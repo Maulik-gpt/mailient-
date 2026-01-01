@@ -1,0 +1,1070 @@
+/* Premium Email Content Styling - Beyond Gmail */
+
+/* Email content wrapper with premium design */
+.email-content-wrapper {
+  font-family: 'Inter', 'SF Pro Display', 'Segoe UI', 'Roboto', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif !important;
+  color: #f8fafc !important;
+  line-height: 1.65 !important;
+  font-size: 15px !important;
+  max-width: 100% !important;
+  margin: 0 auto !important;
+  background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%) !important;
+  padding: 2rem !important;
+  border-radius: 16px !important;
+  box-shadow:
+    0 20px 40px rgba(255, 255, 255, 0.3),
+    0 8px 16px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(0, 0, 0, 0.05) !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.email-content-wrapper::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 1px !important;
+  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.3), transparent) !important;
+}
+
+.email-content-body {
+  color: #e2e8f0 !important;
+  line-height: 1.75 !important;
+  font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1 !important;
+  text-rendering: optimizeLegibility !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+}
+
+/* Hide email tracking pixels and technical elements */
+.email-content-wrapper img[src*="tracking"], .email-content-wrapper img[src*="pixel"],
+.email-content-wrapper img[width="1"], .email-content-wrapper img[height="1"],
+.email-content-wrapper img[src*="spacer"], .email-content-wrapper img[src*=".png"],
+.email-content-wrapper img[src*=".gif"], .email-content-wrapper img[src*=".jpg"] {
+  display: none !important;
+}
+
+/* Clean up email template styles */
+.email-content-wrapper *[style*="display:none"], .email-content-wrapper *[style*="visibility:hidden"],
+.email-content-wrapper .mcnPreviewText, .email-content-wrapper .outlook-group-fix,
+.email-content-wrapper .moz-text-html, .email-content-wrapper .gmail_extra {
+  display: none !important;
+}
+
+/* Premium Typography - Headers with Superior Hierarchy */
+.email-content-wrapper h1, .email-content-wrapper h2, .email-content-wrapper h3,
+.email-content-wrapper h4, .email-content-wrapper h5, .email-content-wrapper h6 {
+  color: #ffffff !important;
+  margin-top: 3em !important;
+  margin-bottom: 1.2em !important;
+  font-weight: 600 !important;
+  line-height: 1.25 !important;
+  letter-spacing: -0.02em !important;
+  position: relative !important;
+  font-feature-settings: 'ss01' 1, 'ss02' 1 !important;
+}
+
+.email-content-wrapper h1 {
+  font-size: 36px !important;
+  margin-top: 0 !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.04em !important;
+  background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  text-shadow: 0 4px 8px rgba(255, 255, 255, 0.3) !important;
+  position: relative !important;
+}
+
+.email-content-wrapper h1::after {
+  content: '' !important;
+  position: absolute !important;
+  bottom: -8px !important;
+  left: 0 !important;
+  width: 80px !important;
+  height: 4px !important;
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6, #ec4899) !important;
+  border-radius: 2px !important;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4) !important;
+}
+
+.email-content-wrapper h2 {
+  font-size: 28px !important;
+  margin-top: 2.5em !important;
+  color: #f1f5f9 !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.03em !important;
+  position: relative !important;
+}
+
+.email-content-wrapper h2::before {
+  content: '' !important;
+  position: absolute !important;
+  left: -1.5rem !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  width: 6px !important;
+  height: 6px !important;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6) !important;
+  border-radius: 50% !important;
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.6) !important;
+}
+
+.email-content-wrapper h3 {
+  font-size: 24px !important;
+  margin-top: 2.2em !important;
+  color: #e2e8f0 !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.02em !important;
+}
+
+.email-content-wrapper h4 {
+  font-size: 20px !important;
+  margin-top: 1.8em !important;
+  color: #cbd5e1 !important;
+  font-weight: 600 !important;
+}
+
+.email-content-wrapper h5 {
+  font-size: 18px !important;
+  margin-top: 1.5em !important;
+  color: #94a3b8 !important;
+  font-weight: 500 !important;
+}
+
+.email-content-wrapper h6 {
+  font-size: 16px !important;
+  margin-top: 1.2em !important;
+  color: #64748b !important;
+  font-weight: 500 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+
+/* Premium Paragraphs and Text Styling */
+.email-content-wrapper p {
+  margin-bottom: 1.8em !important;
+  line-height: 1.8 !important;
+  color: #e2e8f0 !important;
+  font-size: 16px !important;
+  font-weight: 400 !important;
+  text-align: left !important;
+  hyphens: auto !important;
+  word-break: break-word !important;
+  text-indent: 0 !important;
+  hanging-punctuation: none !important;
+}
+
+.email-content-wrapper p:first-child {
+  margin-top: 0 !important;
+  font-size: 18px !important;
+  font-weight: 500 !important;
+  color: #f1f5f9 !important;
+  line-height: 1.7 !important;
+}
+
+.email-content-wrapper p:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* Enhanced text with better spacing and rhythm */
+.email-content-wrapper p + p {
+  margin-top: -0.5em !important;
+}
+
+/* Special styling for important paragraphs - enhanced readability */
+.email-content-wrapper p[style*="font-weight: bold"],
+.email-content-wrapper p[style*="font-weight: 700"],
+.email-content-wrapper p strong,
+.email-content-wrapper p b {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.05), rgba(239, 68, 68, 0.02)) !important;
+  border-left: 4px solid #ef4444 !important;
+  padding: 1.5em 2em !important;
+  border-radius: 0 12px 12px 0 !important;
+  margin: 2em 0 !important;
+  font-weight: 600 !important;
+}
+
+/* Premium Links - Superior Design */
+.email-content-wrapper a {
+  color: #60a5fa !important;
+  text-decoration: none !important;
+  font-weight: 500 !important;
+  position: relative !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  border-radius: 4px !important;
+  padding: 2px 6px !important;
+  margin: 0 -2px !important;
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.1), rgba(96, 165, 250, 0.05)) !important;
+  border-bottom: 2px solid rgba(96, 165, 250, 0.3) !important;
+  box-shadow: 0 2px 4px rgba(96, 165, 250, 0.1) !important;
+}
+
+.email-content-wrapper a::before {
+  content: '' !important;
+  position: absolute !important;
+  bottom: -2px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: 0 !important;
+  height: 2px !important;
+  background: linear-gradient(90deg, #60a5fa, #3b82f6) !important;
+  transition: width 0.3s ease !important;
+}
+
+.email-content-wrapper a:hover {
+  color: #93c5fd !important;
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.2), rgba(96, 165, 250, 0.1)) !important;
+  border-bottom-color: rgba(147, 197, 253, 0.6) !important;
+  box-shadow:
+    0 4px 12px rgba(96, 165, 250, 0.25),
+    0 2px 4px rgba(96, 165, 250, 0.1) !important;
+  transform: translateY(-1px) !important;
+}
+
+.email-content-wrapper a:hover::before {
+  width: 100% !important;
+}
+
+/* Special styling for different types of links */
+.email-content-wrapper a[href*="mailto:"] {
+  color: #34d399 !important;
+  background: linear-gradient(135deg, rgba(52, 211, 153, 0.1), rgba(52, 211, 153, 0.05)) !important;
+  border-bottom-color: rgba(52, 211, 153, 0.3) !important;
+}
+
+.email-content-wrapper a[href*="mailto:"]:hover {
+  color: #6ee7b7 !important;
+  background: linear-gradient(135deg, rgba(52, 211, 153, 0.2), rgba(52, 211, 153, 0.1)) !important;
+  border-bottom-color: rgba(110, 231, 183, 0.6) !important;
+  box-shadow:
+    0 4px 12px rgba(52, 211, 153, 0.25),
+    0 2px 4px rgba(52, 211, 153, 0.1) !important;
+}
+
+.email-content-wrapper a[href*="tel:"] {
+  color: #fbbf24 !important;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(251, 191, 36, 0.05)) !important;
+  border-bottom-color: rgba(251, 191, 36, 0.3) !important;
+}
+
+.email-content-wrapper a[href*="tel:"]:hover {
+  color: #fcd34d !important;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(251, 191, 36, 0.1)) !important;
+  border-bottom-color: rgba(252, 211, 77, 0.6) !important;
+}
+
+/* Premium Blockquotes - Magazine-Quality Design */
+.email-content-wrapper blockquote {
+  border-left: 6px solid linear-gradient(180deg, #3b82f6, #8b5cf6, #ec4899) !important;
+  border-left-width: 6px !important;
+  padding: 2.5em 3em 2.5em 2.5em !important;
+  margin: 3.5em 0 !important;
+  font-style: italic !important;
+  background:
+    linear-gradient(135deg,
+      rgba(59, 130, 246, 0.12) 0%,
+      rgba(139, 92, 246, 0.08) 50%,
+      rgba(236, 72, 153, 0.06) 100%) !important;
+  border-radius: 0 20px 20px 0 !important;
+  position: relative !important;
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.15),
+    0 4px 8px rgba(59, 130, 246, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.email-content-wrapper blockquote::before {
+  content: '"' !important;
+  position: absolute !important;
+  top: 0.8em !important;
+  left: 1.2em !important;
+  font-size: 5em !important;
+  color: rgba(139, 92, 246, 0.4) !important;
+  font-family: 'Georgia', 'Times New Roman', serif !important;
+  line-height: 1 !important;
+  font-weight: bold !important;
+  text-shadow: 0 4px 8px rgba(139, 92, 246, 0.2) !important;
+}
+
+.email-content-wrapper blockquote::after {
+  content: '' !important;
+  position: absolute !important;
+  bottom: 0.8em !important;
+  right: 1.2em !important;
+  font-size: 5em !important;
+  color: rgba(236, 72, 153, 0.4) !important;
+  font-family: 'Georgia', 'Times New Roman', serif !important;
+  line-height: 1 !important;
+  font-weight: bold !important;
+  text-shadow: 0 4px 8px rgba(236, 72, 153, 0.2) !important;
+  transform: rotate(180deg) !important;
+}
+
+.email-content-wrapper blockquote p {
+  margin: 0 !important;
+  font-size: 18px !important;
+  color: #f1f5f9 !important;
+  line-height: 1.7 !important;
+  font-weight: 400 !important;
+  position: relative !important;
+  z-index: 2 !important;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.1) !important;
+}
+
+.email-content-wrapper blockquote p:first-child::first-letter {
+  font-size: 1.4em !important;
+  color: #8b5cf6 !important;
+  font-weight: 700 !important;
+  float: left !important;
+  margin: 0.1em 0.1em 0 0 !important;
+  line-height: 0.8 !important;
+  text-shadow: 0 2px 4px rgba(139, 92, 246, 0.3) !important;
+}
+
+/* Images - Premium treatment */
+.email-content-wrapper img {
+  max-width: 100% !important;
+  height: auto !important;
+  border-radius: 12px !important;
+  margin: 2em 0 !important;
+  box-shadow: 0 8px 24px rgba(255, 255, 255, 0.4) !important;
+  transition: all 0.3s ease !important;
+  cursor: pointer !important;
+}
+
+.email-content-wrapper img:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 12px 32px rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Premium Code Blocks - Developer Experience */
+.email-content-wrapper pre, .email-content-wrapper code {
+  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Source Code Pro', monospace !important;
+  font-size: 14px !important;
+  font-feature-settings: 'liga' 1, 'calt' 1, 'zero' 1 !important;
+  font-variant-ligatures: contextual !important;
+}
+
+.email-content-wrapper code {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(59, 130, 246, 0.1)) !important;
+  color: #fbbf24 !important;
+  padding: 0.2em 0.6em !important;
+  border-radius: 6px !important;
+  border: 1px solid rgba(139, 92, 246, 0.3) !important;
+  font-size: 0.9em !important;
+  font-weight: 500 !important;
+  box-shadow: 0 2px 4px rgba(139, 92, 246, 0.1) !important;
+}
+
+.email-content-wrapper pre {
+  padding: 2.5em !important;
+  overflow-x: auto !important;
+  white-space: pre !important;
+  background:
+    linear-gradient(135deg,
+      rgba(15, 23, 42, 0.95) 0%,
+      rgba(30, 41, 59, 0.9) 100%) !important;
+  border: 2px solid #1f2937 !important;
+  border-radius: 16px !important;
+  margin: 3em 0 !important;
+  position: relative !important;
+  box-shadow:
+    0 20px 40px rgba(255, 255, 255, 0.3),
+    0 8px 16px rgba(139, 92, 246, 0.1),
+    inset 0 1px 0 rgba(0, 0, 0, 0.05) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+.email-content-wrapper pre::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 1.5em !important;
+  left: 1.5em !important;
+  width: 12px !important;
+  height: 12px !important;
+  border-radius: 50% !important;
+  background: #ef4444 !important;
+  box-shadow:
+    20px 0 #f59e0b,
+    40px 0 #10b981 !important;
+  animation: pulse 2s infinite !important;
+}
+
+.email-content-wrapper pre::after {
+  content: 'Code' !important;
+  position: absolute !important;
+  top: 1.5em !important;
+  right: 1.5em !important;
+  color: rgba(139, 92, 246, 0.7) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.1em !important;
+  background: rgba(139, 92, 246, 0.1) !important;
+  padding: 0.5em 1em !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(139, 92, 246, 0.2) !important;
+}
+
+.email-content-wrapper pre code {
+  background: none !important;
+  padding: 0 !important;
+  border: none !important;
+  color: #e5e7eb !important;
+  font-size: 13px !important;
+  line-height: 1.6 !important;
+}
+
+/* Syntax highlighting enhancement */
+.email-content-wrapper pre code .token.comment { color: #64748b !important; font-style: italic !important; }
+.email-content-wrapper pre code .token.string { color: #34d399 !important; }
+.email-content-wrapper pre code .token.number { color: #fbbf24 !important; }
+.email-content-wrapper pre code .token.keyword { color: #ec4899 !important; font-weight: 600 !important; }
+.email-content-wrapper pre code .token.function { color: #60a5fa !important; }
+.email-content-wrapper pre code .token.operator { color: #f1f5f9 !important; }
+
+/* Tables - Modern styling */
+.email-content-wrapper table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  width: 100% !important;
+  margin: 2.5em 0 !important;
+  background: linear-gradient(135deg, #1a1a1a, #0f0f0f) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: 0 8px 24px rgba(255, 255, 255, 0.4) !important;
+  border: 1px solid #2a2a2a !important;
+}
+
+.email-content-wrapper th, .email-content-wrapper td {
+  padding: 1.25em !important;
+  text-align: left !important;
+  border-bottom: 1px solid #2a2a2a !important;
+  border-right: 1px solid #2a2a2a !important;
+}
+
+.email-content-wrapper th {
+  background: linear-gradient(135deg, #1f2937, #374151) !important;
+  font-weight: 600 !important;
+  color: #ffffff !important;
+  font-size: 14px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+
+.email-content-wrapper td {
+  color: #d1d5db !important;
+  font-size: 14px !important;
+}
+
+.email-content-wrapper tr:last-child th,
+.email-content-wrapper tr:last-child td {
+  border-bottom: none !important;
+}
+
+.email-content-wrapper tr th:last-child,
+.email-content-wrapper tr td:last-child {
+  border-right: none !important;
+}
+
+/* Lists - Better spacing and bullets */
+.email-content-wrapper ul, .email-content-wrapper ol {
+  margin: 2em 0 !important;
+  padding-left: 2.5em !important;
+}
+
+.email-content-wrapper li {
+  margin-bottom: 0.8em !important;
+  line-height: 1.7 !important;
+  color: #d1d5db !important;
+}
+
+.email-content-wrapper ul li {
+  list-style-type: disc !important;
+}
+
+.email-content-wrapper ul li li {
+  list-style-type: circle !important;
+}
+
+.email-content-wrapper ol li {
+  list-style-type: decimal !important;
+}
+
+/* Premium Buttons and CTA Elements - Superior Design */
+.email-content-wrapper .btn, .email-content-wrapper .button,
+.email-content-wrapper [role="button"], .email-content-wrapper input[type="submit"],
+.email-content-wrapper input[type="button"] {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 16px 32px !important;
+  background:
+    linear-gradient(135deg,
+      #3b82f6 0%,
+      #8b5cf6 50%,
+      #ec4899 100%) !important;
+  color: white !important;
+  text-decoration: none !important;
+  border-radius: 14px !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  margin: 2em 0 !important;
+  box-shadow:
+    0 8px 25px rgba(59, 130, 246, 0.35),
+    0 4px 8px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(0, 0, 0, 0.2) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  border: none !important;
+  cursor: pointer !important;
+  text-transform: none !important;
+  letter-spacing: 0.025em !important;
+  position: relative !important;
+  overflow: hidden !important;
+  backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.email-content-wrapper .btn::before,
+.email-content-wrapper .button::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: -100% !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent) !important;
+  transition: left 0.5s ease !important;
+}
+
+.email-content-wrapper .btn:hover::before,
+.email-content-wrapper .button:hover::before {
+  left: 100% !important;
+}
+
+.email-content-wrapper .btn:hover, .email-content-wrapper .button:hover {
+  transform: translateY(-3px) scale(1.02) !important;
+  box-shadow:
+    0 15px 35px rgba(59, 130, 246, 0.45),
+    0 8px 16px rgba(139, 92, 246, 0.2),
+    inset 0 1px 0 rgba(0, 0, 0, 0.3) !important;
+  background:
+    linear-gradient(135deg,
+      #60a5fa 0%,
+      #a855f7 50%,
+      #f472b6 100%) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Primary action buttons */
+.email-content-wrapper .btn-primary,
+.email-content-wrapper .button-primary {
+  background:
+    linear-gradient(135deg,
+      #10b981 0%,
+      #059669 100%) !important;
+  box-shadow:
+    0 8px 25px rgba(16, 185, 129, 0.4),
+    0 4px 8px rgba(255, 255, 255, 0.1) !important;
+}
+
+.email-content-wrapper .btn-primary:hover,
+.email-content-wrapper .button-primary:hover {
+  background:
+    linear-gradient(135deg,
+      #34d399 0%,
+      #10b981 100%) !important;
+  box-shadow:
+    0 15px 35px rgba(16, 185, 129, 0.5),
+    0 8px 16px rgba(16, 185, 129, 0.2) !important;
+}
+
+/* Secondary action buttons */
+.email-content-wrapper .btn-secondary,
+.email-content-wrapper .button-secondary {
+  background:
+    linear-gradient(135deg,
+      #6b7280 0%,
+      #4b5563 100%) !important;
+  box-shadow:
+    0 8px 25px rgba(107, 114, 128, 0.3),
+    0 4px 8px rgba(255, 255, 255, 0.1) !important;
+}
+
+.email-content-wrapper .btn-secondary:hover,
+.email-content-wrapper .button-secondary:hover {
+  background:
+    linear-gradient(135deg,
+      #9ca3af 0%,
+      #6b7280 100%) !important;
+  box-shadow:
+    0 15px 35px rgba(107, 114, 128, 0.4),
+    0 8px 16px rgba(107, 114, 128, 0.2) !important;
+}
+
+/* Email metadata and signatures */
+.email-content-wrapper .signature, .email-content-wrapper .footer,
+.email-content-wrapper .gmail_signature, .email-content-wrapper .protonmail_signature {
+  margin-top: 3.5em !important;
+  padding-top: 2.5em !important;
+  border-top: 2px solid #2a2a2a !important;
+  color: #9ca3af !important;
+  font-size: 14px !important;
+  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.02), transparent) !important;
+  padding: 2em !important;
+  border-radius: 8px !important;
+}
+
+/* Horizontal rules */
+.email-content-wrapper hr {
+  border: none !important;
+  height: 2px !important;
+  background: linear-gradient(90deg, transparent, #3b82f6, transparent) !important;
+  margin: 3em 0 !important;
+}
+
+/* Premium Responsive Design */
+@media (max-width: 768px) {
+  .email-content-wrapper {
+    font-size: 15px !important;
+    padding: 1.5rem !important;
+    margin: 0 !important;
+    border-radius: 12px !important;
+  }
+
+  .email-content-wrapper h1 {
+    font-size: 28px !important;
+    margin-top: 0 !important;
+    letter-spacing: -0.03em !important;
+  }
+
+  .email-content-wrapper h1::after {
+    width: 60px !important;
+    height: 3px !important;
+  }
+
+  .email-content-wrapper h2 {
+    font-size: 24px !important;
+    margin-top: 2em !important;
+  }
+
+  .email-content-wrapper h2::before {
+    width: 4px !important;
+    height: 4px !important;
+    left: -1rem !important;
+  }
+
+  .email-content-wrapper h3 {
+    font-size: 20px !important;
+    margin-top: 1.8em !important;
+  }
+
+  .email-content-wrapper p {
+    font-size: 15px !important;
+    line-height: 1.7 !important;
+  }
+
+  .email-content-wrapper p:first-child {
+    font-size: 16px !important;
+  }
+
+  .email-content-wrapper blockquote {
+    margin: 2.5em 0 !important;
+    padding: 2em 1.5em 2em 2em !important;
+    border-left-width: 4px !important;
+  }
+
+  .email-content-wrapper blockquote::before,
+  .email-content-wrapper blockquote::after {
+    font-size: 3.5em !important;
+  }
+
+  .email-content-wrapper pre {
+    padding: 2em 1.5em !important;
+    font-size: 12px !important;
+    border-radius: 12px !important;
+  }
+
+  .email-content-wrapper pre::before {
+    width: 10px !important;
+    height: 10px !important;
+    top: 1em !important;
+    left: 1em !important;
+  }
+
+  .email-content-wrapper pre::after {
+    top: 1em !important;
+    right: 1em !important;
+  }
+
+  .email-content-wrapper .btn, .email-content-wrapper .button {
+    padding: 14px 28px !important;
+    font-size: 14px !important;
+    margin: 1.5em 0 !important;
+  }
+
+  .email-content-wrapper a {
+    padding: 3px 8px !important;
+    margin: 0 -2px !important;
+  }
+}
+
+/* Ultra-wide screen optimizations */
+@media (min-width: 1400px) {
+  .email-content-wrapper {
+    max-width: 1200px !important;
+    margin: 0 auto !important;
+    padding: 3rem !important;
+  }
+
+  .email-content-wrapper h1 {
+    font-size: 42px !important;
+  }
+
+  .email-content-wrapper h2 {
+    font-size: 32px !important;
+  }
+
+  .email-content-wrapper p {
+    font-size: 17px !important;
+    max-width: 75ch !important;
+  }
+}
+
+/* Animation for enhanced user experience */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
+
+.email-content-wrapper *:not(pre):not(code) {
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+/* Focus states for accessibility */
+.email-content-wrapper a:focus {
+  outline: 2px solid rgba(96, 165, 250, 0.6) !important;
+  outline-offset: 2px !important;
+  border-radius: 4px !important;
+}
+
+/* Print optimizations */
+@media print {
+  .email-content-wrapper {
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+    border: 1px solid #e5e7eb !important;
+    padding: 2rem !important;
+  }
+
+  .email-content-wrapper * {
+    color: black !important;
+  }
+
+  .email-content-wrapper a {
+    color: #2563eb !important;
+    text-decoration: underline !important;
+  }
+
+  .email-content-wrapper blockquote {
+    border-left-color: #2563eb !important;
+    background: rgba(37, 99, 235, 0.05) !important;
+  }
+}
+
+/* Dark mode optimizations */
+@media (prefers-color-scheme: dark) {
+  .email-content-wrapper blockquote {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(59, 130, 246, 0.06)) !important;
+  }
+
+  .email-content-wrapper table {
+    background: linear-gradient(135deg, #0f0f0f, #0a0a0a) !important;
+  }
+}
+
+/* Print styles */
+@media print {
+  .email-content-wrapper * {
+    color: #000000 !important;
+    background: #ffffff !important;
+  }
+}
+
+/* Professional Text Mode Styling for Clean Email Display */
+.email-content-container .email-content {
+  font-family: 'Inter', 'Segoe UI', 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  line-height: 1.8 !important;
+  font-size: 15px !important;
+  color: #e5e7eb !important;
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  text-align: justify !important;
+  max-width: 65ch !important;
+  margin: 0 auto !important;
+  padding: 1.5em 0 !important;
+}
+
+/* Enhanced text formatting for better readability */
+.email-content-container .email-content::first-letter {
+  font-size: 3.5em !important;
+  float: left !important;
+  line-height: 0.8 !important;
+  margin: 0.1em 0.1em 0 0 !important;
+  color: #60a5fa !important;
+  font-weight: 700 !important;
+  text-shadow: 0 2px 4px rgba(255, 255, 255, 0.3) !important;
+}
+
+.email-content-container .email-content p {
+  margin-bottom: 1.5em !important;
+  text-indent: 1.5em !important;
+  hanging-punctuation: first last !important;
+}
+
+.email-content-container .email-content p:first-child {
+  text-indent: 0 !important;
+  margin-top: 0 !important;
+}
+
+.email-content-container .email-content p:first-of-type::first-letter {
+  font-size: 3.5em !important;
+  float: left !important;
+  line-height: 0.8 !important;
+  margin: 0.1em 0.1em 0 0 !important;
+  color: #60a5fa !important;
+  font-weight: 700 !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+}
+
+.email-content-container .email-content a {
+  color: #60a5fa !important;
+  text-decoration: none !important;
+  border-bottom: 2px solid rgba(96, 165, 250, 0.3) !important;
+  transition: all 0.2s ease !important;
+  font-weight: 500 !important;
+  padding: 0 1px !important;
+}
+
+.email-content-container .email-content a:hover {
+  color: #93c5fd !important;
+  border-bottom-color: rgba(147, 197, 253, 0.6) !important;
+  background: rgba(96, 165, 250, 0.08) !important;
+  border-radius: 2px !important;
+}
+
+.email-content-container .email-content blockquote {
+  border-left: 4px solid #60a5fa !important;
+  padding: 1.5em 2em !important;
+  margin: 2em 0 !important;
+  font-style: italic !important;
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.08), rgba(96, 165, 250, 0.03)) !important;
+  border-radius: 0 12px 12px 0 !important;
+  position: relative !important;
+  box-shadow: 0 4px 16px rgba(255, 255, 255, 0.1) !important;
+  font-size: 16px !important;
+  line-height: 1.6 !important;
+}
+
+.email-content-container .email-content blockquote::before {
+  content: '"' !important;
+  position: absolute !important;
+  top: 0.3em !important;
+  left: 0.6em !important;
+  font-size: 4em !important;
+  color: rgba(96, 165, 250, 0.2) !important;
+  font-family: serif !important;
+  line-height: 1 !important;
+}
+
+.email-content-container .email-content blockquote p {
+  margin: 0 !important;
+  text-indent: 0 !important;
+  color: #f3f4f6 !important;
+}
+
+/* Enhanced list styling */
+.email-content-container .email-content ul,
+.email-content-container .email-content ol {
+  margin: 2em 0 !important;
+  padding-left: 2.5em !important;
+}
+
+.email-content-container .email-content li {
+  margin-bottom: 1em !important;
+  line-height: 1.7 !important;
+  color: #d1d5db !important;
+  position: relative !important;
+}
+
+.email-content-container .email-content ul li {
+  list-style-type: none !important;
+  padding-left: 1.5em !important;
+}
+
+.email-content-container .email-content ul li::before {
+  content: '•' !important;
+  position: absolute !important;
+  left: 0 !important;
+  color: #60a5fa !important;
+  font-weight: bold !important;
+  font-size: 1.2em !important;
+}
+
+.email-content-container .email-content ol {
+  counter-reset: list-counter !important;
+}
+
+.email-content-container .email-content ol li {
+  list-style-type: none !important;
+  counter-increment: list-counter !important;
+  padding-left: 2em !important;
+}
+
+.email-content-container .email-content ol li::before {
+  content: counter(list-counter) '. ' !important;
+  position: absolute !important;
+  left: 0 !important;
+  color: #60a5fa !important;
+  font-weight: bold !important;
+}
+
+/* Professional heading styles for text mode */
+.email-content-container .email-content h1,
+.email-content-container .email-content h2,
+.email-content-container .email-content h3,
+.email-content-container .email-content h4,
+.email-content-container .email-content h5,
+.email-content-container .email-content h6 {
+  color: #ffffff !important;
+  margin: 2.5em 0 1.5em 0 !important;
+  font-weight: 600 !important;
+  line-height: 1.3 !important;
+  letter-spacing: -0.025em !important;
+  text-align: left !important;
+  border-bottom: 2px solid rgba(96, 165, 250, 0.2) !important;
+  padding-bottom: 0.5em !important;
+}
+
+.email-content-container .email-content h1 {
+  font-size: 28px !important;
+  margin-top: 0 !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.05em !important;
+  border-bottom-color: #60a5fa !important;
+  padding-bottom: 0.8em !important;
+}
+
+.email-content-container .email-content h2 {
+  font-size: 24px !important;
+  margin-top: 2em !important;
+}
+
+.email-content-container .email-content h3 {
+  font-size: 20px !important;
+  margin-top: 1.8em !important;
+}
+
+.email-content-container .email-content h4 {
+  font-size: 18px !important;
+  margin-top: 1.5em !important;
+}
+
+/* Professional signature styling */
+.email-content-container .email-content .signature,
+.email-content-container .email-content .footer {
+  margin-top: 3em !important;
+  padding: 2em 0 !important;
+  border-top: 2px solid rgba(96, 165, 250, 0.2) !important;
+  color: #9ca3af !important;
+  font-size: 14px !important;
+  background: linear-gradient(90deg, transparent, rgba(96, 165, 250, 0.02), transparent) !important;
+  border-radius: 8px !important;
+  text-align: right !important;
+  font-style: italic !important;
+}
+
+/* Code and technical content styling */
+.email-content-container .email-content code {
+  background: linear-gradient(135deg, #1e1e1e, #2a2a2a) !important;
+  color: #f3f4f6 !important;
+  padding: 0.2em 0.5em !important;
+  border-radius: 6px !important;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
+  font-size: 14px !important;
+  border: 1px solid #404040 !important;
+  font-weight: 500 !important;
+}
+
+.email-content-container .email-content pre {
+  background: linear-gradient(135deg, #0f0f0f, #1a1a1a) !important;
+  color: #e5e7eb !important;
+  padding: 1.5em !important;
+  border-radius: 8px !important;
+  overflow-x: auto !important;
+  border: 2px solid #374151 !important;
+  margin: 2em 0 !important;
+  position: relative !important;
+  box-shadow: 0 4px 16px rgba(255, 255, 255, 0.3) !important;
+}
+
+.email-content-container .email-content pre::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 1em !important;
+  left: 1em !important;
+  width: 12px !important;
+  height: 12px !important;
+  border-radius: 50% !important;
+  background: #ef4444 !important;
+  box-shadow: 20px 0 #f59e0b, 40px 0 #10b981 !important;
+}
+
+/* Responsive text styling */
+@media (max-width: 768px) {
+  .email-content-container .email-content {
+    font-size: 14px !important;
+    line-height: 1.7 !important;
+    max-width: 100% !important;
+    padding: 1em 0 !important;
+  }
+
+  .email-content-container .email-content::first-letter,
+  .email-content-container .email-content p:first-of-type::first-letter {
+    font-size: 2.5em !important;
+  }
+
+  .email-content-container .email-content h1 { font-size: 22px !important; }
+  .email-content-container .email-content h2 { font-size: 20px !important; }
+  .email-content-container .email-content h3 { font-size: 18px !important; }
+
+  .email-content-container .email-content blockquote {
+    margin: 1.5em 0 !important;
+    padding: 1em 1.5em !important;
+  }
+}

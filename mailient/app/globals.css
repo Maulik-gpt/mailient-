@@ -1,0 +1,2348 @@
+/* Import Oleo Script font from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Oleo+Script:wght@400;700&display=swap');
+
+/* External Satoshi font declarations from Fontshare CDN */
+@import url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900,300,100&display=swap');
+
+@font-face {
+  font-family: 'Satoshi';
+  src: url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900,300,100&display=swap') format('woff2'),
+    url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900,300,100&display=swap') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Satoshi';
+  src: url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900,300,100&display=swap') format('woff2'),
+    url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900,300,100&display=swap') format('woff');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Satoshi';
+  src: url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900,300,100&display=swap') format('woff2'),
+    url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900,300,100&display=swap') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Satoshi';
+  src: url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900,300,100&display=swap') format('woff2'),
+    url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900,300,100&display=swap') format('woff');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Additional Satoshi font weights for better typography */
+@font-face {
+  font-family: 'Satoshi';
+  src: url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900,300,100&display=swap') format('woff2'),
+    url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900,300,100&display=swap') format('woff');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Satoshi';
+  src: url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900,300,100&display=swap') format('woff2'),
+    url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900,300,100&display=swap') format('woff');
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Oleo Script font declarations */
+.oleo-script-regular {
+  font-family: "Oleo Script", system-ui;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.oleo-script-bold {
+  font-family: "Oleo Script", system-ui;
+  font-weight: 700;
+  font-style: normal;
+}
+
+@import "tailwindcss";
+
+/* Agent-Talk Specific Satoshi Font Loading */
+.satoshi-agent-talk,
+.satoshi-agent-talk * {
+  font-family: 'Satoshi', ui-sans-serif, system-ui, sans-serif !important;
+}
+
+/* Profile Bubble Satoshi Font Loading */
+.satoshi-profile-bubble,
+.satoshi-profile-bubble * {
+  font-family: 'Satoshi', ui-sans-serif, system-ui, sans-serif !important;
+}
+
+/* Profile Page Satoshi Font Loading */
+.satoshi-profile-page,
+.satoshi-profile-page * {
+  font-family: 'Satoshi', ui-sans-serif, system-ui, sans-serif !important;
+}
+
+/* Profile Settings Satoshi Font Loading */
+.satoshi-profile-settings,
+.satoshi-profile-settings * {
+  font-family: 'Satoshi', ui-sans-serif, system-ui, sans-serif !important;
+}
+
+/* Chats Page Satoshi Font Loading */
+.satoshi-chats,
+.satoshi-chats * {
+  font-family: 'Satoshi', ui-sans-serif, system-ui, sans-serif !important;
+}
+
+/* Avatar Upload Satoshi Font Loading */
+.satoshi-avatar-upload,
+.satoshi-avatar-upload * {
+  font-family: 'Satoshi', ui-sans-serif, system-ui, sans-serif !important;
+}
+
+/* Search Page Satoshi Font Loading */
+.satoshi-search-page,
+.satoshi-search-page * {
+  font-family: 'Satoshi', ui-sans-serif, system-ui, sans-serif !important;
+}
+
+/* Home Feed Page Satoshi Font Loading */
+.satoshi-home-feed,
+.satoshi-home-feed * {
+  font-family: 'Satoshi', ui-sans-serif, system-ui, sans-serif !important;
+}
+
+/* Notifications Page Satoshi Font Loading */
+.satoshi-notifications,
+.satoshi-notifications * {
+  font-family: 'Satoshi', ui-sans-serif, system-ui, sans-serif !important;
+}
+
+/* Settings Page Satoshi Font Loading */
+.satoshi-settings-page,
+.satoshi-settings-page * {
+  font-family: 'Satoshi', ui-sans-serif, system-ui, sans-serif !important;
+}
+
+/* Pricing Page Satoshi Font Loading */
+.satoshi-pricing-page,
+.satoshi-pricing-page * {
+  font-family: 'Satoshi', ui-sans-serif, system-ui, sans-serif !important;
+}
+
+/* Global Satoshi App Class */
+.satoshi-app,
+.satoshi-app * {
+  font-family: 'Satoshi', ui-sans-serif, system-ui, sans-serif !important;
+}
+
+/* Hide scrollbar for home feed */
+.satoshi-home-feed ::-webkit-scrollbar {
+  display: none;
+}
+
+.satoshi-home-feed {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+
+
+/* Ensure Satoshi is used as the primary font */
+@layer base {
+  html {
+    font-family: 'Satoshi', ui-sans-serif, system-ui, sans-serif;
+  }
+
+  body {
+    font-family: 'Satoshi', ui-sans-serif, system-ui, sans-serif;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    font-variation-settings: 'wght' 400;
+  }
+
+  :root {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+    --card: 0 0% 0%;
+    --card-foreground: 0 0% 100%;
+    --popover: 0 0% 0%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 0 0% 100%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 0 0% 5%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 5%;
+    --muted-foreground: 0 0% 55%;
+    --accent: 0 0% 5%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 0% 100%;
+    --destructive-foreground: 0 0% 0%;
+    --border: 0 0% 10%;
+    --input: 0 0% 10%;
+    --ring: 0 0% 100%;
+    --radius: 0.5rem;
+    --color-1: 0 100% 63%;
+    --color-2: 270 100% 63%;
+    --color-3: 210 100% 63%;
+    --color-4: 195 100% 63%;
+    --color-5: 90 100% 63%;
+  }
+
+  .dark {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 0%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 0%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 0%;
+    --primary: 0 0% 0%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 85%;
+    --secondary-foreground: 0 0% 0%;
+    --muted: 0 0% 85%;
+    --muted-foreground: 0 0% 35%;
+    --accent: 0 0% 85%;
+    --accent-foreground: 0 0% 0%;
+    --destructive: 0 0% 0%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 80%;
+    --input: 0 0% 80%;
+    --ring: 0 0% 0%;
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+}
+
+:root {
+  --sidebar: hsl(0 0% 0%);
+  --sidebar-foreground: hsl(0 0% 100%);
+  --sidebar-primary: hsl(0 0% 100%);
+  --sidebar-primary-foreground: hsl(0 0% 0%);
+  --sidebar-accent: hsl(0 0% 5%);
+  --sidebar-accent-foreground: hsl(0 0% 100%);
+  --sidebar-border: hsl(0 0% 10%);
+  --sidebar-ring: hsl(0 0% 100%);
+}
+
+.dark {
+  --sidebar: hsl(0 0% 100%);
+  --sidebar-foreground: hsl(0 0% 0%);
+  --sidebar-primary: hsl(0 0% 0%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(0 0% 85%);
+  --sidebar-accent-foreground: hsl(0 0% 0%);
+  --sidebar-border: hsl(0 0% 80%);
+  --sidebar-ring: hsl(0 0% 0%);
+}
+
+/* Sidebar color variables are defined above in :root and .dark selectors */
+
+/* Custom scrollbar for sidebar to prevent scroll conflicts */
+.custom-sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+.custom-sidebar-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-sidebar-scroll::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+}
+
+.custom-sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+/* Ensure main chat area scrolling works properly */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(107, 114, 128, 0.6) rgba(31, 41, 55, 0.5);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(31, 41, 55, 0.5);
+  border-radius: 4px;
+  border: 1px solid rgba(55, 65, 81, 0.3);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #6B7280 0%, #4B5563 50%, #374151 100%);
+  border-radius: 4px;
+  border: 1px solid rgba(75, 85, 99, 0.4);
+  box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.1);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #9CA3AF 0%, #6B7280 50%, #4B5563 100%);
+  border-color: rgba(107, 114, 128, 0.5);
+  box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.15);
+}
+
+.custom-scrollbar::-webkit-scrollbar-corner {
+  background: rgba(31, 41, 55, 0.5);
+}
+
+/* Enhanced scrollbar compatibility for modern browsers */
+.chat-scrollbar,
+.conversation-scrollbar {
+  /* Firefox scrollbar support */
+  scrollbar-width: thin;
+}
+
+/* Webkit scrollbar support with fallbacks */
+.chat-scrollbar::-webkit-scrollbar,
+.conversation-scrollbar::-webkit-scrollbar {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Ensure smooth scrolling behavior */
+.chat-scrollbar,
+.conversation-scrollbar {
+  scroll-behavior: smooth;
+}
+
+/* Additional conversation scrollbar enhancements */
+.conversation-scrollbar {
+  /* Ensure scrollbar is always visible when content overflows */
+  overflow-y: auto;
+}
+
+/* Better visibility for conversation scrollbar */
+.conversation-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.8) !important;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+.conversation-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 1) !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+.conversation-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-radius: 4px;
+}
+
+/* Firefox scrollbar support */
+.conversation-scrollbar {
+  scrollbar-width: auto;
+  scrollbar-color: rgba(156, 163, 175, 0.8) rgba(255, 255, 255, 0.1);
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .chat-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3) !important;
+  }
+
+  .conversation-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(150, 150, 150, 0.4) !important;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+
+  .chat-scrollbar,
+  .conversation-scrollbar {
+    scroll-behavior: auto;
+  }
+
+  .chat-scrollbar::-webkit-scrollbar-thumb,
+  .conversation-scrollbar::-webkit-scrollbar-thumb {
+    transition: none;
+  }
+}
+
+/* Text Selection Styling */
+::selection {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+::-moz-selection {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+/* Chat message text selection */
+.satoshi-agent-talk ::selection {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+.satoshi-agent-talk ::-moz-selection {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+/* Input and textarea text selection */
+input::selection,
+textarea::selection {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+input::-moz-selection,
+textarea::-moz-selection {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+/* Message bubble text selection - using style attribute selector for better CSS compatibility */
+[style*="background-color: #0d1a2a"]::selection {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+[style*="background-color: #0d1a2a"]::-moz-selection {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+/* User message bubble text selection */
+.bg-gray-200::selection {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+.bg-gray-200::-moz-selection {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+/* Sidebar and other UI elements text selection - using style attribute selectors */
+[style*="background-color: #0a0a0a"]::selection,
+[style*="background-color: #0f0f0f"]::selection,
+[style*="background-color: #1a1a1a"]::selection {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+[style*="background-color: #0a0a0a"]::-moz-selection,
+[style*="background-color: #0f0f0f"]::-moz-selection,
+[style*="background-color: #1a1a1a"]::-moz-selection {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+/* Shimmer animation for recording placeholder */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.recording-placeholder::placeholder {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  background-size: 200% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 2s infinite;
+  color: #9ca3af !important;
+  /* light gray */
+}
+
+/* Custom cursor for interactive elements */
+button,
+a,
+input[type="button"],
+input[type="submit"],
+select,
+textarea,
+[role="button"],
+.cursor-pointer {
+  cursor: url('/cursor-white.svg'), pointer;
+}
+
+/* Base, components, and utilities are already imported via @import "tailwindcss" on line 76 */
+
+@layer base {
+  @property --pos-x {
+    syntax: '<percentage>';
+    initial-value: 11.14%;
+    inherits: false;
+  }
+
+  @property --pos-y {
+    syntax: '<percentage>';
+    initial-value: 140%;
+    inherits: false;
+  }
+
+  @property --spread-x {
+    syntax: '<percentage>';
+    initial-value: 150%;
+    inherits: false;
+  }
+
+  @property --spread-y {
+    syntax: '<percentage>';
+    initial-value: 180.06%;
+    inherits: false;
+  }
+
+  @property --color-1 {
+    syntax: '<color>';
+    initial-value: #000;
+    inherits: false;
+  }
+
+  @property --color-2 {
+    syntax: '<color>';
+    initial-value: #08012c;
+    inherits: false;
+  }
+
+  @property --color-3 {
+    syntax: '<color>';
+    initial-value: #4e1e40;
+    inherits: false;
+  }
+
+  @property --color-4 {
+    syntax: '<color>';
+    initial-value: #70464e;
+    inherits: false;
+  }
+
+  @property --color-5 {
+    syntax: '<color>';
+    initial-value: #88394c;
+    inherits: false;
+  }
+
+  @property --border-angle {
+    syntax: '<angle>';
+    initial-value: 20deg;
+    inherits: true;
+  }
+
+  @property --border-color-1 {
+    syntax: '<color>';
+    initial-value: hsla(340, 75%, 60%, 0.2);
+    inherits: true;
+  }
+
+  @property --border-color-2 {
+    syntax: '<color>';
+    initial-value: hsla(340, 75%, 40%, 0.75);
+    inherits: true;
+  }
+
+  @property --stop-1 {
+    syntax: '<percentage>';
+    initial-value: 37.35%;
+    inherits: false;
+  }
+
+  @property --stop-2 {
+    syntax: '<percentage>';
+    initial-value: 61.36%;
+    inherits: false;
+  }
+
+  @property --stop-3 {
+    syntax: '<percentage>';
+    initial-value: 78.42%;
+    inherits: false;
+  }
+
+  @property --stop-4 {
+    syntax: '<percentage>';
+    initial-value: 89.52%;
+    inherits: false;
+  }
+
+  @property --stop-5 {
+    syntax: '<percentage>';
+    initial-value: 100%;
+    inherits: false;
+  }
+}
+
+@layer components {
+  .gradient-button {
+    @apply relative appearance-none cursor-pointer;
+    background: radial-gradient(var(--spread-x) var(--spread-y) at var(--pos-x) var(--pos-y),
+        var(--color-1) var(--stop-1),
+        var(--color-2) var(--stop-2),
+        var(--color-3) var(--stop-3),
+        var(--color-4) var(--stop-4),
+        var(--color-5) var(--stop-5));
+    transition:
+      --pos-x 0.5s,
+      --pos-y 0.5s,
+      --spread-x 0.5s,
+      --spread-y 0.5s,
+      --color-1 0.5s,
+      --color-2 0.5s,
+      --color-3 0.5s,
+      --color-4 0.5s,
+      --color-5 0.5s,
+      --border-angle 0.5s,
+      --border-color-1 0.5s,
+      --border-color-2 0.5s,
+      --stop-1 0.5s,
+      --stop-2 0.5s,
+      --stop-3 0.5s,
+      --stop-4 0.5s,
+      --stop-5 0.5s;
+  }
+
+  .gradient-button::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(var(--border-angle),
+        var(--border-color-1),
+        var(--border-color-2));
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  .gradient-button:hover {
+    --pos-x: 0%;
+    --pos-y: 91.51%;
+    --spread-x: 120.24%;
+    --spread-y: 103.18%;
+    --color-1: #c96287;
+    --color-2: #c66c64;
+    --color-3: #cc7d23;
+    --color-4: #37140a;
+    --color-5: #000;
+    --border-angle: 190deg;
+    --border-color-1: hsla(340, 78%, 90%, 0.1);
+    --border-color-2: hsla(340, 75%, 90%, 0.6);
+    --stop-1: 0%;
+    --stop-2: 8.8%;
+    --stop-3: 21.44%;
+    --stop-4: 71.34%;
+    --stop-5: 85.76%;
+  }
+
+  .gradient-button-variant {
+    --color-1: #000022;
+    --color-2: #1f3f6d;
+    --color-3: #469396;
+    --color-4: #f1ffa5;
+    --border-angle: 200deg;
+    --border-color-1: hsla(320, 75%, 90%, 0.6);
+    --border-color-2: hsla(320, 50%, 90%, 0.15);
+  }
+
+  .gradient-button-variant:hover {
+    --pos-x: 0%;
+    --pos-y: 95.51%;
+    --spread-x: 110.24%;
+    --spread-y: 110.2%;
+    --color-1: #000020;
+    --color-2: #f1ffa5;
+    --color-3: #469396;
+    --color-4: #1f3f6d;
+    --color-5: #000;
+    --stop-1: 0%;
+    --stop-2: 10%;
+    --stop-3: 35.44%;
+    --stop-4: 71.34%;
+    --stop-5: 90.76%;
+    --border-angle: 210deg;
+    --border-color-1: hsla(320, 75%, 90%, 0.2);
+    --border-color-2: hsla(320, 50%, 90%, 0.75);
+  }
+}
+
+
+
+.bg-gradient-radial {
+  background: radial-gradient(circle, var(--tw-gradient-stops));
+}
+
+.bg-gradient-conic {
+  background: conic-gradient(var(--tw-gradient-stops));
+}
+
+/* Spatial audio positioning indicators */
+.spatial-indicator {
+  position: relative;
+}
+
+.spatial-indicator::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 200px;
+  height: 200px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.spatial-indicator.active::before {
+  border-color: rgba(34, 197, 94, 0.5);
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+}
+
+/* Gesture reaction animations */
+@keyframes reaction-pop {
+  0% {
+    transform: scale(0.5) rotate(-10deg);
+    opacity: 0;
+  }
+
+  50% {
+    transform: scale(1.2) rotate(5deg);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 0;
+  }
+}
+
+.gesture-reaction {
+  animation: reaction-pop 2s ease-out forwards;
+}
+
+/* Video bubble positioning */
+.video-bubble-container {
+  position: absolute;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.video-bubble-container:hover {
+  z-index: 10;
+}
+
+.video-bubble-container.speaking {
+  filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.6));
+}
+
+/* Mood mode specific styles */
+.mood-focus {
+  filter: contrast(1.1) brightness(0.9);
+}
+
+.mood-creative {
+  filter: hue-rotate(30deg) saturate(1.3);
+}
+
+.mood-nightflow {
+  filter: brightness(0.7) contrast(1.1);
+}
+
+.mood-open-mic {
+  filter: saturate(1.2) contrast(1.1);
+}
+
+/* Sign-in page specific utilities */
+.bg-gradient-mesh {
+  background:
+    radial-gradient(at 40% 20%, hsla(228, 100%, 74%, 0.1) 0px, transparent 50%),
+    radial-gradient(at 80% 0%, hsla(189, 100%, 56%, 0.1) 0px, transparent 50%),
+    radial-gradient(at 0% 50%, hsla(355, 100%, 93%, 0.1) 0px, transparent 50%),
+    radial-gradient(at 80% 50%, hsla(340, 100%, 76%, 0.1) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, hsla(22, 100%, 77%, 0.1) 0px, transparent 50%),
+    radial-gradient(at 80% 100%, hsla(242, 100%, 70%, 0.1) 0px, transparent 50%),
+    radial-gradient(at 0% 0%, hsla(343, 100%, 76%, 0.1) 0px, transparent 50%);
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.shadow-glow {
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+}
+
+.hover\:shadow-glow:hover {
+  box-shadow: 0 0 30px rgba(139, 92, 246, 0.4), 0 0 60px rgba(139, 92, 246, 0.2);
+}
+
+/* Toast animations */
+@keyframes slide-in-bottom {
+  0% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-out {
+  0% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Cute bounce animations for offline toast */
+@keyframes bounce-in {
+  0% {
+    transform: translate(-50%, -100%) scale(0.3);
+    opacity: 0;
+  }
+
+  50% {
+    transform: translate(-50%, -10%) scale(1.05);
+    opacity: 0.8;
+  }
+
+  70% {
+    transform: translate(-50%, 5%) scale(0.95);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translate(-50%, 0%) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes bounce-out {
+  0% {
+    transform: translate(-50%, 0%) scale(1);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translate(-50%, -100%) scale(0.3);
+    opacity: 0;
+  }
+}
+
+/* Cute wiggle animation for the icon */
+@keyframes wiggle {
+
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+
+  25% {
+    transform: rotate(-5deg);
+  }
+
+  75% {
+    transform: rotate(5deg);
+  }
+}
+
+/* Floating animation for decorative elements */
+@keyframes float-gentle {
+
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(-5px) rotate(2deg);
+  }
+}
+
+/* Pulse glow effect */
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+  }
+
+  50% {
+    box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+  }
+}
+
+.animate-slide-in-bottom {
+  animation: slide-in-bottom 0.3s ease-out;
+}
+
+.toast-fade-out {
+  animation: fade-out 0.3s ease-in-out;
+}
+
+.animate-bounce-in {
+  animation: bounce-in 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.animate-bounce-out {
+  animation: bounce-out 0.3s ease-in-out;
+}
+
+.animate-wiggle {
+  animation: wiggle 1s ease-in-out infinite;
+}
+
+.animate-float-gentle {
+  animation: float-gentle 3s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s infinite;
+}
+
+/* ===== MAILIENT SIFT DESIGN SYSTEM ===== */
+/* Dark mode by default with monochrome + blue accent */
+
+:root {
+  --sift-bg: #000000;
+  --sift-surface: #0a0a0a;
+  --sift-surface-hover: #1a1a1a;
+  --sift-border: #2a2a2a;
+  --sift-text-primary: #ffffff;
+  --sift-text-secondary: #a0a0a0;
+  --sift-text-tertiary: #606060;
+  --sift-accent: #3b82f6;
+  /* Blue-500 */
+  --sift-accent-hover: #2563eb;
+  /* Blue-600 */
+  --sift-success: #10b981;
+  /* Green-500 */
+  --sift-warning: #f59e0b;
+  /* Yellow-500 */
+  --sift-danger: #ef4444;
+  /* Red-500 */
+  --sift-purple: #8b5cf6;
+  /* Purple-500 */
+  --sift-cyan: #06b6d4;
+  /* Cyan-500 */
+}
+
+/* ===== LIGHT THEME VARIABLES ===== */
+/* Applied when html has .light class (via next-themes) */
+.light {
+  --sift-bg: #ffffff;
+  --sift-surface: #f8fafc;
+  --sift-surface-hover: #f1f5f9;
+  --sift-border: #e2e8f0;
+  --sift-text-primary: #0f172a;
+  --sift-text-secondary: #475569;
+  --sift-text-tertiary: #94a3b8;
+  --sift-accent: #2563eb;
+  --sift-accent-hover: #1d4ed8;
+  --sift-success: #059669;
+  --sift-warning: #d97706;
+  --sift-danger: #dc2626;
+  --sift-purple: #7c3aed;
+  --sift-cyan: #0891b2;
+
+  /* Override base CSS variables for light theme */
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+  --primary: 222.2 47.4% 11.2%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 222.2 84% 4.9%;
+
+  /* Sidebar light theme */
+  --sidebar: hsl(0 0% 100%);
+  --sidebar-foreground: hsl(222.2 84% 4.9%);
+  --sidebar-primary: hsl(222.2 47.4% 11.2%);
+  --sidebar-primary-foreground: hsl(210 40% 98%);
+  --sidebar-accent: hsl(210 40% 96.1%);
+  --sidebar-accent-foreground: hsl(222.2 47.4% 11.2%);
+  --sidebar-border: hsl(214.3 31.8% 91.4%);
+  --sidebar-ring: hsl(222.2 84% 4.9%);
+}
+
+/* ===== THEME-AWARE UTILITY CLASSES ===== */
+/* Background colors that respond to theme */
+.theme-bg-primary {
+  background-color: var(--sift-bg);
+}
+
+.theme-bg-surface {
+  background-color: var(--sift-surface);
+}
+
+.theme-bg-surface-hover:hover {
+  background-color: var(--sift-surface-hover);
+}
+
+/* Text colors that respond to theme */
+.theme-text-primary {
+  color: var(--sift-text-primary);
+}
+
+.theme-text-secondary {
+  color: var(--sift-text-secondary);
+}
+
+.theme-text-tertiary {
+  color: var(--sift-text-tertiary);
+}
+
+/* Border colors that respond to theme */
+.theme-border {
+  border-color: var(--sift-border);
+}
+
+/* ===== LIGHT THEME SPECIFIC OVERRIDES ===== */
+/* Light mode specific styles */
+.light .text-\[\#fafafa\] {
+  color: var(--sift-text-primary);
+}
+
+.light .text-\[\#ffffff\] {
+  color: var(--sift-text-primary);
+}
+
+.light .bg-\[\#0a0a0a\] {
+  background-color: var(--sift-bg);
+}
+
+.light .bg-\[\#000000\] {
+  background-color: var(--sift-bg);
+}
+
+.light .bg-black {
+  background-color: var(--sift-bg);
+}
+
+.light .border-neutral-800 {
+  border-color: var(--sift-border);
+}
+
+.light .border-neutral-800\/50 {
+  border-color: rgba(226, 232, 240, 0.5);
+}
+
+.light .text-neutral-500 {
+  color: var(--sift-text-secondary);
+}
+
+.light .text-neutral-400 {
+  color: var(--sift-text-secondary);
+}
+
+.light .hover\:bg-neutral-900:hover {
+  background-color: var(--sift-surface-hover);
+}
+
+.light .hover\:bg-neutral-800:hover {
+  background-color: var(--sift-surface-hover);
+}
+
+.light .bg-neutral-900 {
+  background-color: var(--sift-surface);
+}
+
+.light .bg-neutral-900\/50 {
+  background-color: rgba(241, 245, 249, 0.5);
+}
+
+.light .bg-neutral-900\/30 {
+  background-color: rgba(241, 245, 249, 0.3);
+}
+
+.light .bg-neutral-800 {
+  background-color: var(--sift-surface);
+}
+
+/* Light theme text selection */
+.light ::selection {
+  background-color: #3b82f6;
+  color: #ffffff;
+}
+
+.light ::-moz-selection {
+  background-color: #3b82f6;
+  color: #ffffff;
+}
+
+/* Light theme scrollbar */
+.light .sift-scrollbar::-webkit-scrollbar-track {
+  background: #f8fafc;
+}
+
+.light .sift-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+
+.light .sift-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Light theme custom scrollbar */
+.light .custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(241, 245, 249, 0.5);
+  border-color: rgba(226, 232, 240, 0.3);
+}
+
+.light .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #94a3b8 0%, #64748b 50%, #475569 100%);
+  border-color: rgba(100, 116, 139, 0.4);
+}
+
+.light .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #64748b 0%, #475569 50%, #334155 100%);
+}
+
+/* Light theme cards */
+.light .sift-card-hover:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-color: rgba(37, 99, 235, 0.3);
+}
+
+/* Light theme tooltips */
+.light .sift-tooltip {
+  background: var(--sift-bg);
+  border-color: var(--sift-border);
+  color: var(--sift-text-primary);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+}
+
+/* Light theme modal */
+.light .sift-modal {
+  background: var(--sift-bg);
+  border-color: var(--sift-border);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.06);
+}
+
+/* Light theme sidebar scrollbar */
+.light .custom-sidebar-scroll {
+  scrollbar-color: rgba(100, 116, 139, 0.3) transparent;
+}
+
+.light .custom-sidebar-scroll::-webkit-scrollbar-thumb {
+  background-color: rgba(100, 116, 139, 0.3);
+}
+
+.light .custom-sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(100, 116, 139, 0.5);
+}
+
+/* Light theme glow effects */
+.light .sift-glow {
+  box-shadow: 0 0 8px rgba(37, 99, 235, 0.2);
+}
+
+.light .shadow-glow {
+  box-shadow: 0 0 20px rgba(124, 58, 237, 0.2);
+}
+
+.light .hover\:shadow-glow:hover {
+  box-shadow: 0 0 30px rgba(124, 58, 237, 0.3), 0 0 60px rgba(124, 58, 237, 0.15);
+}
+
+/* Light theme metallic shimmer */
+.light .metallic-shimmer::before {
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(0, 0, 0, 0.05),
+      transparent);
+}
+
+/* Light theme liquid metal border */
+.light .liquid-metal-border::before {
+  background: linear-gradient(90deg,
+      rgba(0, 0, 0, 0.1),
+      rgba(0, 0, 0, 0.05),
+      rgba(0, 0, 0, 0.1));
+}
+
+/* Light theme translucent scrollbar */
+.light .translucent-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.08);
+  border-color: rgba(0, 0, 0, 0.05);
+}
+
+.light .translucent-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.light .translucent-scrollbar {
+  scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
+}
+
+/* Light theme badge colors */
+.light .sift-badge-blue {
+  background: rgba(37, 99, 235, 0.1);
+  color: rgba(37, 99, 235, 1);
+}
+
+.light .sift-badge-green {
+  background: rgba(5, 150, 105, 0.1);
+  color: rgba(5, 150, 105, 1);
+}
+
+.light .sift-badge-yellow {
+  background: rgba(217, 119, 6, 0.1);
+  color: rgba(217, 119, 6, 1);
+}
+
+.light .sift-badge-red {
+  background: rgba(220, 38, 38, 0.1);
+  color: rgba(220, 38, 38, 1);
+}
+
+.light .sift-badge-purple {
+  background: rgba(124, 58, 237, 0.1);
+  color: rgba(124, 58, 237, 1);
+}
+
+.light .sift-badge-cyan {
+  background: rgba(8, 145, 178, 0.1);
+  color: rgba(8, 145, 178, 1);
+}
+
+/* Light theme alert colors */
+.light .sift-alert-info {
+  background: rgba(37, 99, 235, 0.08);
+  border-color: rgba(37, 99, 235, 0.4);
+  color: rgba(37, 99, 235, 1);
+}
+
+.light .sift-alert-success {
+  background: rgba(5, 150, 105, 0.08);
+  border-color: rgba(5, 150, 105, 0.4);
+  color: rgba(5, 150, 105, 1);
+}
+
+.light .sift-alert-warning {
+  background: rgba(217, 119, 6, 0.08);
+  border-color: rgba(217, 119, 6, 0.4);
+  color: rgba(217, 119, 6, 1);
+}
+
+.light .sift-alert-danger {
+  background: rgba(220, 38, 38, 0.08);
+  border-color: rgba(220, 38, 38, 0.4);
+  color: rgba(220, 38, 38, 1);
+}
+
+/* Light theme card backgrounds */
+.light .bg-inbox {
+  background: rgba(37, 99, 235, 0.05);
+}
+
+.light .bg-opportunity {
+  background: rgba(5, 150, 105, 0.05);
+}
+
+.light .bg-founder {
+  background: rgba(124, 58, 237, 0.05);
+}
+
+.light .bg-intelligence {
+  background: rgba(217, 119, 6, 0.05);
+}
+
+.light .bg-arcus {
+  background: rgba(8, 145, 178, 0.05);
+}
+
+/* Light theme text colors for categories */
+.light .text-inbox {
+  color: rgba(37, 99, 235, 1);
+}
+
+.light .text-opportunity {
+  color: rgba(5, 150, 105, 1);
+}
+
+.light .text-founder {
+  color: rgba(124, 58, 237, 1);
+}
+
+.light .text-intelligence {
+  color: rgba(217, 119, 6, 1);
+}
+
+.light .text-arcus {
+  color: rgba(8, 145, 178, 1);
+}
+
+/* Light theme card border colors */
+.light .border-inbox {
+  border-left-color: rgba(37, 99, 235, 0.5);
+}
+
+.light .border-opportunity {
+  border-left-color: rgba(5, 150, 105, 0.5);
+}
+
+.light .border-founder {
+  border-left-color: rgba(124, 58, 237, 0.5);
+}
+
+.light .border-intelligence {
+  border-left-color: rgba(217, 119, 6, 0.5);
+}
+
+.light .border-arcus {
+  border-left-color: rgba(8, 145, 178, 0.5);
+}
+
+/* Light theme focus mode */
+.light .sift-focus-mode {
+  filter: brightness(1.02) contrast(1.05);
+}
+
+/* Light theme stat cards */
+.light .sift-stat-card {
+  background: var(--sift-bg);
+  border-color: var(--sift-border);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+}
+
+.light .sift-stat-card:hover {
+  background: var(--sift-surface-hover);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
+}
+
+/* Light theme progress bar */
+.light .sift-progress-bar {
+  background: var(--sift-border);
+}
+
+/* Light theme spinner */
+.light .sift-spinner {
+  border-color: var(--sift-text-tertiary);
+  border-top-color: var(--sift-accent);
+}
+
+/* Light theme context panel */
+.light .sift-context-panel {
+  background: var(--sift-bg);
+  border-left-color: var(--sift-border);
+}
+
+/* Light theme divider */
+.light .sift-divider {
+  background: var(--sift-border);
+}
+
+/* Light theme avatar */
+.light .sift-avatar {
+  border-color: var(--sift-border);
+}
+
+.light .sift-avatar:hover {
+  border-color: var(--sift-accent);
+}
+
+/* Sift Card Hover Effects */
+.sift-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+/* Sift Button Styles */
+.sift-button {
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.sift-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Sift Input Focus */
+.sift-input:focus {
+  border-color: var(--sift-accent);
+  box-shadow: 0 0 0 1px var(--sift-accent);
+  outline: none;
+}
+
+/* Sift Scrollbar */
+.sift-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sift-scrollbar::-webkit-scrollbar-track {
+  background: #000000;
+}
+
+.sift-scrollbar::-webkit-scrollbar-thumb {
+  background: #374151;
+  border-radius: 4px;
+}
+
+.sift-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #4b5563;
+}
+
+/* Sift Section Headers */
+.sift-section-header {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--sift-text-secondary);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Sift Card Container */
+.sift-card-container {
+  display: grid;
+  gap: 1rem;
+}
+
+/* Sift Empty State */
+.sift-empty-state {
+  text-align: center;
+  padding: 2rem;
+  color: var(--sift-text-tertiary);
+}
+
+/* Sift Loading Animation */
+@keyframes sift-pulse {
+
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+.sift-loading {
+  animation: sift-pulse 1.5s ease-in-out infinite;
+}
+
+/* Sift Badge */
+.sift-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1rem;
+}
+
+/* Sift Tooltip */
+.sift-tooltip {
+  background: var(--sift-surface);
+  border: 1px solid var(--sift-border);
+  color: var(--sift-text-primary);
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Sift Modal */
+.sift-modal {
+  background: var(--sift-surface);
+  border: 1px solid var(--sift-border);
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Sift Divider */
+.sift-divider {
+  height: 1px;
+  background: var(--sift-border);
+  margin: 1.5rem 0;
+}
+
+/* Sift Avatar */
+.sift-avatar {
+  border: 2px solid var(--sift-border);
+  transition: all 0.2s ease;
+}
+
+.sift-avatar:hover {
+  border-color: var(--sift-accent);
+  transform: scale(1.05);
+}
+
+/* Sift Context Panel */
+.sift-context-panel {
+  background: var(--sift-bg);
+  border-left: 1px solid var(--sift-border);
+  overflow-y: auto;
+}
+
+/* Sift Card Border Colors */
+.border-inbox {
+  border-left-color: rgba(59, 130, 246, 0.5);
+}
+
+.border-opportunity {
+  border-left-color: rgba(16, 185, 129, 0.5);
+}
+
+.border-founder {
+  border-left-color: rgba(139, 92, 246, 0.5);
+}
+
+.border-intelligence {
+  border-left-color: rgba(245, 158, 11, 0.5);
+}
+
+.border-arcus {
+  border-left-color: rgba(6, 182, 212, 0.5);
+}
+
+/* Sift Card Background Colors */
+.bg-inbox {
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.bg-opportunity {
+  background: rgba(16, 185, 129, 0.05);
+}
+
+.bg-founder {
+  background: rgba(139, 92, 246, 0.05);
+}
+
+.bg-intelligence {
+  background: rgba(245, 158, 11, 0.05);
+}
+
+.bg-arcus {
+  background: rgba(6, 182, 212, 0.05);
+}
+
+/* Sift Text Colors */
+.text-inbox {
+  color: rgba(59, 130, 246, 1);
+}
+
+.text-opportunity {
+  color: rgba(16, 185, 129, 1);
+}
+
+.text-founder {
+  color: rgba(139, 92, 246, 1);
+}
+
+.text-intelligence {
+  color: rgba(245, 158, 11, 1);
+}
+
+.text-arcus {
+  color: rgba(6, 182, 212, 1);
+}
+
+/* Sift Animation */
+@keyframes sift-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sift-fade-in {
+  animation: sift-fade-in 0.3s ease-out;
+}
+
+/* Liquid Metal Animation */
+@keyframes liquid-metal {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes liquid-metal-slow {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-liquid-metal {
+  animation: liquid-metal 8s linear infinite;
+}
+
+.animate-liquid-metal-slow {
+  animation: liquid-metal-slow 12s linear infinite;
+}
+
+/* Metallic Shimmer Effect */
+@keyframes metallic-shimmer {
+  0% {
+    transform: translateX(-100%) skewX(-15deg);
+  }
+
+  100% {
+    transform: translateX(100%) skewX(-15deg);
+  }
+}
+
+.metallic-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.metallic-shimmer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, 0.1),
+      transparent);
+  transform: translateX(-100%) skewX(-15deg);
+  animation: metallic-shimmer 3s linear infinite;
+}
+
+/* Liquid Metal Border Effect */
+.liquid-metal-border {
+  position: relative;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+}
+
+.liquid-metal-border::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  right: -1px;
+  bottom: -1px;
+  background: linear-gradient(90deg,
+      rgba(255, 255, 255, 0.3),
+      rgba(255, 255, 255, 0.1),
+      rgba(255, 255, 255, 0.3));
+  background-size: 200% 100%;
+  border-radius: inherit;
+  z-index: -1;
+  animation: liquid-metal 4s linear infinite;
+}
+
+/* Sift Grid Layout */
+.sift-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.sift-grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.sift-grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+
+  .sift-grid-2,
+  .sift-grid-3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Sift Focus Mode - Reduces clutter */
+.sift-focus-mode {
+  filter: brightness(0.9) contrast(1.1);
+}
+
+/* Sift High Contrast Mode */
+.sift-high-contrast {
+  --sift-text-primary: #ffffff;
+  --sift-text-secondary: #ffffff;
+  --sift-text-tertiary: #ffffff;
+  --sift-bg: #000000;
+  --sift-surface: #000000;
+  --sift-border: #ffffff;
+}
+
+/* Sift Minimalist Transitions */
+.sift-transition {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Sift Hover Scale */
+.sift-hover-scale:hover {
+  transform: scale(1.02);
+}
+
+/* Sift Active Scale */
+.sift-active-scale:active {
+  transform: scale(0.98);
+}
+
+/* Sift Glow Effect */
+.sift-glow {
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
+}
+
+/* Sift Card Shadow */
+.sift-card-shadow {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+/* Sift Card Shadow Hover */
+.sift-card-shadow-hover:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Sift Input Placeholder */
+.sift-placeholder::placeholder {
+  color: var(--sift-text-tertiary);
+}
+
+/* Sift Disabled State */
+.sift-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Sift Loading Spinner */
+.sift-spinner {
+  border: 2px solid var(--sift-text-tertiary);
+  border-top: 2px solid var(--sift-accent);
+  border-radius: 50%;
+  width: 1rem;
+  height: 1rem;
+  animation: sift-spin 1s linear infinite;
+}
+
+@keyframes sift-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Sift Tag */
+.sift-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+/* Sift Pill */
+.sift-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 500;
+}
+
+/* Sift Stat Card */
+.sift-stat-card {
+  background: var(--sift-surface);
+  border: 1px solid var(--sift-border);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.sift-stat-card:hover {
+  background: var(--sift-surface-hover);
+  border-color: var(--sift-accent);
+  transform: translateY(-2px);
+}
+
+/* Sift Progress Bar */
+.sift-progress-bar {
+  height: 4px;
+  background: var(--sift-border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.sift-progress-bar-fill {
+  height: 100%;
+  background: var(--sift-accent);
+  transition: width 0.3s ease;
+}
+
+/* Sift Alert */
+.sift-alert {
+  padding: 0.75rem;
+  border-radius: 0.375rem;
+  border-left: 4px solid;
+  margin: 1rem 0;
+}
+
+.sift-alert-info {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.5);
+  color: rgba(59, 130, 246, 1);
+}
+
+.sift-alert-success {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.5);
+  color: rgba(16, 185, 129, 1);
+}
+
+.sift-alert-warning {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.5);
+  color: rgba(245, 158, 11, 1);
+}
+
+.sift-alert-danger {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: rgba(239, 68, 68, 1);
+}
+
+/* Sift Badge Colors */
+.sift-badge-blue {
+  background: rgba(59, 130, 246, 0.1);
+  color: rgba(59, 130, 246, 1);
+}
+
+.sift-badge-green {
+  background: rgba(16, 185, 129, 0.1);
+  color: rgba(16, 185, 129, 1);
+}
+
+.sift-badge-yellow {
+  background: rgba(245, 158, 11, 0.1);
+  color: rgba(245, 158, 11, 1);
+}
+
+.sift-badge-red {
+  background: rgba(239, 68, 68, 0.1);
+  color: rgba(239, 68, 68, 1);
+}
+
+.sift-badge-purple {
+  background: rgba(139, 92, 246, 0.1);
+  color: rgba(139, 92, 246, 1);
+}
+
+.sift-badge-cyan {
+  background: rgba(6, 182, 212, 0.1);
+  color: rgba(6, 182, 212, 1);
+}
+
+/* Sift Utility Classes */
+.sift-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sift-multiline-truncate {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.sift-break-words {
+  word-break: break-word;
+}
+
+.sift-capitalize {
+  text-transform: capitalize;
+}
+
+.sift-uppercase {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sift-lowercase {
+  text-transform: lowercase;
+}
+
+/* Sift Layout */
+.sift-container {
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+@media (min-width: 640px) {
+  .sift-container {
+    max-width: 640px;
+  }
+}
+
+@media (min-width: 768px) {
+  .sift-container {
+    max-width: 768px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .sift-container {
+    max-width: 1024px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .sift-container {
+    max-width: 1280px;
+  }
+}
+
+@media (min-width: 1536px) {
+  .sift-container {
+    max-width: 1536px;
+  }
+}
+
+/* Sift Typography */
+.sift-h1 {
+  font-size: 2.25rem;
+  font-weight: 700;
+  line-height: 2.5rem;
+  letter-spacing: -0.025em;
+}
+
+.sift-h2 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  line-height: 2.25rem;
+}
+
+.sift-h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 2rem;
+}
+
+.sift-h4 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.75rem;
+}
+
+.sift-h5 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.75rem;
+}
+
+.sift-h6 {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.5rem;
+}
+
+.sift-p {
+  font-size: 1rem;
+  line-height: 1.5rem;
+}
+
+.sift-small {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.sift-xs {
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+/* Sift Focus Styles */
+:focus-visible {
+  outline: 2px solid var(--sift-accent);
+  outline-offset: 2px;
+}
+
+/* Sift Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Sift Dark Mode (already default) */
+@media (prefers-color-scheme: light) {
+  :root {
+    --sift-bg: #ffffff;
+    --sift-surface: #f9fafb;
+    --sift-surface-hover: #f3f4f6;
+    --sift-border: #e5e7eb;
+    --sift-text-primary: #111827;
+    --sift-text-secondary: #6b7280;
+    --sift-text-tertiary: #9ca3af;
+  }
+}
+
+/* Sift Print Styles */
+@media print {
+  .sift-no-print {
+    display: none !important;
+  }
+
+  .sift-print-only {
+    display: block !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+  }
+}
+
+/* Utility to pause all animations */
+.pause-animations,
+.pause-animations * {
+  animation-play-state: paused !important;
+}
+
+/* Premium Noise Texture */
+.noise-texture {
+  background-image: url("data:image/svg+xml,%3Csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Translucent Premium Scrollbar for Image Share Preview */
+.translucent-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.translucent-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 8px;
+}
+
+.translucent-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
+}
+
+.translucent-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.translucent-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+/* Metallic Glowing Button */
+@keyframes metallic-breathing {
+  0% {
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.05), inset 0 0 15px rgba(255, 255, 255, 0.05);
+  }
+
+  50% {
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.1), inset 0 0 20px rgba(255, 255, 255, 0.1);
+  }
+
+  100% {
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.05), inset 0 0 15px rgba(255, 255, 255, 0.05);
+  }
+}
+
+.metallic-glowing-button {
+  background: linear-gradient(135deg, #1a1a1a 0%, #000000 50%, #1a1a1a 100%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.05), inset 0 0 15px rgba(255, 255, 255, 0.05);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: metallic-breathing 4s ease-in-out infinite;
+}
+
+.metallic-glowing-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(120deg,
+      transparent,
+      rgba(255, 255, 255, 0.1),
+      transparent);
+  transition: all 0.6s ease;
+}
+
+.metallic-glowing-button:hover::before {
+  left: 100%;
+}
+
+.metallic-glowing-button:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.1), inset 0 0 20px rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
+}
+
+.metallic-glowing-button:active {
+  transform: translateY(0);
+}
+
+/* Traditional Email Content Styling */
+.traditional-email-content {
+  color: #d1d1d1;
+  font-family: inherit;
+  line-height: 1.6;
+}
+
+.traditional-email-content a {
+  color: #3b82f6 !important;
+  /* Clickable blue links */
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: all 0.2s ease;
+  cursor: pointer !important;
+  position: relative;
+  z-index: 10;
+}
+
+.traditional-email-content a:hover {
+  border-bottom-color: #3b82f6;
+  opacity: 0.8;
+}
+
+/* Ensure buttons in HTML emails are clickable */
+.traditional-email-content button,
+.traditional-email-content [role="button"],
+.traditional-email-content table a {
+  cursor: pointer !important;
+  pointer-events: auto !important;
+}
+
+.traditional-email-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+  margin: 16px 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.traditional-email-content blockquote {
+  border-left: 2px solid rgba(255, 255, 255, 0.2);
+  padding-left: 16px;
+  margin-left: 0;
+  color: #888;
+}
+
+.traditional-email-content table {
+  width: 100% !important;
+  border-collapse: collapse;
+}
+
+.traditional-email-content h1,
+.traditional-email-content h2,
+.traditional-email-content h3 {
+  color: #fff;
+  margin-top: 24px;
+  margin-bottom: 12px;
+}
+
+/* Arcus Panel Styles - Large Rectangular Box */
+.arcus-panel {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 550px;
+  height: calc(100vh - 48px);
+  max-height: 800px;
+  background: #0a0a0a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(255, 255, 255, 0.03);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: arcus-slide-in 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  backdrop-filter: blur(20px);
+}
+
+@keyframes arcus-slide-in {
+  from {
+    transform: translateX(100%) scale(0.98);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.arcus-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.arcus-content {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.arcus-message-agent {
+  align-self: flex-start;
+  max-width: 85%;
+  background: #2d2e2e;
+  border: 1px solid #323233;
+  border-radius: 20px 20px 20px 4px;
+  padding: 16px 20px;
+  color: #ffffff;
+  font-size: 15px;
+  line-height: 1.6;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.arcus-message-user {
+  align-self: flex-end;
+  max-width: 80%;
+  background: #e5e7eb;
+  /* gray-200 approx */
+  color: #000000;
+  border-radius: 20px 20px 4px 20px;
+  padding: 14px 20px;
+  font-size: 15px;
+  line-height: 1.5;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
+}
+
+
+.arcus-input-container {
+  padding: 24px;
+  background: #000000;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.arcus-input-wrapper {
+  position: relative;
+  background: #111;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 4px;
+  transition: all 0.2s;
+}
+
+.arcus-input-wrapper:focus-within {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: #151515;
+}
+
+.arcus-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: white;
+  padding: 12px 16px;
+  padding-right: 50px;
+  outline: none;
+  font-size: 14px;
+}

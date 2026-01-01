@@ -1,0 +1,304 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
+import { SiftCard } from './sift-card';
+import { Button } from './button';
+import { Badge } from './badge';
+import { RefreshCw, AlertCircle, TrendingUp, Clock, Target, Zap, Mail } from 'lucide-react';
+
+interface SiftInsight {
+  id: string;
+  type: string;
+  title: string;
+  subtitle: string;
+  content: string;
+  timestamp: string;
+  metadata: any;
+  section: string;
+  user?: {
+    name: string;
+    company?: string;
+    avatar: string;
+    username?: string;
+    title?: string;
+  };
+}
+
+interface SiftInsightsResponse {
+  success: boolean;
+  insights: SiftInsight[];
+  timestamp: string;
+  userEmail: string;
+  ai_version: string;
+  sift_intelligence_summary?: {
+    opportunities_detected: number;
+    urgent_action_required: number;
+    hot_leads_heating_up: number;
+    conversations_at_risk: number;
+    missed_follow_ups: number;
+    unread_but_important: number;
+  };
+  error?: string;
+  fallback?: any;
+}
+
+export function GmailInterfaceFixed() {
+  const { data: session } = useSession();
+  const [insights, setInsights] = useState<SiftInsight[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<string>('');
+  const [summary, setSummary] = useState<SiftInsightsResponse['sift_intelligence_summary']>();
+
+  const [hasInitialLoad, setHasInitialLoad] = useState(false);
+
+  const fetchSiftInsights = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      console.log('🤖 Fetching Sift AI insights...');
+      const response = await fetch('/api/home-feed/insights', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch insights: ${response.statusText}`);
+      }
+
+      const data: SiftInsightsResponse = await response.json();
+
+      if (data.success) {
+        setInsights(data.insights || []);
+        setSummary(data.sift_intelligence_summary);
+        setLastUpdated(new Date().toLocaleString());
+        setHasInitialLoad(true);
+        console.log('✅ Sift AI insights loaded successfully');
+      } else {
+        throw new Error(data.error || 'Unknown error occurred');
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load insights';
+      setError(errorMessage);
+      console.error('❌ Error fetching Sift AI insights:', errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+  useEffect(() => {
+    console.log('🔐 Session status:', session?.user?.email ? 'Authenticated' : 'Not authenticated');
+  }, [session]);
+
+  const refreshInsights = () => {
+    fetchSiftInsights();
+  };
+
+  const getCardType = (insight: SiftInsight) => {
+    switch (insight.section) {
+      case 'opportunities':
+        return 'opportunity' as const;
+      case 'inbox-intelligence':
+        return 'inbox-intelligence' as const;
+      case 'ai-highlights':
+        if (insight.title.includes('Week In 10 Seconds') || insight.title.includes('Bulk Analysis Complete')) {
+          return 'weekly-intelligence' as const;
+        } else {
+          return 'arcus-suggestion' as const;
+        }
+      case 'founder-execution':
+        return 'founder-progress' as const;
+      default:
+        return 'inbox-intelligence' as const;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-black p-4">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-3xl font-bold text-white">Mailient Sift AI</h1>
+              <p className="text-gray-300 mt-1">Your intelligent email insights dashboard</p>
+            </div>
+            <div className="flex items-center space-x-4">
+              {lastUpdated && (
+                <p className="text-sm text-gray-500">
+                  Last updated: {lastUpdated}
+                </p>
+              )}
+              <Button
+                onClick={refreshInsights}
+                disabled={loading}
+                variant="outline"
+                size="sm"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                {loading ? 'Loading...' : 'Refresh'}
+              </Button>
+            </div>
+          </div>
+
+          {/* Always show summary when we have data, regardless of hasInitialLoad */}
+          {summary && (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+              <div className="bg-black rounded-lg p-4 border border-gray-600 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-green-300">Opportunities</p>
+                    <p className="text-2xl font-bold text-green-100">{summary.opportunities_detected || 0}</p>
+                  </div>
+                  <Target className="h-8 w-8 text-green-600" />
+                </div>
+              </div>
+
+              <div className="bg-black rounded-lg p-4 border border-gray-600 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-red-300">Urgent Action</p>
+                    <p className="text-2xl font-bold text-red-100">{summary.urgent_action_required || 0}</p>
+                  </div>
+                  <Zap className="h-8 w-8 text-red-600" />
+                </div>
+              </div>
+
+              <div className="bg-black rounded-lg p-4 border border-gray-600 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-orange-300">Hot Leads</p>
+                    <p className="text-2xl font-bold text-orange-100">{summary.hot_leads_heating_up || 0}</p>
+                  </div>
+                  <TrendingUp className="h-8 w-8 text-orange-600" />
+                </div>
+              </div>
+
+              <div className="bg-black rounded-lg p-4 border border-gray-600 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-yellow-300">At Risk</p>
+                    <p className="text-2xl font-bold text-yellow-100">{summary.conversations_at_risk || 0}</p>
+                  </div>
+                  <AlertCircle className="h-8 w-8 text-yellow-600" />
+                </div>
+              </div>
+
+              <div className="bg-black rounded-lg p-4 border border-gray-600 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-purple-300">Missed Follow-ups</p>
+                    <p className="text-2xl font-bold text-purple-100">{summary.missed_follow_ups || 0}</p>
+                  </div>
+                  <Clock className="h-8 w-8 text-purple-600" />
+                </div>
+              </div>
+
+              <div className="bg-black rounded-lg p-4 border border-gray-600 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-blue-300">Unread Important</p>
+                    <p className="text-2xl font-bold text-blue-100">{summary.unread_but_important || 0}</p>
+                  </div>
+                  <Mail className="h-8 w-8 text-blue-600" />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {error && (
+            <div className="mb-6 p-4 border border-red-200 bg-red-50 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <AlertCircle className="h-4 w-4 text-red-500" />
+                <p className="text-red-700">{error}</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {hasInitialLoad ? (
+          insights.length > 0 ? (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-white">Sift AI Insights</h2>
+                <div className="flex space-x-2">
+                  <Badge variant="outline" className="bg-white">
+                    {insights.length} insights
+                  </Badge>
+                  <Badge variant="outline" className="bg-white">
+                    {summary ? Object.values(summary).reduce((a, b) => a + b, 0) : 0} items
+                  </Badge>
+                </div>
+              </div>
+
+              {insights.map((insight) => (
+                <SiftCard
+                  key={insight.id}
+                  type={getCardType(insight)}
+                  title={insight.title}
+                  content={insight.content}
+                  onClick={() => console.log('View details for:', insight.id)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <Mail className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+              <h3 className="text-lg font-medium text-white mb-2">No Sift AI Insights Available</h3>
+              <p className="text-gray-300 mb-6">
+                {error
+                  ? "There was an error loading your email insights."
+                  : "Click 'Refresh' to load your email insights."}
+              </p>
+              <Button
+                onClick={refreshInsights}
+                disabled={loading}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {loading ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  'Load Insights'
+                )}
+              </Button>
+            </div>
+          )
+        ) : (
+          <div className="text-center py-12">
+            <Mail className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+            <h3 className="text-lg font-medium text-white mb-2">Welcome to Mailient Sift AI</h3>
+            <p className="text-gray-300 mb-6">
+              Get started by loading your email insights to see your AI-powered email analysis.
+            </p>
+            <div className="flex justify-center space-x-4">
+              <Button
+                onClick={refreshInsights}
+                disabled={loading}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {loading ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Load Email Insights
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
