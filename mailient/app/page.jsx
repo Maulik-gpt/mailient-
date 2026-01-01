@@ -68,9 +68,9 @@ export default function Home() {
             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.05] to-transparent rotate-45 translate-y-full animate-slow-shimmer" />
 
             <img
-              src="/favicon.png"
+              src="/favicon.png?v=6"
               alt="Mailient"
-              className="w-24 h-24 object-contain brightness-0 invert opacity-90 transition-transform duration-1000 group-hover:scale-110"
+              className="w-24 h-24 object-contain opacity-100 transition-transform duration-1000 group-hover:scale-110"
             />
           </div>
         </div>
