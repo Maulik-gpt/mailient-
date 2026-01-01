@@ -119,88 +119,78 @@ export async function POST(request) {
       });
     }
 
-    return NextResponse.json({
-      message: draftResult.message,
-      timestamp: new Date().toISOString(),
-      conversationId: currentConversationId,
-      aiGenerated: true,
-      actionType: 'draft_reply',
-      draftData: draftResult.draftData || null
-    });
-  }
-
     // Handle notes query
     const detectedIsNotesQuery = isNotesQuery !== undefined ? isNotesQuery : isNotesRelatedQuery(message);
-  if (detectedIsNotesQuery && userEmail) {
-    try {
-      const notesResult = await executeNotesAction(message, userEmail, notesSearchQuery);
-      const notesContext = formatNotesActionResult(notesResult);
+    if (detectedIsNotesQuery && userEmail) {
+      try {
+        const notesResult = await executeNotesAction(message, userEmail, notesSearchQuery);
+        const notesContext = formatNotesActionResult(notesResult);
 
-      const response = await arcusAI.generateResponse(message, {
-        conversationHistory,
-        emailContext: notesContext,
-        integrations,
-        userEmail,
-        userName,
-        privacyMode
-      });
+        const response = await arcusAI.generateResponse(message, {
+          conversationHistory,
+          emailContext: notesContext,
+          integrations,
+          userEmail,
+          userName,
+          privacyMode
+        });
 
-      if (userEmail) {
-        await saveConversation(userEmail, message, response, currentConversationId, db);
+        if (userEmail) {
+          await saveConversation(userEmail, message, response, currentConversationId, db);
+        }
+
+        return NextResponse.json({
+          message: response,
+          timestamp: new Date().toISOString(),
+          conversationId: currentConversationId,
+          aiGenerated: true,
+          actionType: 'notes',
+          notesResult
+        });
+      } catch (error) {
+        console.error('Notes action failed:', error);
       }
-
-      return NextResponse.json({
-        message: response,
-        timestamp: new Date().toISOString(),
-        conversationId: currentConversationId,
-        aiGenerated: true,
-        actionType: 'notes',
-        notesResult
-      });
-    } catch (error) {
-      console.error('Notes action failed:', error);
     }
-  }
 
-  // Handle email context
-  let emailContext = null;
+    // Handle email context
+    let emailContext = null;
 
-  // IF a specific email is selected (from the Traditional View "Ask AI" button)
-  if (selectedEmailId && userEmail) {
-    try {
-      console.log('📧 Arcus: Fetching specific email context for:', selectedEmailId);
-      const emailData = await getEmailById(selectedEmailId, userEmail, session);
-      if (emailData) {
-        emailContext = `=== SELECTED EMAIL CONTEXT ===
+    // IF a specific email is selected (from the Traditional View "Ask AI" button)
+    if (selectedEmailId && userEmail) {
+      try {
+        console.log('📧 Arcus: Fetching specific email context for:', selectedEmailId);
+        const emailData = await getEmailById(selectedEmailId, userEmail, session);
+        if (emailData) {
+          emailContext = `=== SELECTED EMAIL CONTEXT ===
 This is the specific email the user is currently looking at and asking about:
 From: ${emailData.from}
 Subject: ${emailData.subject}
 Date: ${emailData.date}
 Body: ${emailData.body || emailData.snippet}
 ============================`;
+        }
+      } catch (error) {
+        console.error('Error fetching selected email context:', error);
       }
-    } catch (error) {
-      console.error('Error fetching selected email context:', error);
     }
-  }
-  // Otherwise, handle general email queries by searching
-  else if (userEmail && isEmailRelatedQuery(message)) {
-    try {
-      const emailActionResult = await executeEmailAction(message, userEmail, session);
-      if (emailActionResult && emailActionResult.success) {
-        emailContext = formatEmailActionResult(emailActionResult);
+    // Otherwise, handle general email queries by searching
+    else if (userEmail && isEmailRelatedQuery(message)) {
+      try {
+        const emailActionResult = await executeEmailAction(message, userEmail, session);
+        if (emailActionResult && emailActionResult.success) {
+          emailContext = formatEmailActionResult(emailActionResult);
+        }
+      } catch (error) {
+        console.error('Email action failed:', error);
       }
-    } catch (error) {
-      console.error('Email action failed:', error);
     }
-  }
 
-  // Generate AI response with full context
-  const response = await arcusAI.generateResponse(message, {
-    conversationHistory,
-    emailContext,
-    integrations,
-    additionalContext: `
+    // Generate AI response with full context
+    const response = await arcusAI.generateResponse(message, {
+      conversationHistory,
+      emailContext,
+      integrations,
+      additionalContext: `
 - Understand and act upon **URGENCY, PRIORITY, and REVENUE IMPACT**
 - Remember past conversations and build on previous context
 
@@ -211,41 +201,41 @@ Body: ${emailData.body || emailData.snippet}
 - **Gmail Access**: ${integrations.gmail ? '✅ Connected' : '❌ Not connected'}
 
 ## 🧨 Hard Restrictions - Do Not Cross`,
-    userEmail,
-    userName,
-    privacyMode
-  });
+      userEmail,
+      userName,
+      privacyMode
+    });
 
-  const finalResponse = response && response.trim()
-    ? response
-    : generateFallbackResponse(message, integrations);
+    const finalResponse = response && response.trim()
+      ? response
+      : generateFallbackResponse(message, integrations);
 
-  // Save conversation
-  if (userEmail) {
-    try {
-      await saveConversation(userEmail, message, finalResponse, currentConversationId, db);
-    } catch (error) {
-      console.log('⚠️ Failed to save conversation:', error.message);
+    // Save conversation
+    if (userEmail) {
+      try {
+        await saveConversation(userEmail, message, finalResponse, currentConversationId, db);
+      } catch (error) {
+        console.log('⚠️ Failed to save conversation:', error.message);
+      }
     }
+
+    return NextResponse.json({
+      message: finalResponse,
+      timestamp: new Date().toISOString(),
+      conversationId: currentConversationId,
+      aiGenerated: true,
+      actionType: emailContext ? 'email' : 'general',
+      integrations // Include integration status in response
+    });
+
+  } catch (error) {
+    console.error('💥 Arcus Chat API error:', error);
+    return NextResponse.json({
+      message: "I ran into a temporary issue. Could you try that again? If the problem persists, it might be worth refreshing the page.",
+      timestamp: new Date().toISOString(),
+      error: 'Internal server error',
+    });
   }
-
-  return NextResponse.json({
-    message: finalResponse,
-    timestamp: new Date().toISOString(),
-    conversationId: currentConversationId,
-    aiGenerated: true,
-    actionType: emailContext ? 'email' : 'general',
-    integrations // Include integration status in response
-  });
-
-} catch (error) {
-  console.error('💥 Arcus Chat API error:', error);
-  return NextResponse.json({
-    message: "I ran into a temporary issue. Could you try that again? If the problem persists, it might be worth refreshing the page.",
-    timestamp: new Date().toISOString(),
-    error: 'Internal server error',
-  });
-}
 }
 
 /**
