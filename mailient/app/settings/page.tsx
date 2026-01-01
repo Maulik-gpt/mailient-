@@ -8,9 +8,6 @@ import {
     User,
     Lock,
     Shield,
-    Moon,
-    Sun,
-    Monitor,
     Mail,
     Zap,
     Link as LinkIcon,
@@ -21,12 +18,15 @@ import {
     Clock,
     ShieldCheck,
     LockIcon,
-    AlertCircle
+    AlertCircle,
+    FileText,
+    ExternalLink,
+    ChevronRight,
+    Scale
 } from 'lucide-react';
 
 export default function SettingsPage() {
     const { data: session } = useSession();
-    const { theme, setTheme } = useTheme();
     const [activeTab, setActiveTab] = useState('profile');
     const [profile, setProfile] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -208,7 +208,7 @@ export default function SettingsPage() {
         { id: 'profile', label: 'Profile', icon: User },
         { id: 'account', label: 'Account', icon: Lock },
         { id: 'security', label: 'Security', icon: Shield },
-        { id: 'theme', label: 'Theme', icon: theme === 'dark' ? Moon : Sun },
+        { id: 'legal', label: 'Legal', icon: Scale },
     ];
 
     const renderContent = () => {
@@ -442,88 +442,71 @@ export default function SettingsPage() {
                         </div>
                     </div>
                 );
-            case 'theme':
+            case 'legal':
                 return (
                     <div className="space-y-6 animate-in fade-in duration-300">
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <p className="text-sm text-neutral-500 mb-2">Review our legal documents and usage policies</p>
+
+                        <div className="grid grid-cols-1 gap-4">
+                            {/* Terms & Conditions Card */}
                             <button
-                                onClick={() => setTheme('light')}
-                                className={`flex flex-col items-center gap-4 p-6 rounded-2xl border transition-all duration-300 group relative overflow-hidden ${theme === 'light'
-                                    ? 'bg-gradient-to-br from-amber-100 to-orange-100 border-amber-300 text-amber-900 shadow-lg shadow-amber-200/50'
-                                    : 'bg-neutral-900/30 border-neutral-800 text-neutral-400 hover:border-amber-500/50 hover:bg-neutral-900/50'}`}
+                                onClick={() => window.location.href = '/terms-of-service'}
+                                className="group flex items-center justify-between p-6 rounded-2xl bg-neutral-900/30 border border-neutral-800 hover:border-neutral-600 hover:bg-neutral-900/50 transition-all duration-300 text-left"
                             >
-                                <div className={`absolute inset-0 bg-gradient-to-t from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity ${theme === 'light' ? 'opacity-100' : ''}`} />
-                                <div className={`relative p-3 rounded-full ${theme === 'light' ? 'bg-amber-200' : 'bg-neutral-800'} transition-colors`}>
-                                    <Sun className={`w-8 h-8 ${theme === 'light' ? 'text-amber-600' : ''}`} />
-                                </div>
-                                <span className="text-sm font-semibold relative">Light</span>
-                                {theme === 'light' && (
-                                    <div className="absolute top-3 right-3">
-                                        <CheckCircle2 className="w-5 h-5 text-amber-600" />
+                                <div className="flex items-center gap-5">
+                                    <div className="p-4 bg-blue-500/10 rounded-xl group-hover:scale-110 transition-transform duration-500">
+                                        <Scale className="w-6 h-6 text-blue-500" />
                                     </div>
-                                )}
+                                    <div className="space-y-1">
+                                        <h3 className="text-[#fafafa] font-semibold text-lg">Terms & Conditions</h3>
+                                        <p className="text-sm text-neutral-500">Our rules and guidelines for using Mailient</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <span className="text-[10px] uppercase font-bold tracking-widest text-neutral-600 group-hover:text-blue-500 transition-colors">VIEW</span>
+                                    <div className="p-2 rounded-lg bg-neutral-800 group-hover:bg-blue-500/20 transition-colors">
+                                        <ChevronRight className="w-4 h-4 text-neutral-500 group-hover:text-blue-500" />
+                                    </div>
+                                </div>
                             </button>
+
+                            {/* Privacy Policy Card */}
                             <button
-                                onClick={() => setTheme('dark')}
-                                className={`flex flex-col items-center gap-4 p-6 rounded-2xl border transition-all duration-300 group relative overflow-hidden ${theme === 'dark'
-                                    ? 'bg-gradient-to-br from-slate-800 to-slate-900 border-slate-600 text-white shadow-lg shadow-slate-900/50'
-                                    : 'bg-neutral-900/30 border-neutral-800 text-neutral-400 hover:border-slate-500/50 hover:bg-neutral-900/50'}`}
+                                onClick={() => window.location.href = '/privacy-policy'}
+                                className="group flex items-center justify-between p-6 rounded-2xl bg-neutral-900/30 border border-neutral-800 hover:border-neutral-600 hover:bg-neutral-900/50 transition-all duration-300 text-left"
                             >
-                                <div className={`absolute inset-0 bg-gradient-to-t from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity ${theme === 'dark' ? 'opacity-100' : ''}`} />
-                                <div className={`relative p-3 rounded-full ${theme === 'dark' ? 'bg-slate-700' : 'bg-neutral-800'} transition-colors`}>
-                                    <Moon className={`w-8 h-8 ${theme === 'dark' ? 'text-slate-300' : ''}`} />
-                                </div>
-                                <span className="text-sm font-semibold relative">Dark</span>
-                                {theme === 'dark' && (
-                                    <div className="absolute top-3 right-3">
-                                        <CheckCircle2 className="w-5 h-5 text-slate-300" />
+                                <div className="flex items-center gap-5">
+                                    <div className="p-4 bg-purple-500/10 rounded-xl group-hover:scale-110 transition-transform duration-500">
+                                        <ShieldCheck className="w-6 h-6 text-purple-500" />
                                     </div>
-                                )}
-                            </button>
-                            <button
-                                onClick={() => setTheme('system')}
-                                className={`flex flex-col items-center gap-4 p-6 rounded-2xl border transition-all duration-300 group relative overflow-hidden ${theme === 'system'
-                                    ? 'bg-gradient-to-br from-blue-900/50 to-purple-900/50 border-blue-500/50 text-blue-300 shadow-lg shadow-blue-900/30'
-                                    : 'bg-neutral-900/30 border-neutral-800 text-neutral-400 hover:border-blue-500/50 hover:bg-neutral-900/50'}`}
-                            >
-                                <div className={`absolute inset-0 bg-gradient-to-t from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity ${theme === 'system' ? 'opacity-100' : ''}`} />
-                                <div className={`relative p-3 rounded-full ${theme === 'system' ? 'bg-blue-900/50' : 'bg-neutral-800'} transition-colors`}>
-                                    <Monitor className={`w-8 h-8 ${theme === 'system' ? 'text-blue-400' : ''}`} />
-                                </div>
-                                <span className="text-sm font-semibold relative">System</span>
-                                {theme === 'system' && (
-                                    <div className="absolute top-3 right-3">
-                                        <CheckCircle2 className="w-5 h-5 text-blue-400" />
+                                    <div className="space-y-1">
+                                        <h3 className="text-[#fafafa] font-semibold text-lg">Privacy Policy</h3>
+                                        <p className="text-sm text-neutral-500">How we protect and manage your data</p>
                                     </div>
-                                )}
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <span className="text-[10px] uppercase font-bold tracking-widest text-neutral-600 group-hover:text-purple-500 transition-colors">VIEW</span>
+                                    <div className="p-2 rounded-lg bg-neutral-800 group-hover:bg-purple-500/20 transition-colors">
+                                        <ChevronRight className="w-4 h-4 text-neutral-500 group-hover:text-purple-500" />
+                                    </div>
+                                </div>
                             </button>
                         </div>
 
-                        {/* Theme Info Panel */}
-                        <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-6 space-y-4">
-                            <h3 className="text-[#fafafa] font-medium flex items-center gap-2">
-                                <Activity className="w-4 h-4 text-blue-500" />
-                                Theme Information
-                            </h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="bg-[#0a0a0a] border border-neutral-800/50 rounded-xl p-4">
-                                    <p className="text-xs text-neutral-500 uppercase tracking-wider mb-1">Current Theme</p>
-                                    <p className="text-[#fafafa] font-medium capitalize">{theme}</p>
-                                </div>
-                                <div className="bg-[#0a0a0a] border border-neutral-800/50 rounded-xl p-4">
-                                    <p className="text-xs text-neutral-500 uppercase tracking-wider mb-1">System Preference</p>
-                                    <p className="text-[#fafafa] font-medium">
-                                        {typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'Dark Mode' : 'Light Mode'}
-                                    </p>
-                                </div>
+                        {/* Security Badge Panel */}
+                        <div className="bg-[#0a0a0a] border border-neutral-800 p-8 rounded-3xl relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-1000">
+                                <Shield className="w-32 h-32 text-blue-500" />
                             </div>
-                            <p className="text-xs text-neutral-500 mt-2">
-                                {theme === 'system'
-                                    ? '🔄 Theme will automatically match your system preferences.'
-                                    : theme === 'light'
-                                        ? '☀️ Light theme is active. Enjoy the bright, clean interface.'
-                                        : '🌙 Dark theme is active. Easy on the eyes, especially at night.'}
-                            </p>
+                            <div className="relative z-10 space-y-4 max-w-lg">
+                                <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-500/10 text-green-500 text-[10px] font-bold rounded-full border border-green-500/20 uppercase tracking-widest">
+                                    Secure Platform
+                                </div>
+                                <h4 className="text-xl font-bold text-[#fafafa]">Committed to your privacy</h4>
+                                <p className="text-sm text-neutral-500 leading-relaxed">
+                                    We believe in data sovereignty. All policies are designed to give you ultimate control over your information. We never sell your data or use it for AI training without explicit consent.
+                                </p>
+                            </div>
                         </div>
                     </div>
                 );
