@@ -211,7 +211,7 @@ export default function SiftOnboardingPage() {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="relative">
-          <div className="w-16 h-16 border-t-2 border-white/20 border-r-2 border-white/40 border-b-2 border-white/60 border-l-2 border-white rounded-full animate-spin"></div>
+          <div className="w-16 h-16 border-t-2 border-t-white/20 border-r-2 border-r-white/40 border-b-2 border-b-white/60 border-l-2 border-l-white rounded-full animate-spin"></div>
           <div className="absolute inset-0 flex items-center justify-center">
             <Sparkles className="w-6 h-6 text-white animate-pulse" />
           </div>

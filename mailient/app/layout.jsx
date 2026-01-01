@@ -2,7 +2,7 @@ import "./globals.css";
 import Providers from "./providers";
 
 export const metadata = {
-  title: "Mailent - AI-Powered Email Management",
+  title: "Mailient",
   description: "Intelligent email management with AI-powered relationship tracking",
 };
 
