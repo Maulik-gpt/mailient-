@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
+import Link from "next/link";
 import { Button } from "../../../components/ui/button";
 
 export default function GetStarted() {
@@ -126,15 +127,15 @@ export default function GetStarted() {
           </div>
 
           {/* Terms */}
-          <p className="text-xs text-gray-400 text-center mt-6">
+          <p className="text-xs text-gray-400 text-center mt-6 uppercase tracking-widest font-bold italic">
             By continuing, you agree to our{" "}
-            <a href="#" className="underline hover:text-white">
+            <Link href="/terms-of-service" className="underline hover:text-white transition-colors">
               Terms of Service
-            </a>{" "}
+            </Link>{" "}
             and{" "}
-            <a href="#" className="underline hover:text-white">
+            <Link href="/privacy-policy" className="underline hover:text-white transition-colors">
               Privacy Policy
-            </a>
+            </Link>
           </p>
         </div>
       </div>
