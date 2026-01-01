@@ -87,46 +87,6 @@ export async function POST(request) {
 
     // Parse user intent
     const draftIntent = arcusAI.parseDraftIntent(message);
-    const schedulingIntent = arcusAI.parseSchedulingIntent(message);
-
-    // Handle scheduling confirmation ("yes" to a proposal)
-    const isConfirmation = /^(yes|yeah|yep|correct|do it|confirm|proceed|ok|okay|sure|that works|go ahead)$/i.test(message.trim());
-    if (isConfirmation && conversationHistory.length > 0) {
-      const lastMsg = conversationHistory[conversationHistory.length - 1];
-      if (lastMsg.role === 'assistant' && lastMsg.content.includes('Is this correct? Just say "yes" to confirm')) {
-        console.log('✅ Arcus: Confirmation detected. Executing scheduling...');
-
-        try {
-          const scheduleResult = await executeScheduling(lastMsg.content, userEmail, session, integrations);
-
-          if (userEmail) {
-            await saveConversation(userEmail, message, scheduleResult.message, currentConversationId, db);
-          }
-
-          return NextResponse.json({
-            message: scheduleResult.message,
-            timestamp: new Date().toISOString(),
-            conversationId: currentConversationId,
-            aiGenerated: true,
-            actionType: 'scheduling_complete',
-            eventData: scheduleResult.eventData
-          });
-        } catch (error) {
-          console.error('❌ Scheduling failed:', error);
-          const errorMsg = "I tried to schedule that meeting but ran into an issue with the calendar. Could you check if your Google Calendar integration is still active?";
-          if (userEmail) {
-            await saveConversation(userEmail, message, errorMsg, currentConversationId, db);
-          }
-          return NextResponse.json({
-            message: errorMsg,
-            timestamp: new Date().toISOString(),
-            conversationId: currentConversationId,
-            aiGenerated: true,
-            error: error.message
-          });
-        }
-      }
-    }
 
     // Handle drafting request
     if (draftIntent.isDraftRequest || draftReplyRequest) {
@@ -159,166 +119,133 @@ export async function POST(request) {
       });
     }
 
-    // Handle scheduling request - check integration first
-    if (schedulingIntent.isSchedulingRequest) {
-      if (!integrations['google-calendar']) {
-        const scheduleBlockedResponse = `I'd love to help you schedule that meeting, but I noticed Google Calendar isn't enabled yet.
-
-To schedule meetings and sync with your calendar, you'll need to:
-1. Click on the integrations button (plug icon) in the chat input
-2. Toggle on "Google Calendar"
-3. Grant the necessary permissions
-
-Once that's done, just ask me again and I'll get that meeting set up for you!`;
-
-        if (userEmail) {
-          await saveConversation(userEmail, message, scheduleBlockedResponse, currentConversationId, db);
-        }
-
-        return NextResponse.json({
-          message: scheduleBlockedResponse,
-          timestamp: new Date().toISOString(),
-          conversationId: currentConversationId,
-          aiGenerated: true,
-          actionType: 'integration_required',
-          requiredIntegration: 'google-calendar'
-        });
-      }
-
-      // Handle scheduling with calendar integration
-      const scheduleResult = await handleSchedulingRequest(
-        message,
-        schedulingIntent,
-        userEmail,
-        userName,
-        session,
-        db,
-        arcusAI,
-        integrations,
-        conversationHistory,
-        privacyMode
-      );
-
-      if (userEmail) {
-        await saveConversation(userEmail, message, scheduleResult.message, currentConversationId, db);
-      }
-
-      return NextResponse.json({
-        message: scheduleResult.message,
-        timestamp: new Date().toISOString(),
-        conversationId: currentConversationId,
-        aiGenerated: true,
-        actionType: 'scheduling',
-        schedulingData: scheduleResult.schedulingData || null
-      });
-    }
+    return NextResponse.json({
+      message: draftResult.message,
+      timestamp: new Date().toISOString(),
+      conversationId: currentConversationId,
+      aiGenerated: true,
+      actionType: 'draft_reply',
+      draftData: draftResult.draftData || null
+    });
+  }
 
     // Handle notes query
     const detectedIsNotesQuery = isNotesQuery !== undefined ? isNotesQuery : isNotesRelatedQuery(message);
-    if (detectedIsNotesQuery && userEmail) {
-      try {
-        const notesResult = await executeNotesAction(message, userEmail, notesSearchQuery);
-        const notesContext = formatNotesActionResult(notesResult);
+  if (detectedIsNotesQuery && userEmail) {
+    try {
+      const notesResult = await executeNotesAction(message, userEmail, notesSearchQuery);
+      const notesContext = formatNotesActionResult(notesResult);
 
-        const response = await arcusAI.generateResponse(message, {
-          conversationHistory,
-          emailContext: notesContext,
-          integrations,
-          userEmail,
-          userName,
-          privacyMode
-        });
+      const response = await arcusAI.generateResponse(message, {
+        conversationHistory,
+        emailContext: notesContext,
+        integrations,
+        userEmail,
+        userName,
+        privacyMode
+      });
 
-        if (userEmail) {
-          await saveConversation(userEmail, message, response, currentConversationId, db);
-        }
-
-        return NextResponse.json({
-          message: response,
-          timestamp: new Date().toISOString(),
-          conversationId: currentConversationId,
-          aiGenerated: true,
-          actionType: 'notes',
-          notesResult
-        });
-      } catch (error) {
-        console.error('Notes action failed:', error);
+      if (userEmail) {
+        await saveConversation(userEmail, message, response, currentConversationId, db);
       }
+
+      return NextResponse.json({
+        message: response,
+        timestamp: new Date().toISOString(),
+        conversationId: currentConversationId,
+        aiGenerated: true,
+        actionType: 'notes',
+        notesResult
+      });
+    } catch (error) {
+      console.error('Notes action failed:', error);
     }
+  }
 
-    // Handle email context
-    let emailContext = null;
+  // Handle email context
+  let emailContext = null;
 
-    // IF a specific email is selected (from the Traditional View "Ask AI" button)
-    if (selectedEmailId && userEmail) {
-      try {
-        console.log('📧 Arcus: Fetching specific email context for:', selectedEmailId);
-        const emailData = await getEmailById(selectedEmailId, userEmail, session);
-        if (emailData) {
-          emailContext = `=== SELECTED EMAIL CONTEXT ===
+  // IF a specific email is selected (from the Traditional View "Ask AI" button)
+  if (selectedEmailId && userEmail) {
+    try {
+      console.log('📧 Arcus: Fetching specific email context for:', selectedEmailId);
+      const emailData = await getEmailById(selectedEmailId, userEmail, session);
+      if (emailData) {
+        emailContext = `=== SELECTED EMAIL CONTEXT ===
 This is the specific email the user is currently looking at and asking about:
 From: ${emailData.from}
 Subject: ${emailData.subject}
 Date: ${emailData.date}
 Body: ${emailData.body || emailData.snippet}
 ============================`;
-        }
-      } catch (error) {
-        console.error('Error fetching selected email context:', error);
       }
+    } catch (error) {
+      console.error('Error fetching selected email context:', error);
     }
-    // Otherwise, handle general email queries by searching
-    else if (userEmail && isEmailRelatedQuery(message)) {
-      try {
-        const emailActionResult = await executeEmailAction(message, userEmail, session);
-        if (emailActionResult && emailActionResult.success) {
-          emailContext = formatEmailActionResult(emailActionResult);
-        }
-      } catch (error) {
-        console.error('Email action failed:', error);
-      }
-    }
-
-    // Generate AI response with full context
-    const response = await arcusAI.generateResponse(message, {
-      conversationHistory,
-      emailContext,
-      integrations,
-      userEmail,
-      userName,
-      privacyMode
-    });
-
-    const finalResponse = response && response.trim()
-      ? response
-      : generateFallbackResponse(message, integrations);
-
-    // Save conversation
-    if (userEmail) {
-      try {
-        await saveConversation(userEmail, message, finalResponse, currentConversationId, db);
-      } catch (error) {
-        console.log('⚠️ Failed to save conversation:', error.message);
-      }
-    }
-
-    return NextResponse.json({
-      message: finalResponse,
-      timestamp: new Date().toISOString(),
-      conversationId: currentConversationId,
-      aiGenerated: true,
-      actionType: emailContext ? 'email' : 'general',
-      integrations // Include integration status in response
-    });
-
-  } catch (error) {
-    console.error('💥 Arcus Chat API error:', error);
-    return NextResponse.json({
-      message: "I ran into a temporary issue. Could you try that again? If the problem persists, it might be worth refreshing the page.",
-      timestamp: new Date().toISOString(),
-      error: 'Internal server error',
-    });
   }
+  // Otherwise, handle general email queries by searching
+  else if (userEmail && isEmailRelatedQuery(message)) {
+    try {
+      const emailActionResult = await executeEmailAction(message, userEmail, session);
+      if (emailActionResult && emailActionResult.success) {
+        emailContext = formatEmailActionResult(emailActionResult);
+      }
+    } catch (error) {
+      console.error('Email action failed:', error);
+    }
+  }
+
+  // Generate AI response with full context
+  const response = await arcusAI.generateResponse(message, {
+    conversationHistory,
+    emailContext,
+    integrations,
+    additionalContext: `
+- Understand and act upon **URGENCY, PRIORITY, and REVENUE IMPACT**
+- Remember past conversations and build on previous context
+
+## Current User Context
+
+- **User Email**: ${userEmail || 'Not signed in'}
+- **User Name**: ${userName}
+- **Gmail Access**: ${integrations.gmail ? '✅ Connected' : '❌ Not connected'}
+
+## 🧨 Hard Restrictions - Do Not Cross`,
+    userEmail,
+    userName,
+    privacyMode
+  });
+
+  const finalResponse = response && response.trim()
+    ? response
+    : generateFallbackResponse(message, integrations);
+
+  // Save conversation
+  if (userEmail) {
+    try {
+      await saveConversation(userEmail, message, finalResponse, currentConversationId, db);
+    } catch (error) {
+      console.log('⚠️ Failed to save conversation:', error.message);
+    }
+  }
+
+  return NextResponse.json({
+    message: finalResponse,
+    timestamp: new Date().toISOString(),
+    conversationId: currentConversationId,
+    aiGenerated: true,
+    actionType: emailContext ? 'email' : 'general',
+    integrations // Include integration status in response
+  });
+
+} catch (error) {
+  console.error('💥 Arcus Chat API error:', error);
+  return NextResponse.json({
+    message: "I ran into a temporary issue. Could you try that again? If the problem persists, it might be worth refreshing the page.",
+    timestamp: new Date().toISOString(),
+    error: 'Internal server error',
+  });
+}
 }
 
 /**
@@ -898,100 +825,4 @@ async function saveConversation(userEmail, userMessage, aiResponse, conversation
   } catch (error) {
     console.error('Error saving conversation:', error);
   }
-}
-
-/**
- * Execute scheduling after confirmation
- */
-async function executeScheduling(proposalText, userEmail, session, integrations) {
-  try {
-    // 1. Extract details from proposal message
-    const attendeeMatch = proposalText.match(/Meeting with:\s+(.+)/i);
-    const whenMatch = proposalText.match(/When:\s+(.+)\s+at\s+(.+)/i);
-
-    if (!whenMatch) {
-      throw new Error("Could not parse meeting details from proposal.");
-    }
-
-    const attendeesNames = attendeeMatch ? attendeeMatch[1].split(',').map(s => s.trim()) : [];
-    const dateStr = whenMatch[1].trim();
-    const timeStr = whenMatch[2].trim();
-
-    // 2. Parse date and time to ISO
-    const { start, end } = parseDateTime(dateStr, timeStr);
-
-    // 3. Get tokens
-    const db = new DatabaseService();
-    const userTokens = await db.getUserTokens(userEmail);
-    const accessToken = decrypt(userTokens.encrypted_access_token);
-    const refreshToken = userTokens.encrypted_refresh_token ? decrypt(userTokens.encrypted_refresh_token) : '';
-
-    const calendarService = new CalendarService(accessToken, refreshToken || '');
-
-    // 4. Create meeting
-    const event = await calendarService.createMeeting({
-      summary: `Meeting with ${attendeesNames.join(', ')}`,
-      description: `Scheduled via Arcus AI Assistant.\nAttendees: ${attendeesNames.join(', ')}`,
-      startTime: start,
-      endTime: end,
-      attendees: [] // Basic implementation (primary calendar event)
-    });
-
-    const meetLink = event.hangoutLink || event.conferenceData?.entryPoints?.find(ep => ep.entryPointType === 'video')?.uri;
-
-    return {
-      success: true,
-      message: `Excellent! I've successfully scheduled the meeting on your Google Calendar for ${dateStr} at ${timeStr}.${meetLink ? `\n\nHere is the Google Meet link: ${meetLink}` : ''} I've also included this link in the calendar event.`,
-      eventData: event
-    };
-  } catch (error) {
-    console.error('executeScheduling error:', error);
-    throw error;
-  }
-}
-
-/**
- * Helper to parse human-readable date/time to ISO range
- */
-function parseDateTime(dateStr, timeStr) {
-  let date = new Date();
-
-  const lowerDate = dateStr.toLowerCase();
-  if (lowerDate.includes('tomorrow')) {
-    date = addDays(date, 1);
-  } else if (lowerDate.includes('today')) {
-    // leave as is
-  } else if (lowerDate.includes('next')) {
-    const dayMatch = lowerDate.match(/next\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i);
-    if (dayMatch) {
-      const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-      const targetDay = days.indexOf(dayMatch[1].toLowerCase());
-      const currentDay = date.getDay();
-      let diff = targetDay - currentDay;
-      if (diff <= 0) diff += 7;
-      date = addDays(date, diff);
-    }
-  }
-
-  // Parse time (e.g. "2pm", "14:30")
-  let hours = 9;
-  let minutes = 0;
-
-  const timeMatch = timeStr.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
-  if (timeMatch) {
-    hours = parseInt(timeMatch[1]);
-    minutes = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
-    const ampm = timeMatch[3]?.toLowerCase();
-
-    if (ampm === 'pm' && hours < 12) hours += 12;
-    if (ampm === 'am' && hours === 12) hours = 0;
-  }
-
-  const startDate = setMinutes(setHours(startOfDay(date), hours), minutes);
-  const finalEndDate = new Date(startDate.getTime() + 30 * 60 * 1000);
-
-  return {
-    start: startDate.toISOString(),
-    end: finalEndDate.toISOString()
-  };
 }

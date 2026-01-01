@@ -120,10 +120,11 @@ You are a highly intelligent, context-aware email and productivity assistant wit
 
 ## 🧨 Hard Restrictions - Do Not Cross
 
-1. ❌ **Direct Email Sending**: You **cannot send emails directly**. You only draft them. If asked to send, say: "I can draft that for you right now, but you'll need to hit the send button yourself. My direct sending features are coming in future updates."
-2. ❌ **No AI Language**: Avoid phrases like "I can help with...", "As an AI model...", "Here is a draft...", or "Moving forward...". Just talk like a person.
-3. ❌ **No Em Dashes**: NEVER use em dashes (—). They look too much like an AI trying to be sophisticated. Use commas or periods.
-4. ❌ **No Formatting Fluff**: No bolding, no italics, no corporate buzzwords.
+1. ❌ **Direct Email Sending**: You **cannot send emails directly**. You only draft them.
+2. ❌ **Scheduling & Calendar**: You **cannot schedule meetings**, book calls, or manage calendars. If asked, say: "I can't schedule meetings or access your calendar right now, but I'm happy to help you draft an email to set something up!"
+3. ❌ **No AI Language**: Avoid phrases like "I can help with...", "As an AI model...", etc. Just talk like a person.
+4. ❌ **No Em Dashes**: NEVER use em dashes (—).
+5. ❌ **No Formatting Fluff**: No bolding, no italics.
 
 ## Communication Style
 
@@ -292,30 +293,6 @@ Write a complete, ready-to-send email reply. Start with an appropriate greeting 
     }
 
     /**
-     * Detect if user is asking about scheduling/calendar
-     */
-    isSchedulingRequest(message) {
-        const schedulingKeywords = [
-            'schedule', 'meeting', 'calendar', 'meet', 'call', 'appointment',
-            'book', 'set up', 'arrange', 'plan', 'sync', 'event', 'invite'
-        ];
-        const lowerMessage = message.toLowerCase();
-        return schedulingKeywords.some(keyword => lowerMessage.includes(keyword));
-    }
-
-    /**
-     * Detect if user is asking about drafting/replying
-     */
-    isDraftingRequest(message) {
-        const draftingKeywords = [
-            'draft', 'reply', 'respond', 'write', 'compose', 'email back',
-            'send a message', 'answer', 'get back to', 'write back'
-        ];
-        const lowerMessage = message.toLowerCase();
-        return draftingKeywords.some(keyword => lowerMessage.includes(keyword));
-    }
-
-    /**
      * Parse draft reply intent from message
      */
     parseDraftIntent(message) {
@@ -363,64 +340,6 @@ Write a complete, ready-to-send email reply. Start with an appropriate greeting 
         // Simple keyword check if no pattern matched
         if (!result.isDraftRequest && this.isDraftingRequest(message)) {
             result.isDraftRequest = true;
-        }
-
-        return result;
-    }
-
-    /**
-     * Parse scheduling intent from message
-     */
-    parseSchedulingIntent(message) {
-        const result = {
-            isSchedulingRequest: false,
-            attendees: [],
-            time: null,
-            date: null,
-            title: null,
-            notify: false
-        };
-
-        const lowerMessage = message.toLowerCase();
-
-        if (!this.isSchedulingRequest(message)) {
-            return result;
-        }
-
-        result.isSchedulingRequest = true;
-
-        // Extract attendees (names after "with")
-        const attendeeMatch = message.match(/with\s+([^,]+(?:,\s*[^,]+)*?)(?:\s+(?:at|on|tomorrow|next|this)|\s*$)/i);
-        if (attendeeMatch) {
-            result.attendees = attendeeMatch[1].split(/,|and/).map(a => a.trim()).filter(Boolean);
-        }
-
-        // Extract time
-        const timeMatch = message.match(/(?:at\s+)?(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)/i);
-        if (timeMatch) {
-            result.time = timeMatch[1].trim();
-        }
-
-        // Extract date indicators
-        if (lowerMessage.includes('tomorrow')) {
-            result.date = 'tomorrow';
-        } else if (lowerMessage.includes('today')) {
-            result.date = 'today';
-        } else if (lowerMessage.match(/next\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i)) {
-            const dayMatch = lowerMessage.match(/next\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i);
-            result.date = 'next ' + dayMatch[1];
-        } else if (lowerMessage.includes('next morning')) {
-            result.date = 'tomorrow morning';
-        }
-
-        // Check for notification request
-        if (lowerMessage.includes('notify') || lowerMessage.includes('invite') || lowerMessage.includes('send')) {
-            result.notify = true;
-        }
-
-        // Check for calendar save request
-        if (lowerMessage.includes('calendar') || lowerMessage.includes('save')) {
-            result.saveToCalendar = true;
         }
 
         return result;
