@@ -293,6 +293,15 @@ Write a complete, ready-to-send email reply. Start with an appropriate greeting 
     }
 
     /**
+     * Check if a message is a drafting request
+     */
+    isDraftingRequest(message) {
+        const keywords = ['draft', 'reply', 'respond', 'answer', 'compose', 'write a reply'];
+        const lower = message.toLowerCase();
+        return keywords.some(k => lower.includes(k));
+    }
+
+    /**
      * Parse draft reply intent from message
      */
     parseDraftIntent(message) {
