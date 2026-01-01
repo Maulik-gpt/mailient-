@@ -334,17 +334,49 @@ export class DatabaseService {
     }
   }
 
-  // Delete user data
+  // Delete user data completely
   async deleteUserData(userId) {
     try {
-      // Delete in order to respect foreign key constraints
-      await this.supabase.from('user_emails').delete().eq('user_id', userId);
-      await this.supabase.from('user_tokens').delete().eq('user_id', userId);
-      await this.supabase.from('user_profiles').delete().eq('user_id', userId);
+      console.log(`🧹 Wiping all data for user: ${userId}`);
 
+      // Delete in order to respect potential foreign key constraints (though many columns are just TEXT user_id)
+      const tables = [
+        'agent_chat_history',
+        'search_history',
+        'saved_searches',
+        'unsubscribed_emails',
+        'search_index',
+        'search_performance',
+        'notes',
+        'user_emails',
+        'user_tokens',
+        'user_profiles'
+      ];
+
+      for (const table of tables) {
+        try {
+          const { error } = await this.supabase
+            .from(table)
+            .delete()
+            .eq('user_id', userId);
+
+          if (error) {
+            // Some tables might use google_email instead of user_id
+            if (table === 'user_tokens') {
+              await this.supabase.from(table).delete().eq('google_email', userId);
+            } else {
+              console.warn(`⚠️ Error deleting from ${table}:`, error.message);
+            }
+          }
+        } catch (tableError) {
+          console.warn(`❌ Failed to delete from ${table}:`, tableError.message);
+        }
+      }
+
+      console.log(`✅ Data wipe complete for ${userId}`);
       return { success: true };
     } catch (error) {
-      console.error('Error deleting user data:', error);
+      console.error('💥 Error in master delete sequence:', error);
       throw error;
     }
   }

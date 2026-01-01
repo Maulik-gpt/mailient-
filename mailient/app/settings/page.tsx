@@ -184,10 +184,23 @@ export default function SettingsPage() {
     };
 
     const handleDeleteAccount = async () => {
-        if (confirm("WARNING: This action is irreversible. All your email signals, metadata, and insights will be permanently deleted from Mailient servers. Proceed?")) {
-            // In a real app, call DELETE /api/profile
-            alert("Account deletion sequence initiated. You will be logged out shortly.");
-            window.location.href = '/api/auth/signout';
+        if (confirm("WARNING: This action is irreversible. All your email signals, metadata, AI chats, notes, and insights will be permanently deleted from Mailient servers. Proceed?")) {
+            try {
+                const response = await fetch('/api/profile', {
+                    method: 'DELETE',
+                });
+
+                if (response.ok) {
+                    alert("Account and all associated data have been permanently deleted. You will be logged out now.");
+                    window.location.href = '/api/auth/signout';
+                } else {
+                    const data = await response.json();
+                    alert("Failed to delete account: " + (data.error || "Unknown error"));
+                }
+            } catch (error) {
+                console.error("Error deleting account:", error);
+                alert("An error occurred while deleting your account. Please try again.");
+            }
         }
     };
 

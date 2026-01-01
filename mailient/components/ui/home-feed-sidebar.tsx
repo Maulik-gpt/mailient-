@@ -60,9 +60,9 @@ export function HomeFeedSidebar({ className = '' }: HomeFeedSidebarProps) {
     return (
         <TooltipProvider>
             <div className={`fixed left-0 top-0 h-screen w-16 bg-[#0a0a0a] dark:bg-[#0a0a0a] border-r border-neutral-800/50 dark:border-neutral-800/50 flex flex-col items-center py-6 z-50 ${className}`}>
-                <div className="mb-6 group cursor-pointer" onClick={() => router.push('/home-feed')}>
-                    <div className="w-10 h-10 bg-black rounded-xl border border-white/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-500 overflow-hidden shadow-[0_0_15px_rgba(255,255,255,0.05)]">
-                        <img src="/mailient-logo.png" alt="Mailient" className="w-full h-full object-cover scale-110" />
+                <div className="mb-8 group cursor-pointer" onClick={() => router.push('/home-feed')}>
+                    <div className="w-12 h-12 bg-black rounded-[35%] border border-white/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-500 overflow-hidden shadow-[0_0_20px_rgba(255,255,255,0.08)]">
+                        <img src="/mailient-logo.png" alt="Mailient" className="w-full h-full object-cover" />
                     </div>
                 </div>
                 <div className="flex flex-col items-center gap-6 w-full">

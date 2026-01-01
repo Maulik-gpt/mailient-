@@ -236,11 +236,11 @@ export default function SiftOnboardingPage() {
         <div className="fixed top-0 left-0 w-full z-50 p-6 md:p-10 flex flex-col items-center">
           <div className="w-full max-w-7xl flex justify-between items-center mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-black flex items-center justify-center rounded-xl rotate-12 group hover:rotate-0 transition-transform duration-500 cursor-pointer overflow-hidden border border-white/20">
+              <div className="w-14 h-14 bg-black flex items-center justify-center rounded-[35%] group hover:rotate-6 transition-transform duration-500 cursor-pointer overflow-hidden border border-white/20 shadow-2xl">
                 <img
                   src="/mailient-logo.png"
                   alt="Mailient Logo"
-                  className="w-full h-full object-cover -rotate-12 group-hover:rotate-0 transition-transform duration-500 scale-125"
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                 />
               </div>
               <span className="font-bold tracking-tighter text-xl">MAILIENT</span>

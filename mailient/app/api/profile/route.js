@@ -11,7 +11,7 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SER
 async function ensureDatabaseTables() {
   try {
     console.log("Checking if user_profiles table exists...");
-    
+
     // Test if user_profiles table exists by doing a simple query
     const { data, error } = await supabase
       .from("user_profiles")
@@ -20,23 +20,23 @@ async function ensureDatabaseTables() {
 
     if (error && error.message.includes('does not exist')) {
       console.log("user_profiles table doesn't exist, triggering database setup...");
-      
+
       try {
         // Call database setup endpoint
         const setupResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/database/setup`, {
           method: 'POST'
         });
-        
+
         if (setupResponse.ok) {
           const setupResult = await setupResponse.json();
           console.log("Database setup completed:", setupResult);
-          
+
           // Re-test table existence
           const { error: retestError } = await supabase
             .from("user_profiles")
             .select("id")
             .limit(1);
-            
+
           if (retestError && retestError.message.includes('does not exist')) {
             throw new Error("Database table 'user_profiles' still does not exist after setup. Please manually run the SQL schema.");
           }
@@ -49,7 +49,7 @@ async function ensureDatabaseTables() {
         throw new Error("Database table 'user_profiles' does not exist. Please run the database setup script at /api/database/setup");
       }
     }
-    
+
     console.log("Database tables check completed");
   } catch (error) {
     console.error("Error checking database tables:", error);
@@ -94,7 +94,7 @@ export async function GET(req) {
       console.error("Error parsing URL:", urlError);
       // Continue without email param
     }
-    
+
     if (email) {
       return await getGmailProfile(email);
     }
@@ -109,12 +109,12 @@ export async function GET(req) {
     if (!session?.user) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
-    
+
     if (!session.user.email) {
       console.error("Session user missing email:", session.user);
       return NextResponse.json({ error: "Invalid session: missing email" }, { status: 401 });
     }
-    
+
     const user = { email: session.user.email };
 
     // Ensure database tables exist
@@ -134,7 +134,7 @@ export async function GET(req) {
 
     if (!profile) {
       console.log("No existing profile found, attempting Gmail sync...");
-      
+
       // Try to sync from Gmail first before creating fallback
       try {
         const syncResponse = await fetch(`${req.nextUrl.origin}/api/profile/sync`, {
@@ -267,24 +267,24 @@ export async function GET(req) {
     }
 
     const enhancedProfile = {
-        ...profile,
-        email_accounts_connected: tokens.length || 0,
-        emails_processed: 99, // Show 99+ for demo purposes
-        plan: 'Free Plan', // This could come from a subscription table
-        storage_used: `${Math.round(emailCount * 0.1)} MB`, // Rough estimate
-        last_email_activity: lastEmail?.date || null,
-        // Ensure defaults for new fields - always set them
-        bio: profile.bio || null,
-        location: profile.location || null, // Will be empty until user sets it
-        website: profile.website || 'https://example.com',
-        status: profile.status || 'online',
-        banner_url: profile.banner_url || null,
-        preferences: profile.preferences || { theme: 'dark', language: 'en', notifications: true, email_frequency: 'daily', timezone: 'UTC' },
-        birthdate: profile.birthdate || '1999-01-01', // Default for demo
-        gender: profile.gender || 'Not specified', // Default for demo
-        work_status: profile.work_status || 'Professional',
-        interests: profile.interests || ['Technology', 'Productivity', 'AI']
-      };
+      ...profile,
+      email_accounts_connected: tokens.length || 0,
+      emails_processed: 99, // Show 99+ for demo purposes
+      plan: 'Free Plan', // This could come from a subscription table
+      storage_used: `${Math.round(emailCount * 0.1)} MB`, // Rough estimate
+      last_email_activity: lastEmail?.date || null,
+      // Ensure defaults for new fields - always set them
+      bio: profile.bio || null,
+      location: profile.location || null, // Will be empty until user sets it
+      website: profile.website || 'https://example.com',
+      status: profile.status || 'online',
+      banner_url: profile.banner_url || null,
+      preferences: profile.preferences || { theme: 'dark', language: 'en', notifications: true, email_frequency: 'daily', timezone: 'UTC' },
+      birthdate: profile.birthdate || '1999-01-01', // Default for demo
+      gender: profile.gender || 'Not specified', // Default for demo
+      work_status: profile.work_status || 'Professional',
+      interests: profile.interests || ['Technology', 'Productivity', 'AI']
+    };
 
     return NextResponse.json(enhancedProfile);
   } catch (err) {
@@ -295,12 +295,12 @@ export async function GET(req) {
       code: err.code,
       details: err.details
     });
-    
+
     // Handle authentication errors
     if (err.message === "Authentication required" || err.message?.includes("Authentication")) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
-    
+
     // Try to get session for fallback profile
     try {
       const session = await auth();
@@ -336,9 +336,9 @@ export async function GET(req) {
     } catch (fallbackError) {
       console.error("Error creating fallback profile:", fallbackError);
     }
-    
+
     // If we can't create a fallback, return error
-    return NextResponse.json({ 
+    return NextResponse.json({
       error: err.message || "Internal server error",
       details: process.env.NODE_ENV === 'development' ? String(err) : undefined
     }, { status: 500 });
@@ -373,10 +373,10 @@ export async function PUT(req) {
 
     // Build profile data, only including defined values
     const profileData = {
-        user_id: user.email, // Use email as user_id for consistency with tokens
-         email: user.email,
-         updated_at: new Date().toISOString()
-       };
+      user_id: user.email, // Use email as user_id for consistency with tokens
+      email: user.email,
+      updated_at: new Date().toISOString()
+    };
 
     // Only include fields that are provided (not undefined)
     if (name !== undefined) profileData.name = name;
@@ -400,7 +400,7 @@ export async function PUT(req) {
     if (gender !== undefined) profileData.gender = gender;
     if (work_status !== undefined) profileData.work_status = work_status;
     if (interests !== undefined) profileData.interests = interests;
-    
+
     // Only set last_synced_at if we're doing a full update
     profileData.last_synced_at = new Date().toISOString();
 
@@ -463,7 +463,7 @@ export async function PUT(req) {
         interests: profileData.interests || ['Technology', 'Productivity', 'AI'],
         created_at: new Date().toISOString()
       };
-      
+
       const { data, error } = await supabase
         .from("user_profiles")
         .insert(createData)
@@ -495,11 +495,11 @@ export async function PUT(req) {
       details: err.details,
       hint: err.hint
     });
-    
+
     if (err.message === "Authentication required" || err.message?.includes("Authentication")) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
-    
+
     // Provide more specific error messages
     let errorMessage = "Failed to update profile";
     if (err.code === '23505') {
@@ -511,8 +511,8 @@ export async function PUT(req) {
     } else if (err.message) {
       errorMessage = err.message;
     }
-    
-    return NextResponse.json({ 
+
+    return NextResponse.json({
       error: errorMessage,
       details: process.env.NODE_ENV === 'development' ? {
         code: err.code,
@@ -530,17 +530,17 @@ export async function PATCH(req) {
     if (!session?.user) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
-    
+
     if (!session.user.email) {
       console.error("Session user missing email:", session.user);
       return NextResponse.json({ error: "Invalid session: missing email" }, { status: 401 });
     }
-    
+
     const user = { email: session.user.email };
 
     // Ensure database tables exist
     await ensureDatabaseTables();
-    
+
     const body = await req.json();
 
     console.log("PATCH request body:", body);
@@ -630,7 +630,7 @@ export async function PATCH(req) {
           details: error.details,
           hint: error.hint
         });
-        
+
         let errorMessage = "Failed to create profile";
         if (error.code === '23505') {
           errorMessage = "Profile already exists with this information";
@@ -641,8 +641,8 @@ export async function PATCH(req) {
         } else if (error.message) {
           errorMessage = error.message;
         }
-        
-        return NextResponse.json({ 
+
+        return NextResponse.json({
           error: errorMessage,
           details: process.env.NODE_ENV === 'development' ? {
             code: error.code,
@@ -672,7 +672,7 @@ export async function PATCH(req) {
         details: error.details,
         hint: error.hint
       });
-      
+
       let errorMessage = "Failed to update profile";
       if (error.code === '23505') {
         errorMessage = "Profile already exists with this information";
@@ -683,8 +683,8 @@ export async function PATCH(req) {
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
-      return NextResponse.json({ 
+
+      return NextResponse.json({
         error: errorMessage,
         details: process.env.NODE_ENV === 'development' ? {
           code: error.code,
@@ -705,13 +705,13 @@ export async function PATCH(req) {
       details: err.details,
       hint: err.hint
     });
-    
+
     if (err.message === "Authentication required" || err.message?.includes("Authentication")) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
-    
+
     let errorMessage = err.message || "Failed to update profile";
-    return NextResponse.json({ 
+    return NextResponse.json({
       error: errorMessage,
       details: process.env.NODE_ENV === 'development' ? String(err) : undefined
     }, { status: 500 });
@@ -768,3 +768,56 @@ async function getGmailProfile(email) {
 }
 
 
+// DELETE - Permanently delete account and all data
+export async function DELETE(req) {
+  try {
+    const session = await auth();
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
+
+    const userId = session.user.email;
+    console.log(`🧨 DELETE ACCOUNT REQUEST: ${userId}`);
+
+    // All relevant tables to wipe
+    const tables = [
+      'agent_chat_history',
+      'search_history',
+      'saved_searches',
+      'unsubscribed_emails',
+      'search_index',
+      'search_performance',
+      'notes',
+      'user_emails',
+      'user_tokens',
+      'user_profiles'
+    ];
+
+    for (const table of tables) {
+      try {
+        const { error } = await supabase
+          .from(table)
+          .delete()
+          .eq('user_id', userId);
+
+        if (error) {
+          // Fallback for user_tokens which might use google_email
+          if (table === 'user_tokens') {
+            await supabase.from(table).delete().eq('google_email', userId);
+          } else {
+            console.warn(`⚠️ Warning: Deletion for ${table} failed or returned error:`, error.message);
+          }
+        }
+      } catch (err) {
+        console.warn(`⚠️ Warning: Exception deleting from ${table}:`, err.message);
+      }
+    }
+
+    console.log(`✅ ACCOUNT PERMANENTLY DELETED: ${userId}`);
+    return NextResponse.json({ success: true, message: "Account and all associated data have been permanently deleted." });
+
+  } catch (error) {
+    console.error("💥 ERROR DURING ACCOUNT DELETION:", error);
+    return NextResponse.json({ error: "Failed to permanently delete account data." }, { status: 500 });
+  }
+}

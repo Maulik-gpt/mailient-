@@ -4,6 +4,13 @@ import Providers from "./providers";
 export const metadata = {
   title: "Mailient",
   description: "Intelligent email management with AI-powered relationship tracking",
+  icons: {
+    icon: [
+      { url: "/favicon.png?v=2", type: "image/png" },
+    ],
+    shortcut: "/favicon.png?v=2",
+    apple: "/favicon.png?v=2",
+  },
 };
 
 export default function RootLayout({ children }) {
