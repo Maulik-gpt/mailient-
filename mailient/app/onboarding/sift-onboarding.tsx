@@ -58,9 +58,9 @@ const STEPS: OnboardingStep[] = [
     accentColor: "from-blue-500 to-cyan-400"
   },
   {
-    title: "Sift Intelligence.",
+    title: "Core Intelligence.",
     subtitle: "Analyze. Draft. Schedule. In seconds.",
-    description: "Sift doesn't just read your email; it understands your intent. It's the engine that turns data into progress.",
+    description: "Mailient doesn't just read your email; it understands your intent. It's the engine that turns data into progress.",
     icon: Zap,
     featureTitle: "Top 6 Quick Actions",
     features: [

@@ -26,19 +26,19 @@ export default function GetStarted() {
     <div className="min-h-screen flex items-center justify-center bg-black relative overflow-hidden">
       {/* Animated background gradient */}
       <div className="absolute inset-0 bg-gradient-mesh opacity-30 animate-float" />
-      
+
       {/* Glow effects */}
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#383838]/20 rounded-full blur-[120px] animate-pulse" />
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#383838]/15 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: "1s" }} />
 
       <div className="relative z-10 w-full max-w-md px-6">
         <div className="bg-[#242424]/20 backdrop-blur-xl border border-gray-700/30 rounded-2xl p-8 shadow-2xl animate-fade-in">
-          {/* Logo/Brand */}
+          {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold tracking-tight mb-2" style={{ color: '#fafafa' }}>
+            <h1 className="text-3xl font-bold text-gray-100 mb-2">
               Mailient
             </h1>
-            <p className="text-gray-100">
+            <p className="text-gray-400 font-medium">
               Create your account and get started
             </p>
           </div>

@@ -119,7 +119,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                 {step === 4 ? 'Meeting Details' : 'Schedule Call'}
                             </h3>
                             <p className="text-sm text-neutral-500 font-light">
-                                {step === 4 ? 'Complete event metadata' : 'Powered by Sift Intelligence'}
+                                {step === 4 ? 'Complete event metadata' : 'Intelligent Calendar Assist'}
                             </p>
                         </div>
                     </div>

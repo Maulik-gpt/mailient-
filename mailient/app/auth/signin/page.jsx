@@ -146,21 +146,11 @@ export default function SignInPage() {
             </div>
           )}
 
-          {/* Logo/Brand */}
+          {/* Brand Heading */}
           <div className="text-center mb-8">
-            <div className="flex justify-center mb-6">
-              <div className="relative group">
-                <div className="absolute inset-0 bg-white/20 rounded-2xl blur-xl group-hover:bg-white/30 transition-colors" />
-                <div className="relative bg-black p-3 rounded-2xl border border-white/10 shadow-2xl">
-                  <img src="/mailient-logo.png" alt="Mailient Logo" className="w-12 h-12 object-contain" />
-                </div>
-              </div>
-            </div>
-            <div className="text-center">
-              <h1 className="text-3xl font-black tracking-tighter text-gray-100 uppercase italic">
-                Welcome Back
-              </h1>
-            </div>
+            <h1 className="text-3xl font-bold text-gray-100">
+              Welcome Back
+            </h1>
             <p className="text-gray-400 font-medium mt-2">
               Sign in to your intelligent workspace
             </p>
