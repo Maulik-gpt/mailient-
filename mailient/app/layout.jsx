@@ -6,10 +6,10 @@ export const metadata = {
   description: "Intelligent email management with AI-powered relationship tracking",
   icons: {
     icon: [
-      { url: "/favicon.png?v=3", type: "image/png" },
+      { url: "/favicon.png?v=6", type: "image/png" },
     ],
-    shortcut: "/favicon.png?v=3",
-    apple: "/favicon.png?v=3",
+    shortcut: "/favicon.png?v=6",
+    apple: "/favicon.png?v=6",
   },
 };
 
