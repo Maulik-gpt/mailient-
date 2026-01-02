@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { auth } from '../../../../../lib/auth.js';
-import { DatabaseService } from '../../../../../lib/supabase.js';
-import { decrypt } from '../../../../../lib/crypto.js';
+import { auth } from '@/lib/auth.js';
+import { DatabaseService } from '@/lib/supabase.js';
+import { decrypt } from '@/lib/crypto.js';
 
 // Read-only email fetcher for Arcus dashboard actions
 export async function POST(request) {
@@ -37,7 +37,7 @@ export async function POST(request) {
 
     const accessToken = decrypt(tokens.encrypted_access_token);
     const refreshToken = tokens.encrypted_refresh_token ? decrypt(tokens.encrypted_refresh_token) : '';
-    const { GmailService } = await import('../../../../../lib/gmail.ts');
+    const { GmailService } = await import('@/lib/gmail.ts');
     const gmailService = new GmailService(accessToken, refreshToken);
 
     const emailsResponse = await gmailService.getEmails(limit, query, null, sort);

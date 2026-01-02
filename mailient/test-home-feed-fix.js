@@ -136,14 +136,14 @@ function checkGmailImportFix() {
     const routeContent = fs.readFileSync(routeFile, 'utf8');
     const enhancedRouteContent = fs.readFileSync(enhancedRouteFile, 'utf8');
     
-    if (routeContent.includes("from '../../../../lib/gmail.js'")) {
+    if (routeContent.includes("from '@/lib/gmail.js'")) {
       console.log('✅ route.js - Imports from gmail.js');
     } else {
       console.log('❌ route.js - Wrong import path');
       return false;
     }
     
-    if (enhancedRouteContent.includes("from '../../../../lib/gmail.js'")) {
+    if (enhancedRouteContent.includes("from '@/lib/gmail.js'")) {
       console.log('✅ enhanced-route.js - Imports from gmail.js');
     } else {
       console.log('❌ enhanced-route.js - Wrong import path');

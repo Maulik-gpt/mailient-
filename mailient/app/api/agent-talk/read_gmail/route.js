@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { GmailService } from '../../../../lib/gmail.ts';
+import { GmailService } from '@/lib/gmail.ts';
 
 function getAccessTokenFromHeaders(request) {
   const bearer = request.headers.get('authorization');

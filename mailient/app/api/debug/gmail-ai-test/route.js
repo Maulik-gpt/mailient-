@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { auth } from '../../../../lib/auth.js';
-import { DatabaseService } from '../../../../lib/supabase.js';
-import { decrypt } from '../../../../lib/crypto.js';
-import { GmailService } from '../../../../lib/gmail.ts';
-import { AIConfig } from '../../../../lib/ai-config.js';
+import { auth } from '@/lib/auth.js';
+import { DatabaseService } from '@/lib/supabase.js';
+import { decrypt } from '@/lib/crypto.js';
+import { GmailService } from '@/lib/gmail.ts';
+import { AIConfig } from '@/lib/ai-config.js';
 
 /**
  * Debug endpoint to test Gmail + AI workflow

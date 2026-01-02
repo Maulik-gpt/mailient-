@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { auth } from '../../../../lib/auth.js';
-import { DatabaseService } from '../../../../lib/supabase.js';
+import { auth } from '@/lib/auth.js';
+import { DatabaseService } from '@/lib/supabase.js';
 
 // Main handler for both GET and DELETE requests
 export async function GET(request) {

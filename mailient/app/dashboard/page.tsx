@@ -1,6 +1,6 @@
-import { auth } from '../../lib/auth.js';
+import { auth } from '@/lib/auth.js';
 import { redirect } from 'next/navigation';
-import { DatabaseService } from '../../lib/supabase.js';
+import { DatabaseService } from '@/lib/supabase.js';
 
 // Server-side component that handles authentication
 export default async function DashboardPage() {

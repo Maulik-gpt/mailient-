@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { google } from 'googleapis';
-import { auth } from '../../../../../lib/auth.js';
-import { DatabaseService } from '../../../../../lib/supabase.js';
-import { decrypt } from '../../../../../lib/crypto.js';
+import { auth } from '@/lib/auth.js';
+import { DatabaseService } from '@/lib/supabase.js';
+import { decrypt } from '@/lib/crypto.js';
 
 // Create a calendar event for Arcus-driven scheduling
 export async function POST(request) {

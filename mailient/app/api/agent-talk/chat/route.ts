@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server';
-import { auth } from '../../../../lib/auth.js';
-import { DatabaseService } from '../../../../lib/supabase.js';
+import { auth } from '@/lib/auth.js';
+import { DatabaseService } from '@/lib/supabase.js';
 
 // Type for the auth function
 type AuthFunction = () => Promise<{ user?: { email?: string }, accessToken?: string, refreshToken?: string } | null>;
 
 // Explicitly type the auth variable
 const typedAuth: AuthFunction = auth as unknown as AuthFunction;
-import { decrypt } from '../../../../lib/crypto.js';
-import { AIConfig } from '../../../../lib/ai-config.js';
+import { decrypt } from '@/lib/crypto.js';
+import { AIConfig } from '@/lib/ai-config.js';
 
 /**
  * Main chat handler with OpenRouter AI + Gmail context
@@ -336,7 +336,7 @@ async function getEmailContext(userMessage: string, userEmail: string) {
     const accessToken = decrypt(userTokens.encrypted_access_token);
     const refreshToken = userTokens.encrypted_refresh_token ? decrypt(userTokens.encrypted_refresh_token) : '';
 
-    const { GmailService } = await import('../../../../lib/gmail');
+    const { GmailService } = await import('@/lib/gmail');
     const gmailService = new GmailService(accessToken, refreshToken);
 
     const query = buildGmailSearchQuery(userMessage);
@@ -458,7 +458,7 @@ async function executeEmailAction(userMessage: string, userEmail: string, sessio
       return { error: 'Gmail not connected. Please sign in with Google to access your emails.' };
     }
 
-    const { GmailService } = await import('../../../../lib/gmail');
+    const { GmailService } = await import('@/lib/gmail');
     const gmailService = new GmailService(accessToken, refreshToken || '');
 
     // Detect and execute email actions

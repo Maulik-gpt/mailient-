@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { auth } from '../../../../lib/auth';
-import { GmailService } from '../../../../lib/gmail';
-import { AIConfig } from '../../../../lib/ai-config';
-import { decrypt } from '../../../../lib/crypto';
-import { DatabaseService } from '../../../../lib/supabase';
-import { subscriptionService, FEATURE_TYPES } from '../../../../lib/subscription-service';
+import { auth } from '@/lib/auth';
+import { GmailService } from '@/lib/gmail';
+import { AIConfig } from '@/lib/ai-config';
+import { decrypt } from '@/lib/crypto';
+import { DatabaseService } from '@/lib/supabase';
+import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service';
 
 export async function POST(request) {
     try {

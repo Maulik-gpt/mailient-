@@ -6,10 +6,10 @@
 
 import { NextResponse } from 'next/server';
 // @ts-ignore
-import { auth } from '../../../../lib/auth.js';
-import { GmailService } from '../../../../lib/gmail';
-import { decrypt } from '../../../../lib/crypto.js';
-import { DatabaseService } from '../../../../lib/supabase.js';
+import { auth } from '@/lib/auth.js';
+import { GmailService } from '@/lib/gmail';
+import { decrypt } from '@/lib/crypto.js';
+import { DatabaseService } from '@/lib/supabase.js';
 
 // Notification types
 interface ThreatNotification {

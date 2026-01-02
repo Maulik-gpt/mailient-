@@ -1,7 +1,7 @@
-import { GmailService } from '../../../../lib/gmail.ts';
-import { DatabaseService } from '../../../../lib/supabase.js';
-import { auth } from '../../../../lib/auth.js';
-import { decrypt, encrypt } from '../../../../lib/crypto.js';
+import { GmailService } from '@/lib/gmail.ts';
+import { DatabaseService } from '@/lib/supabase.js';
+import { auth } from '@/lib/auth.js';
+import { decrypt, encrypt } from '@/lib/crypto.js';
 
 // Global Gmail service instance for debugging
 let globalGmailService = null;

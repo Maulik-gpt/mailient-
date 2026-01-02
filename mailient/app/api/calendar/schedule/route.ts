@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { auth } from '../../../../lib/auth';
-import { CalendarService } from '../../../../lib/calendar';
-import { DatabaseService } from '../../../../lib/supabase';
-import { decrypt } from '../../../../lib/crypto';
-import { GmailService } from '../../../../lib/gmail';
-import { subscriptionService, FEATURE_TYPES } from '../../../../lib/subscription-service';
+import { auth } from '@/lib/auth';
+import { CalendarService } from '@/lib/calendar';
+import { DatabaseService } from '@/lib/supabase';
+import { decrypt } from '@/lib/crypto';
+import { GmailService } from '@/lib/gmail';
+import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service';
 
 export async function POST(request: Request) {
     try {

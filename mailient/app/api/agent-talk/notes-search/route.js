@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { DatabaseService } from '../../../../lib/supabase.js';
-import { auth } from '../../../../lib/auth.js';
+import { DatabaseService } from '@/lib/supabase.js';
+import { auth } from '@/lib/auth.js';
 
 /**
  * Notes Search API for Arcus

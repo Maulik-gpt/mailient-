@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { auth } from '../../../../lib/auth';
-import { GmailService } from '../../../../lib/gmail';
-import { decrypt } from '../../../../lib/crypto';
-import { DatabaseService } from '../../../../lib/supabase';
+import { auth } from '@/lib/auth';
+import { GmailService } from '@/lib/gmail';
+import { decrypt } from '@/lib/crypto';
+import { DatabaseService } from '@/lib/supabase';
 
 export async function POST(request) {
     try {

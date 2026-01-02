@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { auth } from '../../../../lib/auth.js';
-import { DatabaseService } from '../../../../lib/supabase.js';
-import { decrypt } from '../../../../lib/crypto.js';
-import { GmailService } from '../../../../lib/gmail.js';
-import { AIConfig } from '../../../../lib/ai-config.js';
-import { EnhancedSiftAIService } from '../../../../lib/enhanced-sift-ai.js';
+import { auth } from '@/lib/auth.js';
+import { DatabaseService } from '@/lib/supabase.js';
+import { decrypt } from '@/lib/crypto.js';
+import { GmailService } from '@/lib/gmail.js';
+import { AIConfig } from '@/lib/ai-config.js';
+import { EnhancedSiftAIService } from '@/lib/enhanced-sift-ai.js';
 
 /**
  * Enhanced Home Feed Insights API - Sophisticated founder-focused email intelligence

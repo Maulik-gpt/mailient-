@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { auth } from '../../../../lib/auth.js';
-import { DatabaseService } from '../../../../lib/supabase.js';
-import { decrypt } from '../../../../lib/crypto.js';
-import { ArcusAIService } from '../../../../lib/arcus-ai.js';
-import { CalendarService } from '../../../../lib/calendar.js';
-import { subscriptionService, FEATURE_TYPES } from '../../../../lib/subscription-service.js';
+import { auth } from '@/lib/auth.js';
+import { DatabaseService } from '@/lib/supabase.js';
+import { decrypt } from '@/lib/crypto.js';
+import { ArcusAIService } from '@/lib/arcus-ai.js';
+import { CalendarService } from '@/lib/calendar.js';
+import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service.js';
 import { addDays, setHours, setMinutes, startOfDay, format, parse, isWeekend, nextMonday } from 'date-fns';
 
 /**
@@ -529,7 +529,7 @@ async function getEmailById(emailId, userEmail, session) {
     const accessToken = decrypt(userTokens.encrypted_access_token);
     const refreshToken = userTokens.encrypted_refresh_token ? decrypt(userTokens.encrypted_refresh_token) : '';
 
-    const { GmailService } = await import('../../../../lib/gmail');
+    const { GmailService } = await import('@/lib/gmail');
     const gmailService = new GmailService(accessToken, refreshToken);
 
     const details = await gmailService.getEmailDetails(emailId);
@@ -553,7 +553,7 @@ async function searchEmailBySender(senderName, userEmail, session) {
     const accessToken = decrypt(userTokens.encrypted_access_token);
     const refreshToken = userTokens.encrypted_refresh_token ? decrypt(userTokens.encrypted_refresh_token) : '';
 
-    const { GmailService } = await import('../../../../lib/gmail');
+    const { GmailService } = await import('@/lib/gmail');
     const gmailService = new GmailService(accessToken, refreshToken);
 
     // Search for emails from this sender
@@ -647,7 +647,7 @@ async function executeEmailAction(userMessage, userEmail, session) {
       return { error: 'Gmail not connected' };
     }
 
-    const { GmailService } = await import('../../../../lib/gmail');
+    const { GmailService } = await import('@/lib/gmail');
     const gmailService = new GmailService(accessToken, refreshToken || '');
 
     // Build query based on user message

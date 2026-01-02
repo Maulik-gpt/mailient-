@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { DatabaseService } from "../../../lib/supabase.js";
-import { decrypt, encrypt } from "../../../lib/crypto.js";
+import { DatabaseService } from "@/lib/supabase.js";
+import { decrypt, encrypt } from "@/lib/crypto.js";
 
 const db = new DatabaseService();
 const supabase = db.supabase;
@@ -32,7 +32,7 @@ async function getValidAccess(row) {
   if (body.error) throw new Error(JSON.stringify(body));
   const enc = body.access_token; // we'll re-encrypt when saving
   // Save encrypted in DB using server key path
-  const { encrypt } = await import("../../../lib/crypto.js");
+  const { encrypt } = await import("@/lib/crypto.js");
   const encSaved = encrypt(enc);
   const expiry = body.expires_in ? new Date(Date.now() + body.expires_in * 1000).toISOString() : null;
   await supabase.from("user_tokens").update({ encrypted_access_token: encSaved, access_token_expires_at: expiry }).eq("google_email", row.google_email);

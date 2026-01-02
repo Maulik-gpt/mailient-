@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { auth } from '../../../../../lib/auth.js';
-import { DatabaseService } from '../../../../../lib/supabase.js';
-import { encrypt } from '../../../../../lib/crypto.js';
+import { auth } from '@/lib/auth.js';
+import { DatabaseService } from '@/lib/supabase.js';
+import { encrypt } from '@/lib/crypto.js';
 
 export async function POST(req) {
     try {

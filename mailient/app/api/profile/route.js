@@ -1,9 +1,9 @@
 // app/api/profile/route.js
 import { NextResponse } from "next/server";
-import { auth } from "../../../lib/auth.js";
+import { auth } from "@/lib/auth.js";
 import { createClient } from "@supabase/supabase-js";
-import { decrypt, encrypt } from "../../../lib/crypto.js";
-import { isValidUrlStrict } from "../../../lib/url-utils.js";
+import { decrypt, encrypt } from "@/lib/crypto.js";
+import { isValidUrlStrict } from "@/lib/url-utils.js";
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 

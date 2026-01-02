@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { auth } from '../../../../lib/auth';
-import { CalendarService } from '../../../../lib/calendar';
-import { DatabaseService } from '../../../../lib/supabase';
-import { decrypt } from '../../../../lib/crypto';
+import { auth } from '@/lib/auth';
+import { CalendarService } from '@/lib/calendar';
+import { DatabaseService } from '@/lib/supabase';
+import { decrypt } from '@/lib/crypto';
 
 export async function POST(request: Request) {
     try {

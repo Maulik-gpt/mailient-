@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { auth } from '../../../../lib/auth';
-import { SchedulingAIService } from '../../../../lib/scheduling-ai';
-import { GmailService } from '../../../../lib/gmail';
-import { DatabaseService } from '../../../../lib/supabase';
-import { decrypt } from '../../../../lib/crypto';
+import { auth } from '@/lib/auth';
+import { SchedulingAIService } from '@/lib/scheduling-ai';
+import { GmailService } from '@/lib/gmail';
+import { DatabaseService } from '@/lib/supabase';
+import { decrypt } from '@/lib/crypto';
 
 export async function POST(request: Request) {
     try {

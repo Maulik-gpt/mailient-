@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { auth } from '../../../../lib/auth';
-import { DatabaseService } from '../../../../lib/supabase';
-import { OpenRouterAIService } from '../../../../lib/openrouter-ai';
+import { auth } from '@/lib/auth';
+import { DatabaseService } from '@/lib/supabase';
+import { OpenRouterAIService } from '@/lib/openrouter-ai';
 
 export async function POST(request) {
     try {

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { auth } from '../../../../lib/auth.js';
-import { DatabaseService } from '../../../../lib/supabase.js';
-import { decrypt } from '../../../../lib/crypto.js';
+import { auth } from '@/lib/auth.js';
+import { DatabaseService } from '@/lib/supabase.js';
+import { decrypt } from '@/lib/crypto.js';
 
 /**
  * Send reply endpoint for Arcus draft replies
@@ -45,7 +45,7 @@ export async function POST(request) {
             : '';
 
         // Import Gmail service
-        const { GmailService } = await import('../../../../lib/gmail');
+        const { GmailService } = await import('@/lib/gmail');
         const gmailService = new GmailService(accessToken, refreshToken);
 
         // Build the email message

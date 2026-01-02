@@ -3,7 +3,7 @@
  * Handles AI service configuration and testing
  */
 
-import { AIConfig } from '../../../../lib/ai-config.js';
+import { AIConfig } from '@/lib/ai-config.js';
 
 let aiConfig = new AIConfig();
 

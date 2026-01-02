@@ -1,7 +1,7 @@
 import { google } from 'googleapis';
-import { DatabaseService } from '../../../../lib/supabase.js';
-import { auth } from '../../../../lib/auth.js';
-import { decrypt } from '../../../../lib/crypto.js';
+import { DatabaseService } from '@/lib/supabase.js';
+import { auth } from '@/lib/auth.js';
+import { decrypt } from '@/lib/crypto.js';
 
 export async function POST(request) {
   try {

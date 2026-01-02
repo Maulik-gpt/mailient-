@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { auth } from '../../../../lib/auth.js';
-import { SIFT_CONFIG } from '../../../../lib/sift-config.js';
+import { auth } from '@/lib/auth.js';
+import { SIFT_CONFIG } from '@/lib/sift-config.js';
 
 /**
  * Sift AI Actions API - Background AI for entrepreneurial productivity actions

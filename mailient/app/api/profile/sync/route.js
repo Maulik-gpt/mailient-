@@ -1,8 +1,8 @@
 // app/api/profile/sync/route.js
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { decrypt, encrypt } from "../../../lib/crypto.js";
-import { auth } from "../../../lib/auth.js";
+import { decrypt, encrypt } from "@/lib/crypto.js";
+import { auth } from "@/lib/auth.js";
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
@@ -185,7 +185,7 @@ async function syncProfileFromGoogle(userEmail) {
 export async function GET(req) {
   try {
     // Use the same authentication method as the profile API
-    const { auth } = await import("../../../lib/auth.js");
+    const { auth } = await import("@/lib/auth.js");
     const session = await auth();
     
     if (!session?.user?.email) {
@@ -215,7 +215,7 @@ export async function GET(req) {
 export async function POST(req) {
   try {
     // Use the same authentication method as the profile API
-    const { auth } = await import("../../../lib/auth.js");
+    const { auth } = await import("@/lib/auth.js");
     const session = await auth();
     
     if (!session?.user?.email) {

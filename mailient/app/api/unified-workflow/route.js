@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { auth } from '../../../lib/auth.js';
-import { DatabaseService } from '../../../lib/supabase.js';
-import { decrypt } from '../../../lib/crypto.js';
-import { GmailService } from '../../../lib/gmail.ts';
+import { auth } from '@/lib/auth.js';
+import { DatabaseService } from '@/lib/supabase.js';
+import { decrypt } from '@/lib/crypto.js';
+import { GmailService } from '@/lib/gmail.ts';
 
 /**
  * Unified Workflow API - Handles complex email workflows with AI
