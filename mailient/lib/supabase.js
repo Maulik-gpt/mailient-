@@ -10,28 +10,38 @@ const getEnvVar = (key, fallback) => {
   return value.trim();
 };
 
-// Factory functions for Supabase clients to avoid build-time execution errors
+// Factory functions for Supabase clients with enhanced build-time safety
 export function getSupabase() {
-  const supabaseUrl = getEnvVar('SUPABASE_URL', 'https://nelscyaohnrnekscprxq.supabase.co');
-  const supabaseAnonKey = getEnvVar('SUPABASE_ANON_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5lbHNjeWFvaG5ybmVrc2NwcnhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MjAwMzQsImV4cCI6MjA2OTA5NjAzNH0.M0iKG556B4P1IFZkOf7tSWgXlYmy56UBznvTy6TWwgw');
+  const supabaseUrl = getEnvVar('SUPABASE_URL', null);
+  const supabaseAnonKey = getEnvVar('SUPABASE_ANON_KEY', null);
 
   if (!supabaseUrl || !supabaseAnonKey) {
     if (process.env.NEXT_PHASE !== 'phase-production-build') {
-      console.error('🔧 SUPABASE - Missing environment variables');
+      console.error('🔧 SUPABASE - Missing environment variables. Using fallback for build safety.');
     }
+    // Return a proxy that logs or returns empty data instead of crashing the build
+    return createClient(
+      supabaseUrl || 'https://placeholder.supabase.co',
+      supabaseAnonKey || 'placeholder-key'
+    );
   }
 
   return createClient(supabaseUrl, supabaseAnonKey);
 }
 
 export function getSupabaseAdmin() {
-  const supabaseUrl = getEnvVar('SUPABASE_URL', 'https://nelscyaohnrnekscprxq.supabase.co');
-  const supabaseServiceKey = getEnvVar('SUPABASE_SERVICE_ROLE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5lbHNjeWFvaG5ybmVrc2NwcnhxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzUyMDAzNCwiZXhwIjoyMDY5MDk2MDM0fQ.-PdyWp64BikrG-8leAPXEVNviJh21OPi7HOGdwejQ4U');
+  const supabaseUrl = getEnvVar('SUPABASE_URL', null);
+  const supabaseServiceKey = getEnvVar('SUPABASE_SERVICE_ROLE_KEY', null);
 
   if (!supabaseUrl || !supabaseServiceKey) {
     if (process.env.NEXT_PHASE !== 'phase-production-build') {
-      console.error('🔧 SUPABASE ADMIN - Missing environment variables');
+      console.error('🔧 SUPABASE ADMIN - Missing environment variables. Using fallback for build safety.');
     }
+    // Return a proxy to prevent "supabaseUrl is required" crash
+    return createClient(
+      supabaseUrl || 'https://placeholder.supabase.co',
+      supabaseServiceKey || 'placeholder-key'
+    );
   }
 
   return createClient(supabaseUrl, supabaseServiceKey);
@@ -44,7 +54,15 @@ export const supabaseAdmin = null;
 
 export class DatabaseService {
   constructor(isAdmin = true) {
-    this.supabase = isAdmin ? getSupabaseAdmin() : getSupabase();
+    this._isAdmin = isAdmin;
+    this._supabase = null;
+  }
+
+  get supabase() {
+    if (!this._supabase) {
+      this._supabase = this._isAdmin ? getSupabaseAdmin() : getSupabase();
+    }
+    return this._supabase;
   }
 
   // Store user tokens securely

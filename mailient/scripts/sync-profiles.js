@@ -1,19 +1,12 @@
 // scripts/sync-profiles.js
 // This script can be run periodically to sync all user profiles with Google
 
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdmin } from '../lib/supabase.js';
 import { decrypt, encrypt } from '../lib/crypto.js';
 
-// Initialize Supabase client lazily to avoid build-time errors
+// Initialize Supabase client lazily using the centralized factory
 function getSupabaseClient() {
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  
-  if (!supabaseUrl || !supabaseServiceKey) {
-    throw new Error('Missing Supabase environment variables: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required');
-  }
-  
-  return createClient(supabaseUrl, supabaseServiceKey);
+  return getSupabaseAdmin();
 }
 
 async function refreshAccessToken(row) {

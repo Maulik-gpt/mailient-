@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdmin } from "@/lib/supabase.js";
 import { GmailTokenService } from '@/lib/gmail-token-service';
 import { GmailService } from '@/lib/gmail';
 
-const getSupabase = () => createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+// CRITICAL: Force dynamic rendering to prevent build-time evaluation
+export const dynamic = 'force-dynamic';
+
 const supabase = new Proxy({}, {
-    get: (target, prop) => getSupabase()[prop]
+    get: (target, prop) => getSupabaseAdmin()[prop]
 });
 
 // Function to create the unsubscribed_emails table if it doesn't exist

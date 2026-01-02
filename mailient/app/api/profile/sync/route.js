@@ -1,15 +1,14 @@
 // app/api/profile/sync/route.js
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { getSupabaseAdmin } from "@/lib/supabase.js";
 import { decrypt, encrypt } from "@/lib/crypto.js";
 // import { auth } from "@/lib/auth.js"; // Removed top-level import to prevent build-time evaluation
 
 // CRITICAL: Force dynamic rendering to prevent build-time evaluation
 export const dynamic = 'force-dynamic';
 
-const getSupabase = () => createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 const supabase = new Proxy({}, {
-  get: (target, prop) => getSupabase()[prop]
+  get: (target, prop) => getSupabaseAdmin()[prop]
 });
 
 // Ensure database tables exist
