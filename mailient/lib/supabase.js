@@ -1,8 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { encrypt, decrypt } from './crypto.js';
 
-// Get environment variables with proper fallbacks
-// Handle empty strings and undefined values
+// Helper to get environment variables with proper fallbacks
 const getEnvVar = (key, fallback) => {
   const value = process.env[key];
   if (!value || value.trim() === '' || value === 'undefined') {
@@ -11,46 +10,41 @@ const getEnvVar = (key, fallback) => {
   return value.trim();
 };
 
-const supabaseUrl = getEnvVar('SUPABASE_URL', 'https://nelscyaohnrnekscprxq.supabase.co');
-const supabaseAnonKey = getEnvVar('SUPABASE_ANON_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5lbHNjeWFvaG5ybmVrc2NwcnhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MjAwMzQsImV4cCI6MjA2OTA5NjAzNH0.M0iKG556B4P1IFZkOf7tSWgXlYmy56UBznvTy6TWwgw');
-const supabaseServiceKey = getEnvVar('SUPABASE_SERVICE_ROLE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5lbHNjeWFvaG5ybmVrc2NwcnhxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzUyMDAzNCwiZXhwIjoyMDY5MDk2MDM0fQ.-PdyWp64BikrG-8leAPXEVNviJh21OPi7HOGdwejQ4U');
+// Factory functions for Supabase clients to avoid build-time execution errors
+export function getSupabase() {
+  const supabaseUrl = getEnvVar('SUPABASE_URL', 'https://nelscyaohnrnekscprxq.supabase.co');
+  const supabaseAnonKey = getEnvVar('SUPABASE_ANON_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5lbHNjeWFvaG5ybmVrc2NwcnhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MjAwMzQsImV4cCI6MjA2OTA5NjAzNH0.M0iKG556B4P1IFZkOf7tSWgXlYmy56UBznvTy6TWwgw');
 
-// Only log in non-build environments
-if (typeof window !== 'undefined' || process.env.NEXT_PHASE !== 'phase-production-build') {
-  console.log('🔧 SUPABASE - Environment check:', {
-    hasUrl: !!supabaseUrl,
-    hasAnonKey: !!supabaseAnonKey,
-    url: supabaseUrl,
-    keyLength: supabaseAnonKey?.length || 0
-  });
-}
-
-// Validate required values (but allow build to continue with fallbacks)
-if (!supabaseUrl || !supabaseAnonKey) {
-  if (typeof window === 'undefined' && process.env.NEXT_PHASE === 'phase-production-build') {
-    // During build, just warn - don't throw
-    console.warn('🔧 SUPABASE - Using fallback values during build');
-  } else {
-    console.error('🔧 SUPABASE - Missing environment variables:', {
-      SUPABASE_URL: supabaseUrl ? 'present' : 'missing',
-      SUPABASE_ANON_KEY: supabaseAnonKey ? 'present' : 'missing'
-    });
-    // Only throw in runtime, not during build
-    if (typeof window !== 'undefined') {
-      throw new Error('Missing Supabase environment variables');
+  if (!supabaseUrl || !supabaseAnonKey) {
+    if (process.env.NEXT_PHASE !== 'phase-production-build') {
+      console.error('🔧 SUPABASE - Missing environment variables');
     }
   }
+
+  return createClient(supabaseUrl, supabaseAnonKey);
 }
 
-// Use anon key for client operations
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export function getSupabaseAdmin() {
+  const supabaseUrl = getEnvVar('SUPABASE_URL', 'https://nelscyaohnrnekscprxq.supabase.co');
+  const supabaseServiceKey = getEnvVar('SUPABASE_SERVICE_ROLE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5lbHNjeWFvaG5ybmVrc2NwcnhxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzUyMDAzNCwiZXhwIjoyMDY5MDk2MDM0fQ.-PdyWp64BikrG-8leAPXEVNviJh21OPi7HOGdwejQ4U');
 
-// Use service role key for admin operations (only on server)
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+  if (!supabaseUrl || !supabaseServiceKey) {
+    if (process.env.NEXT_PHASE !== 'phase-production-build') {
+      console.error('🔧 SUPABASE ADMIN - Missing environment variables');
+    }
+  }
+
+  return createClient(supabaseUrl, supabaseServiceKey);
+}
+
+// Deprecated: Use getSupabase() or getSupabaseAdmin() instead
+// These are kept for backward compatibility but will trigger build-time evaluation if imported
+export const supabase = null;
+export const supabaseAdmin = null;
 
 export class DatabaseService {
   constructor(isAdmin = true) {
-    this.supabase = isAdmin ? supabaseAdmin : supabase;
+    this.supabase = isAdmin ? getSupabaseAdmin() : getSupabase();
   }
 
   // Store user tokens securely

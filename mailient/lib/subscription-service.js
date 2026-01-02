@@ -3,7 +3,7 @@
  * Handles Whop payment integration, subscription management, and feature usage tracking
  */
 
-import { supabaseAdmin } from './supabase.js';
+import { getSupabaseAdmin } from './supabase.js';
 
 // Plan configurations
 export const PLANS = {
@@ -51,7 +51,14 @@ export const FEATURE_TYPES = {
 
 export class SubscriptionService {
     constructor() {
-        this.supabase = supabaseAdmin;
+        // Initializing with null, will be set on first use if needed, 
+        // or just call the factory in methods.
+        // Actually, we can just call it here as long as this constructor 
+        // isn't called at top-level during build.
+    }
+
+    get supabase() {
+        return getSupabaseAdmin();
     }
 
     /**

@@ -2,7 +2,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+const getSupabase = () => createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+const supabase = new Proxy({}, {
+  get: (target, prop) => getSupabase()[prop]
+});
 
 export async function GET(req) {
   const url = new URL(req.url);

@@ -3,7 +3,10 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { auth } from "@/lib/auth.js";
 
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+const getSupabase = () => createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+const supabase = new Proxy({}, {
+  get: (target, prop) => getSupabase()[prop]
+});
 
 // Simple UUID replacement
 function generateId() {

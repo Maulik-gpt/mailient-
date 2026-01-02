@@ -3,9 +3,10 @@ import { createClient } from '@supabase/supabase-js';
 import { GmailTokenService } from '@/lib/gmail-token-service';
 import { GmailService } from '@/lib/gmail';
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
+const getSupabase = () => createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+const supabase = new Proxy({}, {
+    get: (target, prop) => getSupabase()[prop]
+});
 
 // Function to create the unsubscribed_emails table if it doesn't exist
 async function ensureUnsubscribedEmailsTable() {
