@@ -1,4 +1,7 @@
 import { NextResponse } from 'next/server';
+
+// CRITICAL: Force dynamic rendering to prevent build-time evaluation
+export const dynamic = 'force-dynamic';
 import { auth } from '@/lib/auth.js';
 import { DatabaseService } from '@/lib/supabase.js';
 
@@ -22,7 +25,7 @@ export async function GET(request) {
     const limit = parseInt(searchParams.get('limit') || '50');
 
     const db = new DatabaseService();
-    
+
     let query = db.supabase
       .from('contacts')
       .select('*')
@@ -56,8 +59,8 @@ export async function GET(request) {
   } catch (error) {
     console.error('Contacts fetch error:', error);
     return NextResponse.json(
-      { 
-        error: 'Failed to fetch contacts', 
+      {
+        error: 'Failed to fetch contacts',
         details: error.message,
         timestamp: new Date().toISOString()
       },
@@ -88,7 +91,7 @@ export async function POST(request) {
     }
 
     const db = new DatabaseService();
-    
+
     // Check if contact already exists
     const { data: existingContact } = await db.supabase
       .from('contacts')
@@ -143,8 +146,8 @@ export async function POST(request) {
   } catch (error) {
     console.error('Contact creation error:', error);
     return NextResponse.json(
-      { 
-        error: 'Failed to create contact', 
+      {
+        error: 'Failed to create contact',
         details: error.message,
         timestamp: new Date().toISOString()
       },
@@ -213,8 +216,8 @@ export async function PUT(request) {
   } catch (error) {
     console.error('Contact update error:', error);
     return NextResponse.json(
-      { 
-        error: 'Failed to update contact', 
+      {
+        error: 'Failed to update contact',
         details: error.message,
         timestamp: new Date().toISOString()
       },
@@ -279,8 +282,8 @@ export async function DELETE(request) {
   } catch (error) {
     console.error('Contact deletion error:', error);
     return NextResponse.json(
-      { 
-        error: 'Failed to delete contact', 
+      {
+        error: 'Failed to delete contact',
         details: error.message,
         timestamp: new Date().toISOString()
       },
@@ -295,7 +298,7 @@ export async function DELETE(request) {
 async function logContactActivity(userEmail, contactEmail, action, data) {
   try {
     const db = new DatabaseService();
-    
+
     await db.supabase
       .from('insights')
       .insert({

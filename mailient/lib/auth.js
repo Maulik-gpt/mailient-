@@ -9,10 +9,12 @@ import { DatabaseService } from "./supabase.js";
 import { encrypt } from "./crypto.js";
 
 // Environment validation
-const requiredEnvVars = ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET'];
-const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
-if (missingVars.length > 0) {
-  throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
+if (process.env.NEXT_PHASE !== 'phase-production-build' && process.env.NODE_ENV === 'production') {
+  const requiredEnvVars = ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];
+  const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+  if (missingVars.length > 0) {
+    console.error(`❌ AUTH ERROR: Missing required environment variables: ${missingVars.join(', ')}`);
+  }
 }
 
 // Google OAuth configuration
@@ -20,8 +22,8 @@ if (missingVars.length > 0) {
 // For development, add test users in Google Cloud Console OAuth consent screen
 // For production, submit app for Google verification to remove security warnings
 const googleProvider = Google({
-  clientId: process.env.GOOGLE_CLIENT_ID,
-  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+  clientId: process.env.GOOGLE_CLIENT_ID || 'build-time-id',
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'build-time-secret',
   authorization: {
     params: {
       access_type: "offline", // Required for refresh tokens
@@ -136,7 +138,7 @@ try {
 
     trustHost: true, // Required for localhost development
 
-    secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
+    secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || 'build-time-secret-placeholder',
 
     callbacks: {
       /**

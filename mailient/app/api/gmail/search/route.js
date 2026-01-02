@@ -1,19 +1,22 @@
 import { NextResponse } from 'next/server';
+
+// CRITICAL: Force dynamic rendering to prevent build-time evaluation
+export const dynamic = 'force-dynamic';
 import { GmailSearchService, GmailSearchFilters } from '@/lib/gmail-search-service';
 import { GmailTokenService } from '@/lib/gmail-token-service';
 import { auth } from '@/lib/auth';
 
 export async function POST(request) {
   console.log('=== GMAIL SEARCH API START ===');
-  
+
   try {
     // Authenticate user
     console.log('=== GMAIL SEARCH API START ===');
     console.log('Getting server session...');
     const session = await auth();
-    console.log('Session result:', { 
-      hasSession: !!session, 
-      hasUser: !!session?.user, 
+    console.log('Session result:', {
+      hasSession: !!session,
+      hasUser: !!session?.user,
       email: session?.user?.email,
       hasAccessToken: !!session?.accessToken,
       hasRefreshToken: !!session?.refreshToken
@@ -29,16 +32,16 @@ export async function POST(request) {
 
     // Get request body
     const body = await request.json();
-    const { 
-      filters, 
-      maxResults = 100, 
-      pageToken = null 
+    const {
+      filters,
+      maxResults = 100,
+      pageToken = null
     } = body;
 
-    console.log('Search request:', { 
-      maxResults, 
-      pageToken, 
-      filters: Object.keys(filters || {}) 
+    console.log('Search request:', {
+      maxResults,
+      pageToken,
+      filters: Object.keys(filters || {})
     });
 
     // Get Gmail tokens using the new token service
@@ -92,7 +95,7 @@ export async function POST(request) {
 
   } catch (error) {
     console.error('Gmail search error:', error);
-    
+
     // Handle specific error types
     if (error instanceof Error) {
       if (error.message.includes('Circuit breaker')) {
@@ -101,14 +104,14 @@ export async function POST(request) {
           retryAfter: 30000
         }, { status: 503 });
       }
-      
+
       if (error.message.includes('Rate limit')) {
         return NextResponse.json({
           error: 'Gmail API rate limit exceeded. Please try again later.',
           retryAfter: 60000
         }, { status: 429 });
       }
-      
+
       if (error.message.includes('Access token expired')) {
         return NextResponse.json({
           error: 'Gmail access token expired. Please reconnect your Gmail account.',
@@ -126,7 +129,7 @@ export async function POST(request) {
 
 export async function GET(request) {
   console.log('=== GMAIL LABELS API START ===');
-  
+
   try {
     // Authenticate user
     const session = await auth();

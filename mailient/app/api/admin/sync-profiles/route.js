@@ -2,7 +2,6 @@
 // This endpoint can be called by a cron job to sync all profiles
 
 import { NextResponse } from "next/server";
-import { syncAllProfiles } from "../../../../scripts/sync-profiles.js";
 
 // CRITICAL: Force dynamic rendering to prevent build-time evaluation
 export const dynamic = 'force-dynamic';
@@ -12,6 +11,7 @@ export async function POST(req) {
     // Optional: Add authentication for admin access
     // For now, allow any call (in production, add auth)
 
+    const { syncAllProfiles } = await import("../../../../scripts/sync-profiles.js");
     await syncAllProfiles();
 
     return NextResponse.json({

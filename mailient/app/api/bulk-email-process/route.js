@@ -1,4 +1,7 @@
 import { NextResponse } from 'next/server';
+
+// CRITICAL: Force dynamic rendering to prevent build-time evaluation
+export const dynamic = 'force-dynamic';
 import { auth } from '@/lib/auth.js';
 import { DatabaseService } from '@/lib/supabase.js';
 import { decrypt } from '@/lib/crypto.js';
