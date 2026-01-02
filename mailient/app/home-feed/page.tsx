@@ -9,7 +9,7 @@ export default function HomeFeed() {
   const router = useRouter();
   const { data: session, status } = useSession();
 
-  // Check authentication and onboarding status
+  // Check authentication, activate pending subscriptions, and check onboarding status
   useEffect(() => {
     if (status === "loading") return;
 
@@ -19,8 +19,37 @@ export default function HomeFeed() {
     }
 
     if (status === "authenticated" && session?.user?.email) {
-      const checkOnboarding = async () => {
+      const checkAndActivate = async () => {
         try {
+          // First, check if there's a pending plan that needs activation (user returned from Whop)
+          const pendingPlan = localStorage.getItem('pending_plan');
+          const pendingTimestamp = localStorage.getItem('pending_plan_timestamp');
+
+          if (pendingPlan && pendingTimestamp) {
+            const timestamp = parseInt(pendingTimestamp);
+            const oneHourAgo = Date.now() - (60 * 60 * 1000);
+
+            if (timestamp > oneHourAgo) {
+              console.log('🔄 Activating pending subscription:', pendingPlan);
+
+              const activateResponse = await fetch('/api/subscription/status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ planType: pendingPlan })
+              });
+
+              if (activateResponse.ok) {
+                console.log('✅ Subscription activated!');
+                localStorage.removeItem('pending_plan');
+                localStorage.removeItem('pending_plan_timestamp');
+              }
+            } else {
+              localStorage.removeItem('pending_plan');
+              localStorage.removeItem('pending_plan_timestamp');
+            }
+          }
+
+          // Then check onboarding status
           const response = await fetch("/api/onboarding/status");
           if (response.ok) {
             const data = await response.json();
@@ -29,10 +58,10 @@ export default function HomeFeed() {
             }
           }
         } catch (error) {
-          console.error("Error checking onboarding status:", error);
+          console.error("Error in home-feed init:", error);
         }
       };
-      checkOnboarding();
+      checkAndActivate();
     }
   }, [status, session, router]);
 

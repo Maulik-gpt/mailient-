@@ -163,6 +163,63 @@ export default function ChatInterface({
   const [notesResults, setNotesResults] = useState<any[]>([]);
   const [actionStatus, setActionStatus] = useState<'planning' | 'processing' | 'done' | null>(null);
 
+  // Subscription state - to hide upgrade button for Pro users
+  const [currentPlan, setCurrentPlan] = useState<'starter' | 'pro' | 'none' | null>(null);
+
+  // Fetch subscription status on mount and activate pending plans
+  useEffect(() => {
+    const fetchAndActivateSubscription = async () => {
+      try {
+        // First, check if there's a pending plan that needs activation (user returned from Whop)
+        const pendingPlan = localStorage.getItem('pending_plan');
+        const pendingTimestamp = localStorage.getItem('pending_plan_timestamp');
+
+        // If there's a pending plan from less than 1 hour ago, activate it
+        if (pendingPlan && pendingTimestamp) {
+          const timestamp = parseInt(pendingTimestamp);
+          const oneHourAgo = Date.now() - (60 * 60 * 1000);
+
+          if (timestamp > oneHourAgo) {
+            console.log('🔄 Found pending plan, activating:', pendingPlan);
+
+            // Activate the subscription
+            const activateResponse = await fetch('/api/subscription/status', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ planType: pendingPlan })
+            });
+
+            if (activateResponse.ok) {
+              console.log('✅ Subscription activated successfully!');
+              // Clear pending plan after successful activation
+              localStorage.removeItem('pending_plan');
+              localStorage.removeItem('pending_plan_timestamp');
+            }
+          } else {
+            // Pending plan is too old, clear it
+            localStorage.removeItem('pending_plan');
+            localStorage.removeItem('pending_plan_timestamp');
+          }
+        }
+
+        // Now fetch current subscription status
+        const response = await fetch('/api/subscription/status');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.subscription?.hasActiveSubscription) {
+            setCurrentPlan(data.subscription.planType as 'starter' | 'pro');
+          } else {
+            setCurrentPlan('none');
+          }
+        }
+      } catch (error) {
+        console.error('Error in subscription flow:', error);
+        setCurrentPlan('none');
+      }
+    };
+    fetchAndActivateSubscription();
+  }, []);
+
   // Draft reply state
   const [currentDraftData, setCurrentDraftData] = useState<{
     content: string;
@@ -889,7 +946,9 @@ export default function ChatInterface({
                 </div>
               </div>
               <div className="flex justify-center -mt-8">
-                <GradientButton onClick={() => window.location.href = '/pricing'}>Get Pro Now!</GradientButton>
+                {currentPlan !== 'pro' && (
+                  <GradientButton onClick={() => window.location.href = '/pricing'}>Get Pro Now!</GradientButton>
+                )}
               </div>
             </div>
           </div>

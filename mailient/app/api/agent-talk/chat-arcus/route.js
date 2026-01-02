@@ -4,6 +4,7 @@ import { DatabaseService } from '../../../../lib/supabase.js';
 import { decrypt } from '../../../../lib/crypto.js';
 import { ArcusAIService } from '../../../../lib/arcus-ai.js';
 import { CalendarService } from '../../../../lib/calendar.js';
+import { subscriptionService, FEATURE_TYPES } from '../../../../lib/subscription-service.js';
 import { addDays, setHours, setMinutes, startOfDay, format, parse, isWeekend, nextMonday } from 'date-fns';
 
 /**
@@ -52,6 +53,55 @@ export async function POST(request) {
     const db = new DatabaseService();
     const userEmail = session?.user?.email;
     const userName = session?.user?.name || 'User';
+
+    // Fetch subscription info for Arcus context
+    let subscriptionInfo = null;
+    let userPlanType = 'none';
+
+    if (userEmail) {
+      try {
+        const allUsage = await subscriptionService.getAllFeatureUsage(userEmail);
+        userPlanType = allUsage.planType || 'none';
+
+        if (allUsage.hasActiveSubscription) {
+          subscriptionInfo = {
+            planType: allUsage.planType,
+            planName: allUsage.planType === 'pro' ? 'Pro' : 'Starter',
+            daysRemaining: allUsage.daysRemaining,
+            features: allUsage.features,
+            isUnlimited: allUsage.planType === 'pro'
+          };
+          console.log(`📋 User subscription: ${userPlanType} plan`);
+        }
+      } catch (err) {
+        console.warn('Error fetching subscription info:', err);
+      }
+    }
+
+    // Check subscription and feature usage for Arcus AI
+    // Pro users have unlimited access, Starter users have 10/day limit
+    if (userEmail) {
+      const canUse = await subscriptionService.canUseFeature(userEmail, FEATURE_TYPES.ARCUS_AI);
+      if (!canUse) {
+        const usage = await subscriptionService.getFeatureUsage(userEmail, FEATURE_TYPES.ARCUS_AI);
+        const limitMessage = usage.reason === 'subscription_expired'
+          ? "Your subscription has expired. Please renew to continue using Arcus AI."
+          : usage.reason === 'no_subscription'
+            ? "You need an active subscription to use Arcus AI. Visit /pricing to subscribe."
+            : "You have used all 10 Arcus AI credits for today. Credits reset at midnight. Upgrade to Pro for unlimited access!";
+
+        return NextResponse.json({
+          message: limitMessage,
+          error: 'limit_reached',
+          usage: usage.usage,
+          limit: usage.limit,
+          reason: usage.reason,
+          upgradeUrl: '/pricing',
+          timestamp: new Date().toISOString(),
+          conversationId: currentConversationId
+        }, { status: 403 });
+      }
+    }
 
     // Get user's privacy mode preference
     let privacyMode = false;
@@ -190,6 +240,7 @@ Body: ${emailData.body || emailData.snippet}
       conversationHistory,
       emailContext,
       integrations,
+      subscriptionInfo, // Pass subscription info so Arcus knows user's plan
       additionalContext: `
 - Understand and act upon **URGENCY, PRIORITY, and REVENUE IMPACT**
 - Remember past conversations and build on previous context
@@ -217,6 +268,9 @@ Body: ${emailData.body || emailData.snippet}
       } catch (error) {
         console.log('⚠️ Failed to save conversation:', error.message);
       }
+
+      // Increment usage after successful chat
+      await subscriptionService.incrementFeatureUsage(userEmail, FEATURE_TYPES.ARCUS_AI);
     }
 
     return NextResponse.json({

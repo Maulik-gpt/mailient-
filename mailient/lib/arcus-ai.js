@@ -94,8 +94,51 @@ export class ArcusAIService {
             conversationHistory = [],
             emailContext = null,
             integrations = {},
-            privacyMode = false
+            privacyMode = false,
+            subscriptionInfo = null
         } = options;
+
+        // Build subscription context for Arcus to understand and communicate
+        let subscriptionContext = '';
+        if (subscriptionInfo) {
+            if (subscriptionInfo.isUnlimited) {
+                subscriptionContext = `
+## User's Subscription: Pro Plan ⚡
+
+The user has the **Pro Plan** ($29.99/month) with UNLIMITED access to all features:
+- ✅ Unlimited Draft Replies
+- ✅ Unlimited Schedule Calls
+- ✅ Unlimited AI-assisted Notes
+- ✅ Unlimited Sift AI Analysis
+- ✅ Unlimited Arcus AI interactions (that's me!)
+- ✅ Unlimited Email Summaries
+- ✅ Priority Support
+- ✅ Early Access to New Features
+- 📅 Days remaining in billing cycle: ${subscriptionInfo.daysRemaining}
+
+The Pro plan provides the full, unrestricted Mailient experience. The user can use all features without worrying about limits.`;
+            } else {
+                const features = subscriptionInfo.features || {};
+                subscriptionContext = `
+## User's Subscription: Starter Plan
+
+The user has the **Starter Plan** ($7.99/month) with the following daily/monthly limits:
+- Draft Replies: ${features.draft_reply?.usage || 0}/${features.draft_reply?.limit || 30} used this month
+- Schedule Calls: ${features.schedule_call?.usage || 0}/${features.schedule_call?.limit || 30} used this month
+- AI-assisted Notes: ${features.ai_notes?.usage || 0}/${features.ai_notes?.limit || 20} used this month
+- Sift AI Analysis: ${features.sift_analysis?.usage || 0}/${features.sift_analysis?.limit || 5} used today (resets daily)
+- Arcus AI interactions: ${features.arcus_ai?.usage || 0}/${features.arcus_ai?.limit || 10} used today (resets daily)
+- Email Summaries: ${features.email_summary?.usage || 0}/${features.email_summary?.limit || 20} used today (resets daily)
+- 📅 Days remaining in billing cycle: ${subscriptionInfo.daysRemaining}
+
+If the user asks about their plan or wants to do more, mention they can upgrade to Pro for unlimited access at /pricing.`;
+            }
+        } else {
+            subscriptionContext = `
+## User's Subscription: No Active Plan
+
+The user doesn't have an active subscription. They should visit /pricing to subscribe and unlock AI features.`;
+        }
 
         let prompt = `# ARCUS - Adaptive Response & Communication Understanding System
 
@@ -117,6 +160,21 @@ You are a highly intelligent, context-aware email and productivity assistant wit
 - **User Email**: ${userEmail || 'Not signed in'}
 - **User Name**: ${userName}
 - **Gmail Access**: ${integrations.gmail ? '✅ Connected' : '❌ Not connected'}
+
+${subscriptionContext}
+
+## How to Help with Plan Questions
+
+If the user asks about their plan, subscription, features, or limits, you should:
+1. Tell them which plan they have (Starter or Pro)
+2. Explain what features are included
+3. If on Starter, mention their current usage and remaining credits
+4. If asked how to upgrade, direct them to /pricing
+5. Help them get the most out of their current plan
+
+**Tips for Users:**
+- Starter Plan users: Use credits wisely for high-priority emails. Batch similar tasks together.
+- Pro Plan users: Take full advantage of unlimited access. Use Arcus for everything - drafts, summaries, analysis.
 
 ## 🧨 Hard Restrictions - Do Not Cross
 
@@ -177,7 +235,8 @@ ${emailContext}
             integrations = {},
             userEmail = null,
             userName = 'User',
-            privacyMode = false
+            privacyMode = false,
+            subscriptionInfo = null
         } = options;
 
         try {
@@ -187,7 +246,8 @@ ${emailContext}
                 conversationHistory,
                 emailContext,
                 integrations,
-                privacyMode
+                privacyMode,
+                subscriptionInfo
             });
 
             const messages = [

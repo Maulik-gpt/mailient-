@@ -47,6 +47,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const db = new DatabaseService();
+    const userId = session.user.email;
+
     const body = await request.json();
     const { subject, content, tags } = body;
 
@@ -57,8 +60,19 @@ export async function POST(request: Request) {
       );
     }
 
-    const db = new DatabaseService();
-    const userId = session.user.email;
+    // Check subscription and feature usage for AI-enhanced notes
+    const { subscriptionService, FEATURE_TYPES } = await import("@/lib/subscription-service");
+    const canUse = await subscriptionService.canUseFeature(userId, FEATURE_TYPES.AI_NOTES);
+    if (!canUse) {
+      const usage = await subscriptionService.getFeatureUsage(userId, FEATURE_TYPES.AI_NOTES);
+      return NextResponse.json({
+        error: "limit_reached",
+        message: "You have used all the credits of this month.",
+        usage: usage.usage,
+        limit: usage.limit,
+        upgradeUrl: "/pricing"
+      }, { status: 403 });
+    }
 
     // AI Enhancement
     let finalSubject = subject || "Untitled Note";
@@ -98,6 +112,9 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
+
+    // Increment usage after successful note creation with AI enhancement
+    await subscriptionService.incrementFeatureUsage(userId, FEATURE_TYPES.AI_NOTES);
 
     return NextResponse.json({ success: true, note: data });
   } catch (error) {

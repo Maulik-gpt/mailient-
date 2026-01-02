@@ -4,12 +4,28 @@ import { CalendarService } from '../../../../lib/calendar';
 import { DatabaseService } from '../../../../lib/supabase';
 import { decrypt } from '../../../../lib/crypto';
 import { GmailService } from '../../../../lib/gmail';
+import { subscriptionService, FEATURE_TYPES } from '../../../../lib/subscription-service';
 
 export async function POST(request: Request) {
     try {
         const session = await auth();
         if (!session?.user?.email) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const userId = session.user.email;
+
+        // Check subscription and feature usage
+        const canUse = await subscriptionService.canUseFeature(userId, FEATURE_TYPES.SCHEDULE_CALL);
+        if (!canUse) {
+            const usage = await subscriptionService.getFeatureUsage(userId, FEATURE_TYPES.SCHEDULE_CALL);
+            return NextResponse.json({
+                error: 'limit_reached',
+                message: 'You have used all the credits of this month.',
+                usage: usage.usage,
+                limit: usage.limit,
+                upgradeUrl: '/pricing'
+            }, { status: 403 });
         }
 
         let body;
@@ -98,6 +114,9 @@ ${session.user.name || 'Mailient User'}
                 // Don't fail the whole request just because email notification failed
             }
         }
+
+        // Increment usage after successful scheduling
+        await subscriptionService.incrementFeatureUsage(userId, FEATURE_TYPES.SCHEDULE_CALL);
 
         return NextResponse.json({ success: true, event });
 

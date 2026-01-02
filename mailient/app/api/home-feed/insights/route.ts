@@ -5,6 +5,7 @@ import { DatabaseService } from '../../../../lib/supabase.js';
 import { decrypt } from '../../../../lib/crypto.js';
 import { GmailService } from '../../../../lib/gmail';
 import { AIConfig } from '../../../../lib/ai-config.js';
+import { subscriptionService, FEATURE_TYPES } from '../../../../lib/subscription-service';
 
 interface EmailDetail {
   id: string;
@@ -47,6 +48,30 @@ export async function GET(request: Request) {
     }
 
     const userEmail = session.user.email;
+
+    // Check subscription and feature usage for Sift AI (5/day for Starter)
+    const canUse = await subscriptionService.canUseFeature(userEmail, FEATURE_TYPES.SIFT_ANALYSIS);
+    if (!canUse) {
+      const usage = await subscriptionService.getFeatureUsage(userEmail, FEATURE_TYPES.SIFT_ANALYSIS);
+      return NextResponse.json({
+        success: false,
+        error: 'limit_reached',
+        message: 'You have used all 5 Sift AI analysis credits for today. Credits reset at midnight.',
+        usage: usage.usage,
+        limit: usage.limit,
+        upgradeUrl: '/pricing',
+        insights: [],
+        sift_intelligence_summary: {
+          opportunities_detected: 0,
+          urgent_action_required: 0,
+          hot_leads_heating_up: 0,
+          conversations_at_risk: 0,
+          missed_follow_ups: 0,
+          unread_but_important: 0
+        }
+      }, { status: 403 });
+    }
+
     let accessToken = (session as any)?.accessToken;
     let refreshToken = (session as any)?.refreshToken;
 
@@ -274,6 +299,9 @@ export async function GET(request: Request) {
     });
 
     console.log(`✨ Returning ${enrichedInsights.length} enriched insights`);
+
+    // Increment usage after successful analysis
+    await subscriptionService.incrementFeatureUsage(userEmail, FEATURE_TYPES.SIFT_ANALYSIS);
 
     return NextResponse.json({
       success: true,

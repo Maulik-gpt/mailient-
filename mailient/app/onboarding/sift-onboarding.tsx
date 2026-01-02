@@ -123,20 +123,98 @@ export default function SiftOnboardingPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleSelectPlan = (plan: string) => {
+  // Whop checkout URLs
+  const WHOP_CHECKOUT_URLS = {
+    starter: 'https://whop.com/checkout/plan_OXtDPFaYlmYWN',
+    pro: 'https://whop.com/checkout/plan_HjjXVb5SWxdOK'
+  };
+
+  const handleSelectPlan = async (plan: string) => {
     setSelectedPlan(plan);
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setIsSuccessStep(true);
-      confetti({
-        particleCount: 150,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#ffffff', '#000000']
+
+    try {
+      // CRITICAL: Complete onboarding FIRST before redirecting to Whop
+      // This ensures users won't be stuck in onboarding loop when they return
+      const completeResponse = await fetch("/api/onboarding/complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: session?.user?.name?.toLowerCase().replace(/\s/g, '_') || 'user',
+          plan: plan
+        }),
       });
-    }, 1500);
+
+      if (!completeResponse.ok) {
+        console.error('Failed to complete onboarding before payment');
+      }
+
+      // Store selected plan in localStorage for after payment return
+      localStorage.setItem('pending_plan', plan);
+      localStorage.setItem('pending_plan_timestamp', Date.now().toString());
+
+      // Redirect to Whop checkout
+      const checkoutUrl = WHOP_CHECKOUT_URLS[plan as keyof typeof WHOP_CHECKOUT_URLS];
+      if (checkoutUrl) {
+        // Add user email as a parameter for tracking
+        const params = new URLSearchParams();
+        if (session?.user?.email) {
+          params.set('email', session.user.email);
+        }
+
+        window.location.href = `${checkoutUrl}?${params.toString()}`;
+      }
+    } catch (error) {
+      console.error('Error during plan selection:', error);
+      setIsSubmitting(false);
+    }
   };
+
+  // Check for payment success on page load (redirect from Whop)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentStatus = urlParams.get('payment');
+    const planFromUrl = urlParams.get('plan');
+    const pendingPlan = localStorage.getItem('pending_plan');
+
+    if (paymentStatus === 'success' && (planFromUrl || pendingPlan)) {
+      const finalPlan = planFromUrl || pendingPlan || 'starter';
+      setSelectedPlan(finalPlan);
+
+      // Clear pending plan from localStorage
+      localStorage.removeItem('pending_plan');
+      localStorage.removeItem('pending_plan_timestamp');
+
+      // Activate subscription
+      const activateSubscription = async () => {
+        try {
+          const response = await fetch('/api/subscription/status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ planType: finalPlan })
+          });
+
+          if (response.ok) {
+            setIsSuccessStep(true);
+            setIsPricingStep(false);
+            confetti({
+              particleCount: 150,
+              spread: 70,
+              origin: { y: 0.6 },
+              colors: ['#ffffff', '#000000']
+            });
+          }
+        } catch (error) {
+          console.error('Error activating subscription:', error);
+        }
+      };
+
+      activateSubscription();
+
+      // Clean up URL
+      window.history.replaceState({}, '', '/onboarding');
+    }
+  }, []);
 
   const handleLaunch = async () => {
     setIsSubmitting(true);
@@ -228,23 +306,31 @@ export default function SiftOnboardingPage() {
               {/* Starter */}
               <div
                 onClick={() => !isSubmitting && handleSelectPlan('starter')}
-                className="group relative bg-[#080808] border border-neutral-800 p-10 rounded-[2.5rem] hover:border-neutral-600 transition-all duration-500 cursor-pointer"
+                className="group relative bg-[#080808] border border-neutral-800 p-10 rounded-[2.5rem] hover:border-neutral-600 transition-all duration-500 cursor-pointer overflow-hidden"
               >
-                <div className="space-y-6">
+                <div className="absolute inset-0 opacity-[0.03] pointer-events-none mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
+                <div className="space-y-6 relative z-10">
                   <div className="space-y-1">
                     <span className="text-[10px] font-bold tracking-[0.2em] text-neutral-500 uppercase">Standard</span>
                     <h3 className="text-3xl font-semibold text-white">Starter</h3>
                   </div>
                   <div className="text-4xl font-semibold text-neutral-200">$7.99<span className="text-sm font-normal text-neutral-600 ml-1">/mo</span></div>
                   <ul className="space-y-4 pt-6 border-t border-neutral-800">
-                    {['500 AI Insights', 'Basic Arcus Memory', 'Workspace Sync'].map(f => (
-                      <li key={f} className="flex items-center gap-3 text-neutral-400 text-sm italic">
+                    {[
+                      '30 Draft Replies /month',
+                      '30 Schedule Calls /month',
+                      '20 AI-assisted Notes /month',
+                      '5 Sift AI Analysis /day',
+                      '10 Arcus AI interactions /day',
+                      '20 Email Summaries /day'
+                    ].map(f => (
+                      <li key={f} className="flex items-center gap-3 text-neutral-400 text-sm">
                         <Check className="w-4 h-4 text-neutral-600" /> {f}
                       </li>
                     ))}
                   </ul>
                 </div>
-                <div className="mt-10 h-12 bg-neutral-900 rounded-xl flex items-center justify-center font-semibold text-sm group-hover:bg-white group-hover:text-black transition-all">
+                <div className="mt-10 h-14 bg-neutral-900 border border-white/5 rounded-2xl flex items-center justify-center font-black text-xs tracking-[0.2em] uppercase group-hover:bg-white group-hover:text-black transition-all duration-500">
                   {isSubmitting && selectedPlan === 'starter' ? <Loader2 className="w-4 h-4 animate-spin" /> : "Select Starter"}
                 </div>
               </div>
@@ -252,23 +338,31 @@ export default function SiftOnboardingPage() {
               {/* Pro */}
               <div
                 onClick={() => !isSubmitting && handleSelectPlan('pro')}
-                className="group relative bg-white border border-white p-10 rounded-[2.5rem] transition-all duration-500 cursor-pointer shadow-2xl shadow-white/5"
+                className="group relative bg-white border border-white p-10 rounded-[2.5rem] transition-all duration-500 cursor-pointer shadow-2xl shadow-white/5 overflow-hidden"
               >
-                <div className="space-y-6">
+                <div className="absolute inset-0 opacity-[0.05] pointer-events-none mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
+                <div className="space-y-6 relative z-10">
                   <div className="space-y-1">
                     <span className="text-[10px] font-bold tracking-[0.2em] text-neutral-900/50 uppercase">Elite</span>
                     <h3 className="text-3xl font-semibold text-black">Pro</h3>
                   </div>
                   <div className="text-4xl font-semibold text-black">$29.99<span className="text-sm font-normal text-neutral-500 ml-1">/mo</span></div>
                   <ul className="space-y-4 pt-6 border-t border-black/5">
-                    {['Unlimited Analysis', 'Advanced Persona', 'Priority Threading', 'Early Access'].map(f => (
-                      <li key={f} className="flex items-center gap-3 text-neutral-800 text-sm font-medium italic">
+                    {[
+                      'Unlimited Draft Replies',
+                      'Unlimited AI Analysis',
+                      'Unlimited Arcus AI',
+                      'Unlimited Summaries & Notes',
+                      'Priority Support',
+                      'Early Access to Features'
+                    ].map(f => (
+                      <li key={f} className="flex items-center gap-3 text-neutral-800 text-sm font-medium">
                         <Sparkles className="w-4 h-4 text-neutral-400" /> {f}
                       </li>
                     ))}
                   </ul>
                 </div>
-                <div className="mt-10 h-12 bg-black rounded-xl flex items-center justify-center font-semibold text-sm text-white group-hover:scale-[1.02] transition-all">
+                <div className="mt-10 h-14 bg-black rounded-2xl flex items-center justify-center font-black text-xs tracking-[0.2em] uppercase text-white group-hover:scale-[1.02] transition-all duration-500">
                   {isSubmitting && selectedPlan === 'pro' ? <Loader2 className="w-4 h-4 animate-spin" /> : "Select Pro Elite"}
                 </div>
               </div>

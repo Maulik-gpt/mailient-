@@ -4,12 +4,28 @@ import { GmailService } from '../../../../lib/gmail';
 import { AIConfig } from '../../../../lib/ai-config';
 import { decrypt } from '../../../../lib/crypto';
 import { DatabaseService } from '../../../../lib/supabase';
+import { subscriptionService, FEATURE_TYPES } from '../../../../lib/subscription-service';
 
 export async function POST(request) {
     try {
         const session = await auth();
         if (!session?.user?.email) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const userId = session.user.email;
+
+        // Check subscription and feature usage
+        const canUse = await subscriptionService.canUseFeature(userId, FEATURE_TYPES.DRAFT_REPLY);
+        if (!canUse) {
+            const usage = await subscriptionService.getFeatureUsage(userId, FEATURE_TYPES.DRAFT_REPLY);
+            return NextResponse.json({
+                error: 'limit_reached',
+                message: 'You have used all the credits of this month.',
+                usage: usage.usage,
+                limit: usage.limit,
+                upgradeUrl: '/pricing'
+            }, { status: 403 });
         }
 
         const { emailId, category } = await request.json();
@@ -83,6 +99,9 @@ export async function POST(request) {
         const draftReply = isFollowUp
             ? await aiConfig.generateFollowUp(emailContent, userContext)
             : await aiConfig.generateDraftReply(emailContent, category || 'Opportunity', userContext);
+
+        // Increment usage after successful generation
+        await subscriptionService.incrementFeatureUsage(userId, FEATURE_TYPES.DRAFT_REPLY);
 
         return NextResponse.json({ draftReply });
 
