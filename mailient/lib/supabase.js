@@ -1,23 +1,45 @@
 import { createClient } from '@supabase/supabase-js';
 import { encrypt, decrypt } from './crypto.js';
 
-const supabaseUrl = process.env.SUPABASE_URL || 'https://nelscyaohnrnekscprxq.supabase.co';
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5lbHNjeWFvaG5ybmVrc2NwcnhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MjAwMzQsImV4cCI6MjA2OTA5NjAzNH0.M0iKG556B4P1IFZkOf7tSWgXlYmy56UBznvTy6TWwgw';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5lbHNjeWFvaG5ybmVrc2NwcnhxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzUyMDAzNCwiZXhwIjoyMDY5MDk2MDM0fQ.-PdyWp64BikrG-8leAPXEVNviJh21OPi7HOGdwejQ4U';
+// Get environment variables with proper fallbacks
+// Handle empty strings and undefined values
+const getEnvVar = (key, fallback) => {
+  const value = process.env[key];
+  if (!value || value.trim() === '' || value === 'undefined') {
+    return fallback;
+  }
+  return value.trim();
+};
 
-console.log('🔧 SUPABASE - Environment check:', {
-  hasUrl: !!supabaseUrl,
-  hasAnonKey: !!supabaseAnonKey,
-  url: supabaseUrl,
-  keyLength: supabaseAnonKey?.length || 0
-});
+const supabaseUrl = getEnvVar('SUPABASE_URL', 'https://nelscyaohnrnekscprxq.supabase.co');
+const supabaseAnonKey = getEnvVar('SUPABASE_ANON_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5lbHNjeWFvaG5ybmVrc2NwcnhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MjAwMzQsImV4cCI6MjA2OTA5NjAzNH0.M0iKG556B4P1IFZkOf7tSWgXlYmy56UBznvTy6TWwgw');
+const supabaseServiceKey = getEnvVar('SUPABASE_SERVICE_ROLE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5lbHNjeWFvaG5ybmVrc2NwcnhxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzUyMDAzNCwiZXhwIjoyMDY5MDk2MDM0fQ.-PdyWp64BikrG-8leAPXEVNviJh21OPi7HOGdwejQ4U');
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('🔧 SUPABASE - Missing environment variables:', {
-    SUPABASE_URL: supabaseUrl ? 'present' : 'missing',
-    SUPABASE_ANON_KEY: supabaseAnonKey ? 'present' : 'missing'
+// Only log in non-build environments
+if (typeof window !== 'undefined' || process.env.NEXT_PHASE !== 'phase-production-build') {
+  console.log('🔧 SUPABASE - Environment check:', {
+    hasUrl: !!supabaseUrl,
+    hasAnonKey: !!supabaseAnonKey,
+    url: supabaseUrl,
+    keyLength: supabaseAnonKey?.length || 0
   });
-  throw new Error('Missing Supabase environment variables');
+}
+
+// Validate required values (but allow build to continue with fallbacks)
+if (!supabaseUrl || !supabaseAnonKey) {
+  if (typeof window === 'undefined' && process.env.NEXT_PHASE === 'phase-production-build') {
+    // During build, just warn - don't throw
+    console.warn('🔧 SUPABASE - Using fallback values during build');
+  } else {
+    console.error('🔧 SUPABASE - Missing environment variables:', {
+      SUPABASE_URL: supabaseUrl ? 'present' : 'missing',
+      SUPABASE_ANON_KEY: supabaseAnonKey ? 'present' : 'missing'
+    });
+    // Only throw in runtime, not during build
+    if (typeof window !== 'undefined') {
+      throw new Error('Missing Supabase environment variables');
+    }
+  }
 }
 
 // Use anon key for client operations
