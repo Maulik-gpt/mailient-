@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { CheckCircle, Sparkles, ArrowRight, Loader2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
-export default function PaymentSuccessPage() {
+function PaymentSuccessContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [isActivating, setIsActivating] = useState(true);
@@ -156,3 +156,16 @@ export default function PaymentSuccessPage() {
         </div>
     );
 }
+
+export default function PaymentSuccessPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-black flex items-center justify-center p-6 text-white text-xl">
+                Loading...
+            </div>
+        }>
+            <PaymentSuccessContent />
+        </Suspense>
+    );
+}
+
