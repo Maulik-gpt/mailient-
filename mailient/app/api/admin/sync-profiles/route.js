@@ -4,6 +4,9 @@
 import { NextResponse } from "next/server";
 import { syncAllProfiles } from "../../../../scripts/sync-profiles.js";
 
+// CRITICAL: Force dynamic rendering to prevent build-time evaluation
+export const dynamic = 'force-dynamic';
+
 export async function POST(req) {
   try {
     // Optional: Add authentication for admin access
