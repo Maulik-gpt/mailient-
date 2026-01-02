@@ -1,12 +1,23 @@
 // scripts/sync-profiles.js
 // This script can be run periodically to sync all user profiles with Google
 
-const { createClient } = require('@supabase/supabase-js');
-const { decrypt, encrypt } = require('../lib/crypto');
+import { createClient } from '@supabase/supabase-js';
+import { decrypt, encrypt } from '../lib/crypto.js';
 
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+// Initialize Supabase client lazily to avoid build-time errors
+function getSupabaseClient() {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  
+  if (!supabaseUrl || !supabaseServiceKey) {
+    throw new Error('Missing Supabase environment variables: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required');
+  }
+  
+  return createClient(supabaseUrl, supabaseServiceKey);
+}
 
 async function refreshAccessToken(row) {
+  const supabase = getSupabaseClient();
   if (!row.encrypted_refresh_token) throw new Error("no_refresh_token");
   const refresh_token = decrypt(row.encrypted_refresh_token);
   const r = await fetch("https://oauth2.googleapis.com/token", {
@@ -32,6 +43,7 @@ async function refreshAccessToken(row) {
 }
 
 async function syncProfileFromGoogle(userEmail) {
+  const supabase = getSupabaseClient();
   // Get user tokens
   const { data: row, error: tokenError } = await supabase
     .from("user_tokens")
@@ -118,6 +130,7 @@ async function syncProfileFromGoogle(userEmail) {
 async function syncAllProfiles() {
   console.log('Starting profile sync for all users...');
 
+  const supabase = getSupabaseClient();
   // Get all users with tokens
   const { data: users, error } = await supabase
     .from("user_tokens")
@@ -137,9 +150,4 @@ async function syncAllProfiles() {
   console.log('Profile sync completed.');
 }
 
-// Run if called directly
-if (require.main === module) {
-  syncAllProfiles().catch(console.error);
-}
-
-module.exports = { syncAllProfiles, syncProfileFromGoogle };
+export { syncAllProfiles, syncProfileFromGoogle };

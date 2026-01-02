@@ -2,7 +2,7 @@
 // This endpoint can be called by a cron job to sync all profiles
 
 import { NextResponse } from "next/server";
-import { syncAllProfiles } from "../../../../scripts/sync-profiles";
+import { syncAllProfiles } from "../../../../scripts/sync-profiles.js";
 
 export async function POST(req) {
   try {
