@@ -330,15 +330,33 @@ export default function SettingsPage() {
                             <h3 className="text-[#fafafa] font-medium">Subscription Plan</h3>
                             <div className="flex items-center justify-between p-4 bg-[#0a0a0a] border border-neutral-800 rounded-xl">
                                 <div className="flex flex-col gap-1">
-                                    <span className="text-sm font-semibold text-[#fafafa] uppercase tracking-wider">{profile?.plan || 'Free Plan'}</span>
-                                    <span className="text-xs text-neutral-500">Basic signal intelligence and 100 emails/day limit</span>
+                                    <span className="text-sm font-semibold text-[#fafafa] uppercase tracking-wider">
+                                        {profile?.plan === 'starter' ? 'Starter Plan $7.99' : profile?.plan === 'pro' ? 'Pro Plan $29.99' : 'Free Plan'}
+                                    </span>
+                                    <span className="text-xs text-neutral-500">
+                                        {profile?.plan === 'pro'
+                                            ? 'Full intelligence access with priority execution'
+                                            : profile?.plan === 'starter'
+                                                ? 'Standard signal intelligence and growth tools'
+                                                : 'Basic signal intelligence and 100 emails/day limit'}
+                                    </span>
                                 </div>
-                                <button
-                                    onClick={() => window.location.href = '/pricing'}
-                                    className="text-xs font-semibold px-4 py-2 bg-neutral-900 text-[#fafafa] border border-neutral-800 rounded-lg hover:bg-neutral-800 transition-all"
-                                >
-                                    Upgrade
-                                </button>
+                                {profile?.plan === 'pro' ? (
+                                    <button
+                                        onClick={() => window.open('https://x.com/@Maulik_055', '_blank')}
+                                        className="text-xs font-semibold px-4 py-2 bg-white text-black rounded-lg hover:bg-neutral-200 transition-all flex items-center gap-2"
+                                    >
+                                        <ExternalLink className="w-3 h-3" />
+                                        Talk to Founder
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => window.location.href = '/pricing'}
+                                        className="text-xs font-semibold px-4 py-2 bg-neutral-900 text-[#fafafa] border border-neutral-800 rounded-lg hover:bg-neutral-800 transition-all"
+                                    >
+                                        Upgrade
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>

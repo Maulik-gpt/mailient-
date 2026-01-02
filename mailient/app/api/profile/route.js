@@ -210,7 +210,7 @@ export async function GET(req) {
         // Enhanced data for Mailient
         email_accounts_connected: tokens.length || 0,
         emails_processed: emailCount || 0,
-        plan: 'Free Plan',
+        plan: profile?.preferences?.plan || 'Free Plan',
         storage_used: `${Math.round(emailCount * 0.1)} MB`,
         last_email_activity: null
       });
@@ -270,7 +270,7 @@ export async function GET(req) {
       ...profile,
       email_accounts_connected: tokens.length || 0,
       emails_processed: 99, // Show 99+ for demo purposes
-      plan: 'Free Plan', // This could come from a subscription table
+      plan: profile?.preferences?.plan || 'Free Plan',
       storage_used: `${Math.round(emailCount * 0.1)} MB`, // Rough estimate
       last_email_activity: lastEmail?.date || null,
       // Ensure defaults for new fields - always set them
@@ -328,7 +328,7 @@ export async function GET(req) {
           updated_at: new Date().toISOString(),
           email_accounts_connected: 0,
           emails_processed: 0,
-          plan: 'Free Plan',
+          plan: profile?.preferences?.plan || 'Free Plan',
           storage_used: '0 MB',
           last_email_activity: null
         });
