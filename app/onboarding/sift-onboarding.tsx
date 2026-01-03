@@ -426,12 +426,22 @@ export default function SiftOnboardingPage() {
 
       {/* Subtle Footer */}
       <footer className="py-12 px-8 border-t border-white/5">
-        <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="text-[10px] font-bold tracking-[0.2em] text-neutral-600 uppercase italic">
-            Engineered for Precision
-          </div>
-          <div className="text-[9px] font-medium text-neutral-700 uppercase tracking-widest">
-            © 2025 Mailient Technologies
+        <div className="max-w-5xl mx-auto flex flex-col items-center text-center gap-6">
+          <p className="text-xs text-neutral-600 max-w-md leading-relaxed italic">
+            Mailient is an AI-powered neural layer for your inbox, designed to extract signal from noise and automate high-output communication.
+          </p>
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6 w-full pt-6 border-t border-white/5">
+            <div className="text-[10px] font-bold tracking-[0.2em] text-neutral-600 uppercase italic">
+              Engineered for Precision
+            </div>
+            <div className="flex items-center gap-8">
+              <a href="/privacy-policy" className="text-[9px] font-bold text-neutral-500 hover:text-white transition-colors uppercase tracking-widest">
+                Privacy Policy
+              </a>
+              <div className="text-[9px] font-medium text-neutral-700 uppercase tracking-widest">
+                © 2026 Mailient Technologies
+              </div>
+            </div>
           </div>
         </div>
       </footer>
