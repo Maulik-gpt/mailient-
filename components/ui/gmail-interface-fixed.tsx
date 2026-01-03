@@ -484,7 +484,10 @@ export function GmailInterfaceFixed() {
                 })
             });
 
-            if (!response.ok) throw new Error('Failed to get answer');
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Failed to get answer');
+            }
 
             const data = await response.json();
 
@@ -514,7 +517,7 @@ export function GmailInterfaceFixed() {
             const errorMsg = {
                 id: (Date.now() + 1).toString(),
                 role: 'assistant',
-                content: 'Sorry, I encountered an error. Please try again.',
+                content: error instanceof Error ? error.message : 'Sorry, I encountered an error. Please try again.',
                 timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             };
             setArcusMessages(prev => [...prev, errorMsg]);

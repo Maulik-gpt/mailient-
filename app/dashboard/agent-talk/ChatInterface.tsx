@@ -377,7 +377,7 @@ export default function ChatInterface({
         id: Date.now() + 1,
         type: 'agent',
         content: {
-          text: "I encountered an issue. Let me try that again or let me know if you need help with something else!",
+          text: error instanceof Error ? error.message : "I encountered an issue. Let me try that again or let me know if you need help with something else!",
           list: [],
           footer: ""
         },
