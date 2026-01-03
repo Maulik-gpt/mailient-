@@ -338,7 +338,7 @@ NOTES:
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${apiKey}`,
-                'HTTP-Referer': process.env.HOST || 'http://localhost:3000',
+                'HTTP-Referer': process.env.HOST || 'https://mailient.xyz',
                 'X-Title': 'Mailient Notifications'
             },
             body: JSON.stringify({

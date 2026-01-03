@@ -48,7 +48,7 @@ export class OpenRouterAIService {
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${this.apiKey}`,
-                        'HTTP-Referer': process.env.HOST || 'http://localhost:3000',
+                        'HTTP-Referer': process.env.HOST || 'https://mailient.xyz',
                         'X-Title': 'Mailient',
                         ...(options.privacyMode ? { 'X-OpenRouter-Data-Collection': 'opt-out' } : {})
                     },
@@ -109,7 +109,7 @@ export class OpenRouterAIService {
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${keyToUse}`,
-                        'HTTP-Referer': process.env.HOST || 'http://localhost:3000',
+                        'HTTP-Referer': process.env.HOST || 'https://mailient.xyz',
                         'X-Title': 'Mailient',
                         ...(options.privacyMode ? { 'X-OpenRouter-Data-Collection': 'opt-out' } : {})
                     },

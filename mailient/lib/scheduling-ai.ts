@@ -32,7 +32,7 @@ export class SchedulingAIService {
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${this.apiKey}`,
-                        'HTTP-Referer': process.env.HOST || 'http://localhost:3000',
+                        'HTTP-Referer': process.env.HOST || 'https://mailient.xyz',
                         'X-Title': 'Mailient Scheduling'
                     },
                     body: JSON.stringify({

@@ -15,13 +15,10 @@ export function getSupabase() {
   const supabaseUrl = getEnvVar('SUPABASE_URL', null);
   const supabaseAnonKey = getEnvVar('SUPABASE_ANON_KEY', null);
 
-  if (!supabaseUrl || !supabaseAnonKey) {
-    if (process.env.NEXT_PHASE !== 'phase-production-build') {
-      console.error('🔧 SUPABASE - Missing environment variables. Using fallback for build safety.');
-    }
-    // Return a proxy that logs or returns empty data instead of crashing the build
+  // If missing URL or during build phase, return a safe mock to satisfy static analysis
+  if (!supabaseUrl || !supabaseAnonKey || process.env.NEXT_PHASE === 'phase-production-build') {
     return createClient(
-      supabaseUrl || 'https://placeholder.supabase.co',
+      supabaseUrl || 'https://placeholder-url-for-build.supabase.co',
       supabaseAnonKey || 'placeholder-key'
     );
   }
@@ -33,13 +30,10 @@ export function getSupabaseAdmin() {
   const supabaseUrl = getEnvVar('SUPABASE_URL', null);
   const supabaseServiceKey = getEnvVar('SUPABASE_SERVICE_ROLE_KEY', null);
 
-  if (!supabaseUrl || !supabaseServiceKey) {
-    if (process.env.NEXT_PHASE !== 'phase-production-build') {
-      console.error('🔧 SUPABASE ADMIN - Missing environment variables. Using fallback for build safety.');
-    }
-    // Return a proxy to prevent "supabaseUrl is required" crash
+  // If missing URL or during build phase, return a safe mock to satisfy static analysis
+  if (!supabaseUrl || !supabaseServiceKey || process.env.NEXT_PHASE === 'phase-production-build') {
     return createClient(
-      supabaseUrl || 'https://placeholder.supabase.co',
+      supabaseUrl || 'https://placeholder-url-for-build.supabase.co',
       supabaseServiceKey || 'placeholder-key'
     );
   }

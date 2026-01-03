@@ -780,7 +780,7 @@ async function executeNotesAction(userMessage, userEmail, providedSearchQuery = 
       return { action: 'notes_search', success: true, notes: [], query: '', count: 0 };
     }
 
-    const response = await fetch('http://localhost:3000/api/agent-talk/notes-search', {
+    const response = await fetch('https://mailient.xyz/api/agent-talk/notes-search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query: searchTerm, searchType: 'all' }),

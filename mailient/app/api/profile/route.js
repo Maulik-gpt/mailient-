@@ -28,7 +28,7 @@ async function ensureDatabaseTables() {
 
       try {
         // Call database setup endpoint
-        const setupResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/database/setup`, {
+        const setupResponse = await fetch(`${process.env.NEXTAUTH_URL || 'https://mailient.xyz'}/api/database/setup`, {
           method: 'POST'
         });
 
