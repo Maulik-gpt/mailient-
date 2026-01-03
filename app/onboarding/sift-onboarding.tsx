@@ -401,13 +401,28 @@ export default function SiftOnboardingPage() {
                   ))}
                 </div>
 
-                <Button
-                  onClick={handleNext}
-                  className="w-48 h-12 bg-white hover:bg-neutral-200 text-black font-semibold rounded-xl group transition-all"
-                >
-                  Continue
-                  <ChevronRight className="ml-2 w-4 h-4 transition-transform group-hover:translate-x-1" />
-                </Button>
+                <div className="space-y-6">
+                  <Button
+                    onClick={handleNext}
+                    className="w-48 h-12 bg-white hover:bg-neutral-200 text-black font-semibold rounded-xl group transition-all"
+                  >
+                    Continue
+                    <ChevronRight className="ml-2 w-4 h-4 transition-transform group-hover:translate-x-1" />
+                  </Button>
+
+                  <div className="space-y-2 opacity-50">
+                    <p className="text-[10px] font-medium text-neutral-400 max-w-xs leading-relaxed uppercase tracking-wider">
+                      Mailient is an AI Neural Layer Operating System designed to turn your inbox into a decision system by extracting revenue signals and automating high-output communication.
+                    </p>
+                    <a
+                      href="/privacy-policy"
+                      target="_blank"
+                      className="text-[10px] font-bold text-neutral-500 hover:text-white transition-colors uppercase tracking-widest underline decoration-neutral-800"
+                    >
+                      Protocol: Privacy Policy
+                    </a>
+                  </div>
+                </div>
               </div>
 
               {/* Minimal Demo Context */}
