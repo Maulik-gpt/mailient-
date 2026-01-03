@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSession, signIn } from "next-auth/react";
-import { motion, useScroll, useTransform, useSpring, useInView, AnimatePresence } from "framer-motion";
+import { motion, useScroll, useSpring, useInView } from "framer-motion";
 import {
   ShieldCheck,
   ArrowUpRight,
@@ -15,9 +15,6 @@ import {
   Cpu,
   Workflow,
   Sparkles,
-  Command,
-  Search,
-  CheckCircle2,
   Globe
 } from "lucide-react";
 
@@ -48,12 +45,6 @@ export default function Home() {
       window.removeEventListener("mousemove", handleMouseMove);
     };
   }, []);
-
-  const fadeIn = {
-    initial: { opacity: 0, y: 30 },
-    animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] }
-  };
 
   return (
     <div ref={containerRef} className="min-h-screen bg-[#020202] text-white selection:bg-white selection:text-black font-['Satoshi'] overflow-x-hidden">
@@ -191,167 +182,164 @@ export default function Home() {
                 Explore Neural System
               </button>
             </div>
-        </div>
-    </div>
-
-        {/* Hero Visual Mockup */ }
-  <motion.div
-    initial={{ opacity: 0, y: 100 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 1.5, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
-    className="mt-32 w-full max-w-[1100px] aspect-[16/10] bg-zinc-950 rounded-t-[3rem] border-x border-t border-white/10 p-6 relative group overflow-hidden"
-  >
-    <div className="absolute inset-0 bg-gradient-to-t from-[#020202] via-transparent to-transparent z-20" />
-    <div className="w-full h-full bg-[#050505] rounded-[2rem] border border-white/5 flex flex-col overflow-hidden shadow-2xl">
-      <div className="h-14 border-b border-white/5 flex items-center px-8 justify-between bg-black/40">
-        <div className="flex gap-2">
-          <div className="w-3 h-3 rounded-full bg-white/10" />
-          <div className="w-3 h-3 rounded-full bg-white/10" />
-          <div className="w-3 h-3 rounded-full bg-white/10" />
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="w-32 h-2 bg-white/10 rounded-full" />
-          <div className="w-10 h-10 rounded-full bg-white/5 border border-white/5" />
-        </div>
-      </div>
-      <div className="flex-1 p-10 flex gap-10">
-        <div className="w-64 space-y-6">
-          {[1, 2, 3, 4].map(i => (
-            <div key={i} className={`h-10 rounded-lg bg-white/${i === 1 ? '10' : '5'} border border-white/5 transition-all group-hover:translate-x-1 duration-500`} style={{ delay: `${i * 100}ms` }} />
-          ))}
-        </div>
-        <div className="flex-1 space-y-8">
-          <div className="flex justify-between">
-            <div className="w-48 h-8 bg-white/10 rounded-xl" />
-            <div className="flex gap-3">
-              <div className="w-24 h-8 bg-white text-black font-black text-[10px] flex items-center justify-center rounded-lg">SIFT AI</div>
-              <div className="w-8 h-8 bg-zinc-900 rounded-lg border border-white/5" />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-6">
-            <div className="h-40 rounded-2xl bg-white/[0.02] border border-white/5 p-6 space-y-4">
-              <div className="w-10 h-10 rounded-xl bg-white/5" />
-              <div className="w-full h-2 bg-white/10 rounded-full" />
-              <div className="w-2/3 h-2 bg-white/5 rounded-full" />
-            </div>
-            <div className="h-40 rounded-2xl bg-white/[0.02] border border-white/5 p-6 space-y-4">
-              <div className="w-10 h-10 rounded-xl bg-white/5" />
-              <div className="w-full h-2 bg-white/10 rounded-full" />
-              <div className="w-2/3 h-2 bg-white/5 rounded-full" />
-            </div>
-          </div>
-          <div className="h-64 rounded-3xl bg-zinc-900/30 border border-white/5 p-8 relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-6">
-              <div className="text-[10px] font-black uppercase text-zinc-600 tracking-widest">Neural Draft</div>
-            </div>
-            <div className="space-y-4">
-              <div className="w-3/4 h-3 bg-white/20 rounded-full" />
-              <div className="w-full h-3 bg-white/10 rounded-full" />
-              <div className="w-2/3 h-3 bg-white/5 rounded-full" />
-              <div className="w-4/5 h-3 bg-white/10 rounded-full" />
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    {/* Spotlight overlay in mockup */}
-    <div className="absolute inset-0 z-30 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-1000 bg-[radial-gradient(circle_at_var(--x)_var(--y),rgba(255,255,255,0.05)_0%,transparent_50%)]"
-      style={{ '--x': '50%', '--y': '50%' }} />
-  </motion.div>
-      </section >
-
-    {/* Philosophy Section */ }
-    < section id = "about" className = "py-60 bg-white text-black relative z-20" >
-      <div className="max-w-[1400px] mx-auto px-12">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-32 items-end mb-40">
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 1 }}
-          >
-            <div className="inline-flex items-center gap-3 mb-10 text-[10px] font-black uppercase tracking-[0.4em] text-zinc-400">
-              <div className="w-10 h-[1px] bg-zinc-200" />
-              The Core Philosophy
-            </div>
-            <h2 className="text-[9vw] lg:text-[7vw] font-black tracking-[-0.07em] leading-[0.85] mb-12 uppercase italic">
-              Signal is <br />
-              Everything.
-            </h2>
-            <p className="text-2xl font-medium leading-relaxed max-w-xl text-zinc-800">
-              Most email systems are archives. <br />
-              <span className="font-black italic">Mailient is an intelligence operation.</span> <br />
-              We extract high-frequency signals from the noise of your network to drive growth.
-            </p>
           </motion.div>
+        </div>
 
-          <div className="flex flex-col items-end gap-12">
-            <motion.div
-              initial={{ width: 0 }}
-              whileInView={{ width: "100%" }}
-              viewport={{ once: true }}
-              transition={{ duration: 1.5 }}
-              className="h-[1px] bg-black/10"
-            />
-            <div className="grid grid-cols-2 gap-16 w-full">
-              <div className="space-y-6">
-                <p className="text-[10px] font-black uppercase tracking-[0.5em] text-zinc-400">01 / Logic</p>
-                <h4 className="text-xl font-black uppercase italic tracking-tighter">Business Alignment</h4>
-                <p className="text-sm font-medium text-zinc-500 leading-relaxed italic">The AI understands your goals, revenue streams, and relationship value before processing any thread.</p>
+        {/* Hero Visual Mockup */}
+        <motion.div
+          initial={{ opacity: 0, y: 100 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1.5, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="mt-32 w-full max-w-[1100px] aspect-[16/10] bg-zinc-950 rounded-t-[3rem] border-x border-t border-white/10 p-6 relative group overflow-hidden"
+        >
+          <div className="absolute inset-0 bg-gradient-to-t from-[#020202] via-transparent to-transparent z-20" />
+          <div className="w-full h-full bg-[#050505] rounded-[2rem] border border-white/5 flex flex-col overflow-hidden shadow-2xl">
+            <div className="h-14 border-b border-white/5 flex items-center px-8 justify-between bg-black/40">
+              <div className="flex gap-2">
+                <div className="w-3 h-3 rounded-full bg-white/10" />
+                <div className="w-3 h-3 rounded-full bg-white/10" />
+                <div className="w-3 h-3 rounded-full bg-white/10" />
               </div>
-              <div className="space-y-6">
-                <p className="text-[10px] font-black uppercase tracking-[0.5em] text-zinc-400">02 / Action</p>
-                <h4 className="text-xl font-black uppercase italic tracking-tighter">Proactive Sifting</h4>
-                <p className="text-sm font-medium text-zinc-500 leading-relaxed italic">Intelligence that acts. We don't just categorize; we prepare your next move with context-aware responses.</p>
+              <div className="flex items-center gap-4">
+                <div className="w-32 h-2 bg-white/10 rounded-full" />
+                <div className="w-10 h-10 rounded-full bg-white/5 border border-white/5" />
+              </div>
+            </div>
+            <div className="flex-1 p-10 flex gap-10">
+              <div className="w-64 space-y-6">
+                {[1, 2, 3, 4].map(i => (
+                  <div key={i} className={`h-10 rounded-lg bg-white/${i === 1 ? '10' : '5'} border border-white/5 transition-all group-hover:translate-x-1 duration-500`} style={{ transitionDelay: `${i * 100}ms` }} />
+                ))}
+              </div>
+              <div className="flex-1 space-y-8">
+                <div className="flex justify-between">
+                  <div className="w-48 h-8 bg-white/10 rounded-xl" />
+                  <div className="flex gap-3">
+                    <div className="w-24 h-8 bg-white text-black font-black text-[10px] flex items-center justify-center rounded-lg">SIFT AI</div>
+                    <div className="w-8 h-8 bg-zinc-900 rounded-lg border border-white/5" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="h-40 rounded-2xl bg-white/[0.02] border border-white/5 p-6 space-y-4">
+                    <div className="w-10 h-10 rounded-xl bg-white/5" />
+                    <div className="w-full h-2 bg-white/10 rounded-full" />
+                    <div className="w-2/3 h-2 bg-white/5 rounded-full" />
+                  </div>
+                  <div className="h-40 rounded-2xl bg-white/[0.02] border border-white/5 p-6 space-y-4">
+                    <div className="w-10 h-10 rounded-xl bg-white/5" />
+                    <div className="w-full h-2 bg-white/10 rounded-full" />
+                    <div className="w-2/3 h-2 bg-white/5 rounded-full" />
+                  </div>
+                </div>
+                <div className="h-64 rounded-3xl bg-zinc-900/30 border border-white/5 p-8 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-6">
+                    <div className="text-[10px] font-black uppercase text-zinc-600 tracking-widest">Neural Draft</div>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="w-3/4 h-3 bg-white/20 rounded-full" />
+                    <div className="w-full h-3 bg-white/10 rounded-full" />
+                    <div className="w-2/3 h-3 bg-white/5 rounded-full" />
+                    <div className="w-4/5 h-3 bg-white/10 rounded-full" />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
+      </section>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-1px bg-black/5 border border-black/5 overflow-hidden rounded-[2.5rem]">
-          <FeatureCard
-            icon={<Cpu className="w-10 h-10" strokeWidth={1} />}
-            title="Aether Core"
-            desc="Deep-layer scanning of every communication. We identify patterns invisible to the human eye."
-            index={0}
-          />
-          <FeatureCard
-            icon={<Workflow className="w-10 h-10" strokeWidth={1} />}
-            title="Neural Flow"
-            desc="Sophisticated drafting engine that maintains your voice while maximizing for conversion and clarity."
-            index={1}
-          />
-          <FeatureCard
-            icon={<Fingerprint className="w-10 h-10" strokeWidth={1} />}
-            title="Contact ID"
-            desc="Real-time dossier generation for every participant. Never go into a thread blind again."
-            index={2}
-          />
-        </div>
-      </div>
-      </section >
+      {/* Philosophy Section */}
+      <section id="about" className="py-60 bg-white text-black relative z-20">
+        <div className="max-w-[1400px] mx-auto px-12">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-32 items-end mb-40">
+            <motion.div
+              initial={{ opacity: 0, x: -50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 1 }}
+            >
+              <div className="inline-flex items-center gap-3 mb-10 text-[10px] font-black uppercase tracking-[0.4em] text-zinc-400">
+                <div className="w-10 h-[1px] bg-zinc-200" />
+                The Core Philosophy
+              </div>
+              <h2 className="text-[9vw] lg:text-[7vw] font-black tracking-[-0.07em] leading-[0.85] mb-12 uppercase italic">
+                Signal is <br />
+                Everything.
+              </h2>
+              <p className="text-2xl font-medium leading-relaxed max-w-xl text-zinc-800">
+                Most email systems are archives. <br />
+                <span className="font-black italic">Mailient is an intelligence operation.</span> <br />
+                We extract high-frequency signals from the noise of your network to drive growth.
+              </p>
+            </motion.div>
 
-    {/* Integration & Security Section */ }
-    < section id = "integration" className = "py-60 relative overflow-hidden" >
+            <div className="flex flex-col items-end gap-12">
+              <motion.div
+                initial={{ width: 0 }}
+                whileInView={{ width: "100%" }}
+                viewport={{ once: true }}
+                transition={{ duration: 1.5 }}
+                className="h-[1px] bg-black/10"
+              />
+              <div className="grid grid-cols-2 gap-16 w-full">
+                <div className="space-y-6">
+                  <p className="text-[10px] font-black uppercase tracking-[0.5em] text-zinc-400">01 / Logic</p>
+                  <h4 className="text-xl font-black uppercase italic tracking-tighter">Business Alignment</h4>
+                  <p className="text-sm font-medium text-zinc-500 leading-relaxed italic">The AI understands your goals, revenue streams, and relationship value before processing any thread.</p>
+                </div>
+                <div className="space-y-6">
+                  <p className="text-[10px] font-black uppercase tracking-[0.5em] text-zinc-400">02 / Action</p>
+                  <h4 className="text-xl font-black uppercase italic tracking-tighter">Proactive Sifting</h4>
+                  <p className="text-sm font-medium text-zinc-500 leading-relaxed italic">Intelligence that acts. We don't just categorize; we prepare your next move with context-aware responses.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-1px bg-black/5 border border-black/5 overflow-hidden rounded-[2.5rem]">
+            <FeatureCard
+              icon={<Cpu className="w-10 h-10" strokeWidth={1} />}
+              title="Aether Core"
+              desc="Deep-layer scanning of every communication. We identify patterns invisible to the human eye."
+              index={0}
+            />
+            <FeatureCard
+              icon={<Workflow className="w-10 h-10" strokeWidth={1} />}
+              title="Neural Flow"
+              desc="Sophisticated drafting engine that maintains your voice while maximizing for conversion and clarity."
+              index={1}
+            />
+            <FeatureCard
+              icon={<Fingerprint className="w-10 h-10" strokeWidth={1} />}
+              title="Contact ID"
+              desc="Real-time dossier generation for every participant. Never go into a thread blind again."
+              index={2}
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Integration & Security Section */}
+      <section id="integration" className="py-60 relative overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-        
+
         <div className="max-w-[1400px] mx-auto px-12">
           <div className="flex flex-col items-center text-center mb-40">
-            <motion.div 
-               initial={{ opacity: 0, scale: 0.8 }}
-               whileInView={{ opacity: 1, scale: 1 }}
-               viewport={{ once: true }}
-               className="inline-block p-1 bg-gradient-to-br from-white/10 to-transparent rounded-[2.5rem] mb-16"
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              className="inline-block p-1 bg-gradient-to-br from-white/10 to-transparent rounded-[2.5rem] mb-16"
             >
-               <div className="bg-[#050505] p-10 rounded-[2.4rem] border border-white/5 flex items-center gap-10 grayscale hover:grayscale-0 transition-all duration-1000">
-                  <Globe className="w-12 h-12 text-blue-400" />
-                  <div className="w-[1px] h-12 bg-white/10" />
-                  <img src="https://www.google.com/favicon.ico" className="w-12 h-12" alt="Google" />
-                  <div className="w-[1px] h-12 bg-white/10" />
-                  <Mail className="w-12 h-12 text-white" strokeWidth={1} />
-               </div>
+              <div className="bg-[#050505] p-10 rounded-[2.4rem] border border-white/5 flex items-center gap-10 grayscale hover:grayscale-0 transition-all duration-1000">
+                <Globe className="w-12 h-12 text-blue-400" />
+                <div className="w-[1px] h-12 bg-white/10" />
+                <img src="https://www.google.com/favicon.ico" className="w-12 h-12" alt="Google" />
+                <div className="w-[1px] h-12 bg-white/10" />
+                <Mail className="w-12 h-12 text-white" strokeWidth={1} />
+              </div>
             </motion.div>
-            
+
             <h2 className="text-6xl md:text-8xl font-black uppercase tracking-[-0.08em] mb-10 italic">Secured by Google</h2>
             <p className="max-w-3xl text-2xl text-zinc-500 font-medium leading-relaxed tracking-tight">
               We leverage enterprise-grade OAuth 2.0. Mailient acts as an intelligence proxy—we never store your access credentials or build hidden databases of your private content.
@@ -360,143 +348,143 @@ export default function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
             <div className="group relative p-16 bg-zinc-950 border border-white/5 rounded-[3rem] overflow-hidden transition-all duration-700 hover:border-white/20">
-               <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-               <ShieldCheck className="w-14 h-14 mb-10 text-white group-hover:scale-110 transition-transform duration-700" strokeWidth={1} />
-               <h3 className="text-3xl font-black uppercase mb-6 italic tracking-tighter">Zero Trust Architecture</h3>
-               <p className="text-zinc-500 text-lg font-medium leading-relaxed italic">
-                 Your data is processed in isolated volatile memory. Once insights are extracted, the raw content is purged from our intelligence cycle.
-               </p>
+              <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <ShieldCheck className="w-14 h-14 mb-10 text-white group-hover:scale-110 transition-transform duration-700" strokeWidth={1} />
+              <h3 className="text-3xl font-black uppercase mb-6 italic tracking-tighter">Zero Trust Architecture</h3>
+              <p className="text-zinc-500 text-lg font-medium leading-relaxed italic">
+                Your data is processed in isolated volatile memory. Once insights are extracted, the raw content is purged from our intelligence cycle.
+              </p>
             </div>
             <div className="group relative p-16 bg-zinc-950 border border-white/5 rounded-[3rem] overflow-hidden transition-all duration-700 hover:border-white/20">
-               <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-               <Lock className="w-14 h-14 mb-10 text-white group-hover:scale-110 transition-transform duration-700" strokeWidth={1} />
-               <h3 className="text-3xl font-black uppercase mb-6 italic tracking-tighter">Full Permission Control</h3>
-               <p className="text-zinc-500 text-lg font-medium leading-relaxed italic">
-                 You define the perimeter. Disconnect access in one click and wipe all generated intelligence instantly from our systems.
-               </p>
+              <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <Lock className="w-14 h-14 mb-10 text-white group-hover:scale-110 transition-transform duration-700" strokeWidth={1} />
+              <h3 className="text-3xl font-black uppercase mb-6 italic tracking-tighter">Full Permission Control</h3>
+              <p className="text-zinc-500 text-lg font-medium leading-relaxed italic">
+                You define the perimeter. Disconnect access in one click and wipe all generated intelligence instantly from our systems.
+              </p>
             </div>
           </div>
         </div>
-      </section >
+      </section>
 
-    {/* Founder / Architect Section */ }
-    < section className = "py-60 bg-zinc-950/50 relative" >
-      <div className="max-w-[1400px] mx-auto px-12">
-        <div className="flex flex-col items-center">
-          <div className="inline-flex items-center gap-4 mb-20">
-            <div className="w-12 h-[1px] bg-zinc-800" />
-            <h4 className="text-[10px] font-black uppercase tracking-[0.6em] text-zinc-600">The Neural Architect</h4>
-            <div className="w-12 h-[1px] bg-zinc-800" />
-          </div>
-
-          <div className="flex flex-col items-center gap-12">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              className="relative group cursor-pointer"
-            >
-              <div className="absolute -inset-10 bg-white/[0.03] rounded-full blur-3xl group-hover:bg-white/[0.07] transition-all duration-1000" />
-              <div className="relative w-48 h-48 rounded-full border border-white/10 flex items-center justify-center p-3 grayscale group-hover:grayscale-0 transition-all duration-1000">
-                <div className="w-full h-full rounded-full bg-black flex items-center justify-center text-white font-black text-6xl tracking-tighter border border-white/20 shadow-[0_0_60px_rgba(255,255,255,0.05)] overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 to-transparent opacity-50" />
-                  <span className="relative z-10 italic">M</span>
-                </div>
-              </div>
-            </motion.div>
-
-            <div className="text-center">
-              <h3 className="text-5xl font-black uppercase tracking-[-0.05em] mb-4 italic">Maulik</h3>
-              <p className="text-[12px] font-black uppercase tracking-[0.4em] text-zinc-500">Founder & Core Engineer</p>
+      {/* Founder / Architect Section */}
+      <section className="py-60 bg-zinc-950/50 relative">
+        <div className="max-w-[1400px] mx-auto px-12">
+          <div className="flex flex-col items-center">
+            <div className="inline-flex items-center gap-4 mb-20">
+              <div className="w-12 h-[1px] bg-zinc-800" />
+              <h4 className="text-[10px] font-black uppercase tracking-[0.6em] text-zinc-600">The Neural Architect</h4>
+              <div className="w-12 h-[1px] bg-zinc-800" />
             </div>
 
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="max-w-3xl text-center text-zinc-400 font-medium text-2xl leading-relaxed italic border-x border-white/5 px-20 tracking-tight"
-            >
-              "We didn't build Mailient to manage emails. We built it to manage <span className="text-white">velocity</span>. The modern inbox is where most businesses slow down—we're here to make it where you accelerate."
-            </motion.p>
-
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              className="mt-10"
-            >
-              <a
-                href="https://x.com/Maulik_055"
-                target="_blank"
-                className="flex items-center gap-4 px-10 py-4 bg-white text-black text-[10px] font-black uppercase tracking-[0.4em] rounded-full hover:bg-zinc-200 transition-all group"
+            <div className="flex flex-col items-center gap-12">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                className="relative group cursor-pointer"
               >
-                Network with the founder
-                <ArrowUpRight className="w-3.5 h-3.5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-              </a>
-            </motion.div>
-          </div>
-        </div>
-      </div>
-      </section >
+                <div className="absolute -inset-10 bg-white/[0.03] rounded-full blur-3xl group-hover:bg-white/[0.07] transition-all duration-1000" />
+                <div className="relative w-48 h-48 rounded-full border border-white/10 flex items-center justify-center p-3 grayscale group-hover:grayscale-0 transition-all duration-1000">
+                  <div className="w-full h-full rounded-full bg-black flex items-center justify-center text-white font-black text-6xl tracking-tighter border border-white/20 shadow-[0_0_60px_rgba(255,255,255,0.05)] overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 to-transparent opacity-50" />
+                    <span className="relative z-10 italic">M</span>
+                  </div>
+                </div>
+              </motion.div>
 
-    {/* Footer */ }
-    < footer className = "py-24 border-t border-white/[0.03] bg-[#020202]" >
-      <div className="max-w-[1400px] mx-auto px-12">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-24 mb-32">
-          <div className="col-span-2 space-y-10">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-white flex items-center justify-center rounded-sm">
-                <Mail className="w-7 h-7 text-black" strokeWidth={1} />
+              <div className="text-center">
+                <h3 className="text-5xl font-black uppercase tracking-[-0.05em] mb-4 italic">Maulik</h3>
+                <p className="text-[12px] font-black uppercase tracking-[0.4em] text-zinc-500">Founder & Core Engineer</p>
               </div>
-              <span className="font-black tracking-[0.4em] text-2xl uppercase italic">Mailient</span>
+
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="max-w-3xl text-center text-zinc-400 font-medium text-2xl leading-relaxed italic border-x border-white/5 px-20 tracking-tight"
+              >
+                "We didn't build Mailient to manage emails. We built it to manage <span className="text-white">velocity</span>. The modern inbox is where most businesses slow down—we're here to make it where you accelerate."
+              </motion.p>
+
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                className="mt-10"
+              >
+                <a
+                  href="https://x.com/Maulik_055"
+                  target="_blank"
+                  className="flex items-center gap-4 px-10 py-4 bg-white text-black text-[10px] font-black uppercase tracking-[0.4em] rounded-full hover:bg-zinc-200 transition-all group"
+                >
+                  Network with the founder
+                  <ArrowUpRight className="w-3.5 h-3.5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                </a>
+              </motion.div>
             </div>
-            <p className="text-zinc-500 text-lg max-w-sm font-medium leading-relaxed tracking-tight italic">
-              Redefinition of high-performance communication. Built for the elite class of founders and operators.
-            </p>
-          </div>
-
-          <div className="space-y-10">
-            <h4 className="text-[10px] font-black uppercase tracking-[0.5em] text-white">System</h4>
-            <ul className="space-y-5 text-xs font-black uppercase tracking-[0.3em] text-zinc-500">
-              <li><a href="#about" className="hover:text-white transition-all">Intelligence</a></li>
-              <li><a href="/pricing" className="hover:text-white transition-all">Capital Access</a></li>
-              <li><a href="/auth/signin" className="hover:text-white transition-all">Neural Login</a></li>
-            </ul>
-          </div>
-
-          <div className="space-y-10">
-            <h4 className="text-[10px] font-black uppercase tracking-[0.5em] text-white">Protocol</h4>
-            <ul className="space-y-5 text-xs font-black uppercase tracking-[0.3em] text-zinc-500">
-              <li><a href="/privacy-policy" className="hover:text-white transition-all">Privacy Policy</a></li>
-              <li><a href="/terms-of-service" className="hover:text-white transition-all">Service Terms</a></li>
-              <li><a href="/contact" className="hover:text-white transition-all">Secure Contact</a></li>
-            </ul>
           </div>
         </div>
+      </section>
 
-        <div className="flex flex-col md:flex-row items-center justify-between gap-12 pt-16 border-t border-white/5">
-          <div className="flex flex-col gap-4">
-            <p className="text-[9px] font-black uppercase tracking-[0.4em] text-zinc-800">
-              © 2026 Mailient Intelligence Layer. All Rights Reserved.
-            </p>
-            <p className="text-[9px] font-black uppercase tracking-[0.4em] text-zinc-800">
-              Distributed & Encrypted via Arcus Network.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-12">
-            <div className="flex items-center gap-4 grayscale opacity-20 hover:opacity-100 transition-opacity duration-1000 cursor-default">
-              <img src="https://www.google.com/favicon.ico" className="w-5 h-5" alt="Google" />
-              <span className="text-[9px] font-black uppercase tracking-[0.4em] text-zinc-400">Gmail Native Protocol</span>
-            </div>
-            <div className="flex items-center gap-4 grayscale opacity-20 hover:opacity-100 transition-opacity duration-1000 cursor-default">
-              <div className="w-5 h-5 border border-zinc-800 rounded-sm flex items-center justify-center">
-                <Lock className="w-3 h-3" />
+      {/* Footer */}
+      <footer className="py-24 border-t border-white/[0.03] bg-[#020202]">
+        <div className="max-w-[1400px] mx-auto px-12">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-24 mb-32">
+            <div className="col-span-2 space-y-10">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-white flex items-center justify-center rounded-sm">
+                  <Mail className="w-7 h-7 text-black" strokeWidth={1} />
+                </div>
+                <span className="font-black tracking-[0.4em] text-2xl uppercase italic">Mailient</span>
               </div>
-              <span className="text-[9px] font-black uppercase tracking-[0.4em] text-zinc-400">SHA-256 Encrypted</span>
+              <p className="text-zinc-500 text-lg max-w-sm font-medium leading-relaxed tracking-tight italic">
+                Redefinition of high-performance communication. Built for the elite class of founders and operators.
+              </p>
+            </div>
+
+            <div className="space-y-10">
+              <h4 className="text-[10px] font-black uppercase tracking-[0.5em] text-white">System</h4>
+              <ul className="space-y-5 text-xs font-black uppercase tracking-[0.3em] text-zinc-500">
+                <li><a href="#about" className="hover:text-white transition-all">Intelligence</a></li>
+                <li><a href="/pricing" className="hover:text-white transition-all">Capital Access</a></li>
+                <li><a href="/auth/signin" className="hover:text-white transition-all">Neural Login</a></li>
+              </ul>
+            </div>
+
+            <div className="space-y-10">
+              <h4 className="text-[10px] font-black uppercase tracking-[0.5em] text-white">Protocol</h4>
+              <ul className="space-y-5 text-xs font-black uppercase tracking-[0.3em] text-zinc-500">
+                <li><a href="/privacy-policy" className="hover:text-white transition-all">Privacy Policy</a></li>
+                <li><a href="/terms-of-service" className="hover:text-white transition-all">Service Terms</a></li>
+                <li><a href="/contact" className="hover:text-white transition-all">Secure Contact</a></li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="flex flex-col md:flex-row items-center justify-between gap-12 pt-16 border-t border-white/5">
+            <div className="flex flex-col gap-4">
+              <p className="text-[9px] font-black uppercase tracking-[0.4em] text-zinc-800">
+                © 2026 Mailient Intelligence Layer. All Rights Reserved.
+              </p>
+              <p className="text-[9px] font-black uppercase tracking-[0.4em] text-zinc-800">
+                Distributed & Encrypted via Arcus Network.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-12">
+              <div className="flex items-center gap-4 grayscale opacity-20 hover:opacity-100 transition-opacity duration-1000 cursor-default">
+                <img src="https://www.google.com/favicon.ico" className="w-5 h-5" alt="Google" />
+                <span className="text-[9px] font-black uppercase tracking-[0.4em] text-zinc-400">Gmail Native Protocol</span>
+              </div>
+              <div className="flex items-center gap-4 grayscale opacity-20 hover:opacity-100 transition-opacity duration-1000 cursor-default">
+                <div className="w-5 h-5 border border-zinc-800 rounded-sm flex items-center justify-center">
+                  <Lock className="w-3 h-3" />
+                </div>
+                <span className="text-[9px] font-black uppercase tracking-[0.4em] text-zinc-400">SHA-256 Encrypted</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      </footer >
-    </div >
+      </footer>
+    </div>
   );
 }
 
@@ -528,7 +516,6 @@ function FeatureCard({ icon, title, desc, index }) {
         Review Protocol <ChevronRight className="w-3.5 h-3.5" />
       </div>
 
-      {/* Modern Card Accent */}
       <div className="absolute top-0 right-0 w-32 h-32 bg-zinc-100 rounded-bl-[100%] transition-transform duration-1000 translate-x-full group-hover:translate-x-0" />
     </motion.div>
   );
