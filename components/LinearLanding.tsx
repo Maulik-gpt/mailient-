@@ -127,8 +127,12 @@ export function LinearLanding() {
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-8">
                         <div className="flex items-center gap-2 group cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-                            <div className="w-8 h-8 bg-white rounded flex items-center justify-center group-hover:rotate-6 transition-transform">
-                                <Mail className="w-5 h-5 text-black" />
+                            <div className="w-8 h-8 rounded flex items-center justify-center group-hover:rotate-6 transition-transform overflow-hidden relative">
+                                <img
+                                    src="/logo-new.png"
+                                    alt="Mailient Logo"
+                                    className="w-full h-full object-cover"
+                                />
                             </div>
                             <span className="font-bold tracking-tight text-xl">Mailient</span>
                         </div>
