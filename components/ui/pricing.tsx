@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import {
 	Tooltip,
@@ -8,9 +8,9 @@ import {
 	TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
-import { CheckCircleIcon, StarIcon } from 'lucide-react';
+import { ArrowRight, Check, Star } from 'lucide-react';
 import Link from 'next/link';
-import { motion, Transition } from 'framer-motion';
+import { motion, Transition, HTMLMotionProps } from 'framer-motion';
 
 type FREQUENCY = 'monthly' | 'yearly';
 const frequencies: FREQUENCY[] = ['monthly', 'yearly'];
@@ -33,7 +33,7 @@ interface Plan {
 	highlighted?: boolean;
 }
 
-interface PricingSectionProps extends React.ComponentProps<'div'> {
+interface PricingSectionProps extends Omit<HTMLMotionProps<'div'>, 'plans'> {
 	plans: Plan[];
 	heading: string;
 	description?: string;
@@ -45,31 +45,40 @@ export function PricingSection({
 	description,
 	...props
 }: PricingSectionProps) {
-
 	return (
-		<div
+		<motion.div
 			className={cn(
-				'flex w-full flex-col items-center justify-center space-y-5 p-4',
+				'flex w-full flex-col items-center justify-center py-20 px-6',
 				props.className,
 			)}
 			{...props}
 		>
-			<div className="mx-auto max-w-3xl space-y-4 mb-6" style={{ fontFamily: 'Satoshi, sans-serif' }}>
-				<h2 className="text-center text-3xl font-bold tracking-tight md:text-4xl lg:text-5xl">
+			<div className="max-w-4xl mx-auto mb-20 text-center">
+				<motion.div
+					initial={{ opacity: 0, y: 20 }}
+					whileInView={{ opacity: 1, y: 0 }}
+					viewport={{ once: true }}
+					className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.08] mb-8"
+				>
+					<Star className="h-3 w-3 text-white/60" />
+					<span className="text-xs font-bold uppercase tracking-[0.2em] text-white/60">Pricing</span>
+				</motion.div>
+				<h2 className="text-4xl md:text-7xl font-bold tracking-tight mb-8 bg-gradient-to-b from-white to-white/50 bg-clip-text text-transparent">
 					{heading}
 				</h2>
 				{description && (
-					<p className="text-gray-400 text-center text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
+					<p className="text-zinc-500 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
 						{description}
 					</p>
 				)}
 			</div>
-			<div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-6 md:grid-cols-3">
+
+			<div className="mx-auto grid w-full max-w-5xl grid-cols-1 gap-8 md:grid-cols-2">
 				{plans.map((plan) => (
 					<PricingCard plan={plan} key={plan.name} isHighlighted={plan.highlighted} />
 				))}
 			</div>
-		</div>
+		</motion.div>
 	);
 }
 
@@ -86,7 +95,7 @@ export function PricingFrequencyToggle({
 	return null; // Toggle removed entirely
 }
 
-type PricingCardProps = React.ComponentProps<'div'> & {
+type PricingCardProps = Omit<HTMLMotionProps<'div'>, 'plan'> & {
 	plan: Plan;
 	isHighlighted?: boolean;
 };
@@ -98,95 +107,92 @@ export function PricingCard({
 	...props
 }: PricingCardProps) {
 	return (
-		<div
-			key={plan.name}
+		<motion.div
+			initial={{ opacity: 0, y: 20 }}
+			whileInView={{ opacity: 1, y: 0 }}
+			viewport={{ once: true }}
 			className={cn(
-				'relative flex w-full flex-col rounded-2xl border border-white/20 bg-[#1a1a1a] px-6 py-8 mt-8 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:z-10 hover:border-white/40',
-				isHighlighted && 'md:scale-105 md:shadow-2xl md:z-10 hover:scale-110',
+				'relative flex w-full flex-col rounded-[2.5rem] border p-8 md:p-12 transition-all duration-500',
+				isHighlighted
+					? 'bg-white border-white shadow-[0_0_80px_-15px_rgba(255,255,255,0.1)]'
+					: 'bg-zinc-950/50 border-white/5 backdrop-blur-sm',
 				className,
 			)}
 			{...props}
 		>
-			{plan.highlighted && (
-				<BorderTrail
-					style={{
-						boxShadow:
-							'0px 0px 60px 30px rgb(255 255 255 / 50%), 0 0 100px 60px rgb(0 0 0 / 50%), 0 0 140px 90px rgb(0 0 0 / 50%)',
-					}}
-					size={100}
-				/>
-			)}
-			<div
-				className={cn(
-					'bg-transparent p-0 mb-6',
-				)}
-			>
-				<div className="absolute top-2 right-2 z-10 flex items-center gap-2">
+			<div className="mb-10">
+				<div className="flex items-center justify-between mb-8">
+					<span className={cn(
+						'text-xl font-bold tracking-tight',
+						isHighlighted ? 'text-black' : 'text-white'
+					)}>
+						{plan.name}
+					</span>
 					{plan.highlighted && (
-						<p className="bg-zinc-800 text-white flex items-center gap-1 rounded-md border border-white/10 px-2 py-0.5 text-xs">
-							<StarIcon className="h-3 w-3 fill-current" />
+						<div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-black text-white text-[10px] font-black uppercase tracking-widest shadow-xl">
+							<Star className="w-3 h-3 fill-white" />
 							Popular
-						</p>
+						</div>
 					)}
 				</div>
 
-				<div className="text-lg font-medium mb-2">{plan.name}</div>
-				<h3 className="text-3xl font-bold mb-4 flex items-baseline gap-1">
-					<span>
-						{plan.price.monthly === 0 && plan.name === 'Enterprise'
-							? "Let's Talk"
-							: `$${plan.price.monthly}`}
+				<div className="flex items-baseline gap-1 mb-6">
+					<span className={cn(
+						'text-5xl md:text-6xl font-bold tracking-tight',
+						isHighlighted ? 'text-black' : 'text-white'
+					)}>
+						${plan.price.monthly}
 					</span>
-					{plan.name !== 'Free' && plan.name !== 'Enterprise' && (
-						<span className="text-gray-500 text-lg">/month</span>
-					)}
-				</h3>
-				<p className="text-gray-400 text-sm font-normal">{plan.info}</p>
+					<span className={cn(
+						'text-lg font-medium',
+						isHighlighted ? 'text-black/50' : 'text-zinc-500'
+					)}>
+						/month
+					</span>
+				</div>
+
+				<p className={cn(
+					'text-base leading-relaxed max-w-[280px]',
+					isHighlighted ? 'text-black/60' : 'text-zinc-500'
+				)}>
+					{plan.info}
+				</p>
 			</div>
-			<div
-				className={cn(
-					'text-white space-y-4 text-sm flex-1',
-				)}
-			>
+
+			<div className="mb-12">
+				<Button
+					className={cn(
+						'w-full h-14 rounded-2xl text-lg font-bold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]',
+						isHighlighted
+							? 'bg-black text-white hover:bg-zinc-900 border-none shadow-2xl'
+							: 'bg-zinc-900 border border-white/10 text-white hover:bg-zinc-800'
+					)}
+					asChild
+				>
+					<Link href={plan.btn.href} className="flex items-center justify-center gap-2">
+						{plan.btn.text}
+						<ArrowRight className="w-5 h-5" />
+					</Link>
+				</Button>
+			</div>
+
+			<div className="space-y-4 pt-8 border-t border-dashed border-zinc-500/20">
 				{plan.features.map((feature, index) => (
-					<div key={index} className="flex items-center gap-2">
-						<CheckCircleIcon className="text-foreground h-4 w-4" />
-						<TooltipProvider>
-							<Tooltip delayDuration={0}>
-								<TooltipTrigger asChild>
-									<p
-										className={cn(
-											feature.tooltip &&
-											'cursor-pointer border-b border-dashed',
-										)}
-									>
-										{feature.text}
-									</p>
-								</TooltipTrigger>
-								{feature.tooltip && (
-									<TooltipContent>
-										<p>{feature.tooltip}</p>
-									</TooltipContent>
-								)}
-							</Tooltip>
-						</TooltipProvider>
+					<div key={index} className="flex items-center gap-3">
+						<Check className={cn(
+							'w-5 h-5',
+							isHighlighted ? 'text-black' : 'text-zinc-400'
+						)} />
+						<span className={cn(
+							'text-sm font-medium',
+							isHighlighted ? 'text-black/80' : 'text-zinc-400'
+						)}>
+							{feature.text}
+						</span>
 					</div>
 				))}
 			</div>
-			<div
-				className={cn(
-					'mt-auto w-full pt-6',
-				)}
-			>
-				<Button
-					className="w-full"
-					variant={plan.highlighted ? 'default' : 'outline'}
-					asChild
-				>
-					<Link href={plan.btn.href}>{plan.btn.text}</Link>
-				</Button>
-			</div>
-		</div>
+		</motion.div>
 	);
 }
 
@@ -208,12 +214,6 @@ export function BorderTrail({
 	onAnimationComplete,
 	style,
 }: BorderTrailProps) {
-	const BASE_TRANSITION = {
-		repeat: Infinity,
-		duration: 5,
-		ease: 'linear',
-	};
-
 	return (
 		<div className='pointer-events-none absolute inset-0 rounded-[inherit] border border-transparent [mask-clip:padding-box,border-box] [mask-composite:intersect] [mask-image:linear-gradient(transparent,transparent),linear-gradient(#000,#000)]'>
 			<motion.div
@@ -227,9 +227,12 @@ export function BorderTrail({
 					offsetDistance: ['0%', '100%'],
 				}}
 				transition={{
-					...(transition ?? BASE_TRANSITION),
+					repeat: Infinity,
+					duration: 5,
+					ease: "linear" as const,
 					delay: delay,
-				}}
+					...transition
+				} as Transition}
 				onAnimationComplete={onAnimationComplete}
 			/>
 		</div>

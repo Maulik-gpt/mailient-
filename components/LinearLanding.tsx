@@ -62,41 +62,31 @@ const features = [
 const plans = [
     {
         name: "Starter",
-        info: "Perfect for high-output individuals",
-        price: { monthly: 0, yearly: 0 },
+        info: "Ideal for businesses ready to explore AI and intelligent automation",
+        price: { monthly: 7.99, yearly: 7.99 },
         features: [
             { text: "AI Sift Intelligence" },
             { text: "Priority Inbox" },
             { text: "Basic AI Drafts" },
-            { text: "Secure Google OAuth" }
+            { text: "Secure Google OAuth" },
+            { text: "Standard Relationship Tracking" }
         ],
         btn: { text: "Get Started", href: "/auth/signin" }
     },
     {
         name: "Pro",
-        info: "For teams and advanced founders",
-        price: { monthly: 29, yearly: 290 },
+        info: "Built for companies that want to gain an edge with AI-powered automation",
+        price: { monthly: 29.99, yearly: 29.99 },
         features: [
             { text: "Everything in Starter" },
             { text: "Unlimited AI Processing" },
             { text: "Advanced Relationship Tracking" },
             { text: "Custom Neural Voice" },
-            { text: "Priority Support" }
+            { text: "Priority Support" },
+            { text: "Unlimited Draft Replies" }
         ],
-        btn: { text: "Upgrade to Pro", href: "/pricing" },
+        btn: { text: "Get Started", href: "/auth/signin" },
         highlighted: true
-    },
-    {
-        name: "Enterprise",
-        info: "Custom solutions for organizations",
-        price: { monthly: 0, yearly: 0 },
-        features: [
-            { text: "Everything in Pro" },
-            { text: "Dedicated Infrastructure" },
-            { text: "Custom API Integration" },
-            { text: "White-glove Onboarding" }
-        ],
-        btn: { text: "Contact Sales", href: "/contact" }
     }
 ];
 
