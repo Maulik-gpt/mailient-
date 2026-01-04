@@ -359,48 +359,141 @@ export function LinearLanding() {
                     </div>
                 </div>
             </section>
-            {/* Features Section - Detailed Feature Highlights */}
-            <section id="features" className="py-40 px-6 z-10 relative overflow-hidden bg-zinc-950/20">
+            {/* Features Section - Premium Bento Layout */}
+            <section id="features" className="py-40 px-6 z-10 relative overflow-hidden bg-black">
                 <div className="max-w-7xl mx-auto">
                     <div className="flex flex-col items-center mb-24 text-center">
-                        <motion.div
+                        <motion.h2
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
-                            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.08] mb-8"
+                            className="text-4xl md:text-7xl font-bold tracking-tight mb-6"
                         >
-                            <Sparkles className="h-3 w-3 text-zinc-400" />
-                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-white/60">Capabilities</span>
-                        </motion.div>
-
-                        <h2 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">Built for speed.</h2>
-                        <p className="text-zinc-500 max-w-xl mx-auto text-lg leading-relaxed">
-                            Everything you need to handle 1000s of emails without breaking a sweat.
-                        </p>
+                            All features in 1 tool
+                        </motion.h2>
+                        <motion.p
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: 0.1 }}
+                            className="text-zinc-500 max-w-xl mx-auto text-lg leading-relaxed"
+                        >
+                            Discover features that simplify workflows & grow your business.
+                        </motion.p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {/* Placeholder for future specific feature cards */}
-                        {[
-                            { title: "Command Bar", desc: "Interact with your entire inbox using just your keyboard. Fast and fluid.", icon: Command },
-                            { title: "Smart Filters", desc: "Powerful regex and AI-driven filtering to keep your inbox clean.", icon: Filter },
-                            { title: "Instant Search", desc: "Search across all threads in milliseconds with zero lag.", icon: Search },
-                        ].map((item, i) => (
-                            <motion.div
-                                key={i}
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                whileInView={{ opacity: 1, scale: 1 }}
-                                viewport={{ once: true }}
-                                transition={{ delay: i * 0.1 }}
-                                className="p-8 rounded-2xl border border-white/5 bg-zinc-900/30 hover:bg-zinc-900/50 transition-all border-glow"
-                            >
-                                <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center mb-6">
-                                    <item.icon className="w-6 h-6 text-zinc-400" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+                        {/* Arcus - Large Card */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 30 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            className="md:col-span-1 group relative h-[400px] rounded-3xl border border-white/5 bg-zinc-950/50 backdrop-blur-sm overflow-hidden flex flex-col md:flex-row shadow-2xl hover:border-white/10 transition-colors"
+                        >
+                            <div className="flex-1 p-8 flex flex-col justify-center">
+                                <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center mb-6 border border-white/10">
+                                    <Cpu className="w-5 h-5 text-white" />
                                 </div>
-                                <h3 className="text-xl font-bold mb-3">{item.title}</h3>
-                                <p className="text-zinc-500 text-sm leading-relaxed">{item.desc}</p>
-                            </motion.div>
-                        ))}
+                                <h3 className="text-2xl font-bold mb-4">Arcus</h3>
+                                <p className="text-zinc-500 text-sm leading-relaxed">
+                                    Command-driven AI that understands context and executes complex tasks with intelligent reasoning. Arcus transforms your email workflow into an intuitive, conversational experience.
+                                </p>
+                            </div>
+                            <div className="flex-1 bg-gradient-to-br from-white/5 to-transparent relative p-12 overflow-hidden hidden lg:flex items-center justify-center">
+                                <div className="w-48 h-48 rounded-full border border-white/10 flex items-center justify-center relative">
+                                    <motion.div
+                                        animate={{ rotate: 360 }}
+                                        transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                                        className="absolute inset-2 border-t border-white/20 rounded-full"
+                                    />
+                                    <Bot className="w-16 h-16 text-white/20" />
+                                </div>
+                            </div>
+                        </motion.div>
+
+                        {/* Mailient Sift */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 30 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: 0.1 }}
+                            className="group h-[400px] p-8 rounded-3xl border border-white/5 bg-zinc-950/50 backdrop-blur-sm shadow-2xl overflow-hidden flex flex-col justify-center relative hover:border-white/10 transition-colors"
+                        >
+                            <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center mb-6 border border-white/10">
+                                <Activity className="w-5 h-5 text-white" />
+                            </div>
+                            <h3 className="text-2xl font-bold mb-4">Mailient Sift</h3>
+                            <p className="text-zinc-500 text-sm leading-relaxed max-w-sm">
+                                Start intelligence analysis and let the AI distribute your emails to smart insights like Opportunities, Urgent and Follow-ups followed by one-click smart actions.
+                            </p>
+
+                            {/* Visual background */}
+                            <div className="absolute right-[-20px] bottom-[-20px] w-48 h-48 bg-white/[0.02] rounded-full blur-3xl pointer-events-none" />
+                        </motion.div>
+
+                        {/* Notes */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 30 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: 0.2 }}
+                            className="group h-[400px] p-8 rounded-3xl border border-white/5 bg-zinc-950/50 backdrop-blur-sm shadow-2xl overflow-hidden flex flex-col justify-center relative hover:border-white/10 transition-colors"
+                        >
+                            <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center mb-6 border border-white/10">
+                                <Layers className="w-5 h-5 text-white" />
+                            </div>
+                            <h3 className="text-2xl font-bold mb-4">Notes</h3>
+                            <p className="text-zinc-500 text-sm leading-relaxed max-w-sm">
+                                Add AI-assisted notes, share them as text or image with your team seamlessly. You don't have to miss important stuff now!
+                            </p>
+                            <div className="absolute top-1/2 right-12 -translate-y-1/2 w-32 h-40 bg-white/5 border border-white/10 rounded-lg rotate-6 opacity-40 group-hover:rotate-12 transition-transform hidden lg:block" />
+                        </motion.div>
+
+                        {/* Traditional Inbox */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 30 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: 0.3 }}
+                            className="group relative h-[400px] rounded-3xl border border-white/5 bg-zinc-950/50 backdrop-blur-sm overflow-hidden flex flex-col md:flex-row shadow-2xl hover:border-white/10 transition-colors"
+                        >
+                            <div className="absolute inset-0 bg-white/[0.01] pointer-events-none" />
+                            <div className="flex-1 bg-gradient-to-tl from-white/5 to-transparent relative p-8 lg:flex items-center justify-center hidden">
+                                <div className="w-full max-w-[200px] space-y-3">
+                                    {[1, 2, 3].map(i => (
+                                        <div key={i} className="h-10 bg-white/5 rounded-lg border border-white/5 flex items-center px-3">
+                                            <div className="w-4 h-4 rounded-full bg-white/10 mr-2" />
+                                            <div className="h-2 w-20 bg-white/10 rounded-full" />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="flex-1 p-8 flex flex-col justify-center">
+                                <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center mb-6 border border-white/10">
+                                    <Inbox className="w-5 h-5 text-white" />
+                                </div>
+                                <h3 className="text-2xl font-bold mb-4">Traditional Inbox</h3>
+                                <p className="text-zinc-500 text-sm leading-relaxed">
+                                    Inbox in a traditional way so you don't lose the record of your emails. Ask AI button in every email connected with Arcus intelligence.
+                                </p>
+                            </div>
+                        </motion.div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row justify-center gap-4 mt-20">
+                        <Button
+                            onClick={() => signIn('google')}
+                            className="bg-white text-black hover:bg-zinc-200 rounded-full px-12 py-7 text-lg font-bold shadow-2xl group"
+                        >
+                            Get Started
+                            <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="border-white/10 bg-white/5 text-white hover:bg-white/10 rounded-full px-12 py-7 text-lg font-bold backdrop-blur-sm"
+                        >
+                            See Our Services
+                        </Button>
                     </div>
                 </div>
             </section>
