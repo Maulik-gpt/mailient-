@@ -46,6 +46,8 @@ export default function HomeFeed() {
                 console.log('✅ Subscription activated locally');
                 localStorage.removeItem('pending_plan');
                 localStorage.removeItem('pending_plan_timestamp');
+                // Set this IMMEDIATELY to prevent the onboarding check from failing
+                localStorage.setItem('onboarding_completed', 'true');
               }
             } else {
               localStorage.removeItem('pending_plan');
@@ -53,13 +55,14 @@ export default function HomeFeed() {
             }
           }
 
-          // If we are already marked as done in localStorage, don't even call the API
-          if (isDone) {
-            console.log('✨ Onboarding marked as complete in session storage. Skipping check.');
+          // Then check onboarding status from server
+          // If we JUST activated above, this might still hit a replica lag, 
+          // but the localStorage check at the top of the function handles it.
+          // However, we check again here just to be sure.
+          if (localStorage.getItem('onboarding_completed') === 'true') {
             return;
           }
 
-          // Then check onboarding status from server
           const response = await fetch("/api/onboarding/status");
           if (response.ok) {
             const data = await response.json();

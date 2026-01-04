@@ -73,6 +73,18 @@ export async function POST(request) {
             whopMembershipId
         );
 
+        // Fail-safe: Mark onboarding as completed in the profile when a subscription is activated
+        try {
+            const db = new DatabaseService();
+            await db.supabase
+                .from('user_profiles')
+                .update({ onboarding_completed: true })
+                .eq('user_id', userId);
+            console.log(`✅ Onboarding auto-completed for ${userId} during activation`);
+        } catch (profileError) {
+            console.error('Error updating profile during activation:', profileError);
+        }
+
         return NextResponse.json({
             success: true,
             message: `${PLANS[planType].name} plan activated successfully!`,

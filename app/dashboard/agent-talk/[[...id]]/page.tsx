@@ -29,12 +29,21 @@ export default function AgentTalkPage({ params }: { params: { id?: string[] } })
 
                 // Check onboarding status
                 try {
+                    // IMMEDIATE CHECK: If localStorage says we are done, don't redirect
+                    if (localStorage.getItem('onboarding_completed') === 'true') {
+                        setIsAuthenticated(true);
+                        return;
+                    }
+
                     const response = await fetch('/api/onboarding/status');
                     if (response.ok) {
                         const data = await response.json();
                         if (!data.completed) {
                             router.push('/onboarding');
                             return;
+                        } else {
+                            // Cache it
+                            localStorage.setItem('onboarding_completed', 'true');
                         }
                     }
                 } catch (error) {

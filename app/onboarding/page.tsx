@@ -22,11 +22,18 @@ export default function OnboardingPage() {
     if (status === "authenticated" && session?.user?.email) {
       const checkOnboardingStatus = async () => {
         try {
+          // Check local storage first for instant redirection
+          if (localStorage.getItem('onboarding_completed') === 'true') {
+            router.push("/home-feed");
+            return;
+          }
+
           const response = await fetch("/api/onboarding/status");
           if (response.ok) {
             const data = await response.json();
             if (data.completed) {
-              // Already completed onboarding, redirect to home feed
+              // Already completed onboarding, cache it and redirect
+              localStorage.setItem('onboarding_completed', 'true');
               router.push("/home-feed");
             }
           }
