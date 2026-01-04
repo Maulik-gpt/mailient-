@@ -26,7 +26,8 @@ import {
     Star,
     Plus,
     Inbox,
-    Filter
+    Filter,
+    ChevronDown
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -631,21 +632,38 @@ export function LinearLanding() {
             </section>
 
             {/* FAQ Section */}
-            <section className="py-32 px-6 z-10 relative">
-                <div className="max-w-3xl mx-auto">
-                    <h2 className="text-4xl md:text-6xl font-bold mb-16 text-center tracking-tighter">Common Inquiries</h2>
-                    <div className="space-y-4">
+            <section id="faq" className="py-40 px-6 z-10 relative bg-black">
+                <div className="max-w-4xl mx-auto">
+                    <div className="flex flex-col items-center mb-20 text-center">
+                        <div className="px-4 py-1.5 rounded-full border border-white/10 bg-white/5 mb-8">
+                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-white/80">FAQ</span>
+                        </div>
+                        <h2 className="text-4xl md:text-7xl font-bold mb-6 tracking-tighter">Frequently asked questions</h2>
+                        <p className="text-zinc-500 text-lg max-w-2xl">
+                            Everything you need to know about Mailient. Can't find what you're looking for? <a href="mailto:support@mailient.com" className="text-white font-bold hover:underline">Contact us</a>.
+                        </p>
+                    </div>
+
+                    <div className="space-y-4 max-w-5xl mx-auto">
                         <FAQItem
-                            question="How is my data stored?"
-                            answer="We don't store your raw email content. Mailient processes metadata and content in real-time to generate insights and drafts, which are stored in encrypted form for your session only."
+                            question="How does the 14-day free trial work?"
+                            answer="Start using Mailient immediately with full access to all features. No credit card required to start. At the end of your trial, simply choose a plan that fits your needs."
                         />
                         <FAQItem
-                            question="Does the AI really sound like me?"
-                            answer="Yes. Arcus AI analyzes your past sent emails (with your permission) to build a style profile that matches your tone, brevity, and formatting."
+                            question="Can I change my plan later?"
+                            answer="Absolutely! You can upgrade or downgrade your plan at any time. Changes take effect immediately, and we'll prorate the difference."
                         />
                         <FAQItem
-                            question="Can I cancel any time?"
-                            answer="Absolutely. You can disconnect your Google account and cancel your subscription in one click from the dashboard."
+                            question="What happens to my data if I cancel?"
+                            answer="Your data remains accessible for 30 days after cancellation. You can export everything during this period. After that, data is securely deleted per our privacy policy."
+                        />
+                        <FAQItem
+                            question="Is my email data secure?"
+                            answer="Yes, security is our top priority. We use end-to-end encryption, are SOC 2 compliant, and never share your data with third parties. Your emails are processed securely and never stored longer than necessary."
+                        />
+                        <FAQItem
+                            question="Do you offer refunds?"
+                            answer="Yes, we offer a 30-day money-back guarantee on all paid plans. If you're not satisfied, contact our support team for a full refund."
                         />
                     </div>
                 </div>
@@ -701,23 +719,32 @@ function SecurityCard({ icon, title, desc }: { icon: React.ReactNode, title: str
 function FAQItem({ question, answer }: { question: string, answer: string }) {
     const [isOpen, setIsOpen] = useState(false);
     return (
-        <div className="border border-white/5 rounded-2xl bg-white/[0.02] overflow-hidden">
+        <div
+            className={`border rounded-2xl transition-all duration-300 ${isOpen ? 'bg-zinc-900/40 border-white/10' : 'bg-transparent border-white/5 hover:border-white/10'}`}
+        >
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="w-full p-6 text-left flex items-center justify-between hover:bg-white/5 transition-colors"
+                className="w-full p-6 text-left flex items-center justify-between group"
             >
-                <span className="font-bold">{question}</span>
-                <Plus className={`w-5 h-5 transition-transform duration-300 ${isOpen ? 'rotate-45' : ''}`} />
+                <span className={`text-lg font-bold transition-colors ${isOpen ? 'text-white' : 'text-zinc-200'}`}>
+                    {question}
+                </span>
+                <div className={`p-1 rounded-full transition-colors ${isOpen ? 'bg-white/10' : 'bg-transparent'}`}>
+                    <ChevronDown className={`w-5 h-5 text-zinc-400 transition-transform duration-500 ease-in-out ${isOpen ? 'rotate-180 text-white' : ''}`} />
+                </div>
             </button>
-            <AnimatePresence>
+            <AnimatePresence initial={false}>
                 {isOpen && (
                     <motion.div
+                        key="content"
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: "auto", opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
-                        className="px-6 pb-6 text-zinc-500 text-sm leading-relaxed"
+                        transition={{ duration: 0.4, ease: [0.04, 0.62, 0.23, 0.98] }}
                     >
-                        <p>{answer}</p>
+                        <div className="px-6 pb-6 text-zinc-400 text-base leading-relaxed max-w-4xl">
+                            {answer}
+                        </div>
                     </motion.div>
                 )}
             </AnimatePresence>
