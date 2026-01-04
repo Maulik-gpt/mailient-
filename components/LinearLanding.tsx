@@ -733,24 +733,24 @@ export function LinearLanding() {
 
                     <div className="space-y-4 max-w-5xl mx-auto">
                         <FAQItem
-                            question="How does the 14-day free trial work?"
-                            answer="Start using Mailient immediately with full access to all features. No credit card required to start. At the end of your trial, simply choose a plan that fits your needs."
+                            question="Is Mailient compatible with any email provider?"
+                            answer="Currently, Mailient is optimized for Gmail and Google Workspace. We focus on providing the deepest possible integration with Google's API to ensure real-time sync and high security."
                         />
                         <FAQItem
                             question="Can I change my plan later?"
                             answer="Absolutely! You can upgrade or downgrade your plan at any time. Changes take effect immediately, and we'll prorate the difference."
                         />
                         <FAQItem
-                            question="What happens to my data if I cancel?"
-                            answer="Your data remains accessible for 30 days after cancellation. You can export everything during this period. After that, data is securely deleted per our privacy policy."
+                            question="Is my data used to train public AI models?"
+                            answer="No. Your email data is strictly private and is never used to train public LLMs. We use isolated inference to ensure your business intelligence stays within your secure workspace."
                         />
                         <FAQItem
                             question="Is my email data secure?"
                             answer="Yes, security is our top priority. We use end-to-end encryption, are SOC 2 compliant, and never share your data with third parties. Your emails are processed securely and never stored longer than necessary."
                         />
                         <FAQItem
-                            question="Do you offer refunds?"
-                            answer="Yes, we offer a 30-day money-back guarantee on all paid plans. If you're not satisfied, contact our support team for a full refund."
+                            question="How does AI drafting match my unique voice?"
+                            answer="The AI analyzes your previous outgoing threads to learn your tone, signature style, and typical responses. Over time, it drafts replies that are indistinguishable from your own writing."
                         />
                     </div>
                 </div>
