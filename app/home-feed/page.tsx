@@ -139,12 +139,14 @@ export default function HomeFeed() {
         confetti({
           ...defaults,
           particleCount,
-          origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
+          origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+          colors: ['#ffffff', '#e4e4e7', '#a1a1aa', '#52525b', '#000000']
         });
         confetti({
           ...defaults,
           particleCount,
-          origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
+          origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+          colors: ['#ffffff', '#e4e4e7', '#a1a1aa', '#52525b', '#000000']
         });
       }, 250);
 
