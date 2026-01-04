@@ -25,6 +25,12 @@ export default function HomeFeed() {
           // This prevents the "flash and redirect" when returning from Whop
           const isDone = localStorage.getItem('onboarding_completed') === 'true';
 
+          // If we're already marked as completed, skip all checks
+          if (isDone) {
+            console.log('✅ [HomeFeed] Already completed (localStorage), skipping checks');
+            return;
+          }
+
           // First, check if there's a pending plan that needs activation (user returned from Whop)
           const pendingPlan = localStorage.getItem('pending_plan');
           const pendingTimestamp = localStorage.getItem('pending_plan_timestamp');
@@ -48,6 +54,7 @@ export default function HomeFeed() {
                 localStorage.removeItem('pending_plan_timestamp');
                 // Set this IMMEDIATELY to prevent the onboarding check from failing
                 localStorage.setItem('onboarding_completed', 'true');
+                return; // Skip further checks since we just activated
               }
             } else {
               localStorage.removeItem('pending_plan');
@@ -55,27 +62,42 @@ export default function HomeFeed() {
             }
           }
 
-          // Then check onboarding status from server
-          // If we JUST activated above, this might still hit a replica lag, 
-          // but the localStorage check at the top of the function handles it.
-          // However, we check again here just to be sure.
-          if (localStorage.getItem('onboarding_completed') === 'true') {
-            return;
-          }
-
+          // Check onboarding status from server with retry logic
           console.log('📡 [HomeFeed] Checking server-side onboarding status...');
-          const response = await fetch("/api/onboarding/status");
-          if (response.ok) {
-            const data = await response.json();
-            console.log('📡 [HomeFeed] Server status:', data);
-            if (!data.completed) {
-              console.log('🚫 [HomeFeed] User NOT completed, redirecting to /onboarding');
-              router.push("/onboarding");
-            } else {
-              // Cache it if it was true on server
-              console.log('✅ [HomeFeed] User is completed');
-              localStorage.setItem('onboarding_completed', 'true');
+
+          // Try multiple times with exponential backoff to handle database replication delays
+          const maxRetries = 3;
+          let retryCount = 0;
+          let serverCompleted = false;
+
+          while (retryCount < maxRetries && !serverCompleted) {
+            try {
+              const response = await fetch("/api/onboarding/status");
+              if (response.ok) {
+                const data = await response.json();
+                console.log('📡 [HomeFeed] Server status:', data);
+
+                if (data.completed) {
+                  serverCompleted = true;
+                  console.log('✅ [HomeFeed] User is completed');
+                  localStorage.setItem('onboarding_completed', 'true');
+                } else {
+                  console.log('🚫 [HomeFeed] User NOT completed, redirecting to /onboarding');
+                  router.push("/onboarding");
+                  return;
+                }
+              } else {
+                console.error('❌ [HomeFeed] Status API failed:', response.status);
+              }
+            } catch (error) {
+              console.error(`⚠️ [HomeFeed] Status check failed (attempt ${retryCount + 1}):`, error);
+              if (retryCount < maxRetries - 1) {
+                // Exponential backoff: 500ms, 1000ms, 2000ms
+                const delay = Math.pow(2, retryCount) * 500;
+                await new Promise(resolve => setTimeout(resolve, delay));
+              }
             }
+            retryCount++;
           }
         } catch (error) {
           console.error("Error in home-feed init:", error);

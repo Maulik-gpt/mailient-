@@ -36,20 +36,40 @@ export default function OnboardingPage() {
           }
 
           console.log('📡 [Onboarding] Fetching status from server...');
-          const response = await fetch("/api/onboarding/status");
-          if (response.ok) {
-            const data = await response.json();
-            console.log('📡 [Onboarding] Server response:', data);
-            if (data.completed) {
-              // Already completed onboarding, cache it and redirect
-              console.log('🚀 [Onboarding] Redirecting to /home-feed (server)');
-              localStorage.setItem('onboarding_completed', 'true');
-              router.push("/home-feed");
-            } else {
-              console.log('⏳ [Onboarding] Staying here: Onboarding is NOT complete');
+
+          // Try multiple times with exponential backoff to handle database replication delays
+          const maxRetries = 3;
+          let retryCount = 0;
+          let serverCompleted = false;
+
+          while (retryCount < maxRetries && !serverCompleted) {
+            try {
+              const response = await fetch("/api/onboarding/status");
+              if (response.ok) {
+                const data = await response.json();
+                console.log('📡 [Onboarding] Server response:', data);
+
+                if (data.completed) {
+                  serverCompleted = true;
+                  // Already completed onboarding, cache it and redirect
+                  console.log('🚀 [Onboarding] Redirecting to /home-feed (server)');
+                  localStorage.setItem('onboarding_completed', 'true');
+                  router.push("/home-feed");
+                } else {
+                  console.log('⏳ [Onboarding] Staying here: Onboarding is NOT complete');
+                }
+              } else {
+                console.error('❌ [Onboarding] Status API failed:', response.status);
+              }
+            } catch (error) {
+              console.error(`⚠️ [Onboarding] Status check failed (attempt ${retryCount + 1}):`, error);
+              if (retryCount < maxRetries - 1) {
+                // Exponential backoff: 500ms, 1000ms, 2000ms
+                const delay = Math.pow(2, retryCount) * 500;
+                await new Promise(resolve => setTimeout(resolve, delay));
+              }
             }
-          } else {
-            console.error('❌ [Onboarding] Status API failed:', response.status);
+            retryCount++;
           }
         } catch (error) {
           console.error("❌ [Onboarding] Error checking status:", error);

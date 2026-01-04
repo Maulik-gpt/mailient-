@@ -53,10 +53,14 @@ export async function GET() {
         // If they have any valid subscription status or plan, they are done
         if (subscription.status === 'active' || (subscription.plan_type && subscription.plan_type !== 'none')) {
           console.log(`✅ Status: Completed (active subscription found)`);
-          await db.supabase
-            .from('user_profiles')
-            .update({ onboarding_completed: true })
-            .eq('id', profile.id);
+
+          // Only update if not already completed to avoid race conditions
+          if (!profile?.onboarding_completed) {
+            await db.supabase
+              .from('user_profiles')
+              .update({ onboarding_completed: true })
+              .eq('id', profile.id);
+          }
 
           return NextResponse.json({
             completed: true,
@@ -68,6 +72,44 @@ export async function GET() {
       }
     } catch (subError) {
       console.log('⚠️ Subscription check skipped:', subError);
+    }
+
+    // 5. FINAL FALLBACK: Check if user has been recently created (within last hour)
+    // This handles the case where database replication might cause delays
+    try {
+      if (profile?.created_at) {
+        const createdAt = new Date(profile.created_at);
+        const oneHourAgo = new Date(Date.now() - (60 * 60 * 1000));
+
+        if (createdAt > oneHourAgo) {
+          console.log(`🕒 Profile recently created (${createdAt}), assuming onboarding completion`);
+
+          // Check if they have any subscription record at all
+          const { data: anySubscription } = await db.supabase
+            .from('user_subscriptions')
+            .select('id')
+            .ilike('user_id', userEmail)
+            .maybeSingle();
+
+          if (anySubscription) {
+            console.log(`✅ Status: Completed (recent profile with subscription record)`);
+
+            if (!profile?.onboarding_completed) {
+              await db.supabase
+                .from('user_profiles')
+                .update({ onboarding_completed: true })
+                .eq('id', profile.id);
+            }
+
+            return NextResponse.json({
+              completed: true,
+              note: 'Auto-completed from recent profile with subscription'
+            });
+          }
+        }
+      }
+    } catch (recentError) {
+      console.log('⚠️ Recent profile check skipped:', recentError);
     }
 
     console.log(`❌ Status: NOT COMPLETED`);
