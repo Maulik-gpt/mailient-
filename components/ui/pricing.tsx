@@ -98,6 +98,7 @@ export function PricingFrequencyToggle({
 type PricingCardProps = Omit<HTMLMotionProps<'div'>, 'plan'> & {
 	plan: Plan;
 	isHighlighted?: boolean;
+	onPlanSelect?: () => void;
 };
 
 export function PricingCard({
@@ -160,20 +161,37 @@ export function PricingCard({
 			</div>
 
 			<div className="mb-12">
-				<Button
-					className={cn(
-						'w-full h-14 rounded-2xl text-lg font-bold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]',
-						isHighlighted
-							? 'bg-black text-white hover:bg-zinc-900 border-none shadow-2xl'
-							: 'bg-zinc-900 border border-white/10 text-white hover:bg-zinc-800'
-					)}
-					asChild
-				>
-					<Link href={plan.btn.href} className="flex items-center justify-center gap-2">
-						{plan.btn.text}
-						<ArrowRight className="w-5 h-5" />
-					</Link>
-				</Button>
+				{props.onPlanSelect ? (
+					<Button
+						className={cn(
+							'w-full h-14 rounded-2xl text-lg font-bold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]',
+							isHighlighted
+								? 'bg-black text-white hover:bg-zinc-900 border-none shadow-2xl'
+								: 'bg-zinc-900 border border-white/10 text-white hover:bg-zinc-800'
+						)}
+						onClick={props.onPlanSelect}
+					>
+						<div className="flex items-center justify-center gap-2">
+							{plan.btn.text}
+							<ArrowRight className="w-5 h-5" />
+						</div>
+					</Button>
+				) : (
+					<Button
+						className={cn(
+							'w-full h-14 rounded-2xl text-lg font-bold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]',
+							isHighlighted
+								? 'bg-black text-white hover:bg-zinc-900 border-none shadow-2xl'
+								: 'bg-zinc-900 border border-white/10 text-white hover:bg-zinc-800'
+						)}
+						asChild
+					>
+						<Link href={plan.btn.href} className="flex items-center justify-center gap-2">
+							{plan.btn.text}
+							<ArrowRight className="w-5 h-5" />
+						</Link>
+					</Button>
+				)}
 			</div>
 
 			<div className="space-y-4 pt-8 border-t border-dashed border-zinc-500/20">

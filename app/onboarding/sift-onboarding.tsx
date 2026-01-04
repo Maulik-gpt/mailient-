@@ -710,11 +710,12 @@ export default function SiftOnboardingPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {plans.map(plan => (
-                <div key={plan.name} onClick={() => !isSubmitting && handleSelectPlan(plan.name.toLowerCase())} className="cursor-pointer">
+                <div key={plan.name}>
                   <PricingCard
                     plan={plan as any}
                     isHighlighted={plan.highlighted}
                     className={cn(isSubmitting && selectedPlan === plan.name.toLowerCase() && "opacity-50 pointer-events-none")}
+                    onPlanSelect={() => !isSubmitting && handleSelectPlan(plan.name.toLowerCase())}
                   />
                   {isSubmitting && selectedPlan === plan.name.toLowerCase() && (
                     <div className="mt-4 flex justify-center">
