@@ -628,8 +628,8 @@ export function LinearLanding() {
                     />
                     <SecurityCard
                         icon={<Globe className="w-10 h-10" />}
-                        title="Global Privacy"
-                        desc="GDPR compliant architecture by design. You own your intelligence."
+                        title="AES-256"
+                        desc="All data is encrypted using AES-256 encryption. You are able to on it in Settings. "
                     />
                 </div>
             </section>
