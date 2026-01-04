@@ -13,16 +13,20 @@ import {
     Search,
     Command,
     Sparkles,
-    Inbox,
-    Filter,
+    Check,
+    ShieldCheck,
+    Lock,
+    Globe,
+    BarChart3,
+    Activity,
+    Cpu,
+    RefreshCw,
     Bot,
     Layers,
     Star,
     Plus,
-    Check,
-    ShieldCheck,
-    Lock,
-    Globe
+    Inbox,
+    Filter
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -125,8 +129,8 @@ export function LinearLanding() {
 
             {/* Navigation */}
             <nav className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 ease-in-out ${scrolled
-                    ? 'w-[95%] md:w-[80%] max-w-5xl rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_0_rgba(255,255,255,0.05)] py-3 px-6'
-                    : 'w-[95%] md:w-full max-w-7xl bg-transparent py-6 px-6'
+                ? 'w-[95%] md:w-[80%] max-w-5xl rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_0_rgba(255,255,255,0.05)] py-3 px-6'
+                : 'w-[95%] md:w-full max-w-7xl bg-transparent py-6 px-6'
                 }`}>
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-8">
@@ -216,26 +220,141 @@ export function LinearLanding() {
                 </div>
             </HeroGeometric>
 
-            {/* Features Grid */}
-            <section id="features" className="py-32 px-6 z-10 relative">
+            {/* Features Section - Premium Bento Layout */}
+            <section id="features" className="py-40 px-6 z-10 relative overflow-hidden bg-black">
                 <div className="max-w-7xl mx-auto">
-                    <div className="mb-24 text-center">
-                        <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">Built for focus.</h2>
-                        <p className="text-zinc-500 max-w-xl mx-auto text-lg leading-relaxed">
-                            We've rethought email from the ground up for high-output founders.
-                        </p>
+                    <div className="flex flex-col items-center mb-24 text-center">
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.08] mb-8"
+                        >
+                            <Star className="h-3 w-3 fill-white/80" />
+                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-white/60">Benefits</span>
+                        </motion.div>
+
+                        <motion.h2
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: 0.1 }}
+                            className="text-4xl md:text-6xl font-bold tracking-tight mb-6"
+                        >
+                            The Mailient Advantage
+                        </motion.h2>
+                        <motion.p
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: 0.2 }}
+                            className="text-zinc-500 max-w-xl mx-auto text-lg leading-relaxed"
+                        >
+                            Intelligence that understands your business. Built for high-performance founders.
+                        </motion.p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        {features.map((feature, idx) => (
-                            <div key={idx} className="p-8 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] transition-all group shadow-[0_4px_20px_-10px_rgba(255,255,255,0.05)] hover:shadow-[0_4px_30px_-10px_rgba(255,255,255,0.1)]">
-                                <div className={`mb-6 p-4 rounded-xl bg-white/5 w-fit group-hover:scale-110 transition-transform ${feature.color}`}>
-                                    <feature.icon className="w-6 h-6" />
+                        {/* Feature Card 1: Signal Intelligence */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 40 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            className="group relative h-[450px] p-8 rounded-3xl border border-white/5 bg-zinc-950 flex flex-col items-center text-center overflow-hidden shadow-[0_0_40px_-15px_rgba(255,255,255,0.05)]"
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
+
+                            {/* Visual: Radar/Scanner */}
+                            <div className="h-48 w-full flex items-center justify-center mb-8">
+                                <div className="relative w-40 h-40 rounded-full border border-white/10 flex items-center justify-center">
+                                    <motion.div
+                                        animate={{ rotate: 360 }}
+                                        transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                                        className="absolute inset-0 border-t-2 border-white/20 rounded-full"
+                                    />
+                                    <div className="w-2 h-2 bg-white rounded-full shadow-[0_0_15px_white]" />
+                                    <div className="absolute top-10 left-10 w-1 h-1 bg-white/40 rounded-full" />
+                                    <div className="absolute bottom-12 right-8 w-1 h-1 bg-white/60 rounded-full" />
                                 </div>
-                                <h3 className="text-xl font-bold mb-4">{feature.title}</h3>
-                                <p className="text-zinc-500 text-sm leading-relaxed">{feature.description}</p>
                             </div>
-                        ))}
+
+                            <h3 className="text-2xl font-bold mb-4">Signal Intelligence</h3>
+                            <p className="text-zinc-500 text-sm leading-relaxed max-w-[240px]">
+                                Stay ahead with accurate, real-time revenue and priority tracking across every thread.
+                            </p>
+                        </motion.div>
+
+                        {/* Feature Card 2: AI Driven Growth */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 40 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: 0.1 }}
+                            className="group relative h-[450px] p-8 rounded-3xl border border-white/5 bg-zinc-950 flex flex-col items-center text-center overflow-hidden shadow-[0_0_40px_-15px_rgba(255,255,255,0.05)]"
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
+
+                            {/* Visual: Growth Bars */}
+                            <div className="h-48 w-full flex items-end justify-center gap-3 mb-8 px-4">
+                                {[0.4, 0.7, 1.0, 0.6, 0.8].map((val, i) => (
+                                    <div key={i} className="relative w-full bg-white/5 rounded-t-lg overflow-hidden flex flex-col justify-end h-full">
+                                        <motion.div
+                                            initial={{ height: 0 }}
+                                            whileInView={{ height: `${val * 100}%` }}
+                                            viewport={{ once: true }}
+                                            transition={{ duration: 1, delay: 0.5 + (i * 0.1) }}
+                                            className="w-full bg-white/10"
+                                        />
+                                        {i === 2 && (
+                                            <div className="absolute -top-1 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-white rounded text-[10px] text-black font-bold whitespace-nowrap">
+                                                80% Automated
+                                            </div>
+                                        )}
+                                        {i === 4 && (
+                                            <div className="absolute -top-1 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-zinc-800 rounded text-[10px] text-white font-bold whitespace-nowrap">
+                                                10% Cost
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+
+                            <h3 className="text-2xl font-bold mb-4">AI-Driven Growth</h3>
+                            <p className="text-zinc-500 text-sm leading-relaxed max-w-[240px]">
+                                Make smarter moves with accurate, real-time business insights and automated sifting.
+                            </p>
+                        </motion.div>
+
+                        {/* Feature Card 3: Neural Sync */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 40 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: 0.2 }}
+                            className="group relative h-[450px] p-8 rounded-3xl border border-white/5 bg-zinc-950 flex flex-col items-center text-center overflow-hidden shadow-[0_0_40px_-15px_rgba(255,255,255,0.05)]"
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
+
+                            {/* Visual: Neural Orbit */}
+                            <div className="h-48 w-full flex items-center justify-center mb-8">
+                                <div className="relative w-32 h-32 flex items-center justify-center">
+                                    <div className="absolute inset-0 rounded-full border border-white/10" />
+                                    <div className="absolute inset-[-20px] rounded-full border border-dashed border-white/5 animate-spin-slow" />
+                                    <motion.div
+                                        animate={{ scale: [1, 1.1, 1] }}
+                                        transition={{ duration: 2, repeat: Infinity }}
+                                        className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.2)]"
+                                    >
+                                        <RefreshCw className="w-8 h-8 text-black" />
+                                    </motion.div>
+                                </div>
+                            </div>
+
+                            <h3 className="text-2xl font-bold mb-4">Sync in real time</h3>
+                            <p className="text-zinc-500 text-sm leading-relaxed max-w-[240px]">
+                                Connect with your threads instantly to track progress and generate context-aware updates.
+                            </p>
+                        </motion.div>
                     </div>
                 </div>
             </section>
