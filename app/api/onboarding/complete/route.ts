@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
+// @ts-ignore
 import { auth } from "@/lib/auth";
 import { DatabaseService } from "@/lib/supabase";
 
 export async function POST(request: Request) {
   try {
+    // @ts-ignore
     const session = await auth();
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -16,6 +18,8 @@ export async function POST(request: Request) {
       emailsPerDay,
       writingStyle,
       plan,
+      role,
+      goals,
     } = body;
 
     if (!username || username.length === 0) {
@@ -55,6 +59,8 @@ export async function POST(request: Request) {
       emails_per_day: emailsPerDay || null,
       writing_style: writingStyle || null,
       plan: plan || null,
+      role: role || null,
+      goals: goals || null,
     };
 
     // Get existing preferences and merge
