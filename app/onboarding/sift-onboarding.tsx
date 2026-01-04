@@ -112,7 +112,7 @@ export default function SiftOnboardingPage() {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
 
   // Animation variants
-  const containerVariants = {
+  const containerVariants: any = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } },
     exit: { opacity: 0, y: -20, transition: { duration: 0.4, ease: "easeIn" } }
@@ -193,9 +193,12 @@ export default function SiftOnboardingPage() {
 
       const data = await response.json();
       if (type === "summary") {
+        if (data.summary && data.summary.includes("Could not generate summary")) {
+          throw new Error("AI Service temporary failure");
+        }
         setActionResult(data.summary);
       } else {
-        setActionResult(data.draft);
+        setActionResult(data.draftReply || data.draft);
       }
     } catch (error) {
       console.error("Action failed:", error);
