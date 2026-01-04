@@ -35,16 +35,33 @@ export default function AgentTalkPage({ params }: { params: { id?: string[] } })
                         return;
                     }
 
-                    const response = await fetch('/api/onboarding/status');
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (!data.completed) {
-                            router.push('/onboarding');
-                            return;
-                        } else {
-                            // Cache it
-                            localStorage.setItem('onboarding_completed', 'true');
+                    // Retry logic to handle potential database delays
+                    const maxRetries = 3;
+                    let retryCount = 0;
+                    let serverCompleted = false;
+
+                    while (retryCount < maxRetries && !serverCompleted) {
+                        const response = await fetch('/api/onboarding/status');
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.completed) {
+                                serverCompleted = true;
+                                localStorage.setItem('onboarding_completed', 'true');
+                            } else {
+                                console.log(`⏳ [AgentTalk] User NOT completed (attempt ${retryCount + 1}/${maxRetries})`);
+                                if (retryCount < maxRetries - 1) {
+                                    const delay = Math.pow(2, retryCount) * 500;
+                                    await new Promise(resolve => setTimeout(resolve, delay));
+                                }
+                            }
                         }
+                        retryCount++;
+                    }
+
+                    if (!serverCompleted) {
+                        console.log('🚫 [AgentTalk] All retries exhausted, redirecting to /onboarding');
+                        router.push('/onboarding');
+                        return;
                     }
                 } catch (error) {
                     console.error('Error checking onboarding status:', error);
