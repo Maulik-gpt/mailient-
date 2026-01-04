@@ -265,10 +265,11 @@ export async function GET(request: Request) {
  * Analyze emails using AI to extract notifications
  */
 async function analyzeEmailsWithAI(emails: any[]): Promise<SmartNotification[]> {
-    const apiKey = (process.env.OPENROUTER_API_KEY2 || '').trim();
+    // Use fallbacks for API key to ensure service availability
+    const apiKey = (process.env.OPENROUTER_API_KEY2 || process.env.OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY3 || '').trim();
 
     if (!apiKey) {
-        console.error('❌ OPENROUTER_API_KEY2 is not configured');
+        console.error('❌ OPENROUTER_API_KEY is not configured');
         // Fallback to local analysis
         return localAnalysis(emails);
     }
@@ -290,9 +291,10 @@ async function analyzeEmailsWithAI(emails: any[]): Promise<SmartNotification[]> 
 
 ### CRITICAL INSTRUCTION: EXTREME RESTRICTIVENESS
 You MUST be extremely restrictive when flagging "threats". Only flag emails that are definitively malicious or highly suspicious. 
-- DO NOT flag newsletters, marketing, or automated reports unless they are fraudulent/phishing.
-- DO NOT flag "spam" (junk mail) as a "threat" unless it involves scams or credential theft.
-- Accuracy is more important than recall. If you are unsure, do NOT flag it as a threat.
+- **ABSOLUTELY DO NOT** flag newsletters, marketing, automated reports, or spam (junk mail) as "threats".
+- **ABSOLUTELY DO NOT** flag account verifications or legitimate alerts from known brands (Google, Microsoft, Banks) unless you detect clear signs of phishing (wrong domains, bad links).
+- **False Positives are unacceptable.** If you are even slightly unsure, do NOT flag it as a threat.
+- Accuracy is paramount. Better to miss a low-risk spam than to flag legitimate mail as a threat.
 
 EMAILS TO ANALYZE:
 ${emailSummaries}
@@ -301,7 +303,7 @@ CATEGORIES TO FIND:
 1. "threats" - Only clear malicious activities:
    - Phishing: Impersonation of brands (PayPal, Netflix, Microsoft, Banks) to steal passwords/billing.
    - Account Threats: "Account suspended", "Unusual login", "Verify immediately" with suspicious links.
-Red flags: suspicious sender domain, mismatched links, grammatical errors in "official" mail.
+   Red flags: suspicious sender domain, mismatched links, grammatical errors in "official" mail.
    - Financial Scams: Crypto scams, lottery, inheritance, suspicious job offers.
    - Social Engineering: Direct requests for OTP, MFA codes, or sensitive documents.
    - Malware: Suspicious instructions to open attachments or download files.
@@ -482,14 +484,6 @@ function localAnalysis(emails: any[]): SmartNotification[] {
     const notifications: SmartNotification[] = [];
     const now = new Date().toISOString();
 
-    // Threat detection patterns
-    const threatPatterns = {
-        urgency: /urgent|immediately|act now|limited time|expire|suspend|blocked|verify now/i,
-        phishing: /verify your account|confirm your identity|update your payment|unusual activity|click here to secure/i,
-        suspicious: /lottery|winner|million|prince|inheritance|beneficiary|transfer funds/i,
-        credentials: /password|ssn|social security|credit card|bank account|pin code/i
-    };
-
     // Verification code patterns
     const codePatterns = [
         /(?:code|otp|pin|verification)[\s:]*(\d{4,8})/i,
@@ -505,30 +499,27 @@ function localAnalysis(emails: any[]): SmartNotification[] {
         report: /report|statement|summary|quarterly/i
     };
 
+    // NOTE: Threat detection via regex removed to prevent false positives and loss of trust.
+    // Instead, we add a single system notification informing the user about the AI status.
+
+    // Add system notification (masquerading as a low-severity threat for visibility)
+    if (emails.length > 0) {
+        notifications.push({
+            id: `system-alert-${Date.now()}`,
+            type: 'threat',
+            severity: 'low',
+            title: 'AI Analysis Unavailable',
+            description: 'The AI security analysis is currently down. Please check back soon for full threat detection.',
+            emailId: 'system',
+            from: 'System',
+            subject: 'System Alert',
+            indicators: ['service_outage'],
+            timestamp: now
+        });
+    }
+
     for (const email of emails) {
         const fullText = `${email.subject} ${email.snippet} ${email.body}`.toLowerCase();
-
-        // Check for threats
-        const threatIndicators: string[] = [];
-        if (threatPatterns.urgency.test(fullText)) threatIndicators.push('urgency');
-        if (threatPatterns.phishing.test(fullText)) threatIndicators.push('phishing');
-        if (threatPatterns.suspicious.test(fullText)) threatIndicators.push('suspicious');
-        if (threatPatterns.credentials.test(fullText)) threatIndicators.push('credential_request');
-
-        if (threatIndicators.length >= 3) { // Increased threshold to 3 for higher accuracy/restrictiveness
-            notifications.push({
-                id: `threat-${email.id}`,
-                type: 'threat',
-                severity: threatIndicators.length >= 4 ? 'critical' : 'high',
-                title: 'High-Risk Security Alert',
-                description: `This automated analysis detected ${threatIndicators.length} specific threat patterns including ${threatIndicators.join(', ')}. Use extreme caution.`,
-                emailId: email.id,
-                from: email.from,
-                subject: email.subject,
-                indicators: threatIndicators,
-                timestamp: email.date || now
-            });
-        }
 
         // Check for verification codes
         for (const pattern of codePatterns) {
