@@ -136,17 +136,23 @@ export default function HomeFeed() {
         }
 
         const particleCount = 50 * (timeLeft / duration);
-        confetti({
+        const sparkleConfig = {
           ...defaults,
           particleCount,
-          origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
-          colors: ['#ffffff', '#e4e4e7', '#a1a1aa', '#52525b', '#000000']
+          colors: ['#ffffff', '#ffffff', '#e4e4e7', '#d4d4d8', '#18181b'], // Heavily weighted towards white/silver for "shine"
+          shapes: ['star', 'circle'] as any,
+          scalar: 1.2,
+          gravity: 0.8, // Floating effect
+          drift: 0,
+        };
+
+        confetti({
+          ...sparkleConfig,
+          origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
         });
         confetti({
-          ...defaults,
-          particleCount,
-          origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
-          colors: ['#ffffff', '#e4e4e7', '#a1a1aa', '#52525b', '#000000']
+          ...sparkleConfig,
+          origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
         });
       }, 250);
 
