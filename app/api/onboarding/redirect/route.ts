@@ -50,10 +50,23 @@ export async function GET() {
         // User has any subscription - they completed payment
         if (subscription.status === 'active' || (subscription.plan_type && subscription.plan_type !== 'none')) {
           try {
-            await db.supabase
-              .from('user_profiles')
-              .update({ onboarding_completed: true })
-              .eq('id', profile.id);
+            if (profile?.id) {
+              await db.supabase
+                .from('user_profiles')
+                .update({ onboarding_completed: true })
+                .eq('id', profile.id);
+            } else {
+              // If no profile, we can still redirect them to home-feed
+              // and optionally create a skeleton profile
+              await db.supabase
+                .from('user_profiles')
+                .upsert({
+                  user_id: userEmail,
+                  email: userEmail,
+                  onboarding_completed: true,
+                  updated_at: new Date().toISOString()
+                }, { onConflict: 'user_id' });
+            }
           } catch (e) {
             console.error('Error auto-completing onboarding from subscription:', e);
           }

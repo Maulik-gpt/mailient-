@@ -56,10 +56,23 @@ export async function GET() {
 
           // Only update if not already completed to avoid race conditions
           if (!profile?.onboarding_completed) {
-            await db.supabase
-              .from('user_profiles')
-              .update({ onboarding_completed: true })
-              .eq('id', profile.id);
+            if (profile?.id) {
+              await db.supabase
+                .from('user_profiles')
+                .update({ onboarding_completed: true })
+                .eq('id', profile.id);
+            } else {
+              // If no profile yet, we can try to upsert it or just let it be
+              // Completing via user_id (email) is safer if profile.id is missing
+              await db.supabase
+                .from('user_profiles')
+                .upsert({
+                  user_id: userEmail,
+                  email: userEmail,
+                  onboarding_completed: true,
+                  updated_at: new Date().toISOString()
+                }, { onConflict: 'user_id' });
+            }
           }
 
           return NextResponse.json({

@@ -82,9 +82,12 @@ export default function HomeFeed() {
                   console.log('✅ [HomeFeed] User is completed');
                   localStorage.setItem('onboarding_completed', 'true');
                 } else {
-                  console.log('🚫 [HomeFeed] User NOT completed, redirecting to /onboarding');
-                  router.push("/onboarding");
-                  return;
+                  console.log(`⏳ [HomeFeed] User NOT completed (attempt ${retryCount + 1}/${maxRetries})`);
+                  if (retryCount === maxRetries - 1) {
+                    console.log('🚫 [HomeFeed] All retries exhausted, redirecting to /onboarding');
+                    router.push("/onboarding");
+                    return;
+                  }
                 }
               } else {
                 console.error('❌ [HomeFeed] Status API failed:', response.status);

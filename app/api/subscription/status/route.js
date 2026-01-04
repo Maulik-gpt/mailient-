@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { subscriptionService, PLANS } from '@/lib/subscription-service';
+import { DatabaseService } from '@/lib/supabase';
 
 /**
  * GET - Get current user's subscription status
