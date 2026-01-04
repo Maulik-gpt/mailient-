@@ -669,16 +669,60 @@ export function LinearLanding() {
                 </div>
             </section>
 
-            {/* CTA Layer */}
-            <section className="py-48 px-6 text-center z-10 relative">
-                <div className="max-w-3xl mx-auto">
-                    <h2 className="text-4xl md:text-7xl font-bold tracking-tighter mb-12 italic">Rewrite your workflow.</h2>
-                    <Button onClick={() => router.push('/auth/signin')} size="lg" className="bg-white text-black hover:bg-zinc-200 rounded-full px-12 py-8 text-xl font-medium shadow-2xl transition-transform hover:scale-105 active:scale-95">
-                        Get started for free
-                    </Button>
-                    <p className="mt-12 text-zinc-600 text-sm font-medium tracking-widest uppercase">
-                        Built for founders, by founders.
-                    </p>
+            {/* Final CTA Layer */}
+            <section className="py-20 px-6 z-10 relative">
+                <div className="max-w-6xl mx-auto">
+                    <motion.div
+                        initial={{ opacity: 0, y: 40 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        className="relative rounded-[3rem] border border-white/5 bg-zinc-950/50 backdrop-blur-xl overflow-hidden py-24 px-8 text-center"
+                    >
+                        {/* Subtle Background Glow */}
+                        <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none" />
+
+                        <div className="max-w-3xl mx-auto relative z-10">
+                            <h2 className="text-4xl md:text-7xl font-bold tracking-tight mb-8 bg-gradient-to-b from-white to-white/50 bg-clip-text text-transparent">
+                                Ready to transform<br />your email workflow?
+                            </h2>
+                            <p className="text-zinc-400 text-lg md:text-xl mb-12 leading-relaxed">
+                                Start your free trial today and see why thousands of teams trust Mailient for their email automation.
+                            </p>
+
+                            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10">
+                                <Button
+                                    onClick={() => router.push('/auth/signin')}
+                                    size="lg"
+                                    className="bg-white text-black hover:bg-zinc-200 rounded-2xl px-8 py-7 text-lg font-bold shadow-2xl transition-transform hover:scale-105 active:scale-95 flex items-center gap-2"
+                                >
+                                    Get Started Free
+                                    <ArrowRight className="w-5 h-5" />
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => window.open('https://x.com/Maulik_055', '_blank')}
+                                    size="lg"
+                                    className="border-white/10 bg-transparent text-white hover:bg-white/5 rounded-2xl px-12 py-7 text-lg font-bold transition-all"
+                                >
+                                    Talk to Founder
+                                </Button>
+                            </div>
+
+                            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-zinc-500 text-sm font-medium">
+                                <span className="flex items-center gap-2">
+                                    Direct access to founder
+                                </span>
+                                <span className="hidden sm:block text-zinc-800">•</span>
+                                <span className="flex items-center gap-2">
+                                    2 Whop apps provided
+                                </span>
+                                <span className="hidden sm:block text-zinc-800">•</span>
+                                <span className="flex items-center gap-2">
+                                    Setup in 2 minutes
+                                </span>
+                            </div>
+                        </div>
+                    </motion.div>
                 </div>
             </section>
 
