@@ -28,7 +28,7 @@ export async function POST(request) {
             }, { status: 403 });
         }
 
-        const { emailId } = await request.json();
+        const { emailId, context } = await request.json();
         if (!emailId) {
             return NextResponse.json({ error: 'Email ID required' }, { status: 400 });
         }
@@ -97,7 +97,7 @@ export async function POST(request) {
 
         let summary = "";
         if (aiConfig.hasAIConfigured()) {
-            summary = await aiConfig.generateEmailSummary(emailContent, privacyMode);
+            summary = await aiConfig.generateEmailSummary(emailContent, privacyMode, context);
         } else {
             summary = "AI service not configured.";
         }

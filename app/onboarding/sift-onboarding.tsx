@@ -180,6 +180,8 @@ export default function SiftOnboardingPage() {
   };
 
   const handleAction = async (type: "summary" | "reply", email: any) => {
+    if (!email?.id) return;
+
     setActionType(type);
     setSelectedEmailForAction(email);
     setActionLoading(true);
@@ -187,25 +189,42 @@ export default function SiftOnboardingPage() {
     setEmailSent(false);
 
     try {
+      // Small artificial delay for perceived "intelligence" and weight of Arcus
+      await new Promise(resolve => setTimeout(resolve, 800));
+
       const endpoint = type === "summary" ? "/api/email/summary" : "/api/email/draft-reply";
       const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ emailId: email.id })
+        body: JSON.stringify({
+          emailId: email.id,
+          // Pass context to the AI for higher quality, personalized results
+          context: {
+            role,
+            goals: selectedGoals,
+            userName: session?.user?.name || "there"
+          }
+        })
       });
 
       const data = await response.json();
-      if (type === "summary") {
-        if (data.summary && data.summary.includes("Could not generate summary")) {
-          throw new Error("AI Service temporary failure");
-        }
-        setActionResult(data.summary);
-      } else {
-        setActionResult(data.draftReply || data.draft);
+
+      if (!response.ok) {
+        throw new Error(data.message || data.error || "Failed to generate AI response");
       }
-    } catch (error) {
-      console.error("Action failed:", error);
-      setActionResult("Failed to generate response. Please try again.");
+
+      if (type === "summary") {
+        const summary = data.summary;
+        if (!summary || summary.length < 5) throw new Error("Could not synthesize email");
+        setActionResult(summary);
+      } else {
+        const draft = data.draftReply || data.draft;
+        if (!draft || draft.length < 5) throw new Error("Could not generate draft");
+        setActionResult(draft);
+      }
+    } catch (error: any) {
+      console.error("AI Action Error:", error);
+      setActionResult(error.message || "Failed to generate response. Please try again.");
     } finally {
       setActionLoading(false);
     }

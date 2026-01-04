@@ -28,7 +28,7 @@ export async function POST(request) {
             }, { status: 403 });
         }
 
-        const { emailId, category } = await request.json();
+        const { emailId, category, context } = await request.json();
         if (!emailId) {
             return NextResponse.json({ error: 'Email ID required' }, { status: 400 });
         }
@@ -87,9 +87,12 @@ export async function POST(request) {
             return NextResponse.json({ error: 'AI service not configured' }, { status: 500 });
         }
 
+        // Prepare user context, merging session data with onboarding context
         const userContext = {
             name: session.user.name || session.user.email.split('@')[0],
-            email: session.user.email
+            email: session.user.email,
+            role: context?.role || null,
+            goals: context?.goals || []
         };
 
         // Use follow-up generator for follow-up categories, otherwise use draft reply
