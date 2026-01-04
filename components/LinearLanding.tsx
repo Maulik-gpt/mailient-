@@ -147,7 +147,7 @@ export function LinearLanding() {
 
                     <div className="flex items-center gap-4">
                         {status === "authenticated" ? (
-                            <Button variant="secondary" onClick={() => router.push('/home-feed')} className="bg-white/10 hover:bg-white/20 text-white border-white/10 rounded-full px-6">
+                            <Button variant="secondary" onClick={() => router.push('/home-feed?welcome=true')} className="bg-white/10 hover:bg-white/20 text-white border-white/10 rounded-full px-6">
                                 Dashboard
                             </Button>
                         ) : (
@@ -175,7 +175,7 @@ export function LinearLanding() {
 
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-24">
                         {status === "authenticated" ? (
-                            <Button onClick={() => router.push('/home-feed')} size="lg" className="bg-white text-black hover:bg-zinc-200 rounded-full px-10 py-6 text-lg font-medium shadow-2xl">
+                            <Button onClick={() => router.push('/home-feed?welcome=true')} size="lg" className="bg-white text-black hover:bg-zinc-200 rounded-full px-10 py-6 text-lg font-medium shadow-2xl">
                                 Continue to Dashboard
                                 <ArrowRight className="w-5 h-5 ml-2" />
                             </Button>

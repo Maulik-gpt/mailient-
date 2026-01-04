@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import { GmailInterfaceFixed } from '@/components/ui/gmail-interface-fixed';
+import confetti from 'canvas-confetti';
 
 export default function HomeFeed() {
   const router = useRouter();
@@ -114,6 +115,45 @@ export default function HomeFeed() {
   useEffect(() => {
     document.title = 'Mailient Sift AI - Bulk Email Processing';
   }, []);
+
+  // Check for welcome query param and trigger confetti
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const welcome = searchParams.get('welcome');
+    if (welcome === 'true') {
+      const duration = 3 * 1000;
+      const animationEnd = Date.now() + duration;
+      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+      const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
+
+      const interval = setInterval(function () {
+        const timeLeft = animationEnd - Date.now();
+
+        if (timeLeft <= 0) {
+          return clearInterval(interval);
+        }
+
+        const particleCount = 50 * (timeLeft / duration);
+        confetti({
+          ...defaults,
+          particleCount,
+          origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
+        });
+        confetti({
+          ...defaults,
+          particleCount,
+          origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
+        });
+      }, 250);
+
+      // Clean up the URL parameter
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('welcome');
+      window.history.replaceState({}, '', newUrl.toString());
+    }
+  }, [searchParams]);
 
   const handleLogout = async () => {
     await signOut({ redirect: false });
