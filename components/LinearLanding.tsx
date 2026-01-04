@@ -37,6 +37,7 @@ import { PricingSection } from "@/components/ui/pricing"
 import { useRouter } from "next/navigation"
 import { signIn, useSession } from "next-auth/react"
 import { HeroGeometric } from "@/components/ui/shape-landing-hero"
+import { GlassButton } from "@/components/ui/glass-button"
 
 const features = [
     {
@@ -175,15 +176,15 @@ export function LinearLanding() {
 
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-24">
                         {status === "authenticated" ? (
-                            <Button onClick={() => router.push('/home-feed?welcome=true')} size="lg" className="bg-white text-black hover:bg-zinc-200 rounded-full px-10 py-6 text-lg font-medium shadow-2xl">
+                            <GlassButton onClick={() => router.push('/home-feed?welcome=true')} size="lg">
                                 Continue to Dashboard
-                                <ArrowRight className="w-5 h-5 ml-2" />
-                            </Button>
+                                <ArrowRight className="w-5 h-5 ml-2 inline-block" />
+                            </GlassButton>
                         ) : (
-                            <Button onClick={() => signIn('google')} size="lg" className="bg-white text-black hover:bg-zinc-200 rounded-full px-10 py-6 text-lg font-medium shadow-2xl">
+                            <GlassButton onClick={() => signIn('google')} size="lg">
                                 Connect Gmail
-                                <ArrowRight className="w-5 h-5 ml-2" />
-                            </Button>
+                                <ArrowRight className="w-5 h-5 ml-2 inline-block" />
+                            </GlassButton>
                         )}
                     </div>
 
@@ -781,14 +782,13 @@ export function LinearLanding() {
                             </p>
 
                             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10">
-                                <Button
+                                <GlassButton
                                     onClick={() => router.push('/auth/signin')}
                                     size="lg"
-                                    className="bg-white text-black hover:bg-zinc-200 rounded-2xl px-8 py-7 text-lg font-bold shadow-2xl transition-transform hover:scale-105 active:scale-95 flex items-center gap-2"
                                 >
                                     Get Started Now!
-                                    <ArrowRight className="w-5 h-5" />
-                                </Button>
+                                    <ArrowRight className="w-5 h-5 ml-2 inline-block" />
+                                </GlassButton>
                                 <Button
                                     variant="outline"
                                     onClick={() => window.open('https://x.com/Maulik_055', '_blank')}
