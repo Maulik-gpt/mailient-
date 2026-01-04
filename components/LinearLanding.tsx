@@ -27,7 +27,8 @@ import {
     Plus,
     Inbox,
     Filter,
-    ChevronDown
+    ChevronDown,
+    Quote
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -145,7 +146,6 @@ export function LinearLanding() {
                         <div className="hidden md:flex items-center gap-6 text-sm font-medium text-zinc-500">
                             <a href="#benefits" className="hover:text-white transition-colors">Benefits</a>
                             <a href="#features" className="hover:text-white transition-colors">Features</a>
-                            <a href="#method" className="hover:text-white transition-colors">Method</a>
                             <a href="#integration" className="hover:text-white transition-colors">Security</a>
                             <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
                         </div>
@@ -510,68 +510,6 @@ export function LinearLanding() {
                 </div>
             </section>
 
-            {/* Method Section (Linear Style Tabbed) */}
-            <section id="method" className="py-32 px-6 z-10 relative bg-zinc-950/20">
-                <div className="max-w-7xl mx-auto">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
-                        <div>
-                            <h2 className="text-4xl md:text-6xl font-bold tracking-tight mb-12">The Mailient <br />Method.</h2>
-                            <div className="space-y-8">
-                                {[
-                                    { id: "sift", title: "Smart Sifting", desc: "Aether AI scans for revenue, urgency, and relationships." },
-                                    { id: "draft", title: "Neural Drafting", desc: "Instantly generate replies that match your unique tone." },
-                                    { id: "sync", title: "Native Sync", desc: "Perfectly integrated with Google Workspace. No data lag." }
-                                ].map(tab => (
-                                    <div
-                                        key={tab.id}
-                                        onClick={() => setActiveTab(tab.id)}
-                                        className={`cursor-pointer transition-opacity ${activeTab === tab.id ? 'opacity-100' : 'opacity-40 hover:opacity-60'}`}
-                                    >
-                                        <h3 className="text-xl font-bold mb-2">{tab.title}</h3>
-                                        <p className="text-zinc-500 text-sm">{tab.desc}</p>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="aspect-square bg-zinc-900 rounded-3xl border border-white/10 relative overflow-hidden">
-                            <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent" />
-                            <AnimatePresence mode="wait">
-                                {activeTab === 'sift' && (
-                                    <motion.div
-                                        key="sift"
-                                        initial={{ opacity: 0, scale: 0.95 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        exit={{ opacity: 0, scale: 0.95 }}
-                                        className="absolute inset-0 flex items-center justify-center p-12"
-                                    >
-                                        <div className="w-full space-y-6">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 rounded bg-white/10 flex items-center justify-center">
-                                                    <Zap className="w-6 h-6 text-white" />
-                                                </div>
-                                                <div>
-                                                    <p className="font-bold">Urgent Deal</p>
-                                                    <p className="text-xs text-zinc-400 font-mono italic">High Revenue Signal Detected</p>
-                                                </div>
-                                            </div>
-                                            <div className="h-1 bg-white/5 rounded-full overflow-hidden">
-                                                <motion.div
-                                                    initial={{ width: 0 }}
-                                                    animate={{ width: "85%" }}
-                                                    transition={{ duration: 1, delay: 0.5 }}
-                                                    className="h-full bg-white"
-                                                />
-                                            </div>
-                                        </div>
-                                    </motion.div>
-                                )}
-                                {/* Add more interactive tab contents if needed */}
-                            </AnimatePresence>
-                        </div>
-                    </div>
-                </div>
-            </section>
 
             {/* Security Section */}
             <section id="integration" className="py-32 px-6 bg-zinc-950/30 z-10 relative">
@@ -601,23 +539,77 @@ export function LinearLanding() {
                 </div>
             </section>
 
-            {/* Founder Section */}
-            <section className="py-32 px-6 border-y border-white/5 z-10 relative text-center">
-                <div className="max-w-7xl mx-auto flex flex-col items-center">
-                    <div className="relative mb-12">
-                        <div className="absolute inset-0 bg-white/10 blur-3xl rounded-full" />
-                        <div className="relative w-32 h-32 rounded-full border border-white/20 bg-black flex items-center justify-center overflow-hidden">
-                            <span className="text-4xl font-black italic">M</span>
+            {/* Founder Section - Premium Redesign */}
+            <section className="py-40 px-6 z-10 relative overflow-hidden">
+                <div className="max-w-5xl mx-auto border border-white/5 rounded-[4rem] bg-zinc-950/30 backdrop-blur-3xl p-12 md:p-24 relative">
+                    <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+                        <Quote className="w-32 h-32 text-white" />
+                    </div>
+
+                    <div className="flex flex-col md:flex-row items-center gap-16">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            whileInView={{ opacity: 1, scale: 1 }}
+                            viewport={{ once: true }}
+                            className="relative"
+                        >
+                            <div className="absolute inset-0 bg-white/5 blur-3xl rounded-full" />
+                            <div className="relative w-48 h-48 md:w-64 md:h-64 rounded-full border-2 border-white/10 overflow-hidden shadow-2xl">
+                                <img
+                                    src="/maulik.png"
+                                    alt="Maulik - Founder"
+                                    className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700"
+                                />
+                            </div>
+                            <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 px-6 py-2 bg-white text-black text-xs font-black uppercase tracking-widest rounded-full shadow-xl">
+                                Founder
+                            </div>
+                        </motion.div>
+
+                        <div className="flex-1 text-center md:text-left">
+                            <motion.h3
+                                initial={{ opacity: 0, x: -20 }}
+                                whileInView={{ opacity: 1, x: 0 }}
+                                viewport={{ once: true }}
+                                className="text-2xl font-bold mb-2 tracking-widest uppercase text-white/40"
+                            >
+                                Maulik
+                            </motion.h3>
+                            <motion.p
+                                initial={{ opacity: 0, x: -20 }}
+                                whileInView={{ opacity: 1, x: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: 0.1 }}
+                                className="text-zinc-500 font-bold mb-8 text-sm uppercase tracking-[0.4em]"
+                            >
+                                Neural Architect
+                            </motion.p>
+
+                            <motion.blockquote
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: 0.2 }}
+                                className="text-2xl md:text-3xl font-medium text-zinc-100 italic mb-10 leading-snug"
+                            >
+                                "I built Mailient because the inbox is the last frontier of friction for founders. My goal is to transform email from a chore into a high-leverage asset."
+                            </motion.blockquote>
+
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: 0.3 }}
+                            >
+                                <Button variant="outline" className="rounded-full border-white/10 bg-white/5 hover:bg-white/10 text-white px-8 h-12" asChild>
+                                    <a href="https://x.com/Maulik_055" target="_blank" className="flex items-center gap-2">
+                                        Connect with me
+                                        <ArrowRight className="w-4 h-4" />
+                                    </a>
+                                </Button>
+                            </motion.div>
                         </div>
                     </div>
-                    <h3 className="text-2xl font-bold mb-2 uppercase tracking-widest">Maulik</h3>
-                    <p className="text-zinc-500 font-bold mb-8 text-sm uppercase tracking-[0.3em]">Neural Architect</p>
-                    <blockquote className="max-w-3xl text-center text-2xl md:text-3xl font-medium text-zinc-300 italic mb-12 leading-tight">
-                        "I built Mailient because the inbox is the last frontier of friction for founders. My goal is to transform email from a chore into a high-leverage asset."
-                    </blockquote>
-                    <Button variant="outline" className="rounded-full border-white/10 hover:bg-white/5" asChild>
-                        <a href="https://x.com/Maulik_055" target="_blank">Connect with the founder</a>
-                    </Button>
                 </div>
             </section>
 
@@ -686,7 +678,7 @@ export function LinearLanding() {
                                 Ready to transform<br />your email workflow?
                             </h2>
                             <p className="text-zinc-400 text-lg md:text-xl mb-12 leading-relaxed">
-                                Start your free trial today and see why thousands of teams trust Mailient for their email automation.
+                                Connect your Gmail account today and see why people trust Mailient for their email automation.
                             </p>
 
                             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10">
