@@ -21,6 +21,10 @@ export default function HomeFeed() {
     if (status === "authenticated" && session?.user?.email) {
       const checkAndActivate = async () => {
         try {
+          // IMMEDIATE CHECK: If localStorage says we are done, don't redirect
+          // This prevents the "flash and redirect" when returning from Whop
+          const isDone = localStorage.getItem('onboarding_completed') === 'true';
+
           // First, check if there's a pending plan that needs activation (user returned from Whop)
           const pendingPlan = localStorage.getItem('pending_plan');
           const pendingTimestamp = localStorage.getItem('pending_plan_timestamp');
@@ -39,7 +43,7 @@ export default function HomeFeed() {
               });
 
               if (activateResponse.ok) {
-                console.log('✅ Subscription activated!');
+                console.log('✅ Subscription activated locally');
                 localStorage.removeItem('pending_plan');
                 localStorage.removeItem('pending_plan_timestamp');
               }
@@ -49,12 +53,21 @@ export default function HomeFeed() {
             }
           }
 
-          // Then check onboarding status
+          // If we are already marked as done in localStorage, don't even call the API
+          if (isDone) {
+            console.log('✨ Onboarding marked as complete in session storage. Skipping check.');
+            return;
+          }
+
+          // Then check onboarding status from server
           const response = await fetch("/api/onboarding/status");
           if (response.ok) {
             const data = await response.json();
             if (!data.completed) {
               router.push("/onboarding");
+            } else {
+              // Cache it if it was true on server
+              localStorage.setItem('onboarding_completed', 'true');
             }
           }
         } catch (error) {

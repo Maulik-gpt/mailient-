@@ -274,7 +274,7 @@ export default function SiftOnboardingPage() {
 
     try {
       // Complete onboarding
-      await fetch("/api/onboarding/complete", {
+      const response = await fetch("/api/onboarding/complete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -285,12 +285,27 @@ export default function SiftOnboardingPage() {
         }),
       });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to save onboarding progress");
+      }
+
+      // Set fallback flags in localStorage to prevent redirection loops
+      // even if the database index or session hasn't updated yet
+      localStorage.setItem('onboarding_completed', 'true');
+      localStorage.setItem('pending_plan', plan);
+      localStorage.setItem('pending_plan_timestamp', Date.now().toString());
+      localStorage.setItem('user_role', role || 'founder');
+
       // Redirect to Whop
       const checkoutUrl = WHOP_CHECKOUT_URLS[plan as keyof typeof WHOP_CHECKOUT_URLS];
       if (checkoutUrl) {
         const params = new URLSearchParams();
         if (session?.user?.email) params.set('email', session.user.email);
         window.location.href = `${checkoutUrl}?${params.toString()}`;
+      } else {
+        // Fallback to dashboard if checkout URL is missing
+        router.push("/home-feed");
       }
     } catch (error) {
       console.error('Error during plan selection:', error);

@@ -33,6 +33,7 @@ export async function POST(request: Request) {
     const userId = session.user.email;
 
     // Check if username is already taken by another user
+    let finalUsername = username;
     const existingProfile = await db.supabase
       .from("user_profiles")
       .select("user_id, username")
@@ -40,15 +41,16 @@ export async function POST(request: Request) {
       .maybeSingle();
 
     if (existingProfile.data && existingProfile.data.user_id !== userId) {
-      return NextResponse.json(
-        { error: "Username is already taken" },
-        { status: 400 }
-      );
+      console.log(`⚠️ Username "${username}" taken, generating unique one...`);
+      // Append a random 4-digit suffix to make it unique
+      const suffix = Math.floor(1000 + Math.random() * 9000);
+      finalUsername = `${username}_${suffix}`;
+      console.log(`✅ New username: ${finalUsername}`);
     }
 
     // Update user profile with onboarding data
     const updateData: any = {
-      username,
+      username: finalUsername,
       onboarding_completed: true,
       updated_at: new Date().toISOString(),
     };
