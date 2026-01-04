@@ -1,16 +1,22 @@
 import { NextResponse } from "next/server";
+// @ts-ignore
 import { auth } from "@/lib/auth";
 import { DatabaseService } from "@/lib/supabase";
 
 export async function GET() {
   try {
+    // @ts-ignore
     const session = await auth();
     if (!session?.user?.email) {
       return NextResponse.json({ redirectTo: "/auth/signin" });
     }
 
-    const db = new DatabaseService();
-    const profile = await db.getUserProfile(session.user.email);
+    const userEmail = session.user.email.toLowerCase();
+    const db = new DatabaseService(true);
+    const profile = await db.getUserProfile(userEmail);
+
+    console.log(`🔍 Checking onboarding redirect for: ${userEmail}`);
+    console.log(`👤 Profile: ${!!profile}, Completed: ${profile?.onboarding_completed}`);
 
     // Check if onboarding is explicitly completed
     if (profile?.onboarding_completed) {
@@ -19,12 +25,12 @@ export async function GET() {
 
     // FALLBACK: Check if user selected a plan (means they went through onboarding)
     if (profile?.preferences?.plan) {
-      // Auto-mark as complete
+      console.log(`✅ Auto-completing onboarding (plan pref found)`);
       try {
         await db.supabase
           .from('user_profiles')
           .update({ onboarding_completed: true })
-          .eq('user_id', session.user.email);
+          .eq('id', profile.id);
       } catch (e) {
         console.error('Error auto-completing onboarding:', e);
       }
@@ -35,19 +41,19 @@ export async function GET() {
     try {
       const { data: subscription } = await db.supabase
         .from('user_subscriptions')
-        .select('status, subscription_ends_at')
-        .eq('user_id', session.user.email)
+        .select('status, plan_type, subscription_ends_at')
+        .ilike('user_id', userEmail)
         .maybeSingle();
 
-      if (subscription && subscription.status === 'active') {
-        const endDate = new Date(subscription.subscription_ends_at);
-        if (endDate > new Date()) {
-          // User has active subscription - they completed payment
+      if (subscription) {
+        console.log(`💳 Subscription found: ${subscription.status}, ${subscription.plan_type}`);
+        // User has any subscription - they completed payment
+        if (subscription.status === 'active' || (subscription.plan_type && subscription.plan_type !== 'none')) {
           try {
             await db.supabase
               .from('user_profiles')
               .update({ onboarding_completed: true })
-              .eq('user_id', session.user.email);
+              .eq('id', profile.id);
           } catch (e) {
             console.error('Error auto-completing onboarding from subscription:', e);
           }
@@ -55,7 +61,6 @@ export async function GET() {
         }
       }
     } catch (subError) {
-      // Subscription table might not exist, continue
       console.log('Subscription check skipped:', subError);
     }
 

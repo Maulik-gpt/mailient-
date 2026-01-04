@@ -63,13 +63,17 @@ export default function HomeFeed() {
             return;
           }
 
+          console.log('📡 [HomeFeed] Checking server-side onboarding status...');
           const response = await fetch("/api/onboarding/status");
           if (response.ok) {
             const data = await response.json();
+            console.log('📡 [HomeFeed] Server status:', data);
             if (!data.completed) {
+              console.log('🚫 [HomeFeed] User NOT completed, redirecting to /onboarding');
               router.push("/onboarding");
             } else {
               // Cache it if it was true on server
+              console.log('✅ [HomeFeed] User is completed');
               localStorage.setItem('onboarding_completed', 'true');
             }
           }

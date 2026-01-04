@@ -64,7 +64,8 @@ export async function POST(request) {
             return NextResponse.json({ error: 'Invalid plan type' }, { status: 400 });
         }
 
-        const userId = session.user.email;
+        const userId = session.user.email.toLowerCase();
+        console.log(`📡 Activating subscription for: ${userId}`);
 
         // Activate the subscription
         const subscription = await subscriptionService.activateSubscription(
@@ -76,11 +77,17 @@ export async function POST(request) {
         // Fail-safe: Mark onboarding as completed in the profile when a subscription is activated
         try {
             const db = new DatabaseService();
-            await db.supabase
+            // Use ilike for update to handle MixedCase user_id values in existing data
+            const { error: profileError } = await db.supabase
                 .from('user_profiles')
                 .update({ onboarding_completed: true })
-                .eq('user_id', userId);
-            console.log(`✅ Onboarding auto-completed for ${userId} during activation`);
+                .ilike('user_id', userId);
+
+            if (profileError) {
+                console.error(`❌ Profile update failed during activation:`, profileError);
+            } else {
+                console.log(`✅ Onboarding auto-completed for ${userId} during activation`);
+            }
         } catch (profileError) {
             console.error('Error updating profile during activation:', profileError);
         }

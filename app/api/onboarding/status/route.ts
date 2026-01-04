@@ -28,14 +28,14 @@ export async function GET() {
     if (profile?.username) {
       console.log(`✅ Status: Completed (username found: ${profile.username})`);
       // Auto-fix: mark as completed if they have a username
-      await db.supabase.from('user_profiles').update({ onboarding_completed: true }).eq('user_id', userEmail);
+      await db.supabase.from('user_profiles').update({ onboarding_completed: true }).eq('id', profile.id);
       return NextResponse.json({ completed: true, note: 'username_found' });
     }
 
     // 3. Check for specific onboarding preferences (plan selection)
     if (profile?.preferences?.plan) {
       console.log(`✅ Status: Completed (plan found in preferences: ${profile.preferences.plan})`);
-      await db.supabase.from('user_profiles').update({ onboarding_completed: true }).eq('user_id', userEmail);
+      await db.supabase.from('user_profiles').update({ onboarding_completed: true }).eq('id', profile.id);
       return NextResponse.json({ completed: true, note: 'plan_pref_found' });
     }
 
@@ -45,7 +45,7 @@ export async function GET() {
       const { data: subscription } = await db.supabase
         .from('user_subscriptions')
         .select('status, plan_type, subscription_ends_at')
-        .eq('user_id', userEmail)
+        .ilike('user_id', userEmail)
         .maybeSingle();
 
       if (subscription) {
@@ -56,7 +56,7 @@ export async function GET() {
           await db.supabase
             .from('user_profiles')
             .update({ onboarding_completed: true })
-            .eq('user_id', userEmail);
+            .eq('id', profile.id);
 
           return NextResponse.json({
             completed: true,

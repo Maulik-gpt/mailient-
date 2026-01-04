@@ -20,25 +20,39 @@ export default function OnboardingPage() {
 
     // Check if onboarding is already completed
     if (status === "authenticated" && session?.user?.email) {
+      const userEmail = session?.user?.email;
+      console.log(`📋 [Onboarding] Checking status for: ${userEmail}`);
+
       const checkOnboardingStatus = async () => {
         try {
           // Check local storage first for instant redirection
-          if (localStorage.getItem('onboarding_completed') === 'true') {
+          const localDone = localStorage.getItem('onboarding_completed') === 'true';
+          console.log(`📋 [Onboarding] Local status: ${localDone}`);
+
+          if (localDone) {
+            console.log('🚀 [Onboarding] Redirecting to /home-feed (localStorage)');
             router.push("/home-feed");
             return;
           }
 
+          console.log('📡 [Onboarding] Fetching status from server...');
           const response = await fetch("/api/onboarding/status");
           if (response.ok) {
             const data = await response.json();
+            console.log('📡 [Onboarding] Server response:', data);
             if (data.completed) {
               // Already completed onboarding, cache it and redirect
+              console.log('🚀 [Onboarding] Redirecting to /home-feed (server)');
               localStorage.setItem('onboarding_completed', 'true');
               router.push("/home-feed");
+            } else {
+              console.log('⏳ [Onboarding] Staying here: Onboarding is NOT complete');
             }
+          } else {
+            console.error('❌ [Onboarding] Status API failed:', response.status);
           }
         } catch (error) {
-          console.error("Error checking onboarding status:", error);
+          console.error("❌ [Onboarding] Error checking status:", error);
         }
       };
       checkOnboardingStatus();
