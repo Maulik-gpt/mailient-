@@ -273,12 +273,24 @@ export default function SiftOnboardingPage() {
     setIsSubmitting(true);
 
     try {
+      console.log('🛒 User selected plan:', plan);
+      console.log('👤 User role:', role);
+      console.log('🎯 User goals:', selectedGoals);
+      console.log('📧 User email:', session?.user?.email);
+      console.log('👤 User name:', session?.user?.name);
+
+      // Generate a proper username from email if name is not available
+      const username = session?.user?.name?.toLowerCase().replace(/\s/g, '_') ||
+        session?.user?.email?.split('@')[0] || 'user';
+
+      console.log('👤 Generated username:', username);
+
       // Complete onboarding
       const response = await fetch("/api/onboarding/complete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          username: session?.user?.name?.toLowerCase().replace(/\s/g, '_') || 'user',
+          username: username,
           plan: plan,
           role: role,
           goals: selectedGoals
@@ -290,25 +302,34 @@ export default function SiftOnboardingPage() {
         throw new Error(errorData.error || "Failed to save onboarding progress");
       }
 
+      const result = await response.json();
+      console.log('✅ Onboarding completion response:', result);
+
       // Set fallback flags in localStorage to prevent redirection loops
       // even if the database index or session hasn't updated yet
       localStorage.setItem('onboarding_completed', 'true');
       localStorage.setItem('pending_plan', plan);
       localStorage.setItem('pending_plan_timestamp', Date.now().toString());
       localStorage.setItem('user_role', role || 'founder');
+      localStorage.setItem('user_plan', plan);
+      localStorage.setItem('user_username', username);
+
+      console.log('📋 Set localStorage flags for onboarding completion');
 
       // Redirect to Whop
       const checkoutUrl = WHOP_CHECKOUT_URLS[plan as keyof typeof WHOP_CHECKOUT_URLS];
       if (checkoutUrl) {
         const params = new URLSearchParams();
         if (session?.user?.email) params.set('email', session.user.email);
+        console.log('🚀 Redirecting to Whop:', `${checkoutUrl}?${params.toString()}`);
         window.location.href = `${checkoutUrl}?${params.toString()}`;
       } else {
         // Fallback to dashboard if checkout URL is missing
+        console.log('⚠️ No Whop URL, redirecting to home-feed');
         router.push("/home-feed");
       }
     } catch (error) {
-      console.error('Error during plan selection:', error);
+      console.error('❌ Error during plan selection:', error);
       setIsSubmitting(false);
     }
   };

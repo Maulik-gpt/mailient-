@@ -65,13 +65,20 @@ export async function POST(request: Request) {
       goals: goals || null,
     };
 
+    console.log(`📋 Completing onboarding for ${userId}`);
+    console.log(`👤 Username: ${finalUsername}`);
+    console.log(`💳 Plan: ${plan}`);
+    console.log(`🎯 Role: ${role}, Goals: ${goals}`);
+
     // Get existing preferences and merge
     const existingProfileData = await db.getUserProfile(userId);
     if (existingProfileData) {
       const existingPrefs = existingProfileData.preferences || {};
       updateData.preferences = { ...existingPrefs, ...preferences };
+      console.log(`🔄 Merging with existing preferences`);
     } else {
       updateData.preferences = preferences;
+      console.log(`🆕 Creating new profile`);
     }
 
     // Update or create profile
@@ -88,12 +95,15 @@ export async function POST(request: Request) {
       .single();
 
     if (error) {
-      console.error("Error updating profile:", error);
+      console.error("❌ Error updating profile:", error);
       return NextResponse.json(
-        { error: "Failed to save onboarding data" },
+        { error: "Failed to save onboarding data", details: error.message },
         { status: 500 }
       );
     }
+
+    console.log(`✅ Onboarding completed successfully for ${userId}`);
+    console.log(`📊 Profile ID: ${data.id}, Username: ${data.username}, Completed: ${data.onboarding_completed}`);
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
