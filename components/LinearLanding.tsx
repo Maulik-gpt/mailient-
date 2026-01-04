@@ -390,9 +390,9 @@ export function LinearLanding() {
                             initial={{ opacity: 0, y: 30 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
-                            className="md:col-span-1 group relative h-[400px] rounded-3xl border border-white/5 bg-zinc-950/50 backdrop-blur-sm overflow-hidden flex flex-col md:flex-row shadow-2xl hover:border-white/10 transition-colors"
+                            className="md:col-span-1 group relative h-[450px] rounded-3xl border border-white/5 bg-zinc-950/50 backdrop-blur-sm overflow-hidden flex flex-col md:flex-row shadow-2xl hover:border-white/10 transition-colors"
                         >
-                            <div className="flex-1 p-8 flex flex-col justify-center">
+                            <div className="flex-1 p-8 flex flex-col justify-center relative z-10">
                                 <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center mb-6 border border-white/10">
                                     <Cpu className="w-5 h-5 text-white" />
                                 </div>
@@ -402,13 +402,45 @@ export function LinearLanding() {
                                 </p>
                             </div>
                             <div className="flex-1 bg-gradient-to-br from-white/5 to-transparent relative p-12 overflow-hidden hidden lg:flex items-center justify-center">
-                                <div className="w-48 h-48 rounded-full border border-white/10 flex items-center justify-center relative">
+                                <div className="relative w-64 h-64 flex items-center justify-center">
+                                    {/* Concentric Orbital Rings */}
+                                    {[1, 2, 3].map((ring) => (
+                                        <motion.div
+                                            key={ring}
+                                            animate={{ rotate: 360 * (ring % 2 === 0 ? 1 : -1) }}
+                                            transition={{ duration: 15 + ring * 5, repeat: Infinity, ease: "linear" }}
+                                            className="absolute border border-white/5 rounded-full"
+                                            style={{
+                                                width: `${100 - ring * 25}%`,
+                                                height: `${100 - ring * 25}%`,
+                                                borderStyle: ring === 2 ? 'dashed' : 'solid'
+                                            }}
+                                        />
+                                    ))}
+                                    {/* Pulsing Core */}
                                     <motion.div
-                                        animate={{ rotate: 360 }}
-                                        transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-                                        className="absolute inset-2 border-t border-white/20 rounded-full"
+                                        animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.6, 0.3] }}
+                                        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                                        className="w-16 h-16 bg-white/10 blur-xl rounded-full absolute"
                                     />
-                                    <Bot className="w-16 h-16 text-white/20" />
+                                    <Bot className="w-12 h-12 text-white/40 relative z-10" />
+
+                                    {/* Orbiting particles */}
+                                    {[1, 2, 3, 4].map((p) => (
+                                        <motion.div
+                                            key={p}
+                                            animate={{
+                                                rotate: 360,
+                                                scale: [1, 1.2, 1]
+                                            }}
+                                            transition={{
+                                                rotate: { duration: 8 + p * 2, repeat: Infinity, ease: "linear" },
+                                                scale: { duration: 2, repeat: Infinity, ease: "easeInOut" }
+                                            }}
+                                            className="absolute w-1.5 h-1.5 bg-white/30 rounded-full"
+                                            style={{ top: '10%', left: '50%', originY: '200%' }}
+                                        />
+                                    ))}
                                 </div>
                             </div>
                         </motion.div>
@@ -419,18 +451,42 @@ export function LinearLanding() {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ delay: 0.1 }}
-                            className="group h-[400px] p-8 rounded-3xl border border-white/5 bg-zinc-950/50 backdrop-blur-sm shadow-2xl overflow-hidden flex flex-col justify-center relative hover:border-white/10 transition-colors"
+                            className="group h-[450px] p-8 rounded-3xl border border-white/5 bg-zinc-950/50 backdrop-blur-sm shadow-2xl overflow-hidden flex flex-col justify-center relative hover:border-white/10 transition-colors"
                         >
-                            <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center mb-6 border border-white/10">
+                            <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center mb-6 border border-white/10 relative z-10">
                                 <Activity className="w-5 h-5 text-white" />
                             </div>
-                            <h3 className="text-2xl font-bold mb-4">Mailient Sift</h3>
-                            <p className="text-zinc-500 text-sm leading-relaxed max-w-sm">
-                                Start intelligence analysis and let the AI distribute your emails to smart insights like Opportunities, Urgent and Follow-ups followed by one-click smart actions.
-                            </p>
+                            <div className="relative z-10">
+                                <h3 className="text-2xl font-bold mb-4">Mailient Sift</h3>
+                                <p className="text-zinc-500 text-sm leading-relaxed max-w-sm">
+                                    Start intelligence analysis and let the AI distribute your emails to smart insights like Opportunities, Urgent and Follow-ups followed by one-click smart actions.
+                                </p>
+                            </div>
 
-                            {/* Visual background */}
-                            <div className="absolute right-[-20px] bottom-[-20px] w-48 h-48 bg-white/[0.02] rounded-full blur-3xl pointer-events-none" />
+                            {/* Scanning Visualization */}
+                            <div className="absolute right-8 top-1/2 -translate-y-1/2 w-48 h-64 bg-white/[0.02] border border-white/5 rounded-2xl hidden lg:flex flex-col p-4 gap-3 overflow-hidden">
+                                <motion.div
+                                    animate={{ y: [0, 240, 0] }}
+                                    transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                                    className="absolute inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-white/40 to-transparent z-20"
+                                />
+                                {[
+                                    { text: "Opportunity", color: "bg-emerald-500/20 text-emerald-400" },
+                                    { text: "Urgent", color: "bg-rose-500/20 text-rose-400" },
+                                    { text: "Follow-up", color: "bg-blue-500/20 text-blue-400" },
+                                    { text: "Revenue", color: "bg-amber-500/20 text-amber-400" }
+                                ].map((pill, i) => (
+                                    <motion.div
+                                        key={i}
+                                        initial={{ opacity: 0.3 }}
+                                        whileInView={{ opacity: 1 }}
+                                        transition={{ delay: i * 0.2 }}
+                                        className={`px-3 py-1 rounded-full text-[10px] font-bold border border-white/5 w-fit ${pill.color}`}
+                                    >
+                                        {pill.text}
+                                    </motion.div>
+                                ))}
+                            </div>
                         </motion.div>
 
                         {/* Notes */}
@@ -439,16 +495,40 @@ export function LinearLanding() {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ delay: 0.2 }}
-                            className="group h-[400px] p-8 rounded-3xl border border-white/5 bg-zinc-950/50 backdrop-blur-sm shadow-2xl overflow-hidden flex flex-col justify-center relative hover:border-white/10 transition-colors"
+                            className="group h-[450px] p-8 rounded-3xl border border-white/5 bg-zinc-950/50 backdrop-blur-sm shadow-2xl overflow-hidden flex flex-col justify-center relative hover:border-white/10 transition-colors"
                         >
-                            <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center mb-6 border border-white/10">
+                            <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center mb-6 border border-white/10 relative z-10">
                                 <Layers className="w-5 h-5 text-white" />
                             </div>
-                            <h3 className="text-2xl font-bold mb-4">Notes</h3>
-                            <p className="text-zinc-500 text-sm leading-relaxed max-w-sm">
-                                Add AI-assisted notes, share them as text or image with your team seamlessly. You don't have to miss important stuff now!
-                            </p>
-                            <div className="absolute top-1/2 right-12 -translate-y-1/2 w-32 h-40 bg-white/5 border border-white/10 rounded-lg rotate-6 opacity-40 group-hover:rotate-12 transition-transform hidden lg:block" />
+                            <div className="relative z-10">
+                                <h3 className="text-2xl font-bold mb-4">Notes</h3>
+                                <p className="text-zinc-500 text-sm leading-relaxed max-w-sm">
+                                    Add AI-assisted notes, share them as text or image with your team seamlessly. You don't have to miss important stuff now!
+                                </p>
+                            </div>
+
+                            {/* Fanning Stacked Cards */}
+                            <div className="absolute right-12 top-1/2 -translate-y-1/2 w-40 h-52 hidden lg:block">
+                                {[2, 1, 0].map((i) => (
+                                    <motion.div
+                                        key={i}
+                                        whileHover={{
+                                            rotate: i * 15 - 15,
+                                            x: i * 40 - 40,
+                                            y: i * 10 - 5
+                                        }}
+                                        className="absolute inset-0 bg-zinc-900 border border-white/10 rounded-xl p-4 shadow-xl origin-bottom"
+                                        style={{ zIndex: 10 - i }}
+                                    >
+                                        <div className="w-8 h-1 bg-white/10 rounded-full mb-3" />
+                                        <div className="space-y-2">
+                                            <div className="w-full h-1 bg-white/5 rounded-full" />
+                                            <div className="w-3/4 h-1 bg-white/5 rounded-full" />
+                                            {i === 0 && <Sparkles className="w-4 h-4 text-white/20 absolute bottom-4 right-4" />}
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </div>
                         </motion.div>
 
                         {/* Traditional Inbox */}
@@ -457,20 +537,45 @@ export function LinearLanding() {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ delay: 0.3 }}
-                            className="group relative h-[400px] rounded-3xl border border-white/5 bg-zinc-950/50 backdrop-blur-sm overflow-hidden flex flex-col md:flex-row shadow-2xl hover:border-white/10 transition-colors"
+                            className="group relative h-[450px] rounded-3xl border border-white/5 bg-zinc-950/50 backdrop-blur-sm overflow-hidden flex flex-col md:flex-row shadow-2xl hover:border-white/10 transition-colors"
                         >
-                            <div className="absolute inset-0 bg-white/[0.01] pointer-events-none" />
                             <div className="flex-1 bg-gradient-to-tl from-white/5 to-transparent relative p-8 lg:flex items-center justify-center hidden">
-                                <div className="w-full max-w-[200px] space-y-3">
-                                    {[1, 2, 3].map(i => (
-                                        <div key={i} className="h-10 bg-white/5 rounded-lg border border-white/5 flex items-center px-3">
-                                            <div className="w-4 h-4 rounded-full bg-white/10 mr-2" />
-                                            <div className="h-2 w-20 bg-white/10 rounded-full" />
-                                        </div>
+                                <div className="w-full max-w-[240px] space-y-3 relative">
+                                    {/* Scanning Beam for Inbox */}
+                                    <motion.div
+                                        animate={{ height: ['0%', '100%', '0%'], top: ['0%', '0%', '100%'] }}
+                                        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+                                        className="absolute left-[-8px] w-[2px] bg-white/40 blur-[1px] z-20"
+                                    />
+                                    {[1, 2, 3, 4].map(p => (
+                                        <motion.div
+                                            key={p}
+                                            animate={p === 2 ? {
+                                                backgroundColor: ['rgba(24,24,27,1)', 'rgba(255,255,255,0.05)', 'rgba(24,24,27,1)'],
+                                                borderColor: ['rgba(255,255,255,0.05)', 'rgba(255,255,255,0.2)', 'rgba(255,255,255,0.05)']
+                                            } : {}}
+                                            transition={{ duration: 4, repeat: Infinity }}
+                                            className="h-12 bg-zinc-900 rounded-xl border border-white/5 flex items-center px-4 justify-between group/row"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-2 h-2 rounded-full bg-white/20" />
+                                                <div className="h-2 w-16 bg-white/10 rounded-full" />
+                                            </div>
+                                            {p === 2 && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, scale: 0.8 }}
+                                                    animate={{ opacity: 1, scale: 1 }}
+                                                    className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/10 border border-white/10"
+                                                >
+                                                    <Sparkles className="w-2.5 h-2.5 text-white/60" />
+                                                    <span className="text-[8px] font-bold text-white/60">AI DRAFT</span>
+                                                </motion.div>
+                                            )}
+                                        </motion.div>
                                     ))}
                                 </div>
                             </div>
-                            <div className="flex-1 p-8 flex flex-col justify-center">
+                            <div className="flex-1 p-8 flex flex-col justify-center relative z-10">
                                 <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center mb-6 border border-white/10">
                                     <Inbox className="w-5 h-5 text-white" />
                                 </div>
