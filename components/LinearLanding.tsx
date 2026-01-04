@@ -582,7 +582,7 @@ export function LinearLanding() {
                                 transition={{ delay: 0.1 }}
                                 className="text-zinc-500 font-bold mb-8 text-sm uppercase tracking-[0.4em]"
                             >
-                                Neural Architect
+                                14 y/o founder
                             </motion.p>
 
                             <motion.blockquote
@@ -617,7 +617,7 @@ export function LinearLanding() {
             <section id="pricing" className="py-32 bg-black z-10 relative">
                 <PricingSection
                     plans={plans}
-                    heading="Access the Signal."
+                    heading="Simple Price For All"
                     description="Choose the layer of intelligence that matches your output velocity."
                     className="bg-transparent"
                 />
@@ -630,7 +630,7 @@ export function LinearLanding() {
                         <div className="px-4 py-1.5 rounded-full border border-white/10 bg-white/5 mb-8">
                             <span className="text-xs font-bold uppercase tracking-[0.2em] text-white/80">FAQ</span>
                         </div>
-                        <h2 className="text-4xl md:text-7xl font-bold mb-6 tracking-tighter">Frequently asked questions</h2>
+                        <h2 className="text-4xl md:text-7xl font-bold mb-6 tracking-tighter">Questions? Answers!</h2>
                         <p className="text-zinc-500 text-lg max-w-2xl">
                             Everything you need to know about Mailient. Can't find what you're looking for? <a href="mailto:support@mailient.com" className="text-white font-bold hover:underline">Contact us</a>.
                         </p>
