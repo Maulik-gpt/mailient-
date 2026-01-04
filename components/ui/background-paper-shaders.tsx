@@ -52,8 +52,8 @@ const fragmentShader = `
 
 export function ShaderPlane({
     position,
-    color1 = "#ff5722",
-    color2 = "#ffffff",
+    color1 = "#111111",
+    color2 = "#000000",
 }: {
     position: [number, number, number]
     color1?: string
@@ -95,9 +95,11 @@ export function ShaderPlane({
 export function EnergyRing({
     radius = 1,
     position = [0, 0, 0],
+    color = "#ffffff"
 }: {
     radius?: number
     position?: [number, number, number]
+    color?: string
 }) {
     const mesh = useRef<THREE.Mesh>(null!)
 
@@ -105,15 +107,15 @@ export function EnergyRing({
         if (mesh.current) {
             mesh.current.rotation.z = state.clock.elapsedTime
             if (mesh.current.material instanceof THREE.MeshBasicMaterial) {
-                mesh.current.material.opacity = 0.5 + Math.sin(state.clock.elapsedTime * 3) * 0.3
+                mesh.current.material.opacity = 0.2 + Math.sin(state.clock.elapsedTime * 2) * 0.1
             }
         }
     })
 
     return (
         <mesh ref={mesh} position={position}>
-            <ringGeometry args={[radius * 0.8, radius, 32]} />
-            <meshBasicMaterial color="#ff5722" transparent opacity={0.6} side={THREE.DoubleSide} />
+            <ringGeometry args={[radius * 0.98, radius, 128]} />
+            <meshBasicMaterial color={color} transparent opacity={0.2} side={THREE.DoubleSide} />
         </mesh>
     )
 }
@@ -123,9 +125,10 @@ export function BackgroundShaders() {
         <div className="absolute inset-0 w-full h-full -z-10 bg-black">
             <Canvas camera={{ position: [0, 0, 5], fov: 75 }}>
                 <ambientLight intensity={0.5} />
-                <ShaderPlane position={[0, 0, 0]} color1="#1a1a1a" color2="#000000" />
-                <EnergyRing radius={2} position={[0, 0, -1]} />
-                <EnergyRing radius={3} position={[0, 0, -2]} />
+                <ShaderPlane position={[0, 0, 0]} color1="#0a0a0a" color2="#000000" />
+                <EnergyRing radius={3} position={[0, 0, -1]} color="#ffffff" />
+                <EnergyRing radius={4} position={[0, 0, -2]} color="#333333" />
+                <EnergyRing radius={2.5} position={[0, 0, 0.5]} color="#111111" />
             </Canvas>
         </div>
     )

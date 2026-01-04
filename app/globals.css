@@ -180,23 +180,23 @@
     --popover-foreground: 0 0% 100%;
     --primary: 0 0% 100%;
     --primary-foreground: 0 0% 0%;
-    --secondary: 0 0% 5%;
+    --secondary: 0 0% 9%;
     --secondary-foreground: 0 0% 100%;
-    --muted: 0 0% 5%;
-    --muted-foreground: 0 0% 55%;
-    --accent: 0 0% 5%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 60%;
+    --accent: 0 0% 15%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 0% 100%;
     --destructive-foreground: 0 0% 0%;
-    --border: 0 0% 10%;
-    --input: 0 0% 10%;
+    --border: 0 0% 15%;
+    --input: 0 0% 15%;
     --ring: 0 0% 100%;
     --radius: 0.5rem;
-    --color-1: 0 100% 63%;
-    --color-2: 270 100% 63%;
-    --color-3: 210 100% 63%;
-    --color-4: 195 100% 63%;
-    --color-5: 90 100% 63%;
+    --color-1: 0 0% 100%;
+    --color-2: 0 0% 80%;
+    --color-3: 0 0% 60%;
+    --color-4: 0 0% 40%;
+    --color-5: 0 0% 20%;
   }
 
   .dark {
@@ -794,7 +794,7 @@ textarea,
 }
 
 .text-gradient {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #a1a1aa 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

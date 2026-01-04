@@ -123,7 +123,7 @@ export function PricingCard({
 			>
 				<div className="absolute top-2 right-2 z-10 flex items-center gap-2">
 					{plan.highlighted && (
-						<p className="bg-green-600 text-white flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs">
+						<p className="bg-zinc-800 text-white flex items-center gap-1 rounded-md border border-white/10 px-2 py-0.5 text-xs">
 							<StarIcon className="h-3 w-3 fill-current" />
 							Popular
 						</p>
@@ -157,7 +157,7 @@ export function PricingCard({
 									<p
 										className={cn(
 											feature.tooltip &&
-												'cursor-pointer border-b border-dashed',
+											'cursor-pointer border-b border-dashed',
 										)}
 									>
 										{feature.text}
@@ -192,46 +192,46 @@ export function PricingCard({
 
 
 type BorderTrailProps = {
-  className?: string;
-  size?: number;
-  transition?: Transition;
-  delay?: number;
-  onAnimationComplete?: () => void;
-  style?: React.CSSProperties;
+	className?: string;
+	size?: number;
+	transition?: Transition;
+	delay?: number;
+	onAnimationComplete?: () => void;
+	style?: React.CSSProperties;
 };
 
 export function BorderTrail({
-  className,
-  size = 60,
-  transition,
-  delay,
-  onAnimationComplete,
-  style,
+	className,
+	size = 60,
+	transition,
+	delay,
+	onAnimationComplete,
+	style,
 }: BorderTrailProps) {
-  const BASE_TRANSITION = {
-    repeat: Infinity,
-    duration: 5,
-    ease: 'linear',
-  };
+	const BASE_TRANSITION = {
+		repeat: Infinity,
+		duration: 5,
+		ease: 'linear',
+	};
 
-  return (
-    <div className='pointer-events-none absolute inset-0 rounded-[inherit] border border-transparent [mask-clip:padding-box,border-box] [mask-composite:intersect] [mask-image:linear-gradient(transparent,transparent),linear-gradient(#000,#000)]'>
-      <motion.div
-        className={cn('absolute aspect-square bg-zinc-500', className)}
-        style={{
-          width: size,
-          offsetPath: `rect(0 auto auto 0 round ${size}px)`,
-          ...style,
-        }}
-        animate={{
-          offsetDistance: ['0%', '100%'],
-        }}
-        transition={{
-          ...(transition ?? BASE_TRANSITION),
-          delay: delay,
-        }}
-        onAnimationComplete={onAnimationComplete}
-      />
-    </div>
-  );
+	return (
+		<div className='pointer-events-none absolute inset-0 rounded-[inherit] border border-transparent [mask-clip:padding-box,border-box] [mask-composite:intersect] [mask-image:linear-gradient(transparent,transparent),linear-gradient(#000,#000)]'>
+			<motion.div
+				className={cn('absolute aspect-square bg-zinc-500', className)}
+				style={{
+					width: size,
+					offsetPath: `rect(0 auto auto 0 round ${size}px)`,
+					...style,
+				}}
+				animate={{
+					offsetDistance: ['0%', '100%'],
+				}}
+				transition={{
+					...(transition ?? BASE_TRANSITION),
+					delay: delay,
+				}}
+				onAnimationComplete={onAnimationComplete}
+			/>
+		</div>
+	);
 }

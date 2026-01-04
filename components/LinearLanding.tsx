@@ -37,19 +37,19 @@ const features = [
         title: "Signal Intelligence",
         description: "Automatically extract revenue opportunities and high-priority leads from the noise.",
         icon: Zap,
-        color: "text-blue-500",
+        color: "text-zinc-100",
     },
     {
         title: "Neural Drafting",
         description: "AI that learns your voice and context to draft perfect replies in seconds.",
         icon: Bot,
-        color: "text-purple-500",
+        color: "text-zinc-300",
     },
     {
         title: "Relationship Graph",
         description: "Visualize and track your most important connections across every thread.",
         icon: Layers,
-        color: "text-emerald-500",
+        color: "text-zinc-500",
     }
 ]
 
@@ -120,7 +120,6 @@ export function LinearLanding() {
             {/* Background Layer */}
             <div className="fixed inset-0 z-0">
                 <BackgroundShaders />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(120,119,198,0.1),transparent_50%)]" />
                 <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px]" />
             </div>
 
@@ -333,12 +332,12 @@ export function LinearLanding() {
                                     >
                                         <div className="w-full space-y-6">
                                             <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 rounded bg-blue-500/20 flex items-center justify-center">
-                                                    <Zap className="w-6 h-6 text-blue-500" />
+                                                <div className="w-12 h-12 rounded bg-white/10 flex items-center justify-center">
+                                                    <Zap className="w-6 h-6 text-white" />
                                                 </div>
                                                 <div>
                                                     <p className="font-bold">Urgent Deal</p>
-                                                    <p className="text-xs text-blue-500 font-mono italic">High Revenue Signal Detected</p>
+                                                    <p className="text-xs text-zinc-400 font-mono italic">High Revenue Signal Detected</p>
                                                 </div>
                                             </div>
                                             <div className="h-1 bg-white/5 rounded-full overflow-hidden">
@@ -346,7 +345,7 @@ export function LinearLanding() {
                                                     initial={{ width: 0 }}
                                                     animate={{ width: "85%" }}
                                                     transition={{ duration: 1, delay: 0.5 }}
-                                                    className="h-full bg-blue-500"
+                                                    className="h-full bg-white"
                                                 />
                                             </div>
                                         </div>
