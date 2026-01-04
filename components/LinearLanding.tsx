@@ -734,7 +734,7 @@ export function LinearLanding() {
                     <div className="space-y-4 max-w-5xl mx-auto">
                         <FAQItem
                             question="Is Mailient compatible with any email provider?"
-                            answer="Currently, Mailient is optimized for Gmail and Google Workspace. We focus on providing the deepest possible integration with Google's API to ensure real-time sync and high security."
+                            answer="Currently, Mailient is optimized for Gmail. We focus on providing the deepest possible integration with Google's API to ensure real-time sync and high security."
                         />
                         <FAQItem
                             question="Can I change my plan later?"
@@ -782,7 +782,7 @@ export function LinearLanding() {
                                     size="lg"
                                     className="bg-white text-black hover:bg-zinc-200 rounded-2xl px-8 py-7 text-lg font-bold shadow-2xl transition-transform hover:scale-105 active:scale-95 flex items-center gap-2"
                                 >
-                                    Get Started Free
+                                    Get Started Now!
                                     <ArrowRight className="w-5 h-5" />
                                 </Button>
                                 <Button
