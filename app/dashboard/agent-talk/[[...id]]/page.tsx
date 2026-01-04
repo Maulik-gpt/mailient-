@@ -48,8 +48,7 @@ export default function AgentTalkPage({ params }: { params: { id?: string[] } })
                     }
                 } catch (error) {
                     console.error('Error checking onboarding status:', error);
-                    router.push('/onboarding');
-                    return;
+                    // Do not redirect on transient errors to avoid loop
                 }
 
                 setIsAuthenticated(true);

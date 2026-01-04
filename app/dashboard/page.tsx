@@ -16,10 +16,12 @@ export default async function DashboardPage() {
 
   // Check onboarding status
   let profile = null;
-  if (session.user?.email) {
+  const userEmail = session.user?.email?.toLowerCase();
+
+  if (userEmail) {
     try {
       const db = new DatabaseService();
-      profile = await db.getUserProfile(session.user.email);
+      profile = await db.getUserProfile(userEmail);
     } catch (error) {
       console.error('Error checking onboarding status:', error);
       // Fallback to null profile
@@ -34,19 +36,19 @@ export default async function DashboardPage() {
     // 1. Check preferences for plan selection
     if (profile?.preferences?.plan) {
       console.log('✅ Auto-completing onboarding for user with selected plan');
-      await db.supabase.from('user_profiles').update({ onboarding_completed: true }).eq('user_id', session.user.email);
+      await db.supabase.from('user_profiles').update({ onboarding_completed: true }).eq('user_id', userEmail);
     } else {
       // 2. Check for active subscription
       try {
         const { data: subscription } = await db.supabase
           .from('user_subscriptions')
           .select('status, subscription_ends_at')
-          .eq('user_id', session.user.email)
+          .eq('user_id', userEmail)
           .maybeSingle();
 
         if (subscription && subscription.status === 'active' && new Date(subscription.subscription_ends_at) > new Date()) {
           console.log('✅ Auto-completing onboarding for user with active subscription');
-          await db.supabase.from('user_profiles').update({ onboarding_completed: true }).eq('user_id', session.user.email);
+          await db.supabase.from('user_profiles').update({ onboarding_completed: true }).eq('user_id', userEmail);
         } else {
           // No valid onboarding or subscription found, redirect
           console.log('🚫 User not onboarded, redirecting to /onboarding');

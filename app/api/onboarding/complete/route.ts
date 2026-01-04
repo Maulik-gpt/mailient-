@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     }
 
     const db = new DatabaseService(true);
-    const userId = session.user.email;
+    const userId = session.user.email.toLowerCase();
 
     // Check if username is already taken by another user
     let finalUsername = username;

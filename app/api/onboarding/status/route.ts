@@ -11,53 +11,66 @@ export async function GET() {
       return NextResponse.json({ completed: false }, { status: 200 });
     }
 
+    const userEmail = session.user.email.toLowerCase();
+    console.log(`🔍 Checking onboarding status for: ${userEmail}`);
+
     const db = new DatabaseService(true);
-    const profile = await db.getUserProfile(session.user.email);
+    const profile = await db.getUserProfile(userEmail);
+    console.log(`👤 Profile found: ${!!profile}, Completed: ${profile?.onboarding_completed}, Username: ${profile?.username}`);
 
     // 1. Check if onboarding is explicitly completed
     if (profile?.onboarding_completed) {
-      return NextResponse.json({ completed: true });
+      console.log(`✅ Status: Completed (explicit flag)`);
+      return NextResponse.json({ completed: true, source: 'profile_flag' });
     }
 
     // 2. Check if they have already set a username (means they reached at least step 8/9)
     if (profile?.username) {
+      console.log(`✅ Status: Completed (username found: ${profile.username})`);
       // Auto-fix: mark as completed if they have a username
-      await db.supabase.from('user_profiles').update({ onboarding_completed: true }).eq('user_id', session.user.email);
+      await db.supabase.from('user_profiles').update({ onboarding_completed: true }).eq('user_id', userEmail);
       return NextResponse.json({ completed: true, note: 'username_found' });
     }
 
     // 3. Check for specific onboarding preferences (plan selection)
     if (profile?.preferences?.plan) {
-      await db.supabase.from('user_profiles').update({ onboarding_completed: true }).eq('user_id', session.user.email);
+      console.log(`✅ Status: Completed (plan found in preferences: ${profile.preferences.plan})`);
+      await db.supabase.from('user_profiles').update({ onboarding_completed: true }).eq('user_id', userEmail);
       return NextResponse.json({ completed: true, note: 'plan_pref_found' });
     }
 
     // 4. FALLBACK: Also check if user has an active subscription
     try {
+      console.log(`💳 Checking subscriptions for: ${userEmail}`);
       const { data: subscription } = await db.supabase
         .from('user_subscriptions')
         .select('status, plan_type, subscription_ends_at')
-        .eq('user_id', session.user.email)
+        .eq('user_id', userEmail)
         .maybeSingle();
 
       if (subscription) {
+        console.log(`💳 Subscription found: status=${subscription.status}, plan=${subscription.plan_type}`);
         // If they have any valid subscription status or plan, they are done
         if (subscription.status === 'active' || (subscription.plan_type && subscription.plan_type !== 'none')) {
+          console.log(`✅ Status: Completed (active subscription found)`);
           await db.supabase
             .from('user_profiles')
             .update({ onboarding_completed: true })
-            .eq('user_id', session.user.email);
+            .eq('user_id', userEmail);
 
           return NextResponse.json({
             completed: true,
             note: 'Auto-completed from subscription'
           });
         }
+      } else {
+        console.log(`💳 No subscription record found.`);
       }
     } catch (subError) {
-      console.log('Subscription check skipped:', subError);
+      console.log('⚠️ Subscription check skipped:', subError);
     }
 
+    console.log(`❌ Status: NOT COMPLETED`);
     return NextResponse.json({
       completed: false,
     });

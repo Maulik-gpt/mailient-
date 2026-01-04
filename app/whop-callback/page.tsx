@@ -34,9 +34,10 @@ function PaymentCallbackContent() {
 
         const activateSubscription = async () => {
             try {
-                // Clear pending plan from localStorage
+                // Clear pending plan from localStorage and mark as done
                 localStorage.removeItem('pending_plan');
                 localStorage.removeItem('pending_plan_timestamp');
+                localStorage.setItem('onboarding_completed', 'true');
 
                 const response = await fetch('/api/subscription/status', {
                     method: 'POST',
