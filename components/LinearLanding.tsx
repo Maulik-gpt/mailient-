@@ -124,8 +124,11 @@ export function LinearLanding() {
             </div>
 
             {/* Navigation */}
-            <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-black/80 backdrop-blur-md border-b border-white/10 py-4' : 'bg-transparent py-6'}`}>
-                <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
+            <nav className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 ease-in-out ${scrolled
+                    ? 'w-[95%] md:w-[80%] max-w-5xl rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_0_rgba(255,255,255,0.05)] py-3 px-6'
+                    : 'w-[95%] md:w-full max-w-7xl bg-transparent py-6 px-6'
+                }`}>
+                <div className="flex items-center justify-between">
                     <div className="flex items-center gap-8">
                         <div className="flex items-center gap-2 group cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
                             <div className="w-8 h-8 bg-white rounded flex items-center justify-center group-hover:rotate-6 transition-transform">
@@ -185,7 +188,7 @@ export function LinearLanding() {
                     </div>
 
                     {/* Hero Video Space */}
-                    <div className="relative w-full max-w-5xl mx-auto aspect-video rounded-2xl border border-white/10 bg-zinc-900/50 backdrop-blur-sm overflow-hidden group">
+                    <div className="relative w-full max-w-5xl mx-auto aspect-video rounded-2xl border border-white/10 bg-zinc-900/50 backdrop-blur-sm overflow-hidden group shadow-[0_0_50px_-12px_rgba(255,255,255,0.1)]">
                         <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
 
                         {/* Play Button Overlay */}
@@ -225,7 +228,7 @@ export function LinearLanding() {
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                         {features.map((feature, idx) => (
-                            <div key={idx} className="p-8 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] transition-colors group">
+                            <div key={idx} className="p-8 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] transition-all group shadow-[0_4px_20px_-10px_rgba(255,255,255,0.05)] hover:shadow-[0_4px_30px_-10px_rgba(255,255,255,0.1)]">
                                 <div className={`mb-6 p-4 rounded-xl bg-white/5 w-fit group-hover:scale-110 transition-transform ${feature.color}`}>
                                     <feature.icon className="w-6 h-6" />
                                 </div>
