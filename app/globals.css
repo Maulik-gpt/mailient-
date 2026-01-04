@@ -74,186 +74,85 @@
 }
 
 @import "tailwindcss";
+@import "tw-animate-css";
 
-/* Agent-Talk Specific Satoshi Font Loading */
-.satoshi-agent-talk,
-.satoshi-agent-talk * {
-  font-family: 'Satoshi', ui-sans-serif, system-ui, sans-serif !important;
-}
-
-/* Profile Bubble Satoshi Font Loading */
-.satoshi-profile-bubble,
-.satoshi-profile-bubble * {
-  font-family: 'Satoshi', ui-sans-serif, system-ui, sans-serif !important;
-}
-
-/* Profile Page Satoshi Font Loading */
-.satoshi-profile-page,
-.satoshi-profile-page * {
-  font-family: 'Satoshi', ui-sans-serif, system-ui, sans-serif !important;
-}
-
-/* Profile Settings Satoshi Font Loading */
-.satoshi-profile-settings,
-.satoshi-profile-settings * {
-  font-family: 'Satoshi', ui-sans-serif, system-ui, sans-serif !important;
-}
-
-/* Chats Page Satoshi Font Loading */
-.satoshi-chats,
-.satoshi-chats * {
-  font-family: 'Satoshi', ui-sans-serif, system-ui, sans-serif !important;
-}
-
-/* Avatar Upload Satoshi Font Loading */
-.satoshi-avatar-upload,
-.satoshi-avatar-upload * {
-  font-family: 'Satoshi', ui-sans-serif, system-ui, sans-serif !important;
-}
-
-/* Search Page Satoshi Font Loading */
-.satoshi-search-page,
-.satoshi-search-page * {
-  font-family: 'Satoshi', ui-sans-serif, system-ui, sans-serif !important;
-}
-
-/* Home Feed Page Satoshi Font Loading */
-.satoshi-home-feed,
-.satoshi-home-feed * {
-  font-family: 'Satoshi', ui-sans-serif, system-ui, sans-serif !important;
-}
-
-/* Notifications Page Satoshi Font Loading */
-.satoshi-notifications,
-.satoshi-notifications * {
-  font-family: 'Satoshi', ui-sans-serif, system-ui, sans-serif !important;
-}
-
-/* Settings Page Satoshi Font Loading */
-.satoshi-settings-page,
-.satoshi-settings-page * {
-  font-family: 'Satoshi', ui-sans-serif, system-ui, sans-serif !important;
-}
-
-/* Pricing Page Satoshi Font Loading */
-.satoshi-pricing-page,
-.satoshi-pricing-page * {
-  font-family: 'Satoshi', ui-sans-serif, system-ui, sans-serif !important;
-}
-
-/* Global Satoshi App Class */
-.satoshi-app,
-.satoshi-app * {
-  font-family: 'Satoshi', ui-sans-serif, system-ui, sans-serif !important;
-}
-
-/* Hide scrollbar for home feed */
-.satoshi-home-feed ::-webkit-scrollbar {
-  display: none;
-}
-
-.satoshi-home-feed {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-
-
-/* Ensure Satoshi is used as the primary font */
-@layer base {
-  html {
-    font-family: 'Satoshi', ui-sans-serif, system-ui, sans-serif;
-  }
-
-  body {
-    font-family: 'Satoshi', ui-sans-serif, system-ui, sans-serif;
-    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
-    font-variation-settings: 'wght' 400;
-  }
-
-  :root {
-    --background: 0 0% 0%;
-    --foreground: 0 0% 100%;
-    --card: 0 0% 0%;
-    --card-foreground: 0 0% 100%;
-    --popover: 0 0% 0%;
-    --popover-foreground: 0 0% 100%;
-    --primary: 0 0% 100%;
-    --primary-foreground: 0 0% 0%;
-    --secondary: 0 0% 9%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 60%;
-    --accent: 0 0% 15%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 0% 100%;
-    --destructive-foreground: 0 0% 0%;
-    --border: 0 0% 15%;
-    --input: 0 0% 15%;
-    --ring: 0 0% 100%;
-    --radius: 0.5rem;
-    --color-1: 0 0% 100%;
-    --color-2: 0 0% 80%;
-    --color-3: 0 0% 60%;
-    --color-4: 0 0% 40%;
-    --color-5: 0 0% 20%;
-  }
-
-  .dark {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 0%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 0%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 0%;
-    --primary: 0 0% 0%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 0 0% 85%;
-    --secondary-foreground: 0 0% 0%;
-    --muted: 0 0% 85%;
-    --muted-foreground: 0 0% 35%;
-    --accent: 0 0% 85%;
-    --accent-foreground: 0 0% 0%;
-    --destructive: 0 0% 0%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 80%;
-    --input: 0 0% 80%;
-    --ring: 0 0% 0%;
-    --radius: 0.5rem;
-  }
-}
-
-@layer base {
-  * {
-    border-color: hsl(var(--border));
-  }
-
-  body {
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
-  }
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-destructive-foreground: var(--destructive-foreground);
 }
 
 :root {
-  --sidebar: hsl(0 0% 0%);
-  --sidebar-foreground: hsl(0 0% 100%);
-  --sidebar-primary: hsl(0 0% 100%);
-  --sidebar-primary-foreground: hsl(0 0% 0%);
-  --sidebar-accent: hsl(0 0% 5%);
-  --sidebar-accent-foreground: hsl(0 0% 100%);
-  --sidebar-border: hsl(0 0% 10%);
-  --sidebar-ring: hsl(0 0% 100%);
+  --background: oklch(0 0 0);
+  --foreground: oklch(1 0 0);
+  --card: oklch(0.1 0 0 / 0.1);
+  --card-foreground: oklch(1 0 0);
+  --popover: oklch(0 0 0 / 0.8);
+  --popover-foreground: oklch(1 0 0);
+  --primary: oklch(1 0 0);
+  --primary-foreground: oklch(0 0 0);
+  --secondary: oklch(0.65 0.25 25);
+  --secondary-foreground: oklch(1 0 0);
+  --muted: oklch(1 0 0 / 0.5);
+  --muted-foreground: oklch(0.7 0 0);
+  --accent: oklch(0.65 0.25 25);
+  --accent-foreground: oklch(1 0 0);
+  --destructive: oklch(0.6 0.25 15);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(1 0 0 / 0.2);
+  --input: oklch(1 0 0 / 0.1);
+  --ring: oklch(1 0 0 / 0.3);
+  --chart-1: oklch(0.65 0.25 25);
+  --chart-2: oklch(0.8 0.15 85);
+  --chart-3: oklch(0.7 0.2 140);
+  --chart-4: oklch(0.7 0.2 240);
+  --chart-5: oklch(0.6 0.25 300);
+  --radius: 0.5rem;
+  --sidebar: oklch(0 0 0 / 0.9);
+  --sidebar-foreground: oklch(1 0 0);
+  --sidebar-primary: oklch(0.65 0.25 25);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.65 0.25 25);
+  --sidebar-accent-foreground: oklch(1 0 0);
+  --sidebar-border: oklch(1 0 0 / 0.2);
+  --sidebar-ring: oklch(1 0 0 / 0.3);
+  --font-geist-sans: "Geist Sans", sans-serif;
+  --font-geist-mono: "Geist Mono", monospace;
 }
 
 .dark {
-  --sidebar: hsl(0 0% 100%);
-  --sidebar-foreground: hsl(0 0% 0%);
-  --sidebar-primary: hsl(0 0% 0%);
-  --sidebar-primary-foreground: hsl(0 0% 100%);
-  --sidebar-accent: hsl(0 0% 85%);
-  --sidebar-accent-foreground: hsl(0 0% 0%);
-  --sidebar-border: hsl(0 0% 80%);
-  --sidebar-ring: hsl(0 0% 0%);
+  --background: oklch(0 0 0);
+  --foreground: oklch(1 0 0);
+  --card: oklch(0.1 0 0 / 0.1);
+  --card-foreground: oklch(1 0 0);
+  --popover: oklch(0 0 0 / 0.8);
+  --popover-foreground: oklch(1 0 0);
+  --primary: oklch(1 0 0);
+  --primary-foreground: oklch(0 0 0);
+  --secondary: oklch(0.65 0.25 25);
+  --secondary-foreground: oklch(1 0 0);
+  --muted: oklch(1 0 0 / 0.5);
+  --muted-foreground: oklch(0.7 0 0);
+  --accent: oklch(0.65 0.25 25);
+  --accent-foreground: oklch(1 0 0);
+  --destructive: oklch(0.6 0.25 15);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(1 0 0 / 0.2);
+  --input: oklch(1 0 0 / 0.1);
+  --ring: oklch(1 0 0 / 0.3);
+  --chart-1: oklch(0.65 0.25 25);
+  --chart-2: oklch(0.8 0.15 85);
+  --chart-3: oklch(0.7 0.2 140);
+  --chart-4: oklch(0.7 0.2 240);
+  --chart-5: oklch(0.6 0.25 300);
+  --sidebar: oklch(0 0 0 / 0.9);
+  --sidebar-foreground: oklch(1 0 0);
+  --sidebar-primary: oklch(0.65 0.25 25);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.65 0.25 25);
+  --sidebar-accent-foreground: oklch(1 0 0);
+  --sidebar-border: oklch(1 0 0 / 0.2);
+  --sidebar-ring: oklch(1 0 0 / 0.3);
 }
 
 /* Sidebar color variables are defined above in :root and .dark selectors */
