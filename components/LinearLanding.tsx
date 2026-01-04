@@ -142,6 +142,7 @@ export function LinearLanding() {
                         </div>
 
                         <div className="hidden md:flex items-center gap-6 text-sm font-medium text-zinc-500">
+                            <a href="#benefits" className="hover:text-white transition-colors">Benefits</a>
                             <a href="#features" className="hover:text-white transition-colors">Features</a>
                             <a href="#method" className="hover:text-white transition-colors">Method</a>
                             <a href="#integration" className="hover:text-white transition-colors">Security</a>
@@ -220,8 +221,8 @@ export function LinearLanding() {
                 </div>
             </HeroGeometric>
 
-            {/* Features Section - Premium Bento Layout */}
-            <section id="features" className="py-40 px-6 z-10 relative overflow-hidden bg-black">
+            {/* Benefits Section - Premium Bento Layout */}
+            <section id="benefits" className="py-40 px-6 z-10 relative overflow-hidden bg-black">
                 <div className="max-w-7xl mx-auto">
                     <div className="flex flex-col items-center mb-24 text-center">
                         <motion.div
@@ -355,6 +356,51 @@ export function LinearLanding() {
                                 Connect with your threads instantly to track progress and generate context-aware updates.
                             </p>
                         </motion.div>
+                    </div>
+                </div>
+            </section>
+            {/* Features Section - Detailed Feature Highlights */}
+            <section id="features" className="py-40 px-6 z-10 relative overflow-hidden bg-zinc-950/20">
+                <div className="max-w-7xl mx-auto">
+                    <div className="flex flex-col items-center mb-24 text-center">
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.08] mb-8"
+                        >
+                            <Sparkles className="h-3 w-3 text-zinc-400" />
+                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-white/60">Capabilities</span>
+                        </motion.div>
+
+                        <h2 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">Built for speed.</h2>
+                        <p className="text-zinc-500 max-w-xl mx-auto text-lg leading-relaxed">
+                            Everything you need to handle 1000s of emails without breaking a sweat.
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {/* Placeholder for future specific feature cards */}
+                        {[
+                            { title: "Command Bar", desc: "Interact with your entire inbox using just your keyboard. Fast and fluid.", icon: Command },
+                            { title: "Smart Filters", desc: "Powerful regex and AI-driven filtering to keep your inbox clean.", icon: Filter },
+                            { title: "Instant Search", desc: "Search across all threads in milliseconds with zero lag.", icon: Search },
+                        ].map((item, i) => (
+                            <motion.div
+                                key={i}
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                whileInView={{ opacity: 1, scale: 1 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: i * 0.1 }}
+                                className="p-8 rounded-2xl border border-white/5 bg-zinc-900/30 hover:bg-zinc-900/50 transition-all border-glow"
+                            >
+                                <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center mb-6">
+                                    <item.icon className="w-6 h-6 text-zinc-400" />
+                                </div>
+                                <h3 className="text-xl font-bold mb-3">{item.title}</h3>
+                                <p className="text-zinc-500 text-sm leading-relaxed">{item.desc}</p>
+                            </motion.div>
+                        ))}
                     </div>
                 </div>
             </section>
