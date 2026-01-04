@@ -162,112 +162,54 @@ export function LinearLanding() {
             {/* Hero Section */}
             <HeroGeometric
                 badge="V1.0 is now live"
-                title1="Email at the speed of"
-                title2="thought."
+                title1="Email at the"
+                title2="speed of thought."
             >
-                <div>
-                    <p className="text-lg md:text-xl text-white/40 max-w-2xl mb-12 leading-relaxed font-light tracking-wide mx-auto px-4">
+                <div className="text-center">
+                    <p className="text-lg md:text-xl text-white/40 max-w-2xl mb-12 leading-relaxed font-light tracking-wide mx-auto px-4 text-center">
                         Mailient is the high-performance email client for founders. Built for focus, speed, and intelligence. Sift through the noise and focus on what matters.
                     </p>
 
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-24">
-                        <Button onClick={() => router.push('/auth/signin')} size="lg" className="bg-white text-black hover:bg-zinc-200 rounded-full px-10 py-6 text-lg font-medium shadow-2xl">
-                            Start for free
-                            <ArrowRight className="w-5 h-5 ml-2" />
-                        </Button>
+                        {status === "authenticated" ? (
+                            <Button onClick={() => router.push('/home-feed')} size="lg" className="bg-white text-black hover:bg-zinc-200 rounded-full px-10 py-6 text-lg font-medium shadow-2xl">
+                                Continue to Dashboard
+                                <ArrowRight className="w-5 h-5 ml-2" />
+                            </Button>
+                        ) : (
+                            <Button onClick={() => signIn('google')} size="lg" className="bg-white text-black hover:bg-zinc-200 rounded-full px-10 py-6 text-lg font-medium shadow-2xl">
+                                Connect Gmail
+                                <ArrowRight className="w-5 h-5 ml-2" />
+                            </Button>
+                        )}
                     </div>
 
-                    {/* Hero Interactive Element */}
-                    <motion.div
-                        style={{ opacity, scale }}
-                        className="w-full max-w-6xl aspect-[16/10] bg-zinc-900/50 rounded-2xl border border-white/10 shadow-2xl relative overflow-hidden backdrop-blur-sm mx-auto"
-                    >
-                        <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent" />
+                    {/* Hero Video Space */}
+                    <div className="relative w-full max-w-5xl mx-auto aspect-video rounded-2xl border border-white/10 bg-zinc-900/50 backdrop-blur-sm overflow-hidden group">
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
 
-                        {/* Mockup UI Sidebar */}
-                        <div className="absolute left-0 top-0 bottom-0 w-64 border-r border-white/5 bg-black/20 p-6 hidden lg:block text-left">
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-3 text-white">
-                                    <Inbox className="w-5 h-5 text-zinc-500" />
-                                    <span className="text-sm font-medium">Inbox</span>
-                                    <span className="ml-auto text-xs text-zinc-600">8</span>
-                                </div>
-                                <div className="flex items-center gap-3 text-zinc-500">
-                                    <Star className="w-5 h-5" />
-                                    <span className="text-sm font-medium">Starred</span>
-                                </div>
-                                <div className="pt-4 flex items-center gap-3 text-zinc-500">
-                                    <Filter className="w-5 h-5" />
-                                    <span className="text-sm font-medium">Smart Sift</span>
-                                </div>
-                                <div className="mt-8 space-y-2">
-                                    <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest px-1">Insights</p>
-                                    <div className="flex items-center gap-2 p-2 bg-blue-500/10 rounded-lg border border-blue-500/20">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                                        <span className="text-xs text-blue-400">Revenue Signal</span>
-                                    </div>
-                                    <div className="flex items-center gap-2 p-2 bg-purple-500/10 rounded-lg border border-purple-500/20">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-                                        <span className="text-xs text-purple-400">Urgent Follow-up</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Mockup UI Content */}
-                        <div className="absolute right-0 top-0 bottom-0 left-0 lg:left-64 p-8 text-left">
-                            <div className="flex items-center justify-between mb-8 pb-4 border-b border-white/5">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-zinc-800" />
-                                    <div>
-                                        <p className="text-sm font-bold">Inbox</p>
-                                        <p className="text-xs text-zinc-500">8 unresolved threads</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <div className="px-2 py-1 bg-zinc-800 rounded text-[10px] font-mono text-zinc-400 flex items-center gap-1">
-                                        <Command className="w-3 h-3" />
-                                        <span>K</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="space-y-4">
-                                {[1, 2, 3].map(i => (
-                                    <div key={i} className={`p-4 rounded-xl border transition-colors ${i === 1 ? 'border-white/20 bg-white/5' : 'border-white/5 hover:bg-white/[0.02]'}`}>
-                                        <div className="flex items-center justify-between mb-2">
-                                            <p className="text-sm font-medium text-white">{i === 1 ? 'Maulik GPT-4' : i === 2 ? 'Linear Team' : 'Stripe Support'}</p>
-                                            <p className="text-xs text-zinc-600">2 min ago</p>
-                                        </div>
-                                        <div className="w-full h-2 bg-zinc-800 rounded-full mb-2" />
-                                        <div className="w-4/5 h-2 bg-zinc-800/50 rounded-full" />
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Arcus AI Hover Card */}
-                            <motion.div
-                                initial={{ scale: 0.9, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                transition={{ delay: 1, duration: 0.5 }}
-                                className="absolute bottom-12 right-12 w-80 bg-black/80 backdrop-blur-xl border border-white/20 p-6 rounded-2xl shadow-2xl"
+                        {/* Play Button Overlay */}
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-2xl group-hover:bg-zinc-200 transition-colors"
                             >
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className="p-2 bg-white/10 rounded-lg">
-                                        <Bot className="w-5 h-5 text-purple-400" />
-                                    </div>
-                                    <p className="text-sm font-bold uppercase tracking-widest text-zinc-400">Arcus Intelligence</p>
-                                </div>
-                                <p className="text-sm text-zinc-300 leading-relaxed mb-4 italic">
-                                    "Detected a revenue signal in the linear team thread. Shall I draft a priority response?"
-                                </p>
-                                <div className="flex gap-2">
-                                    <div className="px-3 py-1.5 bg-white text-black text-xs font-bold rounded-lg cursor-pointer hover:bg-zinc-200">Draft now</div>
-                                    <div className="px-3 py-1.5 bg-zinc-800 text-white text-xs font-bold rounded-lg cursor-pointer hover:bg-zinc-700">Dismiss</div>
-                                </div>
-                            </motion.div>
+                                <div className="w-0 h-0 border-t-[10px] border-t-transparent border-l-[18px] border-l-black border-b-[10px] border-b-transparent ml-1" />
+                            </motion.button>
                         </div>
-                    </motion.div>
+
+                        {/* Video Mockup Content (Placeholder for actual iframe) */}
+                        <div className="absolute bottom-6 left-6 flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+                                <Bot className="w-5 h-5 text-white/40" />
+                            </div>
+                            <div className="text-left">
+                                <p className="text-xs font-bold text-white/80 uppercase tracking-widest">Maulik Demo</p>
+                                <p className="text-[10px] text-white/40">Watch Mailient in action</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </HeroGeometric>
 
