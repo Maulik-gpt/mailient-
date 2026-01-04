@@ -42,17 +42,42 @@ export default async function DashboardPage() {
       try {
         const { data: subscription } = await db.supabase
           .from('user_subscriptions')
-          .select('status, subscription_ends_at')
+          .select('status, plan_type, subscription_ends_at')
           .eq('user_id', userEmail)
           .maybeSingle();
 
-        if (subscription && subscription.status === 'active' && new Date(subscription.subscription_ends_at) > new Date()) {
-          console.log('✅ Auto-completing onboarding for user with active subscription');
-          await db.supabase.from('user_profiles').update({ onboarding_completed: true }).eq('user_id', userEmail);
+        if (subscription) {
+          console.log(`💳 Subscription found: status=${subscription.status}, plan=${subscription.plan_type}`);
+          // If they have any valid subscription status or plan, they are done
+          if (subscription.status === 'active' || (subscription.plan_type && subscription.plan_type !== 'none')) {
+            console.log('✅ Auto-completing onboarding for user with active subscription');
+            await db.supabase.from('user_profiles').update({ onboarding_completed: true }).eq('user_id', userEmail);
+          } else {
+            // No valid onboarding or subscription found, redirect
+            console.log('🚫 User not onboarded, redirecting to /onboarding');
+            redirect('/onboarding');
+          }
         } else {
-          // No valid onboarding or subscription found, redirect
-          console.log('🚫 User not onboarded, redirecting to /onboarding');
-          redirect('/onboarding');
+          // 3. FINAL FALLBACK: Check if user has been recently created (within last hour)
+          // This handles the case where database replication might cause delays
+          if (profile?.created_at) {
+            const createdAt = new Date(profile.created_at);
+            const oneHourAgo = new Date(Date.now() - (60 * 60 * 1000));
+
+            if (createdAt > oneHourAgo) {
+              console.log(`🕒 Profile recently created (${createdAt}), assuming onboarding completion`);
+              // Auto-complete onboarding for recent profiles
+              await db.supabase.from('user_profiles').update({ onboarding_completed: true }).eq('user_id', userEmail);
+            } else {
+              // Old profile without subscription, redirect to onboarding
+              console.log('🚫 User not onboarded, redirecting to /onboarding');
+              redirect('/onboarding');
+            }
+          } else {
+            // No profile creation date, redirect to onboarding
+            console.log('🚫 User not onboarded, redirecting to /onboarding');
+            redirect('/onboarding');
+          }
         }
       } catch (e) {
         console.error('Subscription check failed in dashboard:', e);
