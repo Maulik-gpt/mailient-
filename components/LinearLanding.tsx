@@ -363,22 +363,33 @@ export function LinearLanding() {
             <section id="features" className="py-40 px-6 z-10 relative overflow-hidden bg-black">
                 <div className="max-w-7xl mx-auto">
                     <div className="flex flex-col items-center mb-24 text-center">
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.08] mb-8"
+                        >
+                            <Sparkles className="h-3 w-3 text-white/60" />
+                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-white/60">Features</span>
+                        </motion.div>
+
                         <motion.h2
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
+                            transition={{ delay: 0.1 }}
                             className="text-4xl md:text-7xl font-bold tracking-tight mb-6"
                         >
-                            All features in 1 tool
+                            One tool, all features.
                         </motion.h2>
                         <motion.p
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
-                            transition={{ delay: 0.1 }}
+                            transition={{ delay: 0.2 }}
                             className="text-zinc-500 max-w-xl mx-auto text-lg leading-relaxed"
                         >
-                            Discover features that simplify workflows & grow your business.
+                            Simplify workflows, grow faster.
                         </motion.p>
                     </div>
 
