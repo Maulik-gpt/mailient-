@@ -69,8 +69,8 @@ interface ReplyNotification {
 
 type SmartNotification = ThreatNotification | VerificationCodeNotification | DocumentNotification | ReplyNotification;
 
-// Using xiaomi/mimo-v2-flash:free for accurate notifications - NO FALLBACKS to prevent false content
-const NOTIFICATIONS_MODEL = 'xiaomi/mimo-v2-flash:free';
+// Using google/gemini-2.0-flash-exp:free for reliable notifications - NO FALLBACKS to prevent false content
+const NOTIFICATIONS_MODEL = 'google/gemini-2.0-flash-exp:free';
 
 export async function GET(request: Request) {
     try {
@@ -333,7 +333,7 @@ NOTES:
 - "description" for threats must be detailed and analytical.
 - Return ONLY valid JSON. No markdown. No text outside JSON.`;
 
-        console.log('🤖 Calling AI for notification analysis with xiaomi/mimo-v2-flash:free...');
+        console.log('🤖 Calling AI for notification analysis with google/gemini-2.0-flash-exp:free...');
 
         const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
             method: 'POST',
