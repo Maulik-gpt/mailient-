@@ -278,8 +278,7 @@ async function analyzeEmailsWithAI(emails: any[]): Promise<SmartNotification[]> 
 
     if (!apiKey) {
         console.error('❌ OPENROUTER_API_KEY is not configured');
-        // Return empty - NO false content generation
-        return [];
+        throw new Error('AI provider is not configured. Missing OpenRouter API key (set OPENROUTER_API_KEY2 / OPENROUTER_API_KEY / OPENROUTER_API_KEY3).');
     }
 
     try {
@@ -369,8 +368,7 @@ NOTES:
         if (!response.ok) {
             const errorText = await response.text();
             console.error('❌ AI API error:', response.status, errorText);
-            // Return empty - NO false content generation
-            return [];
+            throw new Error(`AI provider request failed (OpenRouter). HTTP ${response.status}: ${errorText || 'No response body'}`);
         }
 
         const data = await response.json();
@@ -378,7 +376,7 @@ NOTES:
 
         if (!content) {
             console.error('❌ AI returned empty response');
-            return [];
+            throw new Error('AI provider returned an empty response.');
         }
 
         console.log('📥 AI response received, parsing...');
@@ -394,8 +392,8 @@ NOTES:
             }
         } catch (e) {
             console.error('❌ JSON parse error:', e);
-            // Return empty - NO false content generation
-            return [];
+            const message = e instanceof Error ? e.message : String(e);
+            throw new Error(`AI provider returned an invalid JSON payload: ${message}`);
         }
 
         // Convert AI response to notification objects
@@ -488,7 +486,6 @@ NOTES:
 
     } catch (error) {
         console.error('❌ AI analysis error:', error);
-        // Return empty - NO false content generation
-        return [];
+        throw error;
     }
 }

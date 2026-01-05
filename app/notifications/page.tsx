@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, Suspense, useRef } from 'react';
+import type { ReactNode } from 'react';
 import { HomeFeedSidebar } from '@/components/ui/home-feed-sidebar';
 import {
     Bell, Clock, Sparkles, ShieldAlert, ShieldX, ShieldCheck,
@@ -104,6 +105,7 @@ function NotificationsPage() {
     const [activeCategory, setActiveCategory] = useState<NotificationCategory>('all');
     const [copiedCode, setCopiedCode] = useState<string | null>(null);
     const [authError, setAuthError] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [summary, setSummary] = useState({ threats: 0, verificationCodes: 0, documents: 0, replies: 0 });
 
     // Email Modal State
@@ -128,6 +130,7 @@ function NotificationsPage() {
                 setNotifications(data.notifications || []);
                 setSummary(data.summary || { threats: 0, verificationCodes: 0, documents: 0, replies: 0 });
                 setAuthError(false);
+                setErrorMessage(null);
                 if (showToast) {
                     toast.success('Refreshed', { description: `${data.notifications.length} notifications found` });
                 }
@@ -135,12 +138,17 @@ function NotificationsPage() {
                 if (data.authRequired || data.error?.includes('expired') || data.error?.includes('authenticate')) {
                     setAuthError(true);
                 }
-                throw new Error(data.error);
+                const message = typeof data.error === 'string' && data.error.trim() ? data.error.trim() : 'Request failed.';
+                setErrorMessage(message);
+                throw new Error(message);
             }
         } catch (error) {
             const msg = error instanceof Error ? error.message : 'Unknown error';
             if (msg.includes('expired') || msg.includes('authenticate') || msg.includes('Unauthorized')) {
                 setAuthError(true);
+            }
+            if (!authError) {
+                setErrorMessage(msg);
             }
             if (showToast) toast.error('Failed to refresh');
         } finally {
@@ -352,8 +360,21 @@ function NotificationsPage() {
                         </div>
                     )}
 
+                    {/* Non-auth Error */}
+                    {!isLoading && !authError && errorMessage && (
+                        <div className="py-12 px-6 border border-white/10 rounded-2xl bg-white/5">
+                            <div className="flex items-start gap-3">
+                                <AlertTriangle className="w-5 h-5 text-white/50 mt-0.5" />
+                                <div className="min-w-0">
+                                    <p className="text-white font-medium">Unable to load notifications</p>
+                                    <p className="text-white/40 text-sm mt-1 break-words">{errorMessage}</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Notifications */}
-                    {!isLoading && !authError && (
+                    {!isLoading && !authError && !errorMessage && (
                         <div className="space-y-3">
                             {filteredNotifications.length > 0 ? (
                                 filteredNotifications.map((notification) => (
@@ -507,7 +528,7 @@ function NotificationCard({
 
     // Document
     if (notification.type === 'document') {
-        const icons: Record<string, React.ReactNode> = {
+        const icons: Record<string, ReactNode> = {
             invoice: <Receipt className="w-5 h-5" />,
             payment: <FileSpreadsheet className="w-5 h-5" />,
             contract: <FileSignature className="w-5 h-5" />,
