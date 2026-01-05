@@ -48,64 +48,20 @@ export async function GET(request) {
 }
 
 /**
- * POST - Activate subscription (called after successful Whop payment)
- * This can be called from the frontend after redirect from Whop
+ * POST - DISABLED: Client-side subscription activation is no longer allowed
+ * 
+ * SECURITY FIX: This endpoint was exploitable - anyone could activate any plan
+ * by simply calling this endpoint. Subscriptions are now ONLY activated via 
+ * the Whop webhook (/api/subscription/webhook) after verified payment.
+ * 
+ * If you need to manually activate a subscription for a user, use the
+ * /api/subscription/activate endpoint which requires admin verification.
  */
 export async function POST(request) {
-    try {
-        const session = await auth();
-        if (!session?.user?.email) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
+    console.warn('⚠️ SECURITY: Blocked client-side subscription activation attempt');
 
-        const body = await request.json();
-        const { planType, whopMembershipId } = body;
-
-        if (!planType || !['starter', 'pro'].includes(planType)) {
-            return NextResponse.json({ error: 'Invalid plan type' }, { status: 400 });
-        }
-
-        const userId = session.user.email.toLowerCase();
-        console.log(`📡 Activating subscription for: ${userId}`);
-
-        // Activate the subscription
-        const subscription = await subscriptionService.activateSubscription(
-            userId,
-            planType,
-            whopMembershipId
-        );
-
-        // Fail-safe: Mark onboarding as completed in the profile when a subscription is activated
-        try {
-            const db = new DatabaseService();
-            // Use ilike for update to handle MixedCase user_id values in existing data
-            const { error: profileError } = await db.supabase
-                .from('user_profiles')
-                .update({ onboarding_completed: true })
-                .ilike('user_id', userId);
-
-            if (profileError) {
-                console.error(`❌ Profile update failed during activation:`, profileError);
-            } else {
-                console.log(`✅ Onboarding auto-completed for ${userId} during activation`);
-            }
-        } catch (profileError) {
-            console.error('Error updating profile during activation:', profileError);
-        }
-
-        return NextResponse.json({
-            success: true,
-            message: `${PLANS[planType].name} plan activated successfully!`,
-            subscription: {
-                planType,
-                planName: PLANS[planType].name,
-                planPrice: PLANS[planType].price,
-                subscriptionStartedAt: subscription.subscription_started_at,
-                subscriptionEndsAt: subscription.subscription_ends_at
-            }
-        });
-    } catch (error) {
-        console.error('Error activating subscription:', error);
-        return NextResponse.json({ error: 'Failed to activate subscription' }, { status: 500 });
-    }
+    return NextResponse.json({
+        error: 'Client-side subscription activation is disabled for security reasons. Subscriptions are activated automatically via Whop webhook after payment verification.',
+        help: 'If you just completed a payment, please wait a moment for the webhook to process. If the issue persists, contact support.'
+    }, { status: 403 });
 }

@@ -62,23 +62,20 @@ export default function PricingPage() {
 		fetchSubscriptionStatus();
 	}, []);
 
-	// Check for payment success on page load (redirect from Whop)
+	// SECURITY FIX: Clear any stale pending plan data on page load
+	// Subscriptions are ONLY activated via Whop webhook after verified payment
 	useEffect(() => {
 		const urlParams = new URLSearchParams(window.location.search);
 		const paymentStatus = urlParams.get('payment');
-		const planFromUrl = urlParams.get('plan');
-		const pendingPlan = localStorage.getItem('pending_plan');
 
-		if (paymentStatus === 'success' && (planFromUrl || pendingPlan)) {
-			const finalPlan = planFromUrl || pendingPlan || 'starter';
+		// Clear any pending plan data - no auto-activation allowed
+		localStorage.removeItem('pending_plan');
+		localStorage.removeItem('pending_plan_timestamp');
 
-			// Clear pending plan from localStorage
-			localStorage.removeItem('pending_plan');
-			localStorage.removeItem('pending_plan_timestamp');
-
-			// Activate subscription
-			activateSubscription(finalPlan);
-
+		if (paymentStatus === 'success') {
+			// Just refresh subscription status from server - webhook should have activated it
+			console.log('📡 Payment success detected, refreshing subscription status from server...');
+			fetchSubscriptionStatus();
 			// Clean up URL
 			window.history.replaceState({}, '', '/pricing');
 		}
@@ -103,22 +100,8 @@ export default function PricingPage() {
 		}
 	};
 
-	const activateSubscription = async (planType: string) => {
-		try {
-			const response = await fetch('/api/subscription/status', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ planType })
-			});
-
-			if (response.ok) {
-				setCurrentPlan(planType);
-				fetchSubscriptionStatus();
-			}
-		} catch (error) {
-			console.error('Error activating subscription:', error);
-		}
-	};
+	// REMOVED: activateSubscription function was a security risk
+	// Subscriptions are now ONLY activated via Whop webhook after verified payment
 
 	const handleSelectPlan = async (planId: string, checkoutUrl: string) => {
 		// Store selected plan in localStorage for after payment return

@@ -1,63 +1,70 @@
 "use client";
 
 import React, { useEffect, useState, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { CheckCircle, Sparkles, ArrowRight, Loader2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 function PaymentSuccessContent() {
     const router = useRouter();
-    const searchParams = useSearchParams();
     const [isActivating, setIsActivating] = useState(true);
     const [planName, setPlanName] = useState('');
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        const plan = searchParams.get('plan') || localStorage.getItem('pending_plan') || 'starter';
-        setPlanName(plan === 'pro' ? 'Pro' : 'Starter');
+        // Clear any stale localStorage data
+        localStorage.removeItem('pending_plan');
+        localStorage.removeItem('pending_plan_timestamp');
+        localStorage.setItem('onboarding_completed', 'true');
 
-        const activateSubscription = async () => {
+        const checkSubscriptionStatus = async () => {
             try {
-                // Clear pending plan from localStorage and mark as done
-                localStorage.removeItem('pending_plan');
-                localStorage.removeItem('pending_plan_timestamp');
-                localStorage.setItem('onboarding_completed', 'true');
-
-                const response = await fetch('/api/subscription/status', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ planType: plan })
-                });
+                // SECURITY FIX: Check subscription status from server
+                // The Whop webhook should have already activated the subscription
+                const response = await fetch('/api/subscription/status');
 
                 if (!response.ok) {
-                    throw new Error('Failed to activate subscription');
+                    throw new Error('Failed to check subscription status');
                 }
 
-                setIsActivating(false);
+                const data = await response.json();
 
-                // Celebrate!
-                confetti({
-                    particleCount: 150,
-                    spread: 70,
-                    origin: { y: 0.6 },
-                    colors: ['#ffffff', '#a855f7', '#6366f1']
-                });
+                if (data.subscription?.hasActiveSubscription) {
+                    // Great! Webhook activated the subscription
+                    const plan = data.subscription.planType;
+                    setPlanName(plan === 'pro' ? 'Pro' : 'Starter');
+                    setIsActivating(false);
 
-                // Redirect to dashboard after 3 seconds
-                setTimeout(() => {
-                    router.push('/home-feed');
-                }, 3000);
+                    // Celebrate!
+                    confetti({
+                        particleCount: 150,
+                        spread: 70,
+                        origin: { y: 0.6 },
+                        colors: ['#ffffff', '#a855f7', '#6366f1']
+                    });
+
+                    // Redirect to dashboard after 3 seconds
+                    setTimeout(() => {
+                        router.push('/home-feed');
+                    }, 3000);
+                } else {
+                    // Subscription not yet active - webhook may be delayed
+                    // Wait a bit and retry
+                    console.log('⏳ Subscription not yet active, waiting for webhook...');
+                    setTimeout(checkSubscriptionStatus, 2000);
+                }
 
             } catch (err) {
-                console.error('Error activating subscription:', err);
-                setError('There was an issue activating your subscription. Please contact support.');
+                console.error('Error checking subscription status:', err);
+                setError('There was an issue verifying your subscription. Please contact support if this persists.');
                 setIsActivating(false);
             }
         };
 
-        activateSubscription();
-    }, [searchParams, router]);
+        // Start checking after a brief delay to give webhook time to process
+        setTimeout(checkSubscriptionStatus, 1500);
+    }, [router]);
 
     return (
         <div className="min-h-screen bg-black flex items-center justify-center p-6">

@@ -32,35 +32,15 @@ function HomeFeedContent() {
             return;
           }
 
-          // First, check if there's a pending plan that needs activation (user returned from Whop)
+          // SECURITY FIX: Clear any pending plan data without activating
+          // Subscriptions should ONLY be activated via Whop webhook after verified payment
           const pendingPlan = localStorage.getItem('pending_plan');
           const pendingTimestamp = localStorage.getItem('pending_plan_timestamp');
 
-          if (pendingPlan && pendingTimestamp) {
-            const timestamp = parseInt(pendingTimestamp);
-            const oneHourAgo = Date.now() - (60 * 60 * 1000);
-
-            if (timestamp > oneHourAgo) {
-              console.log('🔄 Activating pending subscription:', pendingPlan);
-
-              const activateResponse = await fetch('/api/subscription/status', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ planType: pendingPlan })
-              });
-
-              if (activateResponse.ok) {
-                console.log('✅ Subscription activated locally');
-                localStorage.removeItem('pending_plan');
-                localStorage.removeItem('pending_plan_timestamp');
-                // Set this IMMEDIATELY to prevent the onboarding check from failing
-                localStorage.setItem('onboarding_completed', 'true');
-                return; // Skip further checks since we just activated
-              }
-            } else {
-              localStorage.removeItem('pending_plan');
-              localStorage.removeItem('pending_plan_timestamp');
-            }
+          if (pendingPlan || pendingTimestamp) {
+            console.log('🧹 [HomeFeed] Clearing stale pending plan data (subscriptions activated via webhook only)');
+            localStorage.removeItem('pending_plan');
+            localStorage.removeItem('pending_plan_timestamp');
           }
 
           // Check onboarding status from server with retry logic
