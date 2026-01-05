@@ -69,14 +69,8 @@ interface ReplyNotification {
 
 type SmartNotification = ThreatNotification | VerificationCodeNotification | DocumentNotification | ReplyNotification;
 
-// Cost-effective model for notifications - using FREE model to avoid credit issues
-const NOTIFICATIONS_MODEL = 'google/gemini-2.0-flash-exp:free';
-// Fallback models in case primary fails
-const FALLBACK_MODELS = [
-    'google/gemini-2.0-flash-exp:free',
-    'google/gemini-flash-1.5:free',
-    'meta-llama/llama-3.2-3b-instruct:free'
-];
+// Using xiaomi/mimo-v2-flash:free for accurate notifications - NO FALLBACKS to prevent false content
+const NOTIFICATIONS_MODEL = 'xiaomi/mimo-v2-flash:free';
 
 export async function GET(request: Request) {
     try {
@@ -276,8 +270,8 @@ async function analyzeEmailsWithAI(emails: any[]): Promise<SmartNotification[]> 
 
     if (!apiKey) {
         console.error('❌ OPENROUTER_API_KEY is not configured');
-        // Fallback to local analysis
-        return localAnalysis(emails);
+        // Return empty - NO false content generation
+        return [];
     }
 
     try {
@@ -339,67 +333,44 @@ NOTES:
 - "description" for threats must be detailed and analytical.
 - Return ONLY valid JSON. No markdown. No text outside JSON.`;
 
-        console.log('🤖 Calling AI for notification analysis...');
+        console.log('🤖 Calling AI for notification analysis with xiaomi/mimo-v2-flash:free...');
 
-        // Try multiple models with fallback
-        let data: any = null;
-        let lastError = '';
-
-        for (const modelId of FALLBACK_MODELS) {
-            try {
-                console.log(`📡 Attempting model: ${modelId}`);
-
-                const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${apiKey}`,
-                        'HTTP-Referer': process.env.HOST || 'https://mailient.xyz',
-                        'X-Title': 'Mailient Notifications'
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`,
+                'HTTP-Referer': process.env.HOST || 'https://mailient.xyz',
+                'X-Title': 'Mailient Notifications'
+            },
+            body: JSON.stringify({
+                model: NOTIFICATIONS_MODEL,
+                messages: [
+                    {
+                        role: 'system',
+                        content: 'You are a professional email categorization and security analysis AI. Accuracy is your top priority. Always respond with valid JSON only. Never include markdown code blocks or explanations. Be extremely skeptical and restrictive when identifying security threats.'
                     },
-                    body: JSON.stringify({
-                        model: modelId,
-                        messages: [
-                            {
-                                role: 'system',
-                                content: 'You are a professional email categorization and security analysis AI. Accuracy is your top priority. Always respond with valid JSON only. Never include markdown code blocks or explanations. Be extremely skeptical and restrictive when identifying security threats.'
-                            },
-                            { role: 'user', content: prompt }
-                        ],
-                        temperature: 0.1,
-                        max_tokens: 3000
-                    })
-                });
+                    { role: 'user', content: prompt }
+                ],
+                temperature: 0.1,
+                max_tokens: 3000
+            })
+        });
 
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.warn(`⚠️ ${modelId} failed with status ${response.status}: ${errorText.substring(0, 100)}`);
-                    lastError = errorText;
-                    continue;
-                }
-
-                const responseData = await response.json();
-                if (responseData?.choices?.[0]?.message?.content) {
-                    console.log(`✅ AI Success with ${modelId}`);
-                    data = responseData;
-                    break;
-                } else {
-                    console.warn(`⚠️ ${modelId} returned empty response`);
-                    continue;
-                }
-            } catch (error) {
-                console.warn(`❌ ${modelId} error:`, error);
-                lastError = error instanceof Error ? error.message : 'Unknown error';
-                continue;
-            }
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ AI API error:', response.status, errorText);
+            // Return empty - NO false content generation
+            return [];
         }
 
-        if (!data) {
-            console.error('❌ All AI models failed:', lastError);
-            return localAnalysis(emails);
-        }
-
+        const data = await response.json();
         const content = data?.choices?.[0]?.message?.content || '';
+
+        if (!content) {
+            console.error('❌ AI returned empty response');
+            return [];
+        }
 
         console.log('📥 AI response received, parsing...');
 
@@ -414,7 +385,8 @@ NOTES:
             }
         } catch (e) {
             console.error('❌ JSON parse error:', e);
-            return localAnalysis(emails);
+            // Return empty - NO false content generation
+            return [];
         }
 
         // Convert AI response to notification objects
@@ -507,130 +479,7 @@ NOTES:
 
     } catch (error) {
         console.error('❌ AI analysis error:', error);
-        return localAnalysis(emails);
+        // Return empty - NO false content generation
+        return [];
     }
-}
-
-/**
- * Fallback local analysis when AI is unavailable
- */
-function localAnalysis(emails: any[]): SmartNotification[] {
-    console.log('⚠️ Using local fallback analysis...');
-    const notifications: SmartNotification[] = [];
-    const now = new Date().toISOString();
-
-    // Verification code patterns
-    const codePatterns = [
-        /(?:code|otp|pin|verification)[\s:]*(\d{4,8})/i,
-        /(\d{4,8})[\s]*(?:is your|verification|code|otp)/i,
-        /(?:enter|use)[\s]*(\d{4,8})/i
-    ];
-
-    // Document patterns
-    const docPatterns = {
-        invoice: /invoice|bill|payment due|amount due/i,
-        payment: /payment|receipt|transaction|charged/i,
-        contract: /contract|agreement|sign|signature/i,
-        report: /report|statement|summary|quarterly/i
-    };
-
-    // NOTE: Threat detection via regex removed to prevent false positives and loss of trust.
-    // Instead, we add a single system notification informing the user about the AI status.
-
-    // Add system notification (masquerading as a low-severity threat for visibility)
-    if (emails.length > 0) {
-        notifications.push({
-            id: `system-alert-${Date.now()}`,
-            type: 'threat',
-            severity: 'low',
-            title: 'AI Analysis Unavailable',
-            description: 'The AI security analysis is currently down. Please check back soon for full threat detection.',
-            emailId: 'system',
-            from: 'System',
-            subject: 'System Alert',
-            indicators: ['service_outage'],
-            timestamp: now
-        });
-    }
-
-    for (const email of emails) {
-        const fullText = `${email.subject} ${email.snippet} ${email.body}`.toLowerCase();
-
-        // Check for verification codes
-        for (const pattern of codePatterns) {
-            const match = fullText.match(pattern);
-            if (match && match[1]) {
-                // Detect platform
-                let platform = 'Unknown';
-                if (/google/i.test(fullText)) platform = 'Google';
-                else if (/microsoft|outlook|azure/i.test(fullText)) platform = 'Microsoft';
-                else if (/amazon|aws/i.test(fullText)) platform = 'Amazon';
-                else if (/apple|icloud/i.test(fullText)) platform = 'Apple';
-                else if (/facebook|meta/i.test(fullText)) platform = 'Meta';
-                else if (/twitter|x\.com/i.test(fullText)) platform = 'X (Twitter)';
-                else if (/bank|chase|wells|citi/i.test(fullText)) platform = 'Banking';
-
-                notifications.push({
-                    id: `verification-${email.id}`,
-                    type: 'verification',
-                    code: match[1],
-                    platform,
-                    description: `Verification code from ${platform}`,
-                    emailId: email.id,
-                    timestamp: email.date || now
-                });
-                break;
-            }
-        }
-
-        // Check for documents
-        if (email.hasAttachments && email.attachments.length > 0) {
-            const hasImportantDocs = email.attachments.some((a: any) =>
-                /\.(pdf|doc|docx|xls|xlsx|csv)$/i.test(a.filename)
-            );
-
-            if (hasImportantDocs) {
-                let category: DocumentNotification['category'] = 'other';
-                if (docPatterns.invoice.test(fullText)) category = 'invoice';
-                else if (docPatterns.payment.test(fullText)) category = 'payment';
-                else if (docPatterns.contract.test(fullText)) category = 'contract';
-                else if (docPatterns.report.test(fullText)) category = 'report';
-
-                const fromName = email.from.split('<')[0].trim() || email.from;
-
-                notifications.push({
-                    id: `document-${email.id}`,
-                    type: 'document',
-                    category,
-                    title: `${category.charAt(0).toUpperCase() + category.slice(1)} Document`,
-                    description: `Document from ${fromName}`,
-                    emailId: email.id,
-                    attachments: email.attachments,
-                    from: email.from,
-                    isImportant: category === 'invoice' || category === 'payment',
-                    timestamp: email.date || now
-                });
-            }
-        }
-
-        // Check for replies
-        if (/^re:/i.test(email.subject)) {
-            const fromName = email.from.split('<')[0].trim() || email.from;
-
-            notifications.push({
-                id: `reply-${email.id}`,
-                type: 'reply',
-                title: 'Reply Received',
-                description: `Reply from ${fromName}`,
-                emailId: email.id,
-                threadId: email.threadId,
-                from: email.from,
-                subject: email.subject,
-                preview: email.snippet,
-                timestamp: email.date || now
-            });
-        }
-    }
-
-    return notifications;
 }
