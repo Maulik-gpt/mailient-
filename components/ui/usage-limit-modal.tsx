@@ -91,13 +91,13 @@ export function UsageLimitModal({
                                 {/* Usage indicator */}
                                 <div className="bg-white/5 rounded-2xl p-4">
                                     <div className="flex justify-between text-sm mb-2">
-                                        <span className="text-white/50">Usage</span>
-                                        <span className="text-white/80">{currentUsage} / {limit}</span>
+                                        <span className="text-white/50">Credits</span>
+                                        <span className="text-white/80">{limit - currentUsage} remaining</span>
                                     </div>
                                     <div className="h-2 bg-white/10 rounded-full overflow-hidden">
                                         <div
                                             className="h-full bg-gradient-to-r from-orange-500 to-red-500 rounded-full"
-                                            style={{ width: '100%' }}
+                                            style={{ width: `${((limit - currentUsage) / limit) * 100}%` }}
                                         />
                                     </div>
                                 </div>
