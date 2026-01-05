@@ -67,9 +67,11 @@ export async function POST(request: Request) {
       const usage = await subscriptionService.getFeatureUsage(userId, FEATURE_TYPES.AI_NOTES);
       return NextResponse.json({
         error: "limit_reached",
-        message: "You have used all the credits of this month.",
+        message: `Sorry, but you've exhausted all the credits of ${usage.period === 'daily' ? 'the day' : 'the month'}.`,
         usage: usage.usage,
         limit: usage.limit,
+        period: usage.period,
+        planType: usage.planType,
         upgradeUrl: "/pricing"
       }, { status: 403 });
     }
@@ -77,6 +79,7 @@ export async function POST(request: Request) {
     // AI Enhancement
     let finalSubject = subject || "Untitled Note";
     let finalContent = content || "";
+    let aiEnhanced = false;
 
     try {
       console.log("✨ Creating note with AI enhancement...");
@@ -86,6 +89,7 @@ export async function POST(request: Request) {
       if (enhanced && enhanced.subject && enhanced.content) {
         finalSubject = enhanced.subject;
         finalContent = enhanced.content;
+        aiEnhanced = true;
       }
     } catch (aiError) {
       console.error("AI Enhancement failed, falling back to original:", aiError);
@@ -113,8 +117,10 @@ export async function POST(request: Request) {
       );
     }
 
-    // Increment usage after successful note creation with AI enhancement
-    await subscriptionService.incrementFeatureUsage(userId, FEATURE_TYPES.AI_NOTES);
+    // Increment usage only if AI enhancement actually succeeded
+    if (aiEnhanced) {
+      await subscriptionService.incrementFeatureUsage(userId, FEATURE_TYPES.AI_NOTES);
+    }
 
     return NextResponse.json({ success: true, note: data });
   } catch (error) {

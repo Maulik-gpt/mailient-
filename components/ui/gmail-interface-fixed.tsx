@@ -9,6 +9,8 @@ import { HomeFeedSidebar } from './home-feed-sidebar';
 import { RefreshCw, AlertCircle, TrendingUp, Clock, Target, Zap, Mail, Home, X, User, Sparkles, ArrowLeft, LayoutList, Inbox, ExternalLink, Download, FilePlus, ChevronRight, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { SchedulingModal } from './scheduling-modal';
+import { UsageLimitModal } from './usage-limit-modal';
+import { UsageBadge } from './bubble-button';
 
 // Simple markdown renderer for bold text
 const renderMarkdown = (text: string): string => {
@@ -190,6 +192,39 @@ export function GmailInterfaceFixed() {
     const [noteContent, setNoteContent] = useState<string>('');
     const [isSavingNote, setIsSavingNote] = useState(false);
 
+    const [isUsageLimitModalOpen, setIsUsageLimitModalOpen] = useState(false);
+    const [usageLimitModalData, setUsageLimitModalData] = useState<{
+        featureName: string;
+        currentUsage: number;
+        limit: number;
+        period: 'daily' | 'monthly';
+        currentPlan: 'starter' | 'pro' | 'none';
+    } | null>(null);
+
+    const [usageData, setUsageData] = useState<{
+        planType: 'starter' | 'pro' | 'none';
+        features: Record<string, { usage: number; limit: number; period: 'daily' | 'monthly'; remaining: number; isUnlimited: boolean }>;
+    } | null>(null);
+
+    const fetchUsage = useCallback(async () => {
+        try {
+            const res = await fetch('/api/subscription/usage');
+            if (res.ok) {
+                const data = await res.json();
+                setUsageData({
+                    planType: data.planType || 'starter',
+                    features: data.features || {}
+                });
+            }
+        } catch (e) {
+            console.warn('Failed to fetch usage', e);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchUsage();
+    }, [fetchUsage]);
+
     // Traditional View states
     const [isTraditionalView, setIsTraditionalView] = useState(false);
     const [traditionalEmails, setTraditionalEmails] = useState<any[]>([]);
@@ -308,10 +343,23 @@ export function GmailInterfaceFixed() {
                 body: JSON.stringify({ emailId })
             });
 
-            if (!response.ok) throw new Error('Failed to fetch summary');
-
-            const data = await response.json();
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                if (data?.error === 'limit_reached') {
+                    setUsageLimitModalData({
+                        featureName: 'Email Summary',
+                        currentUsage: data.usage || 0,
+                        limit: data.limit || 0,
+                        period: data.period || 'daily',
+                        currentPlan: data.planType || 'starter'
+                    });
+                    setIsUsageLimitModalOpen(true);
+                    return;
+                }
+                throw new Error(data?.error || 'Failed to fetch summary');
+            }
             setEmailSummary(decodeEntities(data.summary));
+            fetchUsage();
         } catch (error) {
             console.error('Error fetching summary:', error);
             setEmailSummary("Failed to generate summary. Please try again.");
@@ -417,10 +465,24 @@ export function GmailInterfaceFixed() {
                 body: JSON.stringify({ emailId, category })
             });
 
-            if (!response.ok) throw new Error('Failed to generate draft');
-
-            const data = await response.json();
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                if (data?.error === 'limit_reached') {
+                    setUsageLimitModalData({
+                        featureName: 'Draft Reply',
+                        currentUsage: data.usage || 0,
+                        limit: data.limit || 0,
+                        period: data.period || 'monthly',
+                        currentPlan: data.planType || 'starter'
+                    });
+                    setIsUsageLimitModalOpen(true);
+                    setShowDraftEditor(false);
+                    return;
+                }
+                throw new Error(data?.error || 'Failed to generate draft');
+            }
             setDraftContent(decodeEntities(data.draftReply));
+            fetchUsage();
         } catch (error) {
             console.error('Error generating draft:', error);
             toast.error('Failed to generate draft');
@@ -484,12 +546,21 @@ export function GmailInterfaceFixed() {
                 })
             });
 
+            const data = await response.json().catch(() => ({}));
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || 'Failed to get answer');
+                if (data?.error === 'limit_reached') {
+                    setUsageLimitModalData({
+                        featureName: 'Ask AI',
+                        currentUsage: data.usage || 0,
+                        limit: data.limit || 0,
+                        period: data.period || 'daily',
+                        currentPlan: data.planType || 'starter'
+                    });
+                    setIsUsageLimitModalOpen(true);
+                    return;
+                }
+                throw new Error(data.message || 'Failed to get answer');
             }
-
-            const data = await response.json();
 
             if (data.conversationId) setArcusConversationId(data.conversationId);
 
@@ -499,19 +570,9 @@ export function GmailInterfaceFixed() {
                 content: data.message,
                 timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             };
-
-            setArcusMessages(prev => {
-                const updated = [...prev, assistantMsg];
-                // Save to localStorage for history persistence
-                if (arcusConversationId || data.conversationId) {
-                    saveToLocalStorage(
-                        arcusConversationId || data.conversationId,
-                        updated,
-                        arcusMessages[0]?.role === 'user' ? arcusMessages[0].content : arcusEmailSubject
-                    );
-                }
-                return updated;
-            });
+            setArcusMessages(prev => [...prev, assistantMsg]);
+            setArcusQuery('');
+            fetchUsage();
         } catch (error) {
             console.error('Error asking AI:', error);
             const errorMsg = {
@@ -600,10 +661,24 @@ export function GmailInterfaceFixed() {
                 body: JSON.stringify({ emailId, category })
             });
 
-            if (!response.ok) throw new Error('Failed to generate repair reply');
-
-            const data = await response.json();
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                if (data?.error === 'limit_reached') {
+                    setUsageLimitModalData({
+                        featureName: 'Repair Reply',
+                        currentUsage: data.usage || 0,
+                        limit: data.limit || 0,
+                        period: data.period || 'monthly',
+                        currentPlan: data.planType || 'starter'
+                    });
+                    setIsUsageLimitModalOpen(true);
+                    setShowDraftEditor(false);
+                    return;
+                }
+                throw new Error(data?.error || 'Failed to generate repair reply');
+            }
             setDraftContent(data.repairReply);
+            fetchUsage();
         } catch (error) {
             console.error('Error generating repair reply:', error);
             setDraftContent("Dear there,\n\nThank you for reaching out. I appreciate your message and will respond shortly.\n\nWith gratitude,\n" + (session?.user?.name || 'User'));
@@ -687,10 +762,23 @@ export function GmailInterfaceFixed() {
                     })
                 });
 
-                if (response.ok) {
-                    const data = await response.json();
-                    setNoteContent(decodeEntities(data.noteContent));
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    if (data?.error === 'limit_reached') {
+                        setUsageLimitModalData({
+                            featureName: 'AI Notes',
+                            currentUsage: data.usage || 0,
+                            limit: data.limit || 0,
+                            period: data.period || 'monthly',
+                            currentPlan: data.planType || 'starter'
+                        });
+                        setIsUsageLimitModalOpen(true);
+                        setShowNoteEditor(false);
+                        return;
+                    }
+                    throw new Error(data?.error || 'Failed to generate note');
                 }
+                setNoteContent(decodeEntities(data.noteContent));
             } catch (error) {
                 console.error('Error generating note:', error);
                 setNoteContent(`Note about: ${email.subject}\n\n`);
@@ -719,11 +807,22 @@ export function GmailInterfaceFixed() {
                 })
             });
 
+            const result = await response.json().catch(() => ({}));
             if (!response.ok) {
-                throw new Error('Failed to save note');
+                if (result?.error === 'limit_reached') {
+                    setUsageLimitModalData({
+                        featureName: 'AI Notes',
+                        currentUsage: result.usage || 0,
+                        limit: result.limit || 0,
+                        period: result.period || 'monthly',
+                        currentPlan: result.planType || 'starter'
+                    });
+                    setIsUsageLimitModalOpen(true);
+                    toast.dismiss(toastId);
+                    return;
+                }
+                throw new Error(result?.error || 'Failed to save note');
             }
-
-            const result = await response.json();
             toast.success('📝 Note saved successfully!', { id: toastId });
             console.log('✅ Note saved:', result);
 
@@ -731,6 +830,7 @@ export function GmailInterfaceFixed() {
             if (result.note?.id) {
                 window.location.href = `/i/notes/${result.note.id}`;
             }
+            fetchUsage();
 
             // Reset and close
             setNoteContent('');
@@ -1005,6 +1105,33 @@ export function GmailInterfaceFixed() {
 
     return (
         <div className="min-h-screen bg-[#0a0a0a] dark:bg-[#0a0a0a] flex" style={{ fontFamily: "'Satoshi', -apple-system, BlinkMacSystemFont, sans-serif" }}>
+            <UsageLimitModal
+                isOpen={isUsageLimitModalOpen}
+                onClose={() => setIsUsageLimitModalOpen(false)}
+                featureName={usageLimitModalData?.featureName || 'AI'}
+                currentUsage={usageLimitModalData?.currentUsage || 0}
+                limit={usageLimitModalData?.limit || 0}
+                period={usageLimitModalData?.period || 'monthly'}
+                currentPlan={usageLimitModalData?.currentPlan || 'starter'}
+            />
+            {/* Credits Badge in Header */}
+            {usageData && usageData.planType !== 'pro' && (
+                <div className="fixed top-4 right-4 z-50">
+                    <UsageBadge
+                        icon={<Sparkles className="h-4 w-4" />}
+                        planName={usageData.planType === 'starter' ? 'Starter' : 'Free'}
+                        usage={usageData.features?.ARCUS_AI?.usage || 0}
+                        limit={usageData.features?.ARCUS_AI?.limit || 10}
+                        tooltipContent={
+                            <p>
+                                You are on the {usageData.planType === 'starter' ? 'Starter' : 'Free'} plan.
+                                <br />
+                                {usageData.features?.ARCUS_AI?.remaining ?? 0}/{usageData.features?.ARCUS_AI?.limit ?? 10} AI credits left today.
+                            </p>
+                        }
+                    />
+                </div>
+            )}
             {/* Sidebar */}
             <HomeFeedSidebar />
 

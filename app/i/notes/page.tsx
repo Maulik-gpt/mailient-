@@ -9,6 +9,7 @@ import { HomeFeedSidebar } from '@/components/ui/home-feed-sidebar';
 import { Sparkles, Plus, Search, X, Edit, Trash, Save, Folder, Tag, Clock, MoreVertical, FileText, Pen, NotebookPen, AlertTriangle, Share2, Image, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { UsageLimitModal } from '@/components/ui/usage-limit-modal';
 import {
     Dialog,
     DialogContent,
@@ -50,6 +51,14 @@ export default function NotesPage() {
     const [isImageShareOpen, setIsImageShareOpen] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const imagePreviewRef = useRef<HTMLDivElement>(null);
+    const [isUsageLimitModalOpen, setIsUsageLimitModalOpen] = useState(false);
+    const [usageLimitModalData, setUsageLimitModalData] = useState<{
+        featureName: string;
+        currentUsage: number;
+        limit: number;
+        period: 'daily' | 'monthly';
+        currentPlan: 'starter' | 'pro' | 'none';
+    } | null>(null);
 
     const getNoteLink = useCallback((id: string) => {
         if (typeof window !== 'undefined') {
@@ -310,18 +319,30 @@ export default function NotesPage() {
                 })
             });
 
-            if (response.ok) {
-                const data = await response.json();
-                await fetchNotes();
-                setShowNewNoteForm(false);
-                setNewNoteSubject('');
-                setNewNoteContent('');
-                setSelectedNote(data.note);
-                router.push(`/i/notes/${data.note.id}`);
-                toast.success('Your note has been enhanced and created!');
-            } else {
-                toast.error('Failed to create note');
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                if (data?.error === 'limit_reached') {
+                    setUsageLimitModalData({
+                        featureName: 'AI Notes',
+                        currentUsage: data.usage || 0,
+                        limit: data.limit || 0,
+                        period: data.period || 'monthly',
+                        currentPlan: data.planType || 'starter'
+                    });
+                    setIsUsageLimitModalOpen(true);
+                    return;
+                }
+                toast.error(data?.error || 'Failed to create note');
+                return;
             }
+
+            await fetchNotes();
+            setShowNewNoteForm(false);
+            setNewNoteSubject('');
+            setNewNoteContent('');
+            setSelectedNote(data.note);
+            router.push(`/i/notes/${data.note.id}`);
+            toast.success('Your note has been enhanced and created!');
         } catch (error) {
             console.error('Error creating note:', error);
             toast.error('Error creating note');
@@ -331,7 +352,17 @@ export default function NotesPage() {
     };
 
     return (
-        <div className={cn("min-h-screen bg-[#000000] dark:bg-[#000000] text-white transition-all duration-500", (isDeleteDialogOpen || isShareDialogOpen || isShareOptionsOpen || isImageShareOpen) && "pause-animations")} style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'San Francisco', 'Satoshi', sans-serif" }}>
+        <>
+            <UsageLimitModal
+                isOpen={isUsageLimitModalOpen}
+                onClose={() => setIsUsageLimitModalOpen(false)}
+                featureName={usageLimitModalData?.featureName || 'AI Notes'}
+                currentUsage={usageLimitModalData?.currentUsage || 0}
+                limit={usageLimitModalData?.limit || 0}
+                period={usageLimitModalData?.period || 'monthly'}
+                currentPlan={usageLimitModalData?.currentPlan || 'starter'}
+            />
+            <div className={cn("min-h-screen bg-[#000000] dark:bg-[#000000] text-white transition-all duration-500", (isDeleteDialogOpen || isShareDialogOpen || isShareOptionsOpen || isImageShareOpen) && "pause-animations")} style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'San Francisco', 'Satoshi', sans-serif" }}>
             <div className="flex h-screen">
                 {/* Mailient Sidebar */}
                 <HomeFeedSidebar />
@@ -845,5 +876,6 @@ export default function NotesPage() {
                 </div>
             )}
         </div>
+        </>
     );
 }

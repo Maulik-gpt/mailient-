@@ -1,5 +1,13 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+// Import auth with proper typing
+const authFunction: () => Promise<{
+    user?: {
+        email?: string;
+        name?: string;
+    };
+    accessToken?: string;
+    refreshToken?: string;
+}> = require('@/lib/auth').auth;
 import { CalendarService } from '@/lib/calendar';
 import { DatabaseService } from '@/lib/supabase';
 import { decrypt } from '@/lib/crypto';
@@ -8,7 +16,7 @@ import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service';
 
 export async function POST(request: Request) {
     try {
-        const session = await auth();
+        const session = await authFunction();
         if (!session?.user?.email) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
@@ -21,9 +29,11 @@ export async function POST(request: Request) {
             const usage = await subscriptionService.getFeatureUsage(userId, FEATURE_TYPES.SCHEDULE_CALL);
             return NextResponse.json({
                 error: 'limit_reached',
-                message: 'You have used all the credits of this month.',
+                message: `Sorry, but you've exhausted all the credits of ${usage.period === 'daily' ? 'the day' : 'the month'}.`,
                 usage: usage.usage,
                 limit: usage.limit,
+                period: usage.period,
+                planType: usage.planType,
                 upgradeUrl: '/pricing'
             }, { status: 403 });
         }

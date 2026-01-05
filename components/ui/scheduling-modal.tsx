@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from './button';
 import { X, Calendar as CalendarIcon, Clock, Users, Video, CheckCircle, Info, Sparkles, Send, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
+import { UsageLimitModal } from './usage-limit-modal';
 
 interface SchedulingModalProps {
     isOpen: boolean;
@@ -21,6 +22,14 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
     const [isScheduling, setIsScheduling] = useState(false);
     const [notifySender, setNotifySender] = useState(true);
     const [scheduledEvent, setScheduledEvent] = useState<any>(null);
+    const [isUsageLimitModalOpen, setIsUsageLimitModalOpen] = useState(false);
+    const [usageLimitModalData, setUsageLimitModalData] = useState<{
+        featureName: string;
+        currentUsage: number;
+        limit: number;
+        period: 'daily' | 'monthly';
+        currentPlan: 'starter' | 'pro' | 'none';
+    } | null>(null);
 
     useEffect(() => {
         if (isOpen && emailId) {
@@ -49,6 +58,20 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                 body: JSON.stringify({ emailId })
             });
             const data = await response.json();
+            if (!response.ok) {
+                if (data?.error === 'limit_reached') {
+                    setUsageLimitModalData({
+                        featureName: 'Schedule Call',
+                        currentUsage: data.usage || 0,
+                        limit: data.limit || 0,
+                        period: data.period || 'monthly',
+                        currentPlan: data.planType || 'starter'
+                    });
+                    setIsUsageLimitModalOpen(true);
+                    return;
+                }
+                throw new Error(data?.error || 'Failed to get recommendation');
+            }
             if (data.success) {
                 setRecommendation(data.recommendation);
             }
@@ -80,12 +103,25 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
             });
 
             const data = await response.json();
+            if (!response.ok) {
+                if (data?.error === 'limit_reached') {
+                    setUsageLimitModalData({
+                        featureName: 'Schedule Call',
+                        currentUsage: data.usage || 0,
+                        limit: data.limit || 0,
+                        period: data.period || 'monthly',
+                        currentPlan: data.planType || 'starter'
+                    });
+                    setIsUsageLimitModalOpen(true);
+                    return;
+                }
+                toast.error(data.error || 'Failed to schedule meeting');
+                return;
+            }
             if (data.success) {
                 setScheduledEvent(data.event);
                 setStep(3);
                 toast.success('Meeting scheduled successfully!');
-            } else {
-                toast.error(data.error || 'Failed to schedule meeting');
             }
         } catch (error) {
             toast.error('Failed to schedule meeting');
@@ -97,7 +133,17 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center">
+        <>
+            <UsageLimitModal
+                isOpen={isUsageLimitModalOpen}
+                onClose={() => setIsUsageLimitModalOpen(false)}
+                featureName={usageLimitModalData?.featureName || 'Schedule Call'}
+                currentUsage={usageLimitModalData?.currentUsage || 0}
+                limit={usageLimitModalData?.limit || 0}
+                period={usageLimitModalData?.period || 'monthly'}
+                currentPlan={usageLimitModalData?.currentPlan || 'starter'}
+            />
+            <div className="fixed inset-0 z-[100] flex items-center justify-center">
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-black/80 backdrop-blur-xl transition-opacity animate-in fade-in duration-500"
@@ -412,5 +458,6 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                 </div>
             </div>
         </div>
+        </>
     );
 }

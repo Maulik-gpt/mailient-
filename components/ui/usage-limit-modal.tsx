@@ -80,12 +80,11 @@ export function UsageLimitModal({
                             {/* Content */}
                             <div className="p-6 space-y-6">
                                 <div className="text-center space-y-2">
-                                    <p className="text-white/70">
-                                        You have used all <span className="text-white font-medium">{limit}</span>{' '}
-                                        {featureName.toLowerCase()} credits {periodText}.
+                                    <p className="text-white font-medium text-lg leading-relaxed">
+                                        Sorry, but you've exhausted all the credits {period === 'daily' ? 'of the day' : 'of the month'}.
                                     </p>
                                     <p className="text-sm text-white/40">
-                                        Credits will reset {resetText}.
+                                        Your {featureName.toLowerCase()} credits will reset {resetText}.
                                     </p>
                                 </div>
 

@@ -28,6 +28,25 @@ export async function GET(request) {
     const userEmail = session.user.email;
     console.log(`🚀 Enhanced Sift AI: Fetching founder intelligence for: ${userEmail}`);
 
+    const { subscriptionService, FEATURE_TYPES } = await import('@/lib/subscription-service.js');
+
+    // Check subscription and feature usage for Sift AI (5/day for Starter)
+    const canUse = await subscriptionService.canUseFeature(userEmail, FEATURE_TYPES.SIFT_ANALYSIS);
+    if (!canUse) {
+      const usage = await subscriptionService.getFeatureUsage(userEmail, FEATURE_TYPES.SIFT_ANALYSIS);
+      return NextResponse.json({
+        success: false,
+        error: 'limit_reached',
+        message: `Sorry, but you've exhausted all the credits of ${usage.period === 'daily' ? 'the day' : 'the month'}.`,
+        usage: usage.usage,
+        limit: usage.limit,
+        period: usage.period,
+        planType: usage.planType,
+        upgradeUrl: '/pricing',
+        insights: generateFounderFallbackInsights()
+      }, { status: 403 });
+    }
+
     // Get Gmail access token
     let accessToken = session?.accessToken;
     let refreshToken = session?.refreshToken;
@@ -49,7 +68,7 @@ export async function GET(request) {
 
     if (!accessToken) {
       return NextResponse.json(
-        { 
+        {
           error: 'Gmail not connected. Please sign in with Google to access your emails.',
           insights: generateFounderFallbackInsights()
         },
@@ -64,6 +83,9 @@ export async function GET(request) {
 
     // Transform into home-feed compatible format
     const transformedInsights = transformIntelligenceToHomeFeedCards(enhancedIntelligence);
+
+    // Increment usage after successful generation
+    await subscriptionService.incrementFeatureUsage(userEmail, FEATURE_TYPES.SIFT_ANALYSIS);
 
     return NextResponse.json({
       success: true,
@@ -97,7 +119,7 @@ export async function GET(request) {
 async function generateEnhancedFounderIntelligence(gmailService, userEmail) {
   try {
     console.log('🧠 Enhanced Sift AI: Fetching comprehensive Gmail data...');
-    
+
     // Get comprehensive email data for analysis
     const [recentEmails, importantEmails, unreadEmails] = await Promise.all([
       gmailService.getEmails(50, 'newer_than:7d'),
@@ -110,7 +132,7 @@ async function generateEnhancedFounderIntelligence(gmailService, userEmail) {
       ...(importantEmails.messages || []),
       ...(unreadEmails.messages || [])
     ];
-    
+
     const uniqueMessages = [...new Set(allMessages.map(m => m.id))]
       .map(id => allMessages.find(m => m.id === id))
       .slice(0, 30); // Limit to 30 most relevant emails
@@ -277,7 +299,7 @@ function transformIntelligenceToHomeFeedCards(intelligence) {
   // Transform AI Highlights
   if (intelligence.ai_highlights) {
     const highlights = intelligence.ai_highlights;
-    
+
     // Your Week In 10 Seconds
     if (highlights.week_in_10_seconds) {
       const weekData = highlights.week_in_10_seconds;
@@ -330,12 +352,12 @@ function generateRuleBasedFounderIntelligence(emailDetails, userEmail) {
 
   emailDetails.forEach(email => {
     const content = `${email.subject} ${email.snippet} ${email.body}`.toLowerCase();
-    
+
     // Detect hot leads
     if (content.includes('pricing') || content.includes('quote') || content.includes('demo')) {
       const senderMatch = email.from?.match(/^(.+?)\s*<(.+)>$/);
       const senderName = senderMatch ? senderMatch[1].trim() : email.from?.split('<')[0].trim();
-      
+
       hotLeads.push({
         id: email.id,
         name: senderName || 'Unknown',

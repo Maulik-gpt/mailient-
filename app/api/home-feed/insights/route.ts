@@ -56,7 +56,7 @@ export async function GET(request: Request) {
       return NextResponse.json({
         success: false,
         error: 'limit_reached',
-        message: 'You have used all 5 Sift AI analysis credits for today. Credits reset at midnight.',
+        message: `Sorry, but you've exhausted all the credits of ${usage.period === 'daily' ? 'the day' : 'the month'}.`,
         usage: usage.usage,
         limit: usage.limit,
         upgradeUrl: '/pricing',

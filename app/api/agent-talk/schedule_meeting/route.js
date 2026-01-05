@@ -16,6 +16,23 @@ export async function POST(request) {
     const refreshToken = request.headers.get('x-gmail-refresh-token') || '';
     const userEmail = request.headers.get('x-user-email') || undefined;
 
+    const { subscriptionService, FEATURE_TYPES } = await import('@/lib/subscription-service.js');
+
+    // Check subscription if user email is provided
+    if (userEmail) {
+      const canUse = await subscriptionService.canUseFeature(userEmail, FEATURE_TYPES.SCHEDULE_CALL);
+      if (!canUse) {
+        const usage = await subscriptionService.getFeatureUsage(userEmail, FEATURE_TYPES.SCHEDULE_CALL);
+        return NextResponse.json({
+          error: {
+            code: 'limit_reached',
+            message: `Sorry, but you've exhausted all the credits of ${usage.period === 'daily' ? 'the day' : 'the month'}.`,
+            upgradeUrl: '/pricing'
+          }
+        }, { status: 403 });
+      }
+    }
+
     if (!accessToken) {
       return NextResponse.json(
         { error: { code: 'missing_token', message: 'x-gmail-access-token header is required' } },
@@ -60,8 +77,8 @@ export async function POST(request) {
       end: { dateTime: end, timeZone: time_zone },
       attendees: Array.isArray(attendees)
         ? attendees
-            .filter(Boolean)
-            .map((email) => (typeof email === 'string' ? { email } : email))
+          .filter(Boolean)
+          .map((email) => (typeof email === 'string' ? { email } : email))
         : [],
       reminders: {
         useDefault: false,
@@ -86,6 +103,10 @@ export async function POST(request) {
       resource: event,
       conferenceDataVersion: include_meet ? 1 : 0,
     });
+
+    if (userEmail) {
+      await subscriptionService.incrementFeatureUsage(userEmail, FEATURE_TYPES.SCHEDULE_CALL);
+    }
 
     return NextResponse.json({
       success: true,

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { DatabaseService } from '@/lib/supabase';
 import { OpenRouterAIService } from '@/lib/openrouter-ai';
+import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service';
 
 export async function POST(request) {
     try {
@@ -21,9 +22,24 @@ export async function POST(request) {
         const db = new DatabaseService();
         const userId = session.user.email;
 
+        const canUse = await subscriptionService.canUseFeature(userId, FEATURE_TYPES.AI_NOTES);
+        if (!canUse) {
+            const usage = await subscriptionService.getFeatureUsage(userId, FEATURE_TYPES.AI_NOTES);
+            return NextResponse.json({
+                error: 'limit_reached',
+                message: `Sorry, but you've exhausted all the credits of ${usage.period === 'daily' ? 'the day' : 'the month'}.`,
+                usage: usage.usage,
+                limit: usage.limit,
+                period: usage.period,
+                planType: usage.planType,
+                upgradeUrl: '/pricing'
+            }, { status: 403 });
+        }
+
         // AI Enhancement
         let finalSubject = subject || 'Untitled Note';
         let finalContent = content;
+        let aiEnhanced = false;
 
         try {
             console.log('✨ Enhancing note from email via AI...');
@@ -33,6 +49,7 @@ export async function POST(request) {
             if (enhanced && enhanced.subject && enhanced.content) {
                 finalSubject = enhanced.subject;
                 finalContent = enhanced.content;
+                aiEnhanced = true;
             }
         } catch (aiError) {
             console.error('AI Enhancement failed for email note:', aiError);
@@ -60,6 +77,10 @@ export async function POST(request) {
         }
 
         console.log('📝 Note saved to Supabase:', data);
+
+        if (aiEnhanced) {
+            await subscriptionService.incrementFeatureUsage(userId, FEATURE_TYPES.AI_NOTES);
+        }
 
         return NextResponse.json({
             success: true,

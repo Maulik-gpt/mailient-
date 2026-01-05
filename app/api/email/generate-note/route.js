@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { OpenRouterAIService } from '@/lib/openrouter-ai';
 import { DatabaseService } from '@/lib/supabase';
+import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service';
 
 export async function POST(request) {
     try {
@@ -9,6 +10,8 @@ export async function POST(request) {
         if (!session?.user?.email) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
+
+        const userId = session.user.email;
 
         const { emailId, subject, snippet, category } = await request.json();
 
@@ -32,14 +35,34 @@ export async function POST(request) {
         aiService.apiKey = (process.env.OPENROUTER_API_KEY2 || '').trim();
         aiService.model = 'bytedance-seed/seed-1.6-flash';
 
-        if (!aiService.apiKey) {
+        const isAIConfigured = !!aiService.apiKey;
+        if (!isAIConfigured) {
             console.warn('⚠️ OPENROUTER_API_KEY2 not configured for note generation, using fallback');
+        }
+
+        if (isAIConfigured) {
+            const canUse = await subscriptionService.canUseFeature(userId, FEATURE_TYPES.AI_NOTES);
+            if (!canUse) {
+                const usage = await subscriptionService.getFeatureUsage(userId, FEATURE_TYPES.AI_NOTES);
+                return NextResponse.json({
+                    error: 'limit_reached',
+                    message: `Sorry, but you've exhausted all the credits of ${usage.period === 'daily' ? 'the day' : 'the month'}.`,
+                    usage: usage.usage,
+                    limit: usage.limit,
+                    period: usage.period,
+                    planType: usage.planType,
+                    upgradeUrl: '/pricing'
+                }, { status: 403 });
+            }
         }
 
         try {
             const noteContent = await aiService.generateNote(snippet, category, privacyMode);
 
             if (noteContent) {
+                if (isAIConfigured) {
+                    await subscriptionService.incrementFeatureUsage(userId, FEATURE_TYPES.AI_NOTES);
+                }
                 return NextResponse.json({ noteContent });
             }
         } catch (aiError) {

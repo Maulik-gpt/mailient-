@@ -88,13 +88,15 @@ export async function POST(request) {
           ? "Your subscription has expired. Please renew to continue using Arcus AI."
           : usage.reason === 'no_subscription'
             ? "You need an active subscription to use Arcus AI. Visit /pricing to subscribe."
-            : "You have used all 10 Arcus AI credits for today. Credits reset at midnight. Upgrade to Pro for unlimited access!";
+            : `Sorry, but you've exhausted all the credits of ${usage.period === 'daily' ? 'the day' : 'the month'}.`;
 
         return NextResponse.json({
           message: limitMessage,
           error: 'limit_reached',
           usage: usage.usage,
           limit: usage.limit,
+          period: usage.period,
+          planType: usage.planType,
           reason: usage.reason,
           upgradeUrl: '/pricing',
           timestamp: new Date().toISOString(),

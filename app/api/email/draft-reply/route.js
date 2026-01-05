@@ -21,9 +21,11 @@ export async function POST(request) {
             const usage = await subscriptionService.getFeatureUsage(userId, FEATURE_TYPES.DRAFT_REPLY);
             return NextResponse.json({
                 error: 'limit_reached',
-                message: 'You have used all the credits of this month.',
+                message: `Sorry, but you've exhausted all the credits of ${usage.period === 'daily' ? 'the day' : 'the month'}.`,
                 usage: usage.usage,
                 limit: usage.limit,
+                period: usage.period,
+                planType: usage.planType,
                 upgradeUrl: '/pricing'
             }, { status: 403 });
         }

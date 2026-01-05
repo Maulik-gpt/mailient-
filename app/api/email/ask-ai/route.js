@@ -4,6 +4,7 @@ import { GmailService } from '@/lib/gmail';
 import { AIConfig } from '@/lib/ai-config';
 import { decrypt } from '@/lib/crypto';
 import { DatabaseService } from '@/lib/supabase';
+import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service';
 
 export async function POST(request) {
     try {
@@ -11,6 +12,8 @@ export async function POST(request) {
         if (!session?.user?.email) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
+
+        const userId = session.user.email;
 
         const { emailId, question } = await request.json();
         if (!emailId || !question) {
@@ -69,12 +72,30 @@ export async function POST(request) {
             return NextResponse.json({ error: 'AI service not configured' }, { status: 500 });
         }
 
+        const canUse = await subscriptionService.canUseFeature(userId, FEATURE_TYPES.ARCUS_AI);
+        if (!canUse) {
+            const usage = await subscriptionService.getFeatureUsage(userId, FEATURE_TYPES.ARCUS_AI);
+            return NextResponse.json({
+                error: 'limit_reached',
+                message: `Sorry, but you've exhausted all the credits of ${usage.period === 'daily' ? 'the day' : 'the month'}.`,
+                usage: usage.usage,
+                limit: usage.limit,
+                period: usage.period,
+                planType: usage.planType,
+                upgradeUrl: '/pricing'
+            }, { status: 403 });
+        }
+
         const response = await aiConfig.generateChatResponse(
             `QUESTION: ${question}\n\nBased on this email context, please answer the user's question concisely and accurately.`,
             context,
             null,
             privacyMode
         );
+
+        if (typeof response === 'string' && response.trim().length > 0) {
+            await subscriptionService.incrementFeatureUsage(userId, FEATURE_TYPES.ARCUS_AI);
+        }
 
         return NextResponse.json({ response });
 

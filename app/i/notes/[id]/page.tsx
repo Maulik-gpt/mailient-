@@ -26,6 +26,7 @@ import { HomeFeedSidebar } from '@/components/ui/home-feed-sidebar';
 import { ArrowLeft, Sparkles, Plus, Search, X, Edit, Trash, Save, Folder, Tag, Clock, MoreVertical, FileText, Pen, NotebookPen, AlertTriangle, Share2, Image, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { UsageLimitModal } from '@/components/ui/usage-limit-modal';
 import {
     Dialog,
     DialogContent,
@@ -61,6 +62,14 @@ export default function NoteDetailPage({ params }: { params: { id: string } }) {
     const [isShareOptionsOpen, setIsShareOptionsOpen] = useState(false);
     const [isImageShareOpen, setIsImageShareOpen] = useState(false);
     const imagePreviewRef = useRef<HTMLDivElement>(null);
+    const [isUsageLimitModalOpen, setIsUsageLimitModalOpen] = useState(false);
+    const [usageLimitModalData, setUsageLimitModalData] = useState<{
+        featureName: string;
+        currentUsage: number;
+        limit: number;
+        period: 'daily' | 'monthly';
+        currentPlan: 'starter' | 'pro' | 'none';
+    } | null>(null);
 
     const getNoteLink = useCallback((id: string) => {
         if (typeof window !== 'undefined') {
@@ -245,33 +254,46 @@ export default function NoteDetailPage({ params }: { params: { id: string } }) {
                 })
             });
 
-            if (response.ok) {
-                // Refresh notes to get updated data
-                const refreshResponse = await fetch('/api/notes');
-                if (refreshResponse.ok) {
-                    const data = await refreshResponse.json();
-                    const formattedNotes = (data.notes || []).map((note: any) => ({
-                        id: note.id,
-                        subject: note.subject,
-                        content: note.content,
-                        createdAt: note.created_at,
-                        updatedAt: note.updated_at,
-                        tags: note.tags || []
-                    }));
-                    setNotes(formattedNotes);
-
-                    // Find the updated note
-                    const updatedNote = formattedNotes.find((n: Note) => n.id === editingNote);
-                    if (updatedNote) {
-                        setSelectedNote(updatedNote);
-                    }
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                if (data?.error === 'limit_reached') {
+                    setUsageLimitModalData({
+                        featureName: 'AI Notes',
+                        currentUsage: data.usage || 0,
+                        limit: data.limit || 0,
+                        period: data.period || 'monthly',
+                        currentPlan: data.planType || 'starter'
+                    });
+                    setIsUsageLimitModalOpen(true);
+                    return;
                 }
-
-                setEditingNote(null);
-                toast.success('Note updated successfully!');
-            } else {
-                toast.error('Failed to update note');
+                toast.error(data?.error || 'Failed to update note');
+                return;
             }
+
+            // Refresh notes to get updated data
+            const refreshResponse = await fetch('/api/notes');
+            if (refreshResponse.ok) {
+                const refreshData = await refreshResponse.json();
+                const formattedNotes = (refreshData.notes || []).map((note: any) => ({
+                    id: note.id,
+                    subject: note.subject,
+                    content: note.content,
+                    createdAt: note.created_at,
+                    updatedAt: note.updated_at,
+                    tags: note.tags || []
+                }));
+                setNotes(formattedNotes);
+
+                // Find the updated note
+                const updatedNote = formattedNotes.find((n: Note) => n.id === editingNote);
+                if (updatedNote) {
+                    setSelectedNote(updatedNote);
+                }
+            }
+
+            setEditingNote(null);
+            toast.success('Note updated successfully!');
         } catch (error) {
             console.error('Error updating note:', error);
             toast.error('Error updating note');
@@ -333,7 +355,17 @@ export default function NoteDetailPage({ params }: { params: { id: string } }) {
     };
 
     return (
-        <div className={cn("min-h-screen bg-[#000000] text-white transition-all duration-500", (isDeleteDialogOpen || isShareDialogOpen || isShareOptionsOpen || isImageShareOpen) && "pause-animations")} style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'San Francisco', 'Satoshi', sans-serif" }}>
+        <>
+            <UsageLimitModal
+                isOpen={isUsageLimitModalOpen}
+                onClose={() => setIsUsageLimitModalOpen(false)}
+                featureName={usageLimitModalData?.featureName || 'AI Notes'}
+                currentUsage={usageLimitModalData?.currentUsage || 0}
+                limit={usageLimitModalData?.limit || 0}
+                period={usageLimitModalData?.period || 'monthly'}
+                currentPlan={usageLimitModalData?.currentPlan || 'starter'}
+            />
+            <div className={cn("min-h-screen bg-[#000000] text-white transition-all duration-500", (isDeleteDialogOpen || isShareDialogOpen || isShareOptionsOpen || isImageShareOpen) && "pause-animations")} style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'San Francisco', 'Satoshi', sans-serif" }}>
             {/* Mailient Sidebar */}
             <HomeFeedSidebar />
 
@@ -741,5 +773,6 @@ export default function NoteDetailPage({ params }: { params: { id: string } }) {
                 </div>
             )}
         </div>
+        </>
     );
 }

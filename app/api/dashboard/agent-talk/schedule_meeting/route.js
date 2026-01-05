@@ -3,6 +3,7 @@ import { google } from 'googleapis';
 import { auth } from '@/lib/auth.js';
 import { DatabaseService } from '@/lib/supabase.js';
 import { decrypt } from '@/lib/crypto.js';
+import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service.js';
 
 // Create a calendar event for Arcus-driven scheduling
 export async function POST(request) {
@@ -10,6 +11,23 @@ export async function POST(request) {
     const session = await auth();
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized. Please sign in.' }, { status: 401 });
+    }
+
+    const userEmail = session.user.email;
+
+    // Check subscription and feature usage for scheduling (30/month for Starter)
+    const canUse = await subscriptionService.canUseFeature(userEmail, FEATURE_TYPES.SCHEDULE_CALL);
+    if (!canUse) {
+      const usage = await subscriptionService.getFeatureUsage(userEmail, FEATURE_TYPES.SCHEDULE_CALL);
+      return NextResponse.json({
+        error: 'limit_reached',
+        message: `Sorry, but you've exhausted all the credits of ${usage.period === 'daily' ? 'the day' : 'the month'}.`,
+        usage: usage.usage,
+        limit: usage.limit,
+        period: usage.period,
+        planType: usage.planType,
+        upgradeUrl: '/pricing'
+      }, { status: 403 });
     }
 
     const body = await request.json();
@@ -94,6 +112,9 @@ export async function POST(request) {
       resource: event,
       conferenceDataVersion: includeMeet ? 1 : 0,
     });
+
+    // Increment usage after successful scheduling
+    await subscriptionService.incrementFeatureUsage(userEmail, FEATURE_TYPES.SCHEDULE_CALL);
 
     return NextResponse.json({
       success: true,

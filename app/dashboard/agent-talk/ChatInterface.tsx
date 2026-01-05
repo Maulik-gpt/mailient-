@@ -16,6 +16,7 @@ import { RainbowButton } from '@/components/ui/rainbow-button';
 import { HomeFeedSidebar } from "@/components/ui/home-feed-sidebar";
 import { NotificationIcon } from '@/components/ui/notification-icon';
 import NotesFetchingDisplay from '@/components/ui/notes-fetching-display';
+import { UsageLimitModal } from '@/components/ui/usage-limit-modal';
 
 // Detect and wrap URLs in plain text with premium styling for actions
 const linkify = (text: string) => {
@@ -145,6 +146,14 @@ export default function ChatInterface({
   const [newMessageIds, setNewMessageIds] = useState<Set<number>>(new Set());
   const [isInitialMode, setIsInitialMode] = useState<boolean>(!initialConversationId);
   const [showHistory, setShowHistory] = useState<boolean>(false);
+  const [isUsageLimitModalOpen, setIsUsageLimitModalOpen] = useState(false);
+  const [usageLimitModalData, setUsageLimitModalData] = useState<{
+    featureName: string;
+    currentUsage: number;
+    limit: number;
+    period: 'daily' | 'monthly';
+    currentPlan: 'starter' | 'pro' | 'none';
+  } | null>(null);
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(initialConversationId || null);
   const [conversations, setConversations] = useState<{ [key: string]: Message[] }>({});
@@ -311,6 +320,17 @@ export default function ChatInterface({
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        if (errorData?.error === 'limit_reached') {
+          setUsageLimitModalData({
+            featureName: 'Ask AI',
+            currentUsage: errorData.usage || 0,
+            limit: errorData.limit || 0,
+            period: errorData.period || 'daily',
+            currentPlan: errorData.planType || 'starter'
+          });
+          setIsUsageLimitModalOpen(true);
+          return;
+        }
         throw new Error(errorData.message || `Failed to send message (${response.status})`);
       }
 
@@ -803,6 +823,15 @@ export default function ChatInterface({
 
   return (
     <TooltipProvider>
+      <UsageLimitModal
+        isOpen={isUsageLimitModalOpen}
+        onClose={() => setIsUsageLimitModalOpen(false)}
+        featureName={usageLimitModalData?.featureName || 'Ask AI'}
+        currentUsage={usageLimitModalData?.currentUsage || 0}
+        limit={usageLimitModalData?.limit || 0}
+        period={usageLimitModalData?.period || 'daily'}
+        currentPlan={usageLimitModalData?.currentPlan || 'starter'}
+      />
       <div className="flex h-screen w-full text-white overflow-hidden" style={{
         background: '#000000'
       }}>

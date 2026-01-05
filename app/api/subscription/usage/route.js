@@ -30,10 +30,12 @@ export async function POST(request) {
                 return NextResponse.json({
                     success: false,
                     error: 'limit_reached',
-                    message: 'You have used all the credits of this month.',
+                    message: `Sorry, but you've exhausted all the credits of ${usage.period === 'daily' ? 'the day' : 'the month'}.`,
                     usage: usage.usage,
                     limit: usage.limit,
                     remaining: 0,
+                    period: usage.period,
+                    planType: usage.planType,
                     upgradeUrl: '/pricing'
                 }, { status: 403 });
             }
@@ -44,7 +46,9 @@ export async function POST(request) {
                 return NextResponse.json({
                     success: false,
                     error: incrementResult.error,
-                    message: 'You have used all the credits of this month.',
+                    message: `Sorry, but you've exhausted all the credits of ${usage.period === 'daily' ? 'the day' : 'the month'}.`,
+                    period: usage.period,
+                    planType: usage.planType,
                     upgradeUrl: '/pricing'
                 }, { status: 403 });
             }
@@ -54,7 +58,9 @@ export async function POST(request) {
                 usage: incrementResult.newUsage || usage.usage + 1,
                 limit: usage.limit,
                 remaining: incrementResult.remaining ?? (usage.remaining - 1),
-                isUnlimited: usage.isUnlimited || false
+                isUnlimited: usage.isUnlimited || false,
+                period: usage.period,
+                planType: usage.planType
             });
         }
 
@@ -66,7 +72,8 @@ export async function POST(request) {
             limit: usage.limit,
             remaining: usage.remaining,
             period: usage.period,
-            isUnlimited: usage.isUnlimited || false
+            isUnlimited: usage.isUnlimited || false,
+            planType: usage.planType
         });
     } catch (error) {
         console.error('Error checking feature usage:', error);
