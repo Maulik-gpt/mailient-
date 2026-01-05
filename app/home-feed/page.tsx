@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import { GmailInterfaceFixed } from '@/components/ui/gmail-interface-fixed';
 import confetti from 'canvas-confetti';
 
-export default function HomeFeed() {
+function HomeFeedContent() {
   const router = useRouter();
   const { data: session, status } = useSession();
 
@@ -172,6 +172,18 @@ export default function HomeFeed() {
     <div className="satoshi-home-feed w-full h-screen bg-black dark:bg-black">
       <GmailInterfaceFixed />
     </div>
+  );
+}
+
+export default function HomeFeed() {
+  return (
+    <Suspense fallback={
+      <div className="w-full h-screen bg-black flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
+      </div>
+    }>
+      <HomeFeedContent />
+    </Suspense>
   );
 }
 
