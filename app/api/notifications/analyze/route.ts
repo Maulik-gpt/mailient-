@@ -212,8 +212,16 @@ export async function GET(request: Request) {
             date: email.date || '',
         }));
 
-        // Perform AI analysis
-        const notifications = await analyzeEmailsWithAI(emailsForAnalysis);
+        // Perform AI analysis in batches of 10 to ensure accuracy and prevent hallucinations
+        const BATCH_SIZE = 10;
+        const notifications: SmartNotification[] = [];
+
+        for (let i = 0; i < emailsForAnalysis.length; i += BATCH_SIZE) {
+            const batch = emailsForAnalysis.slice(i, i + BATCH_SIZE);
+            console.log(`🤖 Analyzing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(emailsForAnalysis.length / BATCH_SIZE)} (${batch.length} emails)...`);
+            const batchNotifications = await analyzeEmailsWithAI(batch);
+            notifications.push(...batchNotifications);
+        }
 
         // Calculate summary
         const summary = {
@@ -289,8 +297,10 @@ async function analyzeEmailsWithAI(emails: any[]): Promise<SmartNotification[]> 
 
         const prompt = `Act as a senior Cyber Security Intelligence Analyst. Analyze these emails and return a JSON object with 4 arrays. 
 
-### CRITICAL INSTRUCTION: EXTREME RESTRICTIVENESS
-You MUST be extremely restrictive when flagging "threats". Only flag emails that are definitively malicious or highly suspicious. 
+### CRITICAL INSTRUCTIONS:
+1. **NO HALLUCINATIONS**: Use ONLY the information provided in the specific email. DO NOT use names, codes, or platforms from the examples provided in this prompt if they are not in the email.
+2. **ACCURATE TITLES**: Create descriptive, real titles based on the sender or subject (e.g., "Invoice from Amazon", "Reply from John Doe").
+3. **EXTREME RESTRICTIVENESS**: You MUST be extremely restrictive when flagging "threats". Only flag emails that are definitively malicious or highly suspicious. 
 - **ABSOLUTELY DO NOT** flag newsletters, marketing, automated reports, or spam (junk mail) as "threats".
 - **ABSOLUTELY DO NOT** flag account verifications or legitimate alerts from known brands (Google, Microsoft, Banks) unless you detect clear signs of phishing (wrong domains, bad links).
 - **False Positives are unacceptable.** If you are even slightly unsure, do NOT flag it as a threat.
@@ -301,14 +311,13 @@ ${emailSummaries}
 
 CATEGORIES TO FIND:
 1. "threats" - Only clear malicious activities:
-   - Phishing: Impersonation of brands (PayPal, Netflix, Microsoft, Banks) to steal passwords/billing.
+   - Phishing: Impersonation of brands to steal passwords/billing.
    - Account Threats: "Account suspended", "Unusual login", "Verify immediately" with suspicious links.
-   Red flags: suspicious sender domain, mismatched links, grammatical errors in "official" mail.
    - Financial Scams: Crypto scams, lottery, inheritance, suspicious job offers.
    - Social Engineering: Direct requests for OTP, MFA codes, or sensitive documents.
    - Malware: Suspicious instructions to open attachments or download files.
 
-2. "verificationCodes" - Emails with OTP/2FA codes. Extract the actual numeric or alphanumeric code.
+2. "verificationCodes" - Emails with OTP/2FA codes. Extract the ACTUAL code from the email.
 3. "documents" - Emails with legitimate attachments (invoices, receipts, contracts, reports).
 4. "replies" - Actual email replies from humans (look for RE:, In-Reply-To context).
 
@@ -316,22 +325,22 @@ JSON OUTPUT FORMAT (STRICT):
 {
   "threats": [
     {
-      "index": 0,
-      "severity": "critical",
+      "index": [the index from the email list],
+      "severity": "critical" | "high" | "medium" | "low",
       "title": "Precise Threat Title",
-      "indicators": ["brand_impersonation", "suspicious_link", "urgency"],
+      "indicators": ["brand_impersonation", "suspicious_link", "urgency", "etc"],
       "description": "Deep security analysis explaining exactly why this is a threat and what the user should avoid."
     }
   ],
-  "verificationCodes": [{"index": 1, "code": "123456", "platform": "Instagram", "description": "Login code"}],
-  "documents": [{"index": 2, "category": "invoice", "title": "AWS Bill - Dec", "isImportant": true, "description": "Cloud services invoice"}],
-  "replies": [{"index": 3, "title": "Reply from Sarah", "description": "Feedback on the proposal"}]
+  "verificationCodes": [{"index": [index], "code": "[the actual code]", "platform": "[e.g. Google, Discord, etc]", "description": "e.g. Login verification code"}],
+  "documents": [{"index": [index], "category": "invoice" | "payment" | "receipt" | "contract" | "report" | "other", "title": "[Descriptive Title]", "isImportant": true, "description": "Short description"}],
+  "replies": [{"index": [index], "title": "[Descriptive Title]", "description": "[Summary of reply]"}]
 }
 
 NOTES:
-- Use index [X] from the email data.
-- "description" for threats must be detailed and analytical.
-- Return ONLY valid JSON. No markdown. No text outside JSON.`;
+- Use index [X] from the email data provided above.
+- Ensure "title" and "description" are derived FROM THE EMAIL CONTENT.
+- Return ONLY valid JSON. No markdown backticks. No extra text.`;
 
         console.log('🤖 Calling AI for notification analysis with google/gemini-2.0-flash-exp:free...');
 
