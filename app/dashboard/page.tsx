@@ -43,13 +43,16 @@ export default async function DashboardPage() {
         const { data: subscription } = await db.supabase
           .from('user_subscriptions')
           .select('status, plan_type, subscription_ends_at')
-          .eq('user_id', userEmail)
-          .maybeSingle();
+          .ilike('user_id', userEmail)
+          .order('updated_at', { ascending: false })
+          .limit(1);
 
-        if (subscription) {
-          console.log(`💳 Subscription found: status=${subscription.status}, plan=${subscription.plan_type}`);
+        const latestSubscription = Array.isArray(subscription) && subscription.length > 0 ? subscription[0] : null;
+
+        if (latestSubscription) {
+          console.log(`💳 Subscription found: status=${latestSubscription.status}, plan=${latestSubscription.plan_type}`);
           // If they have any valid subscription status or plan, they are done
-          if (subscription.status === 'active' || (subscription.plan_type && subscription.plan_type !== 'none')) {
+          if (latestSubscription.status === 'active' || (latestSubscription.plan_type && latestSubscription.plan_type !== 'none')) {
             console.log('✅ Auto-completing onboarding for user with active subscription');
             await db.supabase.from('user_profiles').update({ onboarding_completed: true }).eq('user_id', userEmail);
           } else {
