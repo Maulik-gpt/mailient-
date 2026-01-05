@@ -69,8 +69,27 @@ interface ReplyNotification {
 
 type SmartNotification = ThreatNotification | VerificationCodeNotification | DocumentNotification | ReplyNotification;
 
-// Using google/gemini-2.0-flash-exp:free for reliable notifications - NO FALLBACKS to prevent false content
-const NOTIFICATIONS_MODEL = 'google/gemini-2.0-flash-exp:free';
+// Using xiaomi/mimo-v2-flash:free as primary with free-only fallbacks - NO FALLBACKS to prevent false content
+const NOTIFICATIONS_MODEL = 'xiaomi/mimo-v2-flash:free';
+
+function sleep(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function parseOpenRouterErrorBody(errorText: string): { message?: string; raw?: string; providerName?: string; code?: number } {
+    try {
+        const parsed = JSON.parse(errorText);
+        const err = parsed?.error;
+        return {
+            message: err?.message,
+            raw: err?.metadata?.raw,
+            providerName: err?.metadata?.provider_name,
+            code: err?.code,
+        };
+    } catch {
+        return {};
+    }
+}
 
 export async function GET(request: Request) {
     try {
@@ -249,6 +268,10 @@ export async function GET(request: Request) {
 
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
+        const isRateLimited = errorMessage.includes('HTTP 429') ||
+            errorMessage.toLowerCase().includes('rate-limit') ||
+            errorMessage.toLowerCase().includes('rate limited');
+
         // Check if it's an auth-related error
         const isAuthError = errorMessage.includes('authentication') ||
             errorMessage.includes('expired') ||
@@ -264,7 +287,7 @@ export async function GET(request: Request) {
                 notifications: [],
                 summary: { threats: 0, verificationCodes: 0, documents: 0, replies: 0 }
             },
-            { status: isAuthError ? 401 : 500 }
+            { status: isAuthError ? 401 : (isRateLimited ? 429 : 500) }
         );
     }
 }
@@ -341,37 +364,85 @@ NOTES:
 - Ensure "title" and "description" are derived FROM THE EMAIL CONTENT.
 - Return ONLY valid JSON. No markdown backticks. No extra text.`;
 
-        console.log('🤖 Calling AI for notification analysis with google/gemini-2.0-flash-exp:free...');
+        const fallbackModels = (process.env.NOTIFICATIONS_MODEL_FALLBACKS || 'google/gemini-2.0-flash-exp:free,meta-llama/llama-3.1-8b-instruct:free,qwen/qwen-2.5-7b-instruct:free')
+            .split(',')
+            .map(s => s.trim())
+            .filter(Boolean);
+        const modelsToTry = [NOTIFICATIONS_MODEL, ...fallbackModels];
 
-        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`,
-                'HTTP-Referer': process.env.HOST || 'https://mailient.xyz',
-                'X-Title': 'Mailient Notifications'
-            },
-            body: JSON.stringify({
-                model: NOTIFICATIONS_MODEL,
-                messages: [
-                    {
-                        role: 'system',
-                        content: 'You are a professional email categorization and security analysis AI. Accuracy is your top priority. Always respond with valid JSON only. Never include markdown code blocks or explanations. Be extremely skeptical and restrictive when identifying security threats.'
+        const requestBody = {
+            messages: [
+                {
+                    role: 'system',
+                    content: 'You are a professional email categorization and security analysis AI. Accuracy is your top priority. Always respond with valid JSON only. Never include markdown code blocks or explanations. Be extremely skeptical and restrictive when identifying security threats.'
+                },
+                { role: 'user', content: prompt }
+            ],
+            temperature: 0.1,
+            max_tokens: 3000
+        };
+
+        let data: any = null;
+        let lastErr: Error | null = null;
+
+        for (const model of modelsToTry) {
+            console.log(`🤖 Calling AI for notification analysis with ${model}...`);
+
+            // Retry only on transient upstream errors (rate limit / gateway / service unavailable)
+            const maxAttempts = 3;
+            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+                const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`,
+                        'HTTP-Referer': process.env.HOST || 'https://mailient.xyz',
+                        'X-Title': 'Mailient Notifications'
                     },
-                    { role: 'user', content: prompt }
-                ],
-                temperature: 0.1,
-                max_tokens: 3000
-            })
-        });
+                    body: JSON.stringify({
+                        model,
+                        ...requestBody
+                    })
+                });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('❌ AI API error:', response.status, errorText);
-            throw new Error(`AI provider request failed (OpenRouter). HTTP ${response.status}: ${errorText || 'No response body'}`);
+                if (response.ok) {
+                    data = await response.json();
+                    lastErr = null;
+                    break;
+                }
+
+                const errorText = await response.text();
+                const meta = parseOpenRouterErrorBody(errorText);
+
+                const isRetryableStatus = response.status === 429 || response.status === 502 || response.status === 503 || response.status === 504;
+                const providerHint = meta.providerName ? ` Provider: ${meta.providerName}.` : '';
+                const rawHint = meta.raw ? ` Upstream: ${meta.raw}` : '';
+
+                console.error('❌ AI API error:', response.status, errorText);
+                lastErr = new Error(`AI provider request failed (OpenRouter). HTTP ${response.status}:${providerHint}${rawHint ? rawHint : ''} ${errorText || 'No response body'}`.trim());
+
+                if (!isRetryableStatus || attempt === maxAttempts) {
+                    break;
+                }
+
+                const backoffMs = Math.min(8000, 500 * Math.pow(2, attempt - 1));
+                await sleep(backoffMs);
+            }
+
+            if (data) break;
+
+            // If the model is rate-limited upstream, try the next model (provider-level failover)
+            const lastMessage = lastErr?.message || '';
+            const isRateLimited = lastMessage.includes('HTTP 429') || lastMessage.toLowerCase().includes('rate-limit') || lastMessage.toLowerCase().includes('rate limited');
+            if (!isRateLimited) {
+                break;
+            }
         }
 
-        const data = await response.json();
+        if (!data) {
+            throw lastErr || new Error('AI provider request failed (OpenRouter).');
+        }
+
         const content = data?.choices?.[0]?.message?.content || '';
 
         if (!content) {
