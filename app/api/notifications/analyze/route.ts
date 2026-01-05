@@ -69,8 +69,14 @@ interface ReplyNotification {
 
 type SmartNotification = ThreatNotification | VerificationCodeNotification | DocumentNotification | ReplyNotification;
 
-// Cost-effective model for notifications
-const NOTIFICATIONS_MODEL = 'google/gemini-2.0-flash-001';
+// Cost-effective model for notifications - using FREE model to avoid credit issues
+const NOTIFICATIONS_MODEL = 'google/gemini-2.0-flash-exp:free';
+// Fallback models in case primary fails
+const FALLBACK_MODELS = [
+    'google/gemini-2.0-flash-exp:free',
+    'google/gemini-flash-1.5:free',
+    'meta-llama/llama-3.2-3b-instruct:free'
+];
 
 export async function GET(request: Request) {
     try {
@@ -335,35 +341,64 @@ NOTES:
 
         console.log('🤖 Calling AI for notification analysis...');
 
-        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`,
-                'HTTP-Referer': process.env.HOST || 'https://mailient.xyz',
-                'X-Title': 'Mailient Notifications'
-            },
-            body: JSON.stringify({
-                model: NOTIFICATIONS_MODEL,
-                messages: [
-                    {
-                        role: 'system',
-                        content: 'You are a professional email categorization and security analysis AI. Accuracy is your top priority. Always respond with valid JSON only. Never include markdown code blocks or explanations. Be extremely skeptical and restrictive when identifying security threats.'
-                    },
-                    { role: 'user', content: prompt }
-                ],
-                temperature: 0.1, // Reduced temperature for more deterministic/accurate results
-                max_tokens: 3000
-            })
-        });
+        // Try multiple models with fallback
+        let data: any = null;
+        let lastError = '';
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('❌ AI API error:', response.status, errorText);
+        for (const modelId of FALLBACK_MODELS) {
+            try {
+                console.log(`📡 Attempting model: ${modelId}`);
+
+                const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`,
+                        'HTTP-Referer': process.env.HOST || 'https://mailient.xyz',
+                        'X-Title': 'Mailient Notifications'
+                    },
+                    body: JSON.stringify({
+                        model: modelId,
+                        messages: [
+                            {
+                                role: 'system',
+                                content: 'You are a professional email categorization and security analysis AI. Accuracy is your top priority. Always respond with valid JSON only. Never include markdown code blocks or explanations. Be extremely skeptical and restrictive when identifying security threats.'
+                            },
+                            { role: 'user', content: prompt }
+                        ],
+                        temperature: 0.1,
+                        max_tokens: 3000
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.warn(`⚠️ ${modelId} failed with status ${response.status}: ${errorText.substring(0, 100)}`);
+                    lastError = errorText;
+                    continue;
+                }
+
+                const responseData = await response.json();
+                if (responseData?.choices?.[0]?.message?.content) {
+                    console.log(`✅ AI Success with ${modelId}`);
+                    data = responseData;
+                    break;
+                } else {
+                    console.warn(`⚠️ ${modelId} returned empty response`);
+                    continue;
+                }
+            } catch (error) {
+                console.warn(`❌ ${modelId} error:`, error);
+                lastError = error instanceof Error ? error.message : 'Unknown error';
+                continue;
+            }
+        }
+
+        if (!data) {
+            console.error('❌ All AI models failed:', lastError);
             return localAnalysis(emails);
         }
 
-        const data = await response.json();
         const content = data?.choices?.[0]?.message?.content || '';
 
         console.log('📥 AI response received, parsing...');
