@@ -976,7 +976,7 @@ export default function ChatInterface({
               </div>
               <div className="flex justify-center -mt-8">
                 {currentPlan !== 'pro' && (
-                  <GradientButton onClick={() => window.location.href = '/pricing'}>Get Pro Now!</GradientButton>
+                  <RainbowButton onClick={() => window.location.href = '/pricing'}>Get Unlimited Access</RainbowButton>
                 )}
               </div>
             </div>
