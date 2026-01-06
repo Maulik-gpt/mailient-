@@ -1062,18 +1062,32 @@ export function LinearLanding() {
                         <a href="#" className="hover:text-white transition-colors">Terms</a>
                     </div>
                     <div className="flex flex-col md:flex-row items-center gap-8">
-                        <a
-                            href="https://www.foundrlist.com/product/mailient"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="opacity-40 hover:opacity-100 transition-all duration-500 scale-90 hover:scale-100"
-                        >
-                            <img
-                                src="https://www.foundrlist.com/api/badge/mailient"
-                                alt="Mailient - Live on FoundrList"
-                                className="h-8 w-auto grayscale hover:grayscale-0"
-                            />
-                        </a>
+                        <div className="flex items-center gap-6">
+                            <a
+                                href="https://www.foundrlist.com/product/mailient"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="opacity-40 hover:opacity-100 transition-all duration-500 scale-90 hover:scale-100"
+                            >
+                                <img
+                                    src="https://www.foundrlist.com/api/badge/mailient"
+                                    alt="Mailient - Live on FoundrList"
+                                    className="h-8 w-auto grayscale hover:grayscale-0"
+                                />
+                            </a>
+                            <a
+                                href="https://launchigniter.com/product/mailient?ref=badge-mailient"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="opacity-40 hover:opacity-100 transition-all duration-500 scale-90 hover:scale-100"
+                            >
+                                <img
+                                    src="https://launchigniter.com/api/badge/mailient?theme=dark"
+                                    alt="Featured on LaunchIgniter"
+                                    className="h-8 w-auto grayscale hover:grayscale-0"
+                                />
+                            </a>
+                        </div>
                         <p className="text-xs text-zinc-600">© 2026 Mailient Intelligence.</p>
                     </div>
                 </div>
