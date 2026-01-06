@@ -165,27 +165,56 @@ export function LinearLanding() {
 
             {/* Hero Section */}
             <HeroGeometric
-                badge="V1.0 is now live"
-                title1="Clarity, so you never"
-                title2="miss what matters."
+                badge="AI-Powered Email for Founders"
+                title1="Find opportunities."
+                title2="Save hours daily."
             >
                 <div className="text-center">
                     <p className="text-lg md:text-xl text-white/40 max-w-2xl mb-12 leading-relaxed font-light tracking-wide mx-auto px-4 text-center">
-                        Mailient is the high-performance email client for founders. Built for focus, speed, and intelligence. Sift through the noise and focus on what matters.
+                        AI assistant for founders. Auto-sifts Gmail to find revenue opportunities and urgent replies.
                     </p>
 
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-24">
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
                         {status === "authenticated" ? (
                             <GlassButton onClick={() => router.push('/home-feed?welcome=true')} size="lg">
                                 Continue to Dashboard
                                 <ArrowRight className="w-5 h-5 ml-2 inline-block" />
                             </GlassButton>
                         ) : (
-                            <GlassButton onClick={() => signIn('google')} size="lg">
-                                Connect Gmail
-                                <ArrowRight className="w-5 h-5 ml-2 inline-block" />
-                            </GlassButton>
+                            <>
+                                <GlassButton onClick={() => signIn('google')} size="lg">
+                                    Connect Gmail Free
+                                    <ArrowRight className="w-5 h-5 ml-2 inline-block" />
+                                </GlassButton>
+                                <Button 
+                                    variant="outline" 
+                                    onClick={() => document.getElementById('demo-section')?.scrollIntoView({ behavior: 'smooth' })}
+                                    className="border-white/10 bg-white/5 text-white hover:bg-white/10 rounded-full px-6"
+                                >
+                                    See Demo First
+                                </Button>
+                            </>
                         )}
+                    </div>
+
+                    {/* Trust Signals */}
+                    <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4 mb-16 text-sm text-zinc-400">
+                        <div className="flex items-center gap-2">
+                            <ShieldCheck className="w-4 h-4 text-green-400" />
+                            <span>Google OAuth Secure</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Lock className="w-4 h-4 text-blue-400" />
+                            <span>End-to-End Encrypted</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Star className="w-4 h-4 text-yellow-400" />
+                            <span>500+ Founders Trust Us</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Zap className="w-4 h-4 text-purple-400" />
+                            <span>Setup in 2 Minutes</span>
+                        </div>
                     </div>
 
                     {/* Hero Video Space */}
@@ -216,6 +245,169 @@ export function LinearLanding() {
                     </div>
                 </div>
             </HeroGeometric>
+
+            {/* Demo Section - Single Video with Fading Text */}
+            <section id="demo-section" className="py-32 px-6 z-10 relative bg-zinc-950/30">
+                <div className="max-w-7xl mx-auto">
+                    <div className="flex flex-col items-center mb-20 text-center">
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.08] mb-8"
+                        >
+                            <Sparkles className="h-3 w-3 text-white/60" />
+                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-white/60">See How It Works</span>
+                        </motion.div>
+
+                        <motion.h2
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: 0.1 }}
+                            className="text-4xl md:text-6xl font-bold tracking-tight mb-6"
+                        >
+                            Mailient in action.
+                        </motion.h2>
+                        <motion.p
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: 0.2 }}
+                            className="text-zinc-500 max-w-2xl mx-auto text-lg leading-relaxed"
+                        >
+                            Watch how AI transforms your chaotic inbox into clear opportunities.
+                        </motion.p>
+                    </div>
+
+                    {/* Single Video + Fading Text */}
+                    <div className="max-w-5xl mx-auto">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                            {/* Text Section - Fading Steps */}
+                            <div className="space-y-8">
+                                {/* Step 1 */}
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: [0, 1, 1, 0] }}
+                                    transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+                                    className="h-32 flex flex-col justify-center"
+                                >
+                                    <div className="flex items-center gap-4 mb-4">
+                                        <div className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center font-bold text-lg">1</div>
+                                        <h3 className="text-3xl font-bold text-white">Start Analysis</h3>
+                                    </div>
+                                    <p className="text-xl text-zinc-400">Find important emails which were buried in your inbox chaos.</p>
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-3">
+                                            <Check className="w-5 h-5 text-green-400" />
+                                            <span className="text-zinc-300">AI scans entire inbox in seconds</span>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <Check className="w-5 h-5 text-green-400" />
+                                            <span className="text-zinc-300">Identifies revenue opportunities</span>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <Check className="w-5 h-5 text-green-400" />
+                                            <span className="text-zinc-300">Flags urgent replies needed</span>
+                                        </div>
+                                    </div>
+                                </motion.div>
+
+                                {/* Step 2 */}
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: [0, 0, 0, 1, 1, 1, 0] }}
+                                    transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+                                    className="h-32 flex flex-col justify-center"
+                                >
+                                    <div className="flex items-center gap-4 mb-4">
+                                        <div className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center font-bold text-lg">2</div>
+                                        <h3 className="text-3xl font-bold text-white">Find Meaningful Insights</h3>
+                                    </div>
+                                    <p className="text-xl text-zinc-400">Emails organized into smart boxes with clear categories.</p>
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-3">
+                                            <Check className="w-5 h-5 text-green-400" />
+                                            <span className="text-zinc-300">Revenue opportunities highlighted</span>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <Check className="w-5 h-5 text-green-400" />
+                                            <span className="text-zinc-300">Urgent replies prioritized</span>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <Check className="w-5 h-5 text-green-400" />
+                                            <span className="text-zinc-300">Follow-ups tracked automatically</span>
+                                        </div>
+                                    </div>
+                                </motion.div>
+
+                                {/* Step 3 */}
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: [0, 0, 0, 0, 0, 0, 1, 1, 1, 0] }}
+                                    transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+                                    className="h-32 flex flex-col justify-center"
+                                >
+                                    <div className="flex items-center gap-4 mb-4">
+                                        <div className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center font-bold text-lg">3</div>
+                                        <h3 className="text-3xl font-bold text-white">Quick Actions in &lt;1min!</h3>
+                                    </div>
+                                    <p className="text-xl text-zinc-400">Select any email and turn it into action with one click.</p>
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-3">
+                                            <Check className="w-5 h-5 text-green-400" />
+                                            <span className="text-zinc-300">AI drafts perfect replies</span>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <Check className="w-5 h-5 text-green-400" />
+                                            <span className="text-zinc-300">Schedule meetings instantly</span>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <Check className="w-5 h-5 text-green-400" />
+                                            <span className="text-zinc-300">Archive with confidence</span>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            </div>
+
+                            {/* Video Section */}
+                            <div className="flex-1">
+                                <div className="relative aspect-video rounded-2xl border border-white/10 bg-zinc-900/50 backdrop-blur-sm overflow-hidden">
+                                    <iframe
+                                        src="https://cap.so/embed/et27d0cbvw1axse?autoplay=1&muted=1&controls=0"
+                                        className="absolute inset-0 w-full h-full rounded-2xl"
+                                        allow="autoplay; fullscreen; picture-in-picture"
+                                        allowFullScreen
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Final CTA */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: 0.5 }}
+                            className="text-center mt-20"
+                        >
+                            <div className="inline-flex items-center gap-6 p-8 rounded-3xl border border-white/10 bg-white/[0.02] backdrop-blur-sm">
+                                <div className="text-left">
+                                    <h3 className="text-2xl font-bold text-white mb-2">Ready to save 10+ hours/week?</h3>
+                                    <p className="text-zinc-400">Join 500+ founders who transformed their inbox.</p>
+                                </div>
+                                <Button 
+                                    onClick={() => signIn('google')} 
+                                    className="bg-white text-black hover:bg-zinc-200 rounded-full px-8 py-4 text-lg font-bold"
+                                >
+                                    Start Free
+                                    <ArrowRight className="w-5 h-5 ml-2" />
+                                </Button>
+                            </div>
+                        </motion.div>
+                    </div>
+                </div>
+            </section>
 
             {/* Benefits Section - Premium Bento Layout */}
             <section id="benefits" className="py-40 px-6 z-10 relative overflow-hidden bg-black">
