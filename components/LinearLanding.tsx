@@ -96,6 +96,7 @@ export function LinearLanding() {
     const { data: session, status } = useSession()
     const [scrolled, setScrolled] = useState(false)
     const [activeTab, setActiveTab] = useState("sift")
+    const [activeStep, setActiveStep] = useState(0)
     const containerRef = useRef<HTMLDivElement>(null)
 
     const { scrollYProgress } = useScroll({
@@ -109,11 +110,18 @@ export function LinearLanding() {
         return () => window.removeEventListener("scroll", handleScroll)
     }, [])
 
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setActiveStep((prev) => (prev + 1) % 3)
+        }, 8000)
+        return () => clearInterval(interval)
+    }, [])
+
     const opacity = useTransform(scrollYProgress, [0, 0.1], [1, 0])
     const scale = useTransform(scrollYProgress, [0, 0.1], [1, 0.95])
 
     return (
-        <div ref={containerRef} className="relative min-h-screen bg-black text-white selection:bg-white selection:text-black font-sans overflow-x-hidden">
+        <div ref={containerRef} className="relative min-h-screen bg-black text-white selection:bg-white selection:text-black font-satoshi overflow-x-hidden">
             {/* Background Layer */}
             <div className="fixed inset-0 z-0">
                 <BackgroundShaders />
@@ -284,90 +292,119 @@ export function LinearLanding() {
                     <div className="max-w-5xl mx-auto">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                             {/* Text Section - Fading Steps */}
-                            <div className="relative h-96">
-                                {/* Step 1 */}
-                                <motion.div
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] }}
-                                    transition={{ duration: 30, repeat: Infinity, ease: "easeInOut" }}
-                                    className="absolute inset-0 flex flex-col justify-center"
-                                >
-                                    <div className="flex items-center gap-4 mb-4">
-                                        <div className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center font-bold text-lg">1</div>
-                                        <h3 className="text-3xl font-bold text-white">Start Analysis</h3>
-                                    </div>
-                                    <p className="text-xl text-zinc-400">Find important emails which were buried in your inbox chaos.</p>
-                                    <div className="space-y-2">
-                                        <div className="flex items-center gap-3">
-                                            <Check className="w-5 h-5 text-green-400" />
-                                            <span className="text-zinc-300">AI scans entire inbox in seconds</span>
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                            <Check className="w-5 h-5 text-green-400" />
-                                            <span className="text-zinc-300">Identifies revenue opportunities</span>
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                            <Check className="w-5 h-5 text-green-400" />
-                                            <span className="text-zinc-300">Flags urgent replies needed</span>
-                                        </div>
-                                    </div>
-                                </motion.div>
+                            <div className="relative h-96 overflow-hidden">
+                                <AnimatePresence mode="wait">
+                                    {activeStep === 0 && (
+                                        <motion.div
+                                            key="step-1"
+                                            initial={{ opacity: 0, x: -20, filter: 'blur(10px)' }}
+                                            animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+                                            exit={{ opacity: 0, x: 20, filter: 'blur(10px)' }}
+                                            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                                            className="absolute inset-0 flex flex-col justify-center"
+                                        >
+                                            <div className="flex items-center gap-4 mb-6">
+                                                <div className="w-12 h-12 rounded-2xl bg-white text-black flex items-center justify-center font-bold text-lg shadow-[0_0_20px_rgba(255,255,255,0.3)]">1</div>
+                                                <h3 className="text-3xl md:text-4xl font-bold text-white tracking-tight">Start Analysis</h3>
+                                            </div>
+                                            <p className="text-xl text-zinc-400 mb-8 leading-relaxed">Find important emails which were buried in your inbox chaos.</p>
+                                            <div className="space-y-4">
+                                                <div className="flex items-center gap-4 group">
+                                                    <div className="w-6 h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
+                                                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                                    </div>
+                                                    <span className="text-zinc-300 font-medium">AI scans entire inbox in seconds</span>
+                                                </div>
+                                                <div className="flex items-center gap-4 group">
+                                                    <div className="w-6 h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
+                                                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                                    </div>
+                                                    <span className="text-zinc-300 font-medium">Identifies revenue opportunities</span>
+                                                </div>
+                                                <div className="flex items-center gap-4 group">
+                                                    <div className="w-6 h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
+                                                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                                    </div>
+                                                    <span className="text-zinc-300 font-medium">Flags urgent replies needed</span>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    )}
 
-                                {/* Step 2 */}
-                                <motion.div
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] }}
-                                    transition={{ duration: 30, repeat: Infinity, ease: "easeInOut" }}
-                                    className="absolute inset-0 flex flex-col justify-center"
-                                >
-                                    <div className="flex items-center gap-4 mb-4">
-                                        <div className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center font-bold text-lg">2</div>
-                                        <h3 className="text-3xl font-bold text-white">Find Meaningful Insights</h3>
-                                    </div>
-                                    <p className="text-xl text-zinc-400">Emails organized into smart boxes with clear categories.</p>
-                                    <div className="space-y-2">
-                                        <div className="flex items-center gap-3">
-                                            <Check className="w-5 h-5 text-green-400" />
-                                            <span className="text-zinc-300">Revenue opportunities highlighted</span>
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                            <Check className="w-5 h-5 text-green-400" />
-                                            <span className="text-zinc-300">Urgent replies prioritized</span>
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                            <Check className="w-5 h-5 text-green-400" />
-                                            <span className="text-zinc-300">Smart boxes for everything</span>
-                                        </div>
-                                    </div>
-                                </motion.div>
+                                    {activeStep === 1 && (
+                                        <motion.div
+                                            key="step-2"
+                                            initial={{ opacity: 0, x: -20, filter: 'blur(10px)' }}
+                                            animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+                                            exit={{ opacity: 0, x: 20, filter: 'blur(10px)' }}
+                                            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                                            className="absolute inset-0 flex flex-col justify-center"
+                                        >
+                                            <div className="flex items-center gap-4 mb-6">
+                                                <div className="w-12 h-12 rounded-2xl bg-white text-black flex items-center justify-center font-bold text-lg shadow-[0_0_20px_rgba(255,255,255,0.3)]">2</div>
+                                                <h3 className="text-3xl md:text-4xl font-bold text-white tracking-tight">Meaningful Insights</h3>
+                                            </div>
+                                            <p className="text-xl text-zinc-400 mb-8 leading-relaxed">Emails organized into smart boxes with clear categories.</p>
+                                            <div className="space-y-4">
+                                                <div className="flex items-center gap-4 group">
+                                                    <div className="w-6 h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
+                                                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                                    </div>
+                                                    <span className="text-zinc-300 font-medium">Revenue opportunities highlighted</span>
+                                                </div>
+                                                <div className="flex items-center gap-4 group">
+                                                    <div className="w-6 h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
+                                                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                                    </div>
+                                                    <span className="text-zinc-300 font-medium">Urgent replies prioritized</span>
+                                                </div>
+                                                <div className="flex items-center gap-4 group">
+                                                    <div className="w-6 h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
+                                                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                                    </div>
+                                                    <span className="text-zinc-300 font-medium">Smart boxes for everything</span>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    )}
 
-                                {/* Step 3 */}
-                                <motion.div
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] }}
-                                    transition={{ duration: 30, repeat: Infinity, ease: "easeInOut" }}
-                                    className="absolute inset-0 flex flex-col justify-center"
-                                >
-                                    <div className="flex items-center gap-4 mb-4">
-                                        <div className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center font-bold text-lg">3</div>
-                                        <h3 className="text-3xl font-bold text-white">One-Click Actions</h3>
-                                    </div>
-                                    <p className="text-xl text-zinc-400">Select any email and turn it into action with one click.</p>
-                                    <div className="space-y-2">
-                                        <div className="flex items-center gap-3">
-                                            <Check className="w-5 h-5 text-green-400" />
-                                            <span className="text-zinc-300">AI drafts perfect replies</span>
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                            <Check className="w-5 h-5 text-green-400" />
-                                            <span className="text-zinc-300">Schedule meetings instantly</span>
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                            <Check className="w-5 h-5 text-green-400" />
-                                            <span className="text-zinc-300">Archive with confidence</span>
-                                        </div>
-                                    </div>
-                                </motion.div>
+                                    {activeStep === 2 && (
+                                        <motion.div
+                                            key="step-3"
+                                            initial={{ opacity: 0, x: -20, filter: 'blur(10px)' }}
+                                            animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+                                            exit={{ opacity: 0, x: 20, filter: 'blur(10px)' }}
+                                            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                                            className="absolute inset-0 flex flex-col justify-center"
+                                        >
+                                            <div className="flex items-center gap-4 mb-6">
+                                                <div className="w-12 h-12 rounded-2xl bg-white text-black flex items-center justify-center font-bold text-lg shadow-[0_0_20px_rgba(255,255,255,0.3)]">3</div>
+                                                <h3 className="text-3xl md:text-4xl font-bold text-white tracking-tight">One-Click Actions</h3>
+                                            </div>
+                                            <p className="text-xl text-zinc-400 mb-8 leading-relaxed">Select any email and turn it into action with one click.</p>
+                                            <div className="space-y-4">
+                                                <div className="flex items-center gap-4 group">
+                                                    <div className="w-6 h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
+                                                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                                    </div>
+                                                    <span className="text-zinc-300 font-medium">AI drafts perfect replies</span>
+                                                </div>
+                                                <div className="flex items-center gap-4 group">
+                                                    <div className="w-6 h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
+                                                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                                    </div>
+                                                    <span className="text-zinc-300 font-medium">Schedule meetings instantly</span>
+                                                </div>
+                                                <div className="flex items-center gap-4 group">
+                                                    <div className="w-6 h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
+                                                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                                    </div>
+                                                    <span className="text-zinc-300 font-medium">Archive with confidence</span>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </div>
 
                             {/* Video Section */}
