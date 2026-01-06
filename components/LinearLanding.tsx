@@ -411,7 +411,7 @@ export function LinearLanding() {
                             <div className="flex-1">
                                 <div className="relative aspect-video rounded-2xl border border-white/10 bg-zinc-900/50 backdrop-blur-sm overflow-hidden">
                                     <iframe
-                                        src="https://cap.so/embed/58ekyq8enhrfq3z?autoplay=1&muted=1&controls=0"
+                                        src="https://cap.so/embed/58ekyq8enhrfq3z?autoplay=1&muted=1&controls=0&loop=1"
                                         className="absolute inset-0 w-full h-full rounded-2xl"
                                         allow="autoplay; fullscreen; picture-in-picture"
                                         allowFullScreen
