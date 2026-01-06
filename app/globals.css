@@ -2345,12 +2345,12 @@ textarea,
   inset: 4px;
   z-index: 0;
   border-radius: 9999px;
-  background: linear-gradient(90deg, #3b82f6, #8b5cf6, #3b82f6);
+  background: linear-gradient(90deg, #71717a, #d4d4d8, #71717a);
   background-size: 200% 100%;
   opacity: 0;
-  filter: blur(12px);
-  transition: opacity 0.3s ease;
-  animation: gradient-x 3s linear infinite;
+  filter: blur(16px);
+  transition: opacity 0.4s ease;
+  animation: gradient-x 5s linear infinite;
 }
 
 .glass-button-wrap:hover .glass-button-shadow {
