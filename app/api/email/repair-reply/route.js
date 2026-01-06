@@ -5,6 +5,7 @@ import { OpenRouterAIService } from '@/lib/openrouter-ai';
 import { decrypt } from '@/lib/crypto';
 import { DatabaseService } from '@/lib/supabase';
 import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service';
+import { voiceProfileService } from '@/lib/voice-profile-service';
 
 export async function POST(request) {
     try {
@@ -98,9 +99,23 @@ export async function POST(request) {
             }, { status: 403 });
         }
 
+        // Fetch user's voice profile for voice cloning (if available)
+        let voiceProfile = null;
+        try {
+            voiceProfile = await voiceProfileService.getVoiceProfile(userId);
+            if (voiceProfile) {
+                console.log('🎭 Voice profile found - enabling voice cloning for repair reply');
+            } else {
+                console.log('📝 No voice profile - using standard repair reply generation');
+            }
+        } catch (e) {
+            console.warn('Voice profile fetch failed:', e.message);
+        }
+
         const userContext = {
             name: session.user.name || session.user.email.split('@')[0],
-            email: session.user.email
+            email: session.user.email,
+            voiceProfile: voiceProfile // Include voice profile for AI voice cloning
         };
 
         const repairReply = await aiService.generateRepairReply(emailContent, userContext, privacyMode);
@@ -109,7 +124,10 @@ export async function POST(request) {
             await subscriptionService.incrementFeatureUsage(userId, FEATURE_TYPES.DRAFT_REPLY);
         }
 
-        return NextResponse.json({ repairReply });
+        return NextResponse.json({
+            repairReply,
+            voiceCloned: !!voiceProfile && voiceProfile.status !== 'default'
+        });
 
     } catch (error) {
         console.error('Error generating repair reply:', error);

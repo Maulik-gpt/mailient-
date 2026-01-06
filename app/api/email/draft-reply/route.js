@@ -5,6 +5,7 @@ import { AIConfig } from '@/lib/ai-config';
 import { decrypt } from '@/lib/crypto';
 import { DatabaseService } from '@/lib/supabase';
 import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service';
+import { voiceProfileService } from '@/lib/voice-profile-service';
 
 export async function POST(request) {
     try {
@@ -89,12 +90,26 @@ export async function POST(request) {
             return NextResponse.json({ error: 'AI service not configured' }, { status: 500 });
         }
 
-        // Prepare user context, merging session data with onboarding context
+        // Fetch user's voice profile for voice cloning (if available)
+        let voiceProfile = null;
+        try {
+            voiceProfile = await voiceProfileService.getVoiceProfile(userId);
+            if (voiceProfile) {
+                console.log('🎭 Voice profile found - enabling voice cloning for draft');
+            } else {
+                console.log('📝 No voice profile - using standard draft generation');
+            }
+        } catch (e) {
+            console.warn('Voice profile fetch failed:', e.message);
+        }
+
+        // Prepare user context, merging session data with onboarding context and voice profile
         const userContext = {
             name: session.user.name || session.user.email.split('@')[0],
             email: session.user.email,
             role: context?.role || null,
-            goals: context?.goals || []
+            goals: context?.goals || [],
+            voiceProfile: voiceProfile // Include voice profile for AI voice cloning
         };
 
         // Use follow-up generator for follow-up categories, otherwise use draft reply
@@ -108,7 +123,10 @@ export async function POST(request) {
         // Increment usage after successful generation
         await subscriptionService.incrementFeatureUsage(userId, FEATURE_TYPES.DRAFT_REPLY);
 
-        return NextResponse.json({ draftReply });
+        return NextResponse.json({
+            draftReply,
+            voiceCloned: !!voiceProfile && voiceProfile.status !== 'default'
+        });
 
     } catch (error) {
         console.error('Error generating draft reply:', error);
