@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { toPng } from 'html-to-image';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import React from 'react';
 import { Button } from '@/components/ui/button';
 
@@ -45,7 +45,8 @@ interface Note {
     tags?: string[];
 }
 
-export default function NoteDetailPage({ params }: { params: { id: string } }) {
+export default function NoteDetailPage() {
+    const params = useParams();
     const { data: session } = useSession();
     const router = useRouter();
     const [notes, setNotes] = useState<Note[]>([]);
@@ -196,6 +197,8 @@ export default function NoteDetailPage({ params }: { params: { id: string } }) {
 
     // Load notes from Supabase on initial render
     useEffect(() => {
+        const noteId = Array.isArray(params?.id) ? params.id[0] : params?.id;
+
         const fetchNotes = async () => {
             try {
                 const response = await fetch('/api/notes');
@@ -212,7 +215,7 @@ export default function NoteDetailPage({ params }: { params: { id: string } }) {
                     setNotes(formattedNotes);
 
                     // Find note with matching ID
-                    const note = formattedNotes.find((n: Note) => n.id === params.id);
+                    const note = formattedNotes.find((n: Note) => n.id === noteId);
                     if (note) {
                         setSelectedNote(note);
                         setEditSubject(note.subject);
@@ -220,7 +223,7 @@ export default function NoteDetailPage({ params }: { params: { id: string } }) {
                     } else {
                         // Only redirect if we're sure the note doesn't exist
                         // (not just because of a loading issue)
-                        console.warn(`Note with ID ${params.id} not found in fetched notes`);
+                        console.warn(`Note with ID ${noteId} not found in fetched notes`);
                         setTimeout(() => {
                             router.push('/i/notes');
                         }, 100);
@@ -237,10 +240,12 @@ export default function NoteDetailPage({ params }: { params: { id: string } }) {
             }
         };
 
-        if (params.id) {
+        if (noteId) {
             fetchNotes();
+        } else {
+            setLoading(false);
         }
-    }, [params.id]);
+    }, [params?.id]);
 
     const handleEditNote = () => {
         if (selectedNote) {

@@ -16,6 +16,17 @@ export async function POST(request) {
             return NextResponse.json({ error: 'Invalid webhook payload' }, { status: 400 });
         }
 
+        // Log critical subscription date information from Whop
+        if (data.created_at || data.valid_until || data.expires_at) {
+            console.log('📅 Whop Date Fields:', {
+                created_at: data.created_at ? new Date(data.created_at * 1000).toISOString() : 'N/A',
+                valid_until: data.valid_until ? new Date(data.valid_until * 1000).toISOString() : 'N/A',
+                expires_at: data.expires_at ? new Date(data.expires_at * 1000).toISOString() : 'N/A',
+                user: data.user?.email,
+                product: data.product?.id
+            });
+        }
+
         // Validate webhook signature (implement based on Whop's documentation)
         // const signature = request.headers.get('x-whop-signature');
         // const webhookSecret = process.env.WHOP_WEBHOOK_SECRET;
