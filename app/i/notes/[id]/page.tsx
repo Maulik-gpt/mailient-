@@ -218,19 +218,29 @@ export default function NoteDetailPage({ params }: { params: { id: string } }) {
                         setEditSubject(note.subject);
                         setEditContent(note.content);
                     } else {
-                        router.push('/i/notes');
+                        // Only redirect if we're sure the note doesn't exist
+                        // (not just because of a loading issue)
+                        console.warn(`Note with ID ${params.id} not found in fetched notes`);
+                        setTimeout(() => {
+                            router.push('/i/notes');
+                        }, 100);
                     }
+                } else {
+                    console.error('Failed to fetch notes:', response.status);
+                    // Don't immediately redirect on fetch errors - let user see error state
                 }
             } catch (error) {
                 console.error('Error fetching notes:', error);
-                router.push('/i/notes');
+                // Don't immediately redirect on errors - let user see error state
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchNotes();
-    }, [params, router]);
+        if (params.id) {
+            fetchNotes();
+        }
+    }, [params.id]);
 
     const handleEditNote = () => {
         if (selectedNote) {
@@ -366,413 +376,413 @@ export default function NoteDetailPage({ params }: { params: { id: string } }) {
                 currentPlan={usageLimitModalData?.currentPlan || 'starter'}
             />
             <div className={cn("min-h-screen bg-[#000000] text-white transition-all duration-500", (isDeleteDialogOpen || isShareDialogOpen || isShareOptionsOpen || isImageShareOpen) && "pause-animations")} style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'San Francisco', 'Satoshi', sans-serif" }}>
-            {/* Mailient Sidebar */}
-            <HomeFeedSidebar />
+                {/* Mailient Sidebar */}
+                <HomeFeedSidebar />
 
-            {/* Main Content Area - Full Width */}
-            <div className="flex-1 flex flex-col ml-16">
-                <div className="border-b border-neutral-800 px-6 py-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => router.push('/i/notes')}
-                            className="p-1 hover:bg-neutral-900 rounded flex items-center gap-2"
-                        >
-                            <ArrowLeft className="w-4 h-4 text-neutral-400" />
-                            <span className="text-sm text-neutral-400">Back to Notes</span>
-                        </button>
-                    </div>
-                    <span className="text-sm text-neutral-400">
-                        {selectedNote ?
-                            `Last updated: ${new Date(selectedNote.updatedAt || selectedNote.createdAt).toLocaleString()}` :
-                            'Loading...'}
-                    </span>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-8">
-                    {loading ? (
-                        <div className="flex items-center justify-center h-full">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500"></div>
+                {/* Main Content Area - Full Width */}
+                <div className="flex-1 flex flex-col ml-16">
+                    <div className="border-b border-neutral-800 px-6 py-3 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => router.push('/i/notes')}
+                                className="p-1 hover:bg-neutral-900 rounded flex items-center gap-2"
+                            >
+                                <ArrowLeft className="w-4 h-4 text-neutral-400" />
+                                <span className="text-sm text-neutral-400">Back to Notes</span>
+                            </button>
                         </div>
-                    ) : selectedNote ? (
-                        <div className="max-w-4xl mx-auto w-full">
-                            <div className="mb-6">
-                                {editingNote === selectedNote.id ? (
-                                    <input
-                                        type="text"
-                                        value={editSubject}
-                                        onChange={(e) => setEditSubject(e.target.value)}
-                                        placeholder="Note title..."
-                                        className="w-full bg-transparent text-3xl font-medium outline-none border-none text-white placeholder-neutral-500 mb-4"
-                                        autoFocus
-                                    />
-                                ) : (
-                                    <h1 className="text-3xl font-medium text-white mb-2">{selectedNote.subject || 'Untitled Note'}</h1>
-                                )}
-                                <div className="text-sm text-neutral-500">
-                                    Created {new Date(selectedNote.createdAt).toLocaleDateString()}
-                                    {selectedNote.updatedAt && selectedNote.updatedAt !== selectedNote.createdAt &&
-                                        ` • Updated ${new Date(selectedNote.updatedAt).toLocaleDateString()}`}
-                                </div>
-                            </div>
-
-                            <div className="prose prose-invert max-w-none">
-                                {editingNote === selectedNote.id ? (
-                                    <textarea
-                                        value={editContent}
-                                        onChange={(e) => setEditContent(e.target.value)}
-                                        className="w-full bg-transparent text-neutral-200 p-0 outline-none border-none resize-none h-96 text-lg leading-relaxed"
-                                        autoFocus
-                                    />
-                                ) : (
-                                    <div className="whitespace-pre-wrap text-lg leading-relaxed text-neutral-200 min-h-[500px] prose prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: renderMarkdown(selectedNote.content) }} />
-                                )}
-                            </div>
-
-                            {editingNote === selectedNote.id ? (
-                                <div className="flex gap-3 mt-8">
-                                    <Button
-                                        onClick={handleSaveEdit}
-                                        className="h-10 px-6 bg-yellow-500 hover:bg-yellow-600 text-black font-medium rounded-lg transition-colors"
-                                    >
-                                        <Save className="w-4 h-4 mr-2" />
-                                        Save Changes
-                                    </Button>
-                                    <Button
-                                        onClick={() => setEditingNote(null)}
-                                        className="h-10 px-6 bg-neutral-700 hover:bg-neutral-600 text-neutral-300 font-medium rounded-lg transition-colors"
-                                    >
-                                        Cancel
-                                    </Button>
-                                </div>
-                            ) : (
-                                <div className="flex gap-3 mt-8">
-                                    <Button
-                                        onClick={handleEditNote}
-                                        className="h-10 px-6 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition-colors"
-                                    >
-                                        <Edit className="w-4 h-4 mr-2" />
-                                        Edit Note
-                                    </Button>
-                                    <Button
-                                        onClick={() => setIsShareDialogOpen(true)}
-                                        className="h-10 px-6 bg-blue-500/10 hover:bg-blue-500 text-blue-500 hover:text-white font-medium rounded-lg transition-all border border-blue-500/20 hover:border-blue-500"
-                                    >
-                                        <Share2 className="w-4 h-4 mr-2" />
-                                        Share Note
-                                    </Button>
-                                    <Button
-                                        onClick={() => setIsDeleteDialogOpen(true)}
-                                        className="h-10 px-6 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white font-medium rounded-lg transition-all border border-red-500/20 hover:border-red-500"
-                                    >
-                                        <Trash className="w-4 h-4 mr-2" />
-                                        Delete Note
-                                    </Button>
-                                </div>
-                            )}
-                        </div>
-                    ) : (
-                        <div className="flex items-center justify-center h-full">
-                            <div className="text-center">
-                                <div className="w-16 h-16 mx-auto mb-4 bg-neutral-800 rounded-2xl flex items-center justify-center">
-                                    <Pen className="w-8 h-8 text-yellow-500" />
-                                </div>
-                                <h3 className="text-xl font-medium text-neutral-300 mb-2">Note not found</h3>
-                                <p className="text-neutral-500 max-w-md mx-auto">
-                                    The requested note could not be found. It may have been deleted.
-                                </p>
-                                <Button
-                                    onClick={() => router.push('/i/notes')}
-                                    className="mt-6 h-10 px-6 bg-yellow-500 hover:bg-yellow-600 text-black font-medium rounded-lg transition-colors"
-                                >
-                                    Return to Notes
-                                </Button>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Share Type Selection Dialog */}
-            <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
-                <DialogContent className="bg-neutral-900/90 backdrop-blur-2xl border-neutral-800 text-white rounded-[2.5rem] sm:max-w-lg p-0 overflow-hidden shadow-[0_0_50px_-12px_rgba(59,130,246,0.3)]">
-                    <DialogHeader className="p-6 pb-2">
-                        <DialogTitle className="text-xl font-medium text-center">Share Note</DialogTitle>
-                        <DialogDescription className="text-neutral-400 text-center">
-                            Choose how you want to share this note
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    <div className="px-4 py-2 flex flex-col gap-2">
-                        <button
-                            onClick={() => {
-                                setIsShareDialogOpen(false);
-                                setIsShareOptionsOpen(true);
-                            }}
-                            className="w-full h-14 flex items-center gap-4 px-4 bg-neutral-800/50 hover:bg-blue-500/10 text-neutral-200 hover:text-blue-400 rounded-2xl transition-all border border-transparent hover:border-blue-500/20 group/opt"
-                        >
-                            <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center transition-colors group-hover/opt:bg-blue-500/20">
-                                <Copy className="w-5 h-5" />
-                            </div>
-                            <span className="font-medium">Share as text</span>
-                        </button>
-
-                        <button
-                            onClick={() => {
-                                setIsShareDialogOpen(false);
-                                setIsImageShareOpen(true);
-                            }}
-                            className="w-full h-14 flex items-center gap-4 px-4 bg-neutral-800/50 hover:bg-blue-500/10 text-neutral-200 hover:text-blue-400 rounded-2xl transition-all border border-transparent hover:border-blue-500/20 group/opt"
-                        >
-                            <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center transition-colors group-hover/opt:bg-blue-500/20">
-                                <Image className="w-5 h-5" />
-                            </div>
-                            <span className="font-medium">Share as image</span>
-                        </button>
+                        <span className="text-sm text-neutral-400">
+                            {selectedNote ?
+                                `Last updated: ${new Date(selectedNote.updatedAt || selectedNote.createdAt).toLocaleString()}` :
+                                'Loading...'}
+                        </span>
                     </div>
 
-                    <div className="mt-2 border-t border-neutral-800 p-4">
-                        <Button
-                            variant="ghost"
-                            onClick={() => setIsShareDialogOpen(false)}
-                            className="w-full h-12 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-xl transition-all border-none font-medium"
-                        >
-                            Cancel
-                        </Button>
-                    </div>
-                </DialogContent>
-            </Dialog>
-
-            {/* Share as Image Preview Dialog */}
-            <Dialog open={isImageShareOpen} onOpenChange={setIsImageShareOpen}>
-                <DialogContent className="bg-neutral-900/95 backdrop-blur-3xl border-neutral-800 text-white rounded-[2.5rem] sm:max-w-2xl p-0 overflow-hidden shadow-[0_0_80px_-20px_rgba(59,130,246,0.3)]">
-                    <DialogHeader className="p-8 pb-4">
-                        <DialogTitle className="text-2xl font-semibold text-center bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent italic">Image Preview</DialogTitle>
-                        <DialogDescription className="text-neutral-400 text-center text-sm mt-1">
-                            This is how your note will look when shared as an image.
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    <div className="px-8 pb-4 max-h-[60vh] overflow-y-auto translucent-scrollbar">
-                        <div
-                            ref={imagePreviewRef}
-                            className="w-full bg-[#0a0a0a] border border-neutral-800 rounded-3xl p-10 shadow-2xl"
-                        >
-                            <div className="flex justify-between items-start mb-8">
-                                <div className="space-y-1">
-                                    <div className="flex items-center gap-2 text-white/50 mb-4">
-                                        <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center">
-                                            <Sparkles className="w-4 h-4 text-blue-400" />
-                                        </div>
-                                        <span className="text-[10px] font-bold tracking-[0.2em] uppercase">Mailient Sift</span>
+                    <div className="flex-1 overflow-y-auto p-8">
+                        {loading ? (
+                            <div className="flex items-center justify-center h-full">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500"></div>
+                            </div>
+                        ) : selectedNote ? (
+                            <div className="max-w-4xl mx-auto w-full">
+                                <div className="mb-6">
+                                    {editingNote === selectedNote.id ? (
+                                        <input
+                                            type="text"
+                                            value={editSubject}
+                                            onChange={(e) => setEditSubject(e.target.value)}
+                                            placeholder="Note title..."
+                                            className="w-full bg-transparent text-3xl font-medium outline-none border-none text-white placeholder-neutral-500 mb-4"
+                                            autoFocus
+                                        />
+                                    ) : (
+                                        <h1 className="text-3xl font-medium text-white mb-2">{selectedNote.subject || 'Untitled Note'}</h1>
+                                    )}
+                                    <div className="text-sm text-neutral-500">
+                                        Created {new Date(selectedNote.createdAt).toLocaleDateString()}
+                                        {selectedNote.updatedAt && selectedNote.updatedAt !== selectedNote.createdAt &&
+                                            ` • Updated ${new Date(selectedNote.updatedAt).toLocaleDateString()}`}
                                     </div>
-                                    <h2 className="text-3xl font-bold tracking-tight text-white leading-tight">
-                                        {selectedNote?.subject || 'Untitled Note'}
-                                    </h2>
-                                    <p className="text-xs text-neutral-500 font-medium">
-                                        {selectedNote && new Date(selectedNote.createdAt).toLocaleDateString(undefined, {
-                                            year: 'numeric',
-                                            month: 'long',
-                                            day: 'numeric',
-                                            hour: '2-digit',
-                                            minute: '2-digit'
-                                        })}
-                                    </p>
                                 </div>
-                                <div className="px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full">
-                                    <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Note</span>
+
+                                <div className="prose prose-invert max-w-none">
+                                    {editingNote === selectedNote.id ? (
+                                        <textarea
+                                            value={editContent}
+                                            onChange={(e) => setEditContent(e.target.value)}
+                                            className="w-full bg-transparent text-neutral-200 p-0 outline-none border-none resize-none h-96 text-lg leading-relaxed"
+                                            autoFocus
+                                        />
+                                    ) : (
+                                        <div className="whitespace-pre-wrap text-lg leading-relaxed text-neutral-200 min-h-[500px] prose prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: renderMarkdown(selectedNote.content) }} />
+                                    )}
                                 </div>
-                            </div>
 
-                            <div className="h-px w-full bg-gradient-to-r from-transparent via-neutral-800 to-transparent mb-8" />
-
-                            <div
-                                className="text-lg leading-[1.6] text-neutral-400 whitespace-pre-wrap selection:bg-blue-500/30"
-                                dangerouslySetInnerHTML={{
-                                    __html: selectedNote ? stripMarkdown(selectedNote.content) : ''
-                                }}
-                            />
-
-                            <div className="mt-12 flex items-center justify-between opacity-50">
-                                <span className="text-[10px] font-medium text-neutral-600">Created via Mailient</span>
-                                <div className="flex gap-1">
-                                    {[1, 2, 3].map(i => (
-                                        <div key={i} className="w-1.5 h-1.5 rounded-full bg-neutral-800" />
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <DialogFooter className="p-8 pt-4 flex gap-4">
-                        <Button
-                            variant="ghost"
-                            onClick={() => setIsImageShareOpen(false)}
-                            className="flex-1 h-12 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-400 border-none transition-all"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={handleCopyImage}
-                            className="flex-1 h-12 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium shadow-lg shadow-blue-500/20 transition-all transform hover:-translate-y-0.5"
-                        >
-                            <Copy className="w-4 h-4 mr-2" />
-                            Copy Image
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Share as Text - Platform Options Dialog */}
-            <Dialog open={isShareOptionsOpen} onOpenChange={setIsShareOptionsOpen}>
-                <DialogContent className="bg-neutral-900/95 backdrop-blur-3xl border-neutral-800 text-white rounded-[2.5rem] sm:max-w-3xl p-0 overflow-y-auto shadow-[0_0_80px_-20px_rgba(59,130,246,0.4)] max-h-[85vh]">
-                    <DialogHeader className="p-8 pb-3">
-                        <DialogTitle className="text-2xl font-semibold text-center bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent">Share Note Content</DialogTitle>
-                        <div className="mt-5 p-4 bg-black/40 rounded-[1.2rem] border border-neutral-800 flex items-center justify-between group/link">
-                            <div className="flex-1 truncate text-sm text-neutral-400 font-mono tracking-tight">
-                                {selectedNote ? getNoteLink(selectedNote.id) : 'Loading link...'}
-                            </div>
-                            <button
-                                onClick={() => {
-                                    if (selectedNote) {
-                                        navigator.clipboard.writeText(getNoteLink(selectedNote.id));
-                                        toast.success('Link copied!');
-                                    }
-                                }}
-                                className="ml-4 p-2 bg-neutral-800 hover:bg-blue-500 text-neutral-300 hover:text-white rounded-xl transition-all shadow-inner"
-                            >
-                                <Copy className="w-5 h-5" />
-                            </button>
-                        </div>
-                    </DialogHeader>
-
-                    <div className="px-8 py-2 grid grid-cols-1 last:sm:grid-cols-2 md:grid-cols-3 gap-4 pb-6">
-                        {sharePlatforms.map((platform) => (
-                            <button
-                                key={platform.name}
-                                onClick={() => {
-                                    if (selectedNote) {
-                                        const msg = platform.getMessage(selectedNote);
-                                        const url = platform.getUrl(msg, selectedNote);
-                                        window.open(url, '_blank');
-                                        setIsShareOptionsOpen(false);
-                                    }
-                                }}
-                                className={cn(
-                                    "flex flex-col items-center justify-center p-4 rounded-3xl bg-neutral-800/40 border border-neutral-800/50 transition-all duration-300 group/item",
-                                    platform.color,
-                                    platform.borderColor
+                                {editingNote === selectedNote.id ? (
+                                    <div className="flex gap-3 mt-8">
+                                        <Button
+                                            onClick={handleSaveEdit}
+                                            className="h-10 px-6 bg-yellow-500 hover:bg-yellow-600 text-black font-medium rounded-lg transition-colors"
+                                        >
+                                            <Save className="w-4 h-4 mr-2" />
+                                            Save Changes
+                                        </Button>
+                                        <Button
+                                            onClick={() => setEditingNote(null)}
+                                            className="h-10 px-6 bg-neutral-700 hover:bg-neutral-600 text-neutral-300 font-medium rounded-lg transition-colors"
+                                        >
+                                            Cancel
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <div className="flex gap-3 mt-8">
+                                        <Button
+                                            onClick={handleEditNote}
+                                            className="h-10 px-6 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition-colors"
+                                        >
+                                            <Edit className="w-4 h-4 mr-2" />
+                                            Edit Note
+                                        </Button>
+                                        <Button
+                                            onClick={() => setIsShareDialogOpen(true)}
+                                            className="h-10 px-6 bg-blue-500/10 hover:bg-blue-500 text-blue-500 hover:text-white font-medium rounded-lg transition-all border border-blue-500/20 hover:border-blue-500"
+                                        >
+                                            <Share2 className="w-4 h-4 mr-2" />
+                                            Share Note
+                                        </Button>
+                                        <Button
+                                            onClick={() => setIsDeleteDialogOpen(true)}
+                                            className="h-10 px-6 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white font-medium rounded-lg transition-all border border-red-500/20 hover:border-red-500"
+                                        >
+                                            <Trash className="w-4 h-4 mr-2" />
+                                            Delete Note
+                                        </Button>
+                                    </div>
                                 )}
-                            >
-                                <div className="w-12 h-12 mb-3 bg-neutral-800 rounded-2xl flex items-center justify-center transition-transform group-hover/item:scale-110 shadow-lg">
-                                    {platform.icon}
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-center h-full">
+                                <div className="text-center">
+                                    <div className="w-16 h-16 mx-auto mb-4 bg-neutral-800 rounded-2xl flex items-center justify-center">
+                                        <Pen className="w-8 h-8 text-yellow-500" />
+                                    </div>
+                                    <h3 className="text-xl font-medium text-neutral-300 mb-2">Note not found</h3>
+                                    <p className="text-neutral-500 max-w-md mx-auto">
+                                        The requested note could not be found. It may have been deleted.
+                                    </p>
+                                    <Button
+                                        onClick={() => router.push('/i/notes')}
+                                        className="mt-6 h-10 px-6 bg-yellow-500 hover:bg-yellow-600 text-black font-medium rounded-lg transition-colors"
+                                    >
+                                        Return to Notes
+                                    </Button>
                                 </div>
-                                <span className="text-sm font-medium">{platform.name}</span>
-                            </button>
-                        ))}
-                    </div>
-
-                    <div className="border-t border-neutral-800 p-6 pt-5">
-                        <Button
-                            variant="ghost"
-                            onClick={() => setIsShareOptionsOpen(false)}
-                            className="w-full h-12 bg-neutral-800/80 hover:bg-neutral-700 text-neutral-300 hover:text-white rounded-2xl transition-all border border-neutral-700/50 font-medium shadow-lg"
-                        >
-                            Cancel
-                        </Button>
-                    </div>
-                </DialogContent>
-            </Dialog>
-
-            {/* Delete Confirmation Dialog */}
-            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                <DialogContent className="bg-neutral-900/90 backdrop-blur-2xl border-neutral-800 text-white rounded-[2.5rem] max-w-md shadow-[0_0_50px_-12px_rgba(239,68,68,0.3)]">
-                    <DialogHeader className="space-y-4">
-                        <div className="flex items-center gap-4 text-red-500">
-                            <div className="p-2 bg-red-500/10 rounded-lg">
-                                <AlertTriangle className="w-5 h-5" />
                             </div>
-                            <DialogTitle className="text-xl font-medium">Are you sure?</DialogTitle>
-                        </div>
-                        <DialogDescription className="text-neutral-400 text-base leading-relaxed">
-                            This action cannot be undone. This will permanently delete your note and remove it from our servers.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter className="gap-3 mt-6">
-                        <Button
-                            variant="ghost"
-                            onClick={() => setIsDeleteDialogOpen(false)}
-                            className="flex-1 h-11 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 border-none transition-all"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={() => {
-                                if (selectedNote) {
-                                    handleDeleteNote(selectedNote.id);
-                                    setIsDeleteDialogOpen(false);
-                                }
-                            }}
-                            className="flex-1 h-11 rounded-xl bg-red-500 hover:bg-red-600 text-white font-medium shadow-lg shadow-red-500/20 transition-all transform hover:-translate-y-0.5"
-                        >
-                            Delete Permanently
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                        )}
+                    </div>
+                </div>
 
-            {/* New Note Form */}
-            {showNewNoteForm && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-xl flex items-center justify-center z-50 p-4">
-                    <div className="bg-gradient-to-br from-neutral-800/90 to-neutral-900/90 rounded-[2rem] p-8 max-w-2xl w-full border border-neutral-700/50 shadow-2xl">
-                        <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-xl font-medium text-white">Create New Note</h3>
+                {/* Share Type Selection Dialog */}
+                <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
+                    <DialogContent className="bg-neutral-900/90 backdrop-blur-2xl border-neutral-800 text-white rounded-[2.5rem] sm:max-w-lg p-0 overflow-hidden shadow-[0_0_50px_-12px_rgba(59,130,246,0.3)]">
+                        <DialogHeader className="p-6 pb-2">
+                            <DialogTitle className="text-xl font-medium text-center">Share Note</DialogTitle>
+                            <DialogDescription className="text-neutral-400 text-center">
+                                Choose how you want to share this note
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="px-4 py-2 flex flex-col gap-2">
                             <button
-                                onClick={() => setShowNewNoteForm(false)}
-                                className="p-2 hover:bg-neutral-700/50 rounded-full transition-colors text-neutral-400 hover:text-white"
+                                onClick={() => {
+                                    setIsShareDialogOpen(false);
+                                    setIsShareOptionsOpen(true);
+                                }}
+                                className="w-full h-14 flex items-center gap-4 px-4 bg-neutral-800/50 hover:bg-blue-500/10 text-neutral-200 hover:text-blue-400 rounded-2xl transition-all border border-transparent hover:border-blue-500/20 group/opt"
                             >
-                                <X className="w-6 h-6" />
+                                <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center transition-colors group-hover/opt:bg-blue-500/20">
+                                    <Copy className="w-5 h-5" />
+                                </div>
+                                <span className="font-medium">Share as text</span>
+                            </button>
+
+                            <button
+                                onClick={() => {
+                                    setIsShareDialogOpen(false);
+                                    setIsImageShareOpen(true);
+                                }}
+                                className="w-full h-14 flex items-center gap-4 px-4 bg-neutral-800/50 hover:bg-blue-500/10 text-neutral-200 hover:text-blue-400 rounded-2xl transition-all border border-transparent hover:border-blue-500/20 group/opt"
+                            >
+                                <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center transition-colors group-hover/opt:bg-blue-500/20">
+                                    <Image className="w-5 h-5" />
+                                </div>
+                                <span className="font-medium">Share as image</span>
                             </button>
                         </div>
-                        <div className="space-y-4 mb-8">
-                            <div>
-                                <label className="block text-sm font-medium text-neutral-300 mb-2">Subject</label>
-                                <input
-                                    type="text"
-                                    value={newNoteSubject}
-                                    onChange={(e) => setNewNoteSubject(e.target.value)}
-                                    placeholder="Note subject or title..."
-                                    className="w-full bg-neutral-900/30 text-white px-4 py-3 rounded-xl border border-neutral-800 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 transition-colors"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-neutral-300 mb-2">Content</label>
-                                <textarea
-                                    value={newNoteContent}
-                                    onChange={(e) => setNewNoteContent(e.target.value)}
-                                    placeholder="Write your note content... Use bullet points for clarity"
-                                    className="w-full bg-neutral-900/30 text-neutral-200 p-4 rounded-xl border border-neutral-800 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 transition-colors h-64 resize-none"
-                                />
-                            </div>
-                        </div>
-                        <div className="flex gap-4">
+
+                        <div className="mt-2 border-t border-neutral-800 p-4">
                             <Button
-                                onClick={handleCreateNote}
-                                className="flex-1 h-12 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black font-medium rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                            >
-                                <Sparkles className="w-5 h-5 mr-2" />
-                                Create Note
-                            </Button>
-                            <Button
-                                onClick={() => setShowNewNoteForm(false)}
-                                className="h-12 px-8 bg-neutral-700 hover:bg-neutral-600 text-neutral-300 font-medium rounded-2xl transition-colors"
+                                variant="ghost"
+                                onClick={() => setIsShareDialogOpen(false)}
+                                className="w-full h-12 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-xl transition-all border-none font-medium"
                             >
                                 Cancel
                             </Button>
                         </div>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Share as Image Preview Dialog */}
+                <Dialog open={isImageShareOpen} onOpenChange={setIsImageShareOpen}>
+                    <DialogContent className="bg-neutral-900/95 backdrop-blur-3xl border-neutral-800 text-white rounded-[2.5rem] sm:max-w-2xl p-0 overflow-hidden shadow-[0_0_80px_-20px_rgba(59,130,246,0.3)]">
+                        <DialogHeader className="p-8 pb-4">
+                            <DialogTitle className="text-2xl font-semibold text-center bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent italic">Image Preview</DialogTitle>
+                            <DialogDescription className="text-neutral-400 text-center text-sm mt-1">
+                                This is how your note will look when shared as an image.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="px-8 pb-4 max-h-[60vh] overflow-y-auto translucent-scrollbar">
+                            <div
+                                ref={imagePreviewRef}
+                                className="w-full bg-[#0a0a0a] border border-neutral-800 rounded-3xl p-10 shadow-2xl"
+                            >
+                                <div className="flex justify-between items-start mb-8">
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-2 text-white/50 mb-4">
+                                            <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center">
+                                                <Sparkles className="w-4 h-4 text-blue-400" />
+                                            </div>
+                                            <span className="text-[10px] font-bold tracking-[0.2em] uppercase">Mailient Sift</span>
+                                        </div>
+                                        <h2 className="text-3xl font-bold tracking-tight text-white leading-tight">
+                                            {selectedNote?.subject || 'Untitled Note'}
+                                        </h2>
+                                        <p className="text-xs text-neutral-500 font-medium">
+                                            {selectedNote && new Date(selectedNote.createdAt).toLocaleDateString(undefined, {
+                                                year: 'numeric',
+                                                month: 'long',
+                                                day: 'numeric',
+                                                hour: '2-digit',
+                                                minute: '2-digit'
+                                            })}
+                                        </p>
+                                    </div>
+                                    <div className="px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full">
+                                        <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Note</span>
+                                    </div>
+                                </div>
+
+                                <div className="h-px w-full bg-gradient-to-r from-transparent via-neutral-800 to-transparent mb-8" />
+
+                                <div
+                                    className="text-lg leading-[1.6] text-neutral-400 whitespace-pre-wrap selection:bg-blue-500/30"
+                                    dangerouslySetInnerHTML={{
+                                        __html: selectedNote ? stripMarkdown(selectedNote.content) : ''
+                                    }}
+                                />
+
+                                <div className="mt-12 flex items-center justify-between opacity-50">
+                                    <span className="text-[10px] font-medium text-neutral-600">Created via Mailient</span>
+                                    <div className="flex gap-1">
+                                        {[1, 2, 3].map(i => (
+                                            <div key={i} className="w-1.5 h-1.5 rounded-full bg-neutral-800" />
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <DialogFooter className="p-8 pt-4 flex gap-4">
+                            <Button
+                                variant="ghost"
+                                onClick={() => setIsImageShareOpen(false)}
+                                className="flex-1 h-12 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-400 border-none transition-all"
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={handleCopyImage}
+                                className="flex-1 h-12 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium shadow-lg shadow-blue-500/20 transition-all transform hover:-translate-y-0.5"
+                            >
+                                <Copy className="w-4 h-4 mr-2" />
+                                Copy Image
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Share as Text - Platform Options Dialog */}
+                <Dialog open={isShareOptionsOpen} onOpenChange={setIsShareOptionsOpen}>
+                    <DialogContent className="bg-neutral-900/95 backdrop-blur-3xl border-neutral-800 text-white rounded-[2.5rem] sm:max-w-3xl p-0 overflow-y-auto shadow-[0_0_80px_-20px_rgba(59,130,246,0.4)] max-h-[85vh]">
+                        <DialogHeader className="p-8 pb-3">
+                            <DialogTitle className="text-2xl font-semibold text-center bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent">Share Note Content</DialogTitle>
+                            <div className="mt-5 p-4 bg-black/40 rounded-[1.2rem] border border-neutral-800 flex items-center justify-between group/link">
+                                <div className="flex-1 truncate text-sm text-neutral-400 font-mono tracking-tight">
+                                    {selectedNote ? getNoteLink(selectedNote.id) : 'Loading link...'}
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        if (selectedNote) {
+                                            navigator.clipboard.writeText(getNoteLink(selectedNote.id));
+                                            toast.success('Link copied!');
+                                        }
+                                    }}
+                                    className="ml-4 p-2 bg-neutral-800 hover:bg-blue-500 text-neutral-300 hover:text-white rounded-xl transition-all shadow-inner"
+                                >
+                                    <Copy className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </DialogHeader>
+
+                        <div className="px-8 py-2 grid grid-cols-1 last:sm:grid-cols-2 md:grid-cols-3 gap-4 pb-6">
+                            {sharePlatforms.map((platform) => (
+                                <button
+                                    key={platform.name}
+                                    onClick={() => {
+                                        if (selectedNote) {
+                                            const msg = platform.getMessage(selectedNote);
+                                            const url = platform.getUrl(msg, selectedNote);
+                                            window.open(url, '_blank');
+                                            setIsShareOptionsOpen(false);
+                                        }
+                                    }}
+                                    className={cn(
+                                        "flex flex-col items-center justify-center p-4 rounded-3xl bg-neutral-800/40 border border-neutral-800/50 transition-all duration-300 group/item",
+                                        platform.color,
+                                        platform.borderColor
+                                    )}
+                                >
+                                    <div className="w-12 h-12 mb-3 bg-neutral-800 rounded-2xl flex items-center justify-center transition-transform group-hover/item:scale-110 shadow-lg">
+                                        {platform.icon}
+                                    </div>
+                                    <span className="text-sm font-medium">{platform.name}</span>
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="border-t border-neutral-800 p-6 pt-5">
+                            <Button
+                                variant="ghost"
+                                onClick={() => setIsShareOptionsOpen(false)}
+                                className="w-full h-12 bg-neutral-800/80 hover:bg-neutral-700 text-neutral-300 hover:text-white rounded-2xl transition-all border border-neutral-700/50 font-medium shadow-lg"
+                            >
+                                Cancel
+                            </Button>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Delete Confirmation Dialog */}
+                <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                    <DialogContent className="bg-neutral-900/90 backdrop-blur-2xl border-neutral-800 text-white rounded-[2.5rem] max-w-md shadow-[0_0_50px_-12px_rgba(239,68,68,0.3)]">
+                        <DialogHeader className="space-y-4">
+                            <div className="flex items-center gap-4 text-red-500">
+                                <div className="p-2 bg-red-500/10 rounded-lg">
+                                    <AlertTriangle className="w-5 h-5" />
+                                </div>
+                                <DialogTitle className="text-xl font-medium">Are you sure?</DialogTitle>
+                            </div>
+                            <DialogDescription className="text-neutral-400 text-base leading-relaxed">
+                                This action cannot be undone. This will permanently delete your note and remove it from our servers.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter className="gap-3 mt-6">
+                            <Button
+                                variant="ghost"
+                                onClick={() => setIsDeleteDialogOpen(false)}
+                                className="flex-1 h-11 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 border-none transition-all"
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={() => {
+                                    if (selectedNote) {
+                                        handleDeleteNote(selectedNote.id);
+                                        setIsDeleteDialogOpen(false);
+                                    }
+                                }}
+                                className="flex-1 h-11 rounded-xl bg-red-500 hover:bg-red-600 text-white font-medium shadow-lg shadow-red-500/20 transition-all transform hover:-translate-y-0.5"
+                            >
+                                Delete Permanently
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* New Note Form */}
+                {showNewNoteForm && (
+                    <div className="fixed inset-0 bg-black/80 backdrop-blur-xl flex items-center justify-center z-50 p-4">
+                        <div className="bg-gradient-to-br from-neutral-800/90 to-neutral-900/90 rounded-[2rem] p-8 max-w-2xl w-full border border-neutral-700/50 shadow-2xl">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-xl font-medium text-white">Create New Note</h3>
+                                <button
+                                    onClick={() => setShowNewNoteForm(false)}
+                                    className="p-2 hover:bg-neutral-700/50 rounded-full transition-colors text-neutral-400 hover:text-white"
+                                >
+                                    <X className="w-6 h-6" />
+                                </button>
+                            </div>
+                            <div className="space-y-4 mb-8">
+                                <div>
+                                    <label className="block text-sm font-medium text-neutral-300 mb-2">Subject</label>
+                                    <input
+                                        type="text"
+                                        value={newNoteSubject}
+                                        onChange={(e) => setNewNoteSubject(e.target.value)}
+                                        placeholder="Note subject or title..."
+                                        className="w-full bg-neutral-900/30 text-white px-4 py-3 rounded-xl border border-neutral-800 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 transition-colors"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-neutral-300 mb-2">Content</label>
+                                    <textarea
+                                        value={newNoteContent}
+                                        onChange={(e) => setNewNoteContent(e.target.value)}
+                                        placeholder="Write your note content... Use bullet points for clarity"
+                                        className="w-full bg-neutral-900/30 text-neutral-200 p-4 rounded-xl border border-neutral-800 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 transition-colors h-64 resize-none"
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex gap-4">
+                                <Button
+                                    onClick={handleCreateNote}
+                                    className="flex-1 h-12 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black font-medium rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                                >
+                                    <Sparkles className="w-5 h-5 mr-2" />
+                                    Create Note
+                                </Button>
+                                <Button
+                                    onClick={() => setShowNewNoteForm(false)}
+                                    className="h-12 px-8 bg-neutral-700 hover:bg-neutral-600 text-neutral-300 font-medium rounded-2xl transition-colors"
+                                >
+                                    Cancel
+                                </Button>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )}
+            </div>
         </>
     );
 }
