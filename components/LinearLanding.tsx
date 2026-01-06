@@ -186,8 +186,8 @@ export function LinearLanding() {
                                     Connect Gmail Free
                                     <ArrowRight className="w-5 h-5 ml-2 inline-block" />
                                 </GlassButton>
-                                <Button 
-                                    variant="outline" 
+                                <Button
+                                    variant="outline"
                                     onClick={() => document.getElementById('demo-section')?.scrollIntoView({ behavior: 'smooth' })}
                                     className="border-white/10 bg-white/5 text-white hover:bg-white/10 rounded-full px-6"
                                 >
@@ -284,13 +284,13 @@ export function LinearLanding() {
                     <div className="max-w-5xl mx-auto">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                             {/* Text Section - Fading Steps */}
-                            <div className="space-y-8">
+                            <div className="relative h-96">
                                 {/* Step 1 */}
                                 <motion.div
                                     initial={{ opacity: 0 }}
-                                    animate={{ opacity: [0, 1, 1, 0] }}
-                                    transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-                                    className="h-32 flex flex-col justify-center"
+                                    animate={{ opacity: [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] }}
+                                    transition={{ duration: 30, repeat: Infinity, ease: "easeInOut" }}
+                                    className="absolute inset-0 flex flex-col justify-center"
                                 >
                                     <div className="flex items-center gap-4 mb-4">
                                         <div className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center font-bold text-lg">1</div>
@@ -316,9 +316,9 @@ export function LinearLanding() {
                                 {/* Step 2 */}
                                 <motion.div
                                     initial={{ opacity: 0 }}
-                                    animate={{ opacity: [0, 0, 0, 1, 1, 1, 0] }}
-                                    transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-                                    className="h-32 flex flex-col justify-center"
+                                    animate={{ opacity: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] }}
+                                    transition={{ duration: 30, repeat: Infinity, ease: "easeInOut" }}
+                                    className="absolute inset-0 flex flex-col justify-center"
                                 >
                                     <div className="flex items-center gap-4 mb-4">
                                         <div className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center font-bold text-lg">2</div>
@@ -336,7 +336,7 @@ export function LinearLanding() {
                                         </div>
                                         <div className="flex items-center gap-3">
                                             <Check className="w-5 h-5 text-green-400" />
-                                            <span className="text-zinc-300">Follow-ups tracked automatically</span>
+                                            <span className="text-zinc-300">Smart boxes for everything</span>
                                         </div>
                                     </div>
                                 </motion.div>
@@ -344,13 +344,13 @@ export function LinearLanding() {
                                 {/* Step 3 */}
                                 <motion.div
                                     initial={{ opacity: 0 }}
-                                    animate={{ opacity: [0, 0, 0, 0, 0, 0, 1, 1, 1, 0] }}
-                                    transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-                                    className="h-32 flex flex-col justify-center"
+                                    animate={{ opacity: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] }}
+                                    transition={{ duration: 30, repeat: Infinity, ease: "easeInOut" }}
+                                    className="absolute inset-0 flex flex-col justify-center"
                                 >
                                     <div className="flex items-center gap-4 mb-4">
                                         <div className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center font-bold text-lg">3</div>
-                                        <h3 className="text-3xl font-bold text-white">Quick Actions in &lt;1min!</h3>
+                                        <h3 className="text-3xl font-bold text-white">One-Click Actions</h3>
                                     </div>
                                     <p className="text-xl text-zinc-400">Select any email and turn it into action with one click.</p>
                                     <div className="space-y-2">
@@ -396,8 +396,8 @@ export function LinearLanding() {
                                     <h3 className="text-2xl font-bold text-white mb-2">Ready to save 10+ hours/week?</h3>
                                     <p className="text-zinc-400">Join 500+ founders who transformed their inbox.</p>
                                 </div>
-                                <Button 
-                                    onClick={() => signIn('google')} 
+                                <Button
+                                    onClick={() => signIn('google')}
                                     className="bg-white text-black hover:bg-zinc-200 rounded-full px-8 py-4 text-lg font-bold"
                                 >
                                     Start Free
