@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { SchedulingModal } from './scheduling-modal';
 import { UsageLimitModal } from './usage-limit-modal';
 import { UsageBadge } from './bubble-button';
+import { triggerSuccessConfetti } from '@/lib/confetti';
 
 // Simple markdown renderer for bold text
 const renderMarkdown = (text: string): string => {
@@ -634,6 +635,7 @@ export function GmailInterfaceFixed() {
 
             const result = await response.json();
             toast.success('Message escalated successfully! Team notified.', { id: toastId });
+            triggerSuccessConfetti(); // Dopamine boost!
             console.log('✅ Escalation successful:', result);
 
         } catch (error: unknown) {
@@ -729,6 +731,7 @@ export function GmailInterfaceFixed() {
 
             const result = await response.json();
             toast.success('Unsubscribed successfully! This email will no longer appear in your updates.', { id: toastId });
+            triggerSuccessConfetti(); // Dopamine boost!
             console.log('✅ Unsubscribe successful:', result);
 
             // Refresh insights to update the list
@@ -824,6 +827,7 @@ export function GmailInterfaceFixed() {
                 throw new Error(result?.error || 'Failed to save note');
             }
             toast.success('📝 Note saved successfully!', { id: toastId });
+            triggerSuccessConfetti(); // Dopamine boost!
             console.log('✅ Note saved:', result);
 
             // Redirect to the note page
@@ -894,6 +898,7 @@ export function GmailInterfaceFixed() {
             if (response.ok) {
                 console.log('✅ Email sent successfully:', data);
                 toast.success('Email sent successfully!', { id: toastId });
+                triggerSuccessConfetti(); // Dopamine boost!
                 setShowDraftEditor(false);
                 setDraftContent('');
             } else {

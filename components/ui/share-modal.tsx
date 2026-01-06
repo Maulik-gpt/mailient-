@@ -15,6 +15,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { triggerMiniConfetti } from '@/lib/confetti';
 
 interface ShareModalProps {
   open: boolean;
@@ -46,6 +47,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
           await navigator.clipboard.writeText(shareUrl);
           setCopied(true);
           toast.success('Link copied to clipboard!');
+          triggerMiniConfetti(); // Quick dopamine hit
           setTimeout(() => setCopied(false), 2000);
         } catch (err) {
           toast.error('Failed to copy link');
