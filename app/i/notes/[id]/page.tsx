@@ -211,7 +211,7 @@ export default function NoteDetailPage({ params }: { params: { id: string } }) {
                     }));
                     setNotes(formattedNotes);
 
-                    // Find the note with the matching ID
+                    // Find note with matching ID
                     const note = formattedNotes.find((n: Note) => n.id === params.id);
                     if (note) {
                         setSelectedNote(note);
