@@ -1061,7 +1061,21 @@ export function LinearLanding() {
                         <a href="/privacy-policy" className="hover:text-white transition-colors">Privacy</a>
                         <a href="#" className="hover:text-white transition-colors">Terms</a>
                     </div>
-                    <p className="text-xs text-zinc-600">© 2026 Mailient Intelligence.</p>
+                    <div className="flex flex-col md:flex-row items-center gap-8">
+                        <a
+                            href="https://www.foundrlist.com/product/mailient"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="opacity-40 hover:opacity-100 transition-all duration-500 scale-90 hover:scale-100"
+                        >
+                            <img
+                                src="https://www.foundrlist.com/api/badge/mailient"
+                                alt="Mailient - Live on FoundrList"
+                                className="h-8 w-auto grayscale hover:grayscale-0"
+                            />
+                        </a>
+                        <p className="text-xs text-zinc-600">© 2026 Mailient Intelligence.</p>
+                    </div>
                 </div>
             </footer>
         </div>
