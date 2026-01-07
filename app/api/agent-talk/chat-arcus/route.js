@@ -753,7 +753,10 @@ function isEmailRelatedQuery(message) {
   const emailKeywords = [
     'email', 'emails', 'inbox', 'gmail', 'message', 'messages',
     'send', 'compose', 'reply', 'forward', 'unread', 'read',
-    'from', 'subject', 'attachment', 'urgent', 'important'
+    'from', 'subject', 'attachment', 'urgent', 'important',
+    'today', 'yesterday', 'this week', 'recent', 'latest',
+    'received', 'sent', 'what did', 'show me', 'find',
+    'search', 'check', 'any new', 'pending', 'waiting'
   ];
   const lowerMessage = message.toLowerCase();
   return emailKeywords.some(keyword => lowerMessage.includes(keyword));

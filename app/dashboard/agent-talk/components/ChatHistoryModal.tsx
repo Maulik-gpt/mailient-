@@ -25,22 +25,22 @@ interface ChatHistoryModalProps {
 }
 
 export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConversationDelete }: ChatHistoryModalProps) {
-   const [history, setHistory] = useState<ChatHistoryItem[]>([]);
-   const [isLoading, setIsLoading] = useState(false);
-   const [error, setError] = useState<string | null>(null);
-   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; item: ChatHistoryItem | null }>({
-     isOpen: false,
-     item: null
-   });
-   const [isDeleting, setIsDeleting] = useState(false);
+  const [history, setHistory] = useState<ChatHistoryItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; item: ChatHistoryItem | null }>({
+    isOpen: false,
+    item: null
+  });
+  const [isDeleting, setIsDeleting] = useState(false);
 
-   // Multi-selection state
-   const [isSelectionMode, setIsSelectionMode] = useState(false);
-   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
-   const [selectAll, setSelectAll] = useState(false);
-   const [selectionTimeout, setSelectionTimeout] = useState<NodeJS.Timeout | null>(null);
-   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
-   const longPressItem = useRef<ChatHistoryItem | null>(null);
+  // Multi-selection state
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+  const [selectAll, setSelectAll] = useState(false);
+  const [selectionTimeout, setSelectionTimeout] = useState<NodeJS.Timeout | null>(null);
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  const longPressItem = useRef<ChatHistoryItem | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -128,95 +128,98 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
     return groups;
   };
 
-  const getChatTitle = (userMessage: string) => {
-    // Extract a meaningful title from the first few words of the user message
-    const words = userMessage.split(' ').slice(0, 4).join(' ');
-    return words.length > 30 ? words.substring(0, 30) + '...' : words;
+  const getChatTitle = (title: string) => {
+    // Since we're now storing AI-generated or proper titles, just truncate if needed
+    if (!title) return 'Untitled Chat';
+    return title.length > 40 ? title.substring(0, 40) + '...' : title;
   };
 
   // Load conversations from localStorage on component mount
- useEffect(() => {
-   if (isOpen) {
-     loadConversationsFromStorage();
-   }
- }, [isOpen]);
+  useEffect(() => {
+    if (isOpen) {
+      loadConversationsFromStorage();
+    }
+  }, [isOpen]);
 
- const loadConversationsFromStorage = () => {
-   const conversationsMap: {[key: string]: ChatHistoryItem} = {};
+  const loadConversationsFromStorage = () => {
+    const conversationsMap: { [key: string]: ChatHistoryItem } = {};
 
-   // Load all conversations from localStorage
-   for (let i = 0; i < localStorage.length; i++) {
-     const key = localStorage.key(i);
-     if (key && key.startsWith('conversation_')) {
-       try {
-         const conversationData = JSON.parse(localStorage.getItem(key) || '{}');
-         if (conversationData.id && conversationData.title && conversationData.messages) {
-           // Get the first user message as the preview
-           const firstUserMessage = conversationData.messages.find((msg: any) => msg.type === 'user');
-           const userMessage = firstUserMessage ? firstUserMessage.content : conversationData.title;
+    // Load all conversations from localStorage
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('conversation_')) {
+        try {
+          const conversationData = JSON.parse(localStorage.getItem(key) || '{}');
+          if (conversationData.id && conversationData.messages) {
+            // Get the first user message as the preview
+            const firstUserMessage = conversationData.messages.find((msg: any) => msg.type === 'user');
+            const userMessage = firstUserMessage ? firstUserMessage.content : '';
 
-           conversationsMap[conversationData.id] = {
-             id: conversationData.id,
-             conversation_id: conversationData.id,
-             user_id: '', // Not stored in localStorage, will be empty
-             user_message: userMessage,
-             agent_response: '', // Not needed for display
-             message_order: 0,
-             is_initial_message: true,
-             created_at: conversationData.lastUpdated,
-             initialMessagePreview: userMessage.length > 100
-               ? userMessage.substring(0, 100) + '...'
-               : userMessage,
-             lastMessageDate: conversationData.lastUpdated,
-             source: 'localStorage' // Mark as localStorage data
-           };
-         }
-       } catch (error) {
-         console.error('Error parsing conversation data:', error);
-       }
-     }
-   }
+            // Use the stored title, or fall back to first few words of user message
+            const title = conversationData.title || (userMessage ? userMessage.split(' ').slice(0, 5).join(' ') : 'Untitled Chat');
 
-   // Convert to array and sort by last updated
-   const conversationsList = Object.values(conversationsMap).sort((a, b) =>
-     new Date(b.lastMessageDate || b.created_at).getTime() - new Date(a.lastMessageDate || a.created_at).getTime()
-   );
+            conversationsMap[conversationData.id] = {
+              id: conversationData.id,
+              conversation_id: conversationData.id,
+              user_id: '', // Not stored in localStorage, will be empty
+              user_message: title, // Use the title directly for display
+              agent_response: '', // Not needed for display
+              message_order: 0,
+              is_initial_message: true,
+              created_at: conversationData.lastUpdated,
+              initialMessagePreview: userMessage && userMessage.length > 100
+                ? userMessage.substring(0, 100) + '...'
+                : userMessage,
+              lastMessageDate: conversationData.lastUpdated,
+              source: 'localStorage' // Mark as localStorage data
+            };
+          }
+        } catch (error) {
+          console.error('Error parsing conversation data:', error);
+        }
+      }
+    }
 
-   console.log('Loaded conversations from localStorage:', conversationsList.map(conv => ({
-     id: conv.id,
-     title: conv.user_message,
-     source: conv.source
-   })));
+    // Convert to array and sort by last updated
+    const conversationsList = Object.values(conversationsMap).sort((a, b) =>
+      new Date(b.lastMessageDate || b.created_at).getTime() - new Date(a.lastMessageDate || a.created_at).getTime()
+    );
 
-   // If we have localStorage conversations, merge them with existing history
-   if (conversationsList.length > 0) {
-     setHistory(prev => {
-       // Create a map of existing conversations by ID to avoid duplicates
-       const existingMap = new Map(prev.map(item => [item.conversation_id || item.id, item]));
+    console.log('Loaded conversations from localStorage:', conversationsList.map(conv => ({
+      id: conv.id,
+      title: conv.user_message,
+      source: conv.source
+    })));
 
-       // Add localStorage conversations that don't already exist
-       conversationsList.forEach(localItem => {
-         const existingItem = existingMap.get(localItem.conversation_id || localItem.id);
-         if (!existingItem) {
-           existingMap.set(localItem.conversation_id || localItem.id, localItem);
-         }
-       });
+    // If we have localStorage conversations, merge them with existing history
+    if (conversationsList.length > 0) {
+      setHistory(prev => {
+        // Create a map of existing conversations by ID to avoid duplicates
+        const existingMap = new Map(prev.map(item => [item.conversation_id || item.id, item]));
 
-       // Convert back to array and sort by date
-       const merged = Array.from(existingMap.values()).sort((a, b) =>
-         new Date(b.lastMessageDate || b.created_at).getTime() - new Date(a.lastMessageDate || a.created_at).getTime()
-       );
+        // Add localStorage conversations that don't already exist
+        conversationsList.forEach(localItem => {
+          const existingItem = existingMap.get(localItem.conversation_id || localItem.id);
+          if (!existingItem) {
+            existingMap.set(localItem.conversation_id || localItem.id, localItem);
+          }
+        });
 
-       console.log('Merged conversations:', merged.map(conv => ({
-         id: conv.id,
-         title: conv.user_message,
-         source: conv.source
-       })));
+        // Convert back to array and sort by date
+        const merged = Array.from(existingMap.values()).sort((a, b) =>
+          new Date(b.lastMessageDate || b.created_at).getTime() - new Date(a.lastMessageDate || a.created_at).getTime()
+        );
 
-       return merged;
-     });
-   }
- };
+        console.log('Merged conversations:', merged.map(conv => ({
+          id: conv.id,
+          title: conv.user_message,
+          source: conv.source
+        })));
+
+        return merged;
+      });
+    }
+  };
 
   const handleDeleteClick = (e: React.MouseEvent, item: ChatHistoryItem) => {
     e.stopPropagation();
@@ -293,16 +296,16 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
       }
 
       // Remove the deleted item from the local state
-       setHistory(prev => prev.filter(item =>
-         item.conversation_id !== (deleteConfirm.item!.conversation_id || deleteConfirm.item!.id) &&
-         item.id !== deleteConfirm.item!.id
-       ));
+      setHistory(prev => prev.filter(item =>
+        item.conversation_id !== (deleteConfirm.item!.conversation_id || deleteConfirm.item!.id) &&
+        item.id !== deleteConfirm.item!.id
+      ));
 
-       // Notify parent component that conversation was deleted
-       const deletedConversationId = deleteConfirm.item!.conversation_id || deleteConfirm.item!.id;
-       onConversationDelete?.(deletedConversationId);
+      // Notify parent component that conversation was deleted
+      const deletedConversationId = deleteConfirm.item!.conversation_id || deleteConfirm.item!.id;
+      onConversationDelete?.(deletedConversationId);
 
-       setDeleteConfirm({ isOpen: false, item: null });
+      setDeleteConfirm({ isOpen: false, item: null });
     } catch (error) {
       console.error('Error deleting conversation:', error);
       setError(error instanceof Error ? error.message : 'Failed to delete conversation');
@@ -410,15 +413,15 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
       }
 
       // Remove deleted items from local state
-       setHistory(prev => prev.filter(item => !selectedItems.has(item.id)));
+      setHistory(prev => prev.filter(item => !selectedItems.has(item.id)));
 
-       // Notify parent component for each deleted conversation
-       selectedItems.forEach(conversationId => {
-         onConversationDelete?.(conversationId);
-       });
+      // Notify parent component for each deleted conversation
+      selectedItems.forEach(conversationId => {
+        onConversationDelete?.(conversationId);
+      });
 
-       exitSelectionMode();
-       setDeleteConfirm({ isOpen: false, item: null });
+      exitSelectionMode();
+      setDeleteConfirm({ isOpen: false, item: null });
     } catch (error) {
       console.error('Error deleting selected conversations:', error);
       setError(error instanceof Error ? error.message : 'Failed to delete selected conversations');
@@ -524,13 +527,12 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
                           e.stopPropagation();
                           handleItemClick(item);
                         }}
-                        className={`group rounded-lg p-3 border transition-all duration-300 cursor-pointer ${
-                          isSelectionMode
-                            ? selectedItems.has(item.id)
-                              ? 'bg-blue-600/20 border-blue-500/50 ring-1 ring-blue-500/30'
-                              : 'bg-[#0f0f0f] border-gray-700/50 hover:border-gray-600/50 hover:bg-[#1a1a1a]'
+                        className={`group rounded-lg p-3 border transition-all duration-300 cursor-pointer ${isSelectionMode
+                          ? selectedItems.has(item.id)
+                            ? 'bg-blue-600/20 border-blue-500/50 ring-1 ring-blue-500/30'
                             : 'bg-[#0f0f0f] border-gray-700/50 hover:border-gray-600/50 hover:bg-[#1a1a1a]'
-                        }`}
+                          : 'bg-[#0f0f0f] border-gray-700/50 hover:border-gray-600/50 hover:bg-[#1a1a1a]'
+                          }`}
                       >
                         <div className="flex items-start gap-3">
                           {isSelectionMode ? (
@@ -552,16 +554,16 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
                                 {getChatTitle(item.user_message)}
                               </h3>
                               <div className="flex items-center gap-2">
-                                 {!isSelectionMode && (
-                                   <button
-                                     onClick={(e) => handleDeleteClick(e, item)}
-                                     className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 hover:bg-gray-800 rounded flex-shrink-0"
-                                     title="Delete conversation"
-                                   >
-                                     <Trash2 className="w-3 h-3 text-[#bab8b8] hover:text-red-400" />
-                                   </button>
-                                 )}
-                               </div>
+                                {!isSelectionMode && (
+                                  <button
+                                    onClick={(e) => handleDeleteClick(e, item)}
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 hover:bg-gray-800 rounded flex-shrink-0"
+                                    title="Delete conversation"
+                                  >
+                                    <Trash2 className="w-3 h-3 text-[#bab8b8] hover:text-red-400" />
+                                  </button>
+                                )}
+                              </div>
                             </div>
                             <p className="text-gray-400 text-xs truncate font-sans">
                               {item.initialMessagePreview || item.user_message}

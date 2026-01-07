@@ -146,6 +146,7 @@ export default function ChatInterface({
   const [newMessageIds, setNewMessageIds] = useState<Set<number>>(new Set());
   const [isInitialMode, setIsInitialMode] = useState<boolean>(!initialConversationId);
   const [showHistory, setShowHistory] = useState<boolean>(false);
+  const [historyRefreshKey, setHistoryRefreshKey] = useState<number>(0);
   const [isUsageLimitModalOpen, setIsUsageLimitModalOpen] = useState(false);
   const [usageLimitModalData, setUsageLimitModalData] = useState<{
     featureName: string;
@@ -274,6 +275,31 @@ export default function ChatInterface({
     localStorage.setItem(`conv_${conversationId}_title`, title);
   };
 
+  // Generate AI-powered chat title based on user's first message
+  const generateChatTitle = async (userMessage: string): Promise<string> => {
+    try {
+      const response = await fetch('/api/agent-talk/generate-title', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: userMessage })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.title && data.title.length > 0) {
+          console.log('🏷️ AI-generated chat title:', data.title);
+          return data.title;
+        }
+      }
+    } catch (error) {
+      console.error('Error generating chat title:', error);
+    }
+
+    // Fallback: Use first words of message
+    const fallbackTitle = userMessage.trim().split(' ').slice(0, 5).join(' ');
+    return fallbackTitle.length > 40 ? fallbackTitle.substring(0, 40) + '...' : fallbackTitle;
+  };
+
   const processAIMessage = async (messageText: string, conversationIdToUse: string, isNew: boolean) => {
     let actionTriggered = false;
     let statusTimeout: any = null;
@@ -365,31 +391,105 @@ export default function ChatInterface({
 
       setNewMessageIds(prev => new Set(prev).add(agentMessage.id));
 
-      const updatedMessages = [...(conversations[conversationIdToUse] || []), {
+      // Add agent message to state
+      setMessages(prev => [...prev, agentMessage]);
+
+      // Get existing conversation data from localStorage to preserve title
+      const existingConversationRaw = localStorage.getItem(`conversation_${conversationIdToUse}`);
+      let existingTitle = '';
+      let existingMessages: Message[] = [];
+      let shouldGenerateTitle = false;
+
+      if (existingConversationRaw) {
+        try {
+          const existingData = JSON.parse(existingConversationRaw);
+          existingTitle = existingData.title || '';
+          existingMessages = existingData.messages || [];
+
+          // If this is the first message pair (only 1 user message exists or no title yet)
+          // then we should generate an AI title
+          const userMessageCount = existingMessages.filter(m => m.type === 'user').length;
+          shouldGenerateTitle = !existingTitle || userMessageCount <= 1;
+        } catch (e) {
+          console.error('Error parsing existing conversation:', e);
+          shouldGenerateTitle = true;
+        }
+      } else {
+        shouldGenerateTitle = true;
+      }
+
+      // Use temporary title first (non-blocking), then update with AI title
+      if (!existingTitle) {
+        existingTitle = messageText.trim().split(' ').slice(0, 5).join(' ');
+      }
+
+      // Generate AI title asynchronously (non-blocking) for new conversations
+      if (shouldGenerateTitle && isNew) {
+        generateChatTitle(messageText).then((aiTitle) => {
+          console.log('🏷️ Generated title for new conversation:', aiTitle);
+          // Update localStorage with AI-generated title
+          const currentDataRaw = localStorage.getItem(`conversation_${conversationIdToUse}`);
+          if (currentDataRaw) {
+            try {
+              const currentData = JSON.parse(currentDataRaw);
+              currentData.title = aiTitle;
+              localStorage.setItem(`conversation_${conversationIdToUse}`, JSON.stringify(currentData));
+              localStorage.setItem(`conv_${conversationIdToUse}_title`, aiTitle);
+            } catch (e) {
+              console.error('Error updating title:', e);
+            }
+          }
+        }).catch((titleError) => {
+          console.error('Failed to generate AI title:', titleError);
+        });
+      }
+
+      // If we still don't have a title, use the message
+      if (!existingTitle) {
+        existingTitle = messageText.trim().split(' ').slice(0, 5).join(' ');
+      }
+
+      // Build the updated messages list - use current messages state
+      // Note: We need to access the current messages state synchronously
+      // The messages already include all prior messages + the new user message we added in handleSend
+      // Now we need to add the agent message
+      const userMessage: UserMessage = {
         id: Date.now() - 1,
         type: 'user',
         content: messageText,
         time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
-      } as UserMessage, agentMessage];
+      };
 
-      setMessages(prev => {
-        const lastMsg = prev[prev.length - 1];
-        if (lastMsg && lastMsg.type === 'user' && lastMsg.content === messageText) {
-          return [...prev, agentMessage];
-        }
-        return [...prev, agentMessage];
-      });
+      // Filter out duplicates and combine with existing messages
+      const allMessages = [...existingMessages];
+
+      // Check if user message already exists (by content match)
+      const userMsgExists = allMessages.some(m => m.type === 'user' && m.content === messageText);
+      if (!userMsgExists) {
+        allMessages.push(userMessage);
+      }
+      allMessages.push(agentMessage);
+
+      // Remove duplicates by ID
+      const uniqueMessages = allMessages.filter((msg, index, self) =>
+        index === self.findIndex((t) => t.id === msg.id)
+      );
 
       const finalConversationData = {
         id: conversationIdToUse,
-        messages: updatedMessages.filter((msg, index, self) =>
-          index === self.findIndex((t) => (t.id === msg.id))
-        ),
-        title: messageText,
+        messages: uniqueMessages,
+        title: existingTitle, // Use AI-generated title or preserved original
         lastUpdated: new Date().toISOString(),
-        messageCount: updatedMessages.length
+        messageCount: uniqueMessages.length
       };
       localStorage.setItem(`conversation_${conversationIdToUse}`, JSON.stringify(finalConversationData));
+      localStorage.setItem(`conv_${conversationIdToUse}_title`, existingTitle);
+
+      // Update conversations state
+      setConversations(prev => ({
+        ...prev,
+        [conversationIdToUse]: uniqueMessages
+      }));
 
     } catch (error) {
       console.error('Error in processAIMessage:', error);
@@ -423,12 +523,25 @@ export default function ChatInterface({
     if (savedConversation) {
       try {
         const conversationData = JSON.parse(savedConversation);
-        setMessages(conversationData.messages);
-        setConversations(prev => ({ ...prev, [conversationId]: conversationData.messages }));
+        const loadedMessages = conversationData.messages || [];
+
+        setMessages(loadedMessages);
+        setConversations(prev => ({ ...prev, [conversationId]: loadedMessages }));
         setCurrentConversationId(conversationId);
         setIsInitialMode(false);
         setIsNewConversation(false);
         setShowHistory(false);
+        setSelectedConversationId(conversationId);
+
+        console.log('DEBUG: Loaded', loadedMessages.length, 'messages for conversation:', conversationId);
+
+        // Navigate to the conversation URL
+        if (onConversationSelect) {
+          onConversationSelect(conversationId);
+        }
+
+        // Scroll to bottom after messages are loaded
+        setTimeout(() => scrollToBottom(true), 150);
 
         // Check for pending AI trigger
         const pendingId = localStorage.getItem('pending_arcus_id');
@@ -445,6 +558,7 @@ export default function ChatInterface({
         console.error('Error loading conversation from localStorage:', error);
       }
     } else {
+      // If not in localStorage, fetch from API
       fetch(`/api/agent-talk/conversation/${conversationId}`)
         .then(response => response.json())
         .then(data => {
@@ -458,6 +572,18 @@ export default function ChatInterface({
             setMessages(formattedMessages);
             setConversations(prev => ({ ...prev, [conversationId]: formattedMessages }));
             setCurrentConversationId(conversationId);
+            setIsInitialMode(false);
+            setIsNewConversation(false);
+            setShowHistory(false);
+            setSelectedConversationId(conversationId);
+
+            // Navigate to the conversation URL
+            if (onConversationSelect) {
+              onConversationSelect(conversationId);
+            }
+
+            // Scroll to bottom after messages are loaded
+            setTimeout(() => scrollToBottom(true), 150);
           }
         }).catch(err => console.error('Error fetching conversation:', err));
     }
@@ -692,26 +818,19 @@ export default function ChatInterface({
     const conversationData = {
       id: conversationIdToUse as string,
       messages: [...(conversations[conversationIdToUse as string] || []), newMessage],
-      title: messageText,
+      title: messageText.trim().split(' ').slice(0, 5).join(' '), // Temporary title, will be updated by AI
       lastUpdated: new Date().toISOString(),
       messageCount: 1
     };
     localStorage.setItem(`conversation_${conversationIdToUse}`, JSON.stringify(conversationData));
 
-    // Notify parent to move to dynamic URL if new - but AFTER optimistic updates
+    // Navigate to the conversation URL if this is a new conversation
     if (shouldCreateNewConversation && onConversationSelect && conversationIdToUse) {
       onConversationSelect(conversationIdToUse);
     }
 
-    // For new conversations, navigate first and let loadConversation handle the AI trigger
-    if (shouldCreateNewConversation && onConversationSelect) {
-      localStorage.setItem('pending_arcus_id', conversationIdToUse as string);
-      localStorage.setItem('pending_arcus_message', messageText);
-      onConversationSelect(conversationIdToUse as string);
-    } else {
-      // For existing conversations, proceed as normal
-      processAIMessage(messageText, conversationIdToUse as string, false);
-    }
+    // Process the AI message directly - don't rely on navigation/loadConversation
+    processAIMessage(messageText, conversationIdToUse as string, shouldCreateNewConversation);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -727,6 +846,14 @@ export default function ChatInterface({
       await saveConversation();
     }
 
+    // Navigate to base agent-talk page for new chat FIRST
+    if (onNewChat) {
+      onNewChat();
+    } else {
+      // Fallback: use router directly
+      router.push('/dashboard/agent-talk');
+    }
+
     // Clear all conversation state for new chat
     setMessages([]);
     setIsInitialMode(true);
@@ -738,11 +865,6 @@ export default function ChatInterface({
 
     // Clear any stored conversation ID from localStorage
     localStorage.removeItem('lastActiveConversation');
-
-    // Navigate to base agent-talk page for new chat
-    if (onNewChat) {
-      onNewChat();
-    }
 
     console.log('Started new chat - all conversation state cleared');
   };
@@ -835,9 +957,9 @@ export default function ChatInterface({
       <div className="flex h-screen w-full text-white overflow-hidden" style={{
         background: '#000000'
       }}>
-        {/* Sidebar */}
+        {/* History Sidebar - Positioned to the right of Mailient sidebar (left: 64px = 16 * 4 for w-16 sidebar) */}
         {showHistory && (
-          <div className="fixed left-0 top-0 h-screen w-80 bg-[#0a0a0a] border-r border-[#1a1a1a] flex flex-col backdrop-blur-md z-40">
+          <div className="fixed left-16 top-0 h-screen w-80 bg-[#0a0a0a] border-r border-[#1a1a1a] flex flex-col backdrop-blur-md z-40">
             <div className="p-4 border-b border-[#2a2a2a]">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-lg font-semibold text-white font-sans">Chats</h2>
@@ -884,7 +1006,8 @@ export default function ChatInterface({
 
             <div className="flex-1 overflow-y-auto">
               <ChatHistoryModal
-                isOpen={true}
+                key={`history-${historyRefreshKey}`}
+                isOpen={showHistory}
                 onClose={() => setShowHistory(false)}
                 onConversationSelect={loadConversation}
                 onConversationDelete={handleConversationDelete}
@@ -895,8 +1018,8 @@ export default function ChatInterface({
 
         {/* Universal Sidebar - Fixed Position Full Height */}
         <HomeFeedSidebar className="z-30" />
-        {/* Main Content - Original Position */}
-        <div className={`flex-1 flex flex-col relative font-sans ${showHistory ? 'ml-80' : 'ml-16'} transition-all duration-300`}>
+        {/* Main Content - Adjust margin when history sidebar is open (ml-16 for Mailient sidebar + 80 for history = 96) */}
+        <div className={`flex-1 flex flex-col relative font-sans ${showHistory ? 'ml-96' : 'ml-16'} transition-all duration-300`}>
           {/* Background elements */}
           <div className="absolute inset-0 overflow-hidden">
             <div className="absolute -top-40 -right-40 w-80 h-80 bg-gray-500/5 rounded-full blur-3xl animate-pulse"></div>
@@ -938,7 +1061,12 @@ export default function ChatInterface({
                   <Tooltip delayDuration={100}>
                     <TooltipTrigger asChild>
                       <button
-                        onClick={() => setShowHistory(!showHistory)}
+                        onClick={() => {
+                          if (!showHistory) {
+                            setHistoryRefreshKey(prev => prev + 1); // Force refresh when opening
+                          }
+                          setShowHistory(!showHistory);
+                        }}
                         className="p-2.5 hover:bg-[#2a2a2a] rounded-lg transition-all duration-300 hover:scale-105"
                         aria-label="Toggle chat history"
                       >
@@ -947,26 +1075,6 @@ export default function ChatInterface({
                     </TooltipTrigger>
                     <TooltipContent side="bottom">
                       <p>History</p>
-                    </TooltipContent>
-                  </Tooltip>
-                  <Tooltip delayDuration={100}>
-                    <TooltipTrigger asChild>
-                      <button
-                        onClick={() => {
-                          loadPersonalityPreferences();
-                          setIsPersonalityModalOpen(true);
-                        }}
-                        className="p-2.5 hover:bg-[#2a2a2a] rounded-lg transition-all duration-300 hover:scale-105"
-                        aria-label="Personality settings"
-                      >
-                        <svg className="w-5 h-5 text-white/60 hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">
-                      <p>Personality Settings</p>
                     </TooltipContent>
                   </Tooltip>
                   <div className="p-2.5">
@@ -1136,16 +1244,22 @@ export default function ChatInterface({
                       </div>
                     ))}
                     {isLoading && (
-                      <div className="flex items-start gap-4">
+                      <div className="flex items-start gap-4 animate-fade-in">
                         <div className="flex-shrink-0 mt-1">
-                          <div className="bg-[#696868] rounded-full p-2.5 w-11 h-11 flex items-center justify-center backdrop-blur-sm border border-[#3a4a5a] shadow-lg">
-                            <img src="/logo.png" alt="AI Logo" className="w-5 h-5 rounded-full" />
+                          <div className="bg-neutral-800 rounded-full w-11 h-11 flex items-center justify-center backdrop-blur-sm border border-white/10 shadow-lg overflow-hidden">
+                            <img src="/arcus-ai-icon.jpg" alt="Arcus AI" className="w-full h-full object-cover" />
                           </div>
                         </div>
                         <div className="flex-1">
-                          <div className="bg-[#2d2e2e] border border-[#323233] rounded-2xl p-4 max-w-4xl shadow-xl backdrop-blur-md flex items-center gap-3">
-                            <div className="w-2.5 h-2.5 rounded-full bg-white animate-[arcus-dot-pulse_1s_ease-in-out_infinite]" />
-                            <p className="text-white/70 text-sm">Thinking…</p>
+                          <div className="bg-[#2d2e2e] border border-[#323233] rounded-2xl p-4 max-w-fit shadow-xl backdrop-blur-md">
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full bg-blue-400 animate-thinking-dot-1" />
+                                <span className="w-2.5 h-2.5 rounded-full bg-blue-400 animate-thinking-dot-2" />
+                                <span className="w-2.5 h-2.5 rounded-full bg-blue-400 animate-thinking-dot-3" />
+                              </div>
+                              <span className="text-white/80 text-sm font-sans font-medium">Thinking</span>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1168,8 +1282,10 @@ export default function ChatInterface({
                   </div>
                 </div>
 
-                {/* Floating Input Area */}
+                {/* Floating Input Area with Progressive Blur */}
                 <div className="sticky bottom-0 z-20 w-full px-6 pb-12 mt-auto pointer-events-none">
+                  {/* Progressive blur overlay */}
+                  <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none" />
                   <div className="max-w-4xl mx-auto relative z-10 pointer-events-auto">
                     <ChatInput
                       onSendMessage={(msg) => {
