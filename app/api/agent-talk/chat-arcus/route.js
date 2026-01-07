@@ -631,21 +631,28 @@ async function executeEmailAction(userMessage, userEmail, session) {
     let accessToken = session?.accessToken;
     let refreshToken = session?.refreshToken;
 
+    console.log('📧 executeEmailAction: Starting email fetch for:', userEmail?.substring(0, 20) + '...');
+    console.log('📧 Session accessToken available:', !!accessToken);
+
     if (!accessToken) {
+      console.log('📧 No session token, trying database...');
       try {
         const db = new DatabaseService();
         const userTokens = await db.getUserTokens(userEmail);
+        console.log('📧 Database tokens found:', !!userTokens?.encrypted_access_token);
 
         if (userTokens?.encrypted_access_token) {
           accessToken = decrypt(userTokens.encrypted_access_token);
           refreshToken = userTokens.encrypted_refresh_token ? decrypt(userTokens.encrypted_refresh_token) : '';
+          console.log('📧 Decrypted token successfully');
         }
       } catch (dbError) {
-        // Continue without tokens
+        console.error('📧 Database token fetch error:', dbError.message);
       }
     }
 
     if (!accessToken) {
+      console.log('📧 No access token available - Gmail not connected');
       return { error: 'Gmail not connected' };
     }
 
@@ -673,9 +680,13 @@ async function executeEmailAction(userMessage, userEmail, session) {
       query += ` from:${fromMatch[1]}`;
     }
 
+    console.log('📧 Gmail query:', query);
+
     try {
       const emailsResponse = await gmailService.getEmails(maxResults, query, null, 'internalDate desc');
       const messages = emailsResponse?.messages || [];
+
+      console.log('📧 Emails found:', messages.length);
 
       if (messages.length === 0) {
         return { action: 'read_emails', success: true, emails: [], query, count: 0 };

@@ -389,10 +389,17 @@ export default function ChatInterface({
         time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true })
       };
 
-      setNewMessageIds(prev => new Set(prev).add(agentMessage.id));
+      // First stop loading to show the message
+      setIsLoading(false);
 
       // Add agent message to state
       setMessages(prev => [...prev, agentMessage]);
+      setNewMessageIds(prev => new Set(prev).add(agentMessage.id));
+
+      // Force scroll after state update
+      requestAnimationFrame(() => {
+        scrollToBottom(true);
+      });
 
       // Get existing conversation data from localStorage to preserve title
       const existingConversationRaw = localStorage.getItem(`conversation_${conversationIdToUse}`);

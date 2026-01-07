@@ -1055,11 +1055,11 @@ export function LinearLanding() {
                         </div>
                         <span className="font-bold tracking-tight">Mailient</span>
                     </div>
-                    <div className="flex gap-8 text-[10px] font-bold text-zinc-600 uppercase tracking-widest">
-                        <a href="#" className="hover:text-white transition-colors">Twitter</a>
-                        <a href="#" className="hover:text-white transition-colors">GitHub</a>
-                        <a href="/privacy-policy" className="hover:text-white transition-colors">Privacy</a>
-                        <a href="#" className="hover:text-white transition-colors">Terms</a>
+                    <div className="flex gap-8 text-xs font-bold text-zinc-500 uppercase tracking-widest">
+                        <a href="https://x.com/Maulik_055" target="_blank" className="hover:text-white transition-colors">Twitter</a>
+                        <a href="https://github.com" target="_blank" className="hover:text-white transition-colors">GitHub</a>
+                        <a href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</a>
+                        <a href="/terms-of-service" className="hover:text-white transition-colors">Terms of Service</a>
                     </div>
                     <div className="flex flex-col md:flex-row items-center gap-8">
                         <div className="flex items-center gap-6">
