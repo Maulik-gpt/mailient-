@@ -1041,13 +1041,18 @@ export default function ChatInterface({
           </div>
 
           {/* Header */}
-          <div className={`sticky top-0 z-30 border-b border-[#000000]/20 bg-[#000000]/80 backdrop-blur-xl transition-all duration-300 ${(isIntegrationsModalOpen || isEmailSelectionModalOpen || isPersonalityModalOpen) ? 'blur-sm' : ''}`}>
-            <div className="px-6 py-2">
+          <div className={`sticky top-0 z-30 border-b border-[#000000]/20 bg-[#000000]/70 backdrop-blur-2xl transition-all duration-300 ${(isIntegrationsModalOpen || isEmailSelectionModalOpen || isPersonalityModalOpen) ? 'blur-sm' : ''}`}>
+            <div className="relative px-6 py-2">
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/80 via-black/50 to-transparent" />
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-b from-transparent via-black/35 to-black/60" />
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   {/* Placeholder for arrow space */}
                   <div className="w-9 h-9"></div>
                   <div className="flex items-center gap-3">
+                    <div className="bg-neutral-800 rounded-full w-10 h-10 flex items-center justify-center backdrop-blur-sm border border-white/10 shadow-lg overflow-hidden">
+                      <img src="/arcus-ai-icon.jpg" alt="Arcus AI" className="w-full h-full object-cover" />
+                    </div>
                     <div>
                       <h1 className="text-xl font-semibold text-white tracking-tight font-sans">Arcus</h1>
                       <p className="text-sm text-white/60 font-sans">
@@ -1202,7 +1207,7 @@ export default function ChatInterface({
 
                         <div className={`flex-1 ${msg.type === 'user' ? 'flex justify-end' : ''}`}>
                           {msg.type === 'agent' ? (
-                            <div className="space-y-1">
+                            <div className="space-y-1 pt-1">
                               {typeof msg.content === 'string' ? (
                                 <div
                                   className="text-white/90 text-base leading-[1.9] font-sans prose prose-invert max-w-none"
@@ -1235,9 +1240,11 @@ export default function ChatInterface({
                               <p className="text-white/40 text-xs font-medium pt-3">{msg.time}</p>
                             </div>
                           ) : (
-                            <div className="text-right space-y-1">
-                              <p className="text-white text-base leading-relaxed font-sans">{msg.content}</p>
-                              <p className="text-white/40 text-xs font-medium">{msg.time}</p>
+                            <div className="max-w-2xl">
+                              <div className="bg-[#fafafa] text-black rounded-2xl px-4 py-3 shadow-[0_12px_30px_rgba(0,0,0,0.35)] border border-black/10">
+                                <p className="text-black text-base leading-relaxed font-sans">{msg.content}</p>
+                              </div>
+                              <p className="text-right text-white/40 text-xs font-medium pt-2">{msg.time}</p>
                             </div>
                           )}
                         </div>
@@ -1259,7 +1266,7 @@ export default function ChatInterface({
                           </div>
                         </div>
                         <div className="flex-1">
-                          <ShiningText text="Arcus is thinking..." />
+                          <ShiningText text="Arcus is thinking..." className="text-sm relative top-1" />
                         </div>
                       </div>
                     )}
