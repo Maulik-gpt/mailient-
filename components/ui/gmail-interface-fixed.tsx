@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { AnimatePresence, motion, type PanInfo, useAnimation, useDragControls } from 'framer-motion';
 import { useSession } from 'next-auth/react';
 import { SiftCard } from './sift-card';
 import { Button } from './button';
 import { Badge } from './badge';
 import { HomeFeedSidebar } from './home-feed-sidebar';
-import { RefreshCw, AlertCircle, TrendingUp, Clock, Target, Zap, Mail, Home, X, User, Sparkles, ArrowLeft, LayoutList, Inbox, ExternalLink, Download, FilePlus, ChevronRight, Plus } from 'lucide-react';
+import { RefreshCw, AlertCircle, TrendingUp, Clock, Target, Zap, Mail, Home, X, User, Sparkles, ArrowLeft, LayoutList, Inbox, ExternalLink, Download, FilePlus, ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { SchedulingModal } from './scheduling-modal';
 import { UsageLimitModal } from './usage-limit-modal';
@@ -239,12 +240,17 @@ export function GmailInterfaceFixed() {
 
     // Arcus AI Panel states
     const [isArcusOpen, setIsArcusOpen] = useState(false);
+    const [isArcusMinimized, setIsArcusMinimized] = useState(false);
     const [arcusEmailId, setArcusEmailId] = useState<string | null>(null);
     const [arcusEmailSubject, setArcusEmailSubject] = useState('');
     const [arcusQuery, setArcusQuery] = useState('What is this email about?');
     const [arcusMessages, setArcusMessages] = useState<any[]>([]);
     const [isArcusLoading, setIsArcusLoading] = useState(false);
     const [arcusConversationId, setArcusConversationId] = useState<string | null>(null);
+
+    const [arcusPanelHeight, setArcusPanelHeight] = useState(800);
+    const arcusDragControls = useDragControls();
+    const arcusPanelAnimControls = useAnimation();
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -253,6 +259,62 @@ export function GmailInterfaceFixed() {
             messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
         }
     }, [arcusMessages]);
+
+    useEffect(() => {
+        const computeHeight = () => {
+            const h = typeof window !== 'undefined' ? window.innerHeight : 900;
+            setArcusPanelHeight(Math.max(h - 48, 520));
+        };
+        computeHeight();
+        window.addEventListener('resize', computeHeight);
+        return () => window.removeEventListener('resize', computeHeight);
+    }, []);
+
+    useEffect(() => {
+        if (!isArcusOpen || isArcusMinimized) return;
+        arcusPanelAnimControls.set({ opacity: 0, y: 18, scale: 0.985 });
+        arcusPanelAnimControls.start({
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            transition: { type: 'spring', damping: 28, stiffness: 320 }
+        });
+    }, [isArcusOpen, isArcusMinimized, arcusPanelAnimControls]);
+
+    const minimizeArcus = useCallback(() => {
+        setIsArcusMinimized(true);
+    }, []);
+
+    const restoreArcus = useCallback(() => {
+        setIsArcusMinimized(false);
+    }, []);
+
+    const closeArcus = useCallback(() => {
+        setIsArcusOpen(false);
+        setIsArcusMinimized(false);
+    }, []);
+
+    const handleArcusDragEnd = useCallback((_: unknown, info: PanInfo) => {
+        const shouldMinimize = info.offset.y > 140 || info.velocity.y > 900;
+        if (shouldMinimize) {
+            setIsArcusMinimized(true);
+            return;
+        }
+        arcusPanelAnimControls.start({ y: 0, transition: { type: 'spring', damping: 30, stiffness: 380 } });
+    }, [arcusPanelAnimControls]);
+
+    useEffect(() => {
+        if (!isArcusOpen) return;
+
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                closeArcus();
+            }
+        };
+
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, [isArcusOpen, closeArcus]);
 
     // Reset email selection when closing panel or changing insight
     useEffect(() => {
@@ -1348,6 +1410,7 @@ export function GmailInterfaceFixed() {
                                                                 timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                                                             };
                                                             setArcusMessages([initMsg]);
+                                                            setIsArcusMinimized(false);
                                                             setIsArcusOpen(true);
                                                         }}
                                                         className="w-9 h-9 bg-white/5 hover:bg-blue-500/20 rounded-xl text-white/30 hover:text-blue-400 transition-all border border-white/5 hover:border-blue-500/30 group/ai flex items-center justify-center overflow-hidden"
@@ -2009,79 +2072,133 @@ export function GmailInterfaceFixed() {
             )}
 
             {/* Arcus AI Panel */}
-            {isArcusOpen && (
-                <div className="arcus-panel">
-                    <div className="arcus-header">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-neutral-800 flex items-center justify-center border border-white/10 transition-all flex-shrink-0 overflow-hidden">
-                                <img src="/arcus-ai-icon.jpg" alt="Arcus" className="w-full h-full object-cover" />
-                            </div>
-                            <div>
-                                <h4 className="text-xs font-bold text-white uppercase tracking-widest leading-none mb-1 font-sans">Arcus Intelligence</h4>
-                                <p className="text-[10px] text-neutral-500 truncate max-w-[250px] font-medium font-sans">{arcusEmailSubject}</p>
-                            </div>
-                        </div>
-                        <button
-                            onClick={() => setIsArcusOpen(false)}
-                            className="p-2 hover:bg-white/5 rounded-full text-white/40 hover:text-white transition-all"
+            <AnimatePresence>
+                {isArcusOpen && !isArcusMinimized && (
+                    <motion.div
+                        className="arcus-panel arcus-panel-motion"
+                        style={{ height: arcusPanelHeight }}
+                        drag="y"
+                        dragControls={arcusDragControls}
+                        dragListener={false}
+                        dragConstraints={{ top: 0, bottom: arcusPanelHeight }}
+                        dragElastic={0.06}
+                        onDragEnd={handleArcusDragEnd}
+                        animate={arcusPanelAnimControls}
+                        initial={false}
+                        exit={{ opacity: 0, y: arcusPanelHeight * 0.55, scale: 0.985, transition: { duration: 0.18 } }}
+                    >
+                        <div
+                            className="arcus-header"
+                            style={{ touchAction: 'none' }}
+                            onPointerDown={(e) => arcusDragControls.start(e)}
+                            onDoubleClick={minimizeArcus}
                         >
-                            <X className="w-5 h-5" />
-                        </button>
-                    </div>
-
-                    <div className="arcus-content custom-scrollbar">
-                        {arcusMessages.map((msg) => (
-                            <div key={msg.id} className={msg.role === 'user' ? 'arcus-message-user' : 'arcus-message-agent'}>
-                                <div className="prose prose-invert prose-sm">
-                                    <div dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }} />
+                            <div className="w-full">
+                                <div className="flex justify-center">
+                                    <div className="h-1 w-12 rounded-full bg-white/10" />
                                 </div>
-                                <div className={`text-[10px] mt-2 font-medium ${msg.role === 'user' ? 'text-black/40' : 'text-white/20'}`}>
-                                    {msg.timestamp}
+                                <div className="mt-4 flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-neutral-800 flex items-center justify-center border border-white/10 transition-all flex-shrink-0 overflow-hidden">
+                                            <img src="/arcus-ai-icon.jpg" alt="Arcus" className="w-full h-full object-cover" />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-xs font-bold text-white uppercase tracking-widest leading-none mb-1 font-sans">Arcus Intelligence</h4>
+                                            <p className="text-[10px] text-neutral-500 truncate max-w-[250px] font-medium font-sans">{arcusEmailSubject}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); minimizeArcus(); }}
+                                            className="p-2 hover:bg-white/5 rounded-full text-white/40 hover:text-white transition-all"
+                                            aria-label="Minimize Arcus"
+                                            type="button"
+                                        >
+                                            <ChevronDown className="w-5 h-5" />
+                                        </button>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); closeArcus(); }}
+                                            className="p-2 hover:bg-white/5 rounded-full text-white/40 hover:text-white transition-all"
+                                            aria-label="Close Arcus"
+                                            type="button"
+                                        >
+                                            <X className="w-5 h-5" />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        ))}
-
-                        {isArcusLoading && (
-                            <div className="arcus-message-agent flex items-center gap-3">
-                                <div className="w-2.5 h-2.5 rounded-full bg-white animate-[arcus-dot-pulse_1s_ease-in-out_infinite]" />
-                                <span className="text-sm text-white/70 font-medium">Thinking...</span>
-                            </div>
-                        )}
-                        <div ref={messagesEndRef} />
-                    </div>
-
-
-
-
-                    <div className="arcus-input-container">
-                        <div className="arcus-input-wrapper">
-                            <input
-                                type="text"
-                                className="arcus-input"
-                                value={arcusQuery}
-                                placeholder="Ask Arcus anything..."
-                                onChange={(e) => setArcusQuery(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        handleSendAskAI();
-                                    }
-                                }}
-                                autoFocus
-                            />
-                            <button
-                                onClick={() => handleSendAskAI()}
-                                disabled={isArcusLoading || !arcusQuery.trim()}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-white text-black hover:bg-neutral-200 rounded-xl disabled:opacity-30 transition-all shadow-lg"
-                            >
-                                <Zap className={`w-4 h-4 ${isArcusLoading ? 'animate-pulse' : 'fill-black'}`} />
-                            </button>
                         </div>
-                        <p className="text-[10px] text-neutral-600 text-center mt-4 font-medium uppercase tracking-tighter italic">
-                            Connected to Arcus Agent Intelligence
-                        </p>
-                    </div>
-                </div>
-            )}
+
+                        <div className="arcus-content custom-scrollbar">
+                            {arcusMessages.map((msg) => (
+                                <div key={msg.id} className={msg.role === 'user' ? 'arcus-message-user' : 'arcus-message-agent'}>
+                                    <div className="prose prose-invert prose-sm">
+                                        <div dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }} />
+                                    </div>
+                                    <div className={`text-[10px] mt-2 font-medium ${msg.role === 'user' ? 'text-black/40' : 'text-white/20'}`}>
+                                        {msg.timestamp}
+                                    </div>
+                                </div>
+                            ))}
+
+                            {isArcusLoading && (
+                                <div className="arcus-message-agent flex items-center gap-3">
+                                    <div className="w-2.5 h-2.5 rounded-full bg-white animate-[arcus-dot-pulse_1s_ease-in-out_infinite]" />
+                                    <span className="text-sm text-white/70 font-medium">Thinking...</span>
+                                </div>
+                            )}
+                            <div ref={messagesEndRef} />
+                        </div>
+
+                        <div className="arcus-input-container">
+                            <div className="arcus-input-wrapper">
+                                <input
+                                    type="text"
+                                    className="arcus-input"
+                                    value={arcusQuery}
+                                    placeholder="Ask Arcus anything..."
+                                    onChange={(e) => setArcusQuery(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            handleSendAskAI();
+                                        }
+                                    }}
+                                    autoFocus
+                                />
+                                <button
+                                    onClick={() => handleSendAskAI()}
+                                    disabled={isArcusLoading || !arcusQuery.trim()}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-white text-black hover:bg-neutral-200 rounded-xl disabled:opacity-30 transition-all shadow-lg"
+                                    type="button"
+                                >
+                                    <Zap className={`w-4 h-4 ${isArcusLoading ? 'animate-pulse' : 'fill-black'}`} />
+                                </button>
+                            </div>
+                            <p className="text-[10px] text-neutral-600 text-center mt-4 font-medium uppercase tracking-tighter italic">
+                                Connected to Arcus Agent Intelligence
+                            </p>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {isArcusOpen && isArcusMinimized && (
+                    <motion.button
+                        type="button"
+                        className="arcus-minimized-tab"
+                        onClick={restoreArcus}
+                        initial={{ opacity: 0, y: 14, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1, transition: { type: 'spring', damping: 26, stiffness: 340 } }}
+                        exit={{ opacity: 0, y: 14, scale: 0.98, transition: { duration: 0.14 } }}
+                        aria-label="Restore Arcus"
+                    >
+                        <span className="arcus-minimized-dot" aria-hidden="true" />
+                        <span className="arcus-minimized-title">Ask AI</span>
+                        <span className="arcus-minimized-subject">{arcusEmailSubject || 'Conversation'}</span>
+                    </motion.button>
+                )}
+            </AnimatePresence>
 
             {/* Backdrop */}
             {selectedInsight && (
