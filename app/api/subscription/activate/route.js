@@ -15,6 +15,18 @@ export async function POST(request) {
             return NextResponse.json({ error: 'Unauthorized - Please sign in first' }, { status: 401 });
         }
 
+        // SECURITY: Manual subscription activation is disabled by default.
+        // Subscriptions must be activated via verified Whop webhook only.
+        // If you need a break-glass admin flow, set SUBSCRIPTION_ACTIVATION_ADMIN_SECRET
+        // and pass it as x-admin-secret.
+        const adminSecret = (process.env.SUBSCRIPTION_ACTIVATION_ADMIN_SECRET || '').trim();
+        const providedSecret = (request.headers.get('x-admin-secret') || '').trim();
+        if (!adminSecret || providedSecret !== adminSecret) {
+            return NextResponse.json({
+                error: 'Manual activation is disabled. Subscriptions are activated via Whop webhook after verified payment.'
+            }, { status: 403 });
+        }
+
         const body = await request.json();
         const { planType } = body;
 

@@ -7,7 +7,13 @@ import { subscriptionService, PLANS } from '@/lib/subscription-service';
  */
 export async function POST(request) {
     try {
-        const body = await request.json();
+        const rawBody = await request.text();
+        let body;
+        try {
+            body = rawBody ? JSON.parse(rawBody) : {};
+        } catch (e) {
+            return NextResponse.json({ error: 'Invalid webhook payload' }, { status: 400 });
+        }
         console.log('🔔 Whop Webhook received:', JSON.stringify(body, null, 2));
 
         const { action, data } = body;
@@ -27,12 +33,14 @@ export async function POST(request) {
             });
         }
 
-        // Validate webhook signature (implement based on Whop's documentation)
-        // const signature = request.headers.get('x-whop-signature');
-        // const webhookSecret = process.env.WHOP_WEBHOOK_SECRET;
-        // if (!subscriptionService.validateWebhookSignature(body, signature, webhookSecret)) {
-        //   return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
-        // }
+        // Validate webhook signature (Standard Webhooks spec)
+        const webhookSecret = process.env.WHOP_WEBHOOK_SECRET;
+        const headersObj = Object.fromEntries(request.headers);
+        const isValid = subscriptionService.validateWebhookSignature(rawBody, headersObj, webhookSecret);
+        if (!isValid) {
+            console.warn('❌ Invalid Whop webhook signature');
+            return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+        }
 
         await subscriptionService.handleWebhookEvent({ action, data });
 

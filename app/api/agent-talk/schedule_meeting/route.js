@@ -18,19 +18,24 @@ export async function POST(request) {
 
     const { subscriptionService, FEATURE_TYPES } = await import('@/lib/subscription-service.js');
 
+    if (!userEmail) {
+      return NextResponse.json(
+        { error: { code: 'missing_user', message: 'x-user-email header is required' } },
+        { status: 401 }
+      );
+    }
+
     // Check subscription if user email is provided
-    if (userEmail) {
-      const canUse = await subscriptionService.canUseFeature(userEmail, FEATURE_TYPES.SCHEDULE_CALL);
-      if (!canUse) {
-        const usage = await subscriptionService.getFeatureUsage(userEmail, FEATURE_TYPES.SCHEDULE_CALL);
-        return NextResponse.json({
-          error: {
-            code: 'limit_reached',
-            message: `Sorry, but you've exhausted all the credits of ${usage.period === 'daily' ? 'the day' : 'the month'}.`,
-            upgradeUrl: '/pricing'
-          }
-        }, { status: 403 });
-      }
+    const canUse = await subscriptionService.canUseFeature(userEmail, FEATURE_TYPES.SCHEDULE_CALL);
+    if (!canUse) {
+      const usage = await subscriptionService.getFeatureUsage(userEmail, FEATURE_TYPES.SCHEDULE_CALL);
+      return NextResponse.json({
+        error: {
+          code: 'limit_reached',
+          message: `Sorry, but you've exhausted all the credits of ${usage.period === 'daily' ? 'the day' : 'the month'}.`,
+          upgradeUrl: '/pricing'
+        }
+      }, { status: 403 });
     }
 
     if (!accessToken) {
@@ -104,9 +109,7 @@ export async function POST(request) {
       conferenceDataVersion: include_meet ? 1 : 0,
     });
 
-    if (userEmail) {
-      await subscriptionService.incrementFeatureUsage(userEmail, FEATURE_TYPES.SCHEDULE_CALL);
-    }
+    await subscriptionService.incrementFeatureUsage(userEmail, FEATURE_TYPES.SCHEDULE_CALL);
 
     return NextResponse.json({
       success: true,

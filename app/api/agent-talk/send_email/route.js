@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { GmailService } from '@/lib/gmail.ts';
+import { subscriptionService } from '@/lib/subscription-service.js';
 
 function getAccessTokenFromHeaders(request) {
   const bearer = request.headers.get('authorization');
@@ -27,6 +28,27 @@ export async function POST(request) {
     const accessToken = getAccessTokenFromHeaders(request);
     const refreshToken = request.headers.get('x-gmail-refresh-token') || '';
     const userEmail = request.headers.get('x-user-email') || undefined;
+
+    if (!userEmail) {
+      return NextResponse.json(
+        { error: { code: 'missing_user', message: 'x-user-email header is required' } },
+        { status: 401 }
+      );
+    }
+
+    const isActive = await subscriptionService.isSubscriptionActive(userEmail);
+    if (!isActive) {
+      return NextResponse.json(
+        {
+          error: {
+            code: 'subscription_required',
+            message: 'An active subscription is required to use this tool.',
+            upgradeUrl: '/pricing'
+          }
+        },
+        { status: 403 }
+      );
+    }
 
     if (!accessToken) {
       return NextResponse.json(
