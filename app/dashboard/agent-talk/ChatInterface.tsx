@@ -116,6 +116,11 @@ interface AgentMessage {
     footer: string;
   } | string;
   time: string;
+  meta?: {
+    actionType?: 'notes' | 'email' | 'general' | string;
+    notesResult?: any;
+    emailResult?: any;
+  };
 }
 
 interface UserMessage {
@@ -173,6 +178,7 @@ export default function ChatInterface({
   const [showNotesFetching, setShowNotesFetching] = useState<boolean>(false);
   const [notesResults, setNotesResults] = useState<any[]>([]);
   const [actionStatus, setActionStatus] = useState<'planning' | 'processing' | 'done' | null>(null);
+  const [activeSearchLabel, setActiveSearchLabel] = useState<string | null>(null);
 
   // Subscription state - to hide upgrade button for Pro users
   const [currentPlan, setCurrentPlan] = useState<'starter' | 'pro' | 'none' | null>(null);
@@ -309,7 +315,12 @@ export default function ChatInterface({
       setIsLoading(true);
 
       const notesQuery = isNotesRelatedQuery(messageText);
+      const emailQuery = isEmailRelatedQuery(messageText);
       setIsNotesQuery(notesQuery);
+
+      if (notesQuery || emailQuery) {
+        setActiveSearchLabel('Searching...');
+      }
 
       let extractedQuery = '';
       if (notesQuery) {
@@ -387,7 +398,12 @@ export default function ChatInterface({
           list: [],
           footer: ''
         },
-        time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true })
+        time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true }),
+        meta: {
+          actionType: data.actionType,
+          notesResult: data.notesResult,
+          emailResult: data.emailResult
+        }
       };
 
       // First stop loading to show the message
@@ -514,6 +530,7 @@ export default function ChatInterface({
       setMessages(prev => [...prev, errorAgentMessage]);
     } finally {
       setIsLoading(false);
+      setActiveSearchLabel(null);
       setShowNotesFetching(false);
       if (statusTimeout) clearTimeout(statusTimeout);
 
@@ -1238,6 +1255,39 @@ export default function ChatInterface({
                                 </>
                               )}
                               <p className="text-white/40 text-xs font-medium pt-3">{msg.time}</p>
+
+                              {(msg as AgentMessage).meta?.actionType === 'email' && (msg as AgentMessage).meta?.emailResult?.success && (
+                                <div className="mt-4 space-y-3">
+                                  {Array.isArray((msg as AgentMessage).meta?.emailResult?.emails) && (msg as AgentMessage).meta?.emailResult?.emails?.length > 0 ? (
+                                    (msg as AgentMessage).meta?.emailResult?.emails?.map((email: any) => (
+                                      <div key={email.id} className="bg-white/5 border border-white/10 rounded-xl p-4">
+                                        <div className="text-white font-medium leading-snug">{email.subject || '(No Subject)'}</div>
+                                        <div className="text-white/60 text-sm mt-1">{email.from || 'Unknown Sender'}</div>
+                                        {email.date && <div className="text-white/40 text-xs mt-1">{email.date}</div>}
+                                        {email.snippet && <div className="text-white/70 text-sm mt-3 leading-relaxed">{email.snippet}</div>}
+                                      </div>
+                                    ))
+                                  ) : (
+                                    <div className="text-white/70 text-sm">No results found.</div>
+                                  )}
+                                </div>
+                              )}
+
+                              {(msg as AgentMessage).meta?.actionType === 'notes' && (msg as AgentMessage).meta?.notesResult?.success && (
+                                <div className="mt-4 space-y-3">
+                                  {Array.isArray((msg as AgentMessage).meta?.notesResult?.notes) && (msg as AgentMessage).meta?.notesResult?.notes?.length > 0 ? (
+                                    (msg as AgentMessage).meta?.notesResult?.notes?.slice(0, 10).map((note: any, idx: number) => (
+                                      <div key={note.id || idx} className="bg-white/5 border border-white/10 rounded-xl p-4">
+                                        <div className="text-white font-medium leading-snug">{note.subject || '(No Subject)'}</div>
+                                        {note.created_at && <div className="text-white/40 text-xs mt-1">{note.created_at}</div>}
+                                        {note.content && <div className="text-white/70 text-sm mt-3 leading-relaxed">{note.content}</div>}
+                                      </div>
+                                    ))
+                                  ) : (
+                                    <div className="text-white/70 text-sm">No results found.</div>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           ) : (
                             <div className="max-w-2xl">
@@ -1266,7 +1316,10 @@ export default function ChatInterface({
                           </div>
                         </div>
                         <div className="flex-1">
-                          <ShiningText text="Arcus is thinking..." className="text-sm relative top-1" />
+                          <ShiningText
+                            text={activeSearchLabel ? activeSearchLabel : 'Arcus is thinking...'}
+                            className="text-sm relative top-1"
+                          />
                         </div>
                       </div>
                     )}
@@ -1455,6 +1508,17 @@ function isNotesRelatedQuery(message: string): boolean {
   ];
   const lowerMessage = message.toLowerCase();
   return notesKeywords.some((keyword) => lowerMessage.includes(keyword));
+}
+
+function isEmailRelatedQuery(message: string): boolean {
+  const emailKeywords = [
+    'email', 'emails', 'inbox', 'gmail', 'message', 'messages',
+    'unread', 'read', 'urgent', 'important', 'starred',
+    'today', 'yesterday', 'this week', 'recent', 'latest',
+    'from', 'subject', 'attachment', 'search', 'find', 'check'
+  ];
+  const lowerMessage = message.toLowerCase();
+  return emailKeywords.some((keyword) => lowerMessage.includes(keyword));
 }
 
 function extractSearchTerm(message: string): string {

@@ -206,6 +206,7 @@ export async function POST(request) {
 
     // Handle email context
     let emailContext = null;
+    let emailResult = null;
 
     // IF a specific email is selected (from the Traditional View "Ask AI" button)
     if (selectedEmailId && userEmail) {
@@ -229,6 +230,7 @@ Body: ${emailData.body || emailData.snippet}
     else if (userEmail && isEmailRelatedQuery(message)) {
       try {
         const emailActionResult = await executeEmailAction(message, userEmail, session);
+        emailResult = emailActionResult;
         if (emailActionResult && emailActionResult.success) {
           emailContext = formatEmailActionResult(emailActionResult);
         }
@@ -281,6 +283,7 @@ Body: ${emailData.body || emailData.snippet}
       conversationId: currentConversationId,
       aiGenerated: true,
       actionType: emailContext ? 'email' : 'general',
+      emailResult,
       integrations // Include integration status in response
     });
 
