@@ -17,6 +17,7 @@ import { HomeFeedSidebar } from "@/components/ui/home-feed-sidebar";
 import { NotificationIcon } from '@/components/ui/notification-icon';
 import NotesFetchingDisplay from '@/components/ui/notes-fetching-display';
 import { UsageLimitModal } from '@/components/ui/usage-limit-modal';
+import { ShiningText } from '@/components/ui/shining-text';
 
 // Detect and wrap URLs in plain text with premium styling for actions
 const linkify = (text: string) => {
@@ -543,7 +544,7 @@ export default function ChatInterface({
         console.log('DEBUG: Loaded', loadedMessages.length, 'messages for conversation:', conversationId);
 
         // Navigate to the conversation URL
-        if (onConversationSelect) {
+        if (onConversationSelect && conversationId !== initialConversationId) {
           onConversationSelect(conversationId);
         }
 
@@ -685,11 +686,13 @@ export default function ChatInterface({
   }, [isEmailSelectionModalOpen]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const loadedConversationIdRef = useRef<string | null>(null);
 
   // Load initial conversation if provided via URL
   useEffect(() => {
-    if (initialConversationId && initialConversationId !== currentConversationId) {
+    if (initialConversationId && loadedConversationIdRef.current !== initialConversationId) {
       console.log('Loading conversation from URL:', initialConversationId);
+      loadedConversationIdRef.current = initialConversationId;
       loadConversation(initialConversationId);
     } else if (!initialConversationId && !isNewConversation) {
       console.log('No conversation ID provided - starting fresh chat');
@@ -833,7 +836,10 @@ export default function ChatInterface({
 
     // Navigate to the conversation URL if this is a new conversation
     if (shouldCreateNewConversation && onConversationSelect && conversationIdToUse) {
+      localStorage.setItem('pending_arcus_id', conversationIdToUse);
+      localStorage.setItem('pending_arcus_message', messageText);
       onConversationSelect(conversationIdToUse);
+      return;
     }
 
     // Process the AI message directly - don't rely on navigation/loadConversation
@@ -1195,50 +1201,45 @@ export default function ChatInterface({
                         )}
 
                         <div className={`flex-1 ${msg.type === 'user' ? 'flex justify-end' : ''}`}>
-                          <div className={`${msg.type === 'agent'
-                            ? 'bg-[#2d2e2e] border border-[#323233] rounded-2xl p-4 max-w-4xl shadow-xl backdrop-blur-md'
-                            : 'bg-gray-200 text-black rounded-2xl p-3 max-w-2xl shadow-xl backdrop-blur-sm'
-                            }`}>
-                            {msg.type === 'agent' ? (
-                              <div className="space-y-1 relative z-10">
-                                {typeof msg.content === 'string' ? (
+                          {msg.type === 'agent' ? (
+                            <div className="space-y-1">
+                              {typeof msg.content === 'string' ? (
+                                <div
+                                  className="text-white/90 text-base leading-[1.9] font-sans prose prose-invert max-w-none"
+                                  dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
+                                />
+                              ) : (
+                                <>
                                   <div
-                                    className="text-white text-base leading-[1.7] font-sans prose prose-invert max-w-none"
-                                    dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
+                                    className="text-white/90 text-base leading-[1.9] font-sans prose prose-invert max-w-none"
+                                    dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content.text) }}
                                   />
-                                ) : (
-                                  <>
+                                  {msg.content.list && msg.content.list.length > 0 && (
+                                    <ul className="space-y-2.5 pl-2 mt-3">
+                                      {msg.content.list.map((item: string, idx: number) => (
+                                        <li key={idx} className="text-white/90 text-base leading-[1.9] flex items-start gap-2">
+                                          <span className="text-white/40 mt-1 text-lg">•</span>
+                                          <span dangerouslySetInnerHTML={{ __html: renderMarkdown(item) }} />
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  )}
+                                  {msg.content.footer && (
                                     <div
-                                      className="text-white text-base leading-[1.7] font-sans prose prose-invert max-w-none"
-                                      dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content.text) }}
+                                      className="text-white/90 text-base leading-[1.9] pt-3 font-sans"
+                                      dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content.footer) }}
                                     />
-                                    {msg.content.list && msg.content.list.length > 0 && (
-                                      <ul className="space-y-2.5 pl-2 mt-3">
-                                        {msg.content.list.map((item: string, idx: number) => (
-                                          <li key={idx} className="text-white text-base leading-[1.7] flex items-start gap-2">
-                                            <span className="text-white/50 mt-1 text-lg">•</span>
-                                            <span dangerouslySetInnerHTML={{ __html: renderMarkdown(item) }} />
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    )}
-                                    {msg.content.footer && (
-                                      <div
-                                        className="text-white text-base leading-[1.7] pt-3 font-sans"
-                                        dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content.footer) }}
-                                      />
-                                    )}
-                                  </>
-                                )}
-                                <p className="text-white/40 text-xs font-medium pt-3">{msg.time}</p>
-                              </div>
-                            ) : (
-                              <div className="relative z-10">
-                                <p className="text-black text-base leading-relaxed mb-2 font-sans">{msg.content}</p>
-                                <p className="text-black/60 text-xs font-medium">{msg.time}</p>
-                              </div>
-                            )}
-                          </div>
+                                  )}
+                                </>
+                              )}
+                              <p className="text-white/40 text-xs font-medium pt-3">{msg.time}</p>
+                            </div>
+                          ) : (
+                            <div className="text-right space-y-1">
+                              <p className="text-white text-base leading-relaxed font-sans">{msg.content}</p>
+                              <p className="text-white/40 text-xs font-medium">{msg.time}</p>
+                            </div>
+                          )}
                         </div>
 
                         {msg.type === 'user' && (
@@ -1258,16 +1259,7 @@ export default function ChatInterface({
                           </div>
                         </div>
                         <div className="flex-1">
-                          <div className="bg-[#2d2e2e] border border-[#323233] rounded-2xl p-4 max-w-fit shadow-xl backdrop-blur-md">
-                            <div className="flex items-center gap-3">
-                              <div className="flex items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded-full bg-blue-400 animate-thinking-dot-1" />
-                                <span className="w-2.5 h-2.5 rounded-full bg-blue-400 animate-thinking-dot-2" />
-                                <span className="w-2.5 h-2.5 rounded-full bg-blue-400 animate-thinking-dot-3" />
-                              </div>
-                              <span className="text-white/80 text-sm font-sans font-medium">Thinking</span>
-                            </div>
-                          </div>
+                          <ShiningText text="Arcus is thinking..." />
                         </div>
                       </div>
                     )}
