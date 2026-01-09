@@ -86,14 +86,14 @@ export async function POST(request) {
 
         // Check Google data policy compliance
         const compliance = new AIPolicyCompliance();
-        const aiConfig = compliance.getAIConfig();
+        const complianceConfig = compliance.getAIConfig();
         
         console.log(`🔒 Compliance mode: ${compliance.isComplianceMode ? 'ENABLED' : 'DISABLED'}`);
 
         // Generate Draft Reply
         const aiService = new AIConfig();
 
-        if (!aiConfig.hasAIConfigured()) {
+        if (!aiService.hasAIConfigured()) {
             console.error('❌ AI service not configured');
             return NextResponse.json({ error: 'AI service not configured - Please check OPENROUTER_API_KEY' }, { status: 500 });
         }
@@ -128,8 +128,8 @@ export async function POST(request) {
         const useVoiceCloning = !!voiceProfile && voiceProfile.status !== 'default';
         console.log(`🤖 Generating ${useVoiceCloning ? 'voice-cloned' : 'standard'} draft with AI...`);
         const draftReply = isFollowUp
-            ? await aiService.generateFollowUp(emailContent, userContext, aiConfig.privacyMode)
-            : await aiService.generateDraftReply(emailContent, category || 'Opportunity', userContext, aiConfig.privacyMode);
+            ? await aiService.generateFollowUp(emailContent, userContext, complianceConfig.privacyMode)
+            : await aiService.generateDraftReply(emailContent, category || 'Opportunity', userContext, complianceConfig.privacyMode);
 
         // Increment usage after successful generation
         await subscriptionService.incrementFeatureUsage(userId, FEATURE_TYPES.DRAFT_REPLY);

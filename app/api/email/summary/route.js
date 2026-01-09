@@ -97,20 +97,20 @@ export async function POST(request) {
 
         // Check Google data policy compliance
         const compliance = new AIPolicyCompliance();
-        const aiConfig = compliance.getAIConfig();
+        const complianceConfig = compliance.getAIConfig();
         
         console.log(`🔒 Compliance mode: ${compliance.isComplianceMode ? 'ENABLED' : 'DISABLED'}`);
 
         // Generate Summary
         const aiService = new AIConfig();
 
-        if (!aiConfig.hasAIConfigured()) {
+        if (!aiService.hasAIConfigured()) {
             console.error('❌ AI service not configured');
             return NextResponse.json({ error: 'AI service not configured - Please check OPENROUTER_API_KEY' }, { status: 500 });
         }
 
         console.log('🤖 Generating email summary with AI...');
-        const summary = await aiService.generateEmailSummary(emailContent, aiConfig.privacyMode, context);
+        const summary = await aiService.generateEmailSummary(emailContent, complianceConfig.privacyMode, context);
 
         if (typeof summary === 'string' && summary.trim().length > 0) {
             await subscriptionService.incrementFeatureUsage(userId, FEATURE_TYPES.EMAIL_SUMMARY);
