@@ -38,6 +38,7 @@ import { useRouter } from "next/navigation"
 import { signIn, useSession } from "next-auth/react"
 import { HeroGeometric } from "@/components/ui/shape-landing-hero"
 import { GlassButton } from "@/components/ui/glass-button"
+import { useSmoothScroll } from "@/hooks/use-smooth-scroll"
 
 const features = [
     {
@@ -95,7 +96,8 @@ export function LinearLanding() {
     const router = useRouter()
     const { data: session, status } = useSession()
     const [scrolled, setScrolled] = useState(false)
-    const [activeTab, setActiveTab] = useState("sift")
+    const [activeSection, setActiveSection] = useState("")
+    const { handleClick } = useSmoothScroll()
     const [activeStep, setActiveStep] = useState(0)
     const containerRef = useRef<HTMLDivElement>(null)
 
@@ -147,10 +149,10 @@ export function LinearLanding() {
                         </div>
 
                         <div className="hidden md:flex items-center gap-6 text-sm font-medium text-zinc-500">
-                            <a href="#benefits" className="hover:text-white transition-colors">Benefits</a>
-                            <a href="#features" className="hover:text-white transition-colors">Features</a>
-                            <a href="#integration" className="hover:text-white transition-colors">Security</a>
-                            <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
+                            <a href="#benefits" onClick={(e) => handleClick(e, 'benefits')} className="hover:text-white transition-colors">Benefits</a>
+                            <a href="#features" onClick={(e) => handleClick(e, 'features')} className="hover:text-white transition-colors">Features</a>
+                            <a href="#integration" onClick={(e) => handleClick(e, 'integration')} className="hover:text-white transition-colors">Security</a>
+                            <a href="#pricing" onClick={(e) => handleClick(e, 'pricing')} className="hover:text-white transition-colors">Pricing</a>
                         </div>
                     </div>
 
@@ -196,7 +198,7 @@ export function LinearLanding() {
                                 </GlassButton>
                                 <Button
                                     variant="outline"
-                                    onClick={() => document.getElementById('demo-section')?.scrollIntoView({ behavior: 'smooth' })}
+                                    onClick={(e) => handleClick(e, 'demo-section')}
                                     className="border-white/10 bg-white/5 text-white hover:bg-white/10 rounded-full px-6"
                                 >
                                     See Demo First
