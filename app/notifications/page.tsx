@@ -132,7 +132,30 @@ function NotificationsPage() {
                 setAuthError(false);
                 setErrorMessage(null);
                 if (showToast) {
-                    toast.success('Refreshed', { description: `${data.notifications.length} notifications found` });
+                    let creditNote = '';
+                    try {
+                        const usageRes = await fetch('/api/subscription/usage', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ featureType: 'sift_analysis', increment: false })
+                        });
+                        const usageData = await usageRes.json().catch(() => null);
+                        if (usageRes.ok && usageData?.success) {
+                            if (usageData.isUnlimited) {
+                                creditNote = ' • Unlimited';
+                            } else if (Number.isFinite(usageData.limit) && usageData.limit > 0) {
+                                const usage = Number(usageData.usage) || 0;
+                                const limit = Number(usageData.limit) || 0;
+                                const remaining = Number(usageData.remaining) || 0;
+                                const period = usageData.period === 'monthly' ? 'this month' : 'today';
+                                creditNote = ` • Sift AI: ${usage}/${limit} used (${remaining} left ${period})`;
+                            }
+                        }
+                    } catch {
+                        // ignore
+                    }
+
+                    toast.success('Refreshed', { description: `${data.notifications.length} notifications found${creditNote}` });
                 }
             } else {
                 if (data.authRequired || data.error?.includes('expired') || data.error?.includes('authenticate')) {

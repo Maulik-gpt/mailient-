@@ -5,6 +5,7 @@ import { AIConfig } from '@/lib/ai-config';
 import { decrypt } from '@/lib/crypto';
 import { DatabaseService } from '@/lib/supabase';
 import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service';
+import { AIPolicyCompliance } from '@/lib/ai-policy-compliance';
 
 export async function POST(request) {
     try {
@@ -94,8 +95,14 @@ export async function POST(request) {
       Body: ${truncatedBody}
     `;
 
+        // Check Google data policy compliance
+        const compliance = new AIPolicyCompliance();
+        const aiConfig = compliance.getAIConfig();
+        
+        console.log(`🔒 Compliance mode: ${compliance.isComplianceMode ? 'ENABLED' : 'DISABLED'}`);
+
         // Generate Summary
-        const aiConfig = new AIConfig();
+        const aiService = new AIConfig();
 
         if (!aiConfig.hasAIConfigured()) {
             console.error('❌ AI service not configured');
@@ -103,7 +110,7 @@ export async function POST(request) {
         }
 
         console.log('🤖 Generating email summary with AI...');
-        const summary = await aiConfig.generateEmailSummary(emailContent, privacyMode, context);
+        const summary = await aiService.generateEmailSummary(emailContent, aiConfig.privacyMode, context);
 
         if (typeof summary === 'string' && summary.trim().length > 0) {
             await subscriptionService.incrementFeatureUsage(userId, FEATURE_TYPES.EMAIL_SUMMARY);

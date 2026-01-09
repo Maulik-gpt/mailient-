@@ -7,6 +7,7 @@ import { DatabaseService } from '@/lib/supabase.js';
 import { decrypt } from '@/lib/crypto.js';
 import { GmailService } from '@/lib/gmail.js';
 import { AIConfig } from '@/lib/ai-config.js';
+import { subscriptionService } from '@/lib/subscription-service.js';
 
 /**
  * Bulk Email Processing API - Process exactly 50 emails at once
@@ -24,6 +25,28 @@ export async function POST(request) {
     }
 
     const userEmail = session.user.email;
+
+    const isActive = await subscriptionService.isSubscriptionActive(userEmail);
+    if (!isActive) {
+      return NextResponse.json({
+        success: false,
+        error: 'subscription_required',
+        message: 'An active subscription is required to use this feature.',
+        upgradeUrl: '/pricing'
+      }, { status: 403 });
+    }
+
+    const planType = await subscriptionService.getUserPlanType(userEmail);
+    if (planType !== 'pro') {
+      return NextResponse.json({
+        success: false,
+        error: 'pro_required',
+        message: 'This feature is available on the Pro plan.',
+        planType,
+        upgradeUrl: '/pricing'
+      }, { status: 403 });
+    }
+
     console.log(`🚀 BULK EMAIL PROCESS: Starting bulk processing for: ${userEmail}`);
 
     // Get Gmail access token

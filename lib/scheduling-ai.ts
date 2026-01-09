@@ -21,7 +21,10 @@ export class SchedulingAIService {
         this.baseURL = 'https://openrouter.ai/api/v1';
     }
 
-    async callOpenRouter(messages: any[], options: any = {}) {
+    async callOpenRouter(
+        messages: Array<{ role: string; content: string }>,
+        options: { temperature?: number; maxTokens?: number } = {}
+    ) {
         let lastError: Error | null = null;
 
         for (const model of this.models) {
@@ -58,9 +61,10 @@ export class SchedulingAIService {
                 const data = await response.json();
                 console.log(`✅ Scheduling AI: Success with ${model}`);
                 return data?.choices?.[0]?.message?.content || '';
-            } catch (error: any) {
-                console.warn(`⚠️ Model ${model} threw exception:`, error.message);
-                lastError = error;
+            } catch (error: unknown) {
+                const msg = error instanceof Error ? error.message : String(error);
+                console.warn(`⚠️ Model ${model} threw exception:`, msg);
+                lastError = error instanceof Error ? error : new Error(msg);
             }
         }
 
@@ -90,7 +94,7 @@ export class SchedulingAIService {
             const response = await this.callOpenRouter([{ role: 'user', content: prompt }]);
             const cleanJson = response.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
             return JSON.parse(cleanJson);
-        } catch (e) {
+        } catch {
             console.warn('⚠️ AI recommendation failed, using defaults');
             return {
                 suggested_title: 'Follow-up Call',
@@ -141,7 +145,7 @@ export class SchedulingAIService {
         try {
             const response = await this.callOpenRouter([{ role: 'user', content: prompt }]);
             return response.trim();
-        } catch (e) {
+        } catch {
             // Fallback to a basic template if AI fails
             return `Hi there,
 

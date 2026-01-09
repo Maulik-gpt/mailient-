@@ -18,6 +18,7 @@ import { NotificationIcon } from '@/components/ui/notification-icon';
 import NotesFetchingDisplay from '@/components/ui/notes-fetching-display';
 import { UsageLimitModal } from '@/components/ui/usage-limit-modal';
 import { ShiningText } from '@/components/ui/shining-text';
+import { toast } from 'sonner';
 
 // Detect and wrap URLs in plain text with premium styling for actions
 const linkify = (text: string) => {
@@ -183,6 +184,52 @@ export default function ChatInterface({
   // Subscription state - to hide upgrade button for Pro users
   const [currentPlan, setCurrentPlan] = useState<'starter' | 'pro' | 'none' | null>(null);
 
+  const [arcusCredits, setArcusCredits] = useState<{
+    usage: number;
+    limit: number;
+    remaining: number;
+    period: 'daily' | 'monthly';
+    isUnlimited?: boolean;
+  } | null>(null);
+
+  const refreshArcusCredits = async (showToast = false) => {
+    try {
+      const res = await fetch('/api/subscription/usage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ featureType: 'arcus_ai', increment: false })
+      });
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success) return;
+
+      const period: 'daily' | 'monthly' = data.period === 'monthly' ? 'monthly' : 'daily';
+      const next: {
+        usage: number;
+        limit: number;
+        remaining: number;
+        period: 'daily' | 'monthly';
+        isUnlimited?: boolean;
+      } = {
+        usage: Number(data.usage) || 0,
+        limit: Number(data.limit) || 0,
+        remaining: Number(data.remaining) || 0,
+        period,
+        isUnlimited: !!data.isUnlimited
+      };
+
+      setArcusCredits(next);
+
+      if (showToast && !next.isUnlimited && next.limit > 0) {
+        toast.success('Credits Updated', {
+          description: `Arcus AI: ${next.usage}/${next.limit} used (${next.remaining} left ${next.period === 'daily' ? 'today' : 'this month'})`
+        });
+      }
+    } catch {
+      // ignore
+    }
+  };
+
   // Fetch subscription status on mount and activate pending plans
   useEffect(() => {
     const fetchAndActivateSubscription = async () => {
@@ -229,6 +276,8 @@ export default function ChatInterface({
             setCurrentPlan('none');
           }
         }
+
+        await refreshArcusCredits(false);
       } catch (error) {
         console.error('Error in subscription flow:', error);
         setCurrentPlan('none');
@@ -373,6 +422,8 @@ export default function ChatInterface({
       }
 
       const data = await response.json();
+
+      await refreshArcusCredits(true);
 
       // Update currentConversationId if needed
       if (data.conversationId && data.conversationId !== conversationIdToUse) {
@@ -1071,7 +1122,19 @@ export default function ChatInterface({
                       <img src="/arcus-ai-icon.jpg" alt="Arcus AI" className="w-full h-full object-cover" />
                     </div>
                     <div>
-                      <h1 className="text-xl font-semibold text-white tracking-tight font-sans">Arcus</h1>
+                      <div className="flex items-center gap-3">
+                        <h1 className="text-xl font-semibold text-white tracking-tight font-sans">Arcus</h1>
+                        {arcusCredits && currentPlan !== 'pro' && arcusCredits.limit > 0 && !arcusCredits.isUnlimited && (
+                          <span className="text-[11px] px-2 py-1 rounded-full bg-white/5 border border-white/10 text-white/70">
+                            {arcusCredits.remaining} left
+                          </span>
+                        )}
+                        {(currentPlan === 'pro' || arcusCredits?.isUnlimited) && (
+                          <span className="text-[11px] px-2 py-1 rounded-full bg-white/5 border border-white/10 text-white/70">
+                            Unlimited
+                          </span>
+                        )}
+                      </div>
                       <p className="text-sm text-white/60 font-sans">
                         Intelligent email analysis and agentic AI
                       </p>

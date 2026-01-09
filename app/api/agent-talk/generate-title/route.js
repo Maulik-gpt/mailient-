@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { auth } from '@/lib/auth.js';
+import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service.js';
 
 /**
  * Generate a concise chat title based on the user's first message
@@ -6,6 +8,34 @@ import { NextResponse } from 'next/server';
  */
 export async function POST(request) {
     try {
+        const session = await auth();
+        if (!session?.user?.email) {
+            return NextResponse.json(
+                { error: 'Unauthorized' },
+                { status: 401 }
+            );
+        }
+
+        const userId = session.user.email;
+        const canUse = await subscriptionService.canUseFeature(userId, FEATURE_TYPES.ARCUS_AI);
+        if (!canUse) {
+            const usage = await subscriptionService.getFeatureUsage(userId, FEATURE_TYPES.ARCUS_AI);
+            return NextResponse.json({
+                error: 'limit_reached',
+                message: usage.reason === 'subscription_expired'
+                    ? 'Your subscription has expired. Please renew to continue.'
+                    : usage.reason === 'no_subscription'
+                        ? 'You need an active subscription to use this feature.'
+                        : `Sorry, but you've exhausted all the credits of ${usage.period === 'daily' ? 'the day' : 'the month'}.`,
+                usage: usage.usage,
+                limit: usage.limit,
+                remaining: usage.remaining,
+                period: usage.period,
+                planType: usage.planType,
+                upgradeUrl: '/pricing'
+            }, { status: 403 });
+        }
+
         const { message } = await request.json();
 
         if (!message || typeof message !== 'string' || message.trim().length < 2) {
@@ -108,6 +138,8 @@ OUTPUT: Just the title, nothing else. No explanations, no quotes, no colons.`;
         }
 
         console.log('✅ Generated chat title:', generatedTitle);
+
+        await subscriptionService.incrementFeatureUsage(userId, FEATURE_TYPES.ARCUS_AI);
 
         return NextResponse.json({
             title: generatedTitle,

@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/lib/auth.js';
 import { DatabaseService } from '@/lib/supabase.js';
+import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service.js';
 
 // Type for the auth function
 type AuthFunction = () => Promise<{ user?: { email?: string }, accessToken?: string, refreshToken?: string } | null>;
 
 // Explicitly type the auth variable
-const typedAuth: AuthFunction = auth as unknown as AuthFunction;
+const typedAuth: AuthFunction = require('@/lib/auth').auth;
 import { decrypt } from '@/lib/crypto.js';
 import { AIConfig } from '@/lib/ai-config.js';
 
@@ -45,6 +45,33 @@ export async function POST(request: Request) {
       console.log('⚠️ Auth not available, continuing without user context:', (error as Error).message);
     }
 
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const userId = session.user.email;
+    const canUse = await subscriptionService.canUseFeature(userId, FEATURE_TYPES.ARCUS_AI);
+    if (!canUse) {
+      const usage = await subscriptionService.getFeatureUsage(userId, FEATURE_TYPES.ARCUS_AI);
+      return NextResponse.json({
+        error: 'limit_reached',
+        message: usage.reason === 'subscription_expired'
+          ? 'Your subscription has expired. Please renew to continue.'
+          : usage.reason === 'no_subscription'
+            ? 'You need an active subscription to use this feature.'
+            : `Sorry, but you've exhausted all the credits of ${usage.period === 'daily' ? 'the day' : 'the month'}.`,
+        usage: usage.usage,
+        limit: usage.limit,
+        remaining: usage.remaining,
+        period: usage.period,
+        planType: usage.planType,
+        upgradeUrl: '/pricing'
+      }, { status: 403 });
+    }
+
     let emailActionResult = null;
     if (session?.user?.email) {
       try {
@@ -59,14 +86,14 @@ export async function POST(request: Request) {
       }
     }
 
-    const response = await generateAIResponseWithFallbacks(
+    const aiResult = await generateAIResponseWithFallbacks(
       message,
       session,
       emailActionResult,
       gmailAccessToken
     );
-    const finalResponse = response && response.trim()
-      ? response
+    const finalResponse = aiResult.text && aiResult.text.trim()
+      ? aiResult.text
       : generateEmergencyFallback(message, emailActionResult);
 
     if (session?.user?.email) {
@@ -75,6 +102,10 @@ export async function POST(request: Request) {
       } catch (error) {
         console.log('⚠️ Failed to save conversation:', (error as Error).message);
       }
+    }
+
+    if (aiResult.usedAI) {
+      await subscriptionService.incrementFeatureUsage(userId, FEATURE_TYPES.ARCUS_AI);
     }
 
     return NextResponse.json({
@@ -111,7 +142,7 @@ async function generateAIResponseWithFallbacks(
 
     if (!aiConfig.hasAIConfigured()) {
       console.warn('⚠️ OpenRouter AI not configured, using fallback');
-      return generateIntelligentFallback(userMessage, '', emailActionResult);
+      return { text: generateIntelligentFallback(userMessage, '', emailActionResult), usedAI: false };
     }
 
     let emailContext = '';
@@ -135,15 +166,15 @@ async function generateAIResponseWithFallbacks(
 
     if (response && response.trim()) {
       console.log('✅ OpenRouter AI response received');
-      return cleanAIResponse(response.trim());
+      return { text: cleanAIResponse(response.trim()), usedAI: true };
     }
 
     console.warn('⚠️ OpenRouter AI returned empty response, using fallback');
-    return generateIntelligentFallback(userMessage, emailContext, emailActionResult);
+    return { text: generateIntelligentFallback(userMessage, emailContext, emailActionResult), usedAI: false };
   } catch (error) {
     console.error('💥 AI service error:', (error as Error).message, (error as Error).stack);
     const shouldHideError = (error as Error).message.includes('timeout') || (error as Error).message.includes('Timeout');
-    return generateIntelligentFallback(userMessage, '', emailActionResult, shouldHideError ? '' : (error as Error).message);
+    return { text: generateIntelligentFallback(userMessage, '', emailActionResult, shouldHideError ? '' : (error as Error).message), usedAI: false };
   }
 }
 

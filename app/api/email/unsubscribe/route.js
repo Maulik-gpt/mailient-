@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from "@/lib/supabase.js";
 import { GmailTokenService } from '@/lib/gmail-token-service';
 import { GmailService } from '@/lib/gmail';
+import { auth } from '@/lib/auth';
+import { subscriptionService } from '@/lib/subscription-service';
 
 // CRITICAL: Force dynamic rendering to prevent build-time evaluation
 export const dynamic = 'force-dynamic';
@@ -80,8 +82,30 @@ async function ensureUnsubscribedEmailsTable() {
 
 export async function POST(request) {
     try {
+        const session = await auth();
+        if (!session?.user?.email) {
+            return NextResponse.json(
+                { error: 'Unauthorized' },
+                { status: 401 }
+            );
+        }
+
+        const userId = session.user.email;
+        const isActive = await subscriptionService.isSubscriptionActive(userId);
+        if (!isActive) {
+            return NextResponse.json(
+                {
+                    error: 'subscription_required',
+                    message: 'An active subscription is required to use this feature.',
+                    upgradeUrl: '/pricing'
+                },
+                { status: 403 }
+            );
+        }
+
         const payload = await request.json();
-        const { emailId, subject, sender, senderName, receivedAt, snippet, userEmail, userName, category, userId } = payload;
+        const { emailId, subject, sender, senderName, receivedAt, snippet, userName, category } = payload;
+        const userEmail = userId;
 
         if (!emailId || !sender || !userEmail) {
             return NextResponse.json(
@@ -94,7 +118,7 @@ export async function POST(request) {
         await ensureUnsubscribedEmailsTable();
 
         const insertData = {
-            user_id: userId || userEmail,
+            user_id: userId,
             user_name: userName || null,
             user_email: userEmail,
             email_id: emailId,
@@ -120,7 +144,7 @@ export async function POST(request) {
         let gmailActionTaken = 'recorded';
         try {
             const tokenService = new GmailTokenService();
-            const tokenResult = await tokenService.getGmailTokens(userId || userEmail);
+            const tokenResult = await tokenService.getGmailTokens(userId);
 
             if (tokenResult.success && tokenResult.tokens) {
                 const gmail = new GmailService(tokenResult.tokens.accessToken, tokenResult.tokens.refreshToken);

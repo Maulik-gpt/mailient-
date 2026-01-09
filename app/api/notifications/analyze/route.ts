@@ -10,6 +10,7 @@ import { auth } from '@/lib/auth.js';
 import { GmailService } from '@/lib/gmail';
 import { decrypt } from '@/lib/crypto.js';
 import { DatabaseService } from '@/lib/supabase.js';
+import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service';
 
 // Notification types
 interface ThreatNotification {
@@ -108,6 +109,25 @@ export async function GET(request: Request) {
         }
 
         const userEmail = session.user.email;
+
+        const canUse = await subscriptionService.canUseFeature(userEmail, FEATURE_TYPES.SIFT_ANALYSIS);
+        if (!canUse) {
+            const usage = await subscriptionService.getFeatureUsage(userEmail, FEATURE_TYPES.SIFT_ANALYSIS);
+            return NextResponse.json({
+                success: false,
+                error: 'limit_reached',
+                message: `Sorry, but you've exhausted all the credits of ${usage.period === 'daily' ? 'the day' : 'the month'}.`,
+                usage: usage.usage,
+                limit: usage.limit,
+                remaining: usage.remaining,
+                period: usage.period,
+                planType: usage.planType,
+                upgradeUrl: '/pricing',
+                notifications: [],
+                summary: { threats: 0, verificationCodes: 0, documents: 0, replies: 0 }
+            }, { status: 403 });
+        }
+
         let accessToken = (session as any)?.accessToken;
         let refreshToken = (session as any)?.refreshToken;
 
@@ -255,6 +275,8 @@ export async function GET(request: Request) {
         console.log(`   - Verification Codes: ${summary.verificationCodes}`);
         console.log(`   - Documents: ${summary.documents}`);
         console.log(`   - Replies: ${summary.replies}`);
+
+        await subscriptionService.incrementFeatureUsage(userEmail, FEATURE_TYPES.SIFT_ANALYSIS);
 
         return NextResponse.json({
             success: true,

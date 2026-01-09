@@ -6,6 +6,7 @@ import { decrypt } from '@/lib/crypto';
 import { DatabaseService } from '@/lib/supabase';
 import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service';
 import { voiceProfileService } from '@/lib/voice-profile-service';
+import { AIPolicyCompliance } from '@/lib/ai-policy-compliance';
 
 export async function POST(request) {
     try {
@@ -83,8 +84,14 @@ export async function POST(request) {
       Body: ${truncatedBody}
     `;
 
+        // Check Google data policy compliance
+        const compliance = new AIPolicyCompliance();
+        const aiConfig = compliance.getAIConfig();
+        
+        console.log(`🔒 Compliance mode: ${compliance.isComplianceMode ? 'ENABLED' : 'DISABLED'}`);
+
         // Generate Draft Reply
-        const aiConfig = new AIConfig();
+        const aiService = new AIConfig();
 
         if (!aiConfig.hasAIConfigured()) {
             console.error('❌ AI service not configured');
@@ -118,9 +125,11 @@ export async function POST(request) {
         const isFollowUp = category && typeof category === 'string' &&
             (category.toLowerCase() === 'follow-up' || category.toLowerCase() === 'missed-followups' || category.toLowerCase() === 'missed-followups');
 
+        const useVoiceCloning = !!voiceProfile && voiceProfile.status !== 'default';
+        console.log(`🤖 Generating ${useVoiceCloning ? 'voice-cloned' : 'standard'} draft with AI...`);
         const draftReply = isFollowUp
-            ? await aiConfig.generateFollowUp(emailContent, userContext)
-            : await aiConfig.generateDraftReply(emailContent, category || 'Opportunity', userContext);
+            ? await aiService.generateFollowUp(emailContent, userContext, aiConfig.privacyMode)
+            : await aiService.generateDraftReply(emailContent, category || 'Opportunity', userContext, aiConfig.privacyMode);
 
         // Increment usage after successful generation
         await subscriptionService.incrementFeatureUsage(userId, FEATURE_TYPES.DRAFT_REPLY);

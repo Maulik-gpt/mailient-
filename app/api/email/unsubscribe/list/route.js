@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from "@/lib/supabase.js";
+import { auth } from '@/lib/auth';
 
 // CRITICAL: Force dynamic rendering to prevent build-time evaluation
 export const dynamic = 'force-dynamic';
@@ -58,13 +59,24 @@ async function ensureUnsubscribedEmailsTable() {
 
 export async function GET() {
     try {
+        const session = await auth();
+        if (!session?.user?.email) {
+            return NextResponse.json(
+                { success: false, error: 'Unauthorized' },
+                { status: 401 }
+            );
+        }
+
+        const userId = session.user.email;
+
         // Ensure the table exists
         await ensureUnsubscribedEmailsTable();
 
         // Fetch all unsubscribed emails from the database
         const { data, error } = await supabase
             .from('unsubscribed_emails')
-            .select('email_id');
+            .select('email_id')
+            .eq('user_id', userId);
 
         if (error) {
             console.error('❌ Error fetching unsubscribed emails:', error);

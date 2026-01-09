@@ -3,6 +3,11 @@
  */
 
 export async function GET(request) {
+  return new Response(JSON.stringify({ error: 'Not found' }), {
+    status: 404,
+    headers: { 'Content-Type': 'application/json' }
+  });
+
   console.log('🔍 CATCH-ALL DEBUG - GET request received:');
   console.log('📋 Full URL:', request.url);
   console.log('🔍 Query params:', Object.fromEntries(new URL(request.url).searchParams));
@@ -21,6 +26,11 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+  return new Response(JSON.stringify({ error: 'Not found' }), {
+    status: 404,
+    headers: { 'Content-Type': 'application/json' }
+  });
+
   console.log('🔍 CATCH-ALL DEBUG - POST request received:');
   console.log('📋 Full URL:', request.url);
   console.log('📋 Method:', request.method);

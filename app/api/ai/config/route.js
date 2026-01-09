@@ -9,6 +9,11 @@ let aiConfig = new AIConfig();
 
 export async function GET() {
   try {
+    const adminSecret = (process.env.AI_CONFIG_ADMIN_SECRET || '').trim();
+    if (!adminSecret) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const status = aiConfig.getConfigurationStatus();
     const hasAIConfigured = aiConfig.hasAIConfigured();
 
@@ -29,6 +34,12 @@ export async function GET() {
 
 export async function POST(request) {
   try {
+    const adminSecret = (process.env.AI_CONFIG_ADMIN_SECRET || '').trim();
+    const provided = (request.headers.get('x-admin-secret') || '').trim();
+    if (!adminSecret || provided !== adminSecret) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const body = await request.json();
     const { provider, apiKey, action } = body;
 

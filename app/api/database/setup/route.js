@@ -11,6 +11,12 @@ const supabase = new Proxy({}, {
 
 export async function POST(req) {
   try {
+    const adminSecret = (process.env.DB_SETUP_ADMIN_SECRET || '').trim();
+    const provided = (req.headers.get('x-admin-secret') || '').trim();
+    if (!adminSecret || provided !== adminSecret) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     console.log("Setting up database tables...");
 
     const results = [];
@@ -96,6 +102,12 @@ export async function POST(req) {
 // GET endpoint to check database status and auto-create missing tables
 export async function GET(req) {
   try {
+    const adminSecret = (process.env.DB_SETUP_ADMIN_SECRET || '').trim();
+    const provided = (req.headers.get('x-admin-secret') || '').trim();
+    if (!adminSecret || provided !== adminSecret) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     console.log("🔧 Checking database status and creating missing tables...");
 
     const results = [];
