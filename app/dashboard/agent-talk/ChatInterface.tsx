@@ -21,7 +21,7 @@ import { ShiningText } from '@/components/ui/shining-text';
 import { toast } from 'sonner';
 
 // Detect and wrap URLs in plain text with premium styling for actions
-const linkify = (text: string) => {
+const linkify = (text: string): string => {
   if (!text) return '';
   const urlRegex = /(https?:\/\/[^\s<]+[^.,;?!)\]\s<])/g;
 
@@ -36,23 +36,7 @@ const linkify = (text: string) => {
 
     if (isAction && url.length > 50) {
       // Premium Action Button Layout
-      return `
-        <div class="my-6 p-[2px] bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-3xl shadow-2xl overflow-hidden">
-          <div class="bg-neutral-900 rounded-[1.4rem] p-6 flex flex-col items-center text-center">
-            <div class="w-12 h-12 bg-blue-500/10 rounded-full flex items-center justify-center mb-4 border border-blue-500/20">
-              <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            </div>
-            <h4 class="text-white font-bold text-lg mb-2">Priority Action</h4>
-            <p class="text-neutral-400 text-xs mb-6 max-w-[250px]">Secure action link detected in conversation</p>
-            <a href="${url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-12 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl transition-all transform hover:scale-105 active:scale-95 shadow-[0_0_25px_rgba(37,99,235,0.4)] no-underline">
-              Confirm & Proceed
-            </a>
-            <div class="mt-4 text-[9px] text-neutral-600 font-mono break-all opacity-40 hover:opacity-100 transition-opacity select-all cursor-text py-2 px-4 bg-black/20 rounded-lg">
-              ${url}
-            </div>
-          </div>
-        </div>
-      `;
+      return `<div class="my-6 p-[2px] bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-3xl shadow-2xl overflow-hidden"><div class="bg-neutral-900 rounded-[1.4rem] p-6 flex flex-col items-center text-center"><div class="w-12 h-12 bg-blue-500/10 rounded-full flex items-center justify-center mb-4 border border-blue-500/20"><svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div><h4 class="text-white font-bold text-lg mb-2">Priority Action</h4><p class="text-neutral-400 text-xs mb-6 max-w-[250px]">Secure action link detected in conversation</p><a href="${url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-12 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl transition-all transform hover:scale-105 active:scale-95 shadow-[0_0_25px_rgba(37,99,235,0.4)] no-underline">Confirm & Proceed</a><div class="mt-4 text-[9px] text-neutral-600 font-mono break-all opacity-40 hover:opacity-100 transition-opacity select-all cursor-text py-2 px-4 bg-black/20 rounded-lg">${url}</div></div></div>`;
     }
 
     const displayUrl = url.length > 55 ? url.substring(0, 52) + '...' : url;
@@ -1507,12 +1491,12 @@ export default function ChatInterface({
         </div>
       )}
       <style jsx global>{`
-      @keyframes arcus-dot-pulse {
-        0% { transform: scale(0.7); opacity: 0.8; }
-        50% { transform: scale(1.2); opacity: 1; }
-        100% { transform: scale(0.7); opacity: 0.8; }
-      }
-    `}</style>
+        @keyframes arcus-dot-pulse {
+          0% { transform: scale(0.7); opacity: 0.8; }
+          50% { transform: scale(1.2); opacity: 1; }
+          100% { transform: scale(0.7); opacity: 0.8; }
+        }
+      `}</style>
     </TooltipProvider>
   );
 }
