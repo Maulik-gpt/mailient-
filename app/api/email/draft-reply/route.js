@@ -87,9 +87,11 @@ export async function POST(request) {
         const aiConfig = new AIConfig();
 
         if (!aiConfig.hasAIConfigured()) {
-            return NextResponse.json({ error: 'AI service not configured' }, { status: 500 });
+            console.error('❌ AI service not configured');
+            return NextResponse.json({ error: 'AI service not configured - Please check OPENROUTER_API_KEY' }, { status: 500 });
         }
 
+        console.log('🤖 Generating email draft with AI...');
         // Fetch user's voice profile for voice cloning (if available)
         let voiceProfile = null;
         try {

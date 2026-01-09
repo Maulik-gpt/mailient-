@@ -98,9 +98,11 @@ export async function POST(request) {
         const aiConfig = new AIConfig();
 
         if (!aiConfig.hasAIConfigured()) {
-            return NextResponse.json({ error: 'AI service not configured' }, { status: 500 });
+            console.error('❌ AI service not configured');
+            return NextResponse.json({ error: 'AI service not configured - Please check OPENROUTER_API_KEY' }, { status: 500 });
         }
 
+        console.log('🤖 Generating email summary with AI...');
         const summary = await aiConfig.generateEmailSummary(emailContent, privacyMode, context);
 
         if (typeof summary === 'string' && summary.trim().length > 0) {

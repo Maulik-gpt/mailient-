@@ -180,7 +180,13 @@ export default function SiftOnboardingPage() {
   };
 
   const handleAction = async (type: "summary" | "reply", email: any) => {
-    if (!email?.id) return;
+    if (!email?.id) {
+      console.error('❌ No email ID provided');
+      setActionResult('Error: No email ID found');
+      return;
+    }
+
+    console.log(`🔧 Starting ${type} action for email:`, email.id, email.subject);
 
     setActionType(type);
     setSelectedEmailForAction(email);
@@ -193,6 +199,8 @@ export default function SiftOnboardingPage() {
       await new Promise(resolve => setTimeout(resolve, 800));
 
       const endpoint = type === "summary" ? "/api/email/summary" : "/api/email/draft-reply";
+      console.log(`📡 Calling endpoint: ${endpoint}`);
+      
       const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -207,23 +215,39 @@ export default function SiftOnboardingPage() {
         })
       });
 
+      console.log(`📡 Response status: ${response.status}`);
+
       const data = await response.json();
+      console.log(`📡 Response data:`, data);
 
       if (!response.ok) {
-        throw new Error(data.message || data.error || "Failed to generate AI response");
+        throw new Error(data.message || data.error || `Failed to generate AI response (${response.status})`);
       }
 
       if (type === "summary") {
         const summary = data.summary;
-        if (!summary || summary.length < 5) throw new Error("Could not synthesize email");
-        setActionResult(summary);
+        if (!summary || summary.length < 5) {
+          console.warn('⚠️ AI summary too short, using fallback');
+          // Fallback summary based on email content
+          const fallbackSummary = `This email from ${email.from} discusses "${email.subject}". ${email.snippet ? `Key point: ${email.snippet.substring(0, 100)}...` : 'Please review the full content for details.'}`;
+          setActionResult(fallbackSummary);
+        } else {
+          setActionResult(summary);
+        }
       } else {
         const draft = data.draftReply || data.draft;
-        if (!draft || draft.length < 5) throw new Error("Could not generate draft");
-        setActionResult(draft);
+        if (!draft || draft.length < 5) {
+          console.warn('⚠️ AI draft too short, using fallback');
+          // Fallback draft based on email content
+          const fromName = email.from?.match(/([^<\s]+)/)?.[1]?.trim() || email.from?.split('@')?.[0] || 'there';
+          const fallbackDraft = `Hi ${fromName},\n\nThank you for your email regarding "${email.subject}". I appreciate you reaching out and will review this carefully.\n\nI'll get back to you with a proper response soon.\n\nBest regards,\n${session?.user?.name || 'User'}`;
+          setActionResult(fallbackDraft);
+        } else {
+          setActionResult(draft);
+        }
       }
     } catch (error: any) {
-      console.error("AI Action Error:", error);
+      console.error("❌ AI Action Error:", error);
       setActionResult(error.message || "Failed to generate response. Please try again.");
     } finally {
       setActionLoading(false);
