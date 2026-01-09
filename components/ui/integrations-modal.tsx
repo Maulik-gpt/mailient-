@@ -125,7 +125,7 @@ export function IntegrationsModal({ isOpen, onClose }: IntegrationsModalProps) {
           const confirmed = window.confirm(`Do you want to enable ${integrationName} integration? This will require additional permission from Google.`);
           if (confirmed) {
             signIn('google', {
-              scope: 'https://www.googleapis.com/auth/calendar',
+              scope: 'openid email profile https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.events.freebusy',
               prompt: 'consent',
               redirectTo: window.location.pathname + window.location.search
             });
@@ -143,7 +143,11 @@ export function IntegrationsModal({ isOpen, onClose }: IntegrationsModalProps) {
           }
         } else {
           // User not authenticated, trigger sign in with all scopes including Calendar
-          signIn('google', { prompt: 'consent', redirectTo: window.location.pathname + window.location.search });
+          signIn('google', {
+            scope: 'openid email profile https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.events.freebusy',
+            prompt: 'consent',
+            redirectTo: window.location.pathname + window.location.search
+          });
           // Update API
           fetch('/api/integrations/status', {
             method: 'POST',

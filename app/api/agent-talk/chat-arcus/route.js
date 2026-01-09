@@ -313,7 +313,11 @@ async function getIntegrationStatus(userEmail, db) {
     const tokens = await db.getUserTokens(userEmail);
     const profile = await db.getUserProfile(userEmail);
 
-    const hasCalendarScope = tokens?.scopes?.includes('https://www.googleapis.com/auth/calendar');
+    const tokenScopes = tokens?.scopes || '';
+    const hasCalendarScope =
+      tokenScopes.includes('https://www.googleapis.com/auth/calendar') ||
+      tokenScopes.includes('https://www.googleapis.com/auth/calendar.events') ||
+      tokenScopes.includes('https://www.googleapis.com/auth/calendar.events.freebusy');
 
     return {
       gmail: !!tokens,

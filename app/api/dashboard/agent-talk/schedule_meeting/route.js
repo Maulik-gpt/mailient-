@@ -66,7 +66,11 @@ export async function POST(request) {
       );
     }
 
-    const hasCalendarScope = tokens.scopes?.includes('https://www.googleapis.com/auth/calendar');
+    const tokenScopes = tokens.scopes || '';
+    const hasCalendarScope =
+      tokenScopes.includes('https://www.googleapis.com/auth/calendar') ||
+      tokenScopes.includes('https://www.googleapis.com/auth/calendar.events') ||
+      tokenScopes.includes('https://www.googleapis.com/auth/calendar.events.freebusy');
     if (!hasCalendarScope) {
       return NextResponse.json(
         { error: 'Calendar scope not granted. Reconnect Google with calendar permissions.' },

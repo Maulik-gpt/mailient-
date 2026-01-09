@@ -21,7 +21,11 @@ export async function POST(request) {
       return Response.json({ error: 'No tokens found' }, { status: 404 });
     }
 
-    const hasCalendarScope = tokens.scopes?.includes('https://www.googleapis.com/auth/calendar');
+    const tokenScopes = tokens.scopes || '';
+    const hasCalendarScope =
+      tokenScopes.includes('https://www.googleapis.com/auth/calendar') ||
+      tokenScopes.includes('https://www.googleapis.com/auth/calendar.events') ||
+      tokenScopes.includes('https://www.googleapis.com/auth/calendar.events.freebusy');
     if (!hasCalendarScope) {
       return Response.json({ error: 'Calendar scope not granted' }, { status: 403 });
     }
@@ -103,7 +107,11 @@ export async function GET(request) {
       return Response.json({ error: 'No tokens found' }, { status: 404 });
     }
 
-    const hasCalendarScope = tokens.scopes?.includes('https://www.googleapis.com/auth/calendar');
+    const tokenScopes = tokens.scopes || '';
+    const hasCalendarScope =
+      tokenScopes.includes('https://www.googleapis.com/auth/calendar') ||
+      tokenScopes.includes('https://www.googleapis.com/auth/calendar.events') ||
+      tokenScopes.includes('https://www.googleapis.com/auth/calendar.events.freebusy');
     if (!hasCalendarScope) {
       return Response.json({ error: 'Calendar scope not granted' }, { status: 403 });
     }

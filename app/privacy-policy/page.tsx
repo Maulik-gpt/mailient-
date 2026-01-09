@@ -111,28 +111,45 @@ export default function PrivacyPolicy() {
                         <p>We take reasonable measures to protect your data, including secure storage and industry-standard practices. No system is 100% secure. Use Mailient with that understanding.</p>
                     </section>
 
+                    <section className="space-y-6">
+                        <h2 className="text-2xl font-bold text-white tracking-tight italic uppercase">6. Sharing, Transfer & Disclosure of Google User Data</h2>
+                        <p>We may share, transfer, or disclose Google user data only as needed to provide the Service, comply with law, protect users, and run our infrastructure.</p>
+                        <div className="space-y-3">
+                            <p className="text-sm italic text-neutral-400 px-6 py-4 border-l border-white/20 bg-white/[0.02]">
+                                We do not sell Google user data. We do not use Google user data for advertising.
+                            </p>
+                            <ul className="space-y-2 text-sm">
+                                <li className="flex gap-3"><span className="text-white/30">•</span> <span><span className="text-white font-semibold">Google APIs (Google)</span>: data is transmitted to Google to access Gmail/Calendar/Meet features you enable (e.g., reading messages you request, sending emails you initiate, creating calendar events).</span></li>
+                                <li className="flex gap-3"><span className="text-white/30">•</span> <span><span className="text-white font-semibold">AI processing providers</span>: when you use AI features, relevant email content and metadata may be sent to our AI providers to generate summaries, drafts, and classifications (e.g., OpenRouter and model providers such as Anthropic).</span></li>
+                                <li className="flex gap-3"><span className="text-white/30">•</span> <span><span className="text-white font-semibold">Database & infrastructure vendors</span>: encrypted tokens and app data may be stored/processed by our infrastructure providers (e.g., Supabase) to operate Mailient.</span></li>
+                                <li className="flex gap-3"><span className="text-white/30">•</span> <span><span className="text-white font-semibold">Payments & subscription management</span>: limited account data may be shared with our subscription/payment provider (Whop) to manage billing and access.</span></li>
+                                <li className="flex gap-3"><span className="text-white/30">•</span> <span><span className="text-white font-semibold">Legal, safety, and enforcement</span>: we may disclose information if required by law, subpoena, or to protect Mailient, our users, and the public from fraud, abuse, or security threats.</span></li>
+                            </ul>
+                        </div>
+                    </section>
+
                     <section className="space-y-4">
-                        <h2 className="text-2xl font-bold text-white tracking-tight italic uppercase">6. Third-Party Services</h2>
+                        <h2 className="text-2xl font-bold text-white tracking-tight italic uppercase">7. Third-Party Services</h2>
                         <p>Mailient may rely on trusted third-party tools (e.g., hosting, payments). They only receive what is necessary to operate.</p>
                     </section>
 
                     <section className="space-y-4">
-                        <h2 className="text-2xl font-bold text-white tracking-tight italic uppercase">7. Your Rights</h2>
+                        <h2 className="text-2xl font-bold text-white tracking-tight italic uppercase">8. Your Rights</h2>
                         <p>You can access your data, request deletion, or disconnect email access anytime.</p>
                     </section>
 
                     <section className="space-y-4">
-                        <h2 className="text-2xl font-bold text-white tracking-tight italic uppercase">8. Data Retention</h2>
+                        <h2 className="text-2xl font-bold text-white tracking-tight italic uppercase">9. Data Retention</h2>
                         <p>We keep data only as long as needed to provide the Service. Deleted accounts will have data removed within a reasonable timeframe.</p>
                     </section>
 
                     <section className="space-y-4">
-                        <h2 className="text-2xl font-bold text-white tracking-tight italic uppercase">9. Changes to Privacy Policy</h2>
+                        <h2 className="text-2xl font-bold text-white tracking-tight italic uppercase">10. Changes to Privacy Policy</h2>
                         <p>As Mailient grows, this policy may change. We’ll update the date and notify users when appropriate.</p>
                     </section>
 
                     <section className="space-y-6 pt-12 border-t border-white/10">
-                        <h2 className="text-2xl font-bold text-white tracking-tight italic uppercase">10. Contact</h2>
+                        <h2 className="text-2xl font-bold text-white tracking-tight italic uppercase">11. Contact</h2>
                         <p>Privacy questions? Contact us on X:</p>
                         <a
                             href="https://x.com/Maulik_055"
