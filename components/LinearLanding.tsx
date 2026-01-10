@@ -227,22 +227,18 @@ export function LinearLanding() {
                         </div>
                     </div>
 
-                    {/* Hero Video Space */}
+                    {/* Hero Video */}
                     <div className="relative w-full max-w-5xl mx-auto aspect-video rounded-2xl border border-white/10 bg-zinc-900/50 backdrop-blur-sm overflow-hidden group shadow-[0_0_50px_-12px_rgba(255,255,255,0.1)]">
                         <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
+                        
+                        <iframe
+                            src="https://cap.so/embed/rpter2vmzaz3vyk?autoplay=1&muted=1&controls=1&loop=1"
+                            className="absolute inset-0 w-full h-full rounded-2xl"
+                            allow="autoplay; fullscreen; picture-in-picture"
+                            allowFullScreen
+                        />
 
-                        {/* Play Button Overlay */}
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <motion.button
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.9 }}
-                                className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-2xl group-hover:bg-zinc-200 transition-colors"
-                            >
-                                <div className="w-0 h-0 border-t-[10px] border-t-transparent border-l-[18px] border-l-black border-b-[10px] border-b-transparent ml-1" />
-                            </motion.button>
-                        </div>
-
-                        {/* Video Mockup Content (Placeholder for actual iframe) */}
+                        {/* Video Info Overlay */}
                         <div className="absolute bottom-6 left-6 flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
                                 <Bot className="w-5 h-5 text-white/40" />
