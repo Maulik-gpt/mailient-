@@ -176,8 +176,8 @@ export function LinearLanding() {
             {/* Hero Section */}
             <HeroGeometric
                 badge="AI-Powered Email for Founders"
-                title1="The Art of"
-                title2="Email Excellence"
+                title1="Never Miss"
+                title2="Revenue Again"
             >
                 <div className="text-center">
                     <p className="text-lg md:text-xl text-white/40 max-w-2xl mb-12 leading-relaxed font-light tracking-wide mx-auto px-4 text-center">
