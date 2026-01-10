@@ -93,7 +93,7 @@ function HomeFeedContent() {
 
   // Set page title
   useEffect(() => {
-    document.title = 'Mailient Sift AI - Bulk Email Processing';
+    document.title = 'Mailient - AI Inbox';
   }, []);
 
   // Check for welcome query param and trigger confetti
