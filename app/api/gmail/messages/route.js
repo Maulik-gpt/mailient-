@@ -2,6 +2,7 @@ import { GmailService } from '@/lib/gmail.ts';
 import { DatabaseService } from '@/lib/supabase.js';
 import { auth } from '@/lib/auth.js';
 import { decrypt, encrypt } from '@/lib/crypto.js';
+import { subscriptionService } from '@/lib/subscription-service.js';
 
 export async function GET(request) {
   try {
@@ -14,6 +15,16 @@ export async function GET(request) {
     const session = await auth();
     if (!session?.user?.email) {
       return Response.json({ error: 'No valid session found' }, { status: 401 });
+    }
+
+    // 🔒 SECURITY: Check subscription before allowing email access
+    const hasSubscription = await subscriptionService.isSubscriptionActive(session.user.email);
+    if (!hasSubscription) {
+      return Response.json({
+        error: 'subscription_required',
+        message: 'An active subscription is required to access your emails.',
+        upgradeUrl: '/pricing'
+      }, { status: 403 });
     }
 
     const userEmail = session.user.email;

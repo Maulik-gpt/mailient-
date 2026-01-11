@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 import { GmailSearchService, GmailSearchFilters } from '@/lib/gmail-search-service';
 import { GmailTokenService } from '@/lib/gmail-token-service';
 import { auth } from '@/lib/auth';
+import { subscriptionService } from '@/lib/subscription-service';
 
 export async function POST(request) {
   console.log('=== GMAIL SEARCH API START ===');
@@ -28,6 +29,16 @@ export async function POST(request) {
         error: 'No valid session found. Please sign in again.',
         needsAuth: true
       }, { status: 401 });
+    }
+
+    // 🔒 SECURITY: Check subscription before allowing email search
+    const hasSubscription = await subscriptionService.isSubscriptionActive(session.user.email);
+    if (!hasSubscription) {
+      return NextResponse.json({
+        error: 'subscription_required',
+        message: 'An active subscription is required to search emails.',
+        upgradeUrl: '/pricing'
+      }, { status: 403 });
     }
 
     // Get request body
@@ -138,6 +149,16 @@ export async function GET(request) {
         error: 'No valid session found. Please sign in again.',
         needsAuth: true
       }, { status: 401 });
+    }
+
+    // 🔒 SECURITY: Check subscription before allowing label access
+    const hasSubscription = await subscriptionService.isSubscriptionActive(session.user.email);
+    if (!hasSubscription) {
+      return NextResponse.json({
+        error: 'subscription_required',
+        message: 'An active subscription is required.',
+        upgradeUrl: '/pricing'
+      }, { status: 403 });
     }
 
     // Get Gmail tokens using the new token service

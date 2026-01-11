@@ -12,10 +12,10 @@ export const metadata = {
     siteName: "Mailient",
     images: [
       {
-        url: "/social-screenshot.png",
+        url: "/api/screenshot",
         width: 1200,
         height: 630,
-        alt: "Mailient App Dashboard Mockup",
+        alt: "Mailient App Dashboard - AI-Powered Email Management for Founders",
       },
     ],
     locale: "en_US",
@@ -25,7 +25,7 @@ export const metadata = {
     card: "summary_large_image",
     title: "Mailient | AI-Powered Email Command Center",
     description: "Transform your email workflow with Arcus AI. Intelligent relationship tracking, smart insights, and seamless inbox management for founders.",
-    images: ["/social-screenshot.png"],
+    images: ["/api/screenshot"],
   },
   icons: {
     icon: [

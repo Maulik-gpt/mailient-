@@ -2,6 +2,7 @@ import { GmailService } from '@/lib/gmail.ts';
 import { DatabaseService } from '@/lib/supabase.js';
 import { auth } from '@/lib/auth.js';
 import { decrypt } from '@/lib/crypto.js';
+import { subscriptionService } from '@/lib/subscription-service.js';
 
 export async function GET(request, { params }) {
   try {
@@ -10,6 +11,16 @@ export async function GET(request, { params }) {
 
     if (!session?.user?.email) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // 🔒 SECURITY: Check subscription before allowing thread access
+    const hasSubscription = await subscriptionService.isSubscriptionActive(session.user.email);
+    if (!hasSubscription) {
+      return Response.json({
+        error: 'subscription_required',
+        message: 'An active subscription is required to access email threads.',
+        upgradeUrl: '/pricing'
+      }, { status: 403 });
     }
 
     const db = new DatabaseService();
