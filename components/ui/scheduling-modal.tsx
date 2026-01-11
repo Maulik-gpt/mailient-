@@ -45,6 +45,18 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
     const [calComUsername, setCalComUsername] = useState<string>('');
     const [calComEventType, setCalComEventType] = useState<string>('30min');
     const [showCalComSettings, setShowCalComSettings] = useState(false);
+    const [calComSettingsLoaded, setCalComSettingsLoaded] = useState(false);
+
+    // Load Cal.com settings from localStorage on component mount
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const savedCalUsername = localStorage.getItem('calcom_username') || '';
+            const savedCalEventType = localStorage.getItem('calcom_event_type') || '30min';
+            setCalComUsername(savedCalUsername);
+            setCalComEventType(savedCalEventType);
+            setCalComSettingsLoaded(true);
+        }
+    }, []);
 
     useEffect(() => {
         if (isOpen && emailId) {
@@ -53,6 +65,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
             setRecommendation(null);
             setNotifySender(true);
             setScheduledEvent(null);
+            setShowCalComSettings(false);
 
             // Set default time to next hour
             const now = new Date();
@@ -61,11 +74,13 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
             setSelectedTime(now.toTimeString().split(' ')[0].substring(0, 5));
             setSelectedDate(now.toISOString().split('T')[0]);
 
-            // Load saved Cal.com settings from localStorage
-            const savedCalUsername = localStorage.getItem('calcom_username') || '';
-            const savedCalEventType = localStorage.getItem('calcom_event_type') || '30min';
-            setCalComUsername(savedCalUsername);
-            setCalComEventType(savedCalEventType);
+            // Re-load Cal.com settings when modal opens (in case they changed)
+            if (typeof window !== 'undefined') {
+                const savedCalUsername = localStorage.getItem('calcom_username') || '';
+                const savedCalEventType = localStorage.getItem('calcom_event_type') || '30min';
+                setCalComUsername(savedCalUsername);
+                setCalComEventType(savedCalEventType);
+            }
         }
     }, [isOpen, emailId]);
 
@@ -402,8 +417,8 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                                         key={type}
                                                         onClick={() => setCalComEventType(type)}
                                                         className={`flex-1 py-3 rounded-xl border transition-all duration-300 font-medium text-sm ${calComEventType === type
-                                                                ? 'bg-indigo-500 text-white border-indigo-500'
-                                                                : 'bg-neutral-900/30 text-neutral-400 border-neutral-800 hover:border-neutral-700'
+                                                            ? 'bg-indigo-500 text-white border-indigo-500'
+                                                            : 'bg-neutral-900/30 text-neutral-400 border-neutral-800 hover:border-neutral-700'
                                                             }`}
                                                     >
                                                         {type}
