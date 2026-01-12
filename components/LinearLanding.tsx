@@ -227,10 +227,32 @@ export function LinearLanding() {
                         </div>
                     </div>
 
+                    {/* Product Hunt Featured Badge */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.8, duration: 1 }}
+                        className="flex justify-center mb-16"
+                    >
+                        <a
+                            href="https://www.producthunt.com/products/mailient?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-mailient"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            <img
+                                src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1059008&theme=light&t=1768213643164"
+                                alt="Mailient - Stop managing emails, Start automating them. | Product Hunt"
+                                width="250"
+                                height="54"
+                                className="h-12 md:h-14 w-auto opacity-80 hover:opacity-100 transition-opacity"
+                            />
+                        </a>
+                    </motion.div>
+
                     {/* Hero Video */}
                     <div className="relative w-full max-w-5xl mx-auto aspect-video rounded-2xl border border-white/10 bg-zinc-900/50 backdrop-blur-sm overflow-hidden group shadow-[0_0_50px_-12px_rgba(255,255,255,0.1)]">
                         <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
-                        
+
                         <iframe
                             src="https://cap.so/embed/rpter2vmzaz3vyk?autoplay=1&muted=1&controls=1&loop=1"
                             className="absolute inset-0 w-full h-full rounded-2xl"
@@ -1061,6 +1083,18 @@ export function LinearLanding() {
                     </div>
                     <div className="flex flex-col md:flex-row items-center gap-8">
                         <div className="flex items-center gap-6">
+                            <a
+                                href="https://www.producthunt.com/products/mailient?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-mailient"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="opacity-40 hover:opacity-100 transition-all duration-500 scale-90 hover:scale-100"
+                            >
+                                <img
+                                    src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1059008&theme=light&t=1768213643164"
+                                    alt="Mailient - Stop managing emails, Start automating them. | Product Hunt"
+                                    className="h-8 w-auto grayscale hover:grayscale-0"
+                                />
+                            </a>
                             <a
                                 href="https://www.foundrlist.com/product/mailient"
                                 target="_blank"

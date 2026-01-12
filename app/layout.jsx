@@ -3,30 +3,9 @@ import "./globals.css";
 import Providers from "./providers";
 
 export const metadata = {
-  title: "Mailient | AI-Powered Email Command Center",
-  description: "Transform your email workflow with Arcus AI. Intelligent relationship tracking, smart insights, and seamless inbox management for founders.",
-  openGraph: {
-    title: "Mailient | AI-Powered Email Command Center",
-    description: "Transform your email workflow with Arcus AI. Intelligent relationship tracking, smart insights, and seamless inbox management for founders.",
-    url: "https://mailient.xyz",
-    siteName: "Mailient",
-    images: [
-      {
-        url: "/og-image-v2.png?v=2",
-        width: 1200,
-        height: 630,
-        alt: "Mailient - AI Assistant for Founders",
-      },
-    ],
-    locale: "en_US",
-    type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Mailient | AI-Powered Email Command Center",
-    description: "Transform your email workflow with Arcus AI. Intelligent relationship tracking, smart insights, and seamless inbox management for founders.",
-    images: ["/og-image-v2.png?v=2"],
-  },
+  title: "Mailient",
+  description: "Intelligent email management with AI-powered relationship tracking",
+  metadataBase: new URL('https://mailient.xyz'),
   icons: {
     icon: [
       { url: "/favicon.png?v=8", type: "image/png" },
@@ -34,7 +13,30 @@ export const metadata = {
     shortcut: "/favicon.png?v=8",
     apple: "/apple-touch-icon.png?v=8",
   },
+  openGraph: {
+    title: "Mailient",
+    description: "Never Miss Revenue Again. AI assistant for founders.",
+    url: "https://mailient.xyz",
+    siteName: "Mailient",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Mailient - AI-Powered Email for Founders",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Mailient",
+    description: "Never Miss Revenue Again. AI assistant for founders.",
+    images: ["/og-image.png"],
+  },
 };
+
 
 export default function RootLayout({ children }) {
   return (
