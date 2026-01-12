@@ -132,20 +132,20 @@ export function LinearLanding() {
 
             {/* Navigation */}
             <nav className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 ease-in-out ${scrolled
-                ? 'w-[95%] md:w-[80%] max-w-5xl rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_0_rgba(255,255,255,0.05)] py-3 px-6'
-                : 'w-[95%] md:w-full max-w-7xl bg-transparent py-6 px-6'
+                ? 'w-[95%] md:w-[80%] max-w-5xl rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_0_rgba(255,255,255,0.05)] py-3 px-4 md:px-6'
+                : 'w-[95%] md:w-full max-w-7xl bg-transparent py-4 md:py-6 px-4 md:px-6'
                 }`}>
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-8">
+                    <div className="flex items-center gap-4 md:gap-8">
                         <div className="flex items-center gap-2 group cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-                            <div className="w-8 h-8 rounded flex items-center justify-center group-hover:rotate-6 transition-transform overflow-hidden relative">
+                            <div className="w-7 h-7 md:w-8 md:h-8 rounded flex items-center justify-center group-hover:rotate-6 transition-transform overflow-hidden relative">
                                 <img
                                     src="/logo-new.png"
                                     alt="Mailient Logo"
                                     className="w-full h-full object-cover"
                                 />
                             </div>
-                            <span className="font-bold tracking-tight text-xl">Mailient</span>
+                            <span className="font-bold tracking-tight text-lg md:text-xl">Mailient</span>
                         </div>
 
                         <div className="hidden md:flex items-center gap-6 text-sm font-medium text-zinc-500">
@@ -156,15 +156,15 @@ export function LinearLanding() {
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 md:gap-4">
                         {status === "authenticated" ? (
-                            <Button variant="secondary" onClick={() => router.push('/home-feed?welcome=true')} className="bg-white/10 hover:bg-white/20 text-white border-white/10 rounded-full px-6">
+                            <Button variant="secondary" onClick={() => router.push('/home-feed?welcome=true')} className="bg-white/10 hover:bg-white/20 text-white border-white/10 rounded-full px-4 md:px-6 text-sm md:text-base">
                                 Dashboard
                             </Button>
                         ) : (
                             <>
-                                <button onClick={() => signIn('google')} className="text-sm font-medium text-zinc-500 hover:text-white transition-colors">Log in</button>
-                                <Button onClick={() => router.push('/auth/signin')} className="bg-white text-black hover:bg-zinc-200 rounded-full px-6">
+                                <button onClick={() => signIn('google')} className="hidden sm:block text-sm font-medium text-zinc-500 hover:text-white transition-colors">Log in</button>
+                                <Button onClick={() => router.push('/auth/signin')} className="bg-white text-black hover:bg-zinc-200 rounded-full px-4 md:px-6 text-sm md:text-base">
                                     Sign up
                                 </Button>
                             </>
@@ -176,12 +176,12 @@ export function LinearLanding() {
             {/* Hero Section */}
             <HeroGeometric
                 badge="AI-Powered Email for Founders"
-                title1="Never Miss"
-                title2="Revenue Again"
+                title1="Your Inbox,"
+                title2="On Autopilot"
             >
-                <div className="text-center">
-                    <p className="text-lg md:text-xl text-white/40 max-w-2xl mb-12 leading-relaxed font-light tracking-wide mx-auto px-4 text-center">
-                        AI assistant for founders. Auto-sifts Gmail to find revenue opportunities and urgent replies.
+                <div className="text-center px-4">
+                    <p className="text-base sm:text-lg md:text-xl text-white/50 max-w-2xl mb-8 md:mb-12 leading-relaxed font-light tracking-wide mx-auto text-center">
+                        Stop drowning in emails. Our AI finds what matters, drafts perfect replies, and gives you back hours every week.
                     </p>
 
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
@@ -208,22 +208,22 @@ export function LinearLanding() {
                     </div>
 
                     {/* Trust Signals */}
-                    <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4 mb-16 text-sm text-zinc-400">
-                        <div className="flex items-center gap-2">
-                            <ShieldCheck className="w-4 h-4 text-green-400" />
-                            <span>Google OAuth Secure</span>
+                    <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-center gap-3 sm:gap-x-6 md:gap-x-8 gap-y-3 mb-10 md:mb-16 text-xs sm:text-sm text-zinc-400 px-2">
+                        <div className="flex items-center gap-1.5 sm:gap-2 justify-center">
+                            <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-400 flex-shrink-0" />
+                            <span className="whitespace-nowrap">Google OAuth</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <Lock className="w-4 h-4 text-blue-400" />
-                            <span>End-to-End Encrypted</span>
+                        <div className="flex items-center gap-1.5 sm:gap-2 justify-center">
+                            <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-400 flex-shrink-0" />
+                            <span className="whitespace-nowrap">Encrypted</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <Star className="w-4 h-4 text-yellow-400" />
-                            <span>500+ Founders Trust Us</span>
+                        <div className="flex items-center gap-1.5 sm:gap-2 justify-center">
+                            <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-400 flex-shrink-0" />
+                            <span className="whitespace-nowrap">500+ Users</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <Zap className="w-4 h-4 text-purple-400" />
-                            <span>Setup in 2 Minutes</span>
+                        <div className="flex items-center gap-1.5 sm:gap-2 justify-center">
+                            <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-400 flex-shrink-0" />
+                            <span className="whitespace-nowrap">2 Min Setup</span>
                         </div>
                     </div>
 
@@ -275,9 +275,9 @@ export function LinearLanding() {
             </HeroGeometric>
 
             {/* Demo Section - Single Video with Fading Text */}
-            <section id="demo-section" className="py-32 px-6 z-10 relative bg-zinc-950/30">
+            <section id="demo-section" className="py-16 md:py-32 px-4 md:px-6 z-10 relative bg-zinc-950/30">
                 <div className="max-w-7xl mx-auto">
-                    <div className="flex flex-col items-center mb-20 text-center">
+                    <div className="flex flex-col items-center mb-10 md:mb-20 text-center">
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
@@ -293,7 +293,7 @@ export function LinearLanding() {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ delay: 0.1 }}
-                            className="text-4xl md:text-6xl font-bold tracking-tight mb-6"
+                            className="text-3xl sm:text-4xl md:text-6xl font-bold tracking-tight mb-4 md:mb-6"
                         >
                             Mailient in action.
                         </motion.h2>
@@ -302,7 +302,7 @@ export function LinearLanding() {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ delay: 0.2 }}
-                            className="text-zinc-500 max-w-2xl mx-auto text-lg leading-relaxed"
+                            className="text-zinc-500 max-w-2xl mx-auto text-base md:text-lg leading-relaxed px-4"
                         >
                             Watch how AI transforms your chaotic inbox into clear opportunities.
                         </motion.p>
@@ -310,9 +310,9 @@ export function LinearLanding() {
 
                     {/* Single Video + Fading Text */}
                     <div className="max-w-5xl mx-auto">
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 items-center">
                             {/* Text Section - Fading Steps */}
-                            <div className="relative h-96 overflow-hidden">
+                            <div className="relative h-72 sm:h-80 md:h-96 overflow-hidden order-2 lg:order-1">
                                 <AnimatePresence mode="wait">
                                     {activeStep === 0 && (
                                         <motion.div
@@ -323,29 +323,29 @@ export function LinearLanding() {
                                             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                                             className="absolute inset-0 flex flex-col justify-center"
                                         >
-                                            <div className="flex items-center gap-4 mb-6">
-                                                <div className="w-12 h-12 rounded-2xl bg-white text-black flex items-center justify-center font-bold text-lg shadow-[0_0_20px_rgba(255,255,255,0.3)]">1</div>
-                                                <h3 className="text-3xl md:text-4xl font-bold text-white tracking-tight">Start Analysis</h3>
+                                            <div className="flex items-center gap-3 md:gap-4 mb-4 md:mb-6">
+                                                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-white text-black flex items-center justify-center font-bold text-base md:text-lg shadow-[0_0_20px_rgba(255,255,255,0.3)]">1</div>
+                                                <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white tracking-tight">Start Analysis</h3>
                                             </div>
-                                            <p className="text-xl text-zinc-400 mb-8 leading-relaxed">Find important emails which were buried in your inbox chaos.</p>
-                                            <div className="space-y-4">
-                                                <div className="flex items-center gap-4 group">
-                                                    <div className="w-6 h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
-                                                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                            <p className="text-base md:text-xl text-zinc-400 mb-6 md:mb-8 leading-relaxed">Find important emails buried in your inbox chaos.</p>
+                                            <div className="space-y-3 md:space-y-4">
+                                                <div className="flex items-center gap-3 md:gap-4 group">
+                                                    <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors flex-shrink-0">
+                                                        <Check className="w-3 h-3 md:w-3.5 md:h-3.5 text-emerald-400" />
                                                     </div>
-                                                    <span className="text-zinc-300 font-medium">AI scans entire inbox in seconds</span>
+                                                    <span className="text-zinc-300 font-medium text-sm md:text-base">AI scans inbox in seconds</span>
                                                 </div>
-                                                <div className="flex items-center gap-4 group">
-                                                    <div className="w-6 h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
-                                                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                                <div className="flex items-center gap-3 md:gap-4 group">
+                                                    <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors flex-shrink-0">
+                                                        <Check className="w-3 h-3 md:w-3.5 md:h-3.5 text-emerald-400" />
                                                     </div>
-                                                    <span className="text-zinc-300 font-medium">Identifies revenue opportunities</span>
+                                                    <span className="text-zinc-300 font-medium text-sm md:text-base">Finds opportunities</span>
                                                 </div>
-                                                <div className="flex items-center gap-4 group">
-                                                    <div className="w-6 h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
-                                                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                                <div className="flex items-center gap-3 md:gap-4 group">
+                                                    <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors flex-shrink-0">
+                                                        <Check className="w-3 h-3 md:w-3.5 md:h-3.5 text-emerald-400" />
                                                     </div>
-                                                    <span className="text-zinc-300 font-medium">Flags urgent replies needed</span>
+                                                    <span className="text-zinc-300 font-medium text-sm md:text-base">Flags urgent replies</span>
                                                 </div>
                                             </div>
                                         </motion.div>
@@ -360,29 +360,29 @@ export function LinearLanding() {
                                             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                                             className="absolute inset-0 flex flex-col justify-center"
                                         >
-                                            <div className="flex items-center gap-4 mb-6">
-                                                <div className="w-12 h-12 rounded-2xl bg-white text-black flex items-center justify-center font-bold text-lg shadow-[0_0_20px_rgba(255,255,255,0.3)]">2</div>
-                                                <h3 className="text-3xl md:text-4xl font-bold text-white tracking-tight">Meaningful Insights</h3>
+                                            <div className="flex items-center gap-3 md:gap-4 mb-4 md:mb-6">
+                                                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-white text-black flex items-center justify-center font-bold text-base md:text-lg shadow-[0_0_20px_rgba(255,255,255,0.3)]">2</div>
+                                                <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white tracking-tight">Smart Categories</h3>
                                             </div>
-                                            <p className="text-xl text-zinc-400 mb-8 leading-relaxed">Emails organized into smart boxes with clear categories.</p>
-                                            <div className="space-y-4">
-                                                <div className="flex items-center gap-4 group">
-                                                    <div className="w-6 h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
-                                                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                            <p className="text-base md:text-xl text-zinc-400 mb-6 md:mb-8 leading-relaxed">Emails organized into smart boxes automatically.</p>
+                                            <div className="space-y-3 md:space-y-4">
+                                                <div className="flex items-center gap-3 md:gap-4 group">
+                                                    <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors flex-shrink-0">
+                                                        <Check className="w-3 h-3 md:w-3.5 md:h-3.5 text-emerald-400" />
                                                     </div>
-                                                    <span className="text-zinc-300 font-medium">Revenue opportunities highlighted</span>
+                                                    <span className="text-zinc-300 font-medium text-sm md:text-base">Opportunities highlighted</span>
                                                 </div>
-                                                <div className="flex items-center gap-4 group">
-                                                    <div className="w-6 h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
-                                                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                                <div className="flex items-center gap-3 md:gap-4 group">
+                                                    <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors flex-shrink-0">
+                                                        <Check className="w-3 h-3 md:w-3.5 md:h-3.5 text-emerald-400" />
                                                     </div>
-                                                    <span className="text-zinc-300 font-medium">Urgent replies prioritized</span>
+                                                    <span className="text-zinc-300 font-medium text-sm md:text-base">Urgent replies first</span>
                                                 </div>
-                                                <div className="flex items-center gap-4 group">
-                                                    <div className="w-6 h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
-                                                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                                <div className="flex items-center gap-3 md:gap-4 group">
+                                                    <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors flex-shrink-0">
+                                                        <Check className="w-3 h-3 md:w-3.5 md:h-3.5 text-emerald-400" />
                                                     </div>
-                                                    <span className="text-zinc-300 font-medium">Smart boxes for everything</span>
+                                                    <span className="text-zinc-300 font-medium text-sm md:text-base">Smart boxes for all</span>
                                                 </div>
                                             </div>
                                         </motion.div>
@@ -397,29 +397,29 @@ export function LinearLanding() {
                                             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                                             className="absolute inset-0 flex flex-col justify-center"
                                         >
-                                            <div className="flex items-center gap-4 mb-6">
-                                                <div className="w-12 h-12 rounded-2xl bg-white text-black flex items-center justify-center font-bold text-lg shadow-[0_0_20px_rgba(255,255,255,0.3)]">3</div>
-                                                <h3 className="text-3xl md:text-4xl font-bold text-white tracking-tight">One-Click Actions</h3>
+                                            <div className="flex items-center gap-3 md:gap-4 mb-4 md:mb-6">
+                                                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-white text-black flex items-center justify-center font-bold text-base md:text-lg shadow-[0_0_20px_rgba(255,255,255,0.3)]">3</div>
+                                                <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white tracking-tight">One-Click Actions</h3>
                                             </div>
-                                            <p className="text-xl text-zinc-400 mb-8 leading-relaxed">Select any email and turn it into action with one click.</p>
-                                            <div className="space-y-4">
-                                                <div className="flex items-center gap-4 group">
-                                                    <div className="w-6 h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
-                                                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                            <p className="text-base md:text-xl text-zinc-400 mb-6 md:mb-8 leading-relaxed">Turn any email into action with one click.</p>
+                                            <div className="space-y-3 md:space-y-4">
+                                                <div className="flex items-center gap-3 md:gap-4 group">
+                                                    <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors flex-shrink-0">
+                                                        <Check className="w-3 h-3 md:w-3.5 md:h-3.5 text-emerald-400" />
                                                     </div>
-                                                    <span className="text-zinc-300 font-medium">AI drafts perfect replies</span>
+                                                    <span className="text-zinc-300 font-medium text-sm md:text-base">AI drafts replies</span>
                                                 </div>
-                                                <div className="flex items-center gap-4 group">
-                                                    <div className="w-6 h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
-                                                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                                <div className="flex items-center gap-3 md:gap-4 group">
+                                                    <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors flex-shrink-0">
+                                                        <Check className="w-3 h-3 md:w-3.5 md:h-3.5 text-emerald-400" />
                                                     </div>
-                                                    <span className="text-zinc-300 font-medium">Schedule meetings instantly</span>
+                                                    <span className="text-zinc-300 font-medium text-sm md:text-base">Schedule meetings</span>
                                                 </div>
-                                                <div className="flex items-center gap-4 group">
-                                                    <div className="w-6 h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
-                                                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                                <div className="flex items-center gap-3 md:gap-4 group">
+                                                    <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors flex-shrink-0">
+                                                        <Check className="w-3 h-3 md:w-3.5 md:h-3.5 text-emerald-400" />
                                                     </div>
-                                                    <span className="text-zinc-300 font-medium">Archive with confidence</span>
+                                                    <span className="text-zinc-300 font-medium text-sm md:text-base">Archive confidently</span>
                                                 </div>
                                             </div>
                                         </motion.div>
@@ -428,7 +428,7 @@ export function LinearLanding() {
                             </div>
 
                             {/* Video Section */}
-                            <div className="flex-1">
+                            <div className="flex-1 order-1 lg:order-2">
                                 <div className="relative aspect-video rounded-2xl border border-white/10 bg-zinc-900/50 backdrop-blur-sm overflow-hidden">
                                     <iframe
                                         src="https://cap.so/embed/58ekyq8enhrfq3z?autoplay=1&muted=1&controls=0&loop=1"
@@ -500,19 +500,19 @@ export function LinearLanding() {
                         </motion.p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 px-2 md:px-0">
                         {/* Feature Card 1: Signal Intelligence */}
                         <motion.div
                             initial={{ opacity: 0, y: 40 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
-                            className="group relative h-[450px] p-8 rounded-3xl border border-white/5 bg-zinc-950 flex flex-col items-center text-center overflow-hidden shadow-[0_0_40px_-15px_rgba(255,255,255,0.05)]"
+                            className="group relative h-[380px] md:h-[450px] p-6 md:p-8 rounded-3xl border border-white/5 bg-zinc-950 flex flex-col items-center text-center overflow-hidden shadow-[0_0_40px_-15px_rgba(255,255,255,0.05)]"
                         >
                             <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
 
                             {/* Visual: Radar/Scanner */}
-                            <div className="h-48 w-full flex items-center justify-center mb-8">
-                                <div className="relative w-40 h-40 rounded-full border border-white/10 flex items-center justify-center">
+                            <div className="h-36 md:h-48 w-full flex items-center justify-center mb-6 md:mb-8">
+                                <div className="relative w-32 h-32 md:w-40 md:h-40 rounded-full border border-white/10 flex items-center justify-center">
                                     <motion.div
                                         animate={{ rotate: 360 }}
                                         transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
@@ -524,9 +524,9 @@ export function LinearLanding() {
                                 </div>
                             </div>
 
-                            <h3 className="text-2xl font-bold mb-4">Signal Intelligence</h3>
-                            <p className="text-zinc-500 text-sm leading-relaxed max-w-[240px]">
-                                Stay ahead with accurate, real-time revenue and priority tracking across every thread.
+                            <h3 className="text-xl md:text-2xl font-bold mb-3 md:mb-4">Find What Matters</h3>
+                            <p className="text-zinc-500 text-sm leading-relaxed max-w-[280px] md:max-w-[240px]">
+                                AI scans your inbox to surface important emails, opportunities, and urgent items you might miss.
                             </p>
                         </motion.div>
 
@@ -536,14 +536,14 @@ export function LinearLanding() {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ delay: 0.1 }}
-                            className="group relative h-[450px] p-8 rounded-3xl border border-white/5 bg-zinc-950 flex flex-col items-center text-center overflow-hidden shadow-[0_0_40px_-15px_rgba(255,255,255,0.05)]"
+                            className="group relative h-[380px] md:h-[450px] p-6 md:p-8 rounded-3xl border border-white/5 bg-zinc-950 flex flex-col items-center text-center overflow-hidden shadow-[0_0_40px_-15px_rgba(255,255,255,0.05)]"
                         >
                             <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
 
-                            {/* Visual: Growth Bars */}
-                            <div className="h-48 w-full flex items-end justify-center gap-3 mb-8 px-4">
+                            {/* Visual: Growth Bars - Simplified for mobile */}
+                            <div className="h-36 md:h-48 w-full flex items-end justify-center gap-2 md:gap-3 mb-6 md:mb-8 px-2 md:px-4">
                                 {[0.4, 0.7, 1.0, 0.6, 0.8].map((val, i) => (
-                                    <div key={i} className="relative w-full bg-white/5 rounded-t-lg overflow-hidden flex flex-col justify-end h-full">
+                                    <div key={i} className="relative w-full bg-white/5 rounded-t-lg overflow-visible flex flex-col justify-end h-full">
                                         <motion.div
                                             initial={{ height: 0 }}
                                             whileInView={{ height: `${val * 100}%` }}
@@ -552,22 +552,17 @@ export function LinearLanding() {
                                             className="w-full bg-white/10"
                                         />
                                         {i === 2 && (
-                                            <div className="absolute -top-1 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-white rounded text-[10px] text-black font-bold whitespace-nowrap">
-                                                80% Automated
-                                            </div>
-                                        )}
-                                        {i === 4 && (
-                                            <div className="absolute -top-1 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-zinc-800 rounded text-[10px] text-white font-bold whitespace-nowrap">
-                                                10% Cost
+                                            <div className="absolute -top-6 left-1/2 -translate-x-1/2 px-1.5 md:px-2 py-0.5 bg-white rounded text-[8px] md:text-[10px] text-black font-bold whitespace-nowrap">
+                                                <span className="hidden sm:inline">80% </span>Auto
                                             </div>
                                         )}
                                     </div>
                                 ))}
                             </div>
 
-                            <h3 className="text-2xl font-bold mb-4">AI-Driven Growth</h3>
-                            <p className="text-zinc-500 text-sm leading-relaxed max-w-[240px]">
-                                Make smarter moves with accurate, real-time business insights and automated sifting.
+                            <h3 className="text-xl md:text-2xl font-bold mb-3 md:mb-4">Save 10+ Hours/Week</h3>
+                            <p className="text-zinc-500 text-sm leading-relaxed max-w-[280px] md:max-w-[240px]">
+                                Automate email triage, draft replies instantly, and reclaim time for what truly matters.
                             </p>
                         </motion.div>
 
@@ -577,35 +572,35 @@ export function LinearLanding() {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ delay: 0.2 }}
-                            className="group relative h-[450px] p-8 rounded-3xl border border-white/5 bg-zinc-950 flex flex-col items-center text-center overflow-hidden shadow-[0_0_40px_-15px_rgba(255,255,255,0.05)]"
+                            className="group relative h-[380px] md:h-[450px] p-6 md:p-8 rounded-3xl border border-white/5 bg-zinc-950 flex flex-col items-center text-center overflow-hidden shadow-[0_0_40px_-15px_rgba(255,255,255,0.05)]"
                         >
                             <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
 
                             {/* Visual: Neural Orbit */}
-                            <div className="h-48 w-full flex items-center justify-center mb-8">
-                                <div className="relative w-32 h-32 flex items-center justify-center">
+                            <div className="h-36 md:h-48 w-full flex items-center justify-center mb-6 md:mb-8">
+                                <div className="relative w-28 h-28 md:w-32 md:h-32 flex items-center justify-center">
                                     <div className="absolute inset-0 rounded-full border border-white/10" />
-                                    <div className="absolute inset-[-20px] rounded-full border border-dashed border-white/5 animate-spin-slow" />
+                                    <div className="absolute inset-[-16px] md:inset-[-20px] rounded-full border border-dashed border-white/5 animate-spin-slow" />
                                     <motion.div
                                         animate={{ scale: [1, 1.1, 1] }}
                                         transition={{ duration: 2, repeat: Infinity }}
-                                        className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.2)]"
+                                        className="w-14 h-14 md:w-16 md:h-16 bg-white rounded-2xl flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.2)]"
                                     >
-                                        <RefreshCw className="w-8 h-8 text-black" />
+                                        <RefreshCw className="w-7 h-7 md:w-8 md:h-8 text-black" />
                                     </motion.div>
                                 </div>
                             </div>
 
-                            <h3 className="text-2xl font-bold mb-4">Sync in real time</h3>
-                            <p className="text-zinc-500 text-sm leading-relaxed max-w-[240px]">
-                                Connect with your threads instantly to track progress and generate context-aware updates.
+                            <h3 className="text-xl md:text-2xl font-bold mb-3 md:mb-4">Zero Inbox Anxiety</h3>
+                            <p className="text-zinc-500 text-sm leading-relaxed max-w-[280px] md:max-w-[240px]">
+                                Wake up to a clean, organized inbox. Know exactly what needs your attention right now.
                             </p>
                         </motion.div>
                     </div>
                 </div>
             </section>
             {/* Features Section - Premium Bento Layout */}
-            <section id="features" className="py-40 px-6 z-10 relative overflow-hidden bg-black">
+            <section id="features" className="py-20 md:py-40 px-4 md:px-6 z-10 relative overflow-hidden bg-black">
                 <div className="max-w-7xl mx-auto">
                     <div className="flex flex-col items-center mb-24 text-center">
                         <motion.div
