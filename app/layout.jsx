@@ -56,6 +56,12 @@ export default function RootLayout({ children }) {
             gtag('config', 'G-M03D6M49N8');
           `}
         </Script>
+        <Script
+          defer
+          data-website-id="dfid_whZv4FQiiUxQYjnhCQ4tk"
+          data-domain="mailient.xyz"
+          src="https://datafa.st/js/script.js"
+        />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400&display=swap" rel="stylesheet" />
