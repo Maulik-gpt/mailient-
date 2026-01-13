@@ -13,6 +13,17 @@ const WHOP_CHECKOUT_URLS = {
 	pro: 'https://whop.com/checkout/plan_HjjXVb5SWxdOK'
 };
 
+// Helper function to get cookie value
+const getCookie = (name: string): string | null => {
+	const value = `; ${document.cookie}`;
+	const parts = value.split(`; ${name}=`);
+	if (parts.length === 2) {
+		const cookieValue = parts.pop()?.split(';').shift();
+		return cookieValue || null;
+	}
+	return null;
+};
+
 const PLANS = [
 	{
 		id: 'starter',
@@ -104,9 +115,31 @@ export default function PricingPage() {
 	// Subscriptions are now ONLY activated via Whop webhook after verified payment
 
 	const handleSelectPlan = async (planId: string, checkoutUrl: string) => {
-		// Store selected plan in localStorage for after payment return
+		// Capture DataFast visitor ID before redirecting
+		const datafastVisitorId = getCookie('datafast_visitor_id');
+		
+		// Store selected plan and visitor ID in localStorage for after payment return
 		localStorage.setItem('pending_plan', planId);
 		localStorage.setItem('pending_plan_timestamp', Date.now().toString());
+		if (datafastVisitorId) {
+			localStorage.setItem('datafast_visitor_id', datafastVisitorId);
+		}
+
+		// Store visitor ID in server cache for webhook retrieval
+		if (datafastVisitorId && session?.user?.email) {
+			try {
+				await fetch('/api/datafast/visitor-id', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						email: session.user.email,
+						datafast_visitor_id: datafastVisitorId
+					})
+				});
+			} catch (error) {
+				console.error('Error storing visitor ID:', error);
+			}
+		}
 
 		// Complete onboarding before redirecting (prevents onboarding loop)
 		try {
@@ -126,6 +159,9 @@ export default function PricingPage() {
 		const params = new URLSearchParams();
 		if (session?.user?.email) {
 			params.set('email', session.user.email);
+		}
+		if (datafastVisitorId) {
+			params.set('datafast_visitor_id', datafastVisitorId);
 		}
 
 		window.location.href = `${checkoutUrl}?${params.toString()}`;
