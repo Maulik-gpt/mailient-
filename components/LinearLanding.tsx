@@ -1071,7 +1071,7 @@ export function LinearLanding() {
                         className="mb-12"
                     >
                         <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
-                            Request an AI summary of Maileint
+                            Request an AI summary of Mailient
                         </h2>
                         <p className="text-zinc-400 text-sm md:text-base mb-8">
                             Ask any AI platform about Mailient by website "mailient.xyz"
@@ -1152,7 +1152,7 @@ export function LinearLanding() {
                         <div className="w-6 h-6 bg-white rounded flex items-center justify-center">
                             <Mail className="w-4 h-4 text-black" />
                         </div>
-                        <span className="font-bold tracking-tight text-white">Maileint</span>
+                        <span className="font-bold tracking-tight text-white">Mailient</span>
                     </div>
                     <div className="flex gap-8 text-sm font-bold text-zinc-500 uppercase tracking-widest">
                         <a href="https://x.com/Maulik_055" target="_blank" className="hover:text-white transition-colors">Twitter</a>
@@ -1199,7 +1199,7 @@ export function LinearLanding() {
                                 />
                             </a>
                         </div>
-                        <p className="text-xs text-zinc-600">© 2026 Maileint Intelligence.</p>
+                        <p className="text-xs text-zinc-600">© 2026 Mailient Intelligence.</p>
                     </div>
                 </div>
             </footer>
