@@ -1061,16 +1061,100 @@ export function LinearLanding() {
                 </div>
             </section>
 
+            {/* AI Summary Section */}
+            <section className="py-16 px-6 z-10 relative bg-zinc-950/50">
+                <div className="max-w-4xl mx-auto text-center">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        className="mb-12"
+                    >
+                        <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
+                            Request an AI summary of Maileint
+                        </h2>
+                        <p className="text-zinc-400 text-sm md:text-base mb-8">
+                            Ask any AI platform about Mailient by website "mailient.xyz"
+                        </p>
+                        
+                        {/* AI Platform Buttons */}
+                        <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 mb-8">
+                            <a
+                                href="https://chat.openai.com/?q=Tell%20me%20about%20Mailient%20by%20website%20mailient.xyz"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="group flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900/80 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900 transition-all duration-300"
+                            >
+                                <svg className="w-5 h-5 text-zinc-400 group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M22.282 9.821a5.984 5.984 0 0 0-.516-4.91 6.046 6.046 0 0 0-6.51-2.9A6.065 6.065 0 0 0 4.981 4.18a5.984 5.984 0 0 0-3.998 2.9 6.046 6.046 0 0 0 .743 7.097 5.98 5.98 0 0 0 .51 4.911 6.051 6.051 0 0 0 6.515 2.9A5.985 5.985 0 0 0 13.259 24a6.056 6.056 0 0 0 5.771-4.205 5.989 5.989 0 0 0 3.997-2.9 6.055 6.055 0 0 0-.745-7.074zM13.259 22.45a4.575 4.575 0 0 1-2.686-.872l.163-.074 4.497-2.597a.795.795 0 0 0 .392-.682v-6.339l1.902 1.098a.072.072 0 0 1 .038.052v4.836a4.604 4.604 0 0 1-4.306 4.578zm-9.258-3.949a4.563 4.563 0 0 1-.546-3.074l.163.098 4.497 2.597a.77.77 0 0 0 .784 0l5.49-3.17v2.194a.08.08 0 0 1-.032.061L9.86 20.32a4.603 4.603 0 0 1-4.86-1.819zm-1.86-7.654a4.543 4.543 0 0 1 1.194-2.667V13.4a.77.77 0 0 0 .393.667l5.49 3.17-1.902 1.098a.072.072 0 0 1-.07 0l-4.531-2.615a4.603 4.603 0 0 1-1.574-4.873zm16.097 3.823l-5.49-3.17 1.902-1.098a.072.072 0 0 1 .07 0l4.531 2.615a4.603 4.603 0 0 1-.695 8.292v-4.85a.77.77 0 0 0-.318-.79zm1.886-3.074l-.163-.098-4.497-2.597a.77.77 0 0 0-.784 0l-5.49 3.17v-2.194a.08.08 0 0 1 .032-.061l4.531-2.615a4.603 4.603 0 0 1 6.371 4.395zm-6.693 2.312l-2.449-1.414-2.449 1.414v-2.828l2.449-1.414 2.449 1.414z"/>
+                                </svg>
+                                <span className="text-zinc-300 group-hover:text-white text-sm font-medium transition-colors">ChatGPT</span>
+                            </a>
+                            
+                            <a
+                                href="https://claude.ai/new?q=Tell%20me%20about%20Mailient%20by%20website%20mailient.xyz"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="group flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900/80 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900 transition-all duration-300"
+                            >
+                                <svg className="w-5 h-5 text-[#D97757] group-hover:scale-110 transition-transform" viewBox="0 0 256 257" fill="currentColor">
+                                    <path d="m50.228 170.321 50.357-28.257.843-2.463-.843-1.361h-2.462l-8.426-.518-28.775-.778-24.952-1.037-24.175-1.296-6.092-1.297L0 125.796l.583-3.759 5.12-3.434 7.324.648 16.202 1.101 24.304 1.685 17.629 1.037 26.118 2.722h4.148l.583-1.685-1.426-1.037-1.101-1.037-25.147-17.045-27.22-18.017-14.258-10.37-7.713-5.25-3.888-4.925-1.685-10.758 7-7.713 9.397.649 2.398.648 9.527 7.323 20.35 15.75L94.817 91.9l3.889 3.24 1.555-1.102.195-.777-1.75-2.917-14.453-26.118-15.425-26.572-6.87-11.018-1.814-6.61c-.648-2.723-1.102-4.991-1.102-7.778l7.972-10.823L71.42 0 82.05 1.426l4.472 3.888 6.61 15.101 10.694 23.786 16.591 32.34 4.861 9.592 2.592 8.879.973 2.722h1.685v-1.556l1.36-18.211 2.528-22.36 2.463-28.776.843-8.1 4.018-9.722 7.971-5.25 6.222 2.981 5.12 7.324-.713 4.73-3.046 19.768-5.962 30.98-3.889 20.739h2.268l2.593-2.593 10.499-13.934 17.628-22.036 7.778-8.749 9.073-9.657 5.833-4.601h11.018l8.1 12.055-3.628 12.443-11.342 14.388-9.398 12.184-13.48 18.147-8.426 14.518.778 1.166 2.01-.194 30.46-6.481 16.462-2.982 19.637-3.37 8.88 4.148.971 4.213-3.5 8.62-20.998 5.184-24.628 4.926-36.682 8.685-.454.324.519.648 16.526 1.555 7.065.389h17.304l32.21 2.398 8.426 5.574 5.055 6.805-.843 5.184-12.962 6.611-17.498-4.148-40.83-9.721-14-3.5h-1.944v1.167l11.666 11.406 21.387 19.314 26.767 24.887 1.36 6.157-3.434 4.86-3.63-.518-23.526-17.693-9.073-7.972-20.545-17.304h-1.36v1.814l4.73 6.935 25.017 37.59 1.296 11.536-1.814 3.76-6.481 2.268-7.13-1.297-14.647-20.544-15.1-23.138-12.185-20.739-1.49.843-7.194 77.448-3.37 3.953-7.778 2.981-6.48-4.925-3.436-7.972 3.435-15.749 4.148-20.544 3.37-16.333 3.046-20.285 1.815-6.74-.13-.454-1.49.194-15.295 20.999-23.267 31.433-18.406 19.702-4.407 1.75-7.648-3.954.713-7.064 4.277-6.286 25.47-32.405 15.36-20.092 9.917-11.6-.065-1.686h-.583L44.07 198.125l-12.055 1.555-5.185-4.86.648-7.972 2.463-2.593 20.35-13.999-.064.065Z"/>
+                                </svg>
+                                <span className="text-zinc-300 group-hover:text-white text-sm font-medium transition-colors">Claude</span>
+                            </a>
+                            
+                            <a
+                                href="https://gemini.google.com/?q=Tell%20me%20about%20Mailient%20by%20website%20mailient.xyz"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="group flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900/80 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900 transition-all duration-300"
+                            >
+                                <svg className="w-5 h-5 text-[#3186FF] group-hover:scale-110 transition-transform" viewBox="0 0 296 298" fill="currentColor">
+                                    <path d="M141.201 4.886c2.282-6.17 11.042-6.071 13.184.148l5.985 17.37a184.004 184.004 0 0 0 111.257 113.049l19.304 6.997c6.143 2.227 6.156 10.91.02 13.155l-19.35 7.082a184.001 184.001 0 0 0-109.495 109.385l-7.573 20.629c-2.241 6.105-10.869 6.121-13.133.025l-7.908-21.296a184 184 0 0 0-109.02-108.658l-19.698-7.239c-6.102-2.243-6.118-10.867-.025-13.132l20.083-7.467A183.998 183.998 0 0 0 133.291 26.28l7.91-21.394Z"/>
+                                </svg>
+                                <span className="text-zinc-300 group-hover:text-white text-sm font-medium transition-colors">Gemini</span>
+                            </a>
+                            
+                            <a
+                                href="https://www.perplexity.ai/?q=Tell%20me%20about%20Mailient%20by%20website%20mailient.xyz"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="group flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900/80 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900 transition-all duration-300"
+                            >
+                                <svg className="w-5 h-5 text-[#20808d] group-hover:scale-110 transition-transform" viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M24 4.5v39M13.73 16.573v-9.99L24 16.573m0 14.5L13.73 41.417V27.01L24 16.573m0 0l10.27-9.99v9.99"/>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.73 31.396H9.44V16.573h29.12v14.823h-4.29"/>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M24 16.573L34.27 27.01v14.407L24 31.073"/>
+                                </svg>
+                                <span className="text-zinc-300 group-hover:text-white text-sm font-medium transition-colors">Perplexity</span>
+                            </a>
+                            
+                            <a
+                                href="https://copilot.microsoft.com/?q=Tell%20me%20about%20Mailient%20by%20website%20mailient.xyz"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="group flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900/80 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900 transition-all duration-300"
+                            >
+                                <svg className="w-5 h-5 text-zinc-400 group-hover:text-white transition-colors" viewBox="0 0 256 208" fill="currentColor">
+                                    <path d="M205.3 31.4c14 14.8 20 35.2 22.5 63.6 6.6 0 12.8 1.5 17 7.2l7.8 10.6c2.2 3 3.4 6.6 3.4 10.4v28.7a12 12 0 0 1-4.8 9.5C215.9 187.2 172.3 208 128 208c-49 0-98.2-28.3-123.2-46.6a12 12 0 0 1-4.8-9.5v-28.7c0-3.8 1.2-7.4 3.4-10.5l7.8-10.5c4.2-5.7 10.4-7.2 17-7.2 2.5-28.4 8.4-48.8 22.5-63.6C77.3 3.2 112.6 0 127.6 0h.4c14.7 0 50.4 2.9 77.3 31.4Z"/>
+                                </svg>
+                                <span className="text-zinc-300 group-hover:text-white text-sm font-medium transition-colors">Copilot</span>
+                            </a>
+                        </div>
+                    </motion.div>
+                </div>
+            </section>
+
             {/* Footer */}
-            <footer className="py-20 px-6 border-t border-white/5 z-10 relative">
+            <footer className="py-20 px-6 border-t border-zinc-900 z-10 relative bg-zinc-950">
                 <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-12">
                     <div className="flex items-center gap-2">
                         <div className="w-6 h-6 bg-white rounded flex items-center justify-center">
                             <Mail className="w-4 h-4 text-black" />
                         </div>
-                        <span className="font-bold tracking-tight">Mailient</span>
+                        <span className="font-bold tracking-tight text-white">Maileint</span>
                     </div>
-                    <div className="flex gap-8 text-sm font-bold text-zinc-400 uppercase tracking-widest">
+                    <div className="flex gap-8 text-sm font-bold text-zinc-500 uppercase tracking-widest">
                         <a href="https://x.com/Maulik_055" target="_blank" className="hover:text-white transition-colors">Twitter</a>
                         <a href="https://github.com" target="_blank" className="hover:text-white transition-colors">GitHub</a>
                         <a href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</a>
@@ -1085,8 +1169,8 @@ export function LinearLanding() {
                                 className="opacity-40 hover:opacity-100 transition-all duration-500 scale-90 hover:scale-100"
                             >
                                 <img
-                                    src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1059008&theme=light&t=1768213643164"
-                                    alt="Mailient - Stop managing emails, Start automating them. | Product Hunt"
+                                    src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1059008&theme=dark&t=1768213643164"
+                                    alt="Maileint - Stop managing emails, Start automating them. | Product Hunt"
                                     className="h-8 w-auto grayscale hover:grayscale-0"
                                 />
                             </a>
@@ -1098,7 +1182,7 @@ export function LinearLanding() {
                             >
                                 <img
                                     src="https://www.foundrlist.com/api/badge/mailient"
-                                    alt="Mailient - Live on FoundrList"
+                                    alt="Maileint - Live on FoundrList"
                                     className="h-8 w-auto grayscale hover:grayscale-0"
                                 />
                             </a>
@@ -1115,7 +1199,7 @@ export function LinearLanding() {
                                 />
                             </a>
                         </div>
-                        <p className="text-xs text-zinc-600">© 2026 Mailient Intelligence.</p>
+                        <p className="text-xs text-zinc-600">© 2026 Maileint Intelligence.</p>
                     </div>
                 </div>
             </footer>
