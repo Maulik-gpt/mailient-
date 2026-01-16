@@ -314,15 +314,11 @@ async function getIntegrationStatus(userEmail, db) {
     const profile = await db.getUserProfile(userEmail);
 
     const tokenScopes = tokens?.scopes || '';
-    const hasCalendarScope =
-      tokenScopes.includes('https://www.googleapis.com/auth/calendar') ||
-      tokenScopes.includes('https://www.googleapis.com/auth/calendar.events') ||
-      tokenScopes.includes('https://www.googleapis.com/auth/calendar.events.freebusy');
 
     return {
       gmail: !!tokens,
-      'google-calendar': (profile?.integrations?.['google-calendar'] !== false) && !!tokens && hasCalendarScope,
-      'google-meet': (profile?.integrations?.['google-meet'] !== false) && !!tokens && hasCalendarScope
+      'google-calendar': false,
+      'google-meet': false
     };
   } catch (error) {
     console.error('Error getting integration status:', error);

@@ -1222,8 +1222,7 @@ export function LinearLanding() {
                     </div>
                 </div>
             </footer>
-                </div>
-            )}
+                )}
         </div>
     )
 }

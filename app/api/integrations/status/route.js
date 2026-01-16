@@ -37,14 +37,10 @@ export async function GET(request) {
     const profile = await db.getUserProfile(session.user.email);
 
     const tokenScopes = tokens?.scopes || '';
-    const hasCalendarScope =
-      tokenScopes.includes('https://www.googleapis.com/auth/calendar') ||
-      tokenScopes.includes('https://www.googleapis.com/auth/calendar.events') ||
-      tokenScopes.includes('https://www.googleapis.com/auth/calendar.events.freebusy');
     const integrations = {
       gmail: !!tokens,
-      'google-calendar': (profile?.integrations?.['google-calendar'] !== false) && !!tokens && hasCalendarScope, // Enabled if not disabled, has tokens, and has Calendar scope
-      'google-meet': (profile?.integrations?.['google-meet'] !== false) && !!tokens && hasCalendarScope, // Enabled if not disabled, has tokens, and has Calendar scope
+      'google-calendar': false,
+      'google-meet': false
     };
 
     return Response.json({ integrations });
