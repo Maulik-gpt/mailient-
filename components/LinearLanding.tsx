@@ -28,8 +28,7 @@ import {
     Inbox,
     Filter,
     ChevronDown,
-    Quote,
-    Brain
+    Quote
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -40,8 +39,6 @@ import { signIn, useSession } from "next-auth/react"
 import { HeroGeometric } from "@/components/ui/shape-landing-hero"
 import { GlassButton } from "@/components/ui/glass-button"
 import { useSmoothScroll } from "@/hooks/use-smooth-scroll"
-import { MatrixDashboard } from "@/components/MatrixDashboard"
-import { OracleMode } from "@/components/OracleMode"
 
 const features = [
     {
@@ -102,8 +99,6 @@ export function LinearLanding() {
     const [activeSection, setActiveSection] = useState("")
     const { handleClick } = useSmoothScroll()
     const [activeStep, setActiveStep] = useState(0)
-    const [currentView, setCurrentView] = useState<'landing' | 'matrix' | 'oracle'>('landing')
-    const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null)
     const containerRef = useRef<HTMLDivElement>(null)
 
     const { scrollYProgress } = useScroll({
@@ -128,25 +123,18 @@ export function LinearLanding() {
     const scale = useTransform(scrollYProgress, [0, 0.1], [1, 0.95])
 
     return (
-        <div className="relative min-h-screen bg-black text-white selection:bg-white selection:text-black font-satoshi overflow-x-hidden">
+        <div ref={containerRef} className="relative min-h-screen bg-black text-white selection:bg-white selection:text-black font-satoshi overflow-x-hidden">
             {/* Background Layer */}
             <div className="fixed inset-0 z-0">
                 <BackgroundShaders />
                 <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px]" />
             </div>
 
-            {/* View Renderer */}
-            {currentView === 'matrix' ? (
-                <MatrixDashboard />
-            ) : currentView === 'oracle' ? (
-                <OracleMode emailId={selectedEmailId || '1'} />
-            ) : (
-                <div ref={containerRef} className="relative min-h-screen">
-                    {/* Navigation */}
-                    <nav className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 ease-in-out ${scrolled
-                        ? 'w-[95%] md:w-[80%] max-w-5xl rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_0_rgba(255,255,255,0.05)] py-3 px-4 md:px-6'
-                        : 'w-[95%] md:w-full max-w-7xl bg-transparent py-4 md:py-6 px-4 md:px-6'
-                        }`}>
+            {/* Navigation */}
+            <nav className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 ease-in-out ${scrolled
+                ? 'w-[95%] md:w-[80%] max-w-5xl rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_0_rgba(255,255,255,0.05)] py-3 px-4 md:px-6'
+                : 'w-[95%] md:w-full max-w-7xl bg-transparent py-4 md:py-6 px-4 md:px-6'
+                }`}>
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4 md:gap-8">
                         <div className="flex items-center gap-2 group cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
@@ -165,13 +153,6 @@ export function LinearLanding() {
                             <a href="#features" onClick={(e) => handleClick(e, 'features')} className="hover:text-white transition-colors">Features</a>
                             <a href="#integration" onClick={(e) => handleClick(e, 'integration')} className="hover:text-white transition-colors">Security</a>
                             <a href="#pricing" onClick={(e) => handleClick(e, 'pricing')} className="hover:text-white transition-colors">Pricing</a>
-                            <button 
-                                onClick={() => setCurrentView('matrix')}
-                                className="flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 hover:text-purple-300 hover:bg-purple-500/20 transition-all"
-                            >
-                                <Brain className="w-4 h-4" />
-                                <span>Matrix</span>
-                            </button>
                         </div>
                     </div>
 
@@ -1222,7 +1203,6 @@ export function LinearLanding() {
                     </div>
                 </div>
             </footer>
-                )}
         </div>
     )
 }
