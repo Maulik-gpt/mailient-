@@ -249,6 +249,18 @@ export function LinearLanding() {
                         </a>
                     </motion.div>
 
+                    {/* Toolfame Badge */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.9, duration: 1 }}
+                        className="flex justify-center mb-16"
+                    >
+                        <a href="https://toolfame.com/item/mailient" target="_blank" rel="noopener noreferrer">
+                            <img src="https://toolfame.com/badge-dark.svg" alt="Featured on toolfame.com" style={{ height: '54px', width: 'auto' }} />
+                        </a>
+                    </motion.div>
+
                     {/* Hero Video */}
                     <div className="relative w-full max-w-5xl mx-auto aspect-video rounded-2xl border border-white/10 bg-zinc-900/50 backdrop-blur-sm overflow-hidden group shadow-[0_0_50px_-12px_rgba(255,255,255,0.1)]">
                         <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
