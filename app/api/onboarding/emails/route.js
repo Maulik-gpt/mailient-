@@ -93,34 +93,44 @@ export async function GET(request) {
         // Sort by date descending
         emailsWithDetails.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-        // Perform SMART analysis using AI heuristics
-        // Filter emails that actually need replies
-        const toReply = emailsWithDetails.filter(e => {
-            // Check if it's unread
-            const isUnread = e.labels?.includes('UNREAD');
-            // Check if it's FROM someone (not sent by user)
-            const isInbound = !e.labels?.includes('SENT');
-            // Check if it has a question-like subject or ends with ?
-            const hasQuestion = e.subject?.includes('?') ||
-                e.snippet?.includes('?') ||
-                /\b(can you|could you|would you|please|urgent|asap|need|help)\b/i.test(e.snippet || '');
-            // Check if it's a human email (not automated/newsletter)
-            const isHuman = !/\b(noreply|no-reply|newsletter|automated|unsubscribe|donotreply)\b/i.test(e.from || '');
+        // Perform SIMPLE analysis for onboarding demo
+        // Less strict filtering to ensure users see some results
 
-            return isUnread && isInbound && isHuman && (hasQuestion || e.labels?.includes('IMPORTANT'));
-        }).slice(0, 5);
-
-        // Find threads waiting for reply (unanswered threads where user was involved but no recent sent)
-        const unanswered = emailsWithDetails.filter(e => {
+        // Filter for human emails (not automated)
+        const humanEmails = emailsWithDetails.filter(e => {
+            const isHuman = !/\b(noreply|no-reply|newsletter|automated|unsubscribe|donotreply|mailer-daemon|notifications?@|updates?@|alerts?@|info@|support@)\b/i.test(e.from || '');
             const isInbound = !e.labels?.includes('SENT');
-            const isHuman = !/\b(noreply|no-reply|newsletter|automated|unsubscribe|donotreply)\b/i.test(e.from || '');
-            const isOlderThan24h = e.date && (Date.now() - new Date(e.date).getTime()) > 24 * 60 * 60 * 1000;
             const isNotSpam = !e.labels?.includes('SPAM') && !e.labels?.includes('TRASH');
-            // Looking for follow-up signals
-            const needsFollowUp = /\b(waiting|follow.?up|circling back|checking in|any update|heard back|response)\b/i.test(e.snippet || '');
+            return isHuman && isInbound && isNotSpam;
+        });
 
-            return isInbound && isHuman && isNotSpam && (needsFollowUp || (isOlderThan24h && e.labels?.includes('INBOX')));
+        console.log(`📧 Found ${humanEmails.length} human emails out of ${emailsWithDetails.length} total`);
+
+        // Emails to reply: First 5 unread inbound human emails, or recent ones if no unread
+        let toReply = humanEmails.filter(e => e.labels?.includes('UNREAD')).slice(0, 5);
+
+        // If not enough unread, add some recent inbox emails
+        if (toReply.length < 3) {
+            const additionalEmails = humanEmails
+                .filter(e => e.labels?.includes('INBOX') && !toReply.some(r => r.id === e.id))
+                .slice(0, 5 - toReply.length);
+            toReply = [...toReply, ...additionalEmails];
+        }
+
+        // Unanswered threads: Emails older than 12 hours that are still in inbox
+        const twelveHoursAgo = Date.now() - (12 * 60 * 60 * 1000);
+        let unanswered = humanEmails.filter(e => {
+            const emailDate = new Date(e.date).getTime();
+            return emailDate < twelveHoursAgo && e.labels?.includes('INBOX');
         }).slice(0, 5);
+
+        // If still not enough unanswered, just show some emails from inbox
+        if (unanswered.length < 2 && humanEmails.length > toReply.length) {
+            const remaining = humanEmails
+                .filter(e => !toReply.some(r => r.id === e.id) && !unanswered.some(u => u.id === e.id))
+                .slice(0, 5 - unanswered.length);
+            unanswered = [...unanswered, ...remaining];
+        }
 
         const analysis = {
             toReply,
