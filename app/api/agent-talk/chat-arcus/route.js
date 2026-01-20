@@ -139,6 +139,7 @@ export async function POST(request) {
 
     // Parse user intent
     const draftIntent = arcusAI.parseDraftIntent(message);
+    const schedulingIntent = arcusAI.parseSchedulingIntent(message);
 
     // Handle drafting request
     if (draftIntent.isDraftRequest || draftReplyRequest) {
@@ -168,6 +169,37 @@ export async function POST(request) {
         aiGenerated: true,
         actionType: 'draft_reply',
         draftData: draftResult.draftData || null
+      });
+    }
+
+    // Handle scheduling request
+    if (schedulingIntent.isSchedulingRequest) {
+      const schedulingResult = await handleSchedulingRequest(
+        message,
+        schedulingIntent,
+        userEmail,
+        userName,
+        session,
+        db,
+        arcusAI,
+        integrations,
+        conversationHistory,
+        privacyMode,
+        emailContext
+      );
+
+      // Save conversation
+      if (userEmail) {
+        await saveConversation(userEmail, message, schedulingResult.message, currentConversationId, db);
+      }
+
+      return NextResponse.json({
+        message: schedulingResult.message,
+        timestamp: new Date().toISOString(),
+        conversationId: currentConversationId,
+        aiGenerated: true,
+        actionType: 'schedule_meeting',
+        schedulingData: schedulingResult.schedulingData || null
       });
     }
 
@@ -461,61 +493,51 @@ async function handleSchedulingRequest(
   arcusAI,
   integrations,
   conversationHistory,
-  privacyMode
+  privacyMode,
+  emailContext
 ) {
   try {
-    // Check if we have all required information
-    const missingInfo = [];
+    console.log('📅 Handling scheduling request:', schedulingIntent);
 
-    if (schedulingIntent.attendees.length === 0) {
-      missingInfo.push('who should attend the meeting');
-    }
-    if (!schedulingIntent.time) {
-      missingInfo.push('what time the meeting should be');
-    }
-    if (!schedulingIntent.date) {
-      missingInfo.push('what day the meeting should be on');
-    }
+    // Generate meeting details using AI
+    const meetingDetails = await arcusAI.generateMeetingDetails(
+      schedulingIntent.context,
+      emailContext || ''
+    );
 
-    // Ask clarifying questions if info is missing
-    if (missingInfo.length > 0) {
-      const clarificationMessage = `I'd be happy to help schedule that meeting! I just need a bit more information:
+    console.log('✅ Generated meeting details:', meetingDetails);
 
-${missingInfo.map((info, i) => `${i + 1}. ${info.charAt(0).toUpperCase() + info.slice(1)}`).join('\n')}
+    // Build response with AI-generated details
+    const responseMessage = `I've set up the meeting details for you:
 
-Could you provide these details?`;
+**Meeting Title:** ${meetingDetails.suggested_title}
+**Objective:** ${meetingDetails.suggested_description}
+**Duration:** ${meetingDetails.suggested_duration} minutes
 
-      return {
-        message: clarificationMessage,
-        schedulingData: null
-      };
-    }
+${schedulingIntent.attendees.length > 0 ? `**Attendees:** ${schedulingIntent.attendees.join(', ')}` : ''}
+${schedulingIntent.date ? `**Date:** ${schedulingIntent.date}` : ''}
+${schedulingIntent.time ? `**Time:** ${schedulingIntent.time}` : ''}
 
-    // We have all the info, proceed with scheduling
-    const confirmationMessage = `Great! I'll set up the meeting for you:
-
-Meeting with: ${schedulingIntent.attendees.join(', ')}
-When: ${schedulingIntent.date} at ${schedulingIntent.time}
-${schedulingIntent.notify ? 'Notifications: Will be sent to all attendees' : ''}
-${schedulingIntent.saveToCalendar ? 'Calendar: Will be saved to your Google Calendar' : ''}
-
-I'm preparing to create this event now. Is this correct? Just say "yes" to confirm or let me know if you'd like to change anything.`;
+I can help you draft an email to send this invitation to the attendees. Would you like me to do that?`;
 
     return {
-      message: confirmationMessage,
+      message: responseMessage,
       schedulingData: {
-        attendees: schedulingIntent.attendees,
-        time: schedulingIntent.time,
-        date: schedulingIntent.date,
-        notify: schedulingIntent.notify,
-        saveToCalendar: schedulingIntent.saveToCalendar,
-        status: 'pending_confirmation'
+        ...meetingDetails,
+        ...schedulingIntent,
+        status: 'details_generated'
       }
     };
   } catch (error) {
     console.error('Error handling scheduling request:', error);
     return {
-      message: `I had some trouble setting that up. Could you tell me the details again? I need to know who to invite, what day, and what time.`,
+      message: `I'd be happy to help you schedule a meeting! To get started, could you tell me:
+
+1. What the meeting is about
+2. Who should attend
+3. When you'd like to meet
+
+Once I have those details, I can suggest a great title and objective for the meeting.`,
       schedulingData: null
     };
   }

@@ -106,7 +106,8 @@ export default function SiftOnboardingPage() {
   const [isScanning, setIsScanning] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
   const [selectedEmailForAction, setSelectedEmailForAction] = useState<any>(null);
-  const [actionType, setActionType] = useState<"summary" | "reply" | null>(null);
+  const [actionType, setActionType] = useState<"summary" | "reply" | "ask" | null>(null);
+  const [aiQuestion, setAiQuestion] = useState<string>("");
   const [actionLoading, setActionLoading] = useState(false);
   const [actionResult, setActionResult] = useState<string | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
@@ -153,36 +154,47 @@ export default function SiftOnboardingPage() {
       // Fake delay for perceived value
       const delayPromise = new Promise(resolve => setTimeout(resolve, 4000));
 
-      // Real fetch
-      const fetchPromise = fetch("/api/gmail/messages?maxResults=20").then(res => res.json());
+      // Use onboarding-specific endpoint that bypasses subscription checks
+      const fetchPromise = fetch("/api/onboarding/emails").then(res => res.json());
 
       const [_, data] = await Promise.all([delayPromise, fetchPromise]);
 
-      if (data.emails) {
-        setScannedEmails(data.emails);
-        // Heuristic analysis
-        const toReply = data.emails.filter((e: any) => e.labels.includes("UNREAD")).slice(0, 3);
-        const unanswered = data.emails.filter((e: any) => !e.labels.includes("SENT")).slice(0, 2);
+      console.log('📧 Onboarding email scan result:', data);
 
+      if (data.emails && data.emails.length > 0) {
+        setScannedEmails(data.emails);
+        // Use the smart analysis from the API
         setAnalysisResult({
-          toReply,
-          unanswered
+          toReply: data.analysis?.toReply || [],
+          unanswered: data.analysis?.unanswered || []
         });
+      } else {
+        // Even if no emails found, set empty results
+        setScannedEmails([]);
+        setAnalysisResult({ toReply: [], unanswered: [] });
       }
 
       handleNext();
     } catch (error) {
       console.error("Scan failed:", error);
+      // Set empty results on error
+      setScannedEmails([]);
+      setAnalysisResult({ toReply: [], unanswered: [] });
       handleNext(); // Still move forward even if it fails
     } finally {
       setIsScanning(false);
     }
   };
 
-  const handleAction = async (type: "summary" | "reply", email: any) => {
+  const handleAction = async (type: "summary" | "reply" | "ask", email: any, question?: string) => {
     if (!email?.id) {
       console.error('❌ No email ID provided');
       setActionResult('Error: No email ID found');
+      return;
+    }
+
+    if (type === "ask" && !question?.trim()) {
+      setActionResult('Please enter a question to ask about this email.');
       return;
     }
 
@@ -198,21 +210,29 @@ export default function SiftOnboardingPage() {
       // Small artificial delay for perceived "intelligence" and weight of Arcus
       await new Promise(resolve => setTimeout(resolve, 800));
 
-      const endpoint = type === "summary" ? "/api/email/summary" : "/api/email/draft-reply";
-      console.log(`📡 Calling endpoint: ${endpoint}`);
-      
+      // Use onboarding-specific endpoint that bypasses subscription checks
+      const endpoint = "/api/onboarding/ai-action";
+      console.log(`📡 Calling onboarding AI endpoint: ${endpoint}`);
+
+      const requestBody: any = {
+        emailId: email.id,
+        actionType: type,
+        context: {
+          role,
+          goals: selectedGoals,
+          userName: session?.user?.name || "there"
+        }
+      };
+
+      // Add question for ask action
+      if (type === "ask" && question) {
+        requestBody.question = question;
+      }
+
       const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          emailId: email.id,
-          // Pass context to the AI for higher quality, personalized results
-          context: {
-            role,
-            goals: selectedGoals,
-            userName: session?.user?.name || "there"
-          }
-        })
+        body: JSON.stringify(requestBody)
       });
 
       console.log(`📡 Response status: ${response.status}`);
@@ -224,26 +244,23 @@ export default function SiftOnboardingPage() {
         throw new Error(data.message || data.error || `Failed to generate AI response (${response.status})`);
       }
 
-      if (type === "summary") {
-        const summary = data.summary;
-        if (!summary || summary.length < 5) {
-          console.warn('⚠️ AI summary too short, using fallback');
-          // Fallback summary based on email content
-          const fallbackSummary = `This email from ${email.from} discusses "${email.subject}". ${email.snippet ? `Key point: ${email.snippet.substring(0, 100)}...` : 'Please review the full content for details.'}`;
-          setActionResult(fallbackSummary);
-        } else {
-          setActionResult(summary);
+      // Handle the unified response format from onboarding endpoint
+      if (data.result) {
+        setActionResult(data.result);
+        if (type === "ask") {
+          setAiQuestion(""); // Clear question after successful response
         }
       } else {
-        const draft = data.draftReply || data.draft;
-        if (!draft || draft.length < 5) {
-          console.warn('⚠️ AI draft too short, using fallback');
-          // Fallback draft based on email content
+        // Fallback based on action type
+        if (type === "summary") {
+          const fallbackSummary = `This email from ${email.from} discusses "${email.subject}". ${email.snippet ? `Key point: ${email.snippet.substring(0, 100)}...` : 'Please review the full content for details.'}`;
+          setActionResult(fallbackSummary);
+        } else if (type === "reply") {
           const fromName = email.from?.match(/([^<\s]+)/)?.[1]?.trim() || email.from?.split('@')?.[0] || 'there';
           const fallbackDraft = `Hi ${fromName},\n\nThank you for your email regarding "${email.subject}". I appreciate you reaching out and will review this carefully.\n\nI'll get back to you with a proper response soon.\n\nBest regards,\n${session?.user?.name || 'User'}`;
           setActionResult(fallbackDraft);
         } else {
-          setActionResult(draft);
+          setActionResult('I can help you understand this email better. Please try again or ask a specific question.');
         }
       }
     } catch (error: any) {
@@ -575,25 +592,58 @@ export default function SiftOnboardingPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Button
-                      onClick={() => handleAction("summary", emailToTry)}
-                      disabled={actionLoading}
-                      variant="outline"
-                      className="h-16 border-white/10 bg-white/5 text-white hover:bg-white/10 rounded-2xl font-bold flex items-center justify-center gap-2"
-                    >
-                      {actionLoading && actionType === "summary" ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-                      Summarize this email
-                    </Button>
+                  {/* Two Main Actions */}
+                  <div className="space-y-4">
+                    {/* Primary Action: Generate Reply Draft */}
                     <Button
                       onClick={() => handleAction("reply", emailToTry)}
                       disabled={actionLoading}
-                      variant="outline"
-                      className="h-16 border-white/10 bg-white/5 text-white hover:bg-white/10 rounded-2xl font-bold flex items-center justify-center gap-2"
+                      className="w-full h-16 bg-white text-black hover:bg-zinc-200 rounded-2xl font-bold flex items-center justify-center gap-3 text-lg shadow-[0_0_30px_rgba(255,255,255,0.1)] transition-all"
                     >
                       {actionLoading && actionType === "reply" ? <Loader2 className="w-5 h-5 animate-spin" /> : <Bot className="w-5 h-5" />}
-                      Draft a quick reply
+                      Generate Reply Draft
                     </Button>
+
+                    {/* Secondary Action: Talk to AI */}
+                    <div className="p-6 bg-zinc-900/50 border border-white/10 rounded-2xl space-y-4">
+                      <div className="flex items-center gap-2 text-zinc-400">
+                        <MessageSquare className="w-5 h-5" />
+                        <span className="font-bold">Talk to AI about this email</span>
+                      </div>
+                      <div className="flex gap-3">
+                        <input
+                          type="text"
+                          value={aiQuestion}
+                          onChange={(e) => setAiQuestion(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && aiQuestion.trim() && handleAction("ask", emailToTry, aiQuestion)}
+                          placeholder="Ask anything... e.g., 'What does this person want?' or 'Is this urgent?'"
+                          className="flex-1 h-12 px-4 bg-black/50 border border-white/10 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-white/30 transition-colors"
+                          disabled={actionLoading}
+                        />
+                        <Button
+                          onClick={() => handleAction("ask", emailToTry, aiQuestion)}
+                          disabled={actionLoading || !aiQuestion.trim()}
+                          className="h-12 px-6 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {actionLoading && actionType === "ask" ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                        </Button>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {["What's the priority?", "Summarize this", "What action needed?"].map((suggestion) => (
+                          <button
+                            key={suggestion}
+                            onClick={() => {
+                              setAiQuestion(suggestion);
+                              handleAction("ask", emailToTry, suggestion);
+                            }}
+                            disabled={actionLoading}
+                            className="px-3 py-1.5 text-xs font-medium text-zinc-400 bg-white/5 hover:bg-white/10 border border-white/5 rounded-full transition-colors disabled:opacity-50"
+                          >
+                            {suggestion}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
 
                   <AnimatePresence>
@@ -608,10 +658,14 @@ export default function SiftOnboardingPage() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <div className="w-6 h-6 rounded-lg bg-white/10 flex items-center justify-center">
-                              {actionType === "summary" ? <Sparkles className="w-3 h-3 text-zinc-300" /> : <Bot className="w-3 h-3 text-zinc-300" />}
+                              {actionType === "summary" ? <Sparkles className="w-3 h-3 text-zinc-300" /> :
+                                actionType === "ask" ? <MessageSquare className="w-3 h-3 text-zinc-300" /> :
+                                  <Bot className="w-3 h-3 text-zinc-300" />}
                             </div>
                             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">
-                              {actionType === "summary" ? "Arcus Synthesis" : "Deep Draft Intelligence"}
+                              {actionType === "summary" ? "Arcus Synthesis" :
+                                actionType === "ask" ? "Arcus Intelligence" :
+                                  "Deep Draft Intelligence"}
                             </span>
                           </div>
                           <motion.div

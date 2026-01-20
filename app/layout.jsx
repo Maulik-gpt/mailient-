@@ -20,10 +20,10 @@ export const metadata = {
     siteName: "Mailient",
     images: [
       {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "Mailient - AI-Powered Email for Founders",
+        url: "/api/screenshot",
+        width: 1280,
+        height: 720,
+        alt: "Mailient App Dashboard - AI-Powered Email Management for Founders",
       },
     ],
     locale: "en_US",
@@ -33,7 +33,7 @@ export const metadata = {
     card: "summary_large_image",
     title: "Mailient",
     description: "Never Miss Revenue Again. AI assistant for founders.",
-    images: ["/og-image.png"],
+    images: ["/api/screenshot"],
   },
 };
 

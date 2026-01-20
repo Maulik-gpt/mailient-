@@ -10,7 +10,7 @@ function HomeFeedContent() {
   const router = useRouter();
   const { data: session, status } = useSession();
 
-  // Check authentication, activate pending subscriptions, and check onboarding status
+  // Check authentication, subscription status, and onboarding status
   useEffect(() => {
     if (status === "loading") return;
 
@@ -20,25 +20,51 @@ function HomeFeedContent() {
     }
 
     if (status === "authenticated" && session?.user?.email) {
-      const checkAndActivate = async () => {
+      const checkAccessAndSubscription = async () => {
         try {
-          // IMMEDIATE CHECK: If localStorage says we are done, don't redirect
-          // This prevents the "flash and redirect" when returning from Whop
+          // IMMEDIATE CHECK: If localStorage says we are done, check subscription
           const isDone = localStorage.getItem('onboarding_completed') === 'true';
 
-          // If we're already marked as completed, skip all checks
+          // Check subscription status FIRST
+          console.log('📡 [HomeFeed] Checking subscription status...');
+          try {
+            const subResponse = await fetch('/api/subscription/status');
+            if (subResponse.ok) {
+              const subData = await subResponse.json();
+              console.log('💳 [HomeFeed] Subscription status:', subData);
+
+              // If no active subscription, redirect to pricing
+              if (!subData.isActive && subData.planType !== 'starter' && subData.planType !== 'pro') {
+                console.log('🚫 [HomeFeed] No active subscription, redirecting to /pricing');
+                router.push('/pricing');
+                return;
+              }
+
+              // If subscription is active, mark onboarding as complete
+              if (subData.isActive) {
+                localStorage.setItem('onboarding_completed', 'true');
+                console.log('✅ [HomeFeed] Subscription active, access granted');
+                return;
+              }
+            } else {
+              console.error('❌ [HomeFeed] Subscription API failed:', subResponse.status);
+            }
+          } catch (subError) {
+            console.error('⚠️ [HomeFeed] Subscription check error:', subError);
+          }
+
+          // If we're already marked as completed locally and haven't been redirected, allow access
           if (isDone) {
-            console.log('✅ [HomeFeed] Already completed (localStorage), skipping checks');
+            console.log('✅ [HomeFeed] Already completed (localStorage)');
             return;
           }
 
           // SECURITY FIX: Clear any pending plan data without activating
-          // Subscriptions should ONLY be activated via Whop webhook after verified payment
           const pendingPlan = localStorage.getItem('pending_plan');
           const pendingTimestamp = localStorage.getItem('pending_plan_timestamp');
 
           if (pendingPlan || pendingTimestamp) {
-            console.log('🧹 [HomeFeed] Clearing stale pending plan data (subscriptions activated via webhook only)');
+            console.log('🧹 [HomeFeed] Clearing stale pending plan data');
             localStorage.removeItem('pending_plan');
             localStorage.removeItem('pending_plan_timestamp');
           }
@@ -46,7 +72,6 @@ function HomeFeedContent() {
           // Check onboarding status from server with retry logic
           console.log('📡 [HomeFeed] Checking server-side onboarding status...');
 
-          // Try multiple times with exponential backoff to handle database replication delays
           const maxRetries = 3;
           let retryCount = 0;
           let serverCompleted = false;
@@ -62,6 +87,17 @@ function HomeFeedContent() {
                   serverCompleted = true;
                   console.log('✅ [HomeFeed] User is completed');
                   localStorage.setItem('onboarding_completed', 'true');
+
+                  // Double-check subscription for completed users
+                  const subCheck = await fetch('/api/subscription/status');
+                  if (subCheck.ok) {
+                    const subCheckData = await subCheck.json();
+                    if (!subCheckData.isActive) {
+                      console.log('🚫 [HomeFeed] Onboarding done but no subscription, redirecting to /pricing');
+                      router.push('/pricing');
+                      return;
+                    }
+                  }
                 } else {
                   console.log(`⏳ [HomeFeed] User NOT completed (attempt ${retryCount + 1}/${maxRetries})`);
                   if (retryCount === maxRetries - 1) {
@@ -76,7 +112,6 @@ function HomeFeedContent() {
             } catch (error) {
               console.error(`⚠️ [HomeFeed] Status check failed (attempt ${retryCount + 1}):`, error);
               if (retryCount < maxRetries - 1) {
-                // Exponential backoff: 500ms, 1000ms, 2000ms
                 const delay = Math.pow(2, retryCount) * 500;
                 await new Promise(resolve => setTimeout(resolve, delay));
               }
@@ -87,7 +122,7 @@ function HomeFeedContent() {
           console.error("Error in home-feed init:", error);
         }
       };
-      checkAndActivate();
+      checkAccessAndSubscription();
     }
   }, [status, session, router]);
 

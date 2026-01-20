@@ -1,13 +1,41 @@
 import { NextResponse } from 'next/server';
+import { SchedulingAIService } from '@/lib/scheduling-ai';
 
-// Calendar functionality has been disabled
 export async function POST(request) {
-  return NextResponse.json(
-    { 
-      error: 'Calendar functionality has been disabled',
-      message: 'Google Calendar integration is no longer available. Please use email scheduling instead.'
-    },
-    { status: 503 }
-  );
+  try {
+    const { emailContent, meetingContext } = await request.json();
+    
+    console.log('🤖 Meeting scheduling request received (dashboard)');
+    
+    const schedulingAI = new SchedulingAIService();
+    
+    // Generate meeting details using AI
+    const meetingDetails = await schedulingAI.recommendMeetingDetails(
+      emailContent || meetingContext || ''
+    );
+    
+    console.log('✅ Generated meeting details:', meetingDetails);
+    
+    return NextResponse.json({
+      success: true,
+      meetingDetails,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ Meeting scheduling error:', error);
+    return NextResponse.json(
+      { 
+        error: 'Failed to generate meeting details',
+        message: error.message,
+        fallback: {
+          suggested_title: 'Follow-up Call',
+          suggested_description: 'Discussing the recent email exchange.',
+          suggested_duration: 30
+        }
+      },
+      { status: 500 }
+    );
+  }
 }
 

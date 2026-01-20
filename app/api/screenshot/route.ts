@@ -6,9 +6,9 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     
-    // Get dimensions from query params or use defaults
-    const width = parseInt(searchParams.get('width') || '1200');
-    const height = parseInt(searchParams.get('height') || '630');
+    // Get dimensions from query params or use defaults (16:9 ratio)
+    const width = parseInt(searchParams.get('width') || '1280');
+    const height = parseInt(searchParams.get('height') || '720');
 
     const svgContent = `
       <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">

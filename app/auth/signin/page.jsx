@@ -12,7 +12,7 @@ function SignInContent() {
   const [error, setError] = useState(null);
   const [toast, setToast] = useState({ show: false, message: '', type: 'info', fading: false });
 
-  const callbackUrl = searchParams?.get('callbackUrl') || '/home-feed';
+  const callbackUrl = searchParams?.get('callbackUrl') || '/onboarding';
 
   const showToast = (message, type = 'info') => {
     setToast({ show: true, message, type, fading: false });
@@ -101,8 +101,10 @@ function SignInContent() {
 
     try {
       // Use NextAuth v5 signIn with redirect option
+      // Always redirect to onboarding first - the onboarding flow handles
+      // routing to home-feed if user already completed onboarding
       await signIn('google', {
-        redirectTo: callbackUrl,
+        redirectTo: '/onboarding',
       });
 
       // Note: In NextAuth v5, signIn doesn't return a result when redirect is true
