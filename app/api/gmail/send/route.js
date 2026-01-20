@@ -1,4 +1,4 @@
-import { GmailService } from '@/lib/gmail.ts';
+import { GmailService } from '@/lib/gmail';
 import { auth } from '@/lib/auth.js';
 
 export async function POST(request) {

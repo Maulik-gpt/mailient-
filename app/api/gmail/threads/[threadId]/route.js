@@ -1,4 +1,4 @@
-import { GmailService } from '@/lib/gmail.ts';
+import { GmailService } from '@/lib/gmail';
 import { DatabaseService } from '@/lib/supabase.js';
 import { auth } from '@/lib/auth.js';
 import { decrypt } from '@/lib/crypto.js';

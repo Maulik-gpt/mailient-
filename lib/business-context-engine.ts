@@ -153,7 +153,12 @@ export class BusinessContextEngine {
     relationshipOpportunities: string[]
     priorityEmails: string[]
   } {
-    const insights = {
+    const insights: {
+      urgentActions: string[]
+      dealWarnings: string[]
+      relationshipOpportunities: string[]
+      priorityEmails: string[]
+    } = {
       urgentActions: [],
       dealWarnings: [],
       relationshipOpportunities: [],
@@ -199,7 +204,7 @@ export class BusinessContextEngine {
     suggestedAction: string
     estimatedValue?: number
   } {
-    const reasons = []
+    const reasons: string[] = []
     let importance: 'Low' | 'Medium' | 'High' | 'Critical' = 'Medium'
     let suggestedAction = 'Review when available'
     let estimatedValue = 0

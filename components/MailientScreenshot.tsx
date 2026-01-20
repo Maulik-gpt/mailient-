@@ -2,14 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Mail, 
-  TrendingUp, 
-  AlertCircle, 
-  Clock, 
-  Target, 
-  Zap, 
-  Sparkles, 
+import {
+  Mail,
+  TrendingUp,
+  AlertCircle,
+  Clock,
+  Target,
+  Zap,
+  Sparkles,
   CheckCircle,
   ArrowRight,
   BarChart3,
@@ -30,11 +30,24 @@ import {
   Trash2
 } from 'lucide-react';
 
+type EmailItem = {
+  id: number;
+  sender: string;
+  senderEmail: string;
+  subject: string;
+  preview: string;
+  amount?: string;
+  priority: string;
+  time: string;
+  avatar: string;
+  status: string;
+};
+
 const MailientScreenshot = () => {
   const [activeTab, setActiveTab] = useState('opportunities');
   const [isAnimating, setIsAnimating] = useState(false);
 
-  const emailData = {
+  const emailData: Record<'opportunities' | 'urgent' | 'followups', EmailItem[]> = {
     opportunities: [
       {
         id: 1,

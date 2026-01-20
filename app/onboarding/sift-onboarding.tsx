@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import {
   Zap,
@@ -104,6 +104,8 @@ export default function SiftOnboardingPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [scannedEmails, setScannedEmails] = useState<any[]>([]);
   const [isScanning, setIsScanning] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [scanNeedsReauth, setScanNeedsReauth] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
   const [selectedEmailForAction, setSelectedEmailForAction] = useState<any>(null);
   const [actionType, setActionType] = useState<"summary" | "reply" | "ask" | null>(null);
@@ -150,12 +152,29 @@ export default function SiftOnboardingPage() {
 
   const startScan = async () => {
     setIsScanning(true);
+    setScanError(null);
+    setScanNeedsReauth(false);
     try {
       // Fake delay for perceived value
       const delayPromise = new Promise(resolve => setTimeout(resolve, 4000));
 
       // Use onboarding-specific endpoint that bypasses subscription checks
-      const fetchPromise = fetch("/api/onboarding/emails").then(res => res.json());
+      const fetchPromise = fetch("/api/onboarding/emails").then(async (res) => {
+        let data: any = {};
+        try {
+          data = await res.json();
+        } catch {
+          data = {};
+        }
+
+        if (!res.ok) {
+          const err: any = new Error(data?.details || data?.error || `Failed to fetch emails (${res.status})`);
+          err.needsReauth = !!data?.needsReauth;
+          throw err;
+        }
+
+        return data;
+      });
 
       const [_, data] = await Promise.all([delayPromise, fetchPromise]);
 
@@ -175,12 +194,15 @@ export default function SiftOnboardingPage() {
       }
 
       handleNext();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Scan failed:", error);
-      // Set empty results on error
-      setScannedEmails([]);
-      setAnalysisResult({ toReply: [], unanswered: [] });
-      handleNext(); // Still move forward even if it fails
+      if (error?.needsReauth) {
+        setScanNeedsReauth(true);
+        setScanError("Gmail permissions need to be refreshed. Please reconnect Gmail to continue.");
+        return;
+      }
+
+      setScanError(error?.message || "Failed to fetch emails. Please try again.");
     } finally {
       setIsScanning(false);
     }
@@ -483,20 +505,71 @@ export default function SiftOnboardingPage() {
       case 3: // Scanning
         return (
           <motion.div key="step-3" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-12 text-center max-w-2xl mx-auto">
-            <div className="relative w-32 h-32 mx-auto">
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                className="absolute inset-0 border-t-2 border-white/20 rounded-full"
-              />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 text-white animate-spin" />
-              </div>
-            </div>
-            <div className="space-y-4">
-              <h2 className="text-3xl font-bold text-white">Looking at recent conversations…</h2>
-              <p className="text-zinc-500">Finding emails that may need attention.</p>
-            </div>
+            {isScanning ? (
+              <>
+                <div className="relative w-32 h-32 mx-auto">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                    className="absolute inset-0 border-t-2 border-white/20 rounded-full"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Loader2 className="w-8 h-8 text-white animate-spin" />
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <h2 className="text-3xl font-bold text-white">Looking at recent conversations…</h2>
+                  <p className="text-zinc-500">Finding emails that may need attention.</p>
+                </div>
+              </>
+            ) : scanError ? (
+              <>
+                <div className="space-y-4">
+                  <h2 className="text-3xl font-bold text-white">We couldn’t scan your inbox.</h2>
+                  <p className="text-zinc-500">{scanError}</p>
+                </div>
+                <div className="flex flex-col gap-3 items-center">
+                  {scanNeedsReauth ? (
+                    <Button
+                      onClick={() => signOut({ callbackUrl: "/auth/signin" })}
+                      className="h-14 px-10 bg-white text-black hover:bg-zinc-200 rounded-2xl font-bold"
+                    >
+                      Reconnect Gmail
+                    </Button>
+                  ) : null}
+                  <Button
+                    onClick={startScan}
+                    className="h-14 px-10 bg-white text-black hover:bg-zinc-200 rounded-2xl font-bold"
+                  >
+                    Retry Scan
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setScannedEmails([]);
+                      setAnalysisResult({ toReply: [], unanswered: [] });
+                      handleNext();
+                    }}
+                    variant="ghost"
+                    className="text-zinc-400 hover:text-white hover:bg-white/5 rounded-xl h-12 px-6"
+                  >
+                    Skip
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="space-y-4">
+                  <h2 className="text-3xl font-bold text-white">Ready to scan your inbox.</h2>
+                  <p className="text-zinc-500">We’ll look at your latest emails to find what needs attention.</p>
+                </div>
+                <Button
+                  onClick={startScan}
+                  className="h-14 px-10 bg-white text-black hover:bg-zinc-200 rounded-2xl font-bold"
+                >
+                  Start Scan
+                </Button>
+              </>
+            )}
           </motion.div>
         );
 

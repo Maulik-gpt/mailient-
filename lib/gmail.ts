@@ -144,7 +144,7 @@ export class GmailService {
         this.circuitBreakerOpen = false;
         this.circuitBreakerUntil = null;
         this.consecutiveErrors = 0;
-        console.log('🔄 Circuit breaker auto-recovered');
+        console.log('Circuit breaker auto-recovered');
       } else {
         throw new Error(`Circuit breaker is open for ${Math.ceil(timeLeft / 1000)} more seconds`);
       }
@@ -201,16 +201,16 @@ export class GmailService {
 
       // Handle token expiration
       if (response.status === 401) {
-        console.log('DEBUG: Received 401 Unauthorized - Access token expired');
-        console.log('DEBUG: Refresh token available:', !!this.refreshToken);
-        console.log('DEBUG: Current access token length:', this.accessToken?.length || 0);
+        console.log('Received 401 Unauthorized - Access token expired');
+        console.log('Refresh token available:', !!this.refreshToken);
+        console.log('Current access token length:', this.accessToken?.length || 0);
 
         // Try to refresh the token automatically
         if (this.refreshToken) {
           try {
-            console.log('DEBUG: Attempting automatic token refresh...');
+            console.log('Attempting automatic token refresh...');
             const newAccessToken = await this.refreshAccessToken();
-            console.log('DEBUG: Token refresh successful, retrying request...');
+            console.log('Token refresh successful, retrying request...');
 
             // Retry the request with the new token
             const retryResponse = await fetch(url, {
@@ -224,19 +224,19 @@ export class GmailService {
 
             // If retry succeeds, return the response
             if (retryResponse.ok) {
-              console.log('DEBUG: Retry request successful');
+              console.log('Retry request successful');
               return retryResponse.json();
             } else {
-              console.log('DEBUG: Retry request failed with status:', retryResponse.status);
+              console.log('Retry request failed with status:', retryResponse.status);
               throw new Error(`Token refresh succeeded but retry failed: ${retryResponse.status} ${retryResponse.statusText}`);
             }
           } catch (refreshError) {
-            console.error('DEBUG: Token refresh failed:', refreshError);
+            console.error('Token refresh failed:', refreshError);
             throw new Error(`Access token expired and refresh failed: ${refreshError instanceof Error ? refreshError.message : String(refreshError)}`);
           }
         } else {
-          console.error('❌ Gmail authentication failed: Access token expired and no refresh token available');
-          console.info('💡 User needs to re-authenticate with Google to restore functionality');
+          console.error('Gmail authentication failed: Access token expired and no refresh token available');
+          console.info('User needs to re-authenticate with Google to restore functionality');
           throw new Error('Google authentication required: Your session has expired. Please sign out and sign back in with Google to restore full functionality.');
         }
       }
@@ -251,7 +251,24 @@ export class GmailService {
             throw new Error(`Circuit breaker opened due to ${this.consecutiveErrors} consecutive errors`);
           }
         }
-        throw new Error(`Gmail API error: ${response.status} ${response.statusText}`);
+        let errorBody = '';
+        try {
+          errorBody = await response.text();
+        } catch {
+          errorBody = '';
+        }
+
+        if (
+          response.status === 403 &&
+          /insufficient\s*permissions|insufficient\s*authentication\s*scopes|access\s*not\s*configured/i.test(errorBody)
+        ) {
+          throw new Error(
+            'Google permissions missing for Gmail read access. Please sign out and sign back in to grant Gmail permissions.'
+          );
+        }
+
+        const details = errorBody ? ` - ${errorBody.substring(0, 300)}` : '';
+        throw new Error(`Gmail API error: ${response.status} ${response.statusText}${details}`);
       }
 
       // Reset error count on success
@@ -263,9 +280,8 @@ export class GmailService {
       // If it's a network error, don't count it as a consecutive error
       if (error instanceof Error && (error.message.includes('fetch') || error.message.includes('network'))) {
         console.log('Network error, not counting as consecutive error');
-      } else {
-        throw error;
       }
+      throw error;
     }
   }
 
