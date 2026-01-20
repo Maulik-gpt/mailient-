@@ -33,19 +33,21 @@ function HomeFeedContent() {
               const subData = await subResponse.json();
               console.log('💳 [HomeFeed] Subscription status:', subData);
 
-              // If no active subscription, redirect to pricing
-              if (!subData.isActive && subData.planType !== 'starter' && subData.planType !== 'pro') {
-                console.log('🚫 [HomeFeed] No active subscription, redirecting to /pricing');
-                router.push('/pricing');
+              // Extract from the nested subscription object
+              const isActive = subData.subscription?.hasActiveSubscription;
+              const planType = subData.subscription?.planType;
+
+              // If user has an active subscription OR has a valid plan type, allow access
+              if (isActive || planType === 'starter' || planType === 'pro') {
+                localStorage.setItem('onboarding_completed', 'true');
+                console.log('✅ [HomeFeed] Subscription active, access granted', { isActive, planType });
                 return;
               }
 
-              // If subscription is active, mark onboarding as complete
-              if (subData.isActive) {
-                localStorage.setItem('onboarding_completed', 'true');
-                console.log('✅ [HomeFeed] Subscription active, access granted');
-                return;
-              }
+              // No active subscription - redirect to pricing
+              console.log('🚫 [HomeFeed] No active subscription, redirecting to /pricing', { isActive, planType });
+              router.push('/pricing');
+              return;
             } else {
               console.error('❌ [HomeFeed] Subscription API failed:', subResponse.status);
             }
@@ -92,7 +94,9 @@ function HomeFeedContent() {
                   const subCheck = await fetch('/api/subscription/status');
                   if (subCheck.ok) {
                     const subCheckData = await subCheck.json();
-                    if (!subCheckData.isActive) {
+                    const subIsActive = subCheckData.subscription?.hasActiveSubscription;
+                    const subPlanType = subCheckData.subscription?.planType;
+                    if (!subIsActive && subPlanType !== 'starter' && subPlanType !== 'pro') {
                       console.log('🚫 [HomeFeed] Onboarding done but no subscription, redirecting to /pricing');
                       router.push('/pricing');
                       return;
