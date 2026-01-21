@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import {
@@ -97,8 +97,13 @@ const plans = [
 
 export default function SiftOnboardingPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session, status } = useSession();
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState(() => {
+    // Initialize step from URL or default to 0
+    const stepFromUrl = searchParams?.get('step');
+    return stepFromUrl ? parseInt(stepFromUrl, 10) : 0;
+  });
   const [role, setRole] = useState<string | null>(null);
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -129,16 +134,42 @@ export default function SiftOnboardingPage() {
     }
   }, [status, router]);
 
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowRight" && currentStep < STEPS.length - 1) {
+        handleNext();
+      } else if (e.key === "ArrowLeft" && currentStep > 0) {
+        handleBack();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [currentStep]);
+
   const handleNext = () => {
     if (currentStep < STEPS.length - 1) {
-      setCurrentStep(currentStep + 1);
+      const nextStep = currentStep + 1;
+      setCurrentStep(nextStep);
+      router.push(`/onboarding?step=${nextStep}`);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
   const handleBack = () => {
     if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
+      const prevStep = currentStep - 1;
+      setCurrentStep(prevStep);
+      router.push(`/onboarding?step=${prevStep}`);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  const goToStep = (step: number) => {
+    if (step >= 0 && step < STEPS.length) {
+      setCurrentStep(step);
+      router.push(`/onboarding?step=${step}`);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
@@ -903,17 +934,36 @@ export default function SiftOnboardingPage() {
 
         {currentStep > 0 && currentStep < 8 && (
           <div className="flex items-center gap-2">
+            {/* Desktop step indicator */}
             <div className="hidden md:flex gap-1">
-              {STEPS.map((_, i) => (
-                <div
+              {STEPS.map((step, i) => (
+                <button
                   key={i}
+                  onClick={() => goToStep(i)}
                   className={cn(
                     "h-1 rounded-full transition-all duration-500",
-                    i <= currentStep ? "w-8 bg-white" : "w-4 bg-white/10"
+                    i <= currentStep ? "w-8 bg-white hover:bg-white/80" : "w-4 bg-white/10 hover:bg-white/20"
                   )}
+                  title={`Go to ${step}`}
                 />
               ))}
             </div>
+            
+            {/* Mobile step dropdown */}
+            <div className="md:hidden">
+              <select
+                value={currentStep}
+                onChange={(e) => goToStep(parseInt(e.target.value, 10))}
+                className="bg-black/50 border border-white/10 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-white/30"
+              >
+                {STEPS.map((step, i) => (
+                  <option key={i} value={i}>
+                    {i + 1}. {step}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
             <span className="text-[10px] font-black tracking-widest text-zinc-500 uppercase ml-4">
               Step {currentStep + 1} / {STEPS.length}
             </span>
