@@ -90,7 +90,7 @@ const plans = [
       { text: "Priority Support" },
       { text: "Unlimited Draft Replies" }
     ],
-    btn: { text: "Select Pro Elite", href: "#" },
+    btn: { text: "Select Pro", href: "#" },
     highlighted: true
   }
 ];
@@ -948,7 +948,7 @@ export default function SiftOnboardingPage() {
                 />
               ))}
             </div>
-            
+
             {/* Mobile step dropdown */}
             <div className="md:hidden">
               <select
@@ -963,7 +963,7 @@ export default function SiftOnboardingPage() {
                 ))}
               </select>
             </div>
-            
+
             <span className="text-[10px] font-black tracking-widest text-zinc-500 uppercase ml-4">
               Step {currentStep + 1} / {STEPS.length}
             </span>

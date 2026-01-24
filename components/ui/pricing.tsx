@@ -116,7 +116,7 @@ export function PricingCard({
 				'relative flex w-full flex-col rounded-[2.5rem] border p-8 md:p-12 transition-all duration-500',
 				isHighlighted
 					? 'bg-white border-white shadow-[0_0_80px_-15px_rgba(255,255,255,0.1)]'
-					: 'bg-zinc-950/50 border-white/5 backdrop-blur-sm',
+					: 'bg-black border-white/10',
 				className,
 			)}
 			{...props}
@@ -167,7 +167,7 @@ export function PricingCard({
 							'w-full h-14 rounded-2xl text-lg font-bold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]',
 							isHighlighted
 								? 'bg-black text-white hover:bg-zinc-900 border-none shadow-2xl'
-								: 'bg-zinc-900 border border-white/10 text-white hover:bg-zinc-800'
+								: 'bg-white text-black hover:bg-zinc-100'
 						)}
 						onClick={props.onPlanSelect}
 					>
@@ -182,7 +182,7 @@ export function PricingCard({
 							'w-full h-14 rounded-2xl text-lg font-bold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]',
 							isHighlighted
 								? 'bg-black text-white hover:bg-zinc-900 border-none shadow-2xl'
-								: 'bg-zinc-900 border border-white/10 text-white hover:bg-zinc-800'
+								: 'bg-white text-black hover:bg-zinc-100'
 						)}
 						asChild
 					>
@@ -199,11 +199,11 @@ export function PricingCard({
 					<div key={index} className="flex items-center gap-3">
 						<Check className={cn(
 							'w-5 h-5',
-							isHighlighted ? 'text-black' : 'text-zinc-400'
+							isHighlighted ? 'text-black' : 'text-white'
 						)} />
 						<span className={cn(
 							'text-sm font-medium',
-							isHighlighted ? 'text-black/80' : 'text-zinc-400'
+							isHighlighted ? 'text-black/80' : 'text-white'
 						)}>
 							{feature.text}
 						</span>

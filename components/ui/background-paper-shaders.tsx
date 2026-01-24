@@ -80,7 +80,7 @@ export function ShaderPlane({
 
     return (
         <mesh ref={mesh} position={position}>
-            <planeGeometry args={[2, 2, 32, 32]} />
+            <planeGeometry args={[2, 2, 8, 8]} />
             <shaderMaterial
                 uniforms={uniforms}
                 vertexShader={vertexShader}
@@ -105,16 +105,16 @@ export function EnergyRing({
 
     useFrame((state) => {
         if (mesh.current) {
-            mesh.current.rotation.z = state.clock.elapsedTime
+            mesh.current.rotation.z = state.clock.elapsedTime * 0.5
             if (mesh.current.material instanceof THREE.MeshBasicMaterial) {
-                mesh.current.material.opacity = 0.2 + Math.sin(state.clock.elapsedTime * 2) * 0.1
+                mesh.current.material.opacity = 0.15 + Math.sin(state.clock.elapsedTime) * 0.05
             }
         }
     })
 
     return (
         <mesh ref={mesh} position={position}>
-            <ringGeometry args={[radius * 0.98, radius, 128]} />
+            <ringGeometry args={[radius * 0.99, radius, 64]} />
             <meshBasicMaterial color={color} transparent opacity={0.2} side={THREE.DoubleSide} />
         </mesh>
     )
@@ -123,7 +123,12 @@ export function EnergyRing({
 export function BackgroundShaders() {
     return (
         <div className="absolute inset-0 w-full h-full -z-10 bg-black">
-            <Canvas camera={{ position: [0, 0, 5], fov: 75 }}>
+            <Canvas
+                camera={{ position: [0, 0, 5], fov: 75 }}
+                dpr={1}
+                gl={{ antialias: false, powerPreference: "high-performance" }}
+                performance={{ min: 0.5 }}
+            >
                 <ambientLight intensity={0.5} />
                 <ShaderPlane position={[0, 0, 0]} color1="#0a0a0a" color2="#000000" />
                 <EnergyRing radius={3} position={[0, 0, -1]} color="#ffffff" />

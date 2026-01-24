@@ -127,7 +127,7 @@ export function LinearLanding() {
             {/* Background Layer */}
             <div className="fixed inset-0 z-0">
                 <BackgroundShaders />
-                <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px]" />
+                <div className="absolute inset-0 bg-black/60" />
             </div>
 
             {/* Navigation */}
@@ -187,6 +187,7 @@ export function LinearLanding() {
                             <a href="#features" onClick={(e) => handleClick(e, 'features')} className="hover:text-white transition-colors">Features</a>
                             <a href="#integration" onClick={(e) => handleClick(e, 'integration')} className="hover:text-white transition-colors">Security</a>
                             <a href="#pricing" onClick={(e) => handleClick(e, 'pricing')} className="hover:text-white transition-colors">Pricing</a>
+                            <a href="#faq" onClick={(e) => handleClick(e, 'faq')} className="hover:text-white transition-colors">FAQ</a>
                         </div>
                     </div>
 
@@ -352,9 +353,9 @@ export function LinearLanding() {
                                     {activeStep === 0 && (
                                         <motion.div
                                             key="step-1"
-                                            initial={{ opacity: 0, x: -20, filter: 'blur(10px)' }}
-                                            animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
-                                            exit={{ opacity: 0, x: 20, filter: 'blur(10px)' }}
+                                            initial={{ opacity: 0, x: -20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: 20 }}
                                             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                                             className="absolute inset-0 flex flex-col justify-center"
                                         >
@@ -389,9 +390,9 @@ export function LinearLanding() {
                                     {activeStep === 1 && (
                                         <motion.div
                                             key="step-2"
-                                            initial={{ opacity: 0, x: -20, filter: 'blur(10px)' }}
-                                            animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
-                                            exit={{ opacity: 0, x: 20, filter: 'blur(10px)' }}
+                                            initial={{ opacity: 0, x: -20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: 20 }}
                                             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                                             className="absolute inset-0 flex flex-col justify-center"
                                         >
@@ -426,9 +427,9 @@ export function LinearLanding() {
                                     {activeStep === 2 && (
                                         <motion.div
                                             key="step-3"
-                                            initial={{ opacity: 0, x: -20, filter: 'blur(10px)' }}
-                                            animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
-                                            exit={{ opacity: 0, x: 20, filter: 'blur(10px)' }}
+                                            initial={{ opacity: 0, x: -20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: 20 }}
                                             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                                             className="absolute inset-0 flex flex-col justify-center"
                                         >

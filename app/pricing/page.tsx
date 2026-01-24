@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { Check, Lock, Crown, Sparkles, ArrowRight, Loader2 } from 'lucide-react';
+import { Check, Lock, Crown, Sparkles, ArrowRight, Loader2, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { useSession } from 'next-auth/react';
@@ -30,12 +30,11 @@ const PLANS = [
 		name: 'Starter',
 		price: 7.99,
 		features: [
-			'30 Draft Replies /month',
-			'30 Schedule Calls /month',
-			'20 AI-assisted Notes /month',
-			'5 Sift AI Analysis /day',
-			'10 Arcus AI interactions /day',
-			'20 Email Summaries /day'
+			'AI Sift Intelligence',
+			'Priority Inbox',
+			'Basic AI Drafts',
+			'Secure Google OAuth',
+			'Standard Relationship Tracking'
 		],
 		buttonText: 'Subscribe to Starter',
 		isPopular: false,
@@ -46,14 +45,12 @@ const PLANS = [
 		name: 'Pro',
 		price: 29.99,
 		features: [
-			'Unlimited Draft Replies',
-			'Unlimited Schedule Calls',
-			'Unlimited AI-assisted Notes',
-			'Unlimited Sift AI Analysis',
-			'Unlimited Arcus AI interactions',
-			'Unlimited Email Summaries',
+			'Everything in Starter',
+			'Unlimited AI Processing',
+			'Advanced Relationship Tracking',
+			'Custom Neural Voice',
 			'Priority Support',
-			'Early Access to New Features'
+			'Unlimited Draft Replies'
 		],
 		buttonText: 'Subscribe to Pro',
 		isPopular: true,
@@ -117,7 +114,7 @@ export default function PricingPage() {
 	const handleSelectPlan = async (planId: string, checkoutUrl: string) => {
 		// Capture DataFast visitor ID before redirecting
 		const datafastVisitorId = getCookie('datafast_visitor_id');
-		
+
 		// Store selected plan and visitor ID in localStorage for after payment return
 		localStorage.setItem('pending_plan', planId);
 		localStorage.setItem('pending_plan_timestamp', Date.now().toString());
@@ -266,57 +263,79 @@ function PricingCard({ plan, index, currentPlan, isLoading, onSelect }: PricingC
 			animate={{ opacity: 1, y: 0 }}
 			transition={{ delay: index * 0.1, duration: 1, ease: [0.23, 1, 0.32, 1] }}
 			className={cn(
-				"relative rounded-[2.5rem] bg-white/[0.02] border border-white/5 flex flex-col transition-all duration-700 hover:border-white/20 backdrop-blur-[5px] min-h-[620px] group/card",
-				plan.isPopular && "border-white/10 bg-white/[0.08] shadow-[0_0_80px_rgba(255,255,255,0.03)]",
+				"relative rounded-[2.5rem] flex flex-col transition-all duration-700 min-h-[620px] group/card overflow-hidden",
+				plan.id === 'pro'
+					? "bg-white border-white shadow-[0_0_80px_rgba(255,255,255,0.15)]"
+					: "bg-black border-white/10",
 				isCurrentPlan && "ring-2 ring-green-500/50 border-green-500/30"
 			)}
 		>
 			{/* High-Contrast Grain Texture */}
-			<div className="absolute inset-0 opacity-[0.05] pointer-events-none mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')] brightness-150"></div>
+			<div className={cn(
+				"absolute inset-0 opacity-[0.05] pointer-events-none mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')] brightness-150",
+				plan.id === 'pro' && "invert"
+			)}></div>
 
 			{/* Current Plan Badge - Active in Green */}
 			{isCurrentPlan && (
-				<div className="absolute -top-3 left-1/2 -translate-x-1/2 px-6 py-1 bg-green-500 text-black text-[10px] font-black rounded-full uppercase tracking-[0.2em] shadow-[0_0_20px_rgba(34,197,94,0.3)]">
+				<div className="absolute -top-3 left-1/2 -translate-x-1/2 px-6 py-1 bg-green-500 text-black text-[10px] font-black rounded-full uppercase tracking-[0.2em] shadow-[0_0_20px_rgba(34,197,94,0.3)] z-20">
 					ACTIVE PLAN
 				</div>
 			)}
 
 			{/* Popular Badge - Only show if not current plan */}
 			{plan.isPopular && !isCurrentPlan && (
-				<div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-violet-500 to-purple-500 text-white text-[10px] font-black rounded-full uppercase tracking-[0.2em] flex items-center gap-1 shadow-[0_0_20px_rgba(139,92,246,0.3)]">
-					<Sparkles className="w-3 h-3" />
+				<div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-black text-white text-[10px] font-black rounded-full uppercase tracking-[0.2em] flex items-center gap-1 shadow-xl z-20">
+					<Star className="w-3 h-3 fill-white" />
 					Most Popular
 				</div>
 			)}
 
 			<div className="relative p-8 pt-10">
-				<p className="text-neutral-500 text-xs font-semibold mb-6 tracking-[0.15em] uppercase">
+				<p className={cn(
+					"text-xs font-semibold mb-6 tracking-[0.15em] uppercase",
+					plan.id === 'pro' ? "text-black/50" : "text-neutral-500"
+				)}>
 					{plan.name}
 				</p>
 
 				<div className="flex items-baseline gap-1">
-					<span className="text-4xl font-black text-white tracking-tighter">
+					<span className={cn(
+						"text-4xl font-black tracking-tighter",
+						plan.id === 'pro' ? "text-black" : "text-white"
+					)}>
 						${plan.price}
 					</span>
-					<span className="text-white/20 text-sm font-medium">/month</span>
+					<span className={cn(
+						"text-sm font-medium",
+						plan.id === 'pro' ? "text-black/20" : "text-white/20"
+					)}>/month</span>
 				</div>
 			</div>
 
 			{/* Divider */}
-			<div className="h-px w-full bg-gradient-to-r from-transparent via-white/[0.05] to-transparent"></div>
+			<div className={cn(
+				"h-px w-full",
+				plan.id === 'pro' ? "bg-black/5" : "bg-white/5"
+			)}></div>
 
 			{/* Features */}
 			<div className="flex-1 p-8 pt-10 space-y-4">
 				{plan.features.map((feature: string) => (
 					<div key={feature} className="flex items-start gap-4 group/feat">
-						<div className="mt-0.5 w-5 h-5 rounded-full bg-neutral-900 border border-white/5 flex items-center justify-center transition-all group-hover/feat:border-white/40 group-hover/feat:bg-white/[0.05]">
-							{plan.isPopular ? (
-								<Sparkles className="w-2.5 h-2.5 text-purple-400" />
-							) : (
-								<Check className="w-2.5 h-2.5 text-neutral-400 group-hover/feat:text-white" strokeWidth={4} />
-							)}
+						<div className={cn(
+							"mt-0.5 w-5 h-5 rounded-full flex items-center justify-center transition-all",
+							plan.id === 'pro' ? "bg-black/5 border border-black/10" : "bg-neutral-900 border border-white/5"
+						)}>
+							<Check className={cn(
+								"w-2.5 h-2.5",
+								plan.id === 'pro' ? "text-black" : "text-white"
+							)} strokeWidth={4} />
 						</div>
-						<p className="text-neutral-500 text-[13px] font-medium leading-relaxed group-hover/feat:text-neutral-300 transition-colors">
+						<p className={cn(
+							"text-[13px] font-medium leading-relaxed transition-colors",
+							plan.id === 'pro' ? "text-black/70 group-hover/feat:text-black" : "text-neutral-500 group-hover/feat:text-neutral-300"
+						)}>
 							{feature}
 						</p>
 					</div>
@@ -326,48 +345,38 @@ function PricingCard({ plan, index, currentPlan, isLoading, onSelect }: PricingC
 			{/* Button */}
 			<div className="p-8 pt-0">
 				{isLoading ? (
-					<div className="w-full py-4 rounded-2xl flex items-center justify-center bg-neutral-800/50">
-						<Loader2 className="w-5 h-5 animate-spin text-neutral-400" />
+					<div className={cn(
+						"w-full py-4 rounded-2xl flex items-center justify-center",
+						plan.id === 'pro' ? "bg-black/5" : "bg-neutral-800/50"
+					)}>
+						<Loader2 className={cn(
+							"w-5 h-5 animate-spin",
+							plan.id === 'pro' ? "text-black/50" : "text-neutral-400"
+						)} />
 					</div>
 				) : isCurrentPlan ? (
 					// Current plan - show original button text but locked
 					<div
-						className="w-full py-4 rounded-2xl font-black text-[12px] tracking-[0.2em] uppercase flex items-center justify-center gap-2 bg-green-500/10 text-green-500 border border-green-500/30 cursor-not-allowed group/locked shadow-[0_0_20px_rgba(34,197,94,0.05)]"
+						className={cn(
+							"w-full py-4 rounded-2xl font-black text-[12px] tracking-[0.2em] uppercase flex items-center justify-center gap-2 border cursor-not-allowed group/locked",
+							plan.id === 'pro' ? "bg-green-500/10 text-green-600 border-green-500/30" : "bg-green-500/10 text-green-500 border-green-500/30"
+						)}
 					>
 						<Lock className="w-4 h-4 transition-transform group-hover/locked:scale-110" />
 						{plan.buttonText}
 					</div>
-				) : isUpgrade ? (
-					// Starter user upgrading to Pro
-					<button
-						onClick={onSelect}
-						className="w-full py-4 rounded-2xl font-black text-[12px] tracking-[0.2em] uppercase transition-all duration-500 relative overflow-hidden bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white shadow-xl shadow-purple-900/10 hover:shadow-purple-900/30 hover:scale-[1.02] active:scale-[0.98]"
-					>
-						<span className="flex items-center justify-center gap-2">
-							<Crown className="w-4 h-4" />
-							Upgrade to Pro
-						</span>
-					</button>
-				) : isSwitch ? (
-					// Pro user switching to Starter
-					<button
-						onClick={onSelect}
-						className="w-full py-4 rounded-2xl font-black text-[12px] tracking-[0.2em] uppercase transition-all duration-500 relative overflow-hidden bg-white text-black hover:bg-neutral-200 shadow-xl shadow-white/5 hover:scale-[1.02] active:scale-[0.98]"
-					>
-						Switch to Starter
-					</button>
 				) : (
-					// No current plan - show subscribe button
+					// No current plan OR upgrade/switch - show button
 					<button
 						onClick={onSelect}
 						className={cn(
 							"w-full py-4 rounded-2xl font-black text-[12px] tracking-[0.2em] uppercase transition-all duration-500 relative overflow-hidden shadow-xl hover:scale-[1.02] active:scale-[0.98]",
-							plan.isPopular
-								? "bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white shadow-purple-900/10 hover:shadow-purple-900/30"
-								: "bg-white text-black hover:bg-neutral-200 shadow-white/5"
+							plan.id === 'pro'
+								? "bg-black text-white hover:bg-zinc-900"
+								: "bg-white text-black hover:bg-neutral-200"
 						)}
 					>
-						{plan.buttonText}
+						{isUpgrade ? "Upgrade to Pro" : isSwitch ? "Switch to Starter" : plan.buttonText}
 					</button>
 				)}
 			</div>
