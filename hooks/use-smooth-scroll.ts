@@ -18,9 +18,9 @@ export const useSmoothScroll = () => {
 
   const smoothScrollTo = (targetId: string, options: SmoothScrollOptions = {}): void => {
     const {
-      duration = 1200,
+      duration = 800,
       easing = 'easeInOutCubic',
-      blur = true
+      blur = false
     } = options
 
     const targetElement = document.getElementById(targetId)
@@ -35,18 +35,12 @@ export const useSmoothScroll = () => {
     const distance = targetPosition - startPosition
     let startTime: number | null = null
 
-    // Add blur effect to body
-    if (blur) {
-      document.body.style.transition = 'filter 0.3s ease-out'
-      document.body.style.filter = 'blur(2px)'
-    }
-
     const animateScroll = (currentTime: number) => {
       if (startTime === null) startTime = currentTime
       const timeElapsed = currentTime - startTime
       const progress = Math.min(timeElapsed / duration, 1)
-      
-      const easeProgress = easing === 'easeInOutCubic' 
+
+      const easeProgress = easing === 'easeInOutCubic'
         ? easeInOutCubic(progress)
         : progress
 
@@ -55,17 +49,13 @@ export const useSmoothScroll = () => {
       if (timeElapsed < duration) {
         requestAnimationFrame(animateScroll)
       } else {
-        // Remove blur effect
-        if (blur) {
-          document.body.style.filter = 'none'
-        }
         isScrolling.current = false
-        
+
         // Clear any existing timeout
         if (scrollTimeout.current) {
           clearTimeout(scrollTimeout.current)
         }
-        
+
         // Reset isScrolling after a delay to prevent rapid clicks
         scrollTimeout.current = setTimeout(() => {
           isScrolling.current = false
@@ -87,7 +77,6 @@ export const useSmoothScroll = () => {
       if (scrollTimeout.current) {
         clearTimeout(scrollTimeout.current)
       }
-      document.body.style.filter = 'none'
     }
   }, [])
 
