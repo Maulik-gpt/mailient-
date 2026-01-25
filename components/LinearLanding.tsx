@@ -73,7 +73,7 @@ const plans = [
             { text: "Secure Google OAuth" },
             { text: "Standard Relationship Tracking" }
         ],
-        btn: { text: "Get Started", href: "/auth/signin" }
+        btn: { text: "Connect Gmail Free", href: "/auth/signin" }
     },
     {
         name: "Pro",
@@ -87,7 +87,7 @@ const plans = [
             { text: "Priority Support" },
             { text: "Unlimited Draft Replies" }
         ],
-        btn: { text: "Get Started", href: "/auth/signin" },
+        btn: { text: "Connect Gmail Free", href: "/auth/signin" },
         highlighted: true
     }
 ];
@@ -200,7 +200,7 @@ export function LinearLanding() {
                             <>
                                 <button onClick={() => signIn('google')} className="hidden sm:block text-sm font-medium text-zinc-500 hover:text-white transition-colors">Log in</button>
                                 <Button onClick={() => router.push('/auth/signin')} className="bg-white text-black hover:bg-zinc-200 rounded-full px-4 md:px-6 text-sm md:text-base">
-                                    Sign up
+                                    Connect Gmail Free
                                 </Button>
                             </>
                         )}
@@ -211,12 +211,12 @@ export function LinearLanding() {
             {/* Hero Section */}
             <HeroGeometric
                 badge="AI-Powered Email for Founders"
-                title1="Your Inbox,"
-                title2="On Autopilot"
+                title1="Email That Thinks"
+                title2="Like You Do."
             >
                 <div className="text-center px-4">
                     <p className="text-base sm:text-lg md:text-xl text-white/50 max-w-2xl mb-8 md:mb-12 leading-relaxed font-light tracking-wide mx-auto text-center">
-                        Stop drowning in emails. Our AI finds what matters, drafts perfect replies, and gives you back hours every week.
+                        Stop triaging. Mailient identifies revenue opportunities, surfaces urgent threads, and drafts replies in your voice—automatically.
                     </p>
 
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
@@ -314,6 +314,79 @@ export function LinearLanding() {
                 </div>
             </HeroGeometric>
 
+            {/* Pain Section - The Consequences */}
+            <section className="py-20 md:py-32 px-6 z-10 relative overflow-hidden bg-black">
+                <div className="max-w-7xl mx-auto">
+                    <div className="flex flex-col items-center mb-16 text-center">
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 mb-8"
+                        >
+                            <Activity className="h-3 w-3 text-rose-500" />
+                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-rose-500/80">The Cost of Friction</span>
+                        </motion.div>
+
+                        <motion.h2
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: 0.1 }}
+                            className="text-4xl md:text-6xl font-bold tracking-tight mb-6"
+                        >
+                            Your inbox is a <span className="text-rose-500">bottleneck.</span>
+                        </motion.h2>
+                        <motion.p
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: 0.2 }}
+                            className="text-zinc-500 max-w-2xl mx-auto text-lg leading-relaxed"
+                        >
+                            Every hour spent triaging emails is an hour stolen from growing your business.
+                            The noise isn't just annoying—it's expensive.
+                        </motion.p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        {[
+                            {
+                                title: "Lost Revenue",
+                                desc: "High-ticket opportunities buried under 50 newsletters you never signed up for.",
+                                icon: BarChart3,
+                                color: "text-rose-500"
+                            },
+                            {
+                                title: "Executive Burnout",
+                                desc: "The micro-stress of 200+ unread threads kills your creative deep-work state.",
+                                icon: Cpu,
+                                color: "text-rose-500"
+                            },
+                            {
+                                title: "Missed Momentum",
+                                desc: "Speed is a founder's only edge. Slow replies are killing your deal velocity.",
+                                icon: Zap,
+                                color: "text-rose-500"
+                            }
+                        ].map((item, i) => (
+                            <motion.div
+                                key={i}
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: i * 0.1 }}
+                                className="p-8 rounded-3xl border border-white/5 bg-zinc-950/50 hover:border-rose-500/20 transition-colors group"
+                            >
+                                <item.icon className={`w-8 h-8 ${item.color} mb-6 group-hover:scale-110 transition-transform`} />
+                                <h3 className="text-xl font-bold mb-4">{item.title}</h3>
+                                <p className="text-zinc-500 text-sm leading-relaxed">{item.desc}</p>
+                            </motion.div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
             {/* Demo Section - Single Video with Fading Text */}
             <section id="demo-section" className="py-16 md:py-32 px-4 md:px-6 z-10 relative bg-zinc-950/30">
                 <div className="max-w-7xl mx-auto">
@@ -365,9 +438,9 @@ export function LinearLanding() {
                                         >
                                             <div className="flex items-center gap-3 md:gap-4 mb-4 md:mb-6">
                                                 <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-white text-black flex items-center justify-center font-bold text-base md:text-lg shadow-[0_0_20px_rgba(255,255,255,0.3)]">1</div>
-                                                <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white tracking-tight">Start Analysis</h3>
+                                                <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white tracking-tight">Connect Gmail</h3>
                                             </div>
-                                            <p className="text-base md:text-xl text-zinc-400 mb-6 md:mb-8 leading-relaxed">Find important emails buried in your inbox chaos.</p>
+                                            <p className="text-base md:text-xl text-zinc-400 mb-6 md:mb-8 leading-relaxed">AI scans your inbox chaos in seconds.</p>
                                             <div className="space-y-3 md:space-y-4">
                                                 <div className="flex items-center gap-3 md:gap-4 group">
                                                     <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors flex-shrink-0">
@@ -402,9 +475,9 @@ export function LinearLanding() {
                                         >
                                             <div className="flex items-center gap-3 md:gap-4 mb-4 md:mb-6">
                                                 <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-white text-black flex items-center justify-center font-bold text-base md:text-lg shadow-[0_0_20px_rgba(255,255,255,0.3)]">2</div>
-                                                <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white tracking-tight">Smart Categories</h3>
+                                                <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white tracking-tight">Smart Sifting</h3>
                                             </div>
-                                            <p className="text-base md:text-xl text-zinc-400 mb-6 md:mb-8 leading-relaxed">Emails organized into smart boxes automatically.</p>
+                                            <p className="text-base md:text-xl text-zinc-400 mb-6 md:mb-8 leading-relaxed">Opportunities and urgent threads are prioritized.</p>
                                             <div className="space-y-3 md:space-y-4">
                                                 <div className="flex items-center gap-3 md:gap-4 group">
                                                     <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors flex-shrink-0">
@@ -439,9 +512,9 @@ export function LinearLanding() {
                                         >
                                             <div className="flex items-center gap-3 md:gap-4 mb-4 md:mb-6">
                                                 <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-white text-black flex items-center justify-center font-bold text-base md:text-lg shadow-[0_0_20px_rgba(255,255,255,0.3)]">3</div>
-                                                <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white tracking-tight">One-Click Actions</h3>
+                                                <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white tracking-tight">One-Click Action</h3>
                                             </div>
-                                            <p className="text-base md:text-xl text-zinc-400 mb-6 md:mb-8 leading-relaxed">Turn any email into action with one click.</p>
+                                            <p className="text-base md:text-xl text-zinc-400 mb-6 md:mb-8 leading-relaxed">Draft replies or schedule meetings instantly.</p>
                                             <div className="space-y-3 md:space-y-4">
                                                 <div className="flex items-center gap-3 md:gap-4 group">
                                                     <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors flex-shrink-0">
@@ -499,7 +572,7 @@ export function LinearLanding() {
                                     onClick={() => signIn('google')}
                                     className="bg-white text-black hover:bg-zinc-200 rounded-full px-8 py-4 text-lg font-bold"
                                 >
-                                    Start Free
+                                    Connect Gmail Free
                                     <ArrowRight className="w-5 h-5 ml-2" />
                                 </Button>
                             </div>
@@ -883,7 +956,7 @@ export function LinearLanding() {
                             onClick={() => signIn('google')}
                             className="bg-white text-black hover:bg-zinc-200 rounded-full px-12 py-7 text-lg font-bold shadow-2xl group"
                         >
-                            Get Started
+                            Connect Gmail Free
                             <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                         </Button>
                         <Button
@@ -1072,7 +1145,7 @@ export function LinearLanding() {
                                     onClick={() => router.push('/auth/signin')}
                                     size="lg"
                                 >
-                                    Get Started Now!
+                                    Connect Gmail Free
                                     <ArrowRight className="w-5 h-5 ml-2 inline-block" />
                                 </GlassButton>
                                 <Button
