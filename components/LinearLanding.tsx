@@ -322,10 +322,10 @@ export function LinearLanding() {
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
-                            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 mb-8"
+                            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 mb-8"
                         >
-                            <Activity className="h-3 w-3 text-rose-500" />
-                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-rose-500/80">The Cost of Friction</span>
+                            <Activity className="h-3 w-3 text-amber-500" />
+                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-amber-500/80">The Cost of Friction</span>
                         </motion.div>
 
                         <motion.h2
@@ -335,7 +335,7 @@ export function LinearLanding() {
                             transition={{ delay: 0.1 }}
                             className="text-4xl md:text-6xl font-bold tracking-tight mb-6"
                         >
-                            Your inbox is a <span className="text-rose-500">bottleneck.</span>
+                            Your inbox is a <span className="text-amber-200">bottleneck.</span>
                         </motion.h2>
                         <motion.p
                             initial={{ opacity: 0, y: 20 }}
@@ -355,19 +355,19 @@ export function LinearLanding() {
                                 title: "Lost Revenue",
                                 desc: "High-ticket opportunities buried under 50 newsletters you never signed up for.",
                                 icon: BarChart3,
-                                color: "text-rose-500"
+                                color: "text-amber-500"
                             },
                             {
                                 title: "Executive Burnout",
                                 desc: "The micro-stress of 200+ unread threads kills your creative deep-work state.",
                                 icon: Cpu,
-                                color: "text-rose-500"
+                                color: "text-amber-500"
                             },
                             {
                                 title: "Missed Momentum",
                                 desc: "Speed is a founder's only edge. Slow replies are killing your deal velocity.",
                                 icon: Zap,
-                                color: "text-rose-500"
+                                color: "text-amber-500"
                             }
                         ].map((item, i) => (
                             <motion.div
@@ -376,7 +376,7 @@ export function LinearLanding() {
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true }}
                                 transition={{ delay: i * 0.1 }}
-                                className="p-8 rounded-3xl border border-white/5 bg-zinc-950/50 hover:border-rose-500/20 transition-colors group"
+                                className="p-8 rounded-3xl border border-white/5 bg-zinc-950/50 hover:border-amber-500/20 transition-colors group"
                             >
                                 <item.icon className={`w-8 h-8 ${item.color} mb-6 group-hover:scale-110 transition-transform`} />
                                 <h3 className="text-xl font-bold mb-4">{item.title}</h3>
