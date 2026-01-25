@@ -287,25 +287,29 @@ export function LinearLanding() {
 
                     {/* Hero Video */}
                     <div className="relative w-full max-w-5xl mx-auto aspect-video rounded-2xl border border-white/10 bg-zinc-900/50 backdrop-blur-sm overflow-hidden group shadow-[0_0_50px_-12px_rgba(255,255,255,0.1)]">
-                        <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none z-10" />
+
+                        {/* Preferred: Local Video (Recommended for performance) */}
+                        {/* 
+                        <video 
+                            src="/videos/hero-demo.mp4" 
+                            autoPlay 
+                            muted 
+                            loop 
+                            playsInline 
+                            className="absolute inset-0 w-full h-full object-cover"
+                        /> 
+                        */}
 
                         <iframe
-                            src="https://cap.so/embed/rpter2vmzaz3vyk?autoplay=1&muted=1&controls=1&loop=1"
-                            className="absolute inset-0 w-full h-full rounded-2xl"
-                            allow="autoplay; fullscreen; picture-in-picture"
+                            src="https://cap.so/embed/rpter2vmzaz3vyk?autoplay=1&muted=1&controls=1&loop=1&playsinline=1"
+                            title="Mailient Product Demo"
+                            className="absolute inset-0 w-full h-full"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                             allowFullScreen
+                            loading="eager"
                         />
 
-                        {/* Video Info Overlay */}
-                        <div className="absolute bottom-6 left-6 flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
-                                <Bot className="w-5 h-5 text-white/40" />
-                            </div>
-                            <div className="text-left">
-                                <p className="text-xs font-bold text-white/80 uppercase tracking-widest">Maulik Demo</p>
-                                <p className="text-[10px] text-white/40">Watch Mailient in action</p>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </HeroGeometric>
@@ -465,12 +469,14 @@ export function LinearLanding() {
 
                             {/* Video Section */}
                             <div className="flex-1 order-1 lg:order-2">
-                                <div className="relative aspect-video rounded-2xl border border-white/10 bg-zinc-900/50 backdrop-blur-sm overflow-hidden">
+                                <div className="relative aspect-video rounded-2xl border border-white/10 bg-zinc-900/50 backdrop-blur-sm overflow-hidden shadow-2xl">
                                     <iframe
-                                        src="https://cap.so/embed/58ekyq8enhrfq3z?autoplay=1&muted=1&controls=0&loop=1"
-                                        className="absolute inset-0 w-full h-full rounded-2xl"
-                                        allow="autoplay; fullscreen; picture-in-picture"
+                                        src="https://cap.so/embed/58ekyq8enhrfq3z?autoplay=1&muted=1&controls=0&loop=1&playsinline=1"
+                                        title="Mailient Feature Demo"
+                                        className="absolute inset-0 w-full h-full"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                                         allowFullScreen
+                                        loading="lazy"
                                     />
                                 </div>
                             </div>
