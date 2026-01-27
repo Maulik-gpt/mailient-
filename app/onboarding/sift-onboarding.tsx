@@ -121,6 +121,25 @@ export default function SiftOnboardingPage() {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
 
+  // Save step to database as user progresses
+  useEffect(() => {
+    if (status === "authenticated" && session?.user?.email) {
+      const saveStep = async () => {
+        try {
+          await fetch("/api/onboarding/step", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ step: currentStep }),
+          });
+          console.log(`💾 [Onboarding] Step ${currentStep} saved to server`);
+        } catch (error) {
+          console.error("❌ Failed to save onboarding step:", error);
+        }
+      };
+      saveStep();
+    }
+  }, [currentStep, status, session]);
+
   // Animation variants
   const containerVariants: any = {
     hidden: { opacity: 0, y: 20 },

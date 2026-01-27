@@ -44,7 +44,19 @@ function HomeFeedContent() {
                 return;
               }
 
-              // No active subscription - redirect to pricing
+              // No active subscription - check onboarding status before forcing pricing
+              console.log('🚫 [HomeFeed] No active subscription, checking onboarding completion...');
+
+              const onboardingResp = await fetch("/api/onboarding/status");
+              if (onboardingResp.ok) {
+                const onboardingData = await onboardingResp.json();
+                if (!onboardingData.completed) {
+                  console.log('🚀 [HomeFeed] Onboarding incomplete, redirecting to /onboarding');
+                  router.push('/onboarding');
+                  return;
+                }
+              }
+
               console.log('🚫 [HomeFeed] No active subscription, redirecting to /pricing', { isActive, planType });
               router.push('/pricing');
               return;

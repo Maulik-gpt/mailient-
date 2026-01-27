@@ -125,9 +125,10 @@ export async function GET() {
       console.log('⚠️ Recent profile check skipped:', recentError);
     }
 
-    console.log(`❌ Status: NOT COMPLETED`);
+    console.log(`❌ Status: NOT COMPLETED, Last Step: ${profile?.preferences?.last_onboarding_step}`);
     return NextResponse.json({
       completed: false,
+      lastStep: profile?.preferences?.last_onboarding_step ?? 0
     });
   } catch (error) {
     console.error("Error checking onboarding status:", error);

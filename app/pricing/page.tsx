@@ -263,7 +263,7 @@ function PricingCard({ plan, index, currentPlan, isLoading, onSelect }: PricingC
 			animate={{ opacity: 1, y: 0 }}
 			transition={{ delay: index * 0.1, duration: 1, ease: [0.23, 1, 0.32, 1] }}
 			className={cn(
-				"relative rounded-[2.5rem] flex flex-col transition-all duration-700 min-h-[620px] group/card overflow-hidden",
+				"relative rounded-[2.5rem] flex flex-col transition-all duration-700 min-h-[620px] group/card",
 				plan.id === 'pro'
 					? "bg-white border-white shadow-[0_0_80px_rgba(255,255,255,0.15)]"
 					: "bg-black border-white/10",

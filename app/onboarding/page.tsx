@@ -55,6 +55,17 @@ export default function OnboardingPage() {
                   console.log('🚀 [Onboarding] Redirecting to /home-feed (server)');
                   localStorage.setItem('onboarding_completed', 'true');
                   router.push("/home-feed");
+                } else if (data.lastStep !== undefined) {
+                  // Not completed, redirect to the last step they were on
+                  const currentParam = new URLSearchParams(window.location.search).get('step');
+                  if (currentParam === null || parseInt(currentParam) !== data.lastStep) {
+                    console.log(`🚀 [Onboarding] Redirecting to step ${data.lastStep}`);
+                    router.push(`/onboarding?step=${data.lastStep}`);
+                    serverCompleted = true; // Stop retrying as we found our place
+                  } else {
+                    console.log(`⏳ [Onboarding] Already on step ${data.lastStep}`);
+                    serverCompleted = true;
+                  }
                 } else {
                   console.log('⏳ [Onboarding] Staying here: Onboarding is NOT complete');
                 }
