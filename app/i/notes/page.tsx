@@ -452,7 +452,7 @@ export default function NotesPage() {
                                                     value={newNoteContent}
                                                     onChange={(e) => setNewNoteContent(e.target.value)}
                                                     placeholder="Take a quick note with your voice"
-                                                    className="w-full bg-transparent text-2xl md:text-3xl text-neutral-200 placeholder:text-neutral-700 outline-none resize-none min-h-[80px] font-medium leading-tight"
+                                                    className="w-full bg-transparent text-2xl md:text-3xl text-neutral-200 placeholder:text-neutral-700 outline-none focus:outline-none focus:ring-0 border-none focus:border-none resize-none min-h-[80px] font-medium leading-tight"
                                                     onKeyDown={(e) => {
                                                         if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                                                             handleCreateNote();
