@@ -82,20 +82,30 @@ export async function POST(request: Request) {
     let aiEnhanced = false;
 
     try {
-      console.log("✨ Creating note with AI enhancement...");
+      console.log("✨ Notes API: Starting AI enhancement for:", { subject: finalSubject, contentLength: finalContent.length });
       const ai = new OpenRouterAIService();
       const enhanced = await ai.enhanceNote(finalSubject, finalContent);
 
+      console.log("🤖 AI Response received:", enhanced);
+
       if (enhanced && enhanced.subject && enhanced.content) {
-        finalSubject = enhanced.subject;
-        finalContent = enhanced.content;
-        aiEnhanced = true;
+        if (enhanced.subject !== finalSubject || enhanced.content !== finalContent) {
+          finalSubject = enhanced.subject;
+          finalContent = enhanced.content;
+          aiEnhanced = true;
+          console.log("✅ Notes API: Note successfully enhanced");
+        } else {
+          console.log("⚠️ Notes API: AI returned same content, mark as not enhanced");
+        }
+      } else {
+        console.log("❌ Notes API: AI returned invalid structure:", enhanced);
       }
     } catch (aiError) {
-      console.error("AI Enhancement failed, falling back to original:", aiError);
+      console.error("❌ Notes API: AI Enhancement failed:", aiError);
     }
 
     // Create note
+    console.log("📝 Notes API: Inserting into database...");
     const { data, error } = await db.supabase
       .from("notes")
       .insert({
