@@ -54,6 +54,8 @@ export default function NotesPage() {
     const [isImageShareOpen, setIsImageShareOpen] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const imagePreviewRef = useRef<HTMLDivElement>(null);
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    const [showSearchInput, setShowSearchInput] = useState(false);
     const [isUsageLimitModalOpen, setIsUsageLimitModalOpen] = useState(false);
     const [usageLimitModalData, setUsageLimitModalData] = useState<{
         featureName: string;
@@ -497,15 +499,44 @@ export default function NotesPage() {
                                 {/* Recents Section */}
                                 <div className="space-y-8 pb-24">
                                     <div className="flex items-center justify-between border-b border-neutral-800 pb-4">
-                                        <h2 className="text-xs font-bold tracking-[0.2em] text-neutral-500 uppercase">
-                                            Recents
-                                        </h2>
+                                        <div className="flex items-center gap-4 flex-1">
+                                            <h2 className="text-xs font-bold tracking-[0.2em] text-neutral-500 uppercase whitespace-nowrap">
+                                                Recents
+                                            </h2>
+                                            {showSearchInput && (
+                                                <div className="flex-1 max-w-xs relative animate-in fade-in slide-in-from-left-2 duration-300">
+                                                    <input
+                                                        autoFocus
+                                                        type="text"
+                                                        value={searchQuery}
+                                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                                        placeholder="Search your thoughts..."
+                                                        className="w-full bg-neutral-900/50 border border-neutral-800 rounded-full py-1.5 px-4 text-sm text-neutral-200 placeholder:text-neutral-600 outline-none focus:border-neutral-700 transition-all"
+                                                    />
+                                                    {searchQuery && (
+                                                        <button
+                                                            onClick={() => setSearchQuery('')}
+                                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-600 hover:text-neutral-400"
+                                                        >
+                                                            <X className="w-3 h-3" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
                                         <div className="flex items-center gap-6 text-neutral-500">
-                                            <button className="hover:text-white transition-colors">
+                                            <button
+                                                onClick={() => setShowSearchInput(!showSearchInput)}
+                                                className={cn("hover:text-white transition-colors", showSearchInput && "text-white")}
+                                            >
                                                 <Search className="w-4 h-4" />
                                             </button>
-                                            <button className="hover:text-white transition-colors">
-                                                <LayoutGrid className="w-4 h-4" />
+                                            <button
+                                                onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+                                                className="hover:text-white transition-colors"
+                                                title={viewMode === 'grid' ? 'Switch to List View' : 'Switch to Grid View'}
+                                            >
+                                                {viewMode === 'grid' ? <LayoutGrid className="w-4 h-4" /> : <List className="w-4 h-4" />}
                                             </button>
                                             <button
                                                 onClick={() => fetchNotes()}
@@ -522,20 +553,32 @@ export default function NotesPage() {
                                             <p className="text-neutral-500">Loading notes...</p>
                                         </div>
                                     ) : filteredNotes.length > 0 ? (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className={cn(
+                                            "grid gap-6",
+                                            viewMode === 'grid' ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1"
+                                        )}>
                                             {filteredNotes.map((note) => (
                                                 <div
                                                     key={note.id}
                                                     className="group relative transition-all duration-300 hover:scale-[1.01]"
                                                 >
-                                                    <div className="bg-[#0A0A0A] border border-neutral-800 rounded-3xl p-6 h-full flex flex-col justify-between relative overflow-hidden transition-all hover:bg-neutral-900/50 hover:border-neutral-700">
+                                                    <div className={cn(
+                                                        "bg-[#0A0A0A] border border-neutral-800 rounded-3xl p-6 relative overflow-hidden transition-all hover:bg-neutral-900/50 hover:border-neutral-700 h-full flex flex-col justify-between",
+                                                        viewMode === 'list' && "flex-row items-center p-4"
+                                                    )}>
                                                         <div
                                                             className="absolute inset-0 z-0 cursor-pointer"
                                                             onClick={() => router.push(`/i/notes/${note.id}`)}
                                                         />
-                                                        <div className="relative z-10 space-y-4">
+                                                        <div className={cn(
+                                                            "relative z-10 space-y-4",
+                                                            viewMode === 'list' && "flex-1 space-y-1"
+                                                        )}>
                                                             <div className="flex justify-between items-start">
-                                                                <h3 className="text-lg font-semibold text-white line-clamp-1 group-hover:text-yellow-500 transition-colors">
+                                                                <h3 className={cn(
+                                                                    "text-lg font-semibold text-white line-clamp-1 group-hover:text-yellow-500 transition-colors",
+                                                                    viewMode === 'list' && "text-base"
+                                                                )}>
                                                                     {note.subject || 'Untitled Note'}
                                                                 </h3>
                                                                 <span className="text-[10px] text-neutral-500 font-mono">
@@ -543,11 +586,17 @@ export default function NotesPage() {
                                                                 </span>
                                                             </div>
                                                             <p
-                                                                className="text-neutral-400 text-sm leading-relaxed line-clamp-3 overflow-hidden"
+                                                                className={cn(
+                                                                    "text-neutral-400 text-sm leading-relaxed line-clamp-3 overflow-hidden",
+                                                                    viewMode === 'list' && "line-clamp-1 text-xs opacity-60"
+                                                                )}
                                                                 dangerouslySetInnerHTML={{ __html: renderMarkdown(note.content) }}
                                                             />
                                                         </div>
-                                                        <div className="relative z-10 flex items-center justify-end gap-2 pt-4 mt-4 border-t border-neutral-800/50">
+                                                        <div className={cn(
+                                                            "relative z-10 flex items-center justify-end gap-2 pt-4 mt-4 border-t border-neutral-800/50",
+                                                            viewMode === 'list' && "pt-0 mt-0 border-t-0 pl-4"
+                                                        )}>
                                                             <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
