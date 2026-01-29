@@ -375,36 +375,52 @@ export default function NotesPage() {
 
         try {
             setIsCreating(true);
-            const response = await fetch('/api/notes', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    subject: 'Untitled Note',
-                    content: newNoteContent.trim(),
-                    tags: []
-                })
-            });
 
-            const data = await response.json().catch(() => ({}));
-            if (!response.ok) {
-                if (data?.error === 'limit_reached') {
-                    setUsageLimitModalData({
-                        featureName: 'AI Notes',
-                        currentUsage: data.usage || 0,
-                        limit: data.limit || 0,
-                        period: data.period || 'monthly',
-                        currentPlan: data.planType || 'starter'
-                    });
-                    setIsUsageLimitModalOpen(true);
+            // Create AbortController with 15 second timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+            try {
+                const response = await fetch('/api/notes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        subject: 'Untitled Note',
+                        content: newNoteContent.trim(),
+                        tags: []
+                    }),
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    if (data?.error === 'limit_reached') {
+                        setUsageLimitModalData({
+                            featureName: 'AI Notes',
+                            currentUsage: data.usage || 0,
+                            limit: data.limit || 0,
+                            period: data.period || 'monthly',
+                            currentPlan: data.planType || 'starter'
+                        });
+                        setIsUsageLimitModalOpen(true);
+                        return;
+                    }
+                    toast.error(data?.error || 'Failed to create note');
                     return;
                 }
-                toast.error(data?.error || 'Failed to create note');
-                return;
-            }
 
-            await fetchNotes();
-            setNewNoteContent('');
-            toast.success('Your note has been enhanced and created!');
+                await fetchNotes();
+                setNewNoteContent('');
+                toast.success('Note created successfully!');
+            } catch (fetchError: any) {
+                if (fetchError.name === 'AbortError') {
+                    toast.error('Request timed out. Please try again.');
+                } else {
+                    throw fetchError;
+                }
+            }
         } catch (error) {
             console.error('Error creating note:', error);
             toast.error('Error creating note');
@@ -454,7 +470,8 @@ export default function NotesPage() {
                                                     value={newNoteContent}
                                                     onChange={(e) => setNewNoteContent(e.target.value)}
                                                     placeholder="Take a quick note with your voice"
-                                                    className="w-full bg-transparent text-2xl md:text-3xl text-neutral-200 placeholder:text-neutral-700 outline-none focus:outline-none focus:ring-0 border-none focus:border-none resize-none min-h-[80px] font-medium leading-tight"
+                                                    className="w-full bg-transparent text-2xl md:text-3xl text-neutral-200 placeholder:text-neutral-700 resize-none min-h-[80px] font-medium leading-tight"
+                                                    style={{ outline: 'none', border: 'none', boxShadow: 'none' }}
                                                     onKeyDown={(e) => {
                                                         if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                                                             handleCreateNote();
