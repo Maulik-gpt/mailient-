@@ -1317,6 +1317,11 @@ export function LinearLanding() {
                         <p className="text-xs text-zinc-600">© 2026 Mailient Intelligence.</p>
                     </div>
                 </div>
+                <div className="pt-20 -mb-20 flex justify-center opacity-[0.03] select-none pointer-events-none w-full overflow-hidden">
+                    <span className="text-[15vw] md:text-[22vw] font-black uppercase tracking-tighter leading-none text-white whitespace-nowrap">
+                        mailient
+                    </span>
+                </div>
             </footer>
         </div>
     )
