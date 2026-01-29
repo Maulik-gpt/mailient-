@@ -22,7 +22,6 @@ export const SiftSidebar: React.FC<SiftSidebarProps> = ({
   const navItems = [
     { id: 'home', icon: <Home className="w-5 h-5" />, label: 'Home', tooltip: 'Signal Feed' },
     { id: 'opportunities', icon: <TrendingUp className="w-5 h-5" />, label: 'Opportunities', tooltip: 'Detected Opportunities' },
-    { id: 'people', icon: <Users className="w-5 h-5" />, label: 'People', tooltip: 'Founder Network' },
     { id: 'progress', icon: <BarChart className="w-5 h-5" />, label: 'My Progress', tooltip: 'Your Execution' },
     { id: 'intelligence', icon: <Lightbulb className="w-5 h-5" />, label: 'Weekly Intelligence', tooltip: 'AI Insights' },
     { id: 'arcus', icon: <Mail className="w-5 h-5" />, label: 'Arcus', tooltip: 'AI Assistant' },

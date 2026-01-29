@@ -26,7 +26,6 @@ export const MailientSidebar: React.FC<MailientSidebarProps> = ({
   // Navigation items matching Mailient's existing sidebar
   const navItems = [
     { id: 'home', icon: <Mail className="w-6 h-6" />, label: 'Feed', tooltip: 'Home Feed', route: '/home-feed' },
-    { id: 'aether', icon: <Users className="w-6 h-6" />, label: 'Aether', tooltip: 'Founder Network', route: '/aether' },
     { id: 'notifications', icon: <Bell className="w-6 h-6" />, label: 'Notifications', tooltip: 'Notifications', route: '/notifications' },
     { id: 'arcus', icon: <span className="oleo-script-regular text-2xl">A</span>, label: 'Arcus', tooltip: 'AI Assistant', route: '/dashboard/agent-talk' }
   ];
@@ -72,25 +71,7 @@ export const MailientSidebar: React.FC<MailientSidebarProps> = ({
             </TooltipContent>
           </Tooltip>
 
-          {/* Aether Icon - Founder Network */}
-          <Tooltip delayDuration={100}>
-            <TooltipTrigger asChild>
-              <button
-                onClick={() => {
-                  window.location.href = '/aether';
-                  document.title = 'Aether / Mailient';
-                }}
-                className={`p-2 hover:bg-[#1a1a1a] rounded-full transition-all duration-300 hover:scale-105 ${activeSection === 'aether' ? 'bg-[#1a1a1a]' : ''
-                  }`}
-                aria-label="Aether"
-              >
-                <Users className="w-6 h-6 text-[#fafafa]" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="right" className="bg-[#363636] border-[#363636]">
-              <p className="text-white text-sm">Aether</p>
-            </TooltipContent>
-          </Tooltip>
+
 
           {/* Notifications Icon */}
           <Tooltip delayDuration={100}>

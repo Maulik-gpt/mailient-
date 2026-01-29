@@ -97,24 +97,6 @@ export function HomeFeedSidebar({ className = '', onPeopleClick, activeView = 'h
                             </Tooltip>
                         );
                     })}
-
-                    <div className="w-6 h-px bg-white/5 my-1" />
-
-                    {/* Profiles Icon */}
-                    <Tooltip delayDuration={100}>
-                        <TooltipTrigger asChild>
-                            <button
-                                onClick={() => router.push('/i/profiles')}
-                                className={`p-2.5 transition-all duration-200 rounded-xl ${pathname === '/i/profiles' ? 'bg-white text-black' : 'text-white/30 hover:text-white/80 hover:bg-white/5'}`}
-                                aria-label="Profiles"
-                            >
-                                <Users className="w-5 h-5" strokeWidth={1.5} />
-                            </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="right" className="bg-neutral-900 text-white text-[11px] border-white/10 px-3 py-1.5 rounded-md font-normal">
-                            <p>Profiles</p>
-                        </TooltipContent>
-                    </Tooltip>
                 </div>
 
                 {/* Account Section at Bottom */}
