@@ -411,9 +411,15 @@ export default function NotesPage() {
                     return;
                 }
 
-                await fetchNotes();
                 setNewNoteContent('');
                 toast.success('Note created successfully!');
+
+                // Navigate to the newly created note
+                if (data?.note?.id) {
+                    router.push(`/i/notes/${data.note.id}`);
+                } else {
+                    await fetchNotes();
+                }
             } catch (fetchError: any) {
                 if (fetchError.name === 'AbortError') {
                     toast.error('Request timed out. Please try again.');
