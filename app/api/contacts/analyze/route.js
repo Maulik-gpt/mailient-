@@ -44,7 +44,7 @@ export async function POST(request) {
                 analysis: {
                     relationshipScore: 50,
                     trend: 'stable',
-                    sentimentHistory: [50, 50, 50, 50, 50, 50, 50, 50],
+                    sentimentHistory: Array(12).fill(50),
                     aiSuggestion: 'No recent email history with this contact.',
                     socialLinks: [],
                     recentTopics: []
@@ -52,43 +52,38 @@ export async function POST(request) {
             });
         }
 
-        // Get email contents for analysis
         const emailContents = [];
         const socialLinks = [];
 
-        // Process up to 20 emails for detailed analysis
-        for (const msg of messages.slice(0, 20)) {
+        // Process messages to build context
+        for (const msg of messages.slice(0, 30)) {
             try {
                 const details = await gmailService.getEmailDetails(msg.id);
                 const parsed = gmailService.parseEmailData(details);
-
                 const isFromContact = parsed.from?.toLowerCase().includes(email.toLowerCase());
 
                 emailContents.push({
                     subject: parsed.subject || '',
                     snippet: parsed.snippet || '',
-                    date: parsed.date || '',
-                    direction: isFromContact ? 'received' : 'sent'
+                    date: parsed.date || (parsed.internalDate ? new Date(parseInt(parsed.internalDate)).toISOString() : new Date().toISOString()),
+                    direction: isFromContact ? 'received' : 'sent',
+                    body: parsed.body || ''
                 });
 
-                // Extract social links from email body/signature
                 if (parsed.body) {
                     const linkedinMatch = parsed.body.match(/linkedin\.com\/in\/[\w-]+/gi);
                     const twitterMatch = parsed.body.match(/twitter\.com\/[\w]+/gi) || parsed.body.match(/x\.com\/[\w]+/gi);
-
-                    if (linkedinMatch && !socialLinks.some(l => l.type === 'linkedin')) {
-                        socialLinks.push({ type: 'linkedin', url: `https://${linkedinMatch[0]}` });
-                    }
-                    if (twitterMatch && !socialLinks.some(l => l.type === 'twitter')) {
-                        socialLinks.push({ type: 'twitter', url: `https://${twitterMatch[0]}` });
-                    }
+                    if (linkedinMatch && !socialLinks.some(l => l.type === 'linkedin')) socialLinks.push({ type: 'linkedin', url: `https://${linkedinMatch[0]}` });
+                    if (twitterMatch && !socialLinks.some(l => l.type === 'twitter')) socialLinks.push({ type: 'twitter', url: `https://${twitterMatch[0]}` });
                 }
             } catch (e) {
-                console.error('Error fetching email details:', e);
+                console.error('Email detail error:', e);
             }
         }
 
-        // Use AI to analyze the relationship
+        // CHRONOLOGICAL SORTING IS KEY FOR GRAPH
+        emailContents.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
         let relationshipScore = 65;
         let trend = 'stable';
         let sentimentHistory = [];
@@ -99,17 +94,18 @@ export async function POST(request) {
 
         if (openRouterKey && emailContents.length > 0) {
             try {
-                const prompt = `Analyze the interaction history (up to 100 emails) between a user and their contact. Return a JSON response with:
-1. relationshipScore (0-100): Overall relationship health
-2. trend: "up" if improving, "down" if declining, "stable" if neutral
-3. sentimentHistory: Array of 12 numbers (50-100) representing sentiment over time (oldest to newest) based on the latest 100 interaction data points.
-4. aiSuggestion: A clear, regular-font actionable insight about this relationship (1-2 sentences). IMPORTANT: DO NOT USE BOLD (**) OR ITALIC (*) MARKERS IN THE TEXT.
-5. recentTopics: Array of 3 main topics discussed
+                const prompt = `Perform a chronological relationship analysis.
+Output JSON:
+1. "relationshipScore": (0-100)
+2. "trend": "up", "down", or "stable"
+3. "sentimentHistory": Array of 12 numbers (30-100) representing sentiment from OLDEST (index 0) to MOST RECENT (index 11).
+4. "aiSuggestion": Normal text, no bold/italic.
+5. "recentTopics": 3 themes.
 
-Context (latest emails):
-${emailContents.slice(0, 15).map(e => `[${e.direction.toUpperCase()}] Subject: ${e.subject}\nSnippet: ${e.snippet}`).join('\n\n')}
+Interactions (OLD TO NEW):
+${emailContents.map(e => `[${e.direction.toUpperCase()}] Date: ${e.date}\nSubject: ${e.subject}\nSnippet: ${e.snippet}`).join('\n\n')}
 
-Return ONLY valid JSON.`;
+JSON ONLY.`;
 
                 const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
                     method: 'POST',
@@ -122,19 +118,16 @@ Return ONLY valid JSON.`;
                     body: JSON.stringify({
                         model: 'google/gemini-2.0-flash-001',
                         messages: [
-                            { role: 'system', content: 'You are analyzing email relationships. Return only valid JSON.' },
+                            { role: 'system', content: 'You are a Relationship Intelligence AI. Build a 12-point chronological sentiment graph based on tone and frequency. Higher index = more recent. Higher values = warmer tone.' },
                             { role: 'user', content: prompt }
                         ],
-                        temperature: 0.7,
-                        max_tokens: 500
+                        temperature: 0.1
                     })
                 });
 
                 if (response.ok) {
                     const data = await response.json();
-                    const responseText = data.choices?.[0]?.message?.content || '';
-                    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-
+                    const jsonMatch = (data.choices?.[0]?.message?.content || '').match(/\{[\s\S]*\}/);
                     if (jsonMatch) {
                         const analysis = JSON.parse(jsonMatch[0]);
                         relationshipScore = analysis.relationshipScore || 65;
@@ -145,33 +138,12 @@ Return ONLY valid JSON.`;
                     }
                 }
             } catch (aiError) {
-                console.error('AI analysis error:', aiError);
+                console.error('AI error:', aiError);
             }
         }
 
-        // Generate fallback sentiment history if not provided (12 points)
         if (sentimentHistory.length === 0) {
-            const baseScore = relationshipScore;
-            sentimentHistory = Array.from({ length: 12 }, (_, i) => {
-                const variance = Math.random() * 20 - 10;
-                const trendAdjust = trend === 'up' ? i * 2 : trend === 'down' ? -i * 2 : 0;
-                return Math.min(100, Math.max(30, Math.round(baseScore + variance + trendAdjust)));
-            });
-        }
-
-        // Generate fallback suggestion if not provided
-        if (!aiSuggestion) {
-            const emailCount = emailContents.length;
-            const receivedCount = emailContents.filter(e => e.direction === 'received').length;
-            const sentCount = emailCount - receivedCount;
-
-            if (sentCount > receivedCount * 2) {
-                aiSuggestion = 'You\'ve been reaching out more than receiving responses. Consider a different approach or timing.';
-            } else if (receivedCount > sentCount * 2) {
-                aiSuggestion = 'This contact is quite responsive. Great opportunity to strengthen this relationship.';
-            } else {
-                aiSuggestion = 'This appears to be a balanced communication pattern. Keep up the consistent engagement.';
-            }
+            sentimentHistory = Array.from({ length: 12 }, (_, i) => 60 + (trend === 'up' ? i * 2 : trend === 'down' ? -i * 2 : 0) + (Math.random() * 15));
         }
 
         return NextResponse.json({
@@ -180,13 +152,13 @@ Return ONLY valid JSON.`;
                 trend,
                 sentimentHistory,
                 aiSuggestion,
-                socialLinks,
+                socialLinks: socialLinks.slice(0, 3),
                 recentTopics
             }
         });
 
     } catch (error) {
-        console.error('Contact analysis error:', error);
+        console.error('Analyze route error:', error);
         return NextResponse.json({ error: 'Analysis failed' }, { status: 500 });
     }
 }
