@@ -1,18 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+// @ts-ignore
+import { auth } from '@/lib/auth.js';
+// @ts-ignore
 import { GmailService } from '@/lib/gmail';
-import OpenAI from 'openai';
+// @ts-ignore
+import { DatabaseService } from '@/lib/supabase.js';
+// @ts-ignore
+import { decrypt } from '@/lib/crypto.js';
 
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY
-});
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
     try {
-        const session = await getServerSession(authOptions);
+        const session = await auth();
 
-        if (!session?.accessToken || !session?.user?.email) {
+        if (!session?.user?.email) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -22,12 +25,23 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Email address required' }, { status: 400 });
         }
 
-        const gmailService = new GmailService(session.accessToken);
         const userEmail = session.user.email;
 
-        // Fetch emails with this contact
+        // Get tokens from database
+        const db = new DatabaseService();
+        const tokens = await db.getUserTokens(userEmail);
+
+        if (!tokens?.access_token) {
+            return NextResponse.json({ error: 'No access token' }, { status: 401 });
+        }
+
+        const accessToken = decrypt(tokens.access_token);
+        const gmailService = new GmailService(accessToken);
+
+        // Fetch last 100 emails with this contact
         const query = `from:${email} OR to:${email}`;
-        const messages = await gmailService.listEmails(query, 20);
+        const emailsResponse = await gmailService.getEmails(100, query);
+        const messages = emailsResponse?.messages || [];
 
         if (!messages || messages.length === 0) {
             return NextResponse.json({
@@ -46,7 +60,8 @@ export async function POST(request: NextRequest) {
         const emailContents: { subject: string; snippet: string; date: string; direction: string }[] = [];
         const socialLinks: { type: string; url: string }[] = [];
 
-        for (const msg of messages.slice(0, 10)) {
+        // Process up to 20 emails for detailed analysis
+        for (const msg of messages.slice(0, 20)) {
             try {
                 const details = await gmailService.getEmailDetails(msg.id);
                 const parsed = gmailService.parseEmailData(details);
@@ -84,7 +99,9 @@ export async function POST(request: NextRequest) {
         let aiSuggestion = '';
         let recentTopics: string[] = [];
 
-        if (process.env.OPENAI_API_KEY && emailContents.length > 0) {
+        const openRouterKey = process.env.OPENROUTERAPI_KEY2;
+
+        if (openRouterKey && emailContents.length > 0) {
             try {
                 const prompt = `Analyze the following email conversation between a user and their contact. Return a JSON response with:
 1. relationshipScore (0-100): Overall relationship health
@@ -94,30 +111,42 @@ export async function POST(request: NextRequest) {
 5. recentTopics: Array of 3 main topics discussed
 
 Emails (newest first):
-${emailContents.slice(0, 5).map(e => `[${e.direction.toUpperCase()}] Subject: ${e.subject}\nSnippet: ${e.snippet}`).join('\n\n')}
+${emailContents.slice(0, 10).map(e => `[${e.direction.toUpperCase()}] Subject: ${e.subject}\nSnippet: ${e.snippet}`).join('\n\n')}
 
 Return only valid JSON, no markdown.`;
 
-                const completion = await openai.chat.completions.create({
-                    model: 'gpt-4o-mini',
-                    messages: [
-                        { role: 'system', content: 'You are analyzing email relationships. Return only valid JSON.' },
-                        { role: 'user', content: prompt }
-                    ],
-                    temperature: 0.7,
-                    max_tokens: 500
+                const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${openRouterKey}`,
+                        'Content-Type': 'application/json',
+                        'HTTP-Referer': 'https://mailient.xyz',
+                        'X-Title': 'Mailient'
+                    },
+                    body: JSON.stringify({
+                        model: 'google/gemini-2.0-flash-001',
+                        messages: [
+                            { role: 'system', content: 'You are analyzing email relationships. Return only valid JSON.' },
+                            { role: 'user', content: prompt }
+                        ],
+                        temperature: 0.7,
+                        max_tokens: 500
+                    })
                 });
 
-                const responseText = completion.choices[0]?.message?.content || '';
-                const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+                if (response.ok) {
+                    const data = await response.json();
+                    const responseText = data.choices?.[0]?.message?.content || '';
+                    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
 
-                if (jsonMatch) {
-                    const analysis = JSON.parse(jsonMatch[0]);
-                    relationshipScore = analysis.relationshipScore || 65;
-                    trend = analysis.trend || 'stable';
-                    sentimentHistory = analysis.sentimentHistory || [];
-                    aiSuggestion = analysis.aiSuggestion || '';
-                    recentTopics = analysis.recentTopics || [];
+                    if (jsonMatch) {
+                        const analysis = JSON.parse(jsonMatch[0]);
+                        relationshipScore = analysis.relationshipScore || 65;
+                        trend = analysis.trend || 'stable';
+                        sentimentHistory = analysis.sentimentHistory || [];
+                        aiSuggestion = analysis.aiSuggestion || '';
+                        recentTopics = analysis.recentTopics || [];
+                    }
                 }
             } catch (aiError) {
                 console.error('AI analysis error:', aiError);
