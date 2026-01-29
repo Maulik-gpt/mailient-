@@ -99,17 +99,17 @@ export async function POST(request) {
 
         if (openRouterKey && emailContents.length > 0) {
             try {
-                const prompt = `Analyze the following email conversation between a user and their contact. Return a JSON response with:
+                const prompt = `Analyze the interaction history (up to 100 emails) between a user and their contact. Return a JSON response with:
 1. relationshipScore (0-100): Overall relationship health
 2. trend: "up" if improving, "down" if declining, "stable" if neutral
-3. sentimentHistory: Array of 8 numbers (50-100) representing sentiment over time (oldest to newest)
-4. aiSuggestion: A brief, actionable insight about this relationship (1-2 sentences)
+3. sentimentHistory: Array of 12 numbers (50-100) representing sentiment over time (oldest to newest) based on the latest 100 interaction data points.
+4. aiSuggestion: A clear, regular-font actionable insight about this relationship (1-2 sentences). IMPORTANT: DO NOT USE BOLD (**) OR ITALIC (*) MARKERS IN THE TEXT.
 5. recentTopics: Array of 3 main topics discussed
 
-Emails (newest first):
-${emailContents.slice(0, 10).map(e => `[${e.direction.toUpperCase()}] Subject: ${e.subject}\nSnippet: ${e.snippet}`).join('\n\n')}
+Context (latest emails):
+${emailContents.slice(0, 15).map(e => `[${e.direction.toUpperCase()}] Subject: ${e.subject}\nSnippet: ${e.snippet}`).join('\n\n')}
 
-Return only valid JSON, no markdown.`;
+Return ONLY valid JSON.`;
 
                 const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
                     method: 'POST',
@@ -149,12 +149,12 @@ Return only valid JSON, no markdown.`;
             }
         }
 
-        // Generate fallback sentiment history if not provided
+        // Generate fallback sentiment history if not provided (12 points)
         if (sentimentHistory.length === 0) {
             const baseScore = relationshipScore;
-            sentimentHistory = Array.from({ length: 8 }, (_, i) => {
+            sentimentHistory = Array.from({ length: 12 }, (_, i) => {
                 const variance = Math.random() * 20 - 10;
-                const trendAdjust = trend === 'up' ? i * 3 : trend === 'down' ? -i * 3 : 0;
+                const trendAdjust = trend === 'up' ? i * 2 : trend === 'down' ? -i * 2 : 0;
                 return Math.min(100, Math.max(30, Math.round(baseScore + variance + trendAdjust)));
             });
         }
