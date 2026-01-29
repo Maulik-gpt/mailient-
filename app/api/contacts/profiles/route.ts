@@ -124,12 +124,56 @@ export async function GET(request: Request) {
                         if (!addr) return null;
                         const match = addr.match(/(?:"?([^"]*)"?\s)?<?([^<>\s]+@[^<>\s]+)>?/);
                         if (match && match[2]) {
-                            return {
-                                name: match[1]?.trim() || match[2].split('@')[0],
-                                email: match[2].toLowerCase().trim()
-                            };
+                            const email = match[2].toLowerCase().trim();
+                            let name = match[1]?.trim() || '';
+
+                            // If no name provided, try to extract from email
+                            if (!name) {
+                                name = email.split('@')[0];
+                            }
+
+                            // Check if name looks like a hash/random string (more than 20 chars with numbers)
+                            const looksLikeHash = name.length > 20 && /\d/.test(name) && !/\s/.test(name);
+                            if (looksLikeHash) {
+                                // Use the domain part instead, formatted nicely
+                                const domain = email.split('@')[1]?.split('.')[0] || 'Unknown';
+                                name = domain.charAt(0).toUpperCase() + domain.slice(1);
+                            }
+
+                            return { name, email };
                         }
                         return null;
+                    };
+
+                    // Filter out automated/system email addresses
+                    const isAutomatedEmail = (email: string): boolean => {
+                        const lowerEmail = email.toLowerCase();
+                        const automatedPatterns = [
+                            'noreply', 'no-reply', 'donotreply', 'do-not-reply',
+                            'unsubscribe', 'notifications', 'notification',
+                            'mailer-daemon', 'postmaster', 'bounce',
+                            'newsletter', 'marketing', 'promo', 'promotions',
+                            'updates@', 'info@', 'support@', 'hello@', 'team@',
+                            'customer.io', 'sendgrid', 'mailchimp', 'mailgun',
+                            'amazonses', 'postmarkapp', 'mandrill', 'sparkpost',
+                            'campaign', 'broadcast', 'bulk', 'mass',
+                            '.customer.io', 'reply+', 'reply-'
+                        ];
+
+                        // Check if email matches any automated pattern
+                        for (const pattern of automatedPatterns) {
+                            if (lowerEmail.includes(pattern)) {
+                                return true;
+                            }
+                        }
+
+                        // Check if local part (before @) is a long hash-like string
+                        const localPart = lowerEmail.split('@')[0];
+                        if (localPart.length > 30 && /^[a-z0-9]+$/.test(localPart)) {
+                            return true;
+                        }
+
+                        return false;
                     };
 
                     const fromParsed = parseEmailAddress(fromHeader);
@@ -139,7 +183,7 @@ export async function GET(request: Request) {
                     if (isNaN(emailDate.getTime())) return;
 
                     // Process sender (received email)
-                    if (fromParsed && fromParsed.email !== userEmail) {
+                    if (fromParsed && fromParsed.email !== userEmail && !isAutomatedEmail(fromParsed.email)) {
                         const existingContact = contactMap.get(fromParsed.email);
                         if (existingContact) {
                             existingContact.receivedEmails++;
@@ -166,7 +210,7 @@ export async function GET(request: Request) {
                     }
 
                     // Process recipient (sent email)
-                    if (toParsed && toParsed.email !== userEmail) {
+                    if (toParsed && toParsed.email !== userEmail && !isAutomatedEmail(toParsed.email)) {
                         const existingContact = contactMap.get(toParsed.email);
                         if (existingContact) {
                             existingContact.sentEmails++;
