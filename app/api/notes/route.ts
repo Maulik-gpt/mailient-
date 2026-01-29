@@ -76,29 +76,31 @@ export async function POST(request: Request) {
       }, { status: 403 });
     }
 
-    // AI Enhancement
+    // AI Enhancement with 6 second timeout
     let finalSubject = subject || "Untitled Note";
     let finalContent = content || "";
     let aiEnhanced = false;
 
     try {
-      console.log("✨ Notes API: Starting AI enhancement for:", { subject: finalSubject, contentLength: finalContent.length });
+      console.log("✨ Notes API: Starting AI enhancement...");
       const ai = new OpenRouterAIService();
-      const enhanced = await ai.enhanceNote(finalSubject, finalContent);
 
-      console.log("🤖 AI Response received:", enhanced);
+      // Race between AI enhancement and a 6 second timeout
+      const timeoutPromise = new Promise((resolve) => {
+        setTimeout(() => resolve({ subject: finalSubject, content: finalContent, timedOut: true }), 6000);
+      });
 
-      if (enhanced && enhanced.subject && enhanced.content) {
-        if (enhanced.subject !== finalSubject || enhanced.content !== finalContent) {
-          finalSubject = enhanced.subject;
-          finalContent = enhanced.content;
-          aiEnhanced = true;
-          console.log("✅ Notes API: Note successfully enhanced");
-        } else {
-          console.log("⚠️ Notes API: AI returned same content, mark as not enhanced");
-        }
-      } else {
-        console.log("❌ Notes API: AI returned invalid structure:", enhanced);
+      const aiPromise = ai.enhanceNote(finalSubject, finalContent).then(result => ({ ...result, timedOut: false }));
+
+      const result = await Promise.race([aiPromise, timeoutPromise]) as { subject: string; content: string; timedOut: boolean };
+
+      if (result.timedOut) {
+        console.log("⏱️ Notes API: AI timed out, using original content");
+      } else if (result.subject && result.content && (result.subject !== finalSubject || result.content !== finalContent)) {
+        finalSubject = result.subject;
+        finalContent = result.content;
+        aiEnhanced = true;
+        console.log("✅ Notes API: AI enhancement applied");
       }
     } catch (aiError) {
       console.error("❌ Notes API: AI Enhancement failed:", aiError);
