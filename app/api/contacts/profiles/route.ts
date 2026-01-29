@@ -95,8 +95,8 @@ export async function GET(request: Request) {
 
         // Fetch sent and inbox emails in parallel
         const [sentResponse, receivedResponse] = await Promise.all([
-            gmailService.getEmails(Math.min(limit * 2, 100), searchQuery ? `in:sent ${searchQuery}` : 'in:sent'),
-            gmailService.getEmails(Math.min(limit * 2, 100), searchQuery ? `in:inbox ${searchQuery}` : 'in:inbox')
+            gmailService.getEmails(500, searchQuery ? `in:sent ${searchQuery}` : 'in:sent'),
+            gmailService.getEmails(500, searchQuery ? `in:inbox ${searchQuery}` : 'in:inbox')
         ]);
 
         const allMessages = [
