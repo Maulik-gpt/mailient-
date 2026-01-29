@@ -7,7 +7,8 @@ import { SiftCard } from './sift-card';
 import { Button } from './button';
 import { Badge } from './badge';
 import { HomeFeedSidebar } from './home-feed-sidebar';
-import { RefreshCw, AlertCircle, TrendingUp, Clock, Target, Zap, Mail, Home, X, User, Sparkles, ArrowLeft, LayoutList, Inbox, ExternalLink, Download, FilePlus, ChevronDown, ChevronRight, Plus } from 'lucide-react';
+import { RefreshCw, AlertCircle, TrendingUp, Clock, Target, Zap, Mail, Home, X, User, Sparkles, ArrowLeft, LayoutList, Inbox, ExternalLink, Download, FilePlus, ChevronDown, ChevronRight, Plus, Users, Building, Phone, Loader2, MessageCircle, Send } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from './avatar';
 import { toast } from 'sonner';
 import { SchedulingModal } from './scheduling-modal';
 import { UsageLimitModal } from './usage-limit-modal';
@@ -203,10 +204,52 @@ export function GmailInterfaceFixed() {
         currentPlan: 'starter' | 'pro' | 'none';
     } | null>(null);
 
+    // --- All State Hooks ---
+
+    // Usage & Subscription
     const [usageData, setUsageData] = useState<{
         planType: 'starter' | 'pro' | 'none';
         features: Record<string, { usage: number; limit: number; period: 'daily' | 'monthly'; remaining: number; isUnlimited: boolean }>;
     } | null>(null);
+
+    // View Management
+    const [viewMode, setViewMode] = useState<'home' | 'people'>('home');
+
+    // Traditional View states
+    const [isTraditionalView, setIsTraditionalView] = useState(false);
+    const [traditionalEmails, setTraditionalEmails] = useState<any[]>([]);
+    const [isLoadingTraditional, setIsLoadingTraditional] = useState(false);
+    const [selectedTraditionalEmail, setSelectedTraditionalEmail] = useState<any | null>(null);
+    const [isTraditionalModalOpen, setIsTraditionalModalOpen] = useState(false);
+    const [isTraditionalLoadingError, setIsTraditionalLoadingError] = useState(false);
+    const [traditionalNextPageToken, setTraditionalNextPageToken] = useState<string | null>(null);
+    const [isLoadingMoreTraditional, setIsLoadingMoreTraditional] = useState(false);
+    const [hasLoadedMore, setHasLoadedMore] = useState(false);
+
+    // People View states
+    const [contacts, setContacts] = useState<any[]>([]);
+    const [isLoadingContacts, setIsLoadingContacts] = useState(false);
+    const [selectedContactEmail, setSelectedContactEmail] = useState<string | null>(null);
+    const [contactDetail, setContactDetail] = useState<any | null>(null);
+    const [isLoadingContactDetail, setIsLoadingContactDetail] = useState(false);
+    const [peopleSearchQuery, setPeopleSearchQuery] = useState('');
+
+    // Arcus AI Panel states
+    const [isArcusOpen, setIsArcusOpen] = useState(false);
+    const [isArcusMinimized, setIsArcusMinimized] = useState(false);
+    const [arcusEmailId, setArcusEmailId] = useState<string | null>(null);
+    const [arcusEmailSubject, setArcusEmailSubject] = useState('');
+    const [arcusQuery, setArcusQuery] = useState('What is this email about?');
+    const [arcusMessages, setArcusMessages] = useState<any[]>([]);
+    const [isArcusLoading, setIsArcusLoading] = useState(false);
+    const [arcusConversationId, setArcusConversationId] = useState<string | null>(null);
+    const [arcusPanelHeight, setArcusPanelHeight] = useState(800);
+
+    const arcusDragControls = useDragControls();
+    const arcusPanelAnimControls = useAnimation();
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    // --- All Callbacks (useCallback) ---
 
     const fetchUsage = useCallback(async () => {
         try {
@@ -221,38 +264,52 @@ export function GmailInterfaceFixed() {
         } catch (e) {
             console.warn('Failed to fetch usage', e);
         }
-    }, []);
+    }, [setUsageData]);
+
+    const fetchContacts = useCallback(async (query: string = '') => {
+        setIsLoadingContacts(true);
+        try {
+            const searchParam = query ? `?search=${encodeURIComponent(query)}` : '';
+            const response = await fetch(`/api/contacts/profiles${searchParam}`);
+            if (!response.ok) throw new Error('Failed to fetch contacts');
+            const data = await response.json();
+            setContacts(data.contacts || []);
+        } catch (err) {
+            console.error('Error fetching contacts:', err);
+            toast.error('Failed to load contacts');
+        } finally {
+            setIsLoadingContacts(false);
+        }
+    }, [setContacts, setIsLoadingContacts]);
+
+    const fetchContactDetail = useCallback(async (email: string) => {
+        setIsLoadingContactDetail(true);
+        setSelectedContactEmail(email);
+        try {
+            const response = await fetch(`/api/contacts/profiles/${encodeURIComponent(email)}`);
+            if (!response.ok) throw new Error('Failed to fetch contact details');
+            const data = await response.json();
+            setContactDetail(data.contact);
+        } catch (err) {
+            console.error('Error fetching contact details:', err);
+            toast.error('Failed to load profile details');
+        } finally {
+            setIsLoadingContactDetail(false);
+        }
+    }, [setContactDetail, setIsLoadingContactDetail, setSelectedContactEmail]);
+
+    // --- All Effects (useEffect) ---
+
+    useEffect(() => {
+        if (viewMode === 'people') {
+            fetchContacts(peopleSearchQuery);
+        }
+    }, [viewMode, peopleSearchQuery, fetchContacts]);
 
     useEffect(() => {
         fetchUsage();
     }, [fetchUsage]);
 
-    // Traditional View states
-    const [isTraditionalView, setIsTraditionalView] = useState(false);
-    const [traditionalEmails, setTraditionalEmails] = useState<any[]>([]);
-    const [isLoadingTraditional, setIsLoadingTraditional] = useState(false);
-    const [selectedTraditionalEmail, setSelectedTraditionalEmail] = useState<any | null>(null);
-    const [isTraditionalModalOpen, setIsTraditionalModalOpen] = useState(false);
-    const [isTraditionalLoadingError, setIsTraditionalLoadingError] = useState(false);
-    const [traditionalNextPageToken, setTraditionalNextPageToken] = useState<string | null>(null);
-    const [isLoadingMoreTraditional, setIsLoadingMoreTraditional] = useState(false);
-    const [hasLoadedMore, setHasLoadedMore] = useState(false);
-
-    // Arcus AI Panel states
-    const [isArcusOpen, setIsArcusOpen] = useState(false);
-    const [isArcusMinimized, setIsArcusMinimized] = useState(false);
-    const [arcusEmailId, setArcusEmailId] = useState<string | null>(null);
-    const [arcusEmailSubject, setArcusEmailSubject] = useState('');
-    const [arcusQuery, setArcusQuery] = useState('What is this email about?');
-    const [arcusMessages, setArcusMessages] = useState<any[]>([]);
-    const [isArcusLoading, setIsArcusLoading] = useState(false);
-    const [arcusConversationId, setArcusConversationId] = useState<string | null>(null);
-
-    const [arcusPanelHeight, setArcusPanelHeight] = useState(800);
-    const arcusDragControls = useDragControls();
-    const arcusPanelAnimControls = useAnimation();
-
-    const messagesEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (messagesEndRef.current) {
@@ -1200,18 +1257,25 @@ export function GmailInterfaceFixed() {
                 </div>
             )}
             {/* Sidebar */}
-            <HomeFeedSidebar />
+            <HomeFeedSidebar
+                onPeopleClick={() => setViewMode(prev => prev === 'people' ? 'home' : 'people')}
+                activeView={viewMode}
+            />
 
             {/* Main Content */}
             <div className="flex-1 ml-16">
-                <div className="max-w-5xl mx-auto px-8 py-10">
+                <div className={`${viewMode === 'people' ? 'max-w-[1600px]' : 'max-w-5xl'} mx-auto px-8 py-10 transition-all duration-500`}>
 
                     {/* Header */}
                     <div className="flex items-center justify-between mb-16">
                         <div className="flex items-center gap-4">
-                            <Home className="w-6 h-6 text-[#fafafa]" strokeWidth={1.5} />
+                            {viewMode === 'people' ? (
+                                <Users className="w-6 h-6 text-[#fafafa]" strokeWidth={1.5} />
+                            ) : (
+                                <Home className="w-6 h-6 text-[#fafafa]" strokeWidth={1.5} />
+                            )}
                             <h1 className="text-2xl font-medium text-[#fafafa] tracking-tight">
-                                Home
+                                {viewMode === 'people' ? 'People' : 'Home'}
                             </h1>
                         </div>
 
@@ -1342,200 +1406,424 @@ export function GmailInterfaceFixed() {
                         </div>
                     )}
 
-                    {/* Insights or Traditional View */}
-                    {isTraditionalView ? (
-                        <div className="animate-in fade-in duration-500">
-                            <div className="flex items-center justify-between mb-8">
-                                <h2 className="text-sm font-medium text-neutral-400 uppercase tracking-wider">
-                                    Traditional Inbox
-                                </h2>
-                                <div className="flex items-center gap-3 text-xs text-neutral-600">
-                                    <Inbox className="w-3.5 h-3.5" />
-                                    <span>Latest 50 emails</span>
-                                </div>
+                    {/* People View */}
+                    {viewMode === 'people' ? (
+                        <div className="flex gap-6 min-h-[700px] animate-in fade-in slide-in-from-bottom-2 duration-500">
+
+                            {/* Left Column: Context Sidebar (Blank until click) */}
+                            <div className="w-64 bg-neutral-900/10 border border-neutral-800/30 rounded-3xl overflow-hidden flex flex-col transition-all duration-500 border-dashed">
+                                {!selectedContactEmail ? (
+                                    <div className="flex-1 flex items-center justify-center p-8 opacity-20">
+                                        <div className="w-px h-12 bg-white/20" />
+                                    </div>
+                                ) : (
+                                    <div className="p-6 space-y-8 animate-in fade-in slide-in-from-left-4 duration-500">
+                                        <div className="space-y-4">
+                                            <h4 className="text-[10px] uppercase tracking-[0.2em] font-bold text-neutral-600">Filters</h4>
+                                            <div className="space-y-1">
+                                                {['All Activity', 'Sent', 'Received', 'Attachments', 'Reminders'].map((filter) => (
+                                                    <button key={filter} className="w-full text-left px-3 py-2 text-xs text-neutral-500 hover:text-white hover:bg-white/5 rounded-lg transition-all font-normal">
+                                                        {filter}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="space-y-4">
+                                            <h4 className="text-[10px] uppercase tracking-[0.2em] font-bold text-neutral-600">Timeline</h4>
+                                            <div className="space-y-4 pl-2">
+                                                {[
+                                                    { date: 'Recent', desc: 'Latest interaction' },
+                                                    { date: '30d+', desc: 'Stable period' },
+                                                    { date: 'Initial', desc: 'First contact' }
+                                                ].map((t) => (
+                                                    <div key={t.date} className="relative pl-4 border-l border-white/5">
+                                                        <div className="absolute -left-[4.5px] top-1 w-2 h-2 rounded-full bg-white/10" />
+                                                        <p className="text-[10px] text-white/60 font-medium">{t.date}</p>
+                                                        <p className="text-[9px] text-neutral-600 font-light">{t.desc}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
-                            {isLoadingTraditional ? (
-                                <div className="py-32 text-center">
-                                    <RefreshCw className="w-8 h-8 mx-auto text-neutral-700 animate-spin mb-4" />
-                                    <p className="text-neutral-500 font-light text-lg">Loading your inbox...</p>
+                            {/* Middle Column: People List (Max Space) */}
+                            <div className="flex-1 space-y-px bg-neutral-900/20 border border-neutral-800/50 rounded-3xl overflow-hidden shadow-2xl transition-all">
+                                <div className="p-6 border-b border-white/[0.03] flex items-center justify-between bg-white/[0.01]">
+                                    <h3 className="text-[10px] uppercase tracking-[0.2em] font-bold text-neutral-500">Recently Contacted</h3>
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            placeholder="Search people..."
+                                            value={peopleSearchQuery}
+                                            onChange={(e) => setPeopleSearchQuery(e.target.value)}
+                                            className="bg-white/5 border border-white/5 rounded-full px-4 py-1.5 text-xs text-white placeholder-white/20 focus:outline-none focus:border-white/10 transition-all w-48 font-normal"
+                                        />
+                                    </div>
                                 </div>
-                            ) : traditionalEmails.length > 0 ? (
-                                <div className="space-y-px bg-neutral-900/20 border border-neutral-800/50 rounded-2xl overflow-hidden shadow-2xl">
-                                    {traditionalEmails.map((email, index) => (
-                                        <React.Fragment key={email.id}>
-                                            {/* Separation line after 50 emails */}
-                                            {index === 50 && (
-                                                <div className="py-8 flex items-center justify-center gap-4 bg-white/[0.01] border-y border-white/[0.03]">
-                                                    <div className="h-[1px] w-24 bg-gradient-to-r from-transparent to-neutral-800" />
-                                                    <span className="text-[10px] uppercase font-bold tracking-[0.3em] text-neutral-600">Previous Messages</span>
-                                                    <div className="h-[1px] w-24 bg-gradient-to-l from-transparent to-neutral-800" />
-                                                </div>
-                                            )}
+                                <div className="max-h-[700px] overflow-y-auto custom-scrollbar">
+                                    {isLoadingContacts && contacts.length === 0 ? (
+                                        <div className="py-32 text-center">
+                                            <Loader2 className="w-8 h-8 mx-auto text-neutral-700 animate-spin mb-4" />
+                                            <p className="text-neutral-500 font-light text-lg">Loading contacts...</p>
+                                        </div>
+                                    ) : contacts.length > 0 ? (
+                                        contacts.map((contact) => (
                                             <div
-                                                onClick={() => handleTraditionalEmailClick(email.id)}
-                                                className="group flex items-center gap-6 p-5 hover:bg-white/[0.04] active:bg-white/[0.06] transition-all cursor-pointer border-b border-white/[0.02] last:border-0 relative overflow-hidden"
+                                                key={contact.email}
+                                                onClick={() => fetchContactDetail(contact.email)}
+                                                className={`group flex items-center gap-6 p-5 hover:bg-white/[0.04] active:bg-white/[0.06] transition-all cursor-pointer border-b border-white/[0.02] last:border-0 relative ${selectedContactEmail === contact.email ? 'bg-white/[0.05]' : ''}`}
                                             >
-                                                <div className="w-10 h-10 rounded-full bg-neutral-800/50 flex items-center justify-center flex-shrink-0 border border-white/[0.05] text-white/40 group-hover:text-white/80 transition-colors">
-                                                    {email.from?.[0]?.toUpperCase() || 'M'}
-                                                </div>
+                                                <Avatar className="w-12 h-12 border border-white/[0.05]">
+                                                    <AvatarFallback className="bg-neutral-800 text-white/50 text-sm font-normal">
+                                                        {contact.name?.[0]?.toUpperCase() || contact.email?.[0]?.toUpperCase() || 'U'}
+                                                    </AvatarFallback>
+                                                </Avatar>
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex justify-between items-center mb-1">
                                                         <h4 className="text-sm font-semibold text-white/90 truncate group-hover:text-white transition-colors">
-                                                            {email.from?.split('<')[0]?.trim()}
+                                                            {contact.name || contact.email.split('@')[0]}
                                                         </h4>
                                                         <span className="text-[10px] uppercase tracking-widest text-neutral-600 font-medium">
-                                                            {new Date(email.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                                            {contact.frequency}
                                                         </span>
                                                     </div>
-                                                    <p className="text-sm text-white/60 font-medium truncate mb-1">
-                                                        {email.subject}
-                                                    </p>
                                                     <p className="text-xs text-neutral-500 truncate font-light leading-relaxed">
-                                                        {email.snippet}
+                                                        {contact.email}
                                                     </p>
                                                 </div>
                                                 <div className="flex items-center gap-3 pr-2">
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setArcusEmailId(email.id);
-                                                            setArcusEmailSubject(email.subject);
-                                                            setArcusQuery('What is this email about?');
-                                                            setArcusConversationId(null);
-                                                            const initMsg = {
-                                                                id: 'init',
-                                                                role: 'assistant',
-                                                                content: `I've connected to the email: **${email.subject}**. Ask me anything about it.`,
-                                                                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                                                            };
-                                                            setArcusMessages([initMsg]);
-                                                            setIsArcusMinimized(false);
-                                                            setIsArcusOpen(true);
-                                                        }}
-                                                        className="w-9 h-9 bg-white/5 hover:bg-blue-500/20 rounded-xl text-white/30 hover:text-blue-400 transition-all border border-white/5 hover:border-blue-500/30 group/ai flex items-center justify-center overflow-hidden"
-                                                        title="Ask Arcus AI"
-                                                    >
-                                                        <img src="/arcus-ai-icon.jpg" alt="Ask AI" className="w-full h-full object-cover brightness-90 group-hover:brightness-110 transition-all" />
-                                                    </button>
-                                                    <ChevronRight className="w-4 h-4 text-neutral-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                    <div className="text-[10px] text-white/20 font-mono">
+                                                        {contact.totalEmails} emails
+                                                    </div>
+                                                    <ChevronRight className={`w-4 h-4 text-neutral-600 transition-all ${selectedContactEmail === contact.email ? 'translate-x-1 text-white' : 'opacity-0 group-hover:opacity-100'}`} />
                                                 </div>
-                                                <div className="absolute inset-y-0 left-0 w-1 bg-white scale-y-0 group-hover:scale-y-100 transition-transform origin-center" />
-                                            </div>
-                                        </React.Fragment>
-                                    ))}
-
-                                    {/* Load More Button */}
-                                    {traditionalNextPageToken && (
-                                        <div className="p-8 text-center border-t border-white/[0.02] bg-white/[0.01]">
-                                            <Button
-                                                onClick={handleLoadMoreTraditional}
-                                                disabled={isLoadingMoreTraditional}
-                                                className="h-12 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-2xl px-12 transition-all transform hover:scale-105 active:scale-95 group shadow-lg"
-                                            >
-                                                {isLoadingMoreTraditional ? (
-                                                    <RefreshCw className="w-4 h-4 animate-spin mr-3" />
-                                                ) : (
-                                                    <Plus className="w-4 h-4 mr-3 group-hover:rotate-90 transition-transform duration-300" />
+                                                {selectedContactEmail === contact.email && (
+                                                    <div className="absolute inset-y-0 left-0 w-1 bg-white" />
                                                 )}
-                                                Load More Emails
-                                            </Button>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="py-32 text-center">
+                                            <Users className="w-8 h-8 mx-auto text-neutral-700 mb-4" strokeWidth={1} />
+                                            <h3 className="text-lg font-light text-neutral-300">No contacts found</h3>
+                                            <p className="text-sm text-neutral-600 mt-2 font-light">Try searching for someone else.</p>
                                         </div>
                                     )}
                                 </div>
-                            ) : isTraditionalLoadingError ? (
-                                <div className="py-32 text-center">
-                                    <AlertCircle className="w-8 h-8 mx-auto text-red-900/50 mb-4" />
-                                    <h3 className="text-lg font-light text-neutral-300">Failed to load Inbox</h3>
-                                    <p className="text-sm text-neutral-600 mt-2 mb-8 font-light italic">There was an error connecting to Gmail.</p>
-                                    <Button
-                                        onClick={fetchTraditionalEmails}
-                                        className="h-10 px-6 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl"
-                                    >
-                                        Try again
-                                    </Button>
-                                </div>
-                            ) : (
-                                <div className="py-32 text-center">
-                                    <Inbox className="w-8 h-8 mx-auto text-neutral-700 mb-4" strokeWidth={1} />
-                                    <h3 className="text-lg font-light text-neutral-300">Your inbox is empty</h3>
-                                    <p className="text-sm text-neutral-600 mt-2 font-light">All caught up!</p>
-                                </div>
-                            )}
+                            </div>
+
+                            {/* Right Column: Profile Details */}
+                            <div className="w-[400px] flex flex-col bg-neutral-900/40 border border-neutral-800/50 rounded-3xl overflow-hidden shadow-2xl transition-all">
+                                {!selectedContactEmail ? (
+                                    <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
+                                        <div className="w-20 h-20 bg-white/[0.02] border border-white/[0.05] rounded-full flex items-center justify-center mb-6">
+                                            <User className="w-8 h-8 text-white/10" strokeWidth={1} />
+                                        </div>
+                                        <h3 className="text-lg font-light text-white/30 mb-2">Select a profile</h3>
+                                        <p className="text-sm text-white/10 font-light max-w-[200px]">Choose someone from the list to view their relationship history.</p>
+                                    </div>
+                                ) : isLoadingContactDetail ? (
+                                    <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
+                                        <Loader2 className="w-8 h-8 text-white/20 animate-spin mb-4" />
+                                        <p className="text-white/20 font-light">Fetching details...</p>
+                                    </div>
+                                ) : contactDetail ? (
+                                    <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
+                                        {/* Profile Header */}
+                                        <div className="flex flex-col items-center text-center mb-10">
+                                            <Avatar className="w-24 h-24 border border-white/10 mb-6">
+                                                <AvatarFallback className="bg-neutral-800 text-white/80 text-3xl font-normal">
+                                                    {(contactDetail.name || contactDetail.email)?.[0]?.toUpperCase()}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                            <h2 className="text-2xl font-normal text-white mb-1">
+                                                {contactDetail.name || contactDetail.email.split('@')[0]}
+                                            </h2>
+                                            <p className="text-white/40 text-sm font-normal truncate max-w-full">{contactDetail.email}</p>
+
+                                            <div className="flex gap-3 mt-8">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="border-white/10 text-white/80 hover:bg-white/5 rounded-full px-6 font-normal"
+                                                    onClick={() => window.open(`mailto:${contactDetail.email}`, '_blank')}
+                                                >
+                                                    Email
+                                                </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="border-white/10 text-white/80 hover:bg-white/5 rounded-full px-6 font-normal"
+                                                    onClick={() => window.open(`tel:${contactDetail.phone || ''}`, '_blank')}
+                                                >
+                                                    Call
+                                                </Button>
+                                            </div>
+                                        </div>
+
+                                        {/* AI Insight */}
+                                        {contactDetail.aiSuggestion && (
+                                            <div className="mb-10 bg-white/5 border border-white/5 rounded-2xl p-6 relative overflow-hidden group">
+                                                <div className="flex items-center gap-2 mb-3 text-white/30">
+                                                    <Sparkles className="w-3.5 h-3.5" />
+                                                    <span className="text-[10px] font-bold uppercase tracking-widest">AI Intelligence</span>
+                                                </div>
+                                                <p className="text-sm text-white/90 leading-relaxed font-normal italic">
+                                                    "{contactDetail.aiSuggestion}"
+                                                </p>
+                                                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-3xl rounded-full -mr-16 -mt-16 group-hover:bg-blue-500/10 transition-colors" />
+                                            </div>
+                                        )}
+
+                                        {/* Stats Grid */}
+                                        <div className="grid grid-cols-2 gap-3 mb-10">
+                                            {[
+                                                { label: 'Total Emails', value: contactDetail.totalEmails },
+                                                { label: 'Score', value: `${contactDetail.relationshipScore}%` },
+                                                { label: 'Sent', value: contactDetail.sentEmails },
+                                                { label: 'Received', value: contactDetail.receivedEmails }
+                                            ].map((item, i) => (
+                                                <div key={i} className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 hover:bg-white/[0.04] transition-colors">
+                                                    <span className="text-[10px] text-white/20 block mb-1 font-bold uppercase tracking-wider">{item.label}</span>
+                                                    <span className="text-xl text-white font-normal">{item.value}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {/* Sentiment History */}
+                                        {contactDetail.sentimentHistory?.length > 0 && (
+                                            <div className="mb-10">
+                                                <h3 className="text-[10px] text-white/20 mb-4 font-bold uppercase tracking-widest">Sentiment Drift</h3>
+                                                <div className="h-16 flex items-end gap-1 px-1">
+                                                    {contactDetail.sentimentHistory.map((item: any, index: number) => (
+                                                        <div
+                                                            key={index}
+                                                            className="flex-1 bg-white/10 hover:bg-white/40 transition-all rounded-t-sm"
+                                                            style={{ height: `${item.score}%` }}
+                                                            title={`Score: ${item.score}`}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Subjects */}
+                                        {contactDetail.recentSubjects?.length > 0 && (
+                                            <div className="space-y-4">
+                                                <h3 className="text-[10px] text-white/20 font-bold uppercase tracking-widest">Recent Topics</h3>
+                                                <div className="space-y-2">
+                                                    {contactDetail.recentSubjects.map((subject: string, index: number) => (
+                                                        <div key={index} className="text-xs text-white/60 bg-white/[0.02] border border-white/5 rounded-xl px-4 py-3 truncate font-normal hover:bg-white/[0.04] transition-colors">
+                                                            {subject || '(No subject)'}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : null}
+                            </div>
                         </div>
-                    ) : hasInitialLoad ? (
-                        insights.length > 0 ? (
-                            <div>
+                    ) : (
+                        /* Insights or Traditional View */
+                        isTraditionalView ? (
+                            /* ... existing traditional view code ... */
+                            <div className="animate-in fade-in duration-500">
+                                {/* ... rest of traditional view ... */}
                                 <div className="flex items-center justify-between mb-8">
                                     <h2 className="text-sm font-medium text-neutral-400 uppercase tracking-wider">
-                                        Insights
+                                        Traditional Inbox
                                     </h2>
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-xs text-neutral-600">{insights.length} insights</span>
-                                        <span className="text-neutral-800">·</span>
-                                        <span className="text-xs text-neutral-600">{totalItems} items</span>
+                                    <div className="flex items-center gap-3 text-xs text-neutral-600">
+                                        <Inbox className="w-3.5 h-3.5" />
+                                        <span>Latest 50 emails</span>
                                     </div>
                                 </div>
 
-                                <div className="space-y-3">
-                                    {insights.map((insight) => (
-                                        <SiftCard
-                                            key={insight.id}
-                                            type={getCardType(insight)}
-                                            title={insight.title}
-                                            content={insight.content}
-                                            onClick={() => setSelectedInsight(insight)}
-                                        />
-                                    ))}
-                                </div>
+                                {isLoadingTraditional ? (
+                                    <div className="py-32 text-center">
+                                        <RefreshCw className="w-8 h-8 mx-auto text-neutral-700 animate-spin mb-4" />
+                                        <p className="text-neutral-500 font-light text-lg">Loading your inbox...</p>
+                                    </div>
+                                ) : traditionalEmails.length > 0 ? (
+                                    <div className="space-y-px bg-neutral-900/20 border border-neutral-800/50 rounded-2xl overflow-hidden shadow-2xl">
+                                        {traditionalEmails.map((email, index) => (
+                                            <React.Fragment key={email.id}>
+                                                {/* Separation line after 50 emails */}
+                                                {index === 50 && (
+                                                    <div className="py-8 flex items-center justify-center gap-4 bg-white/[0.01] border-y border-white/[0.03]">
+                                                        <div className="h-[1px] w-24 bg-gradient-to-r from-transparent to-neutral-800" />
+                                                        <span className="text-[10px] uppercase font-bold tracking-[0.3em] text-neutral-600">Previous Messages</span>
+                                                        <div className="h-[1px] w-24 bg-gradient-to-l from-transparent to-neutral-800" />
+                                                    </div>
+                                                )}
+                                                <div
+                                                    onClick={() => handleTraditionalEmailClick(email.id)}
+                                                    className="group flex items-center gap-6 p-5 hover:bg-white/[0.04] active:bg-white/[0.06] transition-all cursor-pointer border-b border-white/[0.02] last:border-0 relative overflow-hidden"
+                                                >
+                                                    <div className="w-10 h-10 rounded-full bg-neutral-800/50 flex items-center justify-center flex-shrink-0 border border-white/[0.05] text-white/40 group-hover:text-white/80 transition-colors">
+                                                        {email.from?.[0]?.toUpperCase() || 'M'}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex justify-between items-center mb-1">
+                                                            <h4 className="text-sm font-semibold text-white/90 truncate group-hover:text-white transition-colors">
+                                                                {email.from?.split('<')[0]?.trim()}
+                                                            </h4>
+                                                            <span className="text-[10px] uppercase tracking-widest text-neutral-600 font-medium">
+                                                                {new Date(email.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-sm text-white/60 font-medium truncate mb-1">
+                                                            {email.subject}
+                                                        </p>
+                                                        <p className="text-xs text-neutral-500 truncate font-light leading-relaxed">
+                                                            {email.snippet}
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex items-center gap-3 pr-2">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setArcusEmailId(email.id);
+                                                                setArcusEmailSubject(email.subject);
+                                                                setArcusQuery('What is this email about?');
+                                                                setArcusConversationId(null);
+                                                                const initMsg = {
+                                                                    id: 'init',
+                                                                    role: 'assistant',
+                                                                    content: `I've connected to the email: **${email.subject}**. Ask me anything about it.`,
+                                                                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                                                };
+                                                                setArcusMessages([initMsg]);
+                                                                setIsArcusMinimized(false);
+                                                                setIsArcusOpen(true);
+                                                            }}
+                                                            className="w-9 h-9 bg-white/5 hover:bg-blue-500/20 rounded-xl text-white/30 hover:text-blue-400 transition-all border border-white/5 hover:border-blue-500/30 group/ai flex items-center justify-center overflow-hidden"
+                                                            title="Ask Arcus AI"
+                                                        >
+                                                            <img src="/arcus-ai-icon.jpg" alt="Ask AI" className="w-full h-full object-cover brightness-90 group-hover:brightness-110 transition-all" />
+                                                        </button>
+                                                        <ChevronRight className="w-4 h-4 text-neutral-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                    </div>
+                                                    <div className="absolute inset-y-0 left-0 w-1 bg-white scale-y-0 group-hover:scale-y-100 transition-transform origin-center" />
+                                                </div>
+                                            </React.Fragment>
+                                        ))}
+
+                                        {/* Load More Button */}
+                                        {traditionalNextPageToken && (
+                                            <div className="p-8 text-center border-t border-white/[0.02] bg-white/[0.01]">
+                                                <Button
+                                                    onClick={handleLoadMoreTraditional}
+                                                    disabled={isLoadingMoreTraditional}
+                                                    className="h-12 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-2xl px-12 transition-all transform hover:scale-105 active:scale-95 group shadow-lg"
+                                                >
+                                                    {isLoadingMoreTraditional ? (
+                                                        <RefreshCw className="w-4 h-4 animate-spin mr-3" />
+                                                    ) : (
+                                                        <Plus className="w-4 h-4 mr-3 group-hover:rotate-90 transition-transform duration-300" />
+                                                    )}
+                                                    Load More Emails
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : isTraditionalLoadingError ? (
+                                    <div className="py-32 text-center">
+                                        <AlertCircle className="w-8 h-8 mx-auto text-red-900/50 mb-4" />
+                                        <h3 className="text-lg font-light text-neutral-300">Failed to load Inbox</h3>
+                                        <p className="text-sm text-neutral-600 mt-2 mb-8 font-light italic">There was an error connecting to Gmail.</p>
+                                        <Button
+                                            onClick={fetchTraditionalEmails}
+                                            className="h-10 px-6 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl"
+                                        >
+                                            Try again
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <div className="py-32 text-center">
+                                        <Inbox className="w-8 h-8 mx-auto text-neutral-700 mb-4" strokeWidth={1} />
+                                        <h3 className="text-lg font-light text-neutral-300">Your inbox is empty</h3>
+                                        <p className="text-sm text-neutral-600 mt-2 font-light">All caught up!</p>
+                                    </div>
+                                )}
                             </div>
+                        ) : hasInitialLoad ? (
+                            insights.length > 0 ? (
+                                <div>
+                                    <div className="flex items-center justify-between mb-8">
+                                        <h2 className="text-sm font-medium text-neutral-400 uppercase tracking-wider">
+                                            Insights
+                                        </h2>
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-xs text-neutral-600">{insights.length} insights</span>
+                                            <span className="text-neutral-800">·</span>
+                                            <span className="text-xs text-neutral-600">{totalItems} items</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        {insights.map((insight) => (
+                                            <SiftCard
+                                                key={insight.id}
+                                                type={getCardType(insight)}
+                                                title={insight.title}
+                                                content={insight.content}
+                                                onClick={() => setSelectedInsight(insight)}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="text-center py-24">
+                                    <Mail className="h-8 w-8 mx-auto text-neutral-700 mb-6" strokeWidth={1} />
+                                    <h3 className="text-lg font-light text-neutral-300 mb-2">No insights yet</h3>
+                                    <p className="text-sm text-neutral-600 mb-8 font-light">
+                                        {error ? "Unable to load insights" : "Click refresh to load insights"}
+                                    </p>
+                                    <Button
+                                        onClick={refreshInsights}
+                                        disabled={loading}
+                                        className="h-10 px-6 bg-[#fafafa] hover:bg-neutral-200 text-[#0a0a0a] rounded-lg transition-colors font-medium"
+                                    >
+                                        {loading ? (
+                                            <>
+                                                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                                Loading
+                                            </>
+                                        ) : (
+                                            'Load Insights'
+                                        )}
+                                    </Button>
+                                </div>
+                            )
                         ) : (
                             <div className="text-center py-24">
-                                <Mail className="h-8 w-8 mx-auto text-neutral-700 mb-6" strokeWidth={1} />
-                                <h3 className="text-lg font-light text-neutral-300 mb-2">No insights yet</h3>
-                                <p className="text-sm text-neutral-600 mb-8 font-light">
-                                    {error ? "Unable to load insights" : "Click refresh to load insights"}
+                                <div className="w-12 h-12 mx-auto mb-8 rounded-full border border-neutral-800 flex items-center justify-center">
+                                    <Mail className="h-5 w-5 text-neutral-500" strokeWidth={1.5} />
+                                </div>
+                                <h3 className="text-xl font-light text-[#fafafa] mb-3">Welcome</h3>
+                                <p className="text-sm text-neutral-500 mb-10 font-light max-w-sm mx-auto">
+                                    Analyze your inbox to surface opportunities, urgent items, and important conversations.
                                 </p>
                                 <Button
                                     onClick={refreshInsights}
                                     disabled={loading}
-                                    className="h-10 px-6 bg-[#fafafa] hover:bg-neutral-200 text-[#0a0a0a] rounded-lg transition-colors font-medium"
+                                    className="h-11 px-8 bg-[#fafafa] hover:bg-neutral-200 text-[#0a0a0a] rounded-lg transition-colors font-medium"
                                 >
                                     {loading ? (
                                         <>
                                             <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                                            Loading
+                                            Analyzing
                                         </>
                                     ) : (
-                                        'Load Insights'
+                                        'Start Analysis'
                                     )}
                                 </Button>
                             </div>
                         )
-                    ) : (
-                        <div className="text-center py-24">
-                            <div className="w-12 h-12 mx-auto mb-8 rounded-full border border-neutral-800 flex items-center justify-center">
-                                <Mail className="h-5 w-5 text-neutral-500" strokeWidth={1.5} />
-                            </div>
-                            <h3 className="text-xl font-light text-[#fafafa] mb-3">Welcome</h3>
-                            <p className="text-sm text-neutral-500 mb-10 font-light max-w-sm mx-auto">
-                                Analyze your inbox to surface opportunities, urgent items, and important conversations.
-                            </p>
-                            <Button
-                                onClick={refreshInsights}
-                                disabled={loading}
-                                className="h-11 px-8 bg-[#fafafa] hover:bg-neutral-200 text-[#0a0a0a] rounded-lg transition-colors font-medium"
-                            >
-                                {loading ? (
-                                    <>
-                                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                                        Analyzing
-                                    </>
-                                ) : (
-                                    'Start Analysis'
-                                )}
-                            </Button>
-                        </div>
                     )}
                 </div>
             </div>

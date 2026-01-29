@@ -1,7 +1,14 @@
 import { NextResponse } from 'next/server';
 // @ts-ignore
 import { auth } from '@/lib/auth.js';
-import { google } from 'googleapis';
+// @ts-ignore
+import { GmailService } from '@/lib/gmail';
+// @ts-ignore
+import { DatabaseService } from '@/lib/supabase.js';
+// @ts-ignore
+import { decrypt } from '@/lib/crypto.js';
+// @ts-ignore
+import { subscriptionService } from '@/lib/subscription-service.js';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -28,7 +35,6 @@ interface EmailContact {
 /**
  * Email Profiles API - Extract all contacts from Gmail history
  * GET: Fetch all unique contacts
- * Query params: search (optional)
  */
 export async function GET(request: Request) {
     try {
@@ -39,143 +45,159 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // @ts-ignore
-        const accessToken = session?.accessToken;
+        const userEmail = session.user.email.toLowerCase();
+
+        // 🔒 SECURITY: Check subscription
+        const hasSubscription = await subscriptionService.isSubscriptionActive(userEmail);
+        if (!hasSubscription) {
+            return NextResponse.json({
+                error: 'subscription_required',
+                message: 'An active subscription is required to access your network.'
+            }, { status: 403 });
+        }
+
+        // Get tokens
+        let accessToken = session.accessToken;
+        let refreshToken = session.refreshToken;
+
+        // Fetch tokens from database if missing from session
+        const db = new DatabaseService();
+        if (!accessToken || !refreshToken) {
+            try {
+                const userTokens = await db.getUserTokens(userEmail);
+                if (userTokens) {
+                    if (userTokens.encrypted_access_token) {
+                        accessToken = decrypt(userTokens.encrypted_access_token);
+                    }
+                    if (userTokens.encrypted_refresh_token) {
+                        refreshToken = decrypt(userTokens.encrypted_refresh_token);
+                    }
+                }
+            } catch (dbError) {
+                console.error('Database error getting tokens:', dbError);
+            }
+        }
+
         if (!accessToken) {
             return NextResponse.json({ error: 'Gmail not connected' }, { status: 401 });
         }
 
         const { searchParams } = new URL(request.url);
         const searchQuery = searchParams.get('search') || '';
-        const limit = parseInt(searchParams.get('limit') || '100');
+        const limit = parseInt(searchParams.get('limit') || '50');
 
-        // Initialize Gmail API
-        const oauth2Client = new google.auth.OAuth2();
-        oauth2Client.setCredentials({ access_token: accessToken });
-
-        const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+        // Initialize Gmail service
+        const gmailService = new GmailService(accessToken, refreshToken || '');
+        gmailService.setUserEmail(userEmail);
 
         // Fetch messages to extract contacts
         const contactMap = new Map<string, EmailContact>();
 
-        // Fetch sent emails
-        const sentResponse = await gmail.users.messages.list({
-            userId: 'me',
-            q: searchQuery ? `in:sent ${searchQuery}` : 'in:sent',
-            maxResults: Math.min(limit * 2, 200),
-        });
+        // Fetch sent and inbox emails in parallel
+        const [sentResponse, receivedResponse] = await Promise.all([
+            gmailService.getEmails(Math.min(limit * 2, 100), searchQuery ? `in:sent ${searchQuery}` : 'in:sent'),
+            gmailService.getEmails(Math.min(limit * 2, 100), searchQuery ? `in:inbox ${searchQuery}` : 'in:inbox')
+        ]);
 
-        // Fetch received emails  
-        const receivedResponse = await gmail.users.messages.list({
-            userId: 'me',
-            q: searchQuery ? `in:inbox ${searchQuery}` : 'in:inbox',
-            maxResults: Math.min(limit * 2, 200),
-        });
-
-        const allMessageIds = [
-            ...(sentResponse.data.messages || []),
-            ...(receivedResponse.data.messages || [])
+        const allMessages = [
+            ...(sentResponse.messages || []),
+            ...(receivedResponse.messages || [])
         ];
 
-        // Process messages to extract contacts
-        for (const message of allMessageIds.slice(0, limit)) {
-            try {
-                const msgDetails = await gmail.users.messages.get({
-                    userId: 'me',
-                    id: message.id!,
-                    format: 'metadata',
-                    metadataHeaders: ['From', 'To', 'Date', 'Subject']
-                });
+        // Process messages in batches of 10 to avoid timeouts and rate limits
+        const messagesToProcess = allMessages.slice(0, 40);
+        const batchSize = 10;
 
-                const headers = msgDetails.data.payload?.headers || [];
-                const fromHeader = headers.find(h => h.name === 'From')?.value || '';
-                const toHeader = headers.find(h => h.name === 'To')?.value || '';
-                const dateHeader = headers.find(h => h.name === 'Date')?.value || '';
+        for (let i = 0; i < messagesToProcess.length; i += batchSize) {
+            const batch = messagesToProcess.slice(i, i + batchSize);
+            await Promise.all(batch.map(async (message) => {
+                try {
+                    const msgDetails = await gmailService.getEmailDetails(message.id);
+                    const parsed = gmailService.parseEmailData(msgDetails);
 
-                // Parse email addresses
-                const parseEmailAddress = (addr: string): { email: string; name: string } | null => {
-                    if (!addr) return null;
+                    const fromHeader = parsed.from;
+                    const toHeader = parsed.to;
+                    const dateHeader = parsed.date;
 
-                    // Handle format: "Name <email@example.com>" or just "email@example.com"
-                    const match = addr.match(/(?:"?([^"]*)"?\s)?<?([^<>\s]+@[^<>\s]+)>?/);
-                    if (match && match[2]) {
-                        return {
-                            name: match[1]?.trim() || match[2].split('@')[0],
-                            email: match[2].toLowerCase().trim()
-                        };
-                    }
-                    return null;
-                };
+                    // Parse email addresses
+                    const parseEmailAddress = (addr: string): { email: string; name: string } | null => {
+                        if (!addr) return null;
+                        const match = addr.match(/(?:"?([^"]*)"?\s)?<?([^<>\s]+@[^<>\s]+)>?/);
+                        if (match && match[2]) {
+                            return {
+                                name: match[1]?.trim() || match[2].split('@')[0],
+                                email: match[2].toLowerCase().trim()
+                            };
+                        }
+                        return null;
+                    };
 
-                const fromParsed = parseEmailAddress(fromHeader);
-                const toParsed = parseEmailAddress(toHeader);
+                    const fromParsed = parseEmailAddress(fromHeader);
+                    const toParsed = parseEmailAddress(toHeader);
 
-                // Skip self-emails
-                const userEmail = session.user.email.toLowerCase();
-
-                // Process sender (received email)
-                if (fromParsed && fromParsed.email !== userEmail) {
-                    const existingContact = contactMap.get(fromParsed.email);
                     const emailDate = new Date(dateHeader);
+                    if (isNaN(emailDate.getTime())) return;
 
-                    if (existingContact) {
-                        existingContact.receivedEmails++;
-                        existingContact.totalEmails++;
-                        if (emailDate < new Date(existingContact.firstContact)) {
-                            existingContact.firstContact = emailDate.toISOString();
+                    // Process sender (received email)
+                    if (fromParsed && fromParsed.email !== userEmail) {
+                        const existingContact = contactMap.get(fromParsed.email);
+                        if (existingContact) {
+                            existingContact.receivedEmails++;
+                            existingContact.totalEmails++;
+                            if (emailDate < new Date(existingContact.firstContact)) {
+                                existingContact.firstContact = emailDate.toISOString();
+                            }
+                            if (emailDate > new Date(existingContact.lastContact)) {
+                                existingContact.lastContact = emailDate.toISOString();
+                            }
+                        } else {
+                            contactMap.set(fromParsed.email, {
+                                email: fromParsed.email,
+                                name: fromParsed.name,
+                                firstContact: emailDate.toISOString(),
+                                lastContact: emailDate.toISOString(),
+                                totalEmails: 1,
+                                sentEmails: 0,
+                                receivedEmails: 1,
+                                sentiment: { positive: 0, negative: 0, neutral: 1 },
+                                frequency: 'rare'
+                            });
                         }
-                        if (emailDate > new Date(existingContact.lastContact)) {
-                            existingContact.lastContact = emailDate.toISOString();
-                        }
-                    } else {
-                        contactMap.set(fromParsed.email, {
-                            email: fromParsed.email,
-                            name: fromParsed.name,
-                            firstContact: emailDate.toISOString(),
-                            lastContact: emailDate.toISOString(),
-                            totalEmails: 1,
-                            sentEmails: 0,
-                            receivedEmails: 1,
-                            sentiment: { positive: 0, negative: 0, neutral: 1 },
-                            frequency: 'rare'
-                        });
                     }
-                }
 
-                // Process recipient (sent email)
-                if (toParsed && toParsed.email !== userEmail) {
-                    const existingContact = contactMap.get(toParsed.email);
-                    const emailDate = new Date(dateHeader);
-
-                    if (existingContact) {
-                        existingContact.sentEmails++;
-                        existingContact.totalEmails++;
-                        if (emailDate < new Date(existingContact.firstContact)) {
-                            existingContact.firstContact = emailDate.toISOString();
+                    // Process recipient (sent email)
+                    if (toParsed && toParsed.email !== userEmail) {
+                        const existingContact = contactMap.get(toParsed.email);
+                        if (existingContact) {
+                            existingContact.sentEmails++;
+                            existingContact.totalEmails++;
+                            if (emailDate < new Date(existingContact.firstContact)) {
+                                existingContact.firstContact = emailDate.toISOString();
+                            }
+                            if (emailDate > new Date(existingContact.lastContact)) {
+                                existingContact.lastContact = emailDate.toISOString();
+                            }
+                        } else {
+                            contactMap.set(toParsed.email, {
+                                email: toParsed.email,
+                                name: toParsed.name,
+                                firstContact: emailDate.toISOString(),
+                                lastContact: emailDate.toISOString(),
+                                totalEmails: 1,
+                                sentEmails: 1,
+                                receivedEmails: 0,
+                                sentiment: { positive: 0, negative: 0, neutral: 1 },
+                                frequency: 'rare'
+                            });
                         }
-                        if (emailDate > new Date(existingContact.lastContact)) {
-                            existingContact.lastContact = emailDate.toISOString();
-                        }
-                    } else {
-                        contactMap.set(toParsed.email, {
-                            email: toParsed.email,
-                            name: toParsed.name,
-                            firstContact: emailDate.toISOString(),
-                            lastContact: emailDate.toISOString(),
-                            totalEmails: 1,
-                            sentEmails: 1,
-                            receivedEmails: 0,
-                            sentiment: { positive: 0, negative: 0, neutral: 1 },
-                            frequency: 'rare'
-                        });
                     }
+                } catch (err) {
+                    console.error('Error processing message:', err);
                 }
-            } catch (err) {
-                console.error('Error processing message:', err);
-            }
+            }));
         }
 
-        // Calculate frequency for each contact
+        // Calculate frequency and sort
         const contacts = Array.from(contactMap.values()).map(contact => {
             const daysSinceFirst = Math.ceil(
                 (new Date().getTime() - new Date(contact.firstContact).getTime()) / (1000 * 60 * 60 * 24)
@@ -188,14 +210,10 @@ export async function GET(request: Request) {
             else if (emailsPerDay >= 0.03) contact.frequency = 'monthly';
             else contact.frequency = 'rare';
 
-            // Generate avatar from initials (color-coded by first letter)
-            const initial = contact.name.charAt(0).toUpperCase();
-
             return contact;
         });
 
-        // Sort by total emails (most contacted first)
-        contacts.sort((a, b) => b.totalEmails - a.totalEmails);
+        contacts.sort((a, b) => new Date(b.lastContact).getTime() - new Date(a.lastContact).getTime());
 
         return NextResponse.json({
             success: true,

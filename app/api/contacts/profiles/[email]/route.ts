@@ -1,7 +1,14 @@
 import { NextResponse } from 'next/server';
 // @ts-ignore
 import { auth } from '@/lib/auth.js';
-import { google } from 'googleapis';
+// @ts-ignore
+import { GmailService } from '@/lib/gmail';
+// @ts-ignore
+import { DatabaseService } from '@/lib/supabase.js';
+// @ts-ignore
+import { decrypt } from '@/lib/crypto.js';
+// @ts-ignore
+import { subscriptionService } from '@/lib/subscription-service.js';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -44,29 +51,48 @@ export async function GET(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // @ts-ignore
-        const accessToken = session?.accessToken;
+        const userEmail = session.user.email.toLowerCase();
+
+        // 🔒 SECURITY: Check subscription
+        const hasSubscription = await subscriptionService.isSubscriptionActive(userEmail);
+        if (!hasSubscription) {
+            return NextResponse.json({
+                error: 'subscription_required',
+                message: 'An active subscription is required to access contact intelligence.'
+            }, { status: 403 });
+        }
+
+        // Get tokens
+        let accessToken = session.accessToken;
+        let refreshToken = session.refreshToken;
+
+        const db = new DatabaseService();
+        if (!accessToken || !refreshToken) {
+            try {
+                const userTokens = await db.getUserTokens(userEmail);
+                if (userTokens) {
+                    if (userTokens.encrypted_access_token) accessToken = decrypt(userTokens.encrypted_access_token);
+                    if (userTokens.encrypted_refresh_token) refreshToken = decrypt(userTokens.encrypted_refresh_token);
+                }
+            } catch (dbError) {
+                console.error('Database error getting tokens:', dbError);
+            }
+        }
+
         if (!accessToken) {
             return NextResponse.json({ error: 'Gmail not connected' }, { status: 401 });
         }
 
         const resolvedParams = await params;
-        const contactEmail = decodeURIComponent(resolvedParams.email);
+        const contactEmail = decodeURIComponent(resolvedParams.email).toLowerCase();
 
-        // Initialize Gmail API
-        const oauth2Client = new google.auth.OAuth2();
-        oauth2Client.setCredentials({ access_token: accessToken });
+        // Initialize Gmail service
+        const gmailService = new GmailService(accessToken, refreshToken || '');
+        gmailService.setUserEmail(userEmail);
 
-        const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
-
-        // Fetch all emails with this contact
-        const response = await gmail.users.messages.list({
-            userId: 'me',
-            q: `from:${contactEmail} OR to:${contactEmail}`,
-            maxResults: 100,
-        });
-
-        const messages = response.data.messages || [];
+        // Fetch emails with this contact
+        const response = await gmailService.getEmails(100, `from:${contactEmail} OR to:${contactEmail}`);
+        const messages = response.messages || [];
 
         let contactDetail: ContactDetail = {
             email: contactEmail,
@@ -83,98 +109,80 @@ export async function GET(
         };
 
         const sentimentScores: { date: string; score: number }[] = [];
-        const userEmail = session.user.email.toLowerCase();
 
-        // Process each message
-        for (const message of messages) {
+        // Process messages
+        const messagesToProcess = messages.slice(0, 20); // Limit to 20 for speed
+
+        for (const message of messagesToProcess) {
             try {
-                const msgDetails = await gmail.users.messages.get({
-                    userId: 'me',
-                    id: message.id!,
-                    format: 'metadata',
-                    metadataHeaders: ['From', 'To', 'Date', 'Subject']
-                });
+                const msgDetails = await gmailService.getEmailDetails(message.id);
+                const parsed = gmailService.parseEmailData(msgDetails);
 
-                const headers = msgDetails.data.payload?.headers || [];
-                const fromHeader = headers.find(h => h.name === 'From')?.value || '';
-                const toHeader = headers.find(h => h.name === 'To')?.value || '';
-                const dateHeader = headers.find(h => h.name === 'Date')?.value || '';
-                const subjectHeader = headers.find(h => h.name === 'Subject')?.value || '';
+                const fromHeader = parsed.from;
+                const toHeader = parsed.to;
+                const dateHeader = parsed.date;
+                const subject = parsed.subject;
 
                 const emailDate = new Date(dateHeader);
+                if (isNaN(emailDate.getTime())) continue;
 
-                // Track first and last contact
-                if (emailDate < new Date(contactDetail.firstContact)) {
-                    contactDetail.firstContact = emailDate.toISOString();
-                }
-                if (emailDate > new Date(contactDetail.lastContact)) {
-                    contactDetail.lastContact = emailDate.toISOString();
-                }
-
-                // Parse name from From header
-                const nameMatch = fromHeader.match(/^"?([^"<]+)"?\s*</);
-                if (nameMatch && fromHeader.toLowerCase().includes(contactEmail.toLowerCase())) {
-                    contactDetail.name = nameMatch[1].trim();
+                // Update contact name if not set
+                if (!contactDetail.name && fromHeader.toLowerCase().includes(contactEmail)) {
+                    const match = fromHeader.match(/(?:"?([^"]*)"?\s)?<?([^<>\s]+@[^<>\s]+)>?/);
+                    if (match && match[1]) contactDetail.name = match[1].trim();
                 }
 
-                // Track sent vs received
-                if (fromHeader.toLowerCase().includes(userEmail)) {
-                    contactDetail.sentEmails++;
-                    // Sent emails are neutral to slightly positive
-                    sentimentScores.push({ date: emailDate.toISOString(), score: 60 });
-                } else {
+                // Track sent/received
+                if (fromHeader.toLowerCase().includes(contactEmail)) {
                     contactDetail.receivedEmails++;
-                    // Received emails - analyze basic sentiment from subject
-                    let sentimentScore = 50;
-                    const lowerSubject = subjectHeader.toLowerCase();
-
-                    if (lowerSubject.includes('thank') || lowerSubject.includes('great') || lowerSubject.includes('love') || lowerSubject.includes('appreciate')) {
-                        sentimentScore = 80;
-                    } else if (lowerSubject.includes('urgent') || lowerSubject.includes('issue') || lowerSubject.includes('problem') || lowerSubject.includes('concern')) {
-                        sentimentScore = 30;
-                    } else if (lowerSubject.includes('follow up') || lowerSubject.includes('reminder')) {
-                        sentimentScore = 45;
-                    }
-
-                    sentimentScores.push({ date: emailDate.toISOString(), score: sentimentScore });
+                } else if (toHeader.toLowerCase().includes(contactEmail)) {
+                    contactDetail.sentEmails++;
                 }
 
-                // Track recent subjects
-                if (contactDetail.recentSubjects.length < 5) {
-                    contactDetail.recentSubjects.push(subjectHeader);
+                // Update dates
+                if (emailDate < new Date(contactDetail.firstContact)) contactDetail.firstContact = emailDate.toISOString();
+                if (emailDate > new Date(contactDetail.lastContact)) contactDetail.lastContact = emailDate.toISOString();
+
+                // Store recent subjects
+                if (subject && !contactDetail.recentSubjects.includes(subject)) {
+                    contactDetail.recentSubjects.push(subject);
                 }
 
-                // Try to extract phone/company from signature (simplified)
-                // In reality, you'd parse the email body
+                // Sentiment simulation/calculation
+                let score = 50;
+                const text = (parsed.subject + ' ' + parsed.snippet).toLowerCase();
+                if (text.match(/thanks?|great|good|awesome|perfect|appreciate/)) score += 10;
+                if (text.match(/urgent|asap|important|prio/)) score += 5;
+                if (text.match(/sorry|apologize|delay|issue|problem/)) score -= 5;
 
+                sentimentScores.push({ date: emailDate.toISOString(), score: Math.min(100, Math.max(0, score)) });
             } catch (err) {
-                console.error('Error processing message:', err);
+                console.error('Error processing contact message:', err);
             }
         }
 
-        // Calculate frequency
+        // Limit recent subjects
+        contactDetail.recentSubjects = contactDetail.recentSubjects.slice(0, 5);
+
+        // Calculate metrics
         const daysSinceFirst = Math.ceil(
             (new Date().getTime() - new Date(contactDetail.firstContact).getTime()) / (1000 * 60 * 60 * 24)
         ) || 1;
-
         const emailsPerDay = contactDetail.totalEmails / daysSinceFirst;
-
         if (emailsPerDay >= 0.5) contactDetail.frequency = 'daily';
         else if (emailsPerDay >= 0.1) contactDetail.frequency = 'weekly';
         else if (emailsPerDay >= 0.03) contactDetail.frequency = 'monthly';
         else contactDetail.frequency = 'rare';
 
-        // Calculate relationship score (0-100)
-        const balanceRatio = Math.min(contactDetail.sentEmails, contactDetail.receivedEmails) /
-            Math.max(contactDetail.sentEmails, contactDetail.receivedEmails, 1);
-        const avgSentiment = sentimentScores.reduce((sum, s) => sum + s.score, 0) / (sentimentScores.length || 1);
-        const frequencyBonus = emailsPerDay >= 0.5 ? 20 : emailsPerDay >= 0.1 ? 10 : 0;
+        // Relationship Score Calculation
+        const sentBalance = contactDetail.sentEmails / (contactDetail.totalEmails || 1);
+        const balancedEmails = sentBalance > 0.3 && sentBalance < 0.7 ? 20 : 10;
+        const frequencyScore = contactDetail.frequency === 'daily' ? 40 : contactDetail.frequency === 'weekly' ? 30 : 15;
+        const recencyValue = (new Date().getTime() - new Date(contactDetail.lastContact).getTime()) / (1000 * 60 * 60 * 24);
+        const recencyScore = recencyValue < 7 ? 40 : recencyValue < 30 ? 20 : 5;
+        contactDetail.relationshipScore = Math.min(100, balancedEmails + frequencyScore + recencyScore);
 
-        contactDetail.relationshipScore = Math.min(100, Math.round(
-            (balanceRatio * 30) + (avgSentiment * 0.5) + frequencyBonus
-        ));
-
-        // Prepare sentiment history (last 10 data points)
+        // Prep sentiment history
         contactDetail.sentimentHistory = sentimentScores
             .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
             .slice(-10);
@@ -194,7 +202,7 @@ export async function GET(
                     Days since first contact: ${daysSinceFirst}
                 `;
 
-                const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                const aiResp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -205,46 +213,27 @@ export async function GET(
                     body: JSON.stringify({
                         model: 'google/gemini-2.0-flash-exp:free',
                         messages: [
-                            {
-                                role: 'system',
-                                content: 'You are an AI that provides one-liner suggestions for email relationships. Keep it under 15 words, professional, and actionable.'
-                            },
-                            {
-                                role: 'user',
-                                content: `Based on this email relationship, provide a one-liner suggestion:\n${relationshipContext}`
-                            }
+                            { role: 'system', content: 'You are an AI that provides one-line suggestions for email relationships. Under 15 words, professional.' },
+                            { role: 'user', content: `One-liner suggestion for this relationship:\n${relationshipContext}` }
                         ],
                         max_tokens: 50,
                         temperature: 0.3
                     })
                 });
 
-                if (response.ok) {
-                    const data = await response.json();
-                    contactDetail.aiSuggestion = data.choices?.[0]?.message?.content?.trim() ||
-                        'Consider reaching out to maintain this connection.';
-                } else {
-                    contactDetail.aiSuggestion = 'Consider scheduling a follow-up to strengthen this relationship.';
+                if (aiResp.ok) {
+                    const data = await aiResp.json();
+                    contactDetail.aiSuggestion = data.choices?.[0]?.message?.content?.trim() || 'Maintain consistency in communication.';
                 }
-            } else {
-                contactDetail.aiSuggestion = 'Consider scheduling a follow-up to strengthen this relationship.';
             }
-        } catch (aiError) {
-            console.error('AI suggestion error:', aiError);
-            contactDetail.aiSuggestion = 'Consider scheduling a follow-up to strengthen this relationship.';
+        } catch (aiErr) {
+            console.error('AI error:', aiErr);
         }
 
-        return NextResponse.json({
-            success: true,
-            contact: contactDetail,
-            timestamp: new Date().toISOString()
-        });
+        return NextResponse.json({ success: true, contact: contactDetail, timestamp: new Date().toISOString() });
 
     } catch (error) {
         console.error('Contact Profile API error:', error);
-        return NextResponse.json(
-            { error: 'Failed to fetch contact profile', details: error instanceof Error ? error.message : 'Unknown error' },
-            { status: 500 }
-        );
+        return NextResponse.json({ error: 'Failed to fetch contact details' }, { status: 500 });
     }
 }

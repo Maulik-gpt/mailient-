@@ -3,21 +3,20 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Mail, Bell, User, MoreHorizontal, LogOut, Settings, CreditCard, UserPlus, NotebookPen, Users, Search } from 'lucide-react';
+import { Mail, Bell, User, MoreHorizontal, LogOut, Settings, CreditCard, UserPlus, NotebookPen, Users } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
-import { EmailProfilesSidebar } from '@/components/ui/email-profiles-sidebar';
 
 interface HomeFeedSidebarProps {
     className?: string;
+    onPeopleClick?: () => void;
+    activeView?: 'home' | 'people';
 }
 
-export function HomeFeedSidebar({ className = '' }: HomeFeedSidebarProps) {
+export function HomeFeedSidebar({ className = '', onPeopleClick, activeView = 'home' }: HomeFeedSidebarProps) {
     const { data: session } = useSession();
     const router = useRouter();
     const pathname = usePathname();
     const [isMoreOptionsOpen, setIsMoreOptionsOpen] = useState(false);
-    const [imageError, setImageError] = useState(false);
-    const [isEmailProfilesOpen, setIsEmailProfilesOpen] = useState(false);
     const moreMenuRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -50,31 +49,15 @@ export function HomeFeedSidebar({ className = '' }: HomeFeedSidebarProps) {
             <div className={`fixed left-0 top-0 h-screen w-16 bg-[#050505] border-r border-white/5 flex flex-col items-center py-8 z-50 ${className}`}>
                 {/* Logo Section */}
                 <div className="mb-10 group cursor-pointer" onClick={() => router.push('/home-feed')}>
-                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform duration-500 overflow-hidden">
+                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform duration-300 overflow-hidden">
                         <img src="/mailient-logo.png" alt="Mailient" className="w-full h-full object-cover invert" />
                     </div>
                 </div>
 
                 {/* Primary Nav Section */}
                 <div className="flex flex-col items-center gap-6 w-full">
-                    {/* Dedicated Search Icon */}
-                    <Tooltip delayDuration={100}>
-                        <TooltipTrigger asChild>
-                            <button
-                                onClick={() => setIsEmailProfilesOpen(true)}
-                                className={`p-2.5 transition-all duration-200 rounded-xl ${isEmailProfilesOpen ? 'bg-white text-black' : 'text-white/30 hover:text-white/80 hover:bg-white/5'}`}
-                                aria-label="Search"
-                            >
-                                <Search className="w-5 h-5" strokeWidth={1.5} />
-                            </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="right" className="bg-neutral-900 text-white text-[11px] border-white/10 px-3 py-1.5 rounded-md">
-                            <p>Search</p>
-                        </TooltipContent>
-                    </Tooltip>
-
                     {navItems.map((item) => {
-                        const isActive = pathname === item.route;
+                        const isActive = (pathname === item.route || (item.id === 'home' && activeView === 'home')) && activeView !== 'people';
 
                         if (item.isArcus) {
                             return (
@@ -85,10 +68,10 @@ export function HomeFeedSidebar({ className = '' }: HomeFeedSidebarProps) {
                                             className={`p-3 transition-all duration-200 flex items-center justify-center w-10 h-10 rounded-xl ${isActive ? 'bg-white text-black' : 'text-white/30 hover:text-white/80 hover:bg-white/5'}`}
                                             aria-label={item.label}
                                         >
-                                            <span className={`text-base font-normal ${isActive ? 'text-black' : 'text-white'}`}>A</span>
+                                            <span className={`text-base font-normal ${isActive ? 'text-black' : 'text-white font-serif italic'}`}>A</span>
                                         </button>
                                     </TooltipTrigger>
-                                    <TooltipContent side="right" className="bg-neutral-900 text-white text-[11px] border-white/10 px-3 py-1.5 rounded-md">
+                                    <TooltipContent side="right" className="bg-neutral-900 text-white text-[11px] border-white/10 px-3 py-1.5 rounded-md font-normal">
                                         <p>{item.label}</p>
                                     </TooltipContent>
                                 </Tooltip>
@@ -108,7 +91,7 @@ export function HomeFeedSidebar({ className = '' }: HomeFeedSidebarProps) {
                                         <Icon className="w-5 h-5" strokeWidth={1.5} />
                                     </button>
                                 </TooltipTrigger>
-                                <TooltipContent side="right" className="bg-neutral-900 text-white text-[11px] border-white/10 px-3 py-1.5 rounded-md">
+                                <TooltipContent side="right" className="bg-neutral-900 text-white text-[11px] border-white/10 px-3 py-1.5 rounded-md font-normal">
                                     <p>{item.label}</p>
                                 </TooltipContent>
                             </Tooltip>
@@ -121,15 +104,15 @@ export function HomeFeedSidebar({ className = '' }: HomeFeedSidebarProps) {
                     <Tooltip delayDuration={100}>
                         <TooltipTrigger asChild>
                             <button
-                                onClick={() => setIsEmailProfilesOpen(true)}
-                                className={`p-2.5 transition-all duration-200 rounded-xl ${isEmailProfilesOpen ? 'bg-white text-black' : 'text-white/30 hover:text-white/80 hover:bg-white/5'}`}
-                                aria-label="Profiles"
+                                onClick={() => onPeopleClick?.()}
+                                className={`p-2.5 transition-all duration-200 rounded-xl ${activeView === 'people' ? 'bg-white text-black' : 'text-white/30 hover:text-white/80 hover:bg-white/5'}`}
+                                aria-label="People"
                             >
                                 <Users className="w-5 h-5" strokeWidth={1.5} />
                             </button>
                         </TooltipTrigger>
-                        <TooltipContent side="right" className="bg-neutral-900 text-white text-[11px] border-white/10 px-3 py-1.5 rounded-md">
-                            <p>Profiles</p>
+                        <TooltipContent side="right" className="bg-neutral-900 text-white text-[11px] border-white/10 px-3 py-1.5 rounded-md font-normal">
+                            <p>People</p>
                         </TooltipContent>
                     </Tooltip>
                 </div>
@@ -150,7 +133,7 @@ export function HomeFeedSidebar({ className = '' }: HomeFeedSidebarProps) {
                                 />
                             </button>
                         </TooltipTrigger>
-                        <TooltipContent side="right" className="bg-neutral-900 text-white text-[11px] border-white/10 px-3 py-1.5 rounded-md">
+                        <TooltipContent side="right" className="bg-neutral-900 text-white text-[11px] border-white/10 px-3 py-1.5 rounded-md font-normal">
                             <p>Account</p>
                         </TooltipContent>
                     </Tooltip>
@@ -210,12 +193,6 @@ export function HomeFeedSidebar({ className = '' }: HomeFeedSidebarProps) {
                     )}
                 </div>
             </div>
-
-            {/* Email Profiles Sidebar */}
-            <EmailProfilesSidebar
-                isOpen={isEmailProfilesOpen}
-                onClose={() => setIsEmailProfilesOpen(false)}
-            />
         </TooltipProvider>
     );
 }
