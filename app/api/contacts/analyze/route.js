@@ -1,17 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
-// @ts-ignore
+import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth.js';
-// @ts-ignore
 import { GmailService } from '@/lib/gmail';
-// @ts-ignore
 import { DatabaseService } from '@/lib/supabase.js';
-// @ts-ignore
 import { decrypt } from '@/lib/crypto.js';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
 
-export async function POST(request: NextRequest) {
+export async function POST(request) {
     try {
         const session = await auth();
 
@@ -57,8 +53,8 @@ export async function POST(request: NextRequest) {
         }
 
         // Get email contents for analysis
-        const emailContents: { subject: string; snippet: string; date: string; direction: string }[] = [];
-        const socialLinks: { type: string; url: string }[] = [];
+        const emailContents = [];
+        const socialLinks = [];
 
         // Process up to 20 emails for detailed analysis
         for (const msg of messages.slice(0, 20)) {
@@ -94,10 +90,10 @@ export async function POST(request: NextRequest) {
 
         // Use AI to analyze the relationship
         let relationshipScore = 65;
-        let trend: 'up' | 'down' | 'stable' = 'stable';
-        let sentimentHistory: number[] = [];
+        let trend = 'stable';
+        let sentimentHistory = [];
         let aiSuggestion = '';
-        let recentTopics: string[] = [];
+        let recentTopics = [];
 
         const openRouterKey = process.env.OPENROUTERAPI_KEY2;
 
