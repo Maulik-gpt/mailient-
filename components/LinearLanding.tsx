@@ -73,7 +73,7 @@ const plans = [
             { text: "Secure Google OAuth" },
             { text: "Standard Relationship Tracking" }
         ],
-        btn: { text: "Connect Gmail Free", href: "/auth/signin" }
+        btn: { text: "Unlock My Inbox", href: "/auth/signin" }
     },
     {
         name: "Pro",
@@ -87,7 +87,7 @@ const plans = [
             { text: "Priority Support" },
             { text: "Unlimited Draft Replies" }
         ],
-        btn: { text: "Connect Gmail Free", href: "/auth/signin" },
+        btn: { text: "Unlock My Inbox", href: "/auth/signin" },
         highlighted: true
     }
 ];
@@ -200,7 +200,7 @@ export function LinearLanding() {
                             <>
                                 <button onClick={() => signIn('google')} className="hidden sm:block text-sm font-medium text-zinc-500 hover:text-white transition-colors">Log in</button>
                                 <Button onClick={() => router.push('/auth/signin')} className="bg-white text-black hover:bg-zinc-200 rounded-full px-4 md:px-6 text-sm md:text-base">
-                                    Connect Gmail Free
+                                    Unlock My Inbox
                                 </Button>
                             </>
                         )}
@@ -228,7 +228,7 @@ export function LinearLanding() {
                         ) : (
                             <>
                                 <GlassButton onClick={() => signIn('google')} size="lg">
-                                    Connect Gmail Free
+                                    Unlock My Inbox
                                     <ArrowRight className="w-5 h-5 ml-2 inline-block" />
                                 </GlassButton>
                                 <Button
@@ -572,7 +572,7 @@ export function LinearLanding() {
                                     onClick={() => signIn('google')}
                                     className="bg-white text-black hover:bg-zinc-200 rounded-full px-8 py-4 text-lg font-bold"
                                 >
-                                    Connect Gmail Free
+                                    Unlock My Inbox
                                     <ArrowRight className="w-5 h-5 ml-2" />
                                 </Button>
                             </div>
@@ -956,7 +956,7 @@ export function LinearLanding() {
                             onClick={() => signIn('google')}
                             className="bg-white text-black hover:bg-zinc-200 rounded-full px-12 py-7 text-lg font-bold shadow-2xl group"
                         >
-                            Connect Gmail Free
+                            Unlock My Inbox
                             <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                         </Button>
                         <Button
@@ -1145,7 +1145,7 @@ export function LinearLanding() {
                                     onClick={() => router.push('/auth/signin')}
                                     size="lg"
                                 >
-                                    Connect Gmail Free
+                                    Unlock My Inbox
                                     <ArrowRight className="w-5 h-5 ml-2 inline-block" />
                                 </GlassButton>
                                 <Button
