@@ -9,14 +9,14 @@ export class SchedulingAIService {
 
     constructor() {
         // Use the secondary key if provided, fallback to primary if not (safety first)
-        this.apiKey = (process.env.OPENROUTER_API_KEY2 || process.env.OPENROUTER_API_KEY || '').trim();
+        // Use all available keys for robustness
+        this.apiKey = (process.env.OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY2 || process.env.OPENROUTER_API_KEY3 || '').trim();
         // Fallback chain of free/cheap models to handle rate limits
         this.models = [
-            'bytedance-seed/seed-1.6-flash',
-            'google/gemini-exp-1206:free',
-            'google/gemini-1.5-flash-8b',
-            'meta-llama/llama-3.3-70b-instruct:free',
-            'qwen/qwen-2.5-72b-instruct:free'
+            'qwen/qwen3-coder:free',
+            'nvidia/nemotron-nano-9b-v2:free',
+            'openai/gpt-oss-20b:free',
+            'z-ai/glm-4.5-air:free'
         ];
         this.baseURL = 'https://openrouter.ai/api/v1';
     }
