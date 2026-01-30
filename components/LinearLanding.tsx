@@ -186,6 +186,7 @@ export function LinearLanding() {
                             <a href="#benefits" onClick={(e) => handleClick(e, 'benefits')} className="hover:text-white transition-colors">Benefits</a>
                             <a href="#features" onClick={(e) => handleClick(e, 'features')} className="hover:text-white transition-colors">Features</a>
                             <a href="#integration" onClick={(e) => handleClick(e, 'integration')} className="hover:text-white transition-colors">Security</a>
+                            <a href="/founders-guide" className="text-[#D97757] hover:text-[#D97757]/80 transition-colors font-bold">Founder Hub</a>
                             <a href="#pricing" onClick={(e) => handleClick(e, 'pricing')} className="hover:text-white transition-colors">Pricing</a>
                             <a href="#faq" onClick={(e) => handleClick(e, 'faq')} className="hover:text-white transition-colors">FAQ</a>
                         </div>
