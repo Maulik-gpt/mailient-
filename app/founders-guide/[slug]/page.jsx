@@ -98,7 +98,7 @@ export default function GuidePage() {
                 body: JSON.stringify({ text: guide?.content })
             });
 
-            if (!res.ok) throw new Error("Failed to load audio");
+            if (!res.ok) throw new Error("API Failed");
 
             const blob = await res.blob();
             const url = URL.createObjectURL(blob);
@@ -110,8 +110,22 @@ export default function GuidePage() {
                 setIsPlaying(true);
             }
         } catch (error) {
-            toast.error("Couldn't load the speaker. Please try again.");
-            console.error(error);
+            console.warn("TTS API failed, falling back to browser voice:", error);
+
+            // Browser Speech Fallback
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(guide.content.replace(/<[^>]*>?/gm, ''));
+                utterance.rate = 0.9;
+                utterance.pitch = 1;
+                utterance.onend = () => setIsPlaying(false);
+                utterance.onerror = () => setIsPlaying(false);
+
+                window.speechSynthesis.speak(utterance);
+                setIsPlaying(true);
+                toast.success("Playing via browser voice (API fallback)");
+            } else {
+                toast.error("Couldn't load the speaker. Please try again.");
+            }
         } finally {
             setIsLoadingAudio(false);
         }
