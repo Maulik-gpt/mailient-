@@ -2,13 +2,13 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { guides } from "@/lib/guides";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Share2, Bookmark, Mail, Check, Sparkles, BookOpen, Volume2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Share2, Bookmark, Mail, Check, Sparkles, BookOpen, Volume2, Pause, Play, Loader2 } from "lucide-react";
 import { BackgroundShaders } from "@/components/ui/background-paper-shaders";
 import { GlassButton } from "@/components/ui/glass-button";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 
@@ -17,8 +17,16 @@ export default function GuidePage() {
     const router = useRouter();
     const { data: session } = useSession();
     const guide = guides.find((g) => g.slug === slug);
+
+    // UI State
     const [isBookmarked, setIsBookmarked] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+
+    // Audio State
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [isLoadingAudio, setIsLoadingAudio] = useState(false);
+    const [audioUrl, setAudioUrl] = useState < string | null > (null);
+    const audioRef = useRef < HTMLAudioElement | null > (null);
 
     useEffect(() => {
         if (session && guide) {
@@ -68,11 +76,52 @@ export default function GuidePage() {
         }
     };
 
+    const handleAudioToggle = async () => {
+        if (isPlaying) {
+            audioRef.current?.pause();
+            setIsPlaying(false);
+            return;
+        }
+
+        if (audioUrl) {
+            audioRef.current?.play();
+            setIsPlaying(true);
+            return;
+        }
+
+        // Generate Audio
+        setIsLoadingAudio(true);
+        try {
+            const res = await fetch("/api/tts", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text: guide?.content })
+            });
+
+            if (!res.ok) throw new Error("Failed to load audio");
+
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            setAudioUrl(url);
+
+            if (audioRef.current) {
+                audioRef.current.src = url;
+                audioRef.current.play();
+                setIsPlaying(true);
+            }
+        } catch (error) {
+            toast.error("Couldn't load the speaker. Please try again.");
+            console.error(error);
+        } finally {
+            setIsLoadingAudio(false);
+        }
+    };
+
     const handleShare = () => {
         if (navigator.share) {
             navigator.share({
-                title: guide.title,
-                text: guide.description,
+                title: guide?.title,
+                text: guide?.description,
                 url: window.location.href,
             }).catch(() => {
                 copyToClipboard();
@@ -98,6 +147,13 @@ export default function GuidePage() {
 
     return (
         <div className="relative min-h-screen bg-black text-white selection:bg-white selection:text-black font-satoshi overflow-x-hidden">
+            {/* Audio Element */}
+            <audio
+                ref={audioRef}
+                onEnded={() => setIsPlaying(false)}
+                className="hidden"
+            />
+
             {/* Background Layer */}
             <div className="fixed inset-0 z-0">
                 <BackgroundShaders />
@@ -144,19 +200,45 @@ export default function GuidePage() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
-                        className="flex items-center justify-center gap-6 text-sm text-zinc-500 mb-12"
+                        className="flex flex-col items-center gap-6 mb-12"
                     >
-                        <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden">
-                                <img src={`https://api.dicebear.com/7.x/bottts/svg?seed=${guide.slug}`} alt="Author" />
+                        <div className="flex items-center justify-center gap-6 text-sm text-zinc-500">
+                            <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden">
+                                    <img src={`https://api.dicebear.com/7.x/bottts/svg?seed=${guide.slug}`} alt="Author" />
+                                </div>
+                                <span>Mailient Editorial</span>
                             </div>
-                            <span>Mailient Editorial</span>
+                            <span>•</span>
+                            <span>5 min read</span>
                         </div>
-                        <span>•</span>
-                        <span>5 min read</span>
-                        <div className="flex items-center gap-1 text-[#D97757]">
-                            <Volume2 className="w-4 h-4" />
-                            <span className="text-xs font-bold">Audio Available (Soon)</span>
+
+                        {/* Speaker Button */}
+                        <div className="relative">
+                            <button
+                                onClick={handleAudioToggle}
+                                disabled={isLoadingAudio}
+                                className={`flex items-center gap-3 px-6 py-3 rounded-2xl border transition-all duration-300 ${isPlaying
+                                        ? "bg-[#D97757] border-[#D97757] text-white shadow-lg shadow-[#D97757]/20 scale-105"
+                                        : "bg-white/5 border-white/10 text-white hover:border-[#D97757]/50"
+                                    }`}
+                            >
+                                {isLoadingAudio ? (
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                ) : isPlaying ? (
+                                    <Pause className="w-5 h-5 fill-current" />
+                                ) : (
+                                    <Volume2 className="w-5 h-5" />
+                                )}
+                                <span className="font-bold text-sm tracking-tight">
+                                    {isLoadingAudio ? "Preparing Audio..." : isPlaying ? "Listening Now" : "Listen to Article"}
+                                </span>
+                            </button>
+
+                            {/* Animated Pulse for Playing State */}
+                            {isPlaying && (
+                                <span className="absolute -inset-1 rounded-2xl bg-[#D97757]/20 animate-ping pointer-events-none" />
+                            )}
                         </div>
                     </motion.div>
                 </header>
