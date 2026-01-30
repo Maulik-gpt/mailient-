@@ -4,15 +4,88 @@ import { useParams, useRouter } from "next/navigation";
 import { guides } from "@/lib/guides";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Share2, Bookmark, Mail, Check, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Share2, Bookmark, Mail, Check, Sparkles, BookOpen, Volume2 } from "lucide-react";
 import { BackgroundShaders } from "@/components/ui/background-paper-shaders";
 import { GlassButton } from "@/components/ui/glass-button";
 import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 
 export default function GuidePage() {
     const { slug } = useParams();
     const router = useRouter();
+    const { data: session } = useSession();
     const guide = guides.find((g) => g.slug === slug);
+    const [isBookmarked, setIsBookmarked] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+
+    useEffect(() => {
+        if (session && guide) {
+            checkBookmarkStatus();
+        }
+    }, [session, guide]);
+
+    const checkBookmarkStatus = async () => {
+        try {
+            const res = await fetch("/api/bookmarks");
+            const data = await res.json();
+            if (data.bookmarks) {
+                setIsBookmarked(data.bookmarks.some(b => b.post_id === guide.slug));
+            }
+        } catch (error) {
+            console.error("Error checking bookmark status:", error);
+        }
+    };
+
+    const toggleBookmark = async () => {
+        if (!session) {
+            toast.error("Please login to save articles");
+            router.push("/auth/signin");
+            return;
+        }
+
+        setIsSaving(true);
+        try {
+            const res = await fetch("/api/bookmarks", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    postId: guide.slug,
+                    postData: { title: guide.title, description: guide.description }
+                })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                setIsBookmarked(data.bookmarked);
+                toast.success(data.bookmarked ? "Saved to your Hub" : "Removed from bookmarks");
+            }
+        } catch (error) {
+            toast.error("Failed to update bookmark");
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleShare = () => {
+        if (navigator.share) {
+            navigator.share({
+                title: guide.title,
+                text: guide.description,
+                url: window.location.href,
+            }).catch(() => {
+                copyToClipboard();
+            });
+        } else {
+            copyToClipboard();
+        }
+    };
+
+    const copyToClipboard = () => {
+        navigator.clipboard.writeText(window.location.href);
+        toast.success("Link copied to clipboard!");
+    };
 
     if (!guide) {
         return (
@@ -75,21 +148,18 @@ export default function GuidePage() {
                     >
                         <div className="flex items-center gap-2">
                             <div className="w-6 h-6 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden">
-                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Maulik" alt="Author" />
+                                <img src={`https://api.dicebear.com/7.x/bottts/svg?seed=${guide.slug}`} alt="Author" />
                             </div>
-                            <span>Maulik</span>
+                            <span>Mailient Editorial</span>
                         </div>
                         <span>•</span>
-                        <span>January 30, 2026</span>
-                        <span>•</span>
                         <span>5 min read</span>
+                        <div className="flex items-center gap-1 text-[#D97757]">
+                            <Volume2 className="w-4 h-4" />
+                            <span className="text-xs font-bold">Audio Available (Soon)</span>
+                        </div>
                     </motion.div>
                 </header>
-
-                {/* Progress Bar (Sticky) */}
-                {/* <div className="sticky top-0 h-1 bg-white/5 z-50">
-           <motion.div className="h-full bg-[#D97757]" style={{ scaleX: scrollYProgress, transformOrigin: "0%" }} />
-        </div> */}
 
                 {/* Content Section */}
                 <main className="px-6 max-w-3xl mx-auto">
@@ -98,24 +168,36 @@ export default function GuidePage() {
                         animate={{ opacity: 1 }}
                         transition={{ delay: 0.3 }}
                         className="prose prose-invert prose-zinc max-w-none 
-              prose-h2:text-2xl prose-h2:font-bold prose-h2:mt-12 prose-h2:mb-6 prose-h2:text-white
-              prose-p:text-zinc-400 prose-p:leading-relaxed prose-p:mb-6 prose-p:text-lg
-              prose-strong:text-white prose-strong:font-bold"
+                            prose-h2:text-2xl prose-h2:font-bold prose-h2:mt-12 prose-h2:mb-6 prose-h2:text-white
+                            prose-p:text-zinc-400 prose-p:leading-relaxed prose-p:mb-8 prose-p:text-lg
+                            prose-strong:text-white prose-strong:font-bold"
                         dangerouslySetInnerHTML={{ __html: guide.content }}
                     />
 
-                    {/* Share Section */}
+                    {/* Action Bar */}
                     <div className="mt-16 pt-8 border-t border-white/10 flex items-center justify-between">
                         <div className="flex gap-4">
-                            <button className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-zinc-400 hover:text-white">
+                            <button
+                                onClick={handleShare}
+                                className="p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors text-zinc-400 hover:text-white flex items-center gap-2 text-sm font-medium"
+                            >
                                 <Share2 className="w-4 h-4" />
+                                Share
                             </button>
-                            <button className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-zinc-400 hover:text-white">
-                                <Bookmark className="w-4 h-4" />
+                            <button
+                                onClick={toggleBookmark}
+                                disabled={isSaving}
+                                className={`p-3 rounded-xl transition-all flex items-center gap-2 text-sm font-medium ${isBookmarked
+                                        ? "bg-[#D97757] text-white"
+                                        : "bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white"
+                                    }`}
+                            >
+                                <Bookmark className={`w-4 h-4 ${isBookmarked ? "fill-current" : ""}`} />
+                                {isBookmarked ? "Saved" : "Save for later"}
                             </button>
                         </div>
-                        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-zinc-600">
-                            Founders Guide / {guide.title}
+                        <div className="hidden sm:flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-zinc-600">
+                            Founders Guide / {guide.slug}
                         </div>
                     </div>
                 </main>
@@ -149,25 +231,6 @@ export default function GuidePage() {
                                 <Link href="/" className="text-zinc-500 hover:text-white transition-colors text-sm font-medium">
                                     Learn more about Mailient
                                 </Link>
-                            </div>
-
-                            <div className="mt-12 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs text-zinc-600">
-                                <div className="flex items-center justify-center gap-2">
-                                    <Check className="w-3 h-3 text-green-500" />
-                                    <span>Google OAuth Secure</span>
-                                </div>
-                                <div className="flex items-center justify-center gap-2">
-                                    <Check className="w-3 h-3 text-green-500" />
-                                    <span>2 Min Setup</span>
-                                </div>
-                                <div className="flex items-center justify-center gap-2">
-                                    <Check className="w-3 h-3 text-green-500" />
-                                    <span>No CC Required</span>
-                                </div>
-                                <div className="flex items-center justify-center gap-2">
-                                    <Check className="w-3 h-3 text-green-500" />
-                                    <span>AI Powered</span>
-                                </div>
                             </div>
                         </div>
                     </motion.div>
