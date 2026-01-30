@@ -126,7 +126,7 @@ export default function FoundersGuideHub() {
                 <main id="guides" className="px-6 py-20 max-w-7xl mx-auto">
                     <div className="flex items-center gap-2 mb-12">
                         <div className="w-2 h-2 rounded-full bg-[#D97757]" />
-                        <h2 className="text-2xl font-bold text-zinc-100 uppercase tracking-widest text-sm">Full Library</h2>
+                        <h2 className="font-bold text-zinc-100 uppercase tracking-widest text-sm">Full Library</h2>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {guides.map((guide, index) => (

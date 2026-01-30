@@ -25,8 +25,8 @@ export default function GuidePage() {
     // Audio State
     const [isPlaying, setIsPlaying] = useState(false);
     const [isLoadingAudio, setIsLoadingAudio] = useState(false);
-    const [audioUrl, setAudioUrl] = useState < string | null > (null);
-    const audioRef = useRef < HTMLAudioElement | null > (null);
+    const [audioUrl, setAudioUrl] = useState(null);
+    const audioRef = useRef(null);
 
     useEffect(() => {
         if (session && guide) {
@@ -219,8 +219,8 @@ export default function GuidePage() {
                                 onClick={handleAudioToggle}
                                 disabled={isLoadingAudio}
                                 className={`flex items-center gap-3 px-6 py-3 rounded-2xl border transition-all duration-300 ${isPlaying
-                                        ? "bg-[#D97757] border-[#D97757] text-white shadow-lg shadow-[#D97757]/20 scale-105"
-                                        : "bg-white/5 border-white/10 text-white hover:border-[#D97757]/50"
+                                    ? "bg-[#D97757] border-[#D97757] text-white shadow-lg shadow-[#D97757]/20 scale-105"
+                                    : "bg-white/5 border-white/10 text-white hover:border-[#D97757]/50"
                                     }`}
                             >
                                 {isLoadingAudio ? (
@@ -270,8 +270,8 @@ export default function GuidePage() {
                                 onClick={toggleBookmark}
                                 disabled={isSaving}
                                 className={`p-3 rounded-xl transition-all flex items-center gap-2 text-sm font-medium ${isBookmarked
-                                        ? "bg-[#D97757] text-white"
-                                        : "bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white"
+                                    ? "bg-[#D97757] text-white"
+                                    : "bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white"
                                     }`}
                             >
                                 <Bookmark className={`w-4 h-4 ${isBookmarked ? "fill-current" : ""}`} />
