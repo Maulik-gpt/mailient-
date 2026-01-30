@@ -1271,7 +1271,7 @@ export function LinearLanding() {
                     </div>
                     <div className="flex gap-8 text-sm font-bold text-zinc-500 uppercase tracking-widest">
                         <a href="https://x.com/Maulik_5" target="_blank" className="hover:text-white transition-colors">Twitter</a>
-                        <a href="https://github.com" target="_blank" className="hover:text-white transition-colors">GitHub</a>
+                        <a href="/founders-guide" className="hover:text-[#D97757] transition-colors">Founders Guide</a>
                         <a href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</a>
                         <a href="/terms-of-service" className="hover:text-white transition-colors">Terms of Service</a>
                     </div>
