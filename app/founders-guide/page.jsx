@@ -200,7 +200,7 @@ function GuideCard({ guide, index, isBookmarked }) {
                 <div className="mt-auto flex items-center justify-between">
                     <div className="flex items-center gap-2 text-xs text-zinc-600">
                         <Clock className="w-3 h-3" />
-                        <span>5 min read</span>
+                        <span>{Math.ceil(guide.content.split(/\s+/).length / 200)} min read</span>
                     </div>
                     <div className="flex items-center gap-1 text-xs font-bold uppercase tracking-widest text-[#D97757] opacity-0 group-hover:opacity-100 transition-opacity">
                         Read More <ArrowRight className="w-3 h-3" />

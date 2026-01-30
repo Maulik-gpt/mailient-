@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { ElevenLabsClient } from "elevenlabs";
 
 export async function POST(request: Request) {
     try {
@@ -9,44 +10,41 @@ export async function POST(request: Request) {
         }
 
         const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
-        const VOICE_ID = "fCxG8OHm4STbIsWe4aT9"; // User selected voice from library
+        // Brian - Professional, deep, and high-fidelity voice for tech/business content
+        const VOICE_ID = "nPczCBEZaRAs7iUqcD8X";
 
         if (!ELEVENLABS_API_KEY) {
             console.warn("⚠️ ELEVENLABS_API_KEY is missing, TTS won't work");
             return NextResponse.json({ error: "Audio service not configured" }, { status: 404 });
         }
 
+        const client = new ElevenLabsClient({
+            apiKey: ELEVENLABS_API_KEY,
+        });
+
         // Clean text from HTML tags for better TTS quality
-        const cleanText = text.replace(/<[^>]*>?/gm, '').substring(0, 5000);
+        const cleanText = text.replace(/<[^>]*>?/gm, '').substring(0, 30000);
 
-        console.log(`🎙️ Generating TTS for ${cleanText.length} chars...`);
+        console.log(`🎙️ Generating REAL ElevenLabs TTS for ${cleanText.length} chars using Brian...`);
 
-        const response = await fetch(
-            `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "xi-api-key": ELEVENLABS_API_KEY,
-                },
-                body: JSON.stringify({
-                    text: cleanText,
-                    model_id: "eleven_multilingual_v2",
-                    voice_settings: {
-                        stability: 0.5,
-                        similarity_boost: 0.8,
-                    },
-                }),
-            }
-        );
+        const audio = await client.generate({
+            voice: VOICE_ID,
+            text: cleanText,
+            model_id: "eleven_turbo_v2_5",
+            voice_settings: {
+                stability: 0.5,
+                similarity_boost: 0.9,
+                style: 0.0,
+                speaker_boost: true
+            },
+        });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error("❌ ElevenLabs API error:", errorText);
-            return NextResponse.json({ error: "Failed to generate audio" }, { status: response.status });
+        // Convert the stream to a buffer
+        const chunks = [];
+        for await (const chunk of audio) {
+            chunks.push(chunk);
         }
-
-        const audioBuffer = await response.arrayBuffer();
+        const audioBuffer = Buffer.concat(chunks);
 
         return new Response(audioBuffer, {
             headers: {
@@ -54,7 +52,7 @@ export async function POST(request: Request) {
             },
         });
     } catch (error) {
-        console.error("Error in TTS route:", error);
+        console.error("❌ Error in REAL ElevenLabs TTS route:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }
 }

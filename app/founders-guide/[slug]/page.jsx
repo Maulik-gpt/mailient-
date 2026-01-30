@@ -227,7 +227,7 @@ export default function GuidePage() {
                                 <span>Mailient Editorial</span>
                             </div>
                             <span>•</span>
-                            <span>5 min read</span>
+                            <span>{Math.ceil(guide.content.split(/\s+/).length / 200)} min read</span>
                         </div>
 
                         {/* Speaker Button */}
