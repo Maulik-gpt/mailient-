@@ -79,6 +79,9 @@ export default function GuidePage() {
     const handleAudioToggle = async () => {
         if (isPlaying) {
             audioRef.current?.pause();
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
             setIsPlaying(false);
             return;
         }
