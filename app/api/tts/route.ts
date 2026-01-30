@@ -9,7 +9,7 @@ export async function POST(request: Request) {
         }
 
         const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
-        const VOICE_ID = "pNInz6obpgDQGcFmaJgB"; // Adam - Deep, smoothing male voice
+        const VOICE_ID = "fCxG8OHm4STbIsWe4aT9"; // User selected voice from library
 
         if (!ELEVENLABS_API_KEY) {
             console.warn("⚠️ ELEVENLABS_API_KEY is missing, TTS won't work");
