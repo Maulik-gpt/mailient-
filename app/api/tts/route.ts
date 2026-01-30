@@ -11,7 +11,7 @@ export async function POST(request: Request) {
 
         const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
         // Brian - Professional, deep, and high-fidelity voice for tech/business content
-        const VOICE_ID = "nPczCBEZaRAs7iUqcD8X";
+        const VOICE_ID = "XrExE9yKIg1WjnnlVkGX";
 
         if (!ELEVENLABS_API_KEY) {
             console.warn("⚠️ ELEVENLABS_API_KEY is missing, TTS won't work");
@@ -32,9 +32,9 @@ export async function POST(request: Request) {
             text: cleanText,
             model_id: "eleven_turbo_v2_5",
             voice_settings: {
-                stability: 0.5,
-                similarity_boost: 0.9,
-                style: 0.0,
+                stability: 0.65, // More stable
+                similarity_boost: 0.85, // Higher fidelity
+                style: 0.05, // Subtle style
                 speaker_boost: true
             },
         });
