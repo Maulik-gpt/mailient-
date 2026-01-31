@@ -92,8 +92,24 @@ export default function GuidePage() {
             return;
         }
 
-        // Generate Audio
+        // Generate Audio: try ElevenLabs first, fall back to browser TTS if unavailable
         setIsLoadingAudio(true);
+        const fallbackToBrowserVoice = () => {
+            const raw = (guide?.content ?? "") || `${guide?.title ?? ""} ${guide?.description ?? ""}`;
+            const plainText = raw.replace(/<[^>]*>?/gm, "").trim().substring(0, 15000);
+            if (!plainText || !("speechSynthesis" in window)) return false;
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(plainText);
+            utterance.rate = 0.92;
+            utterance.pitch = 1;
+            utterance.onend = () => setIsPlaying(false);
+            utterance.onerror = () => setIsPlaying(false);
+            window.speechSynthesis.speak(utterance);
+            setIsPlaying(true);
+            toast.info("Playing with browser voice.");
+            return true;
+        };
+
         try {
             const res = await fetch("/api/tts", {
                 method: "POST",
@@ -101,20 +117,34 @@ export default function GuidePage() {
                 body: JSON.stringify({ text: guide?.content })
             });
 
-            if (!res.ok) throw new Error("API Failed");
+            const contentType = res.headers.get("content-type") || "";
+            const isJson = contentType.includes("application/json");
 
-            const blob = await res.blob();
-            const url = URL.createObjectURL(blob);
-            setAudioUrl(url);
-
-            if (audioRef.current) {
-                audioRef.current.src = url;
-                audioRef.current.play();
-                setIsPlaying(true);
+            if (res.ok && !isJson) {
+                const blob = await res.blob();
+                if (blob.size === 0) throw new Error("Empty audio");
+                const url = URL.createObjectURL(blob);
+                setAudioUrl(url);
+                if (audioRef.current) {
+                    audioRef.current.onerror = () => {
+                        URL.revokeObjectURL(url);
+                        setAudioUrl(null);
+                        if (fallbackToBrowserVoice()) return;
+                        toast.error("Audio failed to play. Try again.");
+                    };
+                    audioRef.current.src = url;
+                    audioRef.current.play();
+                    setIsPlaying(true);
+                }
+            } else {
+                const data = isJson ? await res.json().catch(() => ({})) : {};
+                console.warn("TTS API error:", res.status, data?.code ?? data?.error);
+                throw new Error(data?.code ?? "API_FAILED");
             }
         } catch (error) {
-            console.warn("ElevenLabs TTS failed:", error);
-            toast.error("Audio unavailable. Please try again—Listen to Article uses ElevenLabs.");
+            if (!fallbackToBrowserVoice()) {
+                toast.error("Audio unavailable. Try again or check your connection.");
+            }
         } finally {
             setIsLoadingAudio(false);
         }
