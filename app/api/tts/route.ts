@@ -10,7 +10,7 @@ export async function POST(request: Request) {
         }
 
         const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
-        // Brian - Professional, deep, and high-fidelity voice for tech/business content
+        // High-quality voice for article narration (Founder Hub Listen to Article)
         const VOICE_ID = "XrExE9yKIg1WjnnlVkGX";
 
         if (!ELEVENLABS_API_KEY) {
@@ -25,17 +25,17 @@ export async function POST(request: Request) {
         // Clean text from HTML tags for better TTS quality
         const cleanText = text.replace(/<[^>]*>?/gm, '').substring(0, 30000);
 
-        console.log(`🎙️ Generating REAL ElevenLabs TTS for ${cleanText.length} chars using Brian...`);
+        console.log(`🎙️ ElevenLabs TTS: ${cleanText.length} chars, voice ${VOICE_ID}`);
 
         const audio = await client.generate({
             voice: VOICE_ID,
             text: cleanText,
-            model_id: "eleven_turbo_v2_5",
+            model_id: "eleven_multilingual_v2",
             voice_settings: {
-                stability: 0.65, // More stable
-                similarity_boost: 0.85, // Higher fidelity
-                style: 0.05, // Subtle style
-                speaker_boost: true
+                stability: 0.4,
+                similarity_boost: 0.95,
+                style: 0.2,
+                use_speaker_boost: true
             },
         });
 

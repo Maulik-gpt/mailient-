@@ -11,15 +11,8 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
-import { useScroll, useSpring } from "framer-motion";
 
 export default function GuidePage() {
-    const { scrollYProgress } = useScroll();
-    const scaleX = useSpring(scrollYProgress, {
-        stiffness: 100,
-        damping: 30,
-        restDelta: 0.001
-    });
     const { slug } = useParams();
     const router = useRouter();
     const { data: session } = useSession();
@@ -120,22 +113,8 @@ export default function GuidePage() {
                 setIsPlaying(true);
             }
         } catch (error) {
-            console.warn("TTS API failed, falling back to browser voice:", error);
-
-            // Browser Speech Fallback
-            if ('speechSynthesis' in window) {
-                const utterance = new SpeechSynthesisUtterance(guide.content.replace(/<[^>]*>?/gm, ''));
-                utterance.rate = 0.9;
-                utterance.pitch = 1;
-                utterance.onend = () => setIsPlaying(false);
-                utterance.onerror = () => setIsPlaying(false);
-
-                window.speechSynthesis.speak(utterance);
-                setIsPlaying(true);
-                toast.success("Playing via browser voice (API fallback)");
-            } else {
-                toast.error("Couldn't load the speaker. Please try again.");
-            }
+            console.warn("ElevenLabs TTS failed:", error);
+            toast.error("Audio unavailable. Please try again—Listen to Article uses ElevenLabs.");
         } finally {
             setIsLoadingAudio(false);
         }
@@ -184,12 +163,6 @@ export default function GuidePage() {
                 <div className="absolute inset-0 bg-black/60" />
             </div>
 
-            {/* Reading Progress Bar */}
-            <motion.div
-                className="fixed top-0 left-0 h-1 bg-[#D97757] z-[100]"
-                style={{ scaleX }}
-            />
-
             <div className="relative z-10">
                 {/* Simple Nav */}
                 <nav className="p-8 flex items-center justify-between max-w-7xl mx-auto">
@@ -218,10 +191,10 @@ export default function GuidePage() {
                     </motion.div>
 
                     <motion.h1
-                        initial={{ opacity: 0, y: 30 }}
+                        initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1, duration: 1, ease: [0.22, 1, 0.36, 1] }}
-                        className="text-5xl md:text-7xl font-extrabold tracking-tight mb-12 leading-[1.1] bg-gradient-to-b from-white to-white/60 bg-clip-text text-transparent"
+                        transition={{ delay: 0.1 }}
+                        className="text-4xl md:text-5xl font-bold tracking-tight mb-8 leading-tight"
                     >
                         {guide.title}
                     </motion.h1>
@@ -229,41 +202,39 @@ export default function GuidePage() {
                     <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.4 }}
-                        className="flex flex-col items-center gap-8 mb-16"
+                        transition={{ delay: 0.2 }}
+                        className="flex flex-col items-center gap-6 mb-12"
                     >
-                        <div className="flex items-center justify-center gap-8 text-sm text-zinc-500 font-medium">
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-zinc-800 border border-white/10 overflow-hidden shadow-2xl">
+                        <div className="flex items-center justify-center gap-6 text-sm text-zinc-500">
+                            <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden">
                                     <img src={`https://api.dicebear.com/7.x/bottts/svg?seed=${guide.slug}`} alt="Author" />
                                 </div>
-                                <span className="text-zinc-300">Mailient Editorial</span>
+                                <span>Mailient Editorial</span>
                             </div>
-                            <span className="w-1 h-1 rounded-full bg-zinc-800" />
-                            <span className="bg-zinc-900/50 px-3 py-1 rounded-full border border-white/5">{Math.ceil(guide.content.split(/\s+/).length / 200)} min read</span>
+                            <span>•</span>
+                            <span>{Math.ceil(guide.content.split(/\s+/).length / 200)} min read</span>
                         </div>
 
                         {/* Speaker Button */}
-                        <div className="relative group/speaker">
+                        <div className="relative">
                             <button
                                 onClick={handleAudioToggle}
                                 disabled={isLoadingAudio}
-                                className={`flex items-center gap-4 px-8 py-4 rounded-full border transition-all duration-500 ease-out ${isPlaying
-                                    ? "bg-white border-white text-black shadow-[0_0_40px_rgba(255,255,255,0.2)] scale-105"
-                                    : "bg-white/5 border-white/10 text-white hover:border-[#D97757]/50 hover:bg-white/[0.08]"
+                                className={`flex items-center gap-3 px-6 py-3 rounded-2xl border transition-all duration-300 ${isPlaying
+                                    ? "bg-[#D97757] border-[#D97757] text-white shadow-lg shadow-[#D97757]/20 scale-105"
+                                    : "bg-white/5 border-white/10 text-white hover:border-[#D97757]/50"
                                     }`}
                             >
-                                <div className="relative w-6 h-6 flex items-center justify-center">
-                                    {isLoadingAudio ? (
-                                        <Loader2 className="w-5 h-5 animate-spin" />
-                                    ) : isPlaying ? (
-                                        <Pause className="w-5 h-5 fill-current" />
-                                    ) : (
-                                        <Volume2 className="w-5 h-5 group-hover/speaker:scale-110 transition-transform" />
-                                    )}
-                                </div>
-                                <span className="font-bold text-sm tracking-widest uppercase">
-                                    {isLoadingAudio ? "Syncing..." : isPlaying ? "Streaming" : "Play Article"}
+                                {isLoadingAudio ? (
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                ) : isPlaying ? (
+                                    <Pause className="w-5 h-5 fill-current" />
+                                ) : (
+                                    <Volume2 className="w-5 h-5" />
+                                )}
+                                <span className="font-bold text-sm tracking-tight">
+                                    {isLoadingAudio ? "Preparing Audio..." : isPlaying ? "Listening Now" : "Listen to Article"}
                                 </span>
                             </button>
 
@@ -275,52 +246,20 @@ export default function GuidePage() {
                     </motion.div>
                 </header>
 
-                {/* Content Section */}
-                <main className="px-6 max-w-3xl mx-auto pb-32">
-                    <style jsx global>{`
-                        .article-content h2 {
-                            font-size: 2.25rem;
-                            font-weight: 800;
-                            color: white;
-                            margin-top: 4rem;
-                            margin-bottom: 1.5rem;
-                            letter-spacing: -0.02em;
-                            line-height: 1.2;
-                        }
-                        .article-content p {
-                            font-size: 1.25rem;
-                            line-height: 1.8;
-                            color: #a1a1aa; /* text-zinc-400 */
-                            margin-bottom: 2rem;
-                        }
-                        .article-content strong {
-                            color: white;
-                            font-weight: 700;
-                        }
-                        .article-content ul {
-                            margin-bottom: 2.5rem;
-                            padding-left: 1.5rem;
-                            list-style-type: disc;
-                            color: #a1a1aa;
-                        }
-                        .article-content li {
-                            margin-bottom: 1rem;
-                            padding-left: 0.5rem;
-                            font-size: 1.15rem;
-                        }
-                        .article-content blockquote {
-                            border-left: 4px solid #D97757;
-                            padding-left: 1.5rem;
-                            font-style: italic;
-                            margin: 3rem 0;
-                            color: #e4e4e7;
-                        }
-                    `}</style>
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.3, duration: 0.8 }}
-                        className="article-content"
+                {/* Article Content — editorial typography and spacing */}
+                <main className="px-6 sm:px-8 max-w-3xl mx-auto pb-4">
+                    <motion.article
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.3 }}
+                        className="
+                            [&_h2]:text-2xl sm:[&_h2]:text-3xl [&_h2]:font-extrabold [&_h2]:tracking-tight [&_h2]:text-white
+                            [&_h2]:mt-16 [&_h2]:mb-6 [&_h2]:pb-2 [&_h2]:border-b [&_h2]:border-white/10
+                            [&_p]:text-zinc-300 [&_p]:text-lg [&_p]:leading-[1.85] [&_p]:mb-8
+                            [&_strong]:text-white [&_strong]:font-bold
+                            [&_em]:text-zinc-200
+                            [&_ul]:my-8 [&_ul]:space-y-3 [&_ul]:list-disc [&_ul]:pl-6 [&_li]:text-zinc-400 [&_li]:leading-relaxed [&_li]:text-base
+                        "
                         dangerouslySetInnerHTML={{ __html: guide.content }}
                     />
 
