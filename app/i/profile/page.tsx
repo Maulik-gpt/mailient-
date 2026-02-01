@@ -29,7 +29,8 @@ import {
     Globe,
     Plus,
     UserCircle,
-    Shield
+    Shield,
+    Pencil
 } from 'lucide-react';
 import { HomeFeedSidebar } from '@/components/ui/home-feed-sidebar';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -154,10 +155,11 @@ function ProfileContent() {
     };
 
     const tabs = [
-        { id: 'insights', label: 'Insights', icon: Sparkles },
-        { id: 'activity', label: 'Activity', icon: Activity },
-        { id: 'network', label: 'Network', icon: Users },
-        { id: 'more', label: 'More', icon: ChevronRight },
+        { id: 'posts', label: 'Posts' },
+        { id: 'replies', label: 'Replies' },
+        { id: 'highlights', label: 'Highlights' },
+        { id: 'media', label: 'Media' },
+        { id: 'likes', label: 'Likes' },
     ];
 
     return (
@@ -171,14 +173,16 @@ function ProfileContent() {
             <HomeFeedSidebar />
 
             <div className="ml-16 min-h-screen relative z-10">
-                {/* Top Nav */}
-                <div className="sticky top-0 z-50 bg-[#050505]/60 backdrop-blur-xl border-b border-white/5 px-8 h-16 flex items-center gap-6">
-                    <button onClick={() => router.back()} className="p-2 hover:bg-white/5 rounded-full transition-all active:scale-90">
-                        <ArrowLeft className="w-5 h-5 text-white/60" />
-                    </button>
-                    <div>
-                        <h1 className="text-lg font-black tracking-tight leading-none">{profile?.name || session?.user?.name}</h1>
-                        <p className="text-[10px] text-white/40 font-bold uppercase tracking-[0.2em] mt-1">Verified Experience</p>
+                {/* Header/Top Nav */}
+                <div className="sticky top-0 z-50 bg-black/60 backdrop-blur-xl border-b border-white/10 px-4 h-14 flex items-center justify-between">
+                    <div className="flex items-center gap-6">
+                        <button onClick={() => router.back()} className="p-2 hover:bg-neutral-800 rounded-full transition-colors">
+                            <ArrowLeft className="w-5 h-5" />
+                        </button>
+                        <div>
+                            <h1 className="text-xl font-bold tracking-tight">{profile?.name || session?.user?.name}</h1>
+                            <p className="text-xs text-neutral-500">Posts</p>
+                        </div>
                     </div>
                 </div>
 
@@ -186,22 +190,20 @@ function ProfileContent() {
                     {/* Header Section */}
                     <div className="relative">
                         {/* Banner */}
-                        <div className="h-72 w-full overflow-hidden bg-neutral-900 border-b border-white/5">
+                        <div className="h-52 w-full overflow-hidden bg-neutral-900 rounded-3xl mt-4">
                             {profile?.banner_url ? (
                                 <img src={profile.banner_url} alt="Banner" className="w-full h-full object-cover" />
                             ) : (
-                                <div className="w-full h-full bg-gradient-to-br from-neutral-800 to-black flex items-center justify-center">
-                                    <div className="text-white/[0.02] text-[12rem] font-black italic select-none tracking-tighter">MAILIENT</div>
-                                </div>
+                                <div className="w-full h-full bg-gradient-to-br from-neutral-800 to-black" />
                             )}
                         </div>
 
                         {/* Profile Info Section */}
-                        <div className="px-10 relative">
+                        <div className="px-5 relative">
                             {/* Avatar */}
-                            <div className="absolute -top-24 left-10">
-                                <div className="p-2 rounded-full bg-[#050505]">
-                                    <div className="w-44 h-44 rounded-full border-4 border-[#050505] bg-neutral-900 overflow-hidden shadow-2xl ring-1 ring-white/10">
+                            <div className="absolute -top-[75px] left-5">
+                                <div className="p-1 rounded-full bg-black">
+                                    <div className="w-[140px] h-[140px] rounded-full border-4 border-black bg-neutral-900 overflow-hidden shadow-xl">
                                         <img
                                             src={profile?.avatar_url || session?.user?.image || ''}
                                             alt="Avatar"
@@ -211,91 +213,92 @@ function ProfileContent() {
                                 </div>
                             </div>
 
-                            <div className="flex justify-end pt-8 gap-4">
-                                <button
-                                    onClick={() => setIsEditing(true)}
-                                    className="px-10 py-3.5 rounded-full bg-white text-black font-black text-sm hover:scale-105 transition-all active:scale-95 shadow-[0_0_30px_rgba(255,255,255,0.15)]"
-                                >
-                                    Edit Profile
-                                </button>
-                                <button className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/5 transition-all text-white/40 hover:text-white">
-                                    <MessageCircle className="w-5 h-5" />
-                                </button>
+                            <div className="flex justify-between pt-4 items-start">
+                                <div className="mt-16">
+                                    <div className="flex items-center gap-4">
+                                        <h2 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+                                            {profile?.name || session?.user?.name} ✨
+                                        </h2>
+                                        <button
+                                            onClick={() => setIsEditing(true)}
+                                            className="px-4 py-2 rounded-xl bg-white text-black hover:bg-neutral-200 transition-all text-sm font-semibold flex items-center gap-2"
+                                        >
+                                            <Pencil className="w-4 h-4" />
+                                            Edit Profile
+                                        </button>
+                                    </div>
+                                    <p className="text-neutral-500 text-lg mt-0.5">@{profile?.username || (session?.user?.email?.split('@')[0])}</p>
+                                </div>
                             </div>
 
-                            {/* Info Blocks - High Vertical Spacing */}
-                            <div className="mt-12 space-y-8">
-                                <div>
-                                    <h2 className="text-4xl font-black tracking-tighter flex items-center gap-3">
-                                        {profile?.name || session?.user?.name}
-                                        <div className="px-2 py-0.5 rounded-md bg-blue-500/10 border border-blue-500/20">
-                                            <Shield className="w-5 h-5 text-blue-400 fill-blue-400/20" />
-                                        </div>
-                                    </h2>
-                                    <p className="text-lg text-white/40 font-medium tracking-tight mt-1">@{profile?.username || (session?.user?.email?.split('@')[0])}</p>
-                                </div>
+                            {/* Bio and metadata */}
+                            <div className="mt-4 space-y-3">
+                                <p className="text-base text-neutral-200 leading-normal max-w-2xl">
+                                    {profile?.bio || "No bio yet."}
+                                </p>
 
-                                {profile?.bio && (
-                                    <p className="text-xl text-white/80 leading-relaxed max-w-2xl font-medium tracking-tight">
-                                        {profile.bio}
-                                    </p>
-                                )}
-
-                                <div className="flex flex-wrap gap-x-10 gap-y-4 text-sm text-white/40 font-bold uppercase tracking-widest">
+                                <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-neutral-500">
                                     {profile?.location && (
-                                        <div className="flex items-center gap-2">
-                                            <MapPin className="w-4 h-4 text-white/20" />
+                                        <div className="flex items-center gap-1">
+                                            <MapPin className="w-4 h-4" />
                                             {profile.location}
                                         </div>
                                     )}
                                     {profile?.website && (
-                                        <a href={profile.website} target="_blank" className="flex items-center gap-2 text-white/60 hover:text-white transition-colors">
-                                            <Globe className="w-4 h-4 text-white/20" />
-                                            Site
+                                        <a href={profile.website} target="_blank" className="flex items-center gap-1 text-blue-400 hover:underline">
+                                            <LinkIcon className="w-4 h-4" />
+                                            {profile.website.replace(/^https?:\/\//, '')}
                                         </a>
                                     )}
-                                    <div className="flex items-center gap-2">
-                                        <Calendar className="w-4 h-4 text-white/20" />
-                                        Since {formatDate(profile?.created_at)}
+                                    <div className="flex items-center gap-1">
+                                        <Calendar className="w-4 h-4" />
+                                        Joined {formatDate(profile?.created_at).replace('Since ', '')}
                                     </div>
                                 </div>
 
-                                <div className="flex gap-10 pt-4 border-t border-white/5">
-                                    <div className="flex flex-col gap-1">
-                                        <span className="text-2xl font-black text-white tracking-tighter">420</span>
-                                        <span className="text-[10px] text-white/30 font-black uppercase tracking-[0.2em]">Network</span>
+                                <div className="flex gap-4 pt-1">
+                                    <div className="flex items-center gap-1 text-sm">
+                                        <span className="font-bold text-white">4</span>
+                                        <span className="text-neutral-500">followers</span>
                                     </div>
-                                    <div className="flex flex-col gap-1">
-                                        <span className="text-2xl font-black text-white tracking-tighter">1.2k</span>
-                                        <span className="text-[10px] text-white/30 font-black uppercase tracking-[0.2em]">Signals</span>
+                                    <div className="flex items-center gap-1 text-sm">
+                                        <span className="font-bold text-white">3</span>
+                                        <span className="text-neutral-500">following</span>
                                     </div>
-                                    <div className="flex flex-col gap-1">
-                                        <span className="text-2xl font-black text-white tracking-tighter">14</span>
-                                        <span className="text-[10px] text-white/30 font-black uppercase tracking-[0.2em]">Insights</span>
-                                    </div>
+                                </div>
+
+                                <div className="flex gap-4 pt-2">
+                                    {editForm.socials.twitter && (
+                                        <a href={`https://x.com/${editForm.socials.twitter}`} target="_blank" className="text-white hover:opacity-70 transition-opacity">
+                                            <Twitter className="w-5 h-5" />
+                                        </a>
+                                    )}
+                                    {editForm.socials.instagram && (
+                                        <a href={`https://instagram.com/${editForm.socials.instagram}`} target="_blank" className="text-white hover:opacity-70 transition-opacity">
+                                            <Instagram className="w-5 h-5" />
+                                        </a>
+                                    )}
                                 </div>
                             </div>
                         </div>
 
-                        {/* Tabs - Sparse Layout */}
-                        <div className="flex border-b border-white/5 mt-16 px-6">
+                        {/* Tabs */}
+                        <div className="flex border-b border-white/10 mt-4 overflow-x-auto no-scrollbar">
                             {tabs.map((tab) => {
-                                const Icon = tab.icon;
                                 const isActive = activeTab === tab.id;
                                 return (
                                     <button
                                         key={tab.id}
                                         onClick={() => setActiveTab(tab.id)}
-                                        className={`flex-1 flex flex-col items-center gap-3 py-6 relative group`}
+                                        className={`px-8 py-4 relative group shrink-0`}
                                     >
-                                        <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-white/20 group-hover:text-white/40'} transition-all ${isActive ? 'scale-110' : ''}`} />
-                                        <span className={`text-[10px] font-black uppercase tracking-[0.3em] ${isActive ? 'text-white' : 'text-white/20 group-hover:text-white/40'} transition-colors`}>
+                                        <span className={`text-sm ${isActive ? 'text-white font-medium' : 'text-neutral-500 hover:text-neutral-300'} transition-colors`}>
                                             {tab.label}
                                         </span>
                                         {isActive && (
                                             <motion.div
                                                 layoutId="activeProfileTab"
-                                                className="absolute bottom-0 left-4 right-4 h-1 bg-white rounded-t-full shadow-[0_0_20px_rgba(255,255,255,0.4)]"
+                                                className="absolute bottom-0 left-0 right-0 h-[3px] bg-blue-500 rounded-full"
                                             />
                                         )}
                                     </button>
@@ -384,7 +387,7 @@ function ProfileContent() {
                 </div>
             </div>
 
-            {/* Edit Profile Modal - PREMIUM FLOW */}
+            {/* Edit Profile Modal */}
             <AnimatePresence>
                 {isEditing && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -393,167 +396,176 @@ function ProfileContent() {
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setIsEditing(false)}
-                            className="absolute inset-0 bg-black/90 backdrop-blur-xl"
+                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
                         />
                         <motion.div
-                            initial={{ opacity: 0, scale: 0.9, y: 30 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.9, y: 30 }}
-                            className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-neutral-950 border border-white/10 rounded-[48px] shadow-[0_50px_100px_-20px_rgba(0,0,0,1)] no-scrollbar"
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="relative w-full max-w-xl max-h-[90vh] overflow-hidden bg-black border border-white/10 rounded-2xl shadow-2xl flex flex-col"
                         >
-                            <div className="sticky top-0 z-20 bg-neutral-950/80 backdrop-blur-3xl border-b border-white/5 px-12 py-10 flex items-center justify-between">
-                                <div>
-                                    <h2 className="text-3xl font-black tracking-tighter">Edit Identity</h2>
-                                    <p className="text-xs text-white/30 font-bold uppercase tracking-[0.3em] mt-2">Personalize your digital presence</p>
-                                </div>
-                                <button
-                                    onClick={() => setIsEditing(false)}
-                                    className="p-4 rounded-full bg-white/5 hover:bg-white/10 transition-all text-white/40 hover:text-white group"
-                                >
-                                    <CloseIcon className="w-6 h-6 group-hover:rotate-90 transition-transform" />
+                            {/* Header */}
+                            <div className="px-6 py-4 border-b border-white/10 flex items-center gap-6 bg-black">
+                                <button onClick={() => setIsEditing(false)} className="p-2 hover:bg-neutral-800 rounded-full transition-colors">
+                                    <ArrowLeft className="w-5 h-5" />
                                 </button>
+                                <h2 className="text-xl font-bold">Edit Profile</h2>
                             </div>
 
-                            <div className="p-12 space-y-16">
-                                {/* Media Section */}
-                                <div className="space-y-10">
-                                    <div className="space-y-4">
-                                        <label className="text-xs font-black uppercase tracking-[0.3em] text-white/20 ml-2">Header Signature</label>
-                                        <div className="h-48 relative rounded-[32px] overflow-hidden bg-neutral-900 border border-white/5 group">
-                                            {editForm.banner_url ? (
-                                                <img src={editForm.banner_url} alt="Banner" className="w-full h-full object-cover" />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center">
-                                                    <Camera className="w-8 h-8 text-white/10" />
-                                                </div>
-                                            )}
-                                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button
-                                                    onClick={() => {
-                                                        const url = prompt("Enter Cover Image URL:", editForm.banner_url);
-                                                        if (url !== null) setEditForm(prev => ({ ...prev, banner_url: url }));
-                                                    }}
-                                                    className="px-8 py-3 rounded-full bg-white text-black font-black text-xs shadow-2xl hover:scale-105 active:scale-95 transition-all"
-                                                >
-                                                    Change Image
-                                                </button>
-                                            </div>
+                            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8">
+                                {/* Avatar Section */}
+                                <div className="flex items-center gap-6">
+                                    <div className="relative group">
+                                        <div className="w-24 h-24 rounded-full bg-neutral-900 border border-white/10 overflow-hidden">
+                                            <img
+                                                src={editForm.avatar_url || profile?.avatar_url || session?.user?.image || ''}
+                                                alt="Avatar"
+                                                className="w-full h-full object-cover"
+                                            />
                                         </div>
+                                        <button
+                                            onClick={() => {
+                                                const url = prompt("Enter Profile Photo URL:", editForm.avatar_url);
+                                                if (url !== null) setEditForm(prev => ({ ...prev, avatar_url: url }));
+                                            }}
+                                            className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full"
+                                        >
+                                            <Camera className="w-6 h-6 text-white" />
+                                        </button>
                                     </div>
-
-                                    <div className="flex items-center gap-10 bg-white/[0.02] p-8 rounded-[32px] border border-white/5">
-                                        <div className="relative">
-                                            <div className="w-28 h-28 rounded-full bg-neutral-900 border-2 border-white/10 overflow-hidden shadow-2xl">
-                                                {editForm.avatar_url ? (
-                                                    <img src={editForm.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-                                                ) : (
-                                                    <div className="w-full h-full flex items-center justify-center">
-                                                        <UserCircle className="w-12 h-12 text-white/10" />
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <button
-                                                onClick={() => {
-                                                    const url = prompt("Enter Profile Photo URL:", editForm.avatar_url);
-                                                    if (url !== null) setEditForm(prev => ({ ...prev, avatar_url: url }));
-                                                }}
-                                                className="absolute -bottom-2 -right-2 p-3 rounded-full bg-blue-500 text-white shadow-[0_10px_20px_rgba(59,130,246,0.3)] hover:scale-110 active:scale-95 transition-all border-4 border-neutral-950"
-                                            >
-                                                <Plus className="w-5 h-5" />
-                                            </button>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <h4 className="text-lg font-black tracking-tight">Profile Photo</h4>
-                                            <p className="text-sm text-white/20 font-medium">Click to upload or provide a URL</p>
-                                        </div>
+                                    <div className="space-y-1">
+                                        <p className="text-sm text-neutral-400">Recommended size:</p>
+                                        <p className="text-sm text-neutral-400">400x400px</p>
                                     </div>
                                 </div>
 
-                                {/* Form Section - PURE VERTICALITY */}
-                                <div className="space-y-12">
-                                    <div className="space-y-4">
-                                        <label className="text-xs font-black uppercase tracking-[0.3em] text-white/20 ml-2">Formal Recognition</label>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-neutral-300">Full name <span className="text-red-500">*</span></label>
                                         <input
                                             type="text"
                                             value={editForm.name}
                                             onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
-                                            placeholder="Display Name"
-                                            className="w-full bg-white/[0.03] border border-white/5 rounded-[24px] px-8 py-6 text-lg text-white font-bold focus:outline-none focus:bg-white/[0.05] focus:border-white/10 transition-all placeholder:text-white/5"
+                                            className="w-full h-11 bg-black border border-white/10 rounded-xl px-4 text-neutral-200 text-sm focus:outline-none focus:border-white/30 transition-colors"
                                         />
                                     </div>
-
-                                    <div className="space-y-4">
-                                        <label className="text-xs font-black uppercase tracking-[0.3em] text-white/20 ml-2">Handle Identification</label>
-                                        <div className="relative group">
-                                            <span className="absolute left-8 top-1/2 -translate-y-1/2 text-white/10 text-xl font-bold group-focus-within:text-blue-500 transition-colors">@</span>
-                                            <input
-                                                type="text"
-                                                value={editForm.username}
-                                                onChange={(e) => setEditForm(prev => ({ ...prev, username: e.target.value }))}
-                                                placeholder="username"
-                                                className="w-full bg-white/[0.03] border border-white/5 rounded-[24px] pl-14 pr-8 py-6 text-lg text-white font-bold focus:outline-none focus:bg-white/[0.05] focus:border-white/10 transition-all placeholder:text-white/5"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-4">
-                                        <label className="text-xs font-black uppercase tracking-[0.3em] text-white/20 ml-2">Personal Manifesto</label>
-                                        <textarea
-                                            value={editForm.bio}
-                                            onChange={(e) => setEditForm(prev => ({ ...prev, bio: e.target.value }))}
-                                            placeholder="Elevator pitch..."
-                                            className="w-full bg-white/[0.03] border border-white/5 rounded-[32px] px-8 py-8 text-lg text-white font-medium min-h-[180px] resize-none leading-relaxed focus:outline-none focus:bg-white/[0.05] focus:border-white/10 transition-all placeholder:text-white/5"
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-neutral-300">Username <span className="text-red-500">*</span></label>
+                                        <input
+                                            type="text"
+                                            value={editForm.username}
+                                            onChange={(e) => setEditForm(prev => ({ ...prev, username: e.target.value }))}
+                                            className="w-full h-11 bg-black border border-white/10 rounded-xl px-4 text-neutral-200 text-sm focus:outline-none focus:border-white/30 transition-colors"
                                         />
                                     </div>
+                                </div>
 
-                                    <div className="space-y-4">
-                                        <label className="text-xs font-black uppercase tracking-[0.3em] text-white/20 ml-2">Global Position</label>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between items-center">
+                                        <label className="text-sm font-medium text-neutral-300">Brief bio</label>
+                                        <span className="text-xs text-neutral-500">{editForm.bio.length}/120</span>
+                                    </div>
+                                    <textarea
+                                        value={editForm.bio}
+                                        maxLength={120}
+                                        onChange={(e) => setEditForm(prev => ({ ...prev, bio: e.target.value }))}
+                                        className="w-full h-24 bg-black border border-white/10 rounded-xl p-4 text-neutral-200 text-sm resize-none focus:outline-none focus:border-white/30 transition-colors"
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-neutral-300">Location</label>
+                                        <input
+                                            type="text"
+                                            value={editForm.location}
+                                            onChange={(e) => setEditForm(prev => ({ ...prev, location: e.target.value }))}
+                                            className="w-full h-11 bg-black border border-white/10 rounded-xl px-4 text-neutral-200 text-sm focus:outline-none focus:border-white/30 transition-colors"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-neutral-300">Website</label>
+                                        <input
+                                            type="text"
+                                            value={editForm.website}
+                                            onChange={(e) => setEditForm(prev => ({ ...prev, website: e.target.value }))}
+                                            className="w-full h-11 bg-black border border-white/10 rounded-xl px-4 text-neutral-200 text-sm focus:outline-none focus:border-white/30 transition-colors"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="pt-4 space-y-4">
+                                    <p className="text-sm text-neutral-400">Note: You only need to add your <span className="font-bold">username</span>.</p>
+
+                                    <div className="grid grid-cols-2 gap-4">
                                         <div className="relative group">
-                                            <MapPin className="absolute left-8 top-1/2 -translate-y-1/2 w-6 h-6 text-white/10 group-focus-within:text-red-500/50 transition-colors" />
+                                            <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none">
+                                                <Twitter className="w-4 h-4 text-white" />
+                                                <span className="text-sm text-neutral-500">x.com/</span>
+                                            </div>
                                             <input
                                                 type="text"
-                                                value={editForm.location}
-                                                onChange={(e) => setEditForm(prev => ({ ...prev, location: e.target.value }))}
-                                                placeholder="Location (e.g. London, UK)"
-                                                className="w-full bg-white/[0.03] border border-white/5 rounded-[24px] pl-18 pr-8 py-6 text-lg text-white font-bold focus:outline-none focus:bg-white/[0.05] focus:border-white/10 transition-all placeholder:text-white/5"
-                                                style={{ paddingLeft: '4.5rem' }}
+                                                value={editForm.socials.twitter}
+                                                onChange={(e) => setEditForm(prev => ({ ...prev, socials: { ...prev.socials, twitter: e.target.value } }))}
+                                                className="w-full h-11 bg-black border border-white/10 rounded-xl pl-[74px] pr-4 text-neutral-200 text-sm focus:outline-none focus:border-white/30 transition-colors"
                                             />
                                         </div>
-                                    </div>
-
-                                    <div className="space-y-4">
-                                        <label className="text-xs font-black uppercase tracking-[0.3em] text-white/20 ml-2">Digital Hub</label>
                                         <div className="relative group">
-                                            <Globe className="absolute left-8 top-1/2 -translate-y-1/2 w-6 h-6 text-white/10 group-focus-within:text-green-500/50 transition-colors" />
+                                            <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none">
+                                                <Linkedin className="w-4 h-4 text-[#0077b5]" />
+                                                <span className="text-sm text-neutral-500">linkedin.com/in/</span>
+                                            </div>
                                             <input
                                                 type="text"
-                                                value={editForm.website}
-                                                onChange={(e) => setEditForm(prev => ({ ...prev, website: e.target.value }))}
-                                                placeholder="Website URL"
-                                                className="w-full bg-white/[0.03] border border-white/5 rounded-[24px] pl-18 pr-8 py-6 text-lg text-white font-bold focus:outline-none focus:bg-white/[0.05] focus:border-white/10 transition-all placeholder:text-white/5"
-                                                style={{ paddingLeft: '4.5rem' }}
+                                                value={editForm.socials.linkedin}
+                                                onChange={(e) => setEditForm(prev => ({ ...prev, socials: { ...prev.socials, linkedin: e.target.value } }))}
+                                                className="w-full h-11 bg-black border border-white/10 rounded-xl pl-[124px] pr-4 text-neutral-200 text-sm focus:outline-none focus:border-white/30 transition-colors"
+                                            />
+                                        </div>
+                                        <div className="relative group">
+                                            <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none">
+                                                <Instagram className="w-4 h-4 text-[#e4405f]" />
+                                                <span className="text-sm text-neutral-500">instagram.com/</span>
+                                            </div>
+                                            <input
+                                                type="text"
+                                                value={editForm.socials.instagram}
+                                                onChange={(e) => setEditForm(prev => ({ ...prev, socials: { ...prev.socials, instagram: e.target.value } }))}
+                                                className="w-full h-11 bg-black border border-white/10 rounded-xl pl-[124px] pr-4 text-neutral-200 text-sm focus:outline-none focus:border-white/30 transition-colors"
+                                            />
+                                        </div>
+                                        <div className="relative group">
+                                            <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none">
+                                                <Github className="w-4 h-4 text-white" />
+                                                <span className="text-sm text-neutral-500">github.com/</span>
+                                            </div>
+                                            <input
+                                                type="text"
+                                                value={editForm.socials.github}
+                                                onChange={(e) => setEditForm(prev => ({ ...prev, socials: { ...prev.socials, github: e.target.value } }))}
+                                                className="w-full h-11 bg-black border border-white/10 rounded-xl pl-[104px] pr-4 text-neutral-200 text-sm focus:outline-none focus:border-white/30 transition-colors"
                                             />
                                         </div>
                                     </div>
                                 </div>
+                            </div>
 
-                                {/* Actions */}
-                                <div className="pt-10 flex flex-col gap-4">
-                                    <button
-                                        onClick={handleSave}
-                                        disabled={saving}
-                                        className="w-full bg-white text-black h-20 rounded-[32px] font-black text-xl shadow-[0_20px_40px_rgba(255,255,255,0.1)] hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-4 disabled:opacity-50"
-                                    >
-                                        {saving ? <Loader2 className="w-6 h-6 animate-spin" /> : <Check className="w-6 h-6" />}
-                                        Initialize Updates
-                                    </button>
-                                    <button
-                                        onClick={() => setIsEditing(false)}
-                                        className="w-full h-16 rounded-[24px] text-white/30 font-bold uppercase tracking-widest hover:text-white transition-colors"
-                                    >
-                                        Cancel Protocol
-                                    </button>
-                                </div>
+                            {/* Footer */}
+                            <div className="px-6 py-4 border-t border-white/10 flex justify-end gap-3 bg-black">
+                                <button
+                                    onClick={() => setIsEditing(false)}
+                                    className="px-6 py-2 rounded-full border border-white/20 hover:bg-white/5 transition-colors text-sm font-medium"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleSave}
+                                    disabled={saving}
+                                    className="px-6 py-2 rounded-full bg-white text-black hover:bg-neutral-200 transition-colors text-sm font-medium disabled:opacity-50 flex items-center gap-2"
+                                >
+                                    {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+                                    Save Changes
+                                </button>
                             </div>
                         </motion.div>
                     </div>
