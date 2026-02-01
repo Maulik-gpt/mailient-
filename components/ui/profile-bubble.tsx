@@ -30,7 +30,7 @@ import {
   MapPin
 } from "lucide-react";
 import { WebsiteLink } from "./website-link";
-import { EditProfileDialog } from "./edit-profile-dialog";
+import { EditProfileDialog, type EditProfileFormData } from "./edit-profile-dialog";
 
 type UserStatus = 'online' | 'away' | 'offline';
 
@@ -59,8 +59,6 @@ type UserProfile = {
   last_synced_at?: string | null;
   created_at?: string;
   updated_at?: string;
-  username?: string | null;
-  banner_url?: string | null;
   email_accounts_connected?: number;
   emails_processed?: number;
   plan?: string;
@@ -358,6 +356,34 @@ export default function ProfileBubble() {
     }
   };
 
+  const saveProfileFromDialog = async (data: EditProfileFormData) => {
+    try {
+      const response = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: data.name,
+          bio: data.bio,
+          location: data.location,
+          website: data.website || undefined,
+          preferences: {
+            ...userProfile?.preferences,
+            username: data.username,
+            social_links: {
+              x: data.social_x || undefined,
+              linkedin: data.social_linkedin || undefined,
+              instagram: data.social_instagram || undefined,
+              github: data.social_github || undefined,
+            },
+          },
+        }),
+      });
+      if (response.ok) await fetchUserProfile();
+    } catch (error) {
+      console.error('Error saving profile:', error);
+    }
+  };
+
   const handleLocationChange = (value: string) => {
     setEditForm({ ...editForm, location: value });
 
@@ -423,13 +449,13 @@ export default function ProfileBubble() {
           {/* Desktop Dropdown */}
           <div
             id="profile-dropdown"
-            className="hidden md:block absolute right-0 mt-2 w-80 glass-card apple-border rounded-3xl shadow-2xl z-50 animate-in fade-in-0 zoom-in-95 duration-200 overflow-hidden"
+            className="hidden md:block absolute right-0 mt-2 w-80 bg-[#121212] border border-[#333333] rounded-lg shadow-2xl z-50 animate-in fade-in-0 zoom-in-95 duration-200"
             role="menu"
             aria-label="Profile menu"
             aria-labelledby="profile-button"
           >
             {/* User Info Section */}
-            <div className="p-6 border-b border-white/5 bg-white/[0.02]">
+            <div className="p-4 border-b border-[#333333]">
               <div className="flex items-center gap-3">
                 <div className="relative">
                   <div className="w-12 h-12 rounded-full bg-[#1A1A1A] border border-[#444444] flex items-center justify-center text-white font-semibold text-base">
@@ -482,13 +508,13 @@ export default function ProfileBubble() {
                           user={{ name: user.name || undefined, email: user.email || undefined }}
                           profile={userProfile ? {
                             avatar_url: userProfile.avatar_url || undefined,
+                            username: (userProfile as { username?: string })?.username || undefined,
                             bio: userProfile.bio || undefined,
                             location: userProfile.location || undefined,
-                            website: userProfile.website || undefined
+                            website: userProfile.website || undefined,
+                            preferences: userProfile.preferences
                           } : undefined}
-                          onSave={async (data) => {
-                            await handleSaveProfile();
-                          }}
+                          onSave={saveProfileFromDialog}
                         />
                       </button>
                     </div>
@@ -524,36 +550,36 @@ export default function ProfileBubble() {
                 <div className="space-y-1">
                   <button
                     onClick={() => updateUserStatus('online')}
-                    className={`w-full flex items-center gap-3 px-4 py-3 text-left rounded-2xl transition-all ${userStatus === 'online'
-                      ? 'bg-green-500/10 text-green-400 border border-green-500/20'
-                      : 'text-neutral-400 hover:text-white hover:bg-white/5'
+                    className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${userStatus === 'online'
+                      ? 'bg-green-500/20 text-green-400'
+                      : 'text-white hover:bg-[#2A2A2A]'
                       }`}
                     role="menuitem"
                   >
-                    <div className="w-2.5 h-2.5 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.5)]"></div>
-                    <span className="text-xs font-bold uppercase tracking-wider">Online</span>
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    Online
                   </button>
                   <button
                     onClick={() => updateUserStatus('away')}
-                    className={`w-full flex items-center gap-3 px-4 py-3 text-left rounded-2xl transition-all ${userStatus === 'away'
-                      ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
-                      : 'text-neutral-400 hover:text-white hover:bg-white/5'
+                    className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${userStatus === 'away'
+                      ? 'bg-yellow-500/20 text-yellow-400'
+                      : 'text-white hover:bg-[#2A2A2A]'
                       }`}
                     role="menuitem"
                   >
-                    <div className="w-2.5 h-2.5 bg-yellow-500 rounded-full shadow-[0_0_8px_rgba(234,179,8,0.5)]"></div>
-                    <span className="text-xs font-bold uppercase tracking-wider">Away</span>
+                    <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                    Away
                   </button>
                   <button
                     onClick={() => updateUserStatus('offline')}
-                    className={`w-full flex items-center gap-3 px-4 py-3 text-left rounded-2xl transition-all ${userStatus === 'offline'
-                      ? 'bg-neutral-500/10 text-neutral-400 border border-neutral-500/20'
-                      : 'text-neutral-400 hover:text-white hover:bg-white/5'
+                    className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${userStatus === 'offline'
+                      ? 'bg-gray-500/20 text-gray-400'
+                      : 'text-white hover:bg-[#2A2A2A]'
                       }`}
                     role="menuitem"
                   >
-                    <div className="w-2.5 h-2.5 bg-neutral-500 rounded-full"></div>
-                    <span className="text-xs font-bold uppercase tracking-wider">Offline</span>
+                    <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
+                    Offline
                   </button>
                 </div>
               </div>
@@ -564,41 +590,41 @@ export default function ProfileBubble() {
                 <div className="space-y-1">
                   <button
                     onClick={handleProfileClick}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-left text-neutral-400 hover:text-white hover:bg-white/5 rounded-2xl transition-all group"
+                    className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors"
                     role="menuitem"
                   >
-                    <UserCircle className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                    <span className="text-xs font-bold uppercase tracking-wider">View Profile</span>
+                    <UserCircle className="w-4 h-4" />
+                    View Profile
                   </button>
-                  <div className="w-full flex items-center gap-3 px-4 py-3 text-left text-neutral-400 hover:text-white hover:bg-white/5 rounded-2xl transition-all group cursor-pointer">
-                    <EditProfileDialog
-                      trigger={
-                        <div className="flex items-center gap-3 w-full">
-                          <Edit className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                          <span className="text-xs font-bold uppercase tracking-wider">Edit Profile</span>
-                        </div>
-                      }
-                      user={{ name: user.name || undefined, email: user.email || undefined }}
-                      profile={userProfile ? {
-                        avatar_url: userProfile.avatar_url || undefined,
-                        bio: userProfile.bio || undefined,
-                        location: userProfile.location || undefined,
-                        website: userProfile.website || undefined,
-                        username: userProfile.username || undefined,
-                        banner_url: userProfile.banner_url || undefined
-                      } : undefined}
-                      onSave={async (data) => {
-                        await handleSaveProfile();
-                      }}
-                    />
-                  </div>
+                  <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
+                    <Camera className="w-4 h-4" />
+                    Change Avatar
+                  </button>
+                  <EditProfileDialog
+                    trigger={
+                      <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
+                        <Edit className="w-4 h-4" />
+                        Edit Profile
+                      </button>
+                    }
+                    user={{ name: user.name || undefined, email: user.email || undefined }}
+                    profile={userProfile ? {
+                      avatar_url: userProfile.avatar_url || undefined,
+                      username: (userProfile as { username?: string })?.username || undefined,
+                      bio: userProfile.bio || undefined,
+                      location: userProfile.location || undefined,
+                      website: userProfile.website || undefined,
+                      preferences: userProfile.preferences
+                    } : undefined}
+                    onSave={saveProfileFromDialog}
+                  />
                   <button
-                    onClick={() => router.push('/settings')}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-left text-neutral-400 hover:text-white hover:bg-white/5 rounded-2xl transition-all group"
+                    onClick={() => { router.push('/settings'); setIsDropdownOpen(false); }}
+                    className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors"
                     role="menuitem"
                   >
-                    <Settings className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                    <span className="text-xs font-bold uppercase tracking-wider">Settings</span>
+                    <Settings className="w-4 h-4" />
+                    Settings
                   </button>
                 </div>
               </div>
@@ -827,13 +853,13 @@ export default function ProfileBubble() {
                             user={{ name: user.name || undefined, email: user.email || undefined }}
                             profile={userProfile ? {
                               avatar_url: userProfile.avatar_url || undefined,
+                              username: (userProfile as { username?: string })?.username || undefined,
                               bio: userProfile.bio || undefined,
                               location: userProfile.location || undefined,
-                              website: userProfile.website || undefined
+                              website: userProfile.website || undefined,
+                              preferences: userProfile.preferences
                             } : undefined}
-                            onSave={async (data) => {
-                              await handleSaveProfile();
-                            }}
+                            onSave={saveProfileFromDialog}
                           />
                         </button>
                       </div>
@@ -934,22 +960,24 @@ export default function ProfileBubble() {
                 <div>
                   <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Account & Security</h3>
                   <div className="space-y-1">
-                    <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
-                      <EditProfileDialog
-                        trigger={<Edit className="w-4 h-4" />}
-                        user={{ name: user.name || undefined, email: user.email || undefined }}
-                        profile={userProfile ? {
-                          avatar_url: userProfile.avatar_url || undefined,
-                          bio: userProfile.bio || undefined,
-                          location: userProfile.location || undefined,
-                          website: userProfile.website || undefined
-                        } : undefined}
-                        onSave={async (data) => {
-                          await handleSaveProfile();
-                        }}
-                      />
-                      Edit Profile
-                    </button>
+                    <EditProfileDialog
+                      trigger={
+                        <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
+                          <Edit className="w-4 h-4" />
+                          Edit Profile
+                        </button>
+                      }
+                      user={{ name: user.name || undefined, email: user.email || undefined }}
+                      profile={userProfile ? {
+                        avatar_url: userProfile.avatar_url || undefined,
+                        username: (userProfile as { username?: string })?.username || undefined,
+                        bio: userProfile.bio || undefined,
+                        location: userProfile.location || undefined,
+                        website: userProfile.website || undefined,
+                        preferences: userProfile.preferences
+                      } : undefined}
+                      onSave={saveProfileFromDialog}
+                    />
                     <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
                       <Shield className="w-4 h-4" />
                       Two-Factor Auth
