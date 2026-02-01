@@ -168,7 +168,7 @@ export function EditProfileDialog({
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent
         className={cn(
-          "max-w-xl p-0 gap-0 overflow-hidden border-none bg-black text-neutral-200",
+          "max-w-2xl w-full p-0 gap-0 overflow-hidden border-none bg-black text-neutral-200",
           "shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)]",
           "flex flex-col max-h-[90vh]"
         )}
@@ -333,27 +333,30 @@ export function EditProfileDialog({
 
           <div className="space-y-4 pt-4 border-t border-white/5">
             <p className="text-xs text-neutral-500 font-medium tracking-tight">
-              Note: You only need to add your <span className="text-neutral-300 font-bold">username</span>.
+              Social Links <span className="text-neutral-600">(enter usernames only)</span>
             </p>
             <div className="grid grid-cols-2 gap-4">
               {[
-                { key: "social_x", label: "X.com", prefix: SOCIAL_PREFIXES.x, icon: <X className="w-3.5 h-3.5" /> },
-                { key: "social_linkedin", label: "LinkedIn", prefix: SOCIAL_PREFIXES.linkedin, icon: <Linkedin className="w-3.5 h-3.5" /> },
-                { key: "social_instagram", label: "Instagram", prefix: SOCIAL_PREFIXES.instagram, icon: <Instagram className="w-3.5 h-3.5" /> },
-                { key: "social_github", label: "GitHub", prefix: SOCIAL_PREFIXES.github, icon: <Github className="w-3.5 h-3.5" /> },
+                { key: "social_x", label: "X (Twitter)", prefix: "x.com/", icon: <X className="w-4 h-4" /> },
+                { key: "social_linkedin", label: "LinkedIn", prefix: "linkedin.com/in/", icon: <Linkedin className="w-4 h-4" /> },
+                { key: "social_instagram", label: "Instagram", prefix: "instagram.com/", icon: <Instagram className="w-4 h-4" /> },
+                { key: "social_github", label: "GitHub", prefix: "github.com/", icon: <Github className="w-4 h-4" /> },
               ].map(({ key, label, prefix, icon }) => (
-                <div key={key} className="space-y-1.5">
-                  <div className="relative group">
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none">
-                      <span className="text-neutral-400">{icon}</span>
-                      <span className="text-[11px] font-mono text-neutral-600 border-r border-white/10 pr-2">{prefix}</span>
-                    </div>
+                <div key={key} className="space-y-2">
+                  <Label className="text-neutral-400 text-xs flex items-center gap-2">
+                    <span className="text-neutral-500">{icon}</span>
+                    {label}
+                  </Label>
+                  <div className="flex items-center gap-0 rounded-xl overflow-hidden border border-white/10 bg-neutral-950 focus-within:border-white/20">
+                    <span className="text-[11px] font-mono text-neutral-600 bg-neutral-900 px-3 py-3 border-r border-white/10 whitespace-nowrap">
+                      {prefix}
+                    </span>
                     <Input
                       value={form[key as keyof EditProfileFormData] as string}
                       onChange={(e) =>
                         setForm((f) => ({ ...f, [key]: e.target.value }))
                       }
-                      className="bg-neutral-950 border-white/10 h-11 pl-[110px] rounded-xl focus:border-white/20 focus:ring-0 text-neutral-200 text-xs"
+                      className="bg-transparent border-0 h-10 focus:ring-0 text-neutral-200 text-sm flex-1 min-w-0"
                       placeholder="username"
                     />
                   </div>
