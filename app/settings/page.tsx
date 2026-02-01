@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
@@ -30,18 +30,49 @@ import { Button } from "@/components/ui/button";
 import { WebsiteLink } from "@/components/ui/website-link";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { Confetti } from "@/components/ui/confetti";
 
-// Badge Configuration
+// XP Configuration
+const XP_PER_ACTION = {
+  login: 10,
+  email_read: 5,
+  email_sent: 15,
+  chat_message: 8,
+  streak_day: 25,
+  badge_unlock: 100,
+};
+
+// Level Configuration (inspired by gaming tier systems)
+const LEVELS = [
+  { level: 1, name: "Bronze", minXP: 0, color: "from-amber-700 to-amber-900", icon: "🥉" },
+  { level: 2, name: "Silver", minXP: 500, color: "from-gray-300 to-gray-500", icon: "🥈" },
+  { level: 3, name: "Gold", minXP: 1500, color: "from-yellow-400 to-amber-500", icon: "🥇" },
+  { level: 4, name: "Platinum", minXP: 3500, color: "from-cyan-300 to-blue-400", icon: "💠" },
+  { level: 5, name: "Diamond", minXP: 7500, color: "from-purple-400 to-pink-500", icon: "💎" },
+  { level: 6, name: "Mailient Elite", minXP: 15000, color: "from-orange-400 via-pink-500 to-purple-600", icon: "👑" },
+];
+
+// Streak Badge Configuration
 const STREAK_BADGES = [
-  { days: 1, name: "First Steps", emoji: "🌱", rarity: "common", description: "Started your journey" },
-  { days: 3, name: "Getting Started", emoji: "🚀", rarity: "common", description: "3 days of consistency" },
-  { days: 7, name: "Week Warrior", emoji: "🔥", rarity: "uncommon", description: "A full week streak" },
-  { days: 14, name: "Two Week Champion", emoji: "⚡", rarity: "uncommon", description: "Two weeks strong" },
-  { days: 21, name: "Habit Former", emoji: "💪", rarity: "rare", description: "21 days to form a habit" },
-  { days: 30, name: "Monthly Master", emoji: "🏆", rarity: "rare", description: "One month of dedication" },
-  { days: 45, name: "Email Ninja", emoji: "🥷", rarity: "epic", description: "45 days of mastery" },
-  { days: 90, name: "Quarter Legend", emoji: "👑", rarity: "legendary", description: "90 days - A true legend" },
-  { days: 100, name: "Century Club", emoji: "💎", rarity: "mythic", description: "100 days - Ultimate achievement" },
+  { days: 1, name: "First Steps", emoji: "🌱", rarity: "common", description: "Started your journey", sound: "pop" },
+  { days: 3, name: "Getting Started", emoji: "🚀", rarity: "common", description: "3 days of consistency", sound: "pop" },
+  { days: 7, name: "Week Warrior", emoji: "🔥", rarity: "uncommon", description: "A full week streak", sound: "levelup" },
+  { days: 14, name: "Two Week Champion", emoji: "⚡", rarity: "uncommon", description: "Two weeks strong", sound: "levelup" },
+  { days: 21, name: "Habit Former", emoji: "💪", rarity: "rare", description: "21 days to form a habit", sound: "achievement" },
+  { days: 30, name: "Monthly Master", emoji: "🏆", rarity: "rare", description: "One month of dedication", sound: "achievement" },
+  { days: 45, name: "Email Ninja", emoji: "🥷", rarity: "epic", description: "45 days of mastery", sound: "epic" },
+  { days: 90, name: "Quarter Legend", emoji: "👑", rarity: "legendary", description: "90 days - A true legend", sound: "legendary" },
+  { days: 100, name: "Century Club", emoji: "💎", rarity: "mythic", description: "100 days - Ultimate achievement", sound: "mythic" },
+];
+
+// Special Event Badges
+const SPECIAL_BADGES = [
+  { id: "early_adopter", name: "Early Adopter", emoji: "🌟", rarity: "rare", description: "Joined during beta", condition: "signup_before_2026-06-01" },
+  { id: "weekend_warrior", name: "Weekend Warrior", emoji: "🎮", rarity: "uncommon", description: "Active on weekends", condition: "weekend_activity" },
+  { id: "night_owl", name: "Night Owl", emoji: "🦉", rarity: "uncommon", description: "Active after midnight", condition: "night_activity" },
+  { id: "early_bird", name: "Early Bird", emoji: "🐦", rarity: "uncommon", description: "Active before 6 AM", condition: "morning_activity" },
+  { id: "inbox_zero", name: "Inbox Zero Hero", emoji: "✨", rarity: "epic", description: "Cleared all emails", condition: "inbox_zero" },
+  { id: "power_user", name: "Power User", emoji: "⚡", rarity: "legendary", description: "Used 5+ features daily", condition: "power_usage" },
 ];
 
 const RARITY_COLORS: Record<string, { bg: string; border: string; glow: string; text: string }> = {
@@ -53,10 +84,97 @@ const RARITY_COLORS: Record<string, { bg: string; border: string; glow: string; 
   mythic: { bg: "bg-gradient-to-br from-pink-950/50 to-cyan-950/50", border: "border-pink-500/50", glow: "shadow-[0_0_30px_-5px_rgba(236,72,153,0.7)]", text: "text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-cyan-400" },
 };
 
+// Sound effects for badge unlocks
+const playBadgeSound = (soundType: string) => {
+  if (typeof window === "undefined") return;
+
+  const sounds: Record<string, string> = {
+    pop: "data:audio/wav;base64,UklGRl9vT19teleW...", // placeholder
+    levelup: "/sounds/levelup.mp3",
+    achievement: "/sounds/achievement.mp3",
+    epic: "/sounds/epic.mp3",
+    legendary: "/sounds/legendary.mp3",
+    mythic: "/sounds/mythic.mp3",
+  };
+
+  try {
+    // Use Web Audio API for sound
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    // Different frequencies for different rarities
+    const frequencies: Record<string, number[]> = {
+      pop: [440, 550],
+      levelup: [440, 550, 660],
+      achievement: [440, 550, 660, 880],
+      epic: [440, 550, 660, 880, 1100],
+      legendary: [523, 659, 784, 1047],
+      mythic: [523, 659, 784, 1047, 1319],
+    };
+
+    const freqs = frequencies[soundType] || frequencies.pop;
+    let time = audioContext.currentTime;
+
+    freqs.forEach((freq, i) => {
+      const osc = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      osc.connect(gain);
+      gain.connect(audioContext.destination);
+      osc.frequency.value = freq;
+      osc.type = "sine";
+      gain.gain.setValueAtTime(0.1, time + i * 0.1);
+      gain.gain.exponentialRampToValueAtTime(0.01, time + i * 0.1 + 0.3);
+      osc.start(time + i * 0.1);
+      osc.stop(time + i * 0.1 + 0.3);
+    });
+  } catch (e) {
+    // Audio not supported or blocked
+  }
+};
+
+// Get user's current level based on XP
+const getUserLevel = (xp: number) => {
+  let currentLevel = LEVELS[0];
+  for (const level of LEVELS) {
+    if (xp >= level.minXP) {
+      currentLevel = level;
+    }
+  }
+  const nextLevel = LEVELS.find(l => l.minXP > xp);
+  const xpToNext = nextLevel ? nextLevel.minXP - xp : 0;
+  const progressPercent = nextLevel
+    ? ((xp - currentLevel.minXP) / (nextLevel.minXP - currentLevel.minXP)) * 100
+    : 100;
+
+  return { currentLevel, nextLevel, xpToNext, progressPercent };
+};
+
 /**
- * StreakGrid Component - GitHub-style contribution graph for activity
+ * StreakGrid Component - GitHub-style contribution graph for activity with gamification
  */
-function StreakGrid({ history = [], streak = 0, onRefresh, isRefreshing }: { history?: any[], streak?: number, onRefresh?: () => void, isRefreshing?: boolean }) {
+function StreakGrid({
+  history = [],
+  streak = 0,
+  xp = 0,
+  earnedBadges = [],
+  onRefresh,
+  isRefreshing
+}: {
+  history?: any[],
+  streak?: number,
+  xp?: number,
+  earnedBadges?: string[],
+  onRefresh?: () => void,
+  isRefreshing?: boolean
+}) {
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [newBadge, setNewBadge] = useState<typeof STREAK_BADGES[0] | null>(null);
+  const prevStreakRef = useRef(streak);
+
   const weeks = 40;
   const today = new Date();
   const daysToShow = weeks * 7;
@@ -95,143 +213,246 @@ function StreakGrid({ history = [], streak = 0, onRefresh, isRefreshing }: { his
     ? Math.min(100, ((streak - (lastEarnedBadge?.days || 0)) / (nextBadge.days - (lastEarnedBadge?.days || 0))) * 100)
     : 100;
 
+  // Get level info
+  const { currentLevel, nextLevel, xpToNext, progressPercent } = getUserLevel(xp);
+
+  // Check for new badge unlock
+  useEffect(() => {
+    if (streak > prevStreakRef.current) {
+      const unlockedBadge = STREAK_BADGES.find(b => b.days === streak);
+      if (unlockedBadge) {
+        setNewBadge(unlockedBadge);
+        setShowConfetti(true);
+        playBadgeSound(unlockedBadge.sound);
+        toast.success(
+          <div className="flex items-center gap-3">
+            <span className="text-2xl animate-badge-unlock">{unlockedBadge.emoji}</span>
+            <div>
+              <p className="font-bold">Badge Unlocked!</p>
+              <p className="text-sm opacity-80">{unlockedBadge.name}</p>
+            </div>
+          </div>,
+          { duration: 5000 }
+        );
+        setTimeout(() => {
+          setShowConfetti(false);
+          setNewBadge(null);
+        }, 3000);
+      }
+    }
+    prevStreakRef.current = streak;
+  }, [streak]);
+
   return (
-    <div className="glass-panel p-6 rounded-2xl space-y-6 border border-white/5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-500 shadow-[0_0_20px_-10px_rgba(249,115,22,0.5)]">
-            <Zap className="w-6 h-6 fill-current" />
-          </div>
-          <div>
-            <h3 className="text-xl font-medium text-neutral-200">
-              {streak}-day streak, {streakMessage}
-            </h3>
-            <p className="text-sm text-neutral-500">Consistent usage keeps your inbox optimized</p>
-          </div>
-        </div>
-        {onRefresh && (
-          <button
-            onClick={onRefresh}
-            disabled={isRefreshing}
-            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-orange-400 transition-all disabled:opacity-50"
-            title="Refresh streak data"
-          >
-            <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
-          </button>
-        )}
-      </div>
+    <>
+      <Confetti trigger={showConfetti} />
 
-      {/* Progress to next badge */}
-      {nextBadge && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-neutral-500">
-              {lastEarnedBadge ? `${lastEarnedBadge.emoji} ${lastEarnedBadge.name}` : "Start"}
-            </span>
-            <span className="text-neutral-400 font-medium">
-              {nextBadge.days - streak} days to {nextBadge.emoji} {nextBadge.name}
-            </span>
-          </div>
-          <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-orange-600 to-orange-400 rounded-full transition-all duration-500"
-              style={{ width: `${progressToNext}%` }}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Badges Section */}
-      <div className="space-y-3">
-        <h4 className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Streak Badges</h4>
-        <div className="flex flex-wrap gap-3">
-          {STREAK_BADGES.map((badge) => {
-            const isEarned = streak >= badge.days;
-            const colors = RARITY_COLORS[badge.rarity];
-
-            return (
-              <div
-                key={badge.days}
-                className={cn(
-                  "group relative flex items-center gap-2 px-3 py-2 rounded-xl border transition-all duration-300",
-                  isEarned
-                    ? `${colors.bg} ${colors.border} ${colors.glow}`
-                    : "bg-neutral-900/50 border-neutral-800/50 opacity-40 grayscale"
-                )}
-                title={isEarned ? `${badge.name} - ${badge.description}` : `Unlock at ${badge.days} days`}
-              >
-                <span className={cn("text-xl", !isEarned && "opacity-30")}>{badge.emoji}</span>
-                <div className="hidden sm:block">
-                  <p className={cn("text-xs font-medium", isEarned ? colors.text : "text-neutral-600")}>
-                    {badge.name}
-                  </p>
-                  <p className="text-[10px] text-neutral-600">{badge.days}d</p>
-                </div>
-
-                {/* Tooltip on hover */}
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
-                  <p className="text-xs font-medium text-neutral-200">{badge.name}</p>
-                  <p className="text-[10px] text-neutral-500">{badge.description}</p>
-                  {!isEarned && (
-                    <p className="text-[10px] text-orange-400 mt-1">🔒 {badge.days - streak} more days</p>
-                  )}
-                </div>
+      <div className="glass-panel p-6 rounded-2xl space-y-6 border border-white/5">
+        {/* Header with Level */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <div className={cn(
+                "w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-bold bg-gradient-to-br",
+                currentLevel.color,
+                "shadow-lg"
+              )}>
+                {currentLevel.icon}
               </div>
-            );
-          })}
+              <div className="absolute -bottom-1 -right-1 px-1.5 py-0.5 bg-neutral-900 rounded text-[10px] font-bold text-neutral-300 border border-neutral-700">
+                Lv.{currentLevel.level}
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-xl font-medium text-neutral-200">
+                  {streak}-day streak, {streakMessage}
+                </h3>
+              </div>
+              <p className="text-sm text-neutral-500">{currentLevel.name} • {xp.toLocaleString()} XP</p>
+            </div>
+          </div>
+          {onRefresh && (
+            <button
+              onClick={onRefresh}
+              disabled={isRefreshing}
+              className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-orange-400 transition-all disabled:opacity-50"
+              title="Refresh streak data"
+            >
+              <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
+            </button>
+          )}
         </div>
-      </div>
 
-      {/* Activity Grid */}
-      <div className="flex gap-3">
-        <div className="flex flex-col justify-between py-1 text-[10px] text-neutral-600 font-medium h-[100px] select-none">
-          <span>Sun</span>
-          <span>Tue</span>
-          <span>Thu</span>
-          <span>Sat</span>
-        </div>
-
-        <div className="flex-1 overflow-x-auto custom-scrollbar pb-2">
-          <div
-            className="grid grid-flow-col grid-rows-7 gap-1.5 h-[100px] min-w-max"
-            style={{ gridTemplateColumns: `repeat(${weeks}, 1fr)` }}
-          >
-            {grid.map((d) => (
+        {/* XP Progress Bar */}
+        {nextLevel && (
+          <div className="space-y-1">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-neutral-500">{currentLevel.icon} {currentLevel.name}</span>
+              <span className="text-neutral-400">{xpToNext.toLocaleString()} XP to {nextLevel.icon} {nextLevel.name}</span>
+            </div>
+            <div className="h-2 bg-white/5 rounded-full overflow-hidden">
               <div
-                key={d.key}
-                className={cn(
-                  "w-3 h-3 rounded-[2px] transition-all duration-300",
-                  getIntensityColor(d.count),
-                  d.isToday && "ring-1 ring-orange-500 ring-offset-1 ring-offset-black"
-                )}
-                title={`${d.key}: ${d.count} activities`}
+                className={cn("h-full rounded-full transition-all duration-1000 bg-gradient-to-r", currentLevel.color)}
+                style={{ width: `${progressPercent}%` }}
               />
-            ))}
+            </div>
+          </div>
+        )}
+
+        {/* Progress to next badge */}
+        {nextBadge && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-neutral-500">
+                {lastEarnedBadge ? `${lastEarnedBadge.emoji} ${lastEarnedBadge.name}` : "Start"}
+              </span>
+              <span className="text-neutral-400 font-medium">
+                {nextBadge.days - streak} days to {nextBadge.emoji} {nextBadge.name}
+              </span>
+            </div>
+            <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-orange-600 to-orange-400 rounded-full transition-all duration-500"
+                style={{ width: `${progressToNext}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Streak Badges Section */}
+        <div className="space-y-3">
+          <h4 className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Streak Badges</h4>
+          <div className="flex flex-wrap gap-3">
+            {STREAK_BADGES.map((badge) => {
+              const isEarned = streak >= badge.days;
+              const colors = RARITY_COLORS[badge.rarity];
+              const isNewlyUnlocked = newBadge?.days === badge.days;
+
+              return (
+                <div
+                  key={badge.days}
+                  className={cn(
+                    "group relative flex items-center gap-2 px-3 py-2 rounded-xl border transition-all duration-300",
+                    isEarned
+                      ? `${colors.bg} ${colors.border} ${colors.glow}`
+                      : "bg-neutral-900/50 border-neutral-800/50 opacity-40 grayscale",
+                    isNewlyUnlocked && "animate-badge-unlock"
+                  )}
+                  title={isEarned ? `${badge.name} - ${badge.description}` : `Unlock at ${badge.days} days`}
+                >
+                  <span className={cn("text-xl", !isEarned && "opacity-30", isNewlyUnlocked && "animate-badge-glow")}>{badge.emoji}</span>
+                  <div className="hidden sm:block">
+                    <p className={cn("text-xs font-medium", isEarned ? colors.text : "text-neutral-600")}>
+                      {badge.name}
+                    </p>
+                    <p className="text-[10px] text-neutral-600">{badge.days}d</p>
+                  </div>
+
+                  {/* Tooltip on hover */}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                    <p className="text-xs font-medium text-neutral-200">{badge.name}</p>
+                    <p className="text-[10px] text-neutral-500">{badge.description}</p>
+                    {!isEarned && (
+                      <p className="text-[10px] text-orange-400 mt-1">🔒 {badge.days - streak} more days</p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Special Event Badges */}
+        <div className="space-y-3">
+          <h4 className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Special Badges</h4>
+          <div className="flex flex-wrap gap-3">
+            {SPECIAL_BADGES.map((badge) => {
+              const isEarned = earnedBadges.includes(badge.id);
+              const colors = RARITY_COLORS[badge.rarity];
+
+              return (
+                <div
+                  key={badge.id}
+                  className={cn(
+                    "group relative flex items-center gap-2 px-3 py-2 rounded-xl border transition-all duration-300",
+                    isEarned
+                      ? `${colors.bg} ${colors.border} ${colors.glow}`
+                      : "bg-neutral-900/50 border-neutral-800/50 opacity-40 grayscale"
+                  )}
+                  title={isEarned ? `${badge.name} - ${badge.description}` : badge.description}
+                >
+                  <span className={cn("text-xl", !isEarned && "opacity-30")}>{badge.emoji}</span>
+                  <div className="hidden sm:block">
+                    <p className={cn("text-xs font-medium", isEarned ? colors.text : "text-neutral-600")}>
+                      {badge.name}
+                    </p>
+                  </div>
+
+                  {/* Tooltip */}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                    <p className="text-xs font-medium text-neutral-200">{badge.name}</p>
+                    <p className="text-[10px] text-neutral-500">{badge.description}</p>
+                    {!isEarned && (
+                      <p className="text-[10px] text-amber-400 mt-1">🔒 Complete challenge to unlock</p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Activity Grid */}
+        <div className="flex gap-3">
+          <div className="flex flex-col justify-between py-1 text-[10px] text-neutral-600 font-medium h-[100px] select-none">
+            <span>Sun</span>
+            <span>Tue</span>
+            <span>Thu</span>
+            <span>Sat</span>
+          </div>
+
+          <div className="flex-1 overflow-x-auto custom-scrollbar pb-2">
+            <div
+              className="grid grid-flow-col grid-rows-7 gap-1.5 h-[100px] min-w-max"
+              style={{ gridTemplateColumns: `repeat(${weeks}, 1fr)` }}
+            >
+              {grid.map((d) => (
+                <div
+                  key={d.key}
+                  className={cn(
+                    "w-3 h-3 rounded-[2px] transition-all duration-300",
+                    getIntensityColor(d.count),
+                    d.isToday && "ring-1 ring-orange-500 ring-offset-1 ring-offset-black"
+                  )}
+                  title={`${d.key}: ${d.count} activities`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Legend */}
+        <div className="flex items-center gap-6 text-[10px] text-neutral-500 uppercase tracking-widest font-bold">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-[2px] bg-white/5 border border-white/5" />
+            <span>Less</span>
+          </div>
+          <div className="flex gap-1 items-center">
+            <div className="w-3 h-3 rounded-[2px] bg-orange-950/40" />
+            <div className="w-3 h-3 rounded-[2px] bg-orange-800/60" />
+            <div className="w-3 h-3 rounded-[2px] bg-orange-600" />
+            <div className="w-3 h-3 rounded-[2px] bg-orange-500" />
+          </div>
+          <div className="flex items-center gap-2">
+            <span>More</span>
+          </div>
+          <div className="ml-auto text-neutral-600">
+            Last 280 days
           </div>
         </div>
       </div>
-
-      {/* Legend */}
-      <div className="flex items-center gap-6 text-[10px] text-neutral-500 uppercase tracking-widest font-bold">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-[2px] bg-white/5 border border-white/5" />
-          <span>Less</span>
-        </div>
-        <div className="flex gap-1 items-center">
-          <div className="w-3 h-3 rounded-[2px] bg-orange-950/40" />
-          <div className="w-3 h-3 rounded-[2px] bg-orange-800/60" />
-          <div className="w-3 h-3 rounded-[2px] bg-orange-600" />
-          <div className="w-3 h-3 rounded-[2px] bg-orange-500" />
-        </div>
-        <div className="flex items-center gap-2">
-          <span>More</span>
-        </div>
-        <div className="ml-auto text-neutral-600">
-          Last 280 days
-        </div>
-      </div>
-    </div>
+    </>
   );
 }
 
@@ -260,6 +481,8 @@ type UserProfile = {
   };
   streak_count?: number;
   activity_history?: Array<{ activity_date: string, count: number }>;
+  xp?: number;
+  earned_badges?: string[];
 };
 
 const SECTIONS = ["profile", "account", "security", "legal"] as const;
@@ -608,6 +831,8 @@ export default function SettingsPage() {
               <StreakGrid
                 streak={profile?.streak_count || 0}
                 history={profile?.activity_history || []}
+                xp={profile?.xp || 0}
+                earnedBadges={profile?.earned_badges || []}
                 onRefresh={handleRefreshStreak}
                 isRefreshing={streakRefreshing}
               />
