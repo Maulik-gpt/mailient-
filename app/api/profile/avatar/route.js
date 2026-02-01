@@ -94,12 +94,38 @@ export async function POST(req) {
     // Generate unique filename - sanitize email for filename
     const sanitizedUserId = userId.replace(/[^a-zA-Z0-9]/g, '_');
     const fileExt = file.name?.split(".").pop()?.toLowerCase() || 'jpg';
-    const fileName = `${imageType}/${sanitizedUserId}-${generateId()}.${fileExt}`;
+    const fileName = `${sanitizedUserId}-${imageType}-${generateId()}.${fileExt}`;
 
     console.log("[Avatar API] Uploading file:", fileName, "size:", fileBuffer.length);
 
-    // Upload to Supabase Storage - using profile-images bucket
+    // Use profile-images bucket - create if doesn't exist
     const bucket = "profile-images";
+
+    // Check if bucket exists, create if not
+    try {
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const bucketExists = buckets?.some(b => b.name === bucket);
+
+      if (!bucketExists) {
+        console.log("[Avatar API] Creating bucket:", bucket);
+        const { error: createError } = await supabase.storage.createBucket(bucket, {
+          public: true,
+          fileSizeLimit: 5 * 1024 * 1024, // 5MB
+          allowedMimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+        });
+
+        if (createError) {
+          console.error("[Avatar API] Failed to create bucket:", createError);
+          // Continue anyway - bucket might exist but we couldn't list it
+        } else {
+          console.log("[Avatar API] Bucket created successfully");
+        }
+      }
+    } catch (bucketError) {
+      console.warn("[Avatar API] Bucket check failed, continuing anyway:", bucketError);
+    }
+
+    // Upload to Supabase Storage
 
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from(bucket)
