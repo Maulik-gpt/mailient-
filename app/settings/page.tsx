@@ -22,8 +22,18 @@ import {
     FileText,
     ExternalLink,
     ChevronRight,
-    Scale
+    Scale,
+    Camera,
+    Twitter,
+    Instagram,
+    Linkedin,
+    Github,
+    Globe,
+    Sparkles,
+    LogOut,
+    Plus
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function SettingsPage() {
     const { data: session } = useSession();
@@ -43,6 +53,16 @@ export default function SettingsPage() {
     const [displayName, setDisplayName] = useState('');
     const [username, setUsername] = useState('');
     const [bio, setBio] = useState('');
+    const [location, setLocation] = useState('');
+    const [website, setWebsite] = useState('');
+    const [avatarUrl, setAvatarUrl] = useState('');
+    const [bannerUrl, setBannerUrl] = useState('');
+    const [socialLinks, setSocialLinks] = useState({
+        twitter: '',
+        instagram: '',
+        linkedin: '',
+        github: ''
+    });
 
     useEffect(() => {
         document.title = 'Settings / Mailient';
@@ -59,6 +79,16 @@ export default function SettingsPage() {
                 setDisplayName(data.name || session?.user?.name || '');
                 setUsername(data.username || '');
                 setBio(data.bio || '');
+                setLocation(data.location || '');
+                setWebsite(data.website || '');
+                setAvatarUrl(data.avatar_url || session?.user?.image || '');
+                setBannerUrl(data.banner_url || '');
+                setSocialLinks({
+                    twitter: data.preferences?.social_links?.twitter || '',
+                    instagram: data.preferences?.social_links?.instagram || '',
+                    linkedin: data.preferences?.social_links?.linkedin || '',
+                    github: data.preferences?.social_links?.github || ''
+                });
             }
         } catch (error) {
             console.error("Error fetching profile:", error);
@@ -77,7 +107,14 @@ export default function SettingsPage() {
                     name: displayName,
                     username: username,
                     bio: bio,
-                    preferences: profile?.preferences || {}
+                    location: location,
+                    website: website,
+                    avatar_url: avatarUrl,
+                    banner_url: bannerUrl,
+                    preferences: {
+                        ...(profile?.preferences || {}),
+                        social_links: socialLinks
+                    }
                 })
             });
 
@@ -223,61 +260,213 @@ export default function SettingsPage() {
         switch (activeTab) {
             case 'profile':
                 return (
-                    <div className="space-y-6 animate-in fade-in duration-300">
-                        <div className="space-y-2">
-                            <label className="text-sm text-neutral-400 font-medium">Display Name</label>
-                            <input
-                                type="text"
-                                value={displayName}
-                                onChange={(e) => setDisplayName(e.target.value)}
-                                className="w-full bg-[#0a0a0a] border border-neutral-800 rounded-xl px-4 py-3 text-[#fafafa] focus:outline-none focus:border-neutral-600 transition-all placeholder:text-neutral-700"
-                                placeholder="How you appear to others"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-sm text-neutral-400 font-medium">Email Address</label>
-                            <div className="flex items-center gap-3 w-full bg-[#0a0a0a] border border-neutral-800/50 rounded-xl px-4 py-3 text-neutral-500 cursor-not-allowed">
-                                <Mail className="w-4 h-4" />
-                                <span>{session?.user?.email}</span>
-                                <div className="ml-auto flex items-center gap-1.5 px-2 py-0.5 bg-green-500/10 text-green-500 rounded-full text-[10px] uppercase font-bold tracking-wider border border-green-500/20">
-                                    <CheckCircle2 className="w-3 h-3" />
-                                    Verified
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="space-y-8"
+                    >
+                        {/* Profile Header View Redesigned */}
+                        <div className="relative rounded-[32px] overflow-hidden bg-white/[0.02] border border-white/5 group shadow-2xl">
+                            {/* Banner Section */}
+                            <div className="h-48 relative overflow-hidden bg-neutral-900">
+                                {bannerUrl ? (
+                                    <img src={bannerUrl} alt="Banner" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                                ) : (
+                                    <div className="w-full h-full bg-gradient-to-br from-neutral-800 to-neutral-950 flex items-center justify-center">
+                                        <div className="text-white/5 text-9xl font-bold tracking-tighter italic select-none">MAILIENT</div>
+                                    </div>
+                                )}
+                                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors" />
+                                <button
+                                    onClick={() => {
+                                        const url = prompt("Enter Banner Image URL (recommended 1500x500):", bannerUrl);
+                                        if (url !== null) setBannerUrl(url);
+                                    }}
+                                    className="absolute top-4 right-4 p-2.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-white opacity-0 group-hover:opacity-100 transition-all hover:scale-110 active:scale-95 shadow-xl"
+                                >
+                                    <Camera className="w-4 h-4" />
+                                </button>
+                            </div>
+
+                            {/* Info Section beneath Banner */}
+                            <div className="px-8 pb-8 pt-16 relative">
+                                {/* Avatar - Overlapping */}
+                                <div className="absolute -top-16 left-8">
+                                    <div className="relative group/avatar">
+                                        <div className="w-32 h-32 rounded-full border-4 border-black bg-neutral-900 overflow-hidden shadow-2xl ring-1 ring-white/10">
+                                            {avatarUrl ? (
+                                                <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-3xl font-light text-white/20">
+                                                    {displayName?.[0] || session?.user?.name?.[0] || 'U'}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                const url = prompt("Enter Avatar Image URL (400x400):", avatarUrl);
+                                                if (url !== null) setAvatarUrl(url);
+                                            }}
+                                            className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 backdrop-blur-sm opacity-0 group-hover/avatar:opacity-100 transition-opacity"
+                                        >
+                                            <Camera className="w-6 h-6 text-white" />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col gap-6">
+                                    {/* Name and Basic Info */}
+                                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                                        <div className="space-y-1">
+                                            <div className="flex items-center gap-2">
+                                                <h2 className="text-3xl font-bold tracking-tight text-white">{displayName || 'User Name'}</h2>
+                                                <Sparkles className="w-5 h-5 text-amber-400" />
+                                            </div>
+                                            <p className="text-white/40 font-medium">@{username || 'handle'}</p>
+                                        </div>
+                                        <button
+                                            onClick={() => handleSave()}
+                                            disabled={saving}
+                                            className="px-6 py-2.5 rounded-full bg-white text-black font-semibold text-sm hover:bg-neutral-200 transition-all active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.1)] flex items-center gap-2"
+                                        >
+                                            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                                            {saveSuccess ? 'Saved' : 'Save Changes'}
+                                        </button>
+                                    </div>
+
+                                    {/* Inputs Grid */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                                        {/* Basic Fields */}
+                                        <div className="space-y-6">
+                                            <div className="space-y-2">
+                                                <label className="text-[11px] uppercase tracking-[0.2em] font-bold text-white/30 ml-1">Display Name</label>
+                                                <input
+                                                    type="text"
+                                                    value={displayName}
+                                                    onChange={(e) => setDisplayName(e.target.value)}
+                                                    className="w-full bg-white/[0.03] border border-white/5 rounded-2xl px-5 py-3.5 text-white focus:outline-none focus:border-white/20 focus:bg-white/[0.05] transition-all placeholder:text-white/10"
+                                                    placeholder="Maulik"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[11px] uppercase tracking-[0.2em] font-bold text-white/30 ml-1">Username</label>
+                                                <div className="relative">
+                                                    <span className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20">@</span>
+                                                    <input
+                                                        type="text"
+                                                        value={username}
+                                                        onChange={(e) => setUsername(e.target.value)}
+                                                        className="w-full bg-white/[0.03] border border-white/5 rounded-2xl pl-10 pr-5 py-3.5 text-white focus:outline-none focus:border-white/20 focus:bg-white/[0.05] transition-all placeholder:text-white/10"
+                                                        placeholder="maulik_05"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[11px] uppercase tracking-[0.2em] font-bold text-white/30 ml-1">Bio</label>
+                                                <div className="relative">
+                                                    <textarea
+                                                        value={bio}
+                                                        onChange={(e) => setBio(e.target.value.slice(0, 180))}
+                                                        className="w-full bg-white/[0.03] border border-white/5 rounded-2xl px-5 py-3.5 text-white focus:outline-none focus:border-white/20 focus:bg-white/[0.05] transition-all placeholder:text-white/10 min-h-[120px] resize-none"
+                                                        placeholder="14 yo | Built Mailient | Premium AI Enthusiast"
+                                                    />
+                                                    <span className="absolute bottom-3 right-4 text-[10px] font-mono text-white/20">
+                                                        {bio.length}/180
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Extended Fields & Socials */}
+                                        <div className="space-y-6">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <label className="text-[11px] uppercase tracking-[0.2em] font-bold text-white/30 ml-1">Location</label>
+                                                    <input
+                                                        type="text"
+                                                        value={location}
+                                                        onChange={(e) => setLocation(e.target.value)}
+                                                        className="w-full bg-white/[0.03] border border-white/5 rounded-2xl px-5 py-3.5 text-white focus:outline-none focus:border-white/20 focus:bg-white/[0.05] transition-all placeholder:text-white/10 text-sm"
+                                                        placeholder="India"
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-[11px] uppercase tracking-[0.2em] font-bold text-white/30 ml-1">Website</label>
+                                                    <input
+                                                        type="text"
+                                                        value={website}
+                                                        onChange={(e) => setWebsite(e.target.value)}
+                                                        className="w-full bg-white/[0.03] border border-white/5 rounded-2xl px-5 py-3.5 text-white focus:outline-none focus:border-white/20 focus:bg-white/[0.05] transition-all placeholder:text-white/10 text-sm"
+                                                        placeholder="mailient.xyz"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {/* Social Links Section */}
+                                            <div className="pt-4 border-t border-white/5">
+                                                <label className="text-[11px] uppercase tracking-[0.2em] font-bold text-white/30 ml-1 block mb-4">Connected Presence</label>
+                                                <div className="grid grid-cols-1 gap-4">
+                                                    <div className="relative group/input">
+                                                        <Twitter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 group-focus-within/input:text-sky-400 transition-colors" />
+                                                        <input
+                                                            type="text"
+                                                            value={socialLinks.twitter}
+                                                            onChange={(e) => setSocialLinks(prev => ({ ...prev, twitter: e.target.value }))}
+                                                            className="w-full bg-white/[0.02] border border-white/5 rounded-xl pl-11 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-white/20 transition-all placeholder:text-white/10"
+                                                            placeholder="x.com/username"
+                                                        />
+                                                    </div>
+                                                    <div className="relative group/input">
+                                                        <Instagram className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 group-focus-within/input:text-rose-400 transition-colors" />
+                                                        <input
+                                                            type="text"
+                                                            value={socialLinks.instagram}
+                                                            onChange={(e) => setSocialLinks(prev => ({ ...prev, instagram: e.target.value }))}
+                                                            className="w-full bg-white/[0.02] border border-white/5 rounded-xl pl-11 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-white/20 transition-all placeholder:text-white/10"
+                                                            placeholder="instagram.com/username"
+                                                        />
+                                                    </div>
+                                                    <div className="relative group/input">
+                                                        <Linkedin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 group-focus-within/input:text-blue-400 transition-colors" />
+                                                        <input
+                                                            type="text"
+                                                            value={socialLinks.linkedin}
+                                                            onChange={(e) => setSocialLinks(prev => ({ ...prev, linkedin: e.target.value }))}
+                                                            className="w-full bg-white/[0.02] border border-white/5 rounded-xl pl-11 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-white/20 transition-all placeholder:text-white/10"
+                                                            placeholder="linkedin.com/in/username"
+                                                        />
+                                                    </div>
+                                                    <div className="relative group/input">
+                                                        <Github className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 group-focus-within/input:text-white transition-colors" />
+                                                        <input
+                                                            type="text"
+                                                            value={socialLinks.github}
+                                                            onChange={(e) => setSocialLinks(prev => ({ ...prev, github: e.target.value }))}
+                                                            className="w-full bg-white/[0.02] border border-white/5 rounded-xl pl-11 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-white/20 transition-all placeholder:text-white/10"
+                                                            placeholder="github.com/username"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-sm text-neutral-400 font-medium">Username</label>
-                            <div className="relative">
-                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-600">@</span>
-                                <input
-                                    type="text"
-                                    value={username}
-                                    onChange={(e) => setUsername(e.target.value)}
-                                    className="w-full bg-[#0a0a0a] border border-neutral-800 rounded-xl px-9 py-3 text-[#fafafa] focus:outline-none focus:border-neutral-600 transition-all placeholder:text-neutral-700"
-                                    placeholder="yourhandle"
-                                />
+
+                        {/* Note about username */}
+                        <div className="flex items-start gap-4 p-6 rounded-3xl bg-blue-500/[0.03] border border-blue-500/10">
+                            <AlertCircle className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+                            <div className="space-y-1">
+                                <p className="text-sm text-blue-100 font-medium">Username Availability</p>
+                                <p className="text-xs text-blue-200/50 leading-relaxed">
+                                    Your username is how you're identified across Mailient Signals.
+                                    Changing it will update your profile URL and might temporarily affect link visibility.
+                                </p>
                             </div>
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-sm text-neutral-400 font-medium">Bio</label>
-                            <textarea
-                                value={bio}
-                                onChange={(e) => setBio(e.target.value)}
-                                className="w-full bg-[#0a0a0a] border border-neutral-800 rounded-xl px-4 py-3 text-[#fafafa] focus:outline-none focus:border-neutral-600 transition-all placeholder:text-neutral-700 min-h-[100px] resize-none"
-                                placeholder="Tell us about yourself..."
-                            />
-                        </div>
-                        <div className="pt-4">
-                            <button
-                                onClick={() => handleSave()}
-                                disabled={saving}
-                                className="flex items-center justify-center gap-2 bg-[#fafafa] text-black px-8 py-3 rounded-xl font-semibold hover:bg-neutral-200 transition-all disabled:opacity-50"
-                            >
-                                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                                {saveSuccess ? 'Changes Saved!' : 'Save Changes'}
-                            </button>
-                        </div>
-                    </div>
+                    </motion.div>
                 );
             case 'account':
                 return (
@@ -534,47 +723,71 @@ export default function SettingsPage() {
     };
 
     return (
-        <div className="min-h-screen bg-[#0a0a0a] dark:bg-[#0a0a0a] flex" style={{ fontFamily: "'Satoshi', sans-serif" }}>
+        <div className="min-h-screen bg-[#050505] text-[#fafafa] flex overflow-hidden selection:bg-white selection:text-black" style={{ fontFamily: "'Satoshi', sans-serif" }}>
+            {/* Background Decorative Elements */}
+            <div className="fixed inset-0 pointer-events-none">
+                <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-500/5 blur-[120px] rounded-full animate-pulse" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-500/5 blur-[120px] rounded-full animate-pulse" style={{ animationDelay: '1s' }} />
+            </div>
+
             <HomeFeedSidebar />
-            <div className="flex-1 ml-16">
-                <div className="max-w-4xl mx-auto px-8 py-16">
-                    <div className="flex items-end justify-between mb-12">
-                        <div className="space-y-1">
-                            <h1 className="text-[#fafafa] dark:text-[#fafafa] text-4xl font-bold tracking-tight">Settings</h1>
-                            <p className="text-neutral-500 dark:text-neutral-500 capitalize">{activeTab} preferences & configuration</p>
+            <div className="flex-1 ml-16 relative overflow-y-auto custom-scrollbar">
+                <div className="max-w-5xl mx-auto px-8 py-20 relative z-10">
+                    <div className="flex items-end justify-between mb-16 px-2">
+                        <div className="space-y-2">
+                            <h1 className="text-5xl font-black tracking-tighter text-white">Settings</h1>
+                            <p className="text-white/30 font-medium flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                                Manage your premium identity & preferences
+                            </p>
                         </div>
-                        {saveSuccess && (
-                            <div className="flex items-center gap-2 text-green-500 text-sm font-medium animate-in slide-in-from-right-2">
-                                <CheckCircle2 className="w-4 h-4" />
-                                Changes saved successfully
-                            </div>
-                        )}
                     </div>
 
-                    <div className="flex flex-col lg:flex-row gap-12">
-                        {/* Sidebar Navigation */}
-                        <div className="w-full lg:w-64 flex-shrink-0 flex lg:flex-col gap-2 overflow-x-auto lg:overflow-visible pb-4 lg:pb-0 scrollbar-hide">
-                            {tabs.map((tab) => {
-                                const Icon = tab.icon;
-                                return (
+                    <div className="flex flex-col lg:flex-row gap-16">
+                        {/* Sidebar Navigation - Glassmorphism */}
+                        <div className="w-full lg:w-64 flex-shrink-0">
+                            <div className="flex lg:flex-col gap-1.5 p-1.5 rounded-2xl bg-white/[0.02] border border-white/5 backdrop-blur-3xl sticky top-8 overflow-x-auto lg:overflow-visible scrollbar-hide">
+                                {tabs.map((tab) => {
+                                    const Icon = tab.icon;
+                                    const isActive = activeTab === tab.id;
+                                    return (
+                                        <button
+                                            key={tab.id}
+                                            onClick={() => setActiveTab(tab.id)}
+                                            className={`flex items-center gap-3 px-5 py-3 rounded-xl text-sm font-bold transition-all whitespace-nowrap relative group ${isActive
+                                                ? 'text-white'
+                                                : 'text-white/30 hover:text-white/60'
+                                                }`}
+                                        >
+                                            <Icon className={`w-4 h-4 transition-transform ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
+                                            {tab.label}
+                                            {isActive && (
+                                                <motion.div
+                                                    layoutId="activeTab"
+                                                    className="absolute inset-0 bg-white/[0.05] border border-white/10 rounded-xl z-[-1]"
+                                                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                                                />
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                                <div className="mt-4 pt-4 border-t border-white/5 lg:block hidden px-4">
                                     <button
-                                        key={tab.id}
-                                        onClick={() => setActiveTab(tab.id)}
-                                        className={`flex items-center gap-3 px-5 py-3.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap ${activeTab === tab.id
-                                            ? 'bg-[#fafafa] text-black shadow-[0_0_20px_rgba(255,255,255,0.05)] scale-[1.02]'
-                                            : 'text-neutral-500 hover:text-neutral-200 hover:bg-neutral-900/50'
-                                            }`}
+                                        onClick={() => window.location.href = '/api/auth/signout'}
+                                        className="flex items-center gap-3 text-red-400/50 hover:text-red-400 text-xs font-bold transition-colors"
                                     >
-                                        <Icon className="w-4 h-4" />
-                                        {tab.label}
+                                        <LogOut className="w-3.5 h-3.5" />
+                                        Log Out
                                     </button>
-                                );
-                            })}
+                                </div>
+                            </div>
                         </div>
 
                         {/* Content Area */}
                         <div className="flex-1 min-w-0">
-                            {renderContent()}
+                            <AnimatePresence mode="wait">
+                                {renderContent()}
+                            </AnimatePresence>
                         </div>
                     </div>
                 </div>

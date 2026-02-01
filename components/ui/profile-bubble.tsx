@@ -270,10 +270,10 @@ export default function ProfileBubble() {
 
   const initials = user.name
     ? user.name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
     : user.email?.[0]?.toUpperCase() || "U";
 
   const getStatusColor = (status: UserStatus) => {
@@ -298,7 +298,7 @@ export default function ProfileBubble() {
   };
 
   const handleProfileClick = () => {
-    router.push("/profile-bubble");
+    router.push("/i/profile");
     setIsDropdownOpen(false);
   };
 
@@ -522,11 +522,10 @@ export default function ProfileBubble() {
                 <div className="space-y-1">
                   <button
                     onClick={() => updateUserStatus('online')}
-                    className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${
-                      userStatus === 'online'
+                    className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${userStatus === 'online'
                         ? 'bg-green-500/20 text-green-400'
                         : 'text-white hover:bg-[#2A2A2A]'
-                    }`}
+                      }`}
                     role="menuitem"
                   >
                     <div className="w-3 h-3 bg-green-500 rounded-full"></div>
@@ -534,11 +533,10 @@ export default function ProfileBubble() {
                   </button>
                   <button
                     onClick={() => updateUserStatus('away')}
-                    className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${
-                      userStatus === 'away'
+                    className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${userStatus === 'away'
                         ? 'bg-yellow-500/20 text-yellow-400'
                         : 'text-white hover:bg-[#2A2A2A]'
-                    }`}
+                      }`}
                     role="menuitem"
                   >
                     <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
@@ -546,11 +544,10 @@ export default function ProfileBubble() {
                   </button>
                   <button
                     onClick={() => updateUserStatus('offline')}
-                    className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${
-                      userStatus === 'offline'
+                    className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${userStatus === 'offline'
                         ? 'bg-gray-500/20 text-gray-400'
                         : 'text-white hover:bg-[#2A2A2A]'
-                    }`}
+                      }`}
                     role="menuitem"
                   >
                     <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
@@ -591,7 +588,14 @@ export default function ProfileBubble() {
                     />
                     Edit Profile
                   </button>
-                  <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
+                  <button
+                    onClick={() => {
+                      router.push("/settings");
+                      setIsDropdownOpen(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors"
+                    role="menuitem"
+                  >
                     <Settings className="w-4 h-4" />
                     Settings
                   </button>
@@ -683,11 +687,10 @@ export default function ProfileBubble() {
                 <div className="space-y-1">
                   <button
                     onClick={() => handleThemeChange('dark')}
-                    className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${
-                      theme === 'dark'
+                    className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${theme === 'dark'
                         ? 'bg-[#2A2A2A] text-white'
                         : 'text-white hover:bg-[#2A2A2A]'
-                    }`}
+                      }`}
                     role="menuitem"
                   >
                     <Moon className="w-4 h-4" />
@@ -695,11 +698,10 @@ export default function ProfileBubble() {
                   </button>
                   <button
                     onClick={() => handleThemeChange('light')}
-                    className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${
-                      theme === 'light'
+                    className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${theme === 'light'
                         ? 'bg-[#2A2A2A] text-white'
                         : 'text-white hover:bg-[#2A2A2A]'
-                    }`}
+                      }`}
                     role="menuitem"
                   >
                     <Sun className="w-4 h-4" />
@@ -707,11 +709,10 @@ export default function ProfileBubble() {
                   </button>
                   <button
                     onClick={() => handleThemeChange('system')}
-                    className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${
-                      theme === 'system'
+                    className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${theme === 'system'
                         ? 'bg-[#2A2A2A] text-white'
                         : 'text-white hover:bg-[#2A2A2A]'
-                    }`}
+                      }`}
                     role="menuitem"
                   >
                     <Monitor className="w-4 h-4" />
@@ -867,11 +868,10 @@ export default function ProfileBubble() {
                   <div className="grid grid-cols-3 gap-2">
                     <button
                       onClick={() => updateUserStatus('online')}
-                      className={`flex flex-col items-center gap-2 p-3 rounded-md transition-colors ${
-                        userStatus === 'online'
+                      className={`flex flex-col items-center gap-2 p-3 rounded-md transition-colors ${userStatus === 'online'
                           ? 'bg-green-500/20 text-green-400'
                           : 'text-white hover:bg-[#2A2A2A]'
-                      }`}
+                        }`}
                       role="menuitem"
                     >
                       <div className="w-3 h-3 bg-green-500 rounded-full"></div>
@@ -879,11 +879,10 @@ export default function ProfileBubble() {
                     </button>
                     <button
                       onClick={() => updateUserStatus('away')}
-                      className={`flex flex-col items-center gap-2 p-3 rounded-md transition-colors ${
-                        userStatus === 'away'
+                      className={`flex flex-col items-center gap-2 p-3 rounded-md transition-colors ${userStatus === 'away'
                           ? 'bg-yellow-500/20 text-yellow-400'
                           : 'text-white hover:bg-[#2A2A2A]'
-                      }`}
+                        }`}
                       role="menuitem"
                     >
                       <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
@@ -891,11 +890,10 @@ export default function ProfileBubble() {
                     </button>
                     <button
                       onClick={() => updateUserStatus('offline')}
-                      className={`flex flex-col items-center gap-2 p-3 rounded-md transition-colors ${
-                        userStatus === 'offline'
+                      className={`flex flex-col items-center gap-2 p-3 rounded-md transition-colors ${userStatus === 'offline'
                           ? 'bg-gray-500/20 text-gray-400'
                           : 'text-white hover:bg-[#2A2A2A]'
-                      }`}
+                        }`}
                       role="menuitem"
                     >
                       <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
@@ -903,7 +901,7 @@ export default function ProfileBubble() {
                     </button>
                   </div>
                 </div>
-  
+
                 {/* Quick Actions */}
                 <div>
                   <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Quick Actions</h3>
@@ -968,11 +966,10 @@ export default function ProfileBubble() {
                   <div className="grid grid-cols-3 gap-2">
                     <button
                       onClick={() => handleThemeChange('dark')}
-                      className={`flex flex-col items-center gap-2 p-3 rounded-md transition-colors ${
-                        theme === 'dark'
+                      className={`flex flex-col items-center gap-2 p-3 rounded-md transition-colors ${theme === 'dark'
                           ? 'bg-[#2A2A2A] text-white'
                           : 'text-white hover:bg-[#2A2A2A]'
-                      }`}
+                        }`}
                       role="menuitem"
                     >
                       <Moon className="w-5 h-5" />
@@ -980,11 +977,10 @@ export default function ProfileBubble() {
                     </button>
                     <button
                       onClick={() => handleThemeChange('light')}
-                      className={`flex flex-col items-center gap-2 p-3 rounded-md transition-colors ${
-                        theme === 'light'
+                      className={`flex flex-col items-center gap-2 p-3 rounded-md transition-colors ${theme === 'light'
                           ? 'bg-[#2A2A2A] text-white'
                           : 'text-white hover:bg-[#2A2A2A]'
-                      }`}
+                        }`}
                       role="menuitem"
                     >
                       <Sun className="w-5 h-5" />
@@ -992,11 +988,10 @@ export default function ProfileBubble() {
                     </button>
                     <button
                       onClick={() => handleThemeChange('system')}
-                      className={`flex flex-col items-center gap-2 p-3 rounded-md transition-colors ${
-                        theme === 'system'
+                      className={`flex flex-col items-center gap-2 p-3 rounded-md transition-colors ${theme === 'system'
                           ? 'bg-[#2A2A2A] text-white'
                           : 'text-white hover:bg-[#2A2A2A]'
-                      }`}
+                        }`}
                       role="menuitem"
                     >
                       <Monitor className="w-5 h-5" />
@@ -1035,10 +1030,10 @@ export default function ProfileBubble() {
             </div>
           </div>
         </>
-       )}
+      )}
 
-       {/* Enhanced Edit Profile Modal - Replaced with new dialog component */}
+      {/* Enhanced Edit Profile Modal - Replaced with new dialog component */}
 
-     </div>
-   );
- }
+    </div>
+  );
+}
