@@ -31,15 +31,36 @@ import { WebsiteLink } from "@/components/ui/website-link";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
+// Badge Configuration
+const STREAK_BADGES = [
+  { days: 1, name: "First Steps", emoji: "🌱", rarity: "common", description: "Started your journey" },
+  { days: 3, name: "Getting Started", emoji: "🚀", rarity: "common", description: "3 days of consistency" },
+  { days: 7, name: "Week Warrior", emoji: "🔥", rarity: "uncommon", description: "A full week streak" },
+  { days: 14, name: "Two Week Champion", emoji: "⚡", rarity: "uncommon", description: "Two weeks strong" },
+  { days: 21, name: "Habit Former", emoji: "💪", rarity: "rare", description: "21 days to form a habit" },
+  { days: 30, name: "Monthly Master", emoji: "🏆", rarity: "rare", description: "One month of dedication" },
+  { days: 45, name: "Email Ninja", emoji: "🥷", rarity: "epic", description: "45 days of mastery" },
+  { days: 90, name: "Quarter Legend", emoji: "👑", rarity: "legendary", description: "90 days - A true legend" },
+  { days: 100, name: "Century Club", emoji: "💎", rarity: "mythic", description: "100 days - Ultimate achievement" },
+];
+
+const RARITY_COLORS: Record<string, { bg: string; border: string; glow: string; text: string }> = {
+  common: { bg: "bg-neutral-800/50", border: "border-neutral-600/50", glow: "", text: "text-neutral-400" },
+  uncommon: { bg: "bg-green-950/50", border: "border-green-600/50", glow: "shadow-[0_0_15px_-5px_rgba(34,197,94,0.3)]", text: "text-green-400" },
+  rare: { bg: "bg-blue-950/50", border: "border-blue-500/50", glow: "shadow-[0_0_15px_-5px_rgba(59,130,246,0.4)]", text: "text-blue-400" },
+  epic: { bg: "bg-purple-950/50", border: "border-purple-500/50", glow: "shadow-[0_0_20px_-5px_rgba(168,85,247,0.5)]", text: "text-purple-400" },
+  legendary: { bg: "bg-amber-950/50", border: "border-amber-500/50", glow: "shadow-[0_0_25px_-5px_rgba(245,158,11,0.6)]", text: "text-amber-400" },
+  mythic: { bg: "bg-gradient-to-br from-pink-950/50 to-cyan-950/50", border: "border-pink-500/50", glow: "shadow-[0_0_30px_-5px_rgba(236,72,153,0.7)]", text: "text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-cyan-400" },
+};
+
 /**
  * StreakGrid Component - GitHub-style contribution graph for activity
  */
 function StreakGrid({ history = [], streak = 0, onRefresh, isRefreshing }: { history?: any[], streak?: number, onRefresh?: () => void, isRefreshing?: boolean }) {
-  const weeks = 40; // Show 40 weeks for a nice long graph
+  const weeks = 40;
   const today = new Date();
   const daysToShow = weeks * 7;
 
-  // Calculate start date (Sunday of the first week)
   const startDate = new Date(today);
   startDate.setDate(today.getDate() - daysToShow + (7 - today.getDay()) % 7);
 
@@ -59,17 +80,24 @@ function StreakGrid({ history = [], streak = 0, onRefresh, isRefreshing }: { his
 
   const streakMessage = streak <= 6 ? "oh cmon'" : "keep it up";
 
-  // GitHub-style coloring based on intensity
   const getIntensityColor = (count: number) => {
     if (count === 0) return "bg-white/5 hover:bg-white/10";
-    if (count <= 2) return "bg-orange-950/40"; // Lightest
+    if (count <= 2) return "bg-orange-950/40";
     if (count <= 5) return "bg-orange-800/60";
     if (count <= 10) return "bg-orange-600";
     return "bg-orange-500 shadow-[0_0_10px_-2px_rgba(249,115,22,0.5)]";
   };
 
+  // Find next badge milestone
+  const nextBadge = STREAK_BADGES.find(b => b.days > streak);
+  const lastEarnedBadge = [...STREAK_BADGES].reverse().find(b => b.days <= streak);
+  const progressToNext = nextBadge
+    ? Math.min(100, ((streak - (lastEarnedBadge?.days || 0)) / (nextBadge.days - (lastEarnedBadge?.days || 0))) * 100)
+    : 100;
+
   return (
     <div className="glass-panel p-6 rounded-2xl space-y-6 border border-white/5">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-500 shadow-[0_0_20px_-10px_rgba(249,115,22,0.5)]">
@@ -94,8 +122,69 @@ function StreakGrid({ history = [], streak = 0, onRefresh, isRefreshing }: { his
         )}
       </div>
 
+      {/* Progress to next badge */}
+      {nextBadge && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-neutral-500">
+              {lastEarnedBadge ? `${lastEarnedBadge.emoji} ${lastEarnedBadge.name}` : "Start"}
+            </span>
+            <span className="text-neutral-400 font-medium">
+              {nextBadge.days - streak} days to {nextBadge.emoji} {nextBadge.name}
+            </span>
+          </div>
+          <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-orange-600 to-orange-400 rounded-full transition-all duration-500"
+              style={{ width: `${progressToNext}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Badges Section */}
+      <div className="space-y-3">
+        <h4 className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Streak Badges</h4>
+        <div className="flex flex-wrap gap-3">
+          {STREAK_BADGES.map((badge) => {
+            const isEarned = streak >= badge.days;
+            const colors = RARITY_COLORS[badge.rarity];
+
+            return (
+              <div
+                key={badge.days}
+                className={cn(
+                  "group relative flex items-center gap-2 px-3 py-2 rounded-xl border transition-all duration-300",
+                  isEarned
+                    ? `${colors.bg} ${colors.border} ${colors.glow}`
+                    : "bg-neutral-900/50 border-neutral-800/50 opacity-40 grayscale"
+                )}
+                title={isEarned ? `${badge.name} - ${badge.description}` : `Unlock at ${badge.days} days`}
+              >
+                <span className={cn("text-xl", !isEarned && "opacity-30")}>{badge.emoji}</span>
+                <div className="hidden sm:block">
+                  <p className={cn("text-xs font-medium", isEarned ? colors.text : "text-neutral-600")}>
+                    {badge.name}
+                  </p>
+                  <p className="text-[10px] text-neutral-600">{badge.days}d</p>
+                </div>
+
+                {/* Tooltip on hover */}
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                  <p className="text-xs font-medium text-neutral-200">{badge.name}</p>
+                  <p className="text-[10px] text-neutral-500">{badge.description}</p>
+                  {!isEarned && (
+                    <p className="text-[10px] text-orange-400 mt-1">🔒 {badge.days - streak} more days</p>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Activity Grid */}
       <div className="flex gap-3">
-        {/* Day Labels */}
         <div className="flex flex-col justify-between py-1 text-[10px] text-neutral-600 font-medium h-[100px] select-none">
           <span>Sun</span>
           <span>Tue</span>
@@ -103,7 +192,6 @@ function StreakGrid({ history = [], streak = 0, onRefresh, isRefreshing }: { his
           <span>Sat</span>
         </div>
 
-        {/* The Grid */}
         <div className="flex-1 overflow-x-auto custom-scrollbar pb-2">
           <div
             className="grid grid-flow-col grid-rows-7 gap-1.5 h-[100px] min-w-max"
@@ -124,6 +212,7 @@ function StreakGrid({ history = [], streak = 0, onRefresh, isRefreshing }: { his
         </div>
       </div>
 
+      {/* Legend */}
       <div className="flex items-center gap-6 text-[10px] text-neutral-500 uppercase tracking-widest font-bold">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-[2px] bg-white/5 border border-white/5" />
