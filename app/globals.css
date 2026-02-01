@@ -83,50 +83,42 @@
 }
 
 :root {
-  --background: oklch(0.98 0 0);
-  --foreground: oklch(0.15 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.15 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.15 0 0);
-  --primary: oklch(0.2 0 0);
-  --primary-foreground: oklch(0.98 0 0);
-  --secondary: oklch(0.95 0 0);
-  --secondary-foreground: oklch(0.15 0 0);
-  --muted: oklch(0.95 0 0);
-  --muted-foreground: oklch(0.45 0 0);
-  --accent: oklch(0.95 0 0);
-  --accent-foreground: oklch(0.15 0 0);
-  --destructive: oklch(0.6 0.2 25);
+  --background: oklch(0 0 0);
+  --foreground: oklch(1 0 0);
+  --card: oklch(0.1 0 0 / 0.1);
+  --card-foreground: oklch(1 0 0);
+  --popover: oklch(0 0 0 / 0.8);
+  --popover-foreground: oklch(1 0 0);
+  --primary: oklch(1 0 0);
+  --primary-foreground: oklch(0 0 0);
+  --secondary: oklch(0.65 0.25 25);
+  --secondary-foreground: oklch(1 0 0);
+  --muted: oklch(1 0 0 / 0.5);
+  --muted-foreground: oklch(0.7 0 0);
+  --accent: oklch(0.65 0.25 25);
+  --accent-foreground: oklch(1 0 0);
+  --destructive: oklch(0.6 0.25 15);
   --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.9 0 0);
-  --input: oklch(0.9 0 0);
-  --ring: oklch(0.2 0 0 / 0.1);
+  --border: oklch(1 0 0 / 0.2);
+  --input: oklch(1 0 0 / 0.1);
+  --ring: oklch(1 0 0 / 0.3);
   --chart-1: oklch(0.65 0.25 25);
   --chart-2: oklch(0.8 0.15 85);
   --chart-3: oklch(0.7 0.2 140);
   --chart-4: oklch(0.7 0.2 240);
   --chart-5: oklch(0.6 0.25 300);
-  --radius: 0.75rem;
-  --sidebar: oklch(0.98 0 0);
-  --sidebar-foreground: oklch(0.15 0 0);
-  --sidebar-primary: oklch(0.2 0 0);
-  --sidebar-primary-foreground: oklch(0.98 0 0);
-  --sidebar-accent: oklch(0.92 0 0);
-  --sidebar-accent-foreground: oklch(0.15 0 0);
-  --sidebar-border: oklch(0.9 0 0);
-  --sidebar-ring: oklch(0.2 0 0 / 0.1);
+  --radius: 0.5rem;
+  --sidebar: oklch(0 0 0 / 0.9);
+  --sidebar-foreground: oklch(1 0 0);
+  --sidebar-primary: oklch(0.65 0.25 25);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.65 0.25 25);
+  --sidebar-accent-foreground: oklch(1 0 0);
+  --sidebar-border: oklch(1 0 0 / 0.2);
+  --sidebar-ring: oklch(1 0 0 / 0.3);
   --font-geist-sans: "Geist Sans", sans-serif;
   --font-geist-mono: "Geist Mono", monospace;
   --font-satoshi: "Satoshi", sans-serif;
-
-  /* Settings specific tokens */
-  --settings-surface: oklch(1 0 0);
-  --settings-text: oklch(0.15 0 0);
-  --settings-text-secondary: oklch(0.45 0 0);
-  --settings-text-tertiary: oklch(0.65 0 0);
-  --settings-border: oklch(0.9 0 0);
-  --settings-accent: oklch(0.95 0 0);
 
   /* Rainbow button colors */
   --color-1: 0 100% 63%;
@@ -134,71 +126,45 @@
   --color-3: 210 100% 63%;
   --color-4: 195 100% 63%;
   --color-5: 90 100% 63%;
+}
 
-  /* Glassmorphism Light */
-  --glass-bg: rgba(255, 255, 255, 0.7);
-  --glass-bg-elevated: rgba(255, 255, 255, 0.85);
-  --glass-border: rgba(0, 0, 0, 0.08);
-  --glass-border-strong: rgba(0, 0, 0, 0.12);
-  --glass-highlight: rgba(255, 255, 255, 0.4);
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-
-  /* Arcus AI Light */
-  --arcus-bg: oklch(1 0 0);
-  --arcus-message-agent: oklch(0.95 0 0);
-  --arcus-message-agent-text: oklch(0.15 0 0);
-  --arcus-message-user: oklch(0.2 0 0);
-  --arcus-message-user-text: oklch(0.98 0 0);
-  --arcus-border: oklch(0.9 0 0);
+.satoshi-app {
+  font-family: var(--font-satoshi);
 }
 
 .dark {
-  --background: oklch(0.05 0 0);
-  --foreground: oklch(0.95 0 0);
-  --card: oklch(0.08 0 0);
-  --card-foreground: oklch(0.95 0 0);
-  --popover: oklch(0.08 0 0);
-  --popover-foreground: oklch(0.95 0 0);
-  --primary: oklch(0.98 0 0);
-  --primary-foreground: oklch(0.05 0 0);
-  --secondary: oklch(0.12 0 0);
-  --secondary-foreground: oklch(0.95 0 0);
-  --muted: oklch(0.12 0 0);
-  --muted-foreground: oklch(0.55 0 0);
-  --accent: oklch(0.12 0 0);
-  --accent-foreground: oklch(0.95 0 0);
-  --destructive: oklch(0.4 0.2 25);
-  --destructive-foreground: oklch(0.95 0 0);
-  --border: oklch(0.15 0 0);
-  --input: oklch(0.15 0 0);
-  --ring: oklch(0.8 0 0 / 0.2);
-  --sidebar: oklch(0.05 0 0);
-  --sidebar-foreground: oklch(0.95 0 0);
-  --sidebar-primary: oklch(0.98 0 0);
-  --sidebar-primary-foreground: oklch(0.05 0 0);
-  --sidebar-accent: oklch(0.12 0 0);
-  --sidebar-accent-foreground: oklch(0.95 0 0);
-  --sidebar-border: oklch(0.15 0 0);
-  --sidebar-ring: oklch(0.8 0 0 / 0.2);
-
-  --settings-accent: oklch(0.12 0 0);
-  --settings-accent-hover: oklch(0.2 0 0);
-
-  /* Glassmorphism Dark */
-  --glass-bg: rgba(28, 28, 30, 0.72);
-  --glass-bg-elevated: rgba(44, 44, 46, 0.8);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --glass-border-strong: rgba(255, 255, 255, 0.15);
-  --glass-highlight: rgba(255, 255, 255, 0.06);
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-
-  /* Arcus AI Dark */
-  --arcus-bg: oklch(0.08 0 0);
-  --arcus-message-agent: oklch(0.15 0 0);
-  --arcus-message-agent-text: oklch(0.95 0 0);
-  --arcus-message-user: oklch(0.95 0 0);
-  --arcus-message-user-text: oklch(0.05 0 0);
-  --arcus-border: oklch(0.15 0 0);
+  --background: oklch(0 0 0);
+  --foreground: oklch(1 0 0);
+  --card: oklch(0.1 0 0 / 0.1);
+  --card-foreground: oklch(1 0 0);
+  --popover: oklch(0 0 0 / 0.8);
+  --popover-foreground: oklch(1 0 0);
+  --primary: oklch(1 0 0);
+  --primary-foreground: oklch(0 0 0);
+  --secondary: oklch(0.65 0.25 25);
+  --secondary-foreground: oklch(1 0 0);
+  --muted: oklch(1 0 0 / 0.5);
+  --muted-foreground: oklch(0.7 0 0);
+  --accent: oklch(0.65 0.25 25);
+  --accent-foreground: oklch(1 0 0);
+  --destructive: oklch(0.6 0.25 15);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(1 0 0 / 0.2);
+  --input: oklch(1 0 0 / 0.1);
+  --ring: oklch(1 0 0 / 0.3);
+  --chart-1: oklch(0.65 0.25 25);
+  --chart-2: oklch(0.8 0.15 85);
+  --chart-3: oklch(0.7 0.2 140);
+  --chart-4: oklch(0.7 0.2 240);
+  --chart-5: oklch(0.6 0.25 300);
+  --sidebar: oklch(0 0 0 / 0.9);
+  --sidebar-foreground: oklch(1 0 0);
+  --sidebar-primary: oklch(0.65 0.25 25);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.65 0.25 25);
+  --sidebar-accent-foreground: oklch(1 0 0);
+  --sidebar-border: oklch(1 0 0 / 0.2);
+  --sidebar-ring: oklch(1 0 0 / 0.3);
 }
 
 /* Sidebar color variables are defined above in :root and .dark selectors */
@@ -2256,10 +2222,10 @@ textarea,
   right: 24px;
   width: 550px;
   height: calc(100vh - 48px);
-  background: var(--arcus-bg);
-  border: 1px solid var(--arcus-border);
+  background: #0a0a0a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 24px;
-  box-shadow: var(--glass-shadow);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(255, 255, 255, 0.03);
   z-index: 1000;
   display: flex;
   flex-direction: column;
@@ -2286,11 +2252,11 @@ textarea,
 
 .arcus-header {
   padding: 20px 24px;
-  border-bottom: 1px solid var(--arcus-border);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: var(--glass-bg);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .arcus-content {
@@ -2305,26 +2271,28 @@ textarea,
 .arcus-message-agent {
   align-self: flex-start;
   max-width: 85%;
-  background: var(--arcus-message-agent);
-  border: 1px solid var(--arcus-border);
+  background: #2d2e2e;
+  border: 1px solid #323233;
   border-radius: 20px 20px 20px 4px;
   padding: 16px 20px;
-  color: var(--arcus-message-agent-text);
+  color: #ffffff;
   font-size: 15px;
   line-height: 1.6;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
 .arcus-message-user {
   align-self: flex-end;
   max-width: 80%;
-  background: var(--arcus-message-user);
-  color: var(--arcus-message-user-text);
+  background: #e5e7eb;
+  /* gray-200 approx */
+  color: #000000;
   border-radius: 20px 20px 4px 20px;
   padding: 14px 20px;
   font-size: 15px;
   line-height: 1.5;
   font-weight: 500;
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
 }
 
 .arcus-input-container {

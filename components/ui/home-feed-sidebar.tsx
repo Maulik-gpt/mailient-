@@ -5,7 +5,6 @@ import { useSession, signOut } from 'next-auth/react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Mail, Bell, User, MoreHorizontal, LogOut, Settings, CreditCard, UserPlus, NotebookPen, Users } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
-import { cn } from '@/lib/utils';
 
 interface HomeFeedSidebarProps {
     className?: string;
@@ -47,11 +46,11 @@ export function HomeFeedSidebar({ className = '', onPeopleClick, activeView = 'h
 
     return (
         <TooltipProvider>
-            <div className={`fixed left-0 top-0 h-screen w-16 bg-[var(--sidebar)] border-r border-[var(--sidebar-border)] flex flex-col items-center py-8 z-50 transition-colors duration-300 ${className}`}>
+            <div className={`fixed left-0 top-0 h-screen w-16 bg-[#050505] border-r border-white/5 flex flex-col items-center py-8 z-50 ${className}`}>
                 {/* Logo Section */}
                 <div className="mb-10 group cursor-pointer" onClick={() => router.push('/home-feed')}>
-                    <div className="w-10 h-10 bg-[var(--sidebar-foreground)] rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform duration-300 overflow-hidden">
-                        <img src="/mailient-logo.png" alt="Mailient" className="w-full h-full object-cover dark:invert" />
+                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform duration-300 overflow-hidden">
+                        <img src="/mailient-logo.png" alt="Mailient" className="w-full h-full object-cover invert" />
                     </div>
                 </div>
 
@@ -66,21 +65,13 @@ export function HomeFeedSidebar({ className = '', onPeopleClick, activeView = 'h
                                     <TooltipTrigger asChild>
                                         <button
                                             onClick={() => router.push(item.route)}
-                                            className={cn(
-                                                "p-3 transition-all duration-200 flex items-center justify-center w-10 h-10 rounded-xl",
-                                                isActive
-                                                    ? 'bg-[var(--sidebar-primary)] text-[var(--sidebar-primary-foreground)]'
-                                                    : 'text-[var(--sidebar-foreground)] opacity-30 hover:opacity-80 hover:bg-[var(--sidebar-accent)]'
-                                            )}
+                                            className={`p-3 transition-all duration-200 flex items-center justify-center w-10 h-10 rounded-xl ${isActive ? 'bg-white text-black' : 'text-white/30 hover:text-white/80 hover:bg-white/5'}`}
                                             aria-label={item.label}
                                         >
-                                            <span className={cn(
-                                                "text-base font-normal",
-                                                isActive ? 'text-[var(--sidebar-primary-foreground)]' : 'text-[var(--sidebar-foreground)] font-serif italic'
-                                            )}>A</span>
+                                            <span className={`text-base font-normal ${isActive ? 'text-black' : 'text-white font-serif italic'}`}>A</span>
                                         </button>
                                     </TooltipTrigger>
-                                    <TooltipContent side="right" className="bg-[var(--popover)] text-[var(--popover-foreground)] text-[11px] border border-[var(--sidebar-border)] px-3 py-1.5 rounded-md font-normal shadow-xl">
+                                    <TooltipContent side="right" className="bg-neutral-900 text-white text-[11px] border-white/10 px-3 py-1.5 rounded-md font-normal">
                                         <p>{item.label}</p>
                                     </TooltipContent>
                                 </Tooltip>
@@ -94,18 +85,13 @@ export function HomeFeedSidebar({ className = '', onPeopleClick, activeView = 'h
                                 <TooltipTrigger asChild>
                                     <button
                                         onClick={() => router.push(item.route)}
-                                        className={cn(
-                                            "p-2.5 transition-all duration-200 rounded-xl",
-                                            isActive
-                                                ? 'bg-[var(--sidebar-primary)] text-[var(--sidebar-primary-foreground)] shadow-lg'
-                                                : 'text-[var(--sidebar-foreground)] opacity-30 hover:opacity-80 hover:bg-[var(--sidebar-accent)]'
-                                        )}
+                                        className={`p-2.5 transition-all duration-200 rounded-xl ${isActive ? 'bg-white text-black' : 'text-white/30 hover:text-white/80 hover:bg-white/5'}`}
                                         aria-label={item.label}
                                     >
                                         <Icon className="w-5 h-5" strokeWidth={1.5} />
                                     </button>
                                 </TooltipTrigger>
-                                <TooltipContent side="right" className="bg-[var(--popover)] text-[var(--popover-foreground)] text-[11px] border border-[var(--sidebar-border)] px-3 py-1.5 rounded-md font-normal shadow-xl">
+                                <TooltipContent side="right" className="bg-neutral-900 text-white text-[11px] border-white/10 px-3 py-1.5 rounded-md font-normal">
                                     <p>{item.label}</p>
                                 </TooltipContent>
                             </Tooltip>
@@ -119,31 +105,26 @@ export function HomeFeedSidebar({ className = '', onPeopleClick, activeView = 'h
                         <TooltipTrigger asChild>
                             <button
                                 onClick={() => setIsMoreOptionsOpen(!isMoreOptionsOpen)}
-                                className={cn(
-                                    "w-9 h-9 transition-all duration-200 rounded-full overflow-hidden border flex items-center justify-center translate-y-0 active:translate-y-px",
-                                    isMoreOptionsOpen
-                                        ? 'border-[var(--sidebar-primary)] ring-2 ring-[var(--sidebar-primary)]/20'
-                                        : 'border-[var(--sidebar-border)] hover:border-[var(--sidebar-foreground)]/30'
-                                )}
+                                className={`w-9 h-9 transition-all duration-200 rounded-full overflow-hidden border flex items-center justify-center ${isMoreOptionsOpen ? 'border-white' : 'border-white/10 hover:border-white/30'}`}
                                 aria-label="Account"
                             >
                                 <img
                                     src={session?.user?.image || "/user-avatar.png?v=2"}
                                     alt="User"
-                                    className="w-full h-full object-cover grayscale opacity-80 transition-all hover:grayscale-0 hover:opacity-100"
+                                    className="w-full h-full object-cover grayscale opacity-80"
                                 />
                             </button>
                         </TooltipTrigger>
-                        <TooltipContent side="right" className="bg-[var(--popover)] text-[var(--popover-foreground)] text-[11px] border border-[var(--sidebar-border)] px-3 py-1.5 rounded-md font-normal shadow-xl">
+                        <TooltipContent side="right" className="bg-neutral-900 text-white text-[11px] border-white/10 px-3 py-1.5 rounded-md font-normal">
                             <p>Account</p>
                         </TooltipContent>
                     </Tooltip>
 
                     {/* Dropdown Menu */}
                     {isMoreOptionsOpen && (
-                        <div className="absolute left-14 bottom-0 z-50 bg-[var(--popover)] border border-[var(--sidebar-border)] rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.2)] dark:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.6)] p-2 min-w-[200px] animate-in fade-in zoom-in-95 duration-200 slide-in-from-left-2">
-                            <div className="px-4 py-4 mb-2 border-b border-[var(--sidebar-border)] flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full overflow-hidden bg-[var(--sidebar-accent)] flex-shrink-0 border border-[var(--sidebar-border)]">
+                        <div className="absolute left-14 bottom-0 z-50 bg-[#0a0a0a] border border-white/10 rounded-xl shadow-2xl p-2 min-w-[180px] animate-in fade-in zoom-in-95 duration-150">
+                            <div className="px-3 py-3 mb-2 border-b border-white/5 flex items-center gap-2.5">
+                                <div className="w-7 h-7 rounded-full overflow-hidden bg-white/5 flex-shrink-0">
                                     <img
                                         src={session?.user?.image || "/user-avatar.png?v=2"}
                                         alt="User"
@@ -151,10 +132,10 @@ export function HomeFeedSidebar({ className = '', onPeopleClick, activeView = 'h
                                     />
                                 </div>
                                 <div className="flex flex-col overflow-hidden">
-                                    <span className="text-[13px] font-medium text-[var(--foreground)] truncate">
+                                    <span className="text-xs font-normal text-neutral-300 truncate">
                                         {session?.user?.name || 'User'}
                                     </span>
-                                    <span className="text-[11px] text-[var(--muted-foreground)] truncate font-normal">
+                                    <span className="text-[10px] text-neutral-500 truncate font-normal">
                                         {session?.user?.email || ''}
                                     </span>
                                 </div>
@@ -165,7 +146,7 @@ export function HomeFeedSidebar({ className = '', onPeopleClick, activeView = 'h
                                     router.push('/settings');
                                     setIsMoreOptionsOpen(false);
                                 }}
-                                className="w-full flex items-center gap-3 px-3 py-2.5 text-[var(--foreground)] opacity-50 hover:opacity-100 hover:bg-[var(--sidebar-accent)] rounded-xl transition-all text-xs font-medium"
+                                className="w-full flex items-center gap-3 px-3 py-2 text-white/40 hover:text-white hover:bg-white/5 rounded-lg transition-all text-xs font-normal"
                             >
                                 <Settings className="w-4 h-4" strokeWidth={1.5} />
                                 <span>Settings</span>
@@ -175,13 +156,13 @@ export function HomeFeedSidebar({ className = '', onPeopleClick, activeView = 'h
                                     router.push('/pricing');
                                     setIsMoreOptionsOpen(false);
                                 }}
-                                className="w-full flex items-center gap-3 px-3 py-2.5 text-[var(--foreground)] opacity-50 hover:opacity-100 hover:bg-[var(--sidebar-accent)] rounded-xl transition-all text-xs font-medium"
+                                className="w-full flex items-center gap-3 px-3 py-2 text-white/40 hover:text-white hover:bg-white/5 rounded-lg transition-all text-xs font-normal"
                             >
                                 <CreditCard className="w-4 h-4" strokeWidth={1.5} />
                                 <span>Upgrade</span>
                             </button>
 
-                            <div className="h-px bg-[var(--sidebar-border)] my-2 mx-2" />
+                            <div className="h-px bg-white/5 my-1.5 mx-2" />
 
                             <button
                                 onClick={handleLogout}
