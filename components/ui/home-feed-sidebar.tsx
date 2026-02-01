@@ -109,7 +109,7 @@ export function HomeFeedSidebar({ className = '', onPeopleClick, activeView = 'h
                                 aria-label="Account"
                             >
                                 <img
-                                    src="/user-avatar.png?v=2"
+                                    src={session?.user?.image || "/user-avatar.png?v=2"}
                                     alt="User"
                                     className="w-full h-full object-cover grayscale opacity-80"
                                 />
@@ -126,16 +126,16 @@ export function HomeFeedSidebar({ className = '', onPeopleClick, activeView = 'h
                             <div className="px-3 py-3 mb-2 border-b border-white/5 flex items-center gap-2.5">
                                 <div className="w-7 h-7 rounded-full overflow-hidden bg-white/5 flex-shrink-0">
                                     <img
-                                        src="/user-avatar.png?v=2"
+                                        src={session?.user?.image || "/user-avatar.png?v=2"}
                                         alt="User"
-                                        className="w-full h-full object-cover grayscale opacity-70"
+                                        className="w-full h-full object-cover grayscale opacity-80"
                                     />
                                 </div>
                                 <div className="flex flex-col overflow-hidden">
-                                    <span className="text-xs font-normal text-white truncate">
+                                    <span className="text-xs font-normal text-neutral-300 truncate">
                                         {session?.user?.name || 'User'}
                                     </span>
-                                    <span className="text-[10px] text-white/30 truncate font-normal">
+                                    <span className="text-[10px] text-neutral-500 truncate font-normal">
                                         {session?.user?.email || ''}
                                     </span>
                                 </div>

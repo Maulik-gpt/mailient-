@@ -22,11 +22,12 @@ import {
   FileText,
   ShieldCheck,
 } from "lucide-react";
-import { MailientSidebar } from "@/components/ui/mailient-sidebar";
+import { HomeFeedSidebar } from "@/components/ui/home-feed-sidebar";
 import { EditProfileDialog, type EditProfileFormData } from "@/components/ui/edit-profile-dialog";
 import { Button } from "@/components/ui/button";
 import { WebsiteLink } from "@/components/ui/website-link";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 type UserProfile = {
   name?: string | null;
@@ -47,6 +48,8 @@ type UserProfile = {
     theme?: string;
     language?: string;
     ai_privacy_mode?: string;
+    username?: string;
+    plan?: string;
     social_links?: { x?: string; linkedin?: string; instagram?: string; github?: string };
   };
 };
@@ -97,7 +100,7 @@ export default function SettingsPage() {
     fetch("/api/profile")
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => data && setProfile(data))
-      .catch(() => {});
+      .catch(() => { });
   }, [session?.user?.email]);
 
   useEffect(() => {
@@ -106,30 +109,40 @@ export default function SettingsPage() {
   }, [profile?.avatar_url, profile?.banner_url, (session?.user as { image?: string })?.image]);
 
   const handleSaveProfile = async (data: EditProfileFormData) => {
-    const res = await fetch("/api/profile", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: data.name,
-        bio: data.bio,
-        location: data.location,
-        website: data.website || undefined,
-        banner_url: data.banner_url || undefined,
-        preferences: {
-          ...profile?.preferences,
-          username: data.username,
-          social_links: {
-            x: data.social_x || undefined,
-            linkedin: data.social_linkedin || undefined,
-            instagram: data.social_instagram || undefined,
-            github: data.social_github || undefined,
+    try {
+      const res = await fetch("/api/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: data.name,
+          bio: data.bio,
+          location: data.location,
+          website: data.website || undefined,
+          banner_url: data.banner_url || undefined,
+          avatar_url: data.avatar_url || undefined,
+          preferences: {
+            ...profile?.preferences,
+            username: data.username,
+            social_links: {
+              x: data.social_x || undefined,
+              linkedin: data.social_linkedin || undefined,
+              instagram: data.social_instagram || undefined,
+              github: data.social_github || undefined,
+            },
           },
-        },
-      }),
-    });
-    if (res.ok) {
-      const updated = await fetch("/api/profile").then((r) => r.json());
-      setProfile(updated);
+        }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setProfile(updated);
+        toast.success("Profile updated successfully");
+        // Force session update or refresh if needed, but setProfile should handle UI
+      } else {
+        const err = await res.json();
+        toast.error(err.error || "Failed to update profile");
+      }
+    } catch (err) {
+      toast.error("An error occurred while saving");
     }
   };
 
@@ -194,22 +207,17 @@ export default function SettingsPage() {
   const aiPrivacyEnabled = profile?.preferences?.ai_privacy_mode === "enabled";
 
   return (
-    <div className="settings-page min-h-screen flex">
-      <MailientSidebar
-        activeSection=""
-        onNavigate={() => {}}
-        userAvatar={avatarUrl ?? undefined}
-        userName={displayName}
-      />
+    <div className="settings-page min-h-screen flex bg-black">
+      <HomeFeedSidebar />
 
-      <main className="flex-1 overflow-y-auto ml-20">
-        <div className="max-w-3xl mx-auto px-6 py-8">
-          <header className="mb-8">
-            <h1 className="text-2xl font-semibold tracking-tight text-[var(--settings-text)]">
+      <main className="flex-1 overflow-y-auto ml-16">
+        <div className="max-w-5xl mx-auto px-6 py-12">
+          <header className="mb-10">
+            <h1 className="text-3xl font-medium tracking-tight text-neutral-200">
               Settings
             </h1>
-            <p className="mt-1 text-sm text-[var(--settings-text-secondary)]">
-              Manage your profile, account, security, and legal preferences
+            <p className="mt-2 text-base text-neutral-500">
+              Manage your profile, account, and preferences.
             </p>
           </header>
 
@@ -263,13 +271,12 @@ export default function SettingsPage() {
                       </span>
                     )}
                   </div>
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mt-4">
                     <div>
-                      <h2 className="text-xl font-bold text-[var(--settings-text)] flex items-center gap-2">
+                      <h2 className="text-2xl font-medium text-neutral-200 flex items-center gap-2">
                         {displayName}
-                        <span className="text-[var(--settings-text-tertiary)]" aria-hidden>✦</span>
                       </h2>
-                      <p className="text-[var(--settings-text-secondary)] mt-0.5">@{displayHandle}</p>
+                      <p className="text-neutral-500 text-sm mt-1">@{displayHandle}</p>
                     </div>
                     <EditProfileDialog
                       trigger={

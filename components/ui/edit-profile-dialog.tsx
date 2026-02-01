@@ -12,7 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { Pencil, Camera } from "lucide-react";
+import { Pencil, Camera, ArrowLeft, X, Linkedin, Instagram, Github, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 const BIO_MAX = 120;
 const SOCIAL_PREFIXES: Record<string, string> = {
@@ -28,6 +29,7 @@ export type EditProfileFormData = {
   bio: string;
   location: string;
   website: string;
+  avatar_url: string;
   banner_url: string;
   social_x: string;
   social_linkedin: string;
@@ -60,12 +62,18 @@ export function EditProfileDialog({
 }: EditProfileDialogProps) {
   const [open, setOpen] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = React.useState(false);
+  const [uploadingBanner, setUploadingBanner] = React.useState(false);
+  const avatarInputRef = React.useRef<HTMLInputElement>(null);
+  const bannerInputRef = React.useRef<HTMLInputElement>(null);
+
   const [form, setForm] = React.useState<EditProfileFormData>({
-    name: user?.name ?? "",
+    name: profile?.username || user?.name || "",
     username: profile?.preferences?.username ?? profile?.username ?? (user?.email?.split("@")[0] ?? ""),
     bio: profile?.bio ?? "",
     location: profile?.location ?? "",
     website: profile?.website ?? "",
+    avatar_url: profile?.avatar_url ?? "",
     banner_url: profile?.banner_url ?? "",
     social_x: profile?.preferences?.social_links?.x ?? "",
     social_linkedin: profile?.preferences?.social_links?.linkedin ?? "",
@@ -76,11 +84,12 @@ export function EditProfileDialog({
   React.useEffect(() => {
     if (open) {
       setForm({
-        name: user?.name ?? "",
+        name: profile?.username || user?.name || "",
         username: profile?.preferences?.username ?? profile?.username ?? (user?.email?.split("@")[0] ?? ""),
         bio: profile?.bio ?? "",
         location: profile?.location ?? "",
         website: profile?.website ?? "",
+        avatar_url: profile?.avatar_url ?? "",
         banner_url: profile?.banner_url ?? "",
         social_x: profile?.preferences?.social_links?.x ?? "",
         social_linkedin: profile?.preferences?.social_links?.linkedin ?? "",
@@ -90,13 +99,48 @@ export function EditProfileDialog({
     }
   }, [open, user?.name, user?.email, profile]);
 
-  const avatarUrl = profile?.avatar_url || (user as { image?: string })?.image;
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'banner') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (type === 'avatar') setUploadingAvatar(true);
+    else setUploadingBanner(true);
+
+    const formData = new FormData();
+    formData.append(type, file);
+
+    try {
+      const res = await fetch('/api/profile/avatar', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Upload failed');
+      }
+
+      const data = await res.json();
+      setForm(prev => ({ ...prev, [type === 'avatar' ? 'avatar_url' : 'banner_url']: data.url }));
+      toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} uploaded successfully`);
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      if (type === 'avatar') setUploadingAvatar(false);
+      else setUploadingBanner(false);
+    }
+  };
+
+  const currentAvatarUrl = form.avatar_url || (user as { image?: string })?.image;
+
   const handleSave = async () => {
     if (!onSave) return;
     setSaving(true);
     try {
       await onSave(form);
       setOpen(false);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save changes");
     } finally {
       setSaving(false);
     }
@@ -107,163 +151,192 @@ export function EditProfileDialog({
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent
         className={cn(
-          "glass-panel border-[var(--glass-border)] bg-[var(--glass-bg-elevated)]",
-          "backdrop-blur-[var(--glass-blur)] max-w-lg p-0 gap-0 overflow-hidden",
-          "text-[var(--settings-text)]"
+          "max-w-xl p-0 gap-0 overflow-hidden border-none bg-black text-neutral-200",
+          "shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)]"
         )}
       >
-        <DialogHeader className="px-6 pt-6 pb-4 border-b border-[var(--glass-border)]">
-          <DialogTitle className="text-xl font-semibold tracking-tight text-[var(--settings-text)]">
+        <DialogHeader className="flex flex-row items-center gap-4 px-6 py-4 border-b border-white/10">
+          <button
+            onClick={() => setOpen(false)}
+            className="w-10 h-10 rounded-full flex items-center justify-center border border-white/10 hover:bg-white/5 transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5 text-neutral-400" />
+          </button>
+          <DialogTitle className="text-xl font-bold text-neutral-100">
             Edit Profile
           </DialogTitle>
         </DialogHeader>
 
-        <div className="px-6 py-5 space-y-6 max-h-[min(70vh,520px)] overflow-y-auto">
-          {/* Profile picture */}
-          <div className="flex items-start gap-4">
-            <div className="relative shrink-0">
-              <div className="w-20 h-20 rounded-full overflow-hidden bg-[var(--settings-surface)] border border-[var(--glass-border)]">
-                {avatarUrl ? (
-                  <img
-                    src={avatarUrl}
-                    alt="Profile"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-[var(--settings-text-tertiary)] text-2xl font-medium">
-                    {(user?.name ?? "U").slice(0, 1).toUpperCase()}
+        <div className="px-6 py-6 space-y-8 max-h-[80vh] overflow-y-auto custom-scrollbar">
+          {/* Photos section */}
+          <div className="space-y-6">
+            <div className="flex flex-col gap-4">
+              <Label className="text-neutral-400 text-sm font-medium">Profile & Banner</Label>
+              <div className="flex items-start gap-8">
+                {/* Profile Photo */}
+                <div className="relative group">
+                  <div className="w-24 h-24 rounded-full overflow-hidden bg-neutral-900 border-2 border-white/10 relative">
+                    {uploadingAvatar ? (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                        <Loader2 className="w-6 h-6 animate-spin text-white" />
+                      </div>
+                    ) : currentAvatarUrl ? (
+                      <img
+                        src={currentAvatarUrl}
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-neutral-600 text-3xl font-medium">
+                        {(user?.name ?? "U").slice(0, 1).toUpperCase()}
+                      </div>
+                    )}
                   </div>
-                )}
+                  <button
+                    type="button"
+                    onClick={() => avatarInputRef.current?.click()}
+                    className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-black border border-white/20 flex items-center justify-center hover:bg-neutral-900 transition-colors shadow-lg"
+                    aria-label="Change avatar"
+                  >
+                    <Camera className="w-4 h-4 text-neutral-300" />
+                  </button>
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={(e) => handleFileUpload(e, 'avatar')}
+                  />
+                  <div className="mt-2 text-center">
+                    <p className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold">Photo</p>
+                  </div>
+                </div>
+
+                {/* Banner Photo */}
+                <div className="flex-1">
+                  <div
+                    className="relative h-24 rounded-2xl bg-neutral-900 border-2 border-white/10 overflow-hidden cursor-pointer hover:border-white/20 transition-all"
+                    onClick={() => bannerInputRef.current?.click()}
+                  >
+                    {uploadingBanner ? (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                        <Loader2 className="w-6 h-6 animate-spin text-white" />
+                      </div>
+                    ) : form.banner_url ? (
+                      <img
+                        src={form.banner_url}
+                        alt="Banner"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center gap-2 text-neutral-500 group">
+                        <Camera className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                        <span className="text-sm font-medium">Add Banner</span>
+                      </div>
+                    )}
+                  </div>
+                  <input
+                    ref={bannerInputRef}
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={(e) => handleFileUpload(e, 'banner')}
+                  />
+                  <p className="mt-2 text-xs text-neutral-500">
+                    Recommended size: 1500x500px. JPG, PNG or WebP.
+                  </p>
+                </div>
               </div>
-              <button
-                type="button"
-                className="absolute bottom-0 right-0 w-8 h-8 rounded-full glass-button-secondary flex items-center justify-center border border-[var(--glass-border)]"
-                aria-label="Change photo"
-              >
-                <Camera className="w-4 h-4 text-[var(--settings-text-secondary)]" />
-              </button>
             </div>
-            <p className="text-sm text-[var(--settings-text-tertiary)] pt-2">
-              Recommended size: 400×400px
-            </p>
           </div>
 
-          {/* Banner image URL */}
-          <div>
-            <Label className="text-[var(--settings-text-secondary)]">
-              Banner image URL <span className="text-[var(--settings-text-tertiary)] font-normal">(optional)</span>
-            </Label>
-            <Input
-              value={form.banner_url}
-              onChange={(e) => setForm((f) => ({ ...f, banner_url: e.target.value.trim() }))}
-              className="mt-1.5 glass-input h-11 border-[var(--glass-border)] bg-white/5"
-              placeholder="https://example.com/your-banner.jpg"
-              type="url"
-            />
-            <p className="text-xs text-[var(--settings-text-tertiary)] mt-1">
-              Paste a direct image link. Recommended: 1500×500px or similar aspect ratio.
-            </p>
-          </div>
-
-          {/* Profile fields */}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <Label className="text-[var(--settings-text-secondary)]">
-                Full name <span className="text-red-400">*</span>
-              </Label>
+          <div className="grid grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label className="text-neutral-400 text-sm">Full name <span className="text-red-500">*</span></Label>
               <Input
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                className="mt-1.5 glass-input h-11 border-[var(--glass-border)] bg-white/5"
-                placeholder="Your name"
+                className="bg-neutral-950 border-white/10 h-12 rounded-2xl focus:border-white/20 focus:ring-0 text-neutral-100 placeholder:text-neutral-700"
+                placeholder="Your full name"
               />
             </div>
-            <div className="sm:col-span-2">
-              <Label className="text-[var(--settings-text-secondary)]">
-                Username <span className="text-red-400">*</span>
-              </Label>
+            <div className="space-y-2">
+              <Label className="text-neutral-400 text-sm">Username <span className="text-red-500">*</span></Label>
               <Input
                 value={form.username}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, username: e.target.value.replace(/^@/, "") }))
                 }
-                className="mt-1.5 glass-input h-11 border-[var(--glass-border)] bg-white/5"
+                className="bg-neutral-950 border-white/10 h-12 rounded-2xl focus:border-white/20 focus:ring-0 text-neutral-100 placeholder:text-neutral-700"
                 placeholder="@username"
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <div className="flex justify-between items-center">
-                <Label className="text-[var(--settings-text-secondary)]">
-                  Brief bio
-                </Label>
-                <span className="text-xs text-[var(--settings-text-tertiary)]">
-                  {form.bio.length}/{BIO_MAX}
-                </span>
-              </div>
-              <textarea
-                value={form.bio}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, bio: e.target.value.slice(0, BIO_MAX) }))
-                }
-                maxLength={BIO_MAX}
-                rows={3}
-                className="mt-1.5 w-full rounded-xl glass-input px-3 py-2.5 text-sm resize-y min-h-[80px] border border-[var(--glass-border)] bg-white/5 placeholder:text-[var(--settings-text-tertiary)] focus:outline-none focus:border-[var(--settings-accent)] focus:ring-2 focus:ring-[var(--settings-focus-ring)]"
-                placeholder="Tell us about yourself"
-              />
-            </div>
-            <div>
-              <Label className="text-[var(--settings-text-secondary)]">Location</Label>
-              <Input
-                value={form.location}
-                onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
-                className="mt-1.5 glass-input h-11 border-[var(--glass-border)] bg-white/5"
-                placeholder="e.g. India"
-              />
-            </div>
-            <div>
-              <Label className="text-[var(--settings-text-secondary)]">Website</Label>
-              <Input
-                value={form.website}
-                onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))}
-                className="mt-1.5 glass-input h-11 border-[var(--glass-border)] bg-white/5"
-                placeholder="https://example.com"
               />
             </div>
           </div>
 
-          <p className="text-sm text-[var(--settings-text-tertiary)]">
-            Note: You only need to add your <strong className="text-[var(--settings-text-secondary)]">username</strong>.
-          </p>
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <Label className="text-neutral-400 text-sm">Brief bio</Label>
+              <span className="text-[10px] font-mono text-neutral-600">
+                {form.bio.length}/{BIO_MAX}
+              </span>
+            </div>
+            <textarea
+              value={form.bio}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, bio: e.target.value.slice(0, BIO_MAX) }))
+              }
+              maxLength={BIO_MAX}
+              rows={3}
+              className="w-full rounded-2xl bg-neutral-950 border border-white/10 p-4 text-sm resize-none focus:outline-none focus:border-white/20 text-neutral-200 placeholder:text-neutral-700"
+              placeholder="Tell us about yourself..."
+            />
+          </div>
 
-          {/* Social links */}
-          <div className="pt-2 border-t border-[var(--glass-border)]">
-            <p className="text-sm text-[var(--settings-text-tertiary)] mb-4">
-              Note: You only need to add your <strong className="text-[var(--settings-text-secondary)]">username</strong> for each platform.
+          <div className="grid grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label className="text-neutral-400 text-sm">Location</Label>
+              <Input
+                value={form.location}
+                onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
+                className="bg-neutral-950 border-white/10 h-12 rounded-2xl focus:border-white/20 focus:ring-0 text-neutral-100 placeholder:text-neutral-700"
+                placeholder="City, Country"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-neutral-400 text-sm">Website</Label>
+              <Input
+                value={form.website}
+                onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))}
+                className="bg-neutral-950 border-white/10 h-12 rounded-2xl focus:border-white/20 focus:ring-0 text-neutral-100 placeholder:text-neutral-700"
+                placeholder="https://yourwebsite.com"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-4 pt-4 border-t border-white/5">
+            <p className="text-xs text-neutral-500 font-medium tracking-tight">
+              Note: You only need to add your <span className="text-neutral-300 font-bold">username</span>.
             </p>
-            <div className="grid gap-4 sm:grid-cols-2">
-              {(
-                [
-                  { key: "social_x", label: "X", prefix: SOCIAL_PREFIXES.x, icon: "𝕏" },
-                  { key: "social_linkedin", label: "LinkedIn", prefix: SOCIAL_PREFIXES.linkedin, icon: "in" },
-                  { key: "social_instagram", label: "Instagram", prefix: SOCIAL_PREFIXES.instagram, icon: "📷" },
-                  { key: "social_github", label: "GitHub", prefix: SOCIAL_PREFIXES.github, icon: "⌃" },
-                ] as const
-              ).map(({ key, label, prefix }) => (
-                <div key={key}>
-                  <Label className="text-[var(--settings-text-secondary)] text-xs">
-                    {label}
-                  </Label>
-                  <div className="mt-1.5 flex rounded-xl border border-[var(--glass-border)] bg-white/5 overflow-hidden focus-within:border-[var(--settings-accent)] focus-within:ring-2 focus-within:ring-[var(--settings-focus-ring)]">
-                    <span className="flex items-center px-3 text-sm text-[var(--settings-text-tertiary)] bg-white/5 border-r border-[var(--glass-border)]">
-                      {prefix}
-                    </span>
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { key: "social_x", label: "X.com", prefix: SOCIAL_PREFIXES.x, icon: <X className="w-3.5 h-3.5" /> },
+                { key: "social_linkedin", label: "LinkedIn", prefix: SOCIAL_PREFIXES.linkedin, icon: <Linkedin className="w-3.5 h-3.5" /> },
+                { key: "social_instagram", label: "Instagram", prefix: SOCIAL_PREFIXES.instagram, icon: <Instagram className="w-3.5 h-3.5" /> },
+                { key: "social_github", label: "GitHub", prefix: SOCIAL_PREFIXES.github, icon: <Github className="w-3.5 h-3.5" /> },
+              ].map(({ key, label, prefix, icon }) => (
+                <div key={key} className="space-y-1.5">
+                  <div className="relative group">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none">
+                      <span className="text-neutral-400">{icon}</span>
+                      <span className="text-[11px] font-mono text-neutral-600 border-r border-white/10 pr-2">{prefix}</span>
+                    </div>
                     <Input
-                      value={form[key]}
+                      value={form[key as keyof EditProfileFormData] as string}
                       onChange={(e) =>
                         setForm((f) => ({ ...f, [key]: e.target.value }))
                       }
-                      className="glass-input border-0 bg-transparent rounded-none h-11 focus-visible:ring-0 focus-visible:ring-offset-0"
-                      placeholder={label}
+                      className="bg-neutral-950 border-white/10 h-11 pl-[110px] rounded-xl focus:border-white/20 focus:ring-0 text-neutral-200 text-xs"
+                      placeholder="username"
                     />
                   </div>
                 </div>
@@ -272,22 +345,27 @@ export function EditProfileDialog({
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 px-6 py-4 border-t border-[var(--glass-border)] bg-white/[0.02]">
+        <div className="flex justify-end gap-3 px-6 py-5 border-t border-white/10 bg-neutral-950/50">
           <Button
             type="button"
             variant="outline"
-            className="glass-button-secondary"
+            className="rounded-full px-8 h-12 border-white/10 hover:bg-white/5 text-neutral-300"
             onClick={() => setOpen(false)}
           >
             Cancel
           </Button>
           <Button
             type="button"
-            className="glass-button-primary"
-            onClick={handleSave}
             disabled={saving || !form.name.trim() || !form.username.trim()}
+            className="rounded-full px-8 h-12 bg-white text-black hover:bg-neutral-200 transition-all font-bold"
+            onClick={handleSave}
           >
-            {saving ? "Saving…" : "Save Changes"}
+            {saving ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Saving...
+              </>
+            ) : "Save Changes"}
           </Button>
         </div>
       </DialogContent>
