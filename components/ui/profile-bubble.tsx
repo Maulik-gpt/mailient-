@@ -10,6 +10,7 @@ import {
   LogOut,
   HelpCircle,
   UserCircle,
+  Edit,
   Shield,
   CreditCard,
   Users,
@@ -29,6 +30,7 @@ import {
   MapPin
 } from "lucide-react";
 import { WebsiteLink } from "./website-link";
+import { EditProfileDialog } from "./edit-profile-dialog";
 
 type UserStatus = 'online' | 'away' | 'offline';
 
@@ -57,6 +59,8 @@ type UserProfile = {
   last_synced_at?: string | null;
   created_at?: string;
   updated_at?: string;
+  username?: string | null;
+  banner_url?: string | null;
   email_accounts_connected?: number;
   emails_processed?: number;
   plan?: string;
@@ -296,7 +300,7 @@ export default function ProfileBubble() {
   };
 
   const handleProfileClick = () => {
-    router.push("/i/profile");
+    router.push("/profile-bubble");
     setIsDropdownOpen(false);
   };
 
@@ -419,13 +423,13 @@ export default function ProfileBubble() {
           {/* Desktop Dropdown */}
           <div
             id="profile-dropdown"
-            className="hidden md:block absolute right-0 mt-2 w-80 bg-[#121212] border border-[#333333] rounded-lg shadow-2xl z-50 animate-in fade-in-0 zoom-in-95 duration-200"
+            className="hidden md:block absolute right-0 mt-2 w-80 glass-card apple-border rounded-3xl shadow-2xl z-50 animate-in fade-in-0 zoom-in-95 duration-200 overflow-hidden"
             role="menu"
             aria-label="Profile menu"
             aria-labelledby="profile-button"
           >
             {/* User Info Section */}
-            <div className="p-4 border-b border-[#333333]">
+            <div className="p-6 border-b border-white/5 bg-white/[0.02]">
               <div className="flex items-center gap-3">
                 <div className="relative">
                   <div className="w-12 h-12 rounded-full bg-[#1A1A1A] border border-[#444444] flex items-center justify-center text-white font-semibold text-base">
@@ -457,13 +461,35 @@ export default function ProfileBubble() {
                       <h4 className="text-sm font-medium text-white">Personal Information</h4>
                       <button
                         onClick={() => {
-                          router.push("/i/profile?edit=true");
+                          setEditForm({
+                            name: user.name || '',
+                            bio: userProfile?.bio || '',
+                            location: userProfile?.location || '',
+                            website: userProfile?.website || '',
+                            birthdate: userProfile?.birthdate || '',
+                            gender: userProfile?.gender || '',
+                            work_status: userProfile?.work_status || '',
+                            interests: userProfile?.interests?.join(', ') || ''
+                          });
+                          setIsEditModalOpen(true);
                           setIsDropdownOpen(false);
                         }}
                         className="text-gray-400 hover:text-white transition-colors p-1 rounded-md hover:bg-[#2A2A2A]"
                         aria-label="Edit personal information"
                       >
-                        <UserCircle className="w-4 h-4" />
+                        <EditProfileDialog
+                          trigger={<Edit className="w-4 h-4" />}
+                          user={{ name: user.name || undefined, email: user.email || undefined }}
+                          profile={userProfile ? {
+                            avatar_url: userProfile.avatar_url || undefined,
+                            bio: userProfile.bio || undefined,
+                            location: userProfile.location || undefined,
+                            website: userProfile.website || undefined
+                          } : undefined}
+                          onSave={async (data) => {
+                            await handleSaveProfile();
+                          }}
+                        />
                       </button>
                     </div>
                     <div className="space-y-1 text-xs text-gray-500">
@@ -498,36 +524,36 @@ export default function ProfileBubble() {
                 <div className="space-y-1">
                   <button
                     onClick={() => updateUserStatus('online')}
-                    className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${userStatus === 'online'
-                      ? 'bg-green-500/20 text-green-400'
-                      : 'text-white hover:bg-[#2A2A2A]'
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-left rounded-2xl transition-all ${userStatus === 'online'
+                      ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                      : 'text-neutral-400 hover:text-white hover:bg-white/5'
                       }`}
                     role="menuitem"
                   >
-                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                    Online
+                    <div className="w-2.5 h-2.5 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.5)]"></div>
+                    <span className="text-xs font-bold uppercase tracking-wider">Online</span>
                   </button>
                   <button
                     onClick={() => updateUserStatus('away')}
-                    className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${userStatus === 'away'
-                      ? 'bg-yellow-500/20 text-yellow-400'
-                      : 'text-white hover:bg-[#2A2A2A]'
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-left rounded-2xl transition-all ${userStatus === 'away'
+                      ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
+                      : 'text-neutral-400 hover:text-white hover:bg-white/5'
                       }`}
                     role="menuitem"
                   >
-                    <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                    Away
+                    <div className="w-2.5 h-2.5 bg-yellow-500 rounded-full shadow-[0_0_8px_rgba(234,179,8,0.5)]"></div>
+                    <span className="text-xs font-bold uppercase tracking-wider">Away</span>
                   </button>
                   <button
                     onClick={() => updateUserStatus('offline')}
-                    className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${userStatus === 'offline'
-                      ? 'bg-gray-500/20 text-gray-400'
-                      : 'text-white hover:bg-[#2A2A2A]'
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-left rounded-2xl transition-all ${userStatus === 'offline'
+                      ? 'bg-neutral-500/10 text-neutral-400 border border-neutral-500/20'
+                      : 'text-neutral-400 hover:text-white hover:bg-white/5'
                       }`}
                     role="menuitem"
                   >
-                    <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
-                    Offline
+                    <div className="w-2.5 h-2.5 bg-neutral-500 rounded-full"></div>
+                    <span className="text-xs font-bold uppercase tracking-wider">Offline</span>
                   </button>
                 </div>
               </div>
@@ -538,37 +564,41 @@ export default function ProfileBubble() {
                 <div className="space-y-1">
                   <button
                     onClick={handleProfileClick}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors"
+                    className="w-full flex items-center gap-3 px-4 py-3 text-left text-neutral-400 hover:text-white hover:bg-white/5 rounded-2xl transition-all group"
                     role="menuitem"
                   >
-                    <UserCircle className="w-4 h-4" />
-                    View Profile
+                    <UserCircle className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                    <span className="text-xs font-bold uppercase tracking-wider">View Profile</span>
                   </button>
-                  <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
-                    <Camera className="w-4 h-4" />
-                    Change Avatar
-                  </button>
+                  <div className="w-full flex items-center gap-3 px-4 py-3 text-left text-neutral-400 hover:text-white hover:bg-white/5 rounded-2xl transition-all group cursor-pointer">
+                    <EditProfileDialog
+                      trigger={
+                        <div className="flex items-center gap-3 w-full">
+                          <Edit className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                          <span className="text-xs font-bold uppercase tracking-wider">Edit Profile</span>
+                        </div>
+                      }
+                      user={{ name: user.name || undefined, email: user.email || undefined }}
+                      profile={userProfile ? {
+                        avatar_url: userProfile.avatar_url || undefined,
+                        bio: userProfile.bio || undefined,
+                        location: userProfile.location || undefined,
+                        website: userProfile.website || undefined,
+                        username: userProfile.username || undefined,
+                        banner_url: userProfile.banner_url || undefined
+                      } : undefined}
+                      onSave={async (data) => {
+                        await handleSaveProfile();
+                      }}
+                    />
+                  </div>
                   <button
-                    onClick={() => {
-                      router.push("/i/profile?edit=true");
-                      setIsDropdownOpen(false);
-                    }}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors"
+                    onClick={() => router.push('/settings')}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-left text-neutral-400 hover:text-white hover:bg-white/5 rounded-2xl transition-all group"
                     role="menuitem"
                   >
-                    <UserCircle className="w-4 h-4" />
-                    Edit Profile
-                  </button>
-                  <button
-                    onClick={() => {
-                      router.push("/settings");
-                      setIsDropdownOpen(false);
-                    }}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors"
-                    role="menuitem"
-                  >
-                    <Settings className="w-4 h-4" />
-                    Settings
+                    <Settings className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                    <span className="text-xs font-bold uppercase tracking-wider">Settings</span>
                   </button>
                 </div>
               </div>
@@ -776,13 +806,35 @@ export default function ProfileBubble() {
                         <h4 className="text-sm font-medium text-white">Personal Information</h4>
                         <button
                           onClick={() => {
-                            router.push("/i/profile?edit=true");
+                            setEditForm({
+                              name: user.name || '',
+                              bio: userProfile?.bio || '',
+                              location: userProfile?.location || '',
+                              website: userProfile?.website || '',
+                              birthdate: userProfile?.birthdate || '',
+                              gender: userProfile?.gender || '',
+                              work_status: userProfile?.work_status || '',
+                              interests: userProfile?.interests?.join(', ') || ''
+                            });
+                            setIsEditModalOpen(true);
                             setIsDropdownOpen(false);
                           }}
                           className="text-gray-400 hover:text-white transition-colors p-1 rounded-md hover:bg-[#2A2A2A]"
                           aria-label="Edit personal information"
                         >
-                          <UserCircle className="w-4 h-4" />
+                          <EditProfileDialog
+                            trigger={<Edit className="w-4 h-4" />}
+                            user={{ name: user.name || undefined, email: user.email || undefined }}
+                            profile={userProfile ? {
+                              avatar_url: userProfile.avatar_url || undefined,
+                              bio: userProfile.bio || undefined,
+                              location: userProfile.location || undefined,
+                              website: userProfile.website || undefined
+                            } : undefined}
+                            onSave={async (data) => {
+                              await handleSaveProfile();
+                            }}
+                          />
                         </button>
                       </div>
                       <div className="space-y-1 text-xs text-gray-500">
@@ -882,15 +934,20 @@ export default function ProfileBubble() {
                 <div>
                   <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Account & Security</h3>
                   <div className="space-y-1">
-                    <button
-                      onClick={() => {
-                        router.push("/i/profile?edit=true");
-                        setIsDropdownOpen(false);
-                      }}
-                      className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors"
-                      role="menuitem"
-                    >
-                      <UserCircle className="w-4 h-4" />
+                    <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
+                      <EditProfileDialog
+                        trigger={<Edit className="w-4 h-4" />}
+                        user={{ name: user.name || undefined, email: user.email || undefined }}
+                        profile={userProfile ? {
+                          avatar_url: userProfile.avatar_url || undefined,
+                          bio: userProfile.bio || undefined,
+                          location: userProfile.location || undefined,
+                          website: userProfile.website || undefined
+                        } : undefined}
+                        onSave={async (data) => {
+                          await handleSaveProfile();
+                        }}
+                      />
                       Edit Profile
                     </button>
                     <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
