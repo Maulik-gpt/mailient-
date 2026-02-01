@@ -22,6 +22,7 @@ import {
   FileText,
   ShieldCheck,
   Zap,
+  RefreshCw,
 } from "lucide-react";
 import { HomeFeedSidebar } from "@/components/ui/home-feed-sidebar";
 import { EditProfileDialog, type EditProfileFormData } from "@/components/ui/edit-profile-dialog";
@@ -33,7 +34,7 @@ import { toast } from "sonner";
 /**
  * StreakGrid Component - GitHub-style contribution graph for activity
  */
-function StreakGrid({ history = [], streak = 0 }: { history?: any[], streak?: number }) {
+function StreakGrid({ history = [], streak = 0, onRefresh, isRefreshing }: { history?: any[], streak?: number, onRefresh?: () => void, isRefreshing?: boolean }) {
   const weeks = 40; // Show 40 weeks for a nice long graph
   const today = new Date();
   const daysToShow = weeks * 7;
@@ -81,6 +82,16 @@ function StreakGrid({ history = [], streak = 0 }: { history?: any[], streak?: nu
             <p className="text-sm text-neutral-500">Consistent usage keeps your inbox optimized</p>
           </div>
         </div>
+        {onRefresh && (
+          <button
+            onClick={onRefresh}
+            disabled={isRefreshing}
+            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-orange-400 transition-all disabled:opacity-50"
+            title="Refresh streak data"
+          >
+            <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
+          </button>
+        )}
       </div>
 
       <div className="flex gap-3">
@@ -194,6 +205,7 @@ export default function SettingsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [avatarImageError, setAvatarImageError] = useState(false);
   const [bannerImageError, setBannerImageError] = useState(false);
+  const [streakRefreshing, setStreakRefreshing] = useState(false);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -210,6 +222,24 @@ export default function SettingsPage() {
       .then((data) => data && setProfile(data))
       .catch(() => { });
   }, [session?.user?.email]);
+
+  const handleRefreshStreak = async () => {
+    setStreakRefreshing(true);
+    try {
+      const res = await fetch("/api/profile?force_refresh=true");
+      if (res.ok) {
+        const data = await res.json();
+        setProfile(data);
+        toast.success("Streak data refreshed!");
+      } else {
+        toast.error("Failed to refresh streak data");
+      }
+    } catch (e) {
+      toast.error("Error refreshing streak");
+    } finally {
+      setStreakRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     setAvatarImageError(false);
@@ -489,6 +519,8 @@ export default function SettingsPage() {
               <StreakGrid
                 streak={profile?.streak_count || 0}
                 history={profile?.activity_history || []}
+                onRefresh={handleRefreshStreak}
+                isRefreshing={streakRefreshing}
               />
             </section>
           )}

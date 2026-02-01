@@ -229,9 +229,11 @@ export async function GET(req) {
   try {
     // Check for legacy Gmail profile fetch
     let email = null;
+    let forceRefresh = false;
     try {
       const url = new URL(req.url);
       email = url.searchParams.get("email");
+      forceRefresh = url.searchParams.get("force_refresh") === "true";
     } catch (urlError) {
       console.error("Error parsing URL:", urlError);
       // Continue without email param
@@ -258,6 +260,12 @@ export async function GET(req) {
     }
 
     const user = { email: session.user.email };
+
+    // If force_refresh, clear existing activity to force full rebackfill
+    if (forceRefresh) {
+      console.log(`[Profile] Force refresh requested for ${user.email}`);
+      await supabase.from("user_activity").delete().eq("user_id", user.email);
+    }
 
     // Ensure database tables exist
     await ensureDatabaseTables();
