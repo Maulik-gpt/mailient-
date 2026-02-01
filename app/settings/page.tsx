@@ -81,6 +81,8 @@ export default function SettingsPage() {
   const [section, setSection] = useState<Section>("profile");
   const [deleting, setDeleting] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [avatarImageError, setAvatarImageError] = useState(false);
+  const [bannerImageError, setBannerImageError] = useState(false);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -98,6 +100,11 @@ export default function SettingsPage() {
       .catch(() => {});
   }, [session?.user?.email]);
 
+  useEffect(() => {
+    setAvatarImageError(false);
+    setBannerImageError(false);
+  }, [profile?.avatar_url, profile?.banner_url, (session?.user as { image?: string })?.image]);
+
   const handleSaveProfile = async (data: EditProfileFormData) => {
     const res = await fetch("/api/profile", {
       method: "PUT",
@@ -107,6 +114,7 @@ export default function SettingsPage() {
         bio: data.bio,
         location: data.location,
         website: data.website || undefined,
+        banner_url: data.banner_url || undefined,
         preferences: {
           ...profile?.preferences,
           username: data.username,
@@ -171,6 +179,10 @@ export default function SettingsPage() {
   const displayHandle = profile?.preferences?.username ?? profile?.username ?? user.email?.split("@")[0] ?? MOCK_PROFILE.handle;
   const avatarUrl = profile?.avatar_url ?? user.image;
   const bannerUrl = profile?.banner_url;
+  const hasValidAvatarUrl = avatarUrl && (avatarUrl.startsWith("http") || avatarUrl.startsWith("/") || avatarUrl.startsWith("data:"));
+  const hasValidBannerUrl = bannerUrl && (bannerUrl.startsWith("http") || bannerUrl.startsWith("/") || bannerUrl.startsWith("data:"));
+  const showAvatarImage = hasValidAvatarUrl && !avatarImageError;
+  const showBannerImage = hasValidBannerUrl && !bannerImageError;
   const joinDate = profile?.created_at
     ? new Date(profile.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })
     : MOCK_PROFILE.joinDate;
@@ -225,18 +237,26 @@ export default function SettingsPage() {
             <section className="space-y-6 glass-fade-up">
               <div className="glass-panel overflow-hidden rounded-2xl">
                 {/* Banner */}
-                <div className="relative h-32 sm:h-40 rounded-t-2xl overflow-hidden">
-                  {bannerUrl ? (
-                    <img src={bannerUrl} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-[var(--settings-surface)] via-[#1a1a1f] to-[#0d0d12]" />
+                <div className="relative h-32 sm:h-40 rounded-t-2xl overflow-hidden bg-gradient-to-br from-[var(--settings-surface)] via-[#1a1a1f] to-[#0d0d12]">
+                  {showBannerImage && (
+                    <img
+                      src={bannerUrl!}
+                      alt=""
+                      className="absolute inset-0 w-full h-full object-cover"
+                      onError={() => setBannerImageError(true)}
+                    />
                   )}
                   <div className="absolute inset-0 profile-banner-overlay" />
                 </div>
                 <div className="relative px-6 pb-6 -mt-12">
                   <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border-4 border-[var(--glass-bg-elevated)] bg-[var(--settings-surface)] shadow-xl shrink-0 flex items-center justify-center">
-                    {avatarUrl ? (
-                      <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+                    {showAvatarImage ? (
+                      <img
+                        src={avatarUrl!}
+                        alt=""
+                        className="w-full h-full object-cover"
+                        onError={() => setAvatarImageError(true)}
+                      />
                     ) : (
                       <span className="text-3xl font-semibold text-[var(--settings-text-tertiary)]">
                         {displayName.slice(0, 1).toUpperCase()}
@@ -261,6 +281,7 @@ export default function SettingsPage() {
                       user={{ name: user.name, email: user.email }}
                       profile={{
                         avatar_url: profile?.avatar_url ?? undefined,
+                        banner_url: profile?.banner_url ?? undefined,
                         username: profile?.preferences?.username ?? profile?.username ?? undefined,
                         bio: profile?.bio ?? undefined,
                         location: profile?.location ?? undefined,
@@ -290,16 +311,6 @@ export default function SettingsPage() {
                     <span className="flex items-center gap-1.5">
                       <Calendar className="w-4 h-4 text-[var(--settings-text-tertiary)] shrink-0" />
                       Joined {joinDate}
-                    </span>
-                  </div>
-                  <div className="flex gap-6 mt-4 text-sm">
-                    <span className="text-[var(--settings-text)]">
-                      <span className="font-semibold tabular-nums">{MOCK_PROFILE.followers}</span>{" "}
-                      <span className="text-[var(--settings-text-secondary)]">Followers</span>
-                    </span>
-                    <span className="text-[var(--settings-text)]">
-                      <span className="font-semibold tabular-nums">{MOCK_PROFILE.following}</span>{" "}
-                      <span className="text-[var(--settings-text-secondary)]">Following</span>
                     </span>
                   </div>
                   {hasSocial && (

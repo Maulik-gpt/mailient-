@@ -376,6 +376,11 @@ export async function PUT(req) {
       return NextResponse.json({ error: "Invalid website URL format" }, { status: 400 });
     }
 
+    // URL validation for banner_url (optional)
+    if (banner_url !== undefined && banner_url !== null && String(banner_url).trim() && !isValidUrlStrict(String(banner_url).trim())) {
+      return NextResponse.json({ error: "Invalid banner image URL format" }, { status: 400 });
+    }
+
     // Build profile data, only including defined values
     const profileData = {
       user_id: user.email, // Use email as user_id for consistency with tokens

@@ -42,6 +42,8 @@ export default function ProfileBubblePage() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [avatarImageError, setAvatarImageError] = useState(false);
+  const [bannerImageError, setBannerImageError] = useState(false);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -58,6 +60,11 @@ export default function ProfileBubblePage() {
       .then((data) => data && setProfile(data))
       .catch(() => {});
   }, [session?.user?.email]);
+
+  useEffect(() => {
+    setAvatarImageError(false);
+    setBannerImageError(false);
+  }, [profile?.avatar_url, profile?.banner_url, (session?.user as { image?: string })?.image]);
 
   const handleSaveProfile = async (data: EditProfileFormData) => {
     const res = await fetch("/api/profile", {
@@ -101,6 +108,10 @@ export default function ProfileBubblePage() {
   const displayHandle = profile?.preferences?.username ?? profile?.username ?? user.email?.split("@")[0] ?? "user";
   const avatarUrl = profile?.avatar_url ?? user.image;
   const bannerUrl = profile?.banner_url;
+  const hasValidAvatarUrl = avatarUrl && (avatarUrl.startsWith("http") || avatarUrl.startsWith("/") || avatarUrl.startsWith("data:"));
+  const hasValidBannerUrl = bannerUrl && (bannerUrl.startsWith("http") || bannerUrl.startsWith("/") || bannerUrl.startsWith("data:"));
+  const showAvatarImage = hasValidAvatarUrl && !avatarImageError;
+  const showBannerImage = hasValidBannerUrl && !bannerImageError;
   const joinDate = profile?.created_at
     ? new Date(profile.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })
     : null;
@@ -132,15 +143,14 @@ export default function ProfileBubblePage() {
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 pb-16">
         {/* Banner */}
-        <div className="relative -mx-4 sm:-mx-6 mt-0 h-40 sm:h-48 rounded-b-2xl overflow-hidden">
-          {bannerUrl ? (
+        <div className="relative -mx-4 sm:-mx-6 mt-0 h-40 sm:h-48 rounded-b-2xl overflow-hidden bg-gradient-to-br from-[var(--settings-surface)] via-[#1a1a1f] to-[#0d0d12]">
+          {showBannerImage && (
             <img
-              src={bannerUrl}
+              src={bannerUrl!}
               alt=""
-              className="w-full h-full object-cover"
+              className="absolute inset-0 w-full h-full object-cover"
+              onError={() => setBannerImageError(true)}
             />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-[var(--settings-surface)] via-[#1a1a1f] to-[#0d0d12]" />
           )}
           <div className="absolute inset-0 profile-banner-overlay" />
         </div>
@@ -150,17 +160,18 @@ export default function ProfileBubblePage() {
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
             {/* Avatar */}
             <div className="flex items-end gap-4">
-              <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-[var(--settings-bg)] bg-[var(--settings-surface)] shadow-xl shrink-0">
-                {avatarUrl ? (
+              <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-[var(--settings-bg)] bg-[var(--settings-surface)] shadow-xl shrink-0 flex items-center justify-center">
+                {showAvatarImage ? (
                   <img
-                    src={avatarUrl}
+                    src={avatarUrl!}
                     alt=""
                     className="w-full h-full object-cover"
+                    onError={() => setAvatarImageError(true)}
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-[var(--settings-text-tertiary)] text-4xl font-semibold">
+                  <span className="text-4xl font-semibold text-[var(--settings-text-tertiary)]">
                     {displayName.slice(0, 1).toUpperCase()}
-                  </div>
+                  </span>
                 )}
               </div>
             </div>
@@ -179,6 +190,7 @@ export default function ProfileBubblePage() {
                 user={{ name: user.name, email: user.email }}
                 profile={{
                   avatar_url: profile?.avatar_url ?? undefined,
+                  banner_url: profile?.banner_url ?? undefined,
                   username: profile?.preferences?.username ?? profile?.username ?? undefined,
                   bio: profile?.bio ?? undefined,
                   location: profile?.location ?? undefined,
@@ -233,24 +245,6 @@ export default function ProfileBubblePage() {
                 Joined {joinDate}
               </span>
             )}
-          </div>
-
-          {/* Followers / following placeholder */}
-          <div className="flex gap-6 mt-4 text-sm">
-            <button
-              type="button"
-              className="text-[var(--settings-text)] hover:underline font-medium transition-colors"
-            >
-              <span className="font-semibold tabular-nums">0</span>{" "}
-              <span className="text-[var(--settings-text-secondary)]">Followers</span>
-            </button>
-            <button
-              type="button"
-              className="text-[var(--settings-text)] hover:underline font-medium transition-colors"
-            >
-              <span className="font-semibold tabular-nums">0</span>{" "}
-              <span className="text-[var(--settings-text-secondary)]">Following</span>
-            </button>
           </div>
 
           {/* Social icons */}

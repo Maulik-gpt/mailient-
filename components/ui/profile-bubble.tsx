@@ -366,6 +366,7 @@ export default function ProfileBubble() {
           bio: data.bio,
           location: data.location,
           website: data.website || undefined,
+          banner_url: data.banner_url || undefined,
           preferences: {
             ...userProfile?.preferences,
             username: data.username,
@@ -508,6 +509,7 @@ export default function ProfileBubble() {
                           user={{ name: user.name || undefined, email: user.email || undefined }}
                           profile={userProfile ? {
                             avatar_url: userProfile.avatar_url || undefined,
+                            banner_url: (userProfile as { banner_url?: string })?.banner_url || undefined,
                             username: (userProfile as { username?: string })?.username || undefined,
                             bio: userProfile.bio || undefined,
                             location: userProfile.location || undefined,
@@ -610,6 +612,7 @@ export default function ProfileBubble() {
                     user={{ name: user.name || undefined, email: user.email || undefined }}
                     profile={userProfile ? {
                       avatar_url: userProfile.avatar_url || undefined,
+                      banner_url: (userProfile as { banner_url?: string })?.banner_url || undefined,
                       username: (userProfile as { username?: string })?.username || undefined,
                       bio: userProfile.bio || undefined,
                       location: userProfile.location || undefined,
@@ -853,6 +856,7 @@ export default function ProfileBubble() {
                             user={{ name: user.name || undefined, email: user.email || undefined }}
                             profile={userProfile ? {
                               avatar_url: userProfile.avatar_url || undefined,
+                              banner_url: (userProfile as { banner_url?: string })?.banner_url || undefined,
                               username: (userProfile as { username?: string })?.username || undefined,
                               bio: userProfile.bio || undefined,
                               location: userProfile.location || undefined,
@@ -970,6 +974,7 @@ export default function ProfileBubble() {
                       user={{ name: user.name || undefined, email: user.email || undefined }}
                       profile={userProfile ? {
                         avatar_url: userProfile.avatar_url || undefined,
+                        banner_url: (userProfile as { banner_url?: string })?.banner_url || undefined,
                         username: (userProfile as { username?: string })?.username || undefined,
                         bio: userProfile.bio || undefined,
                         location: userProfile.location || undefined,

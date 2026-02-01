@@ -28,6 +28,7 @@ export type EditProfileFormData = {
   bio: string;
   location: string;
   website: string;
+  banner_url: string;
   social_x: string;
   social_linkedin: string;
   social_instagram: string;
@@ -39,6 +40,7 @@ type EditProfileDialogProps = {
   user?: { name?: string | null; email?: string | null };
   profile?: {
     avatar_url?: string | null;
+    banner_url?: string | null;
     bio?: string | null;
     location?: string | null;
     website?: string | null;
@@ -64,6 +66,7 @@ export function EditProfileDialog({
     bio: profile?.bio ?? "",
     location: profile?.location ?? "",
     website: profile?.website ?? "",
+    banner_url: profile?.banner_url ?? "",
     social_x: profile?.preferences?.social_links?.x ?? "",
     social_linkedin: profile?.preferences?.social_links?.linkedin ?? "",
     social_instagram: profile?.preferences?.social_links?.instagram ?? "",
@@ -78,6 +81,7 @@ export function EditProfileDialog({
         bio: profile?.bio ?? "",
         location: profile?.location ?? "",
         website: profile?.website ?? "",
+        banner_url: profile?.banner_url ?? "",
         social_x: profile?.preferences?.social_links?.x ?? "",
         social_linkedin: profile?.preferences?.social_links?.linkedin ?? "",
         social_instagram: profile?.preferences?.social_links?.instagram ?? "",
@@ -141,6 +145,23 @@ export function EditProfileDialog({
             </div>
             <p className="text-sm text-[var(--settings-text-tertiary)] pt-2">
               Recommended size: 400×400px
+            </p>
+          </div>
+
+          {/* Banner image URL */}
+          <div>
+            <Label className="text-[var(--settings-text-secondary)]">
+              Banner image URL <span className="text-[var(--settings-text-tertiary)] font-normal">(optional)</span>
+            </Label>
+            <Input
+              value={form.banner_url}
+              onChange={(e) => setForm((f) => ({ ...f, banner_url: e.target.value.trim() }))}
+              className="mt-1.5 glass-input h-11 border-[var(--glass-border)] bg-white/5"
+              placeholder="https://example.com/your-banner.jpg"
+              type="url"
+            />
+            <p className="text-xs text-[var(--settings-text-tertiary)] mt-1">
+              Paste a direct image link. Recommended: 1500×500px or similar aspect ratio.
             </p>
           </div>
 
