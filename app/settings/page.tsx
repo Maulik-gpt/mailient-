@@ -28,6 +28,8 @@ import { Button } from "@/components/ui/button";
 import { WebsiteLink } from "@/components/ui/website-link";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useTheme } from "next-themes";
+import { Moon, Sun, Monitor } from "lucide-react";
 
 type UserProfile = {
   name?: string | null;
@@ -80,6 +82,7 @@ const SOCIAL_ICONS: Record<string, { label: string; url: (u: string) => string }
 export default function SettingsPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
+  const { theme, setTheme } = useTheme();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [section, setSection] = useState<Section>("profile");
   const [deleting, setDeleting] = useState(false);
@@ -223,16 +226,16 @@ export default function SettingsPage() {
   const aiPrivacyEnabled = profile?.preferences?.ai_privacy_mode === "enabled";
 
   return (
-    <div className="settings-page min-h-screen flex bg-black">
+    <div className="settings-page min-h-screen flex bg-[var(--background)]">
       <HomeFeedSidebar />
 
       <main className="flex-1 overflow-y-auto ml-16">
         <div className="max-w-5xl mx-auto px-6 py-12">
           <header className="mb-10">
-            <h1 className="text-3xl font-medium tracking-tight text-neutral-200">
+            <h1 className="text-3xl font-medium tracking-tight text-[var(--settings-text)]">
               Settings
             </h1>
-            <p className="mt-2 text-base text-neutral-500">
+            <p className="mt-2 text-base text-[var(--settings-text-secondary)]">
               Manage your profile, account, and preferences.
             </p>
           </header>
@@ -247,8 +250,8 @@ export default function SettingsPage() {
                 className={cn(
                   "flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-200 capitalize",
                   section === s
-                    ? "bg-white/10 text-[var(--settings-text)] shadow-sm"
-                    : "text-[var(--settings-text-secondary)] hover:text-[var(--settings-text)] hover:bg-white/5"
+                    ? "bg-[var(--primary)] text-[var(--primary-foreground)] shadow-sm"
+                    : "text-[var(--settings-text-secondary)] hover:text-[var(--settings-text)] hover:bg-[var(--settings-accent)]"
                 )}
               >
                 {s}
@@ -289,10 +292,10 @@ export default function SettingsPage() {
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mt-4">
                     <div>
-                      <h2 className="text-2xl font-medium text-neutral-200 flex items-center gap-2">
+                      <h2 className="text-2xl font-medium text-[var(--settings-text)] flex items-center gap-2">
                         {displayName}
                       </h2>
-                      <p className="text-neutral-500 text-sm mt-1">@{displayHandle}</p>
+                      <p className="text-[var(--settings-text-secondary)] text-sm mt-1">@{displayHandle}</p>
                     </div>
                     <EditProfileDialog
                       trigger={
@@ -388,8 +391,8 @@ export default function SettingsPage() {
                   Usage and subscription data from your account.
                 </p>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-[var(--glass-border)]">
-                    <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+                  <div className="flex items-center gap-4 p-4 rounded-xl bg-[var(--settings-accent)] border border-[var(--settings-border)]">
+                    <div className="w-10 h-10 rounded-lg bg-[var(--background)] flex items-center justify-center shrink-0 border border-[var(--settings-border)]">
                       <Mail className="w-5 h-5 text-[var(--settings-text-tertiary)]" />
                     </div>
                     <div>
@@ -399,8 +402,8 @@ export default function SettingsPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-[var(--glass-border)]">
-                    <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+                  <div className="flex items-center gap-4 p-4 rounded-xl bg-[var(--settings-accent)] border border-[var(--settings-border)]">
+                    <div className="w-10 h-10 rounded-lg bg-[var(--background)] flex items-center justify-center shrink-0 border border-[var(--settings-border)]">
                       <Link2 className="w-5 h-5 text-[var(--settings-text-tertiary)]" />
                     </div>
                     <div>
@@ -410,8 +413,8 @@ export default function SettingsPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-[var(--glass-border)]">
-                    <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+                  <div className="flex items-center gap-4 p-4 rounded-xl bg-[var(--settings-accent)] border border-[var(--settings-border)]">
+                    <div className="w-10 h-10 rounded-lg bg-[var(--background)] flex items-center justify-center shrink-0 border border-[var(--settings-border)]">
                       <HardDrive className="w-5 h-5 text-[var(--settings-text-tertiary)]" />
                     </div>
                     <div>
@@ -421,8 +424,8 @@ export default function SettingsPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-[var(--glass-border)]">
-                    <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+                  <div className="flex items-center gap-4 p-4 rounded-xl bg-[var(--settings-accent)] border border-[var(--settings-border)]">
+                    <div className="w-10 h-10 rounded-lg bg-[var(--background)] flex items-center justify-center shrink-0 border border-[var(--settings-border)]">
                       <Activity className="w-5 h-5 text-[var(--settings-text-tertiary)]" />
                     </div>
                     <div>
@@ -435,7 +438,7 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 </div>
-                <div className="mt-4 p-4 rounded-xl bg-white/5 border border-[var(--glass-border)] flex items-center gap-4">
+                <div className="mt-4 p-4 rounded-xl bg-[var(--settings-accent)] border border-[var(--settings-border)] flex items-center gap-4">
                   <CreditCard className="w-10 h-10 text-[var(--settings-text-tertiary)] shrink-0" />
                   <div>
                     <p className="text-xs font-medium text-[var(--settings-text-tertiary)] uppercase tracking-wider">Subscription plan</p>
@@ -443,9 +446,51 @@ export default function SettingsPage() {
                       {profile?.plan ?? profile?.preferences?.plan ?? "Free Plan"}
                     </p>
                   </div>
-                  <Button className="ml-auto glass-button-secondary" onClick={() => router.push("/pricing")}>
+                  <Button className="ml-auto bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 rounded-full" onClick={() => router.push("/pricing")}>
                     View plans
                   </Button>
+                </div>
+
+                <div className="mt-8 pt-8 border-t border-[var(--settings-border)]">
+                  <h3 className="text-md font-medium text-[var(--settings-text)] mb-4">Display Theme</h3>
+                  <div className="grid grid-cols-3 gap-3">
+                    <button
+                      onClick={() => setTheme("light")}
+                      className={cn(
+                        "flex flex-col items-center gap-2 p-4 rounded-xl border transition-all",
+                        theme === "light"
+                          ? "bg-[var(--primary)] text-[var(--primary-foreground)] border-transparent shadow-lg"
+                          : "bg-[var(--settings-accent)] text-[var(--settings-text)] border-[var(--settings-border)] hover:border-[var(--settings-text-tertiary)]"
+                      )}
+                    >
+                      <Sun className="w-5 h-5" />
+                      <span className="text-xs font-medium">Light</span>
+                    </button>
+                    <button
+                      onClick={() => setTheme("dark")}
+                      className={cn(
+                        "flex flex-col items-center gap-2 p-4 rounded-xl border transition-all",
+                        theme === "dark"
+                          ? "bg-[var(--primary)] text-[var(--primary-foreground)] border-transparent shadow-lg"
+                          : "bg-[var(--settings-accent)] text-[var(--settings-text)] border-[var(--settings-border)] hover:border-[var(--settings-text-tertiary)]"
+                      )}
+                    >
+                      <Moon className="w-5 h-5" />
+                      <span className="text-xs font-medium">Dark</span>
+                    </button>
+                    <button
+                      onClick={() => setTheme("system")}
+                      className={cn(
+                        "flex flex-col items-center gap-2 p-4 rounded-xl border transition-all",
+                        theme === "system"
+                          ? "bg-[var(--primary)] text-[var(--primary-foreground)] border-transparent shadow-lg"
+                          : "bg-[var(--settings-accent)] text-[var(--settings-text)] border-[var(--settings-border)] hover:border-[var(--settings-text-tertiary)]"
+                      )}
+                    >
+                      <Monitor className="w-5 h-5" />
+                      <span className="text-xs font-medium">System</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </section>
@@ -460,7 +505,7 @@ export default function SettingsPage() {
                   Security
                 </h2>
                 <div className="space-y-6">
-                  <div className="flex items-start gap-4 p-4 rounded-xl bg-white/5 border border-[var(--glass-border)]">
+                  <div className="flex items-start gap-4 p-4 rounded-xl bg-[var(--settings-accent)] border border-[var(--settings-border)]">
                     <Lock className="w-5 h-5 text-[var(--settings-accent)] shrink-0 mt-0.5" />
                     <div>
                       <p className="font-medium text-[var(--settings-text)]">Advanced Encryption (AES-256)</p>
@@ -469,7 +514,7 @@ export default function SettingsPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-[var(--glass-border)]">
+                  <div className="flex items-center justify-between p-4 rounded-xl bg-[var(--settings-accent)] border border-[var(--settings-border)]">
                     <div className="flex items-center gap-3">
                       {aiPrivacyEnabled ? (
                         <EyeOff className="w-5 h-5 text-[var(--settings-text-tertiary)]" />
@@ -519,7 +564,7 @@ export default function SettingsPage() {
                     placeholder="Type DELETE to confirm"
                     value={deleteConfirm}
                     onChange={(e) => setDeleteConfirm(e.target.value)}
-                    className="glass-input flex-1 max-w-xs h-10 px-3 rounded-lg border border-[var(--glass-border)] bg-white/5 text-[var(--settings-text)] placeholder:text-[var(--settings-text-tertiary)]"
+                    className="flex-1 max-w-xs h-12 px-4 rounded-xl border border-[var(--settings-border)] bg-[var(--background)] text-[var(--settings-text)] placeholder:text-[var(--settings-text-tertiary)] focus:outline-none focus:border-red-500/50 transition-colors"
                   />
                   <Button
                     variant="destructive"
@@ -545,20 +590,20 @@ export default function SettingsPage() {
                 <div className="space-y-4">
                   <Link
                     href="/terms-of-service"
-                    className="flex items-center gap-3 p-4 rounded-xl bg-white/5 border border-[var(--glass-border)] hover:bg-white/8 transition-colors text-[var(--settings-text)]"
+                    className="flex items-center gap-3 p-4 rounded-xl bg-[var(--settings-accent)] border border-[var(--settings-border)] hover:opacity-80 transition-opacity text-[var(--settings-text)]"
                   >
                     <FileText className="w-5 h-5 text-[var(--settings-text-tertiary)] shrink-0" />
                     <span className="font-medium">Terms & Conditions</span>
                   </Link>
                   <Link
                     href="/privacy-policy"
-                    className="flex items-center gap-3 p-4 rounded-xl bg-white/5 border border-[var(--glass-border)] hover:bg-white/8 transition-colors text-[var(--settings-text)]"
+                    className="flex items-center gap-3 p-4 rounded-xl bg-[var(--settings-accent)] border border-[var(--settings-border)] hover:opacity-80 transition-opacity text-[var(--settings-text)]"
                   >
                     <ShieldCheck className="w-5 h-5 text-[var(--settings-text-tertiary)] shrink-0" />
                     <span className="font-medium">Privacy Policy</span>
                   </Link>
                 </div>
-                <div className="mt-6 p-6 rounded-xl bg-white/5 border border-[var(--glass-border)]">
+                <div className="mt-6 p-6 rounded-xl bg-[var(--settings-accent)] border border-[var(--settings-border)]">
                   <p className="text-sm font-semibold text-[var(--settings-text)] mb-2">
                     Committed to your sovereignty
                   </p>

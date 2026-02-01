@@ -1228,7 +1228,7 @@ export function GmailInterfaceFixed() {
     const totalItems = summary ? Object.values(summary as Record<string, number>).reduce((a: number, b: number) => a + b, 0) : 0;
 
     return (
-        <div className="min-h-screen bg-[#0a0a0a] dark:bg-[#0a0a0a] flex" style={{ fontFamily: "'Satoshi', -apple-system, BlinkMacSystemFont, sans-serif" }}>
+        <div className="min-h-screen bg-[var(--background)] flex" style={{ fontFamily: "'Satoshi', -apple-system, BlinkMacSystemFont, sans-serif" }}>
             <UsageLimitModal
                 isOpen={isUsageLimitModalOpen}
                 onClose={() => setIsUsageLimitModalOpen(false)}
@@ -1270,11 +1270,11 @@ export function GmailInterfaceFixed() {
                     <div className="flex items-center justify-between mb-16">
                         <div className="flex items-center gap-4">
                             {viewMode === 'people' ? (
-                                <Users className="w-6 h-6 text-[#fafafa]" strokeWidth={1.5} />
+                                <Users className="w-6 h-6 text-[var(--foreground)]" strokeWidth={1.5} />
                             ) : (
-                                <Home className="w-6 h-6 text-[#fafafa]" strokeWidth={1.5} />
+                                <Home className="w-6 h-6 text-[var(--foreground)]" strokeWidth={1.5} />
                             )}
-                            <h1 className="text-2xl font-medium text-[#fafafa] tracking-tight">
+                            <h1 className="text-2xl font-medium text-[var(--foreground)] tracking-tight">
                                 {viewMode === 'people' ? 'People' : 'Home'}
                             </h1>
                         </div>
@@ -1319,7 +1319,7 @@ export function GmailInterfaceFixed() {
                             <Button
                                 onClick={() => isTraditionalView ? fetchTraditionalEmails() : fetchSiftInsights(true)}
                                 disabled={loading || isLoadingTraditional || (!isTraditionalView && !nextPageToken)}
-                                className="h-9 px-4 bg-transparent hover:bg-neutral-900 border border-neutral-800 hover:border-neutral-700 text-neutral-400 hover:text-[#fafafa] rounded-lg transition-colors flex items-center gap-2"
+                                className="h-9 px-4 bg-transparent hover:bg-[var(--accent)] border border-[var(--border)] hover:border-[var(--muted-foreground)]/30 text-[var(--muted-foreground)] hover:text-[var(--foreground)] rounded-lg transition-colors flex items-center gap-2"
                                 size="sm"
                             >
                                 <Sparkles className={`h-3.5 w-3.5 ${loading || isLoadingTraditional ? 'animate-pulse' : ''}`} />
@@ -1328,7 +1328,7 @@ export function GmailInterfaceFixed() {
                             <Button
                                 onClick={() => isTraditionalView ? fetchTraditionalEmails() : fetchSiftInsights(false)}
                                 disabled={loading || isLoadingTraditional}
-                                className="h-9 px-4 bg-transparent hover:bg-neutral-900 border border-neutral-800 hover:border-neutral-700 text-neutral-400 hover:text-[#fafafa] rounded-lg transition-colors flex items-center gap-2"
+                                className="h-9 px-4 bg-transparent hover:bg-[var(--accent)] border border-[var(--border)] hover:border-[var(--muted-foreground)]/30 text-[var(--muted-foreground)] hover:text-[var(--foreground)] rounded-lg transition-colors flex items-center gap-2"
                                 size="sm"
                             >
                                 <RefreshCw className={`h-3.5 w-3.5 ${loading || isLoadingTraditional ? 'animate-spin' : ''}`} />
@@ -1339,14 +1339,14 @@ export function GmailInterfaceFixed() {
 
                     {/* Stats Grid */}
                     {summary && (
-                        <div className="grid grid-cols-6 gap-px bg-neutral-800/50 rounded-xl overflow-hidden mb-16">
+                        <div className="grid grid-cols-6 gap-px bg-[var(--border)] rounded-xl overflow-hidden mb-16">
                             {/* Opportunities */}
-                            <div className="bg-[#0a0a0a] p-6 hover:bg-neutral-900/50 transition-colors">
+                            <div className="bg-[var(--background)] p-6 hover:bg-[var(--accent)] transition-colors">
                                 <div className="flex items-center gap-3 mb-4">
-                                    <Target className="h-4 w-4 text-neutral-500" strokeWidth={1.5} />
+                                    <Target className="h-4 w-4 text-[var(--muted-foreground)]" strokeWidth={1.5} />
                                 </div>
-                                <p className="text-2xl font-medium text-[#fafafa] mb-1">{summary.opportunities_detected || 0}</p>
-                                <p className="text-xs text-neutral-500 font-light">Opportunities</p>
+                                <p className="text-2xl font-medium text-[var(--foreground)] mb-1">{summary.opportunities_detected || 0}</p>
+                                <p className="text-xs text-[var(--muted-foreground)] font-light">Opportunities</p>
                             </div>
 
                             {/* Urgent */}
@@ -1515,7 +1515,7 @@ export function GmailInterfaceFixed() {
                             </div>
 
                             {/* Right Column: Profile Details */}
-                            <div className="w-[400px] flex flex-col bg-neutral-900/40 border border-neutral-800/50 rounded-3xl overflow-hidden shadow-2xl transition-all">
+                            <div className="w-[400px] flex flex-col bg-[var(--background)] border border-[var(--border)] rounded-3xl overflow-hidden shadow-2xl transition-all">
                                 {!selectedContactEmail ? (
                                     <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
                                         <div className="w-20 h-20 bg-white/[0.02] border border-white/[0.05] rounded-full flex items-center justify-center mb-6">
@@ -1648,7 +1648,7 @@ export function GmailInterfaceFixed() {
                                         <p className="text-neutral-500 font-light text-lg">Loading your inbox...</p>
                                     </div>
                                 ) : traditionalEmails.length > 0 ? (
-                                    <div className="space-y-px bg-neutral-900/20 border border-neutral-800/50 rounded-2xl overflow-hidden shadow-2xl">
+                                    <div className="space-y-px bg-[var(--background)] border border-[var(--border)] rounded-2xl overflow-hidden shadow-2xl">
                                         {traditionalEmails.map((email, index) => (
                                             <React.Fragment key={email.id}>
                                                 {/* Separation line after 50 emails */}
@@ -1661,24 +1661,24 @@ export function GmailInterfaceFixed() {
                                                 )}
                                                 <div
                                                     onClick={() => handleTraditionalEmailClick(email.id)}
-                                                    className="group flex items-center gap-6 p-5 hover:bg-white/[0.04] active:bg-white/[0.06] transition-all cursor-pointer border-b border-white/[0.02] last:border-0 relative overflow-hidden"
+                                                    className="group flex items-center gap-6 p-5 hover:bg-[var(--accent)] active:bg-[var(--accent)]/80 transition-all cursor-pointer border-b border-[var(--border)] last:border-0 relative overflow-hidden"
                                                 >
-                                                    <div className="w-10 h-10 rounded-full bg-neutral-800/50 flex items-center justify-center flex-shrink-0 border border-white/[0.05] text-white/40 group-hover:text-white/80 transition-colors">
+                                                    <div className="w-10 h-10 rounded-full bg-[var(--accent)]/50 flex items-center justify-center flex-shrink-0 border border-[var(--border)] text-[var(--muted-foreground)] group-hover:text-[var(--foreground)] transition-colors">
                                                         {email.from?.[0]?.toUpperCase() || 'M'}
                                                     </div>
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex justify-between items-center mb-1">
-                                                            <h4 className="text-sm font-semibold text-white/90 truncate group-hover:text-white transition-colors">
+                                                            <h4 className="text-sm font-semibold text-[var(--foreground)]/90 truncate group-hover:text-[var(--foreground)] transition-colors">
                                                                 {email.from?.split('<')[0]?.trim()}
                                                             </h4>
-                                                            <span className="text-[10px] uppercase tracking-widest text-neutral-600 font-medium">
+                                                            <span className="text-[10px] uppercase tracking-widest text-[var(--muted-foreground)] font-medium">
                                                                 {new Date(email.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                                                             </span>
                                                         </div>
-                                                        <p className="text-sm text-white/60 font-medium truncate mb-1">
+                                                        <p className="text-sm text-[var(--muted-foreground)] font-medium truncate mb-1">
                                                             {email.subject}
                                                         </p>
-                                                        <p className="text-xs text-neutral-500 truncate font-light leading-relaxed">
+                                                        <p className="text-xs text-[var(--muted-foreground)] opacity-70 truncate font-light leading-relaxed">
                                                             {email.snippet}
                                                         </p>
                                                     </div>
@@ -2023,9 +2023,9 @@ export function GmailInterfaceFixed() {
                                             </div>
 
                                             {/* Original Email Content (Optional context) */}
-                                            <div className="pt-10 border-t border-neutral-800/50">
-                                                <h4 className="text-xs font-medium text-neutral-600 uppercase tracking-widest mb-6">Original Message Snippet</h4>
-                                                <div className="bg-neutral-900/30 rounded-2xl p-8 text-neutral-400 text-base leading-relaxed font-light border border-neutral-800/30">
+                                            <div className="pt-10 border-t border-[var(--border)]">
+                                                <h4 className="text-xs font-medium text-[var(--muted-foreground)] uppercase tracking-widest mb-6">Original Message Snippet</h4>
+                                                <div className="bg-[var(--accent)] rounded-2xl p-8 text-[var(--muted-foreground)] text-base leading-relaxed font-light border border-[var(--border)]">
                                                     {selectedInsight.source_emails?.find(e => e.id === selectedEmailId)?.snippet}
                                                     ...
                                                 </div>
@@ -2043,7 +2043,7 @@ export function GmailInterfaceFixed() {
 
             {/* Draft Editor Modal */}
             <div
-                className={`fixed top-1/2 left-1/2 bg-[#1a1a1a] rounded-[2.5rem] shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-[60] flex flex-col border border-neutral-800`}
+                className={`fixed top-1/2 left-1/2 bg-[var(--background)] rounded-[2.5rem] shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-[60] flex flex-col border border-[var(--border)]`}
                 style={{
                     width: '60%',
                     height: '75vh',
@@ -2059,8 +2059,8 @@ export function GmailInterfaceFixed() {
                                 <Sparkles className="w-6 h-6 text-blue-400" />
                             </div>
                             <div>
-                                <h3 className="text-2xl font-medium text-white">AI Draft Reply</h3>
-                                <p className="text-sm text-neutral-500 font-light">Sift AI generated response</p>
+                                <h3 className="text-2xl font-medium text-[var(--foreground)]">AI Draft Reply</h3>
+                                <p className="text-sm text-[var(--muted-foreground)] font-light">Sift AI generated response</p>
                             </div>
                         </div>
                         <button
@@ -2071,14 +2071,14 @@ export function GmailInterfaceFixed() {
                         </button>
                     </div>
 
-                    <div className="flex-1 bg-neutral-900/30 rounded-[2rem] border border-neutral-800/50 p-8 overflow-hidden flex flex-col shadow-inner relative">
+                    <div className="flex-1 bg-[var(--accent)] rounded-[2rem] border border-[var(--border)] p-8 overflow-hidden flex flex-col shadow-inner relative">
                         {isDrafting ? (
                             <div className="flex-1 flex flex-col items-center justify-center">
                                 <div className="relative mb-6">
                                     <Sparkles className="w-12 h-12 text-blue-400 animate-pulse" />
                                     <div className="absolute inset-0 bg-blue-400/20 blur-2xl rounded-full animate-pulse" />
                                 </div>
-                                <p className="text-neutral-400 text-lg font-light animate-pulse">Sift AI is drafting your response...</p>
+                                <p className="text-[var(--muted-foreground)] text-lg font-light animate-pulse">Sift AI is drafting your response...</p>
                             </div>
                         ) : (
                             <>
@@ -2087,18 +2087,18 @@ export function GmailInterfaceFixed() {
                                         type="text"
                                         value={draftSubject}
                                         onChange={(e) => setDraftSubject(e.target.value)}
-                                        className="w-full bg-neutral-900/30 text-white text-lg font-medium px-4 py-3 rounded-xl border border-neutral-800 focus:outline-none focus:border-neutral-700 transition-colors"
+                                        className="w-full bg-[var(--accent)] text-[var(--foreground)] text-lg font-medium px-4 py-3 rounded-xl border border-[var(--border)] focus:outline-none focus:border-[var(--muted-foreground)]/40 transition-colors"
                                         placeholder="Subject"
                                     />
                                 </div>
                                 <textarea
                                     value={draftContent}
                                     onChange={(e) => setDraftContent(e.target.value)}
-                                    className="flex-1 bg-transparent text-neutral-200 resize-none focus:outline-none font-light leading-relaxed text-xl custom-scrollbar"
+                                    className="flex-1 bg-transparent text-[var(--foreground)]/90 resize-none focus:outline-none font-light leading-relaxed text-xl custom-scrollbar"
                                     placeholder="AI generated draft will appear here..."
                                 />
                                 {/* Progressive Blur for Textarea */}
-                                <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-neutral-900/80 to-transparent pointer-events-none z-10" />
+                                <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[var(--accent)]/80 to-transparent pointer-events-none z-10" />
                             </>
                         )}
                     </div>
@@ -2131,7 +2131,7 @@ export function GmailInterfaceFixed() {
 
             {/* Note Editor - Premium UI in bottom-right */}
             <div
-                className={`fixed bottom-6 right-6 w-96 bg-gradient-to-br from-neutral-800/90 to-neutral-900/90 backdrop-blur-2xl rounded-[2rem] shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-[60] border border-neutral-700/50`}
+                className={`fixed bottom-6 right-6 w-96 bg-gradient-to-br from-[var(--background)] to-[var(--accent)] backdrop-blur-2xl rounded-[2rem] shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-[60] border border-[var(--border)]`}
                 style={{
                     transform: showNoteEditor ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.95)',
                     opacity: showNoteEditor ? 1 : 0,
@@ -2146,33 +2146,33 @@ export function GmailInterfaceFixed() {
                                 <Sparkles className="w-5 h-5 text-yellow-400" />
                             </div>
                             <div>
-                                <h3 className="text-lg font-medium text-white">AI Note</h3>
-                                <p className="text-xs text-neutral-400 font-light">Intelligent insights</p>
+                                <h3 className="text-lg font-medium text-[var(--foreground)]">AI Note</h3>
+                                <p className="text-xs text-[var(--muted-foreground)] font-light">Intelligent insights</p>
                             </div>
                         </div>
                         <button
                             onClick={() => setShowNoteEditor(false)}
-                            className="p-2 hover:bg-neutral-700/50 rounded-full transition-colors text-neutral-400 hover:text-white"
+                            className="p-2 hover:bg-[var(--accent)] rounded-full transition-colors text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
                         >
                             <X className="w-5 h-5" />
                         </button>
                     </div>
 
                     {/* Note Content Area */}
-                    <div className="flex-1 bg-neutral-900/30 rounded-[1.5rem] border border-neutral-800/50 p-4 mb-4 overflow-hidden flex flex-col">
+                    <div className="flex-1 bg-[var(--accent)] rounded-[1.5rem] border border-[var(--border)] p-4 mb-4 overflow-hidden flex flex-col">
                         <input
                             type="text"
                             value={noteSubject}
                             onChange={(e) => setNoteSubject(e.target.value)}
-                            className="w-full bg-transparent text-white text-base font-medium px-3 py-2 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-yellow-500/20 transition-colors mb-3"
+                            className="w-full bg-transparent text-[var(--foreground)] text-base font-medium px-3 py-2 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-yellow-500/20 transition-colors mb-3"
                             placeholder="Note heading..."
                         />
-                        <div className="flex-1 bg-transparent text-neutral-200 resize-none focus:outline-none font-light leading-relaxed text-sm custom-scrollbar overflow-y-auto">
+                        <div className="flex-1 bg-transparent text-[var(--foreground)]/80 resize-none focus:outline-none font-light leading-relaxed text-sm custom-scrollbar overflow-y-auto">
                             {/* Render markdown formatting */}
                             <div className="prose prose-invert max-w-none whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: renderMarkdown(noteContent) }} />
                         </div>
                         {/* Progressive Blur for Textarea */}
-                        <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-neutral-900/80 to-transparent pointer-events-none z-10" />
+                        <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-[var(--accent)]/80 to-transparent pointer-events-none z-10" />
                     </div>
 
                     {/* Save Button */}
@@ -2398,7 +2398,7 @@ export function GmailInterfaceFixed() {
                                     <div className="flex items-center gap-1">
                                         <button
                                             onClick={(e) => { e.stopPropagation(); minimizeArcus(); }}
-                                            className="p-2 hover:bg-white/5 rounded-full text-white/40 hover:text-white transition-all"
+                                            className="p-2 hover:bg-[var(--accent)] rounded-full text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-all"
                                             aria-label="Minimize Arcus"
                                             type="button"
                                         >
@@ -2406,7 +2406,7 @@ export function GmailInterfaceFixed() {
                                         </button>
                                         <button
                                             onClick={(e) => { e.stopPropagation(); closeArcus(); }}
-                                            className="p-2 hover:bg-white/5 rounded-full text-white/40 hover:text-white transition-all"
+                                            className="p-2 hover:bg-[var(--accent)] rounded-full text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-all"
                                             aria-label="Close Arcus"
                                             type="button"
                                         >

@@ -446,7 +446,7 @@ export default function NotesPage() {
                 period={usageLimitModalData?.period || 'monthly'}
                 currentPlan={usageLimitModalData?.currentPlan || 'starter'}
             />
-            <div className={cn("min-h-screen bg-[#000000] dark:bg-[#000000] text-white transition-all duration-500", (isDeleteDialogOpen || isShareDialogOpen || isShareOptionsOpen || isImageShareOpen) && "pause-animations")} style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'San Francisco', 'Satoshi', sans-serif" }}>
+            <div className={cn("min-h-screen bg-[var(--background)] text-[var(--foreground)] transition-all duration-500", (isDeleteDialogOpen || isShareDialogOpen || isShareOptionsOpen || isImageShareOpen) && "pause-animations")} style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'San Francisco', 'Satoshi', sans-serif" }}>
                 <div className="flex h-screen">
                     {/* Mailient Sidebar */}
                     <HomeFeedSidebar />
@@ -458,10 +458,10 @@ export default function NotesPage() {
                             <div className="max-w-4xl mx-auto space-y-12">
                                 {/* Hero Text */}
                                 <div className="text-center space-y-4">
-                                    <h1 className="text-3xl md:text-4xl font-semibold text-white tracking-tight">
+                                    <h1 className="text-3xl md:text-4xl font-semibold text-[var(--foreground)] tracking-tight">
                                         For quick thoughts you want to come back to
                                     </h1>
-                                    <p className="text-neutral-500 text-lg">
+                                    <p className="text-[var(--muted-foreground)] text-lg">
                                         Your personal AI-powered scratchpad.
                                     </p>
                                 </div>
@@ -476,7 +476,7 @@ export default function NotesPage() {
                                                     value={newNoteContent}
                                                     onChange={(e) => setNewNoteContent(e.target.value)}
                                                     placeholder="Take a quick note with your voice"
-                                                    className="w-full bg-transparent text-2xl md:text-3xl text-neutral-200 placeholder:text-neutral-700 resize-none min-h-[80px] font-medium leading-tight"
+                                                    className="w-full bg-transparent text-2xl md:text-3xl text-[var(--foreground)]/90 placeholder:text-[var(--muted-foreground)]/30 resize-none min-h-[80px] font-medium leading-tight"
                                                     style={{ outline: 'none', border: 'none', boxShadow: 'none' }}
                                                     onKeyDown={(e) => {
                                                         if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
@@ -485,7 +485,7 @@ export default function NotesPage() {
                                                     }}
                                                 />
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-sm text-neutral-600 font-medium">
+                                                    <span className="text-sm text-[var(--muted-foreground)] font-medium">
                                                         {isListening ? "Listening..." : "Click to speak or start typing"}
                                                     </span>
                                                     <Button
@@ -521,9 +521,9 @@ export default function NotesPage() {
 
                                 {/* Recents Section */}
                                 <div className="space-y-8 pb-24">
-                                    <div className="flex items-center justify-between border-b border-neutral-800 pb-4">
+                                    <div className="flex items-center justify-between border-b border-[var(--border)] pb-4">
                                         <div className="flex items-center gap-4 flex-1">
-                                            <h2 className="text-xs font-bold tracking-[0.2em] text-neutral-500 uppercase whitespace-nowrap">
+                                            <h2 className="text-xs font-bold tracking-[0.2em] text-[var(--muted-foreground)] uppercase whitespace-nowrap">
                                                 Recents
                                             </h2>
                                             {showSearchInput && (

@@ -71,7 +71,7 @@ type NotificationCategory = 'all' | 'threats' | 'verification' | 'documents' | '
 // Loading fallback
 function NotificationsLoadingFallback() {
     return (
-        <div className="min-h-screen bg-black dark:bg-black flex" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+        <div className="min-h-screen bg-[var(--background)] flex" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
             <HomeFeedSidebar />
             <div className="flex-1 ml-16">
                 <div className="max-w-4xl mx-auto px-6 py-12">
@@ -304,20 +304,20 @@ function NotificationsPage() {
     ];
 
     return (
-        <div className="min-h-screen bg-black dark:bg-black flex" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+        <div className="min-h-screen bg-[var(--background)] flex" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
             <HomeFeedSidebar />
             <div className="flex-1 ml-16">
                 <div className="max-w-4xl mx-auto px-6 py-12">
                     {/* Header */}
                     <div className="flex items-center justify-between mb-10">
                         <div>
-                            <h1 className="text-white text-2xl font-semibold tracking-tight flex items-center gap-3">
+                            <h1 className="text-[var(--foreground)] text-2xl font-semibold tracking-tight flex items-center gap-3">
                                 Notifications
-                                <span className="px-2 py-1 bg-white/5 border border-white/10 rounded-lg text-[10px] uppercase tracking-widest text-white/50 font-medium">
+                                <span className="px-2 py-1 bg-[var(--accent)] border border-[var(--border)] rounded-lg text-[10px] uppercase tracking-widest text-[var(--muted-foreground)] font-medium">
                                     AI
                                 </span>
                             </h1>
-                            <p className="text-white/40 text-sm mt-1">Security alerts, codes, documents & replies</p>
+                            <p className="text-[var(--muted-foreground)] text-sm mt-1">Security alerts, codes, documents & replies</p>
                         </div>
                         <button
                             onClick={() => fetchNotifications(true)}

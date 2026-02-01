@@ -200,7 +200,7 @@ function HomeFeedContent() {
   };
 
   return (
-    <div className="satoshi-home-feed w-full h-screen bg-black dark:bg-black">
+    <div className="satoshi-home-feed w-full h-screen bg-[var(--background)]">
       <GmailInterfaceFixed />
     </div>
   );
@@ -209,8 +209,8 @@ function HomeFeedContent() {
 export default function HomeFeed() {
   return (
     <Suspense fallback={
-      <div className="w-full h-screen bg-black flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
+      <div className="w-full h-screen bg-[var(--background)] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[var(--primary)]"></div>
       </div>
     }>
       <HomeFeedContent />

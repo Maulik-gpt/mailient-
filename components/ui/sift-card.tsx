@@ -112,8 +112,9 @@ export const SiftCard: React.FC<SiftCardProps> = ({
 
   return (
     <div
-      className={`group bg-neutral-900/30 hover:bg-neutral-900/50 border border-neutral-800/50 hover:border-neutral-800 ${borderColor} border-l-2 rounded-lg transition-all duration-200`}
+      className={`group bg-[var(--accent)]/40 hover:bg-[var(--accent)]/60 border border-[var(--border)] ${borderColor} border-l-2 rounded-lg transition-all duration-200 cursor-pointer`}
       style={{ fontFamily: "'Satoshi', -apple-system, BlinkMacSystemFont, sans-serif" }}
+      onClick={onClick}
     >
       <div className="p-5">
         <div className="flex items-start justify-between gap-6">
@@ -126,7 +127,7 @@ export const SiftCard: React.FC<SiftCardProps> = ({
               <h3 className={`text-sm font-medium ${accentColor}`}>
                 {title}
               </h3>
-              <p className="text-sm text-neutral-500 leading-relaxed font-light">
+              <p className="text-sm text-[var(--muted-foreground)] leading-relaxed font-light">
                 {content}
               </p>
             </div>
@@ -139,7 +140,7 @@ export const SiftCard: React.FC<SiftCardProps> = ({
             }}
             variant="ghost"
             size="sm"
-            className="flex-shrink-0 h-8 px-3 bg-transparent hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-700 text-neutral-500 hover:text-[#fafafa] rounded-md transition-colors text-xs font-light"
+            className="flex-shrink-0 h-8 px-3 bg-transparent hover:bg-[var(--accent)] border border-[var(--border)] hover:border-[var(--muted-foreground)]/40 text-[var(--muted-foreground)] hover:text-[var(--foreground)] rounded-md transition-colors text-xs font-light"
           >
             Details
             <ArrowRight className="w-3 h-3 ml-1.5" />
