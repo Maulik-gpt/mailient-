@@ -21,6 +21,7 @@ import {
   Trash2,
   FileText,
   ShieldCheck,
+  Zap,
 } from "lucide-react";
 import { HomeFeedSidebar } from "@/components/ui/home-feed-sidebar";
 import { EditProfileDialog, type EditProfileFormData } from "@/components/ui/edit-profile-dialog";
@@ -28,6 +29,99 @@ import { Button } from "@/components/ui/button";
 import { WebsiteLink } from "@/components/ui/website-link";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+
+/**
+ * StreakGrid Component - GitHub-style contribution graph for activity
+ */
+function StreakGrid({ history = [], streak = 0 }: { history?: any[], streak?: number }) {
+  const weeks = 40; // Show 40 weeks for a nice long graph
+  const today = new Date();
+  const daysToShow = weeks * 7;
+
+  // Calculate start date (Sunday of the first week)
+  const startDate = new Date(today);
+  startDate.setDate(today.getDate() - daysToShow + (7 - today.getDay()) % 7);
+
+  const activityMap = new Map(history.map(h => [h.activity_date, h.count]));
+
+  const grid = [];
+  for (let i = 0; i < daysToShow; i++) {
+    const d = new Date(startDate);
+    d.setDate(startDate.getDate() + i);
+    const key = d.toISOString().split('T')[0];
+    grid.push({
+      key,
+      count: activityMap.get(key) || 0,
+      isToday: key === today.toISOString().split('T')[0]
+    });
+  }
+
+  const streakMessage = streak <= 6 ? "oh cmon'" : "keep it up";
+
+  return (
+    <div className="glass-panel p-6 rounded-2xl space-y-6 border border-white/5">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-500 shadow-[0_0_20px_-10px_rgba(249,115,22,0.5)]">
+            <Zap className="w-6 h-6 fill-current" />
+          </div>
+          <div>
+            <h3 className="text-xl font-medium text-neutral-200">
+              {streak}-day streak, {streakMessage}
+            </h3>
+            <p className="text-sm text-neutral-500">Consistent usage keeps your inbox optimized</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex gap-3">
+        {/* Day Labels */}
+        <div className="flex flex-col justify-between py-1 text-[10px] text-neutral-600 font-medium h-[100px] select-none">
+          <span>Sun</span>
+          <span>Tue</span>
+          <span>Thu</span>
+          <span>Sat</span>
+        </div>
+
+        {/* The Grid */}
+        <div className="flex-1 overflow-x-auto custom-scrollbar pb-2">
+          <div
+            className="grid grid-flow-col grid-rows-7 gap-1.5 h-[100px] min-w-max"
+            style={{ gridTemplateColumns: `repeat(${weeks}, 1fr)` }}
+          >
+            {grid.map((d) => (
+              <div
+                key={d.key}
+                className={cn(
+                  "w-3 h-3 rounded-[2px] transition-all duration-500",
+                  d.count > 0
+                    ? "bg-orange-500 shadow-[0_0_8px_-2px_rgba(249,115,22,0.4)]"
+                    : "bg-white/5 hover:bg-white/10",
+                  d.isToday && "ring-1 ring-orange-500 ring-offset-1 ring-offset-black"
+                )}
+                title={`${d.key}: ${d.count} activity`}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-6 text-[10px] text-neutral-500 uppercase tracking-widest font-bold">
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-[2px] bg-white/5 border border-white/5" />
+          <span>Cold</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-[2px] bg-orange-500 shadow-[0_0_8px_-2px_rgba(249,115,22,0.4)]" />
+          <span>Active</span>
+        </div>
+        <div className="ml-auto text-neutral-600">
+          Last 280 days
+        </div>
+      </div>
+    </div>
+  );
+}
 
 type UserProfile = {
   name?: string | null;
@@ -52,6 +146,8 @@ type UserProfile = {
     plan?: string;
     social_links?: { x?: string; linkedin?: string; instagram?: string; github?: string };
   };
+  streak_count?: number;
+  activity_history?: Array<{ activity_date: string, count: number }>;
 };
 
 const SECTIONS = ["profile", "account", "security", "legal"] as const;
@@ -376,6 +472,12 @@ export default function SettingsPage() {
                   )}
                 </div>
               </div>
+
+              {/* Streak Card */}
+              <StreakGrid
+                streak={profile?.streak_count || 0}
+                history={profile?.activity_history || []}
+              />
             </section>
           )}
 

@@ -21,10 +21,25 @@ CREATE TABLE IF NOT EXISTS user_profiles (
   gender TEXT,
   work_status TEXT,
   interests TEXT[],
+  streak_count INTEGER DEFAULT 0,
+  last_activity_at TIMESTAMP WITH TIME ZONE,
   last_synced_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Create user_activity table for the contribution graph
+CREATE TABLE IF NOT EXISTS user_activity (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  activity_date DATE NOT NULL,
+  count INTEGER DEFAULT 1,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(user_id, activity_date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_activity_user_id ON user_activity(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_activity_date ON user_activity(activity_date);
 
 -- Create user_tokens table
 CREATE TABLE IF NOT EXISTS user_tokens (

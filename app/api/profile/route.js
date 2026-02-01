@@ -15,50 +15,114 @@ const supabase = new Proxy({}, {
 // Ensure database tables exist
 async function ensureDatabaseTables() {
   try {
-    console.log("Checking if user_profiles table exists...");
-
-    // Test if user_profiles table exists by doing a simple query
-    const { data, error } = await supabase
+    // 1. Check if user_profiles exists
+    const { error: profileCheckError } = await supabase
       .from("user_profiles")
       .select("id")
       .limit(1);
 
-    if (error && error.message.includes('does not exist')) {
-      console.log("user_profiles table doesn't exist, triggering database setup...");
+    if (profileCheckError && profileCheckError.message.includes('does not exist')) {
+      console.log("user_profiles table missing, running total setup...");
+      const setupResponse = await fetch(`${process.env.NEXTAUTH_URL || 'https://mailient.xyz'}/api/database/setup`, {
+        method: 'POST'
+      });
+      if (!setupResponse.ok) throw new Error("Setup failed");
+    }
 
+    // 2. Check for streak columns and user_activity table
+    const { error: streakError } = await supabase
+      .from("user_profiles")
+      .select("streak_count")
+      .limit(1);
+
+    const { error: activityError } = await supabase
+      .from("user_activity")
+      .select("id")
+      .limit(1);
+
+    if (streakError || activityError) {
+      console.log("Streak columns or user_activity table missing, migrating...");
+      const migrationSQL = `
+        ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS streak_count INTEGER DEFAULT 0;
+        ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS last_activity_at TIMESTAMP WITH TIME ZONE;
+        CREATE TABLE IF NOT EXISTS user_activity (
+          id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          activity_date DATE NOT NULL,
+          count INTEGER DEFAULT 1,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          UNIQUE(user_id, activity_date)
+        );
+        CREATE INDEX IF NOT EXISTS idx_user_activity_user_id ON user_activity(user_id);
+        CREATE INDEX IF NOT EXISTS idx_user_activity_date ON user_activity(activity_date);
+      `;
       try {
-        // Call database setup endpoint
-        const setupResponse = await fetch(`${process.env.NEXTAUTH_URL || 'https://mailient.xyz'}/api/database/setup`, {
-          method: 'POST'
-        });
-
-        if (setupResponse.ok) {
-          const setupResult = await setupResponse.json();
-          console.log("Database setup completed:", setupResult);
-
-          // Re-test table existence
-          const { error: retestError } = await supabase
-            .from("user_profiles")
-            .select("id")
-            .limit(1);
-
-          if (retestError && retestError.message.includes('does not exist')) {
-            throw new Error("Database table 'user_profiles' still does not exist after setup. Please manually run the SQL schema.");
-          }
-        } else {
-          const setupError = await setupResponse.json();
-          throw new Error(`Database setup failed: ${setupError.error || 'Unknown error'}`);
-        }
-      } catch (setupError) {
-        console.error("Database setup failed:", setupError);
-        throw new Error("Database table 'user_profiles' does not exist. Please run the database setup script at /api/database/setup");
+        await supabase.rpc('exec_sql', { sql: migrationSQL });
+      } catch (e) {
+        console.error("Migration SQL failed:", e);
       }
     }
 
     console.log("Database tables check completed");
   } catch (error) {
     console.error("Error checking database tables:", error);
-    throw error;
+  }
+}
+
+/**
+ * Update user streak and activity log
+ */
+async function updateStreak(userId) {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+
+    // 1. Log activity for today
+    await supabase.from("user_activity").upsert(
+      { user_id: userId, activity_date: today },
+      { onConflict: 'user_id,activity_date' }
+    );
+
+    // 2. Fetch current profile to check last activity
+    const { data: profile } = await supabase
+      .from("user_profiles")
+      .select("streak_count, last_activity_at")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (!profile) return 0;
+
+    const lastActivity = profile.last_activity_at ? new Date(profile.last_activity_at) : null;
+    let newStreak = profile.streak_count || 0;
+
+    if (!lastActivity) {
+      newStreak = 1;
+    } else {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
+      const lastActivityStr = lastActivity.toISOString().split('T')[0];
+
+      if (lastActivityStr === today) {
+        // Already active today, streak stays the same
+      } else if (lastActivityStr === yesterdayStr) {
+        newStreak += 1;
+      } else {
+        // Streak broken
+        newStreak = 1;
+      }
+    }
+
+    // Update profile
+    await supabase.from("user_profiles").update({
+      streak_count: newStreak,
+      last_activity_at: now.toISOString()
+    }).eq("user_id", userId);
+
+    return newStreak;
+  } catch (error) {
+    console.error("Error in updateStreak:", error);
+    return 0;
   }
 }
 
@@ -125,12 +189,30 @@ export async function GET(req) {
     // Ensure database tables exist
     await ensureDatabaseTables();
 
+    // Update streak for the authenticated user
+    await updateStreak(user.email);
+
     // Fetch profile from database using email as user_id
     const { data: profile, error } = await supabase
       .from("user_profiles")
       .select("*")
       .eq("user_id", user.email)
       .maybeSingle();
+
+    // Fetch activity log for the streak card (last 6 months)
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+    const { data: activityData } = await supabase
+      .from("user_activity")
+      .select("activity_date, count")
+      .eq("user_id", user.email)
+      .gte("activity_date", sixMonthsAgo.toISOString().split('T')[0])
+      .order("activity_date", { ascending: true });
+
+    if (profile) {
+      profile.activity_history = activityData || [];
+    }
 
     if (error && error.code !== 'PGRST116') {
       console.error("Supabase query error:", error);
