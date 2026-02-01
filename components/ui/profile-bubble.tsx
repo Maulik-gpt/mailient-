@@ -10,7 +10,6 @@ import {
   LogOut,
   HelpCircle,
   UserCircle,
-  Edit,
   Shield,
   CreditCard,
   Users,
@@ -30,7 +29,6 @@ import {
   MapPin
 } from "lucide-react";
 import { WebsiteLink } from "./website-link";
-import { EditProfileDialog } from "./edit-profile-dialog";
 
 type UserStatus = 'online' | 'away' | 'offline';
 
@@ -459,35 +457,13 @@ export default function ProfileBubble() {
                       <h4 className="text-sm font-medium text-white">Personal Information</h4>
                       <button
                         onClick={() => {
-                          setEditForm({
-                            name: user.name || '',
-                            bio: userProfile?.bio || '',
-                            location: userProfile?.location || '',
-                            website: userProfile?.website || '',
-                            birthdate: userProfile?.birthdate || '',
-                            gender: userProfile?.gender || '',
-                            work_status: userProfile?.work_status || '',
-                            interests: userProfile?.interests?.join(', ') || ''
-                          });
-                          setIsEditModalOpen(true);
+                          router.push("/i/profile?edit=true");
                           setIsDropdownOpen(false);
                         }}
                         className="text-gray-400 hover:text-white transition-colors p-1 rounded-md hover:bg-[#2A2A2A]"
                         aria-label="Edit personal information"
                       >
-                        <EditProfileDialog
-                          trigger={<Edit className="w-4 h-4" />}
-                          user={{ name: user.name || undefined, email: user.email || undefined }}
-                          profile={userProfile ? {
-                            avatar_url: userProfile.avatar_url || undefined,
-                            bio: userProfile.bio || undefined,
-                            location: userProfile.location || undefined,
-                            website: userProfile.website || undefined
-                          } : undefined}
-                          onSave={async (data) => {
-                            await handleSaveProfile();
-                          }}
-                        />
+                        <UserCircle className="w-4 h-4" />
                       </button>
                     </div>
                     <div className="space-y-1 text-xs text-gray-500">
@@ -523,8 +499,8 @@ export default function ProfileBubble() {
                   <button
                     onClick={() => updateUserStatus('online')}
                     className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${userStatus === 'online'
-                        ? 'bg-green-500/20 text-green-400'
-                        : 'text-white hover:bg-[#2A2A2A]'
+                      ? 'bg-green-500/20 text-green-400'
+                      : 'text-white hover:bg-[#2A2A2A]'
                       }`}
                     role="menuitem"
                   >
@@ -534,8 +510,8 @@ export default function ProfileBubble() {
                   <button
                     onClick={() => updateUserStatus('away')}
                     className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${userStatus === 'away'
-                        ? 'bg-yellow-500/20 text-yellow-400'
-                        : 'text-white hover:bg-[#2A2A2A]'
+                      ? 'bg-yellow-500/20 text-yellow-400'
+                      : 'text-white hover:bg-[#2A2A2A]'
                       }`}
                     role="menuitem"
                   >
@@ -545,8 +521,8 @@ export default function ProfileBubble() {
                   <button
                     onClick={() => updateUserStatus('offline')}
                     className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${userStatus === 'offline'
-                        ? 'bg-gray-500/20 text-gray-400'
-                        : 'text-white hover:bg-[#2A2A2A]'
+                      ? 'bg-gray-500/20 text-gray-400'
+                      : 'text-white hover:bg-[#2A2A2A]'
                       }`}
                     role="menuitem"
                   >
@@ -572,20 +548,15 @@ export default function ProfileBubble() {
                     <Camera className="w-4 h-4" />
                     Change Avatar
                   </button>
-                  <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
-                    <EditProfileDialog
-                      trigger={<Edit className="w-4 h-4" />}
-                      user={{ name: user.name || undefined, email: user.email || undefined }}
-                      profile={userProfile ? {
-                        avatar_url: userProfile.avatar_url || undefined,
-                        bio: userProfile.bio || undefined,
-                        location: userProfile.location || undefined,
-                        website: userProfile.website || undefined
-                      } : undefined}
-                      onSave={async (data) => {
-                        await handleSaveProfile();
-                      }}
-                    />
+                  <button
+                    onClick={() => {
+                      router.push("/i/profile?edit=true");
+                      setIsDropdownOpen(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors"
+                    role="menuitem"
+                  >
+                    <UserCircle className="w-4 h-4" />
                     Edit Profile
                   </button>
                   <button
@@ -688,8 +659,8 @@ export default function ProfileBubble() {
                   <button
                     onClick={() => handleThemeChange('dark')}
                     className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${theme === 'dark'
-                        ? 'bg-[#2A2A2A] text-white'
-                        : 'text-white hover:bg-[#2A2A2A]'
+                      ? 'bg-[#2A2A2A] text-white'
+                      : 'text-white hover:bg-[#2A2A2A]'
                       }`}
                     role="menuitem"
                   >
@@ -699,8 +670,8 @@ export default function ProfileBubble() {
                   <button
                     onClick={() => handleThemeChange('light')}
                     className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${theme === 'light'
-                        ? 'bg-[#2A2A2A] text-white'
-                        : 'text-white hover:bg-[#2A2A2A]'
+                      ? 'bg-[#2A2A2A] text-white'
+                      : 'text-white hover:bg-[#2A2A2A]'
                       }`}
                     role="menuitem"
                   >
@@ -710,8 +681,8 @@ export default function ProfileBubble() {
                   <button
                     onClick={() => handleThemeChange('system')}
                     className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${theme === 'system'
-                        ? 'bg-[#2A2A2A] text-white'
-                        : 'text-white hover:bg-[#2A2A2A]'
+                      ? 'bg-[#2A2A2A] text-white'
+                      : 'text-white hover:bg-[#2A2A2A]'
                       }`}
                     role="menuitem"
                   >
@@ -805,35 +776,13 @@ export default function ProfileBubble() {
                         <h4 className="text-sm font-medium text-white">Personal Information</h4>
                         <button
                           onClick={() => {
-                            setEditForm({
-                              name: user.name || '',
-                              bio: userProfile?.bio || '',
-                              location: userProfile?.location || '',
-                              website: userProfile?.website || '',
-                              birthdate: userProfile?.birthdate || '',
-                              gender: userProfile?.gender || '',
-                              work_status: userProfile?.work_status || '',
-                              interests: userProfile?.interests?.join(', ') || ''
-                            });
-                            setIsEditModalOpen(true);
+                            router.push("/i/profile?edit=true");
                             setIsDropdownOpen(false);
                           }}
                           className="text-gray-400 hover:text-white transition-colors p-1 rounded-md hover:bg-[#2A2A2A]"
                           aria-label="Edit personal information"
                         >
-                          <EditProfileDialog
-                            trigger={<Edit className="w-4 h-4" />}
-                            user={{ name: user.name || undefined, email: user.email || undefined }}
-                            profile={userProfile ? {
-                              avatar_url: userProfile.avatar_url || undefined,
-                              bio: userProfile.bio || undefined,
-                              location: userProfile.location || undefined,
-                              website: userProfile.website || undefined
-                            } : undefined}
-                            onSave={async (data) => {
-                              await handleSaveProfile();
-                            }}
-                          />
+                          <UserCircle className="w-4 h-4" />
                         </button>
                       </div>
                       <div className="space-y-1 text-xs text-gray-500">
@@ -869,8 +818,8 @@ export default function ProfileBubble() {
                     <button
                       onClick={() => updateUserStatus('online')}
                       className={`flex flex-col items-center gap-2 p-3 rounded-md transition-colors ${userStatus === 'online'
-                          ? 'bg-green-500/20 text-green-400'
-                          : 'text-white hover:bg-[#2A2A2A]'
+                        ? 'bg-green-500/20 text-green-400'
+                        : 'text-white hover:bg-[#2A2A2A]'
                         }`}
                       role="menuitem"
                     >
@@ -880,8 +829,8 @@ export default function ProfileBubble() {
                     <button
                       onClick={() => updateUserStatus('away')}
                       className={`flex flex-col items-center gap-2 p-3 rounded-md transition-colors ${userStatus === 'away'
-                          ? 'bg-yellow-500/20 text-yellow-400'
-                          : 'text-white hover:bg-[#2A2A2A]'
+                        ? 'bg-yellow-500/20 text-yellow-400'
+                        : 'text-white hover:bg-[#2A2A2A]'
                         }`}
                       role="menuitem"
                     >
@@ -891,8 +840,8 @@ export default function ProfileBubble() {
                     <button
                       onClick={() => updateUserStatus('offline')}
                       className={`flex flex-col items-center gap-2 p-3 rounded-md transition-colors ${userStatus === 'offline'
-                          ? 'bg-gray-500/20 text-gray-400'
-                          : 'text-white hover:bg-[#2A2A2A]'
+                        ? 'bg-gray-500/20 text-gray-400'
+                        : 'text-white hover:bg-[#2A2A2A]'
                         }`}
                       role="menuitem"
                     >
@@ -933,20 +882,15 @@ export default function ProfileBubble() {
                 <div>
                   <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Account & Security</h3>
                   <div className="space-y-1">
-                    <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
-                      <EditProfileDialog
-                        trigger={<Edit className="w-4 h-4" />}
-                        user={{ name: user.name || undefined, email: user.email || undefined }}
-                        profile={userProfile ? {
-                          avatar_url: userProfile.avatar_url || undefined,
-                          bio: userProfile.bio || undefined,
-                          location: userProfile.location || undefined,
-                          website: userProfile.website || undefined
-                        } : undefined}
-                        onSave={async (data) => {
-                          await handleSaveProfile();
-                        }}
-                      />
+                    <button
+                      onClick={() => {
+                        router.push("/i/profile?edit=true");
+                        setIsDropdownOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors"
+                      role="menuitem"
+                    >
+                      <UserCircle className="w-4 h-4" />
                       Edit Profile
                     </button>
                     <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
@@ -967,8 +911,8 @@ export default function ProfileBubble() {
                     <button
                       onClick={() => handleThemeChange('dark')}
                       className={`flex flex-col items-center gap-2 p-3 rounded-md transition-colors ${theme === 'dark'
-                          ? 'bg-[#2A2A2A] text-white'
-                          : 'text-white hover:bg-[#2A2A2A]'
+                        ? 'bg-[#2A2A2A] text-white'
+                        : 'text-white hover:bg-[#2A2A2A]'
                         }`}
                       role="menuitem"
                     >
@@ -978,8 +922,8 @@ export default function ProfileBubble() {
                     <button
                       onClick={() => handleThemeChange('light')}
                       className={`flex flex-col items-center gap-2 p-3 rounded-md transition-colors ${theme === 'light'
-                          ? 'bg-[#2A2A2A] text-white'
-                          : 'text-white hover:bg-[#2A2A2A]'
+                        ? 'bg-[#2A2A2A] text-white'
+                        : 'text-white hover:bg-[#2A2A2A]'
                         }`}
                       role="menuitem"
                     >
@@ -989,8 +933,8 @@ export default function ProfileBubble() {
                     <button
                       onClick={() => handleThemeChange('system')}
                       className={`flex flex-col items-center gap-2 p-3 rounded-md transition-colors ${theme === 'system'
-                          ? 'bg-[#2A2A2A] text-white'
-                          : 'text-white hover:bg-[#2A2A2A]'
+                        ? 'bg-[#2A2A2A] text-white'
+                        : 'text-white hover:bg-[#2A2A2A]'
                         }`}
                       role="menuitem"
                     >
