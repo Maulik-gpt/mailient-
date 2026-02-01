@@ -136,30 +136,29 @@ export function LinearLanding() {
                 animate={scrolled ? "scrolled" : "top"}
                 variants={{
                     top: {
-                        width: "85%",
-                        maxWidth: "1100px",
-                        backgroundColor: "rgba(0, 0, 0, 0.4)",
-                        backdropFilter: "blur(20px)",
-                        borderRadius: "9999px",
-                        paddingTop: "10px",
-                        paddingBottom: "10px",
-                        y: 20,
+                        width: "95%",
+                        maxWidth: "1280px",
+                        backgroundColor: "rgba(0, 0, 0, 0)",
+                        backdropFilter: "blur(0px)",
+                        borderRadius: "0px",
+                        paddingTop: "24px",
+                        paddingBottom: "24px",
+                        y: 0,
                         borderWidth: "1px",
-                        borderColor: "rgba(255, 255, 255, 0.12)",
-                        boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0.37)",
+                        borderColor: "rgba(255, 255, 255, 0)",
                     },
                     scrolled: {
-                        width: "75%",
-                        maxWidth: "900px",
-                        backgroundColor: "rgba(0, 0, 0, 0.6)",
-                        backdropFilter: "blur(24px)",
-                        borderRadius: "9999px",
-                        paddingTop: "8px",
-                        paddingBottom: "8px",
+                        width: "85%",
+                        maxWidth: "1024px",
+                        backgroundColor: "rgba(0, 0, 0, 0.4)",
+                        backdropFilter: "blur(16px)",
+                        borderRadius: "32px",
+                        paddingTop: "12px",
+                        paddingBottom: "12px",
                         y: 12,
                         borderWidth: "1px",
-                        borderColor: "rgba(255, 255, 255, 0.15)",
-                        boxShadow: "0 20px 40px -15px rgba(0, 0, 0, 0.9), 0 0 40px 10px rgba(255, 255, 255, 0.05)",
+                        borderColor: "rgba(255, 255, 255, 0.08)",
+                        boxShadow: "0 20px 40px -15px rgba(0, 0, 0, 0.9), 0 0 40px 10px rgba(255, 255, 255, 0.08)",
                     }
                 }}
                 transition={{
@@ -168,42 +167,42 @@ export function LinearLanding() {
                     damping: 30,
                     mass: 0.8
                 }}
-                className="fixed top-0 left-1/2 -translate-x-1/2 z-50 overflow-hidden liquid-metal-border"
+                className="fixed top-0 left-1/2 -translate-x-1/2 z-50 overflow-hidden"
             >
-                <div className="w-full px-6 md:px-10 flex items-center justify-between relative z-10">
-                    <div className="flex items-center gap-2 group cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center group-hover:rotate-6 transition-transform overflow-hidden relative border border-white/20">
-                            <img
-                                src="/logo-new.png"
-                                alt="Mailient Logo"
-                                className="w-full h-full object-cover"
-                            />
+                <div className="w-full px-4 md:px-8 flex items-center justify-between">
+                    <div className="flex items-center gap-4 md:gap-8">
+                        <div className="flex items-center gap-2 group cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+                            <div className="w-7 h-7 md:w-8 md:h-8 rounded flex items-center justify-center group-hover:rotate-6 transition-transform overflow-hidden relative">
+                                <img
+                                    src="/logo-new.png"
+                                    alt="Mailient Logo"
+                                    className="w-full h-full object-cover"
+                                />
+                            </div>
+                            <span className="font-bold tracking-tight text-lg md:text-xl">Mailient</span>
                         </div>
-                        <span className="font-black tracking-[0.2em] uppercase text-lg text-white">Mailient</span>
-                    </div>
 
-                    <div className="hidden md:flex items-center gap-8 text-[10px] font-bold tracking-[0.3em] uppercase text-zinc-400">
-                        <a href="#benefits" onClick={(e) => handleClick(e, 'benefits')} className="hover:text-white transition-colors">Benefits</a>
-                        <a href="#features" onClick={(e) => handleClick(e, 'features')} className="hover:text-white transition-colors">Features</a>
-                        <a href="#integration" onClick={(e) => handleClick(e, 'integration')} className="hover:text-white transition-colors">Security</a>
-                        <a href="/founders-guide" className="text-[#D97757] hover:text-[#D97757]/80 transition-colors font-bold">Founder Hub</a>
-                        <a href="#pricing" onClick={(e) => handleClick(e, 'pricing')} className="hover:text-white transition-colors">Pricing</a>
-                        <a href="#faq" onClick={(e) => handleClick(e, 'faq')} className="hover:text-white transition-colors">FAQ</a>
+                        <div className="hidden md:flex items-center gap-6 text-sm font-medium text-zinc-500">
+                            <a href="#benefits" onClick={(e) => handleClick(e, 'benefits')} className="hover:text-white transition-colors">Benefits</a>
+                            <a href="#features" onClick={(e) => handleClick(e, 'features')} className="hover:text-white transition-colors">Features</a>
+                            <a href="#integration" onClick={(e) => handleClick(e, 'integration')} className="hover:text-white transition-colors">Security</a>
+                            <a href="/founders-guide" className="text-[#D97757] hover:text-[#D97757]/80 transition-colors font-bold">Founder Hub</a>
+                            <a href="#pricing" onClick={(e) => handleClick(e, 'pricing')} className="hover:text-white transition-colors">Pricing</a>
+                            <a href="#faq" onClick={(e) => handleClick(e, 'faq')} className="hover:text-white transition-colors">FAQ</a>
+                        </div>
                     </div>
 
                     <div className="flex items-center gap-2 md:gap-4">
                         {status === "authenticated" ? (
-                            <GlassButton onClick={() => router.push('/home-feed?welcome=true')} size="sm">
+                            <Button variant="secondary" onClick={() => router.push('/home-feed?welcome=true')} className="bg-white/10 hover:bg-white/20 text-white border-none rounded-full px-4 md:px-6 text-sm md:text-base">
                                 Dashboard
-                            </GlassButton>
+                            </Button>
                         ) : (
                             <>
-                                <button onClick={() => signIn('google')} className="hidden sm:block text-[10px] font-bold tracking-[0.2em] uppercase text-zinc-400 hover:text-white transition-colors">Log in</button>
-                                <GlassButton onClick={() => router.push('/auth/signin')} size="sm" className="bg-white/5 border border-white/10">
-                                    <span className="flex items-center gap-2">
-                                        UNLOCK NOW <ArrowRight className="w-3.5 h-3.5" />
-                                    </span>
-                                </GlassButton>
+                                <button onClick={() => signIn('google')} className="hidden sm:block text-sm font-medium text-zinc-500 hover:text-white transition-colors">Log in</button>
+                                <Button onClick={() => router.push('/auth/signin')} className="bg-white text-black hover:bg-zinc-200 rounded-full px-4 md:px-6 text-sm md:text-base">
+                                    Unlock My Inbox
+                                </Button>
                             </>
                         )}
                     </div>

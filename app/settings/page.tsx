@@ -154,20 +154,18 @@ const getUserLevel = (xp: number) => {
 };
 
 /**
- * StreakGrid Component - GitHub-style contribution graph for activity with gamification
+ * StreakCard - Main streak display with XP, level, and contribution graph
  */
-function StreakGrid({
+function StreakCard({
   history = [],
   streak = 0,
   xp = 0,
-  earnedBadges = [],
   onRefresh,
   isRefreshing
 }: {
   history?: any[],
   streak?: number,
   xp?: number,
-  earnedBadges?: string[],
   onRefresh?: () => void,
   isRefreshing?: boolean
 }) {
@@ -205,13 +203,6 @@ function StreakGrid({
     if (count <= 10) return "bg-orange-600";
     return "bg-orange-500 shadow-[0_0_10px_-2px_rgba(249,115,22,0.5)]";
   };
-
-  // Find next badge milestone
-  const nextBadge = STREAK_BADGES.find(b => b.days > streak);
-  const lastEarnedBadge = [...STREAK_BADGES].reverse().find(b => b.days <= streak);
-  const progressToNext = nextBadge
-    ? Math.min(100, ((streak - (lastEarnedBadge?.days || 0)) / (nextBadge.days - (lastEarnedBadge?.days || 0))) * 100)
-    : 100;
 
   // Get level info
   const { currentLevel, nextLevel, xpToNext, progressPercent } = getUserLevel(xp);
@@ -300,109 +291,6 @@ function StreakGrid({
           </div>
         )}
 
-        {/* Progress to next badge */}
-        {nextBadge && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-neutral-500">
-                {lastEarnedBadge ? `${lastEarnedBadge.emoji} ${lastEarnedBadge.name}` : "Start"}
-              </span>
-              <span className="text-neutral-400 font-medium">
-                {nextBadge.days - streak} days to {nextBadge.emoji} {nextBadge.name}
-              </span>
-            </div>
-            <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-orange-600 to-orange-400 rounded-full transition-all duration-500"
-                style={{ width: `${progressToNext}%` }}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Streak Badges Section */}
-        <div className="space-y-3">
-          <h4 className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Streak Badges</h4>
-          <div className="flex flex-wrap gap-3">
-            {STREAK_BADGES.map((badge) => {
-              const isEarned = streak >= badge.days;
-              const colors = RARITY_COLORS[badge.rarity];
-              const isNewlyUnlocked = newBadge?.days === badge.days;
-
-              return (
-                <div
-                  key={badge.days}
-                  className={cn(
-                    "group relative flex items-center gap-2 px-3 py-2 rounded-xl border transition-all duration-300",
-                    isEarned
-                      ? `${colors.bg} ${colors.border} ${colors.glow}`
-                      : "bg-neutral-900/50 border-neutral-800/50 opacity-40 grayscale",
-                    isNewlyUnlocked && "animate-badge-unlock"
-                  )}
-                  title={isEarned ? `${badge.name} - ${badge.description}` : `Unlock at ${badge.days} days`}
-                >
-                  <span className={cn("text-xl", !isEarned && "opacity-30", isNewlyUnlocked && "animate-badge-glow")}>{badge.emoji}</span>
-                  <div className="hidden sm:block">
-                    <p className={cn("text-xs font-medium", isEarned ? colors.text : "text-neutral-600")}>
-                      {badge.name}
-                    </p>
-                    <p className="text-[10px] text-neutral-600">{badge.days}d</p>
-                  </div>
-
-                  {/* Tooltip on hover */}
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
-                    <p className="text-xs font-medium text-neutral-200">{badge.name}</p>
-                    <p className="text-[10px] text-neutral-500">{badge.description}</p>
-                    {!isEarned && (
-                      <p className="text-[10px] text-orange-400 mt-1">🔒 {badge.days - streak} more days</p>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Special Event Badges */}
-        <div className="space-y-3">
-          <h4 className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Special Badges</h4>
-          <div className="flex flex-wrap gap-3">
-            {SPECIAL_BADGES.map((badge) => {
-              const isEarned = earnedBadges.includes(badge.id);
-              const colors = RARITY_COLORS[badge.rarity];
-
-              return (
-                <div
-                  key={badge.id}
-                  className={cn(
-                    "group relative flex items-center gap-2 px-3 py-2 rounded-xl border transition-all duration-300",
-                    isEarned
-                      ? `${colors.bg} ${colors.border} ${colors.glow}`
-                      : "bg-neutral-900/50 border-neutral-800/50 opacity-40 grayscale"
-                  )}
-                  title={isEarned ? `${badge.name} - ${badge.description}` : badge.description}
-                >
-                  <span className={cn("text-xl", !isEarned && "opacity-30")}>{badge.emoji}</span>
-                  <div className="hidden sm:block">
-                    <p className={cn("text-xs font-medium", isEarned ? colors.text : "text-neutral-600")}>
-                      {badge.name}
-                    </p>
-                  </div>
-
-                  {/* Tooltip */}
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
-                    <p className="text-xs font-medium text-neutral-200">{badge.name}</p>
-                    <p className="text-[10px] text-neutral-500">{badge.description}</p>
-                    {!isEarned && (
-                      <p className="text-[10px] text-amber-400 mt-1">🔒 Complete challenge to unlock</p>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
         {/* Activity Grid */}
         <div className="flex gap-3">
           <div className="flex flex-col justify-between py-1 text-[10px] text-neutral-600 font-medium h-[100px] select-none">
@@ -453,6 +341,150 @@ function StreakGrid({
         </div>
       </div>
     </>
+  );
+}
+
+/**
+ * StreakBadgesCard - Display all 9 streak milestone badges
+ */
+function StreakBadgesCard({ streak = 0 }: { streak?: number }) {
+  // Find next badge milestone
+  const nextBadge = STREAK_BADGES.find(b => b.days > streak);
+  const lastEarnedBadge = [...STREAK_BADGES].reverse().find(b => b.days <= streak);
+  const progressToNext = nextBadge
+    ? Math.min(100, ((streak - (lastEarnedBadge?.days || 0)) / (nextBadge.days - (lastEarnedBadge?.days || 0))) * 100)
+    : 100;
+
+  const earnedCount = STREAK_BADGES.filter(b => streak >= b.days).length;
+
+  return (
+    <div className="glass-panel p-6 rounded-2xl space-y-5 border border-white/5">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
+            <Zap className="w-5 h-5 text-orange-500 fill-current" />
+          </div>
+          <div>
+            <h3 className="text-lg font-medium text-neutral-200">Streak Badges</h3>
+            <p className="text-xs text-neutral-500">{earnedCount} of {STREAK_BADGES.length} earned</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Progress to next badge */}
+      {nextBadge && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-neutral-500">
+              {lastEarnedBadge ? `${lastEarnedBadge.emoji} ${lastEarnedBadge.name}` : "Start"}
+            </span>
+            <span className="text-neutral-400 font-medium">
+              {nextBadge.days - streak} days to {nextBadge.emoji} {nextBadge.name}
+            </span>
+          </div>
+          <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-orange-600 to-orange-400 rounded-full transition-all duration-500"
+              style={{ width: `${progressToNext}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Badges Grid */}
+      <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-3">
+        {STREAK_BADGES.map((badge) => {
+          const isEarned = streak >= badge.days;
+          const colors = RARITY_COLORS[badge.rarity];
+
+          return (
+            <div
+              key={badge.days}
+              className={cn(
+                "group relative flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all duration-300 cursor-default",
+                isEarned
+                  ? `${colors.bg} ${colors.border} ${colors.glow}`
+                  : "bg-neutral-900/50 border-neutral-800/50 opacity-50 grayscale"
+              )}
+            >
+              <span className={cn("text-2xl", !isEarned && "opacity-40")}>{badge.emoji}</span>
+              <p className={cn("text-[10px] font-medium text-center leading-tight", isEarned ? colors.text : "text-neutral-600")}>
+                {badge.name}
+              </p>
+              <p className="text-[9px] text-neutral-600">{badge.days}d</p>
+
+              {/* Tooltip */}
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                <p className="text-xs font-medium text-neutral-200">{badge.name}</p>
+                <p className="text-[10px] text-neutral-500">{badge.description}</p>
+                {!isEarned && (
+                  <p className="text-[10px] text-orange-400 mt-1">🔒 {badge.days - streak} more days</p>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * AchievementsCard - Display special event badges and accomplishments
+ */
+function AchievementsCard({ earnedBadges = [] }: { earnedBadges?: string[] }) {
+  const earnedCount = SPECIAL_BADGES.filter(b => earnedBadges.includes(b.id)).length;
+
+  return (
+    <div className="glass-panel p-6 rounded-2xl space-y-5 border border-white/5">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
+            <span className="text-lg">🏅</span>
+          </div>
+          <div>
+            <h3 className="text-lg font-medium text-neutral-200">Achievements</h3>
+            <p className="text-xs text-neutral-500">{earnedCount} of {SPECIAL_BADGES.length} unlocked</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Badges Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        {SPECIAL_BADGES.map((badge) => {
+          const isEarned = earnedBadges.includes(badge.id);
+          const colors = RARITY_COLORS[badge.rarity];
+
+          return (
+            <div
+              key={badge.id}
+              className={cn(
+                "group relative flex flex-col items-center gap-2 p-4 rounded-xl border transition-all duration-300 cursor-default",
+                isEarned
+                  ? `${colors.bg} ${colors.border} ${colors.glow}`
+                  : "bg-neutral-900/50 border-neutral-800/50 opacity-50 grayscale"
+              )}
+            >
+              <span className={cn("text-3xl", !isEarned && "opacity-40")}>{badge.emoji}</span>
+              <p className={cn("text-xs font-medium text-center", isEarned ? colors.text : "text-neutral-600")}>
+                {badge.name}
+              </p>
+
+              {/* Tooltip */}
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                <p className="text-xs font-medium text-neutral-200">{badge.name}</p>
+                <p className="text-[10px] text-neutral-500">{badge.description}</p>
+                {!isEarned && (
+                  <p className="text-[10px] text-amber-400 mt-1">🔒 Complete challenge to unlock</p>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -827,15 +859,20 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              {/* Streak Card */}
-              <StreakGrid
+              {/* Streak & Activity Card */}
+              <StreakCard
                 streak={profile?.streak_count || 0}
                 history={profile?.activity_history || []}
                 xp={profile?.xp || 0}
-                earnedBadges={profile?.earned_badges || []}
                 onRefresh={handleRefreshStreak}
                 isRefreshing={streakRefreshing}
               />
+
+              {/* Streak Badges Card */}
+              <StreakBadgesCard streak={profile?.streak_count || 0} />
+
+              {/* Achievements Card */}
+              <AchievementsCard earnedBadges={profile?.earned_badges || []} />
             </section>
           )}
 
