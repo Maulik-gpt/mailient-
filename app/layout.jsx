@@ -58,7 +58,7 @@ export default function RootLayout({ children }) {
         </Script>
         <Script
           defer
-          data-website-id="dfid_whZv4FQiiUxQYjnhCQ4tk"
+          data-website-id="dfid_CFPVRrMW5ckOyKogWqzo9"
           data-domain="mailient.xyz"
           src="https://datafa.st/js/script.js"
         />
