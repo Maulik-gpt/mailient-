@@ -110,38 +110,54 @@ export default function SettingsPage() {
 
   const handleSaveProfile = async (data: EditProfileFormData) => {
     try {
+      // Build the request body, only including URLs if they are valid
+      const requestBody: Record<string, any> = {
+        name: data.name,
+        bio: data.bio || "",
+        location: data.location || "",
+        preferences: {
+          ...profile?.preferences,
+          username: data.username,
+          social_links: {
+            x: data.social_x || undefined,
+            linkedin: data.social_linkedin || undefined,
+            instagram: data.social_instagram || undefined,
+            github: data.social_github || undefined,
+          },
+        },
+      };
+
+      // Only include website if it's a valid URL
+      if (data.website && data.website.trim().startsWith('http')) {
+        requestBody.website = data.website.trim();
+      }
+
+      // Only include avatar_url if it's a valid URL
+      if (data.avatar_url && data.avatar_url.trim().startsWith('http')) {
+        requestBody.avatar_url = data.avatar_url.trim();
+      }
+
+      // Only include banner_url if it's a valid URL
+      if (data.banner_url && data.banner_url.trim().startsWith('http')) {
+        requestBody.banner_url = data.banner_url.trim();
+      }
+
       const res = await fetch("/api/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: data.name,
-          bio: data.bio,
-          location: data.location,
-          website: data.website || undefined,
-          banner_url: data.banner_url || undefined,
-          avatar_url: data.avatar_url || undefined,
-          preferences: {
-            ...profile?.preferences,
-            username: data.username,
-            social_links: {
-              x: data.social_x || undefined,
-              linkedin: data.social_linkedin || undefined,
-              instagram: data.social_instagram || undefined,
-              github: data.social_github || undefined,
-            },
-          },
-        }),
+        body: JSON.stringify(requestBody),
       });
+
       if (res.ok) {
         const updated = await res.json();
         setProfile(updated);
         toast.success("Profile updated successfully");
-        // Force session update or refresh if needed, but setProfile should handle UI
       } else {
         const err = await res.json();
         toast.error(err.error || "Failed to update profile");
       }
     } catch (err) {
+      console.error("Save profile error:", err);
       toast.error("An error occurred while saving");
     }
   };
