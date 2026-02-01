@@ -77,13 +77,75 @@ async function updateStreak(userId) {
     const today = new Date().toISOString().split('T')[0];
     const now = new Date();
 
-    // 1. Log activity for today
-    await supabase.from("user_activity").upsert(
-      { user_id: userId, activity_date: today },
-      { onConflict: 'user_id,activity_date' }
-    );
+    // 1. Backfill activity if few records exist (ensure history is populated)
+    const { count: activityCount } = await supabase
+      .from("user_activity")
+      .select("id", { count: 'exact', head: true })
+      .eq("user_id", userId);
 
-    // 2. Fetch current profile to check last activity
+    if (activityCount < 5) { // If less than 5 days of activity, try backfilling
+      console.log(`[Streak] Checking for backfill activity for ${userId}...`);
+
+      // Get activity from emails
+      const { data: emails } = await supabase
+        .from("user_emails")
+        .select("date")
+        .eq("user_id", userId)
+        .limit(1000);
+
+      // Get activity from chats
+      const { data: chats } = await supabase
+        .from("agent_chat_history")
+        .select("created_at")
+        .eq("user_id", userId)
+        .limit(1000);
+
+      const combinedDates = [
+        ...(emails || []).map(e => new Date(e.date).toISOString().split('T')[0]),
+        ...(chats || []).map(c => new Date(c.created_at).toISOString().split('T')[0])
+      ];
+
+      if (combinedDates.length > 0) {
+        const dateCounts = combinedDates.reduce((acc, date) => {
+          acc[date] = (acc[date] || 0) + 1;
+          return acc;
+        }, {});
+
+        const backfillData = Object.entries(dateCounts).map(([date, count]) => ({
+          user_id: userId,
+          activity_date: date,
+          count: count
+        }));
+
+        // Batch insert in chunks of 100
+        for (let i = 0; i < backfillData.length; i += 100) {
+          await supabase.from("user_activity").insert(backfillData.slice(i, i + 100));
+        }
+      }
+    }
+
+    // 2. Log activity for today (incrementing count)
+    const { data: existingToday } = await supabase
+      .from("user_activity")
+      .select("count")
+      .eq("user_id", userId)
+      .eq("activity_date", today)
+      .maybeSingle();
+
+    if (existingToday) {
+      await supabase.from("user_activity")
+        .update({ count: existingToday.count + 1 })
+        .eq("user_id", userId)
+        .eq("activity_date", today);
+    } else {
+      await supabase.from("user_activity").insert({
+        user_id: userId,
+        activity_date: today,
+        count: 1
+      });
+    }
+
+    // 3. Update Profile Streak
     const { data: profile } = await supabase
       .from("user_profiles")
       .select("streak_count, last_activity_at")
@@ -104,16 +166,14 @@ async function updateStreak(userId) {
       const lastActivityStr = lastActivity.toISOString().split('T')[0];
 
       if (lastActivityStr === today) {
-        // Already active today, streak stays the same
+        // Already active today
       } else if (lastActivityStr === yesterdayStr) {
         newStreak += 1;
       } else {
-        // Streak broken
         newStreak = 1;
       }
     }
 
-    // Update profile
     await supabase.from("user_profiles").update({
       streak_count: newStreak,
       last_activity_at: now.toISOString()

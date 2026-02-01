@@ -58,6 +58,15 @@ function StreakGrid({ history = [], streak = 0 }: { history?: any[], streak?: nu
 
   const streakMessage = streak <= 6 ? "oh cmon'" : "keep it up";
 
+  // GitHub-style coloring based on intensity
+  const getIntensityColor = (count: number) => {
+    if (count === 0) return "bg-white/5 hover:bg-white/10";
+    if (count <= 2) return "bg-orange-950/40"; // Lightest
+    if (count <= 5) return "bg-orange-800/60";
+    if (count <= 10) return "bg-orange-600";
+    return "bg-orange-500 shadow-[0_0_10px_-2px_rgba(249,115,22,0.5)]";
+  };
+
   return (
     <div className="glass-panel p-6 rounded-2xl space-y-6 border border-white/5">
       <div className="flex items-center justify-between">
@@ -93,13 +102,11 @@ function StreakGrid({ history = [], streak = 0 }: { history?: any[], streak?: nu
               <div
                 key={d.key}
                 className={cn(
-                  "w-3 h-3 rounded-[2px] transition-all duration-500",
-                  d.count > 0
-                    ? "bg-orange-500 shadow-[0_0_8px_-2px_rgba(249,115,22,0.4)]"
-                    : "bg-white/5 hover:bg-white/10",
+                  "w-3 h-3 rounded-[2px] transition-all duration-300",
+                  getIntensityColor(d.count),
                   d.isToday && "ring-1 ring-orange-500 ring-offset-1 ring-offset-black"
                 )}
-                title={`${d.key}: ${d.count} activity`}
+                title={`${d.key}: ${d.count} activities`}
               />
             ))}
           </div>
@@ -109,11 +116,16 @@ function StreakGrid({ history = [], streak = 0 }: { history?: any[], streak?: nu
       <div className="flex items-center gap-6 text-[10px] text-neutral-500 uppercase tracking-widest font-bold">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-[2px] bg-white/5 border border-white/5" />
-          <span>Cold</span>
+          <span>Less</span>
+        </div>
+        <div className="flex gap-1 items-center">
+          <div className="w-3 h-3 rounded-[2px] bg-orange-950/40" />
+          <div className="w-3 h-3 rounded-[2px] bg-orange-800/60" />
+          <div className="w-3 h-3 rounded-[2px] bg-orange-600" />
+          <div className="w-3 h-3 rounded-[2px] bg-orange-500" />
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-[2px] bg-orange-500 shadow-[0_0_8px_-2px_rgba(249,115,22,0.4)]" />
-          <span>Active</span>
+          <span>More</span>
         </div>
         <div className="ml-auto text-neutral-600">
           Last 280 days
