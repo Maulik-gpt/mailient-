@@ -376,9 +376,25 @@ export async function PUT(req) {
       return NextResponse.json({ error: "Invalid website URL format" }, { status: 400 });
     }
 
-    // URL validation for banner_url (optional)
-    if (banner_url !== undefined && banner_url !== null && String(banner_url).trim() && !isValidUrlStrict(String(banner_url).trim())) {
-      return NextResponse.json({ error: "Invalid banner image URL format" }, { status: 400 });
+    // URL validation for banner_url (optional) - allow empty strings, null, or valid URLs
+    const bannerUrlValue = banner_url !== undefined && banner_url !== null ? String(banner_url).trim() : '';
+    if (bannerUrlValue && bannerUrlValue.length > 0) {
+      // Check if it's a valid URL (either starts with https:// or is a Supabase storage URL)
+      const isValidBanner = bannerUrlValue.startsWith('https://') || bannerUrlValue.startsWith('http://');
+      if (!isValidBanner) {
+        console.log("Invalid banner URL format:", bannerUrlValue);
+        return NextResponse.json({ error: "Invalid banner image URL format" }, { status: 400 });
+      }
+    }
+
+    // URL validation for avatar_url (optional) - allow empty strings, null, or valid URLs
+    const avatarUrlValue = avatar_url !== undefined && avatar_url !== null ? String(avatar_url).trim() : '';
+    if (avatarUrlValue && avatarUrlValue.length > 0) {
+      const isValidAvatar = avatarUrlValue.startsWith('https://') || avatarUrlValue.startsWith('http://');
+      if (!isValidAvatar) {
+        console.log("Invalid avatar URL format:", avatarUrlValue);
+        return NextResponse.json({ error: "Invalid avatar image URL format" }, { status: 400 });
+      }
     }
 
     // Build profile data, only including defined values
