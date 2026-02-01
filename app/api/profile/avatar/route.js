@@ -26,8 +26,20 @@ export async function POST(req) {
 
     // Get form data
     const formData = await req.formData();
-    const file = formData.get("avatar") || formData.get("banner");
-    const isBanner = formData.has("banner");
+
+    // Check which type of file was uploaded
+    const avatarFile = formData.get("avatar");
+    const bannerFile = formData.get("banner");
+
+    const file = avatarFile || bannerFile;
+    const isBanner = !!bannerFile;
+
+    console.log("[Avatar API] Upload request:", {
+      hasAvatar: !!avatarFile,
+      hasBanner: !!bannerFile,
+      isBanner,
+      userId
+    });
 
     if (!file || !file.size) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
@@ -55,6 +67,8 @@ export async function POST(req) {
 
     // Choose storage bucket based on file type
     const bucket = isBanner ? "banners" : "avatars";
+
+    console.log("[Avatar API] Uploading to bucket:", bucket, "filename:", fileName);
 
     // Upload to Supabase Storage
     const { data: uploadData, error: uploadError } = await supabase.storage

@@ -103,31 +103,48 @@ export function EditProfileDialog({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (type === 'avatar') setUploadingAvatar(true);
-    else setUploadingBanner(true);
-
-    const formData = new FormData();
-    formData.append(type, file);
+    // Set loading state
+    if (type === 'avatar') {
+      setUploadingAvatar(true);
+    } else {
+      setUploadingBanner(true);
+    }
 
     try {
+      const formData = new FormData();
+      // Append file with the correct key name that the API expects
+      formData.append(type, file);
+
       const res = await fetch('/api/profile/avatar', {
         method: 'POST',
         body: formData,
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        const data = await res.json();
         throw new Error(data.error || 'Upload failed');
       }
 
-      const data = await res.json();
-      setForm(prev => ({ ...prev, [type === 'avatar' ? 'avatar_url' : 'banner_url']: data.url }));
+      // Update form state with the returned URL
+      if (type === 'avatar') {
+        setForm(prev => ({ ...prev, avatar_url: data.url }));
+      } else {
+        setForm(prev => ({ ...prev, banner_url: data.url }));
+      }
       toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} uploaded successfully`);
     } catch (err: any) {
-      toast.error(err.message);
+      console.error('Upload error:', err);
+      toast.error(err.message || `Failed to upload ${type}`);
     } finally {
-      if (type === 'avatar') setUploadingAvatar(false);
-      else setUploadingBanner(false);
+      // Reset loading state
+      if (type === 'avatar') {
+        setUploadingAvatar(false);
+      } else {
+        setUploadingBanner(false);
+      }
+      // Reset the input so the same file can be selected again
+      e.target.value = '';
     }
   };
 
@@ -152,10 +169,11 @@ export function EditProfileDialog({
       <DialogContent
         className={cn(
           "max-w-xl p-0 gap-0 overflow-hidden border-none bg-black text-neutral-200",
-          "shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)]"
+          "shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)]",
+          "flex flex-col max-h-[90vh]"
         )}
       >
-        <DialogHeader className="flex flex-row items-center gap-4 px-6 py-4 border-b border-white/10">
+        <DialogHeader className="flex flex-row items-center gap-4 px-6 py-4 border-b border-white/10 shrink-0">
           <button
             onClick={() => setOpen(false)}
             className="w-10 h-10 rounded-full flex items-center justify-center border border-white/10 hover:bg-white/5 transition-colors"
@@ -167,7 +185,7 @@ export function EditProfileDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="px-6 py-6 space-y-8 max-h-[80vh] overflow-y-auto custom-scrollbar">
+        <div className="px-6 py-6 space-y-8 flex-1 overflow-y-auto custom-scrollbar">
           {/* Photos section */}
           <div className="space-y-6">
             <div className="flex flex-col gap-4">
@@ -345,7 +363,7 @@ export function EditProfileDialog({
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 px-6 py-5 border-t border-white/10 bg-neutral-950/50">
+        <div className="flex justify-end gap-3 px-6 py-5 border-t border-white/10 bg-neutral-950/50 shrink-0">
           <Button
             type="button"
             variant="outline"
