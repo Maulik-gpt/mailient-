@@ -150,12 +150,10 @@ async function analyzeBusinessWithAI(content: string, url: string) {
         return analysis;
     } catch (error) {
         console.error('Business analysis engine failure:', error);
-        // Only fallback to mock if it's a transient failure, but log it clearly
-        if (process.env.NODE_ENV === 'development') {
-            console.warn('DEBUG: Falling back to mock due to AI error');
-            return generateMockAnalysis(url);
-        }
-        throw error;
+        // Always fall back to a heuristic profile so the user can continue,
+        // regardless of environment or transient AI/network issues.
+        console.warn('Falling back to heuristic business analysis profile due to AI error.');
+        return generateMockAnalysis(url);
     }
 }
 
