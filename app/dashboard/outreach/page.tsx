@@ -85,6 +85,19 @@ export default function OutreachPage() {
         followUpDays: 3
     });
 
+    // Mass email states
+    const [isGeneratingMassEmails, setIsGeneratingMassEmails] = useState(false);
+    const [isSendingMassCampaign, setIsSendingMassCampaign] = useState(false);
+    const [massEmails, setMassEmails] = useState<{
+        prospectId: string;
+        to: string;
+        subject: string;
+        body: string;
+        name: string;
+        company: string;
+        jobTitle: string;
+    }[]>([]);
+
     // AI-generated suggestions
     const [aiSuggestions, setAiSuggestions] = useState<{
         filters: typeof searchFilters;
@@ -261,49 +274,85 @@ export default function OutreachPage() {
         }
     };
 
-    const handleSendCampaign = async () => {
-        if (selectedProspects.size === 0 || !campaignDraft.body) {
-            toast.error('Please select prospects and create an email');
+    const handleGenerateMassEmails = async () => {
+        if (selectedProspects.size === 0) {
+            toast.error('Please select prospects to generate personalized emails for');
             return;
         }
 
-        setIsLoading(true);
+        setIsGeneratingMassEmails(true);
         try {
-            const response = await fetch('/api/outreach/send-campaign', {
+            const selectedProspectsList = prospects.filter(p => selectedProspects.has(p.id));
+            
+            const response = await fetch('/api/outreach/generate-mass-emails', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    name: campaignDraft.name || `Campaign ${campaigns.length + 1}`,
-                    subject: campaignDraft.subject,
-                    body: campaignDraft.body,
-                    prospects: prospects.filter(p => selectedProspects.has(p.id)),
-                    followUpDays: campaignDraft.followUpDays
+                    businessProfile,
+                    prospects: selectedProspectsList,
+                    batchSize: 50
                 })
             });
 
-            if (!response.ok) throw new Error('Failed to send campaign');
+            if (!response.ok) throw new Error('Failed to generate mass emails');
 
             const data = await response.json();
+            setMassEmails(data.emails);
+            
+            toast.success(`Generated ${data.totalEmails} personalized emails! Ready to send.`);
+        } catch (error) {
+            console.error('Mass email generation error:', error);
+            toast.error('Failed to generate mass emails');
+        } finally {
+            setIsGeneratingMassEmails(false);
+        }
+    };
 
+    const handleSendMassCampaign = async () => {
+        if (massEmails.length === 0) {
+            toast.error('No emails to send. Please generate emails first.');
+            return;
+        }
+
+        setIsSendingMassCampaign(true);
+        try {
+            const response = await fetch('/api/outreach/send-mass-campaign', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: campaignDraft.name || `Mass Campaign ${new Date().toLocaleDateString()}`,
+                    personalizedEmails: massEmails,
+                    sendImmediately: true
+                })
+            });
+
+            if (!response.ok) throw new Error('Failed to send mass campaign');
+
+            const data = await response.json();
+            
+            // Update campaigns list
             setCampaigns(prev => [...prev, {
                 id: data.campaignId,
-                name: campaignDraft.name || `Campaign ${campaigns.length + 1}`,
-                status: 'active',
-                prospects: selectedProspects.size,
+                name: data.name,
+                status: 'sending',
+                prospects: data.totalEmails,
                 sent: 0,
                 opened: 0,
                 replied: 0,
                 createdAt: new Date().toISOString()
             }]);
 
-            toast.success(`Campaign launched! Sending to ${selectedProspects.size} prospects.`);
+            toast.success(`Mass campaign launched! Sending ${data.totalEmails} emails.`);
+            
+            // Reset states
+            setMassEmails([]);
             setSelectedProspects(new Set());
             setCampaignDraft({ name: '', subject: '', body: '', followUpDays: 3 });
         } catch (error) {
-            console.error('Campaign error:', error);
-            toast.error('Failed to send campaign. Please try again.');
+            console.error('Mass campaign send error:', error);
+            toast.error('Failed to send mass campaign');
         } finally {
-            setIsLoading(false);
+            setIsSendingMassCampaign(false);
         }
     };
 
@@ -533,6 +582,14 @@ export default function OutreachPage() {
                                             <Sparkles className="w-3 h-3" />
                                             Personalize Selection
                                         </button>
+                                        <button
+                                            onClick={handleGenerateMassEmails}
+                                            disabled={isGeneratingMassEmails || selectedProspects.size === 0}
+                                            className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg text-xs transition-all uppercase tracking-widest flex items-center gap-2 disabled:opacity-50"
+                                        >
+                                            {isGeneratingMassEmails ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
+                                            Generate Mass Emails
+                                        </button>
                                     </div>
                                 </div>
 
@@ -689,6 +746,63 @@ export default function OutreachPage() {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* Mass Email Preview */}
+            {massEmails.length > 0 && (
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="fixed top-20 right-8 w-96 bg-black border border-white/10 rounded-2xl shadow-2xl p-6 z-40 max-h-[80vh] overflow-y-auto"
+                >
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-sm font-normal text-white">Mass Email Preview</h3>
+                        <button
+                            onClick={() => setMassEmails([])}
+                            className="text-gray-400 hover:text-white transition-colors"
+                        >
+                            ×
+                        </button>
+                    </div>
+                    
+                    <div className="space-y-4 mb-6">
+                        <div className="text-xs text-gray-500">
+                            {massEmails.length} personalized emails ready to send
+                        </div>
+                        
+                        <div className="space-y-2 max-h-40 overflow-y-auto">
+                            {massEmails.slice(0, 3).map((email, index) => (
+                                <div key={index} className="p-2 bg-white/5 rounded-lg text-xs">
+                                    <div className="font-medium text-white">{email.to}</div>
+                                    <div className="text-gray-400 truncate">{email.subject}</div>
+                                </div>
+                            ))}
+                            {massEmails.length > 3 && (
+                                <div className="text-xs text-gray-500 text-center">
+                                    ... and {massEmails.length - 3} more
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    
+                    <button
+                        onClick={handleSendMassCampaign}
+                        disabled={isSendingMassCampaign}
+                        className="w-full px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg text-sm transition-all uppercase tracking-widest flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                        {isSendingMassCampaign ? (
+                            <>
+                                <RefreshCw className="w-4 h-4 animate-spin" />
+                                Sending...
+                            </>
+                        ) : (
+                            <>
+                                <Send className="w-4 h-4" />
+                                Send All Emails Now
+                            </>
+                        )}
+                    </button>
+                </motion.div>
+            )}
 
             {/* Email Composer Overlay */}
             {selectedProspects.size > 0 && campaignDraft.body && (

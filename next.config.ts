@@ -1,8 +1,11 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
+  experimental: {
+    serverComponentsExternalPackages: ['@supabase/supabase-js'],
+  },
+  images: {
+    domains: ['localhost', 'mailient.xyz', 'avatars.githubusercontent.com'],
   },
   typescript: {
     ignoreBuildErrors: true,
