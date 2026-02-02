@@ -28,7 +28,7 @@ interface Prospect {
 interface Campaign {
     id: string;
     name: string;
-    status: 'draft' | 'active' | 'paused' | 'completed';
+    status: 'draft' | 'active' | 'paused' | 'completed' | 'sending';
     prospects: number;
     sent: number;
     opened: number;
@@ -353,6 +353,52 @@ export default function OutreachPage() {
             toast.error('Failed to send mass campaign');
         } finally {
             setIsSendingMassCampaign(false);
+        }
+    };
+
+    const handleSendCampaign = async () => {
+        if (selectedProspects.size === 0 || !campaignDraft.body) {
+            toast.error('Please select prospects and create an email');
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            const response = await fetch('/api/outreach/send-campaign', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: campaignDraft.name || `Campaign ${campaigns.length + 1}`,
+                    subject: campaignDraft.subject,
+                    body: campaignDraft.body,
+                    prospects: prospects.filter(p => selectedProspects.has(p.id)),
+                    followUpDays: campaignDraft.followUpDays
+                })
+            });
+
+            if (!response.ok) throw new Error('Failed to send campaign');
+
+            const data = await response.json();
+
+            setCampaigns(prev => [...prev, {
+                id: data.campaignId,
+                name: campaignDraft.name || `Campaign ${campaigns.length + 1}`,
+                status: 'active',
+                prospects: selectedProspects.size,
+                sent: 0,
+                opened: 0,
+                replied: 0,
+                createdAt: new Date().toISOString()
+            }]);
+
+            toast.success(`Campaign launched! Sending to ${selectedProspects.size} prospects.`);
+            setSelectedProspects(new Set());
+            setCampaignDraft({ name: '', subject: '', body: '', followUpDays: 3 });
+        } catch (error) {
+            console.error('Campaign error:', error);
+            toast.error('Failed to send campaign. Please try again.');
+        } finally {
+            setIsLoading(false);
         }
     };
 

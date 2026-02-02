@@ -42,11 +42,11 @@ async function generateMassPersonalizedEmails(businessProfile: any, prospects: a
     company: string;
     jobTitle: string;
 }[]> {
-    const apiKeys = [
+    const apiKeys: string[] = [
         process.env.OPENROUTER_API_KEY,
         process.env.OPENROUTER_API_KEY2,
         process.env.OPENROUTER_API_KEY3
-    ].filter(key => !!key);
+    ].filter((key): key is string => !!key);
 
     if (apiKeys.length === 0) {
         throw new Error('No OpenRouter API keys available');

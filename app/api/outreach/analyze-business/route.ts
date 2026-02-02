@@ -454,7 +454,7 @@ function extractValueProposition(content: string): string {
 }
 
 function determineTargetAudience(content: string, industry: string): string {
-    const audienceKeywords = {
+    const audienceKeywords: Record<string, string> = {
         'SaaS': 'Business owners, CTOs, VPs of Engineering, IT managers, and technology leaders looking to streamline operations',
         'FinTech': 'CFOs, financial managers, banking executives, and fintech innovators seeking modern financial solutions',
         'E-commerce': 'E-commerce managers, marketing directors, retail executives, and business owners looking to grow online sales',
@@ -474,7 +474,12 @@ function generateSuggestedFilters(industry: string, targetAudience: string): {
     companySize: string;
     seniorityLevel: string;
 } {
-    const industryFilters = {
+    const industryFilters: Record<string, {
+        jobTitle: string;
+        industry: string;
+        companySize: string;
+        seniorityLevel: string;
+    }> = {
         'SaaS': {
             jobTitle: 'CEO,CTO,CPO,VP Engineering,Head of Product',
             industry: 'Software,Technology,SaaS',
