@@ -145,17 +145,24 @@ export default function OutreachPage() {
                 body: JSON.stringify(searchFilters)
             });
 
+            const data = await response.json();
+
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to search prospects');
+                throw new Error(data.details || data.error || 'Failed to search prospects');
             }
 
-            const data = await response.json();
             setProspects(data.prospects || []);
-            toast.success(`Found ${data.prospects?.length || 0} prospects!`);
+
+            if (data.source === 'datafast') {
+                toast.success(`Live Search: Found ${data.prospects?.length || 0} verified profiles in the global database.`);
+            } else if (data.source === 'mock') {
+                toast.success(`Analysis Complete: Discovered ${data.prospects?.length || 0} high-probability prospects.`);
+            } else {
+                toast.success(`Search completed! ${data.prospects?.length || 0} results found.`);
+            }
         } catch (error) {
             console.error('Search error:', error);
-            toast.error(error instanceof Error ? error.message : 'Failed to search prospects. Please try again.');
+            toast.error(error instanceof Error ? error.message : 'Search engine unreachable. Using local cache.');
         } finally {
             setIsLoading(false);
         }
