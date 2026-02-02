@@ -128,3 +128,38 @@ CREATE POLICY outreach_campaigns_policy ON outreach_campaigns
 
 CREATE POLICY email_templates_policy ON email_templates
     FOR ALL USING (user_id = auth.uid());
+
+CREATE POLICY campaign_emails_policy ON campaign_emails
+    FOR ALL USING (EXISTS (
+        SELECT 1 FROM outreach_campaigns 
+        WHERE outreach_campaigns.id = campaign_emails.campaign_id 
+        AND outreach_campaigns.user_id = auth.uid()
+    ));
+
+-- Functions for atomic increments
+CREATE OR REPLACE FUNCTION increment_campaign_sent_count(campaign_id_input UUID)
+RETURNS void AS $$
+BEGIN
+  UPDATE outreach_campaigns
+  SET sent_count = sent_count + 1
+  WHERE id = campaign_id_input;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION increment_campaign_open_count(campaign_id_input UUID)
+RETURNS void AS $$
+BEGIN
+  UPDATE outreach_campaigns
+  SET opened_count = opened_count + 1
+  WHERE id = campaign_id_input;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION increment_campaign_reply_count(campaign_id_input UUID)
+RETURNS void AS $$
+BEGIN
+  UPDATE outreach_campaigns
+  SET replied_count = replied_count + 1
+  WHERE id = campaign_id_input;
+END;
+$$ LANGUAGE plpgsql;

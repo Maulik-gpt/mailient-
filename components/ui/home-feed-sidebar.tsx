@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Mail, Bell, User, MoreHorizontal, LogOut, Settings, CreditCard, UserPlus, NotebookPen, Users } from 'lucide-react';
+import { Mail, Bell, User, MoreHorizontal, LogOut, Settings, CreditCard, UserPlus, NotebookPen, Users, Rocket } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 
 interface HomeFeedSidebarProps {
@@ -40,6 +40,7 @@ export function HomeFeedSidebar({ className = '', onPeopleClick, activeView = 'h
     const navItems = [
         { id: 'home', icon: Mail, label: 'Home', route: '/home-feed' },
         { id: 'notifications', icon: Bell, label: 'Notifications', route: '/notifications' },
+        { id: 'outreach', icon: Rocket, label: 'Outreach', route: '/dashboard/outreach' },
         { id: 'notes', icon: NotebookPen, label: 'Notes', route: '/i/notes' },
         { id: 'arcus', icon: null, label: 'Arcus', route: '/dashboard/agent-talk', isArcus: true },
     ];

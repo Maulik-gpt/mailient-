@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import {
   Mail,
@@ -28,7 +28,8 @@ import {
   Sparkles,
   MoreHorizontal,
   LogOut,
-  Rocket
+  Rocket,
+  CreditCard
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -125,8 +126,8 @@ export function UnifiedSidebar({
   const universalNavItems: SidebarItem[] = [
     { id: 'home-feed', name: 'Feed', icon: Mail, isRoute: true, route: '/home-feed' },
     { id: 'notifications', name: 'Notifications', icon: Bell, isRoute: true, route: '/notifications' },
-    { id: 'agent-talk', name: 'Arcus', icon: Sparkles, isRoute: true, route: '/dashboard/agent-talk' },
     { id: 'outreach', name: 'Outreach', icon: Rocket, isRoute: true, route: '/dashboard/outreach' },
+    { id: 'agent-talk', name: 'Arcus', icon: Sparkles, isRoute: true, route: '/dashboard/agent-talk' },
   ];
 
   const handleLogout = async () => {
@@ -195,13 +196,13 @@ export function UnifiedSidebar({
         };
       case 'settings':
         return {
-          container: "fixed left-0 top-0 h-screen w-20 bg-[#0a0a0a]/50 backdrop-blur-sm border-r border-[#525252] flex flex-col z-20",
+          container: "w-20 bg-[#0a0a0a]/50 backdrop-blur-sm border-r border-[#525252] flex flex-col h-full",
           header: "",
           title: "",
           subtitle: "",
           composeButton: "",
-          nav: "flex flex-col items-end py-20 gap-6 pr-4",
-          navItem: "p-2 hover:bg-[#1a1a1a] rounded-full transition-all duration-300 hover:scale-105",
+          nav: "flex flex-col items-center py-20 gap-6",
+          navItem: "p-2 hover:bg-[#1a1a1a] rounded-full transition-all duration-300 hover:scale-105 flex items-center justify-center w-12 h-12",
           navItemActive: "bg-[#2a2a2a] rounded-full",
           navItemInactive: "",
           navIcon: "w-6 h-6 text-[#fcfcfc]",
@@ -244,55 +245,32 @@ export function UnifiedSidebar({
 
   const styles = getVariantStyles();
 
-  // Render universal navigation for settings variant
-  if (variant === 'settings' && showUniversalNav) {
-    return (
-      <TooltipProvider>
-        <div className={styles.container}>
-          <div className="flex flex-col items-center py-6 border-b border-[#525252] mb-4">
-            <div
-              className="w-10 h-10 bg-black rounded-xl border border-white/10 flex items-center justify-center cursor-pointer hover:scale-110 transition-transform duration-500 overflow-hidden shadow-xl"
-              onClick={() => router.push('/home-feed')}
-            >
-              <img src="/mailient-logo.png" alt="Mailient" className="w-full h-full object-cover scale-110" />
-            </div>
+  const renderUniversalNav = () => (
+    <TooltipProvider>
+      <div className={variant === 'settings' ? styles.container : "w-16 bg-[#050505] border-r border-white/5 flex flex-col items-center py-6 h-full"}>
+        <div className="flex flex-col items-center py-4 mb-4">
+          <div
+            className="w-10 h-10 bg-white rounded-xl flex items-center justify-center cursor-pointer hover:scale-110 transition-transform duration-500 overflow-hidden shadow-xl"
+            onClick={() => router.push('/home-feed')}
+          >
+            <img src="/mailient-logo.png" alt="Mailient" className="w-full h-full object-cover invert" />
           </div>
-          <div className={styles.nav}>
-            {universalNavItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeItem === item.id;
+        </div>
+        <div className="flex flex-col items-center gap-6 w-full">
+          {universalNavItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeItem === item.id || (item.id === 'outreach' && pathname?.includes('outreach'));
 
-              // Special handling for Arcus "A" symbol
-              if (item.id === 'agent-talk') {
-                return (
-                  <Tooltip delayDuration={100} key={item.id}>
-                    <TooltipTrigger asChild>
-                      <button
-                        onClick={() => handleItemClick(item)}
-                        className={`${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
-                        aria-label={item.name}
-                      >
-                        <span className="text-[#fcfcfc] oleo-script-regular text-2xl">A</span>
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">
-                      <p>{item.name}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                );
-              }
-
-
-
+            if (item.id === 'agent-talk') {
               return (
                 <Tooltip delayDuration={100} key={item.id}>
                   <TooltipTrigger asChild>
                     <button
                       onClick={() => handleItemClick(item)}
-                      className={`${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
+                      className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 ${isActive ? 'bg-white text-black' : 'text-white/30 hover:text-white/80 hover:bg-white/5'}`}
                       aria-label={item.name}
                     >
-                      <Icon className={styles.navIcon} />
+                      <span className={`oleo-script-regular text-2xl ${isActive ? 'text-black' : 'text-white/30'}`}>A</span>
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="right">
@@ -300,62 +278,105 @@ export function UnifiedSidebar({
                   </TooltipContent>
                 </Tooltip>
               );
-            })}
+            }
 
-            {/* More Options Icon */}
-            <div className="relative">
-              <Tooltip delayDuration={100}>
+            return (
+              <Tooltip delayDuration={100} key={item.id}>
                 <TooltipTrigger asChild>
                   <button
-                    onClick={() => setIsMoreOptionsOpen(!isMoreOptionsOpen)}
-                    className={`${styles.navItem} ${isMoreOptionsOpen ? styles.navItemActive : ''}`}
-                    aria-label="More Options"
+                    onClick={() => handleItemClick(item)}
+                    className={`p-2.5 transition-all duration-200 rounded-xl flex items-center justify-center ${isActive ? 'bg-white text-black' : 'text-white/30 hover:text-white/80 hover:bg-white/5'}`}
+                    aria-label={item.name}
                   >
-                    <MoreHorizontal className="w-6 h-6 text-[#fcfcfc]" />
+                    <Icon className="w-5 h-5" strokeWidth={1.5} />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="right">
-                  <p>More Options</p>
+                  <p>{item.name}</p>
                 </TooltipContent>
               </Tooltip>
+            );
+          })}
 
-              {/* Dialog Box */}
-              {isMoreOptionsOpen && (
-                <div className="absolute left-20 top-0 z-50 bg-[#000] border border-[#2a2a2a] rounded-lg shadow-xl p-2 min-w-48 animate-fadeIn">
-                  <button
-                    onClick={() => {
-                      window.location.href = '/settings';
-                      setIsMoreOptionsOpen(false);
-                    }}
-                    className="w-full text-left px-4 py-3 text-[#fcfcfc] hover:bg-[#2a2a2a] rounded-md transition-all duration-200"
-                  >
-                    <div className="font-medium">Settings & Privacy</div>
-                  </button>
-                  <button
-                    onClick={() => {
-                      window.location.href = '/pricing';
-                      setIsMoreOptionsOpen(false);
-                    }}
-                    className="w-full text-left px-4 py-3 text-[#fcfcfc] hover:bg-[#2a2a2a] rounded-md transition-all duration-200"
-                  >
-                    <div className="font-medium">Upgrade Plan</div>
-                  </button>
-                  <div className="border-t border-[#2a2a2a] my-1"></div>
-                  <button
-                    onClick={handleLogout}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-red-500 hover:text-red-400 hover:bg-red-500/10 rounded-md transition-all duration-300 group relative overflow-hidden"
-                  >
-                    <LogOut className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-0.5" />
-                    <span className="font-medium">Log Out</span>
-                    <div className="absolute inset-0 bg-gradient-to-r from-red-500/0 via-red-500/20 to-red-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-                  </button>
+          {/* More Options Icon */}
+          <div className="mt-auto relative">
+            <Tooltip delayDuration={100}>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setIsMoreOptionsOpen(!isMoreOptionsOpen)}
+                  className={`w-9 h-9 transition-all duration-200 rounded-full overflow-hidden border flex items-center justify-center ${isMoreOptionsOpen ? 'border-white' : 'border-white/10 hover:border-white/30'}`}
+                  aria-label="More Options"
+                >
+                  <img
+                    src={session?.user?.image || "/user-avatar.png?v=2"}
+                    alt="User"
+                    className="w-full h-full object-cover grayscale opacity-80"
+                  />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                <p>Account</p>
+              </TooltipContent>
+            </Tooltip>
+
+            {/* Dropdown Box */}
+            {isMoreOptionsOpen && (
+              <div className="absolute left-14 bottom-0 z-50 bg-[#0a0a0a] border border-white/10 rounded-xl shadow-2xl p-2 min-w-[200px] animate-in fade-in zoom-in-95 duration-150">
+                <div className="px-3 py-3 mb-2 border-b border-white/5 flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-full overflow-hidden bg-white/5">
+                    <img
+                      src={session?.user?.image || "/user-avatar.png?v=2"}
+                      alt="User"
+                      className="w-full h-full object-cover grayscale opacity-80"
+                    />
+                  </div>
+                  <div className="flex flex-col overflow-hidden text-left">
+                    <span className="text-xs font-normal text-neutral-300 truncate">
+                      {session?.user?.name || 'User'}
+                    </span>
+                    <span className="text-[10px] text-neutral-500 truncate">
+                      {session?.user?.email || ''}
+                    </span>
+                  </div>
                 </div>
-              )}
-            </div>
+                <button
+                  onClick={() => {
+                    router.push('/settings');
+                    setIsMoreOptionsOpen(false);
+                  }}
+                  className="w-full text-left px-3 py-2 text-white/40 hover:text-white hover:bg-white/5 rounded-lg transition-all text-xs flex items-center gap-3"
+                >
+                  <Settings className="w-4 h-4" />
+                  <span>Settings & Privacy</span>
+                </button>
+                <button
+                  onClick={() => {
+                    router.push('/pricing');
+                    setIsMoreOptionsOpen(false);
+                  }}
+                  className="w-full text-left px-3 py-2 text-white/40 hover:text-white hover:bg-white/5 rounded-lg transition-all text-xs flex items-center gap-3"
+                >
+                  <CreditCard className="w-4 h-4" />
+                  <span>Upgrade Plan</span>
+                </button>
+                <div className="border-t border-white/5 my-1"></div>
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-3 px-3 py-2 text-red-400/80 hover:bg-red-400/5 rounded-lg transition-all text-xs"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Log Out</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
-      </TooltipProvider>
-    );
+      </div>
+    </TooltipProvider>
+  );
+
+  if (variant === 'settings' && showUniversalNav) {
+    return renderUniversalNav();
   }
 
   const getItems = () => {
@@ -368,157 +389,162 @@ export function UnifiedSidebar({
 
   const items = getItems();
 
+  const pathname = usePathname();
+
   return (
-    <div className={`${styles.container} ${className}`}>
-      {/* Header - Only for functional variants */}
-      {variant !== 'settings' && (
-        <div className={styles.header}>
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-8 h-8 bg-black rounded-lg border border-white/10 flex items-center justify-center overflow-hidden">
-              <img src="/mailient-logo.png" alt="Mailient" className="w-full h-full object-cover scale-110" />
-            </div>
-            <h1 className={styles.title}>
-              MAILIENT
-            </h1>
-          </div>
-          {variant === 'home-feed' && (
-            <p className={styles.subtitle}>Unified Intelligence Layer</p>
-          )}
-        </div>
-      )}
-
-      {/* Compose Button - Only for functional variants */}
-      {variant !== 'settings' && onCompose && (
-        <div className="p-4">
-          <Button
-            onClick={onCompose}
-            className={styles.composeButton}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Compose
-          </Button>
-        </div>
-      )}
-
-      {/* Navigation Items */}
-      <nav className={styles.nav}>
-        <div className="space-y-1">
-          {items.map((item) => {
-            const Icon = item.icon;
-            const isActive = item.isActive;
-
-            return (
-              <button
-                key={item.id}
-                onClick={() => handleItemClick(item)}
-                className={`${styles.navItem} ${isActive ? styles.navItemActive : styles.navItemInactive
-                  }`}
-                aria-label={`View ${item.name}`}
-              >
-                <div className="flex items-center">
-                  <Icon className={`${styles.navIcon} ${isActive ? styles.navIconActive : styles.navIconInactive
-                    }`} />
-                  <span className="font-medium">{item.name}</span>
-                </div>
-                {item.count && item.count > 0 && (
-                  <Badge
-                    variant="secondary"
-                    className={`${styles.badge} ${isActive ? styles.badgeActive : styles.badgeInactive
-                      }`}
-                  >
-                    {item.count}
-                  </Badge>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* AI Features Section - Only for dashboard */}
-        {variant === 'dashboard' && (
-          <div className="px-3 mt-6">
-            <button
-              onClick={() => setAiFeaturesExpanded(!aiFeaturesExpanded)}
-              className={styles.sectionTitle}
-            >
-              <span>AI FEATURES</span>
-              <ChevronRight className={`w-3 h-3 transition-transform ${aiFeaturesExpanded ? 'rotate-90' : ''
-                }`} />
-            </button>
-
-            {aiFeaturesExpanded && (
-              <div className="mt-2 space-y-1">
-                {aiFeatures.map((feature) => {
-                  const Icon = feature.icon;
-                  const isActive = feature.isActive;
-
-                  return (
-                    <button
-                      key={feature.id}
-                      onClick={() => handleItemClick(feature)}
-                      className={`flex items-center w-full p-2 text-sm rounded-lg transition-colors ${isActive ? styles.navItemActive : 'text-gray-300 hover:text-white hover:bg-gray-800'
-                        }`}
-                    >
-                      <Icon className="w-4 h-4 mr-3" />
-                      <span className="font-medium">{feature.name}</span>
-                    </button>
-                  );
-                })}
+    <div className={`flex h-screen overflow-hidden ${className}`}>
+      {showUniversalNav && renderUniversalNav()}
+      <div className={`${styles.container} overflow-y-auto`}>
+        {/* Header - Only for functional variants */}
+        {variant !== 'settings' && (
+          <div className={styles.header}>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-8 h-8 bg-black rounded-lg border border-white/10 flex items-center justify-center overflow-hidden">
+                <img src="/mailient-logo.png" alt="Mailient" className="w-full h-full object-cover scale-110" />
               </div>
+              <h1 className={styles.title}>
+                MAILIENT
+              </h1>
+            </div>
+            {variant === 'home-feed' && (
+              <p className={styles.subtitle}>Unified Intelligence Layer</p>
             )}
           </div>
         )}
-      </nav>
 
-      {/* Team Members - Only for home-feed */}
-      {variant === 'home-feed' && teamMembers.length > 0 && (
-        <div className="p-4 border-t border-[#525252]">
-          <h3 className={styles.sectionTitle}>Team</h3>
-          <div className="space-y-2">
-            {teamMembers.map((member) => (
-              <div key={member.id} className={styles.teamMember}>
-                <div className="relative">
-                  <Avatar className={styles.teamMemberAvatar}>
-                    <AvatarImage src={member.avatar} />
-                    <AvatarFallback className="text-white bg-[#525252] text-sm">
-                      {member.name[0]}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-black ${member.status === 'online' ? 'bg-green-500' :
-                    member.status === 'away' ? 'bg-yellow-500' : 'bg-gray-500'
-                    }`} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className={styles.teamMemberName}>{member.name}</p>
-                  <p className={styles.teamMemberStatus}>{member.status}</p>
-                </div>
-              </div>
-            ))}
+        {/* Compose Button - Only for functional variants */}
+        {variant !== 'settings' && onCompose && (
+          <div className="p-4">
+            <Button
+              onClick={onCompose}
+              className={styles.composeButton}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Compose
+            </Button>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Footer - Only for dashboard */}
-      {variant === 'dashboard' && (
-        <div className="p-3 border-t border-gray-700 space-y-1">
-          <button
-            onClick={() => router.push('/settings')}
-            className="flex items-center w-full p-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            <Settings className="w-4 h-4 mr-3" />
-            <span>Settings</span>
-          </button>
-          {onIntegrationsClick && (
+        {/* Navigation Items */}
+        <nav className={styles.nav}>
+          <div className="space-y-1">
+            {items.map((item) => {
+              const Icon = item.icon;
+              const isActive = item.isActive;
+
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleItemClick(item)}
+                  className={`${styles.navItem} ${isActive ? styles.navItemActive : styles.navItemInactive
+                    }`}
+                  aria-label={`View ${item.name}`}
+                >
+                  <div className="flex items-center">
+                    <Icon className={`${styles.navIcon} ${isActive ? styles.navIconActive : styles.navIconInactive
+                      }`} />
+                    <span className="font-medium">{item.name}</span>
+                  </div>
+                  {item.count && item.count > 0 && (
+                    <Badge
+                      variant="secondary"
+                      className={`${styles.badge} ${isActive ? styles.badgeActive : styles.badgeInactive
+                        }`}
+                    >
+                      {item.count}
+                    </Badge>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* AI Features Section - Only for dashboard */}
+          {variant === 'dashboard' && (
+            <div className="px-3 mt-6">
+              <button
+                onClick={() => setAiFeaturesExpanded(!aiFeaturesExpanded)}
+                className={styles.sectionTitle}
+              >
+                <span>AI FEATURES</span>
+                <ChevronRight className={`w-3 h-3 transition-transform ${aiFeaturesExpanded ? 'rotate-90' : ''
+                  }`} />
+              </button>
+
+              {aiFeaturesExpanded && (
+                <div className="mt-2 space-y-1">
+                  {aiFeatures.map((feature) => {
+                    const Icon = feature.icon;
+                    const isActive = feature.isActive;
+
+                    return (
+                      <button
+                        key={feature.id}
+                        onClick={() => handleItemClick(feature)}
+                        className={`flex items-center w-full p-2 text-sm rounded-lg transition-colors ${isActive ? styles.navItemActive : 'text-gray-300 hover:text-white hover:bg-gray-800'
+                          }`}
+                      >
+                        <Icon className="w-4 h-4 mr-3" />
+                        <span className="font-medium">{feature.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+        </nav>
+
+        {/* Team Members - Only for home-feed */}
+        {variant === 'home-feed' && teamMembers.length > 0 && (
+          <div className="p-4 border-t border-[#525252]">
+            <h3 className={styles.sectionTitle}>Team</h3>
+            <div className="space-y-2">
+              {teamMembers.map((member) => (
+                <div key={member.id} className={styles.teamMember}>
+                  <div className="relative">
+                    <Avatar className={styles.teamMemberAvatar}>
+                      <AvatarImage src={member.avatar} />
+                      <AvatarFallback className="text-white bg-[#525252] text-sm">
+                        {member.name[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-black ${member.status === 'online' ? 'bg-green-500' :
+                      member.status === 'away' ? 'bg-yellow-500' : 'bg-gray-500'
+                      }`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={styles.teamMemberName}>{member.name}</p>
+                    <p className={styles.teamMemberStatus}>{member.status}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Footer - Only for dashboard */}
+        {variant === 'dashboard' && (
+          <div className="p-3 border-t border-gray-700 space-y-1">
             <button
-              onClick={onIntegrationsClick}
+              onClick={() => router.push('/settings')}
               className="flex items-center w-full p-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
             >
-              <Plug className="w-4 h-4 mr-3" />
-              <span>Integrations</span>
+              <Settings className="w-4 h-4 mr-3" />
+              <span>Settings</span>
             </button>
-          )}
-        </div>
-      )}
+            {onIntegrationsClick && (
+              <button
+                onClick={onIntegrationsClick}
+                className="flex items-center w-full p-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                <Plug className="w-4 h-4 mr-3" />
+                <span>Integrations</span>
+              </button>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
