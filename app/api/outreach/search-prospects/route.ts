@@ -2,9 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import crypto from 'node:crypto';
 
-const DATAFAST_API_KEY = process.env.DATAFAST_API_KEY;
-
 export async function POST(req: NextRequest) {
+    const DATAFAST_API_KEY = process.env.DATAFAST_API_KEY;
     try {
         let session;
         try {
@@ -30,7 +29,7 @@ export async function POST(req: NextRequest) {
         if (DATAFAST_API_KEY) {
             console.log('Attempting DataFast API search...');
             try {
-                const result = await searchWithDataFast(filters);
+                const result = await searchWithDataFast(filters, DATAFAST_API_KEY);
                 prospects = result.prospects;
                 totalFound = result.total || prospects.length;
                 source = prospects.length > 0 ? 'datafast' : 'none';
@@ -46,7 +45,11 @@ export async function POST(req: NextRequest) {
                 }, { status: 503 });
             }
         } else {
-            return NextResponse.json({ error: 'DATAFAST_API_KEY is missing' }, { status: 500 });
+            console.error('Lead Engine Error: DATAFAST_API_KEY is not defined in process.env');
+            return NextResponse.json({
+                error: 'Lead Engine Configuration Error',
+                details: 'The DATAFAST_API_KEY is missing from the server environment. Please ensure it is set in your .env.local and restart your dev server.'
+            }, { status: 500 });
         }
 
         console.log(`Search complete. Found ${prospects.length} prospects from [${source}] (Total capacity: ${totalFound}+)`);
@@ -67,7 +70,7 @@ export async function POST(req: NextRequest) {
     }
 }
 
-async function searchWithDataFast(filters: any) {
+async function searchWithDataFast(filters: any, apiKey: string) {
     const getSafeString = (val: any) => (typeof val === 'string' ? val : Array.isArray(val) ? val.join(', ') : undefined);
 
     const payload = {
@@ -83,7 +86,7 @@ async function searchWithDataFast(filters: any) {
     const response = await fetch('https://api.datafast.io/v1/people/search', {
         method: 'POST',
         headers: {
-            'Authorization': `Bearer ${DATAFAST_API_KEY}`,
+            'Authorization': `Bearer ${apiKey}`,
             'Content-Type': 'application/json'
         },
         body: JSON.stringify(payload)
