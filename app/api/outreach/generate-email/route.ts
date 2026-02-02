@@ -20,7 +20,7 @@ async function generateEmailWithAI(businessProfile: any, prospects: any[]) {
     const apiKey = process.env.OPENROUTER_API_KEY;
 
     if (!apiKey) {
-        return generateFallbackEmail(businessProfile);
+        throw new Error('OPENROUTER_API_KEY missing for outreach email generation');
     }
 
     try {
@@ -76,29 +76,9 @@ Write a compelling cold email.`
             return JSON.parse(match[0]);
         }
 
-        return generateFallbackEmail(businessProfile);
+        throw new Error('AI did not return a valid JSON email payload');
     } catch (error) {
         console.error('AI email generation error:', error);
-        return generateFallbackEmail(businessProfile);
+        throw error;
     }
-}
-
-function generateFallbackEmail(businessProfile: any) {
-    const businessName = businessProfile.name || 'our company';
-    const valueProp = businessProfile.valueProposition || 'help businesses grow faster';
-
-    return {
-        subject: `Quick question about {{company}}'s growth, {{name}}`,
-        body: `Hi {{name}},
-
-I came across {{company}} and was impressed by what you're building as ${businessProfile.industry || 'a leader'} in the space.
-
-At ${businessName}, we ${valueProp}. We've helped similar companies achieve significant improvements in their key metrics.
-
-I'd love to share a few specific ideas tailored to {{company}}'s current stage.
-
-Would you be open to a quick 15-minute chat this week?
-
-Best regards`
-    };
 }

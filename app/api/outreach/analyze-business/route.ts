@@ -14,10 +14,12 @@ export async function POST(req: NextRequest) {
         }
 
         const websiteContent = await fetchWebsiteContent(url);
+        if (!websiteContent || websiteContent.trim().length < 100) {
+            console.error('Website content unavailable or too thin for analysis.');
+            return NextResponse.json({ error: 'Failed to fetch website for analysis' }, { status: 400 });
+        }
 
-        // Even if the website HTML cannot be fetched (CORS, bot protection, etc.),
-        // still generate a useful business profile so the Outreach AI can work.
-        const analysis = await analyzeBusinessWithAI(websiteContent || '', url);
+        const analysis = await analyzeBusinessWithAI(websiteContent, url);
         return NextResponse.json(analysis);
     } catch (error) {
         console.error('Business analysis error:', error);
@@ -71,18 +73,10 @@ async function fetchWebsiteContent(url: string): Promise<string | null> {
 async function analyzeBusinessWithAI(content: string, url: string) {
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) {
-        console.warn('OPENROUTER_API_KEY missing - falling back to mock analysis.');
-        return generateMockAnalysis(url);
+        throw new Error('OPENROUTER_API_KEY missing for outreach analysis');
     }
 
     try {
-        // If we failed to fetch meaningful HTML, fall back to a robust mock profile
-        // so the user can still continue with Outreach setup.
-        if (!content || content.trim().length < 100) {
-            console.warn(`Website content for ${url} is unavailable or too thin. Falling back to heuristic analysis.`);
-            return generateMockAnalysis(url);
-        }
-
         console.log(`Initiating AI analysis for ${url} (Content length: ${content.length})...`);
         const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
             method: 'POST',
@@ -150,24 +144,6 @@ async function analyzeBusinessWithAI(content: string, url: string) {
         return analysis;
     } catch (error) {
         console.error('Business analysis engine failure:', error);
-        // Always fall back to a heuristic profile so the user can continue,
-        // regardless of environment or transient AI/network issues.
-        console.warn('Falling back to heuristic business analysis profile due to AI error.');
-        return generateMockAnalysis(url);
+        throw error;
     }
-}
-
-function generateMockAnalysis(url: string) {
-    const domain = url.replace(/https?:\/\//, '').split('/')[0];
-    const name = domain.split('.')[0];
-    return {
-        businessName: name.charAt(0).toUpperCase() + name.slice(1),
-        description: 'A modern solution helping businesses streamline operations.',
-        valueProposition: 'Saves time and increases efficiency',
-        targetAudience: 'Founders and decision-makers at growing companies',
-        industry: 'saas',
-        suggestedFilters: { jobTitle: 'CEO, Founder, CTO', industry: 'technology', companySize: '11-50', seniorityLevel: 'c-level' },
-        emailTemplate: 'Hi {{name}},\n\nI noticed {{company}} is doing great work. We help companies like yours achieve better results.\n\nWould you be open to a quick call?\n\nBest',
-        subjectLines: ['Quick question for {{company}}', '{{name}}, idea for you']
-    };
 }
