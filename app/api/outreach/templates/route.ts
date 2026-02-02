@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-// @ts-expect-error - auth.js module
 import { auth } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {

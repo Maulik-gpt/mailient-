@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-// @ts-expect-error - auth.js module doesn't have type definitions
 import { auth } from '@/lib/auth';
 
 interface Prospect {
