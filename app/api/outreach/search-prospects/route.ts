@@ -11,7 +11,6 @@ export async function POST(req: NextRequest) {
             session = await auth();
         } catch (authError) {
             console.error('Auth verification failed:', authError);
-            // In dev mode, we might want to continue for debugging if it's a known issue
             if (process.env.NODE_ENV === 'production') {
                 return NextResponse.json({ error: 'Authentication failed' }, { status: 401 });
             }
@@ -26,33 +25,36 @@ export async function POST(req: NextRequest) {
 
         let prospects = [];
         let source = 'none';
+        let totalFound = 0;
 
         if (DATAFAST_API_KEY) {
             console.log('Attempting DataFast API search...');
             try {
-                prospects = await searchWithDataFast(filters);
+                const result = await searchWithDataFast(filters);
+                prospects = result.prospects;
+                totalFound = result.total || prospects.length;
                 source = prospects.length > 0 ? 'datafast' : 'none';
+
                 if (prospects.length === 0) {
                     console.log('DataFast returned no results for these filters.');
                 }
             } catch (dfError) {
                 console.error('DataFast API critical failure:', dfError);
+                return NextResponse.json({
+                    error: 'Lead database connection failed',
+                    details: dfError instanceof Error ? dfError.message : 'The global prospect engine is temporarily unreachable.'
+                }, { status: 503 });
             }
         } else {
-            console.warn('DATAFAST_API_KEY is missing in environment variables.');
+            return NextResponse.json({ error: 'DATAFAST_API_KEY is missing' }, { status: 500 });
         }
 
-        // Fallback to mock data if no results from real API or if key is missing
-        if (!prospects || prospects.length === 0) {
-            console.log('Using intelligent mock data fallback...');
-            prospects = generateMockProspects(filters);
-            source = 'mock';
-        }
+        console.log(`Search complete. Found ${prospects.length} prospects from [${source}] (Total capacity: ${totalFound}+)`);
 
-        console.log(`Search complete. Found ${prospects.length} prospects from [${source}]`);
         return NextResponse.json({
             prospects,
             total: prospects.length,
+            total_found: totalFound,
             source,
             timestamp: new Date().toISOString()
         });
@@ -75,7 +77,7 @@ async function searchWithDataFast(filters: any) {
         location: getSafeString(filters.location),
         company_size: getSafeString(filters.companySize),
         seniority: getSafeString(filters.seniorityLevel),
-        limit: 100
+        limit: 1000
     };
 
     const response = await fetch('https://api.datafast.io/v1/people/search', {
@@ -90,11 +92,11 @@ async function searchWithDataFast(filters: any) {
     if (!response.ok) {
         const errorText = await response.text();
         console.error(`DataFast API error (${response.status}):`, errorText);
-        return [];
+        throw new Error(`Lead engine error: ${response.status}`);
     }
 
     const data = await response.json();
-    return (data.results || []).map((person: any) => ({
+    const prospects = (data.results || []).map((person: any) => ({
         id: person.id || crypto.randomUUID(),
         name: person.full_name || person.name,
         email: person.email,
@@ -106,62 +108,12 @@ async function searchWithDataFast(filters: any) {
         linkedinUrl: person.linkedin_url,
         verified: person.email_verified || person.verification_status === 'verified'
     }));
+
+    return {
+        prospects,
+        total: data.total || prospects.length
+    };
 }
 
-function generateMockProspects(filters: any) {
-    // Helper to safely get a string from a filter field
-    const getSafeString = (val: any) => (typeof val === 'string' ? val : Array.isArray(val) ? val.join(', ') : '');
-
-    // Clean filters - ensure they are strings before trimming
-    const jobTitleRaw = getSafeString(filters.jobTitle);
-    const industryRaw = getSafeString(filters.industry);
-    const locationRaw = getSafeString(filters.location);
-
-    const targetJob = jobTitleRaw.trim() !== '' ? jobTitleRaw : null;
-    const targetIndustry = industryRaw.trim() !== '' ? industryRaw : 'Technology';
-    const targetLocation = locationRaw.trim() !== '' ? locationRaw : null;
-
-    const jobTitles = targetJob?.split(',').map((t: string) => t.trim()) ||
-        ['CEO', 'Founding Engineer', 'CTO', 'VP Production', 'Marketing Lead', 'Growth Director'];
-
-    const companies = [
-        { name: 'Velocity AI', domain: 'velocity.ai' },
-        { name: 'Quantum Leap', domain: 'quantumleap.io' },
-        { name: 'Nexus Solutions', domain: 'nexus.so' },
-        { name: 'CloudScale', domain: 'cloudscale.tech' },
-        { name: 'Modern Stack', domain: 'modernstack.dev' },
-        { name: 'Apex Systems', domain: 'apex.co' },
-        { name: 'Horizon Digital', domain: 'horizon.digital' },
-        { name: 'Frontier Labs', domain: 'frontier.ai' }
-    ];
-
-    const firstNames = ['James', 'Sarah', 'Michael', 'Emily', 'David', 'Jessica', 'Alex', 'Rachel', 'Chris', 'Amanda', 'Jordan', 'Casey'];
-    const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Davis', 'Miller', 'Wilson', 'Moore', 'Taylor', 'Anderson', 'Chen', 'Kumar'];
-    const locations = targetLocation ? [targetLocation] : ['San Francisco, CA', 'New York, NY', 'Austin, TX', 'London, UK', 'Berlin, DE', 'Toronto, CA'];
-
-    const prospects = [];
-    const count = 25; // Consistent count for better UX
-
-    for (let i = 0; i < count; i++) {
-        const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
-        const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
-        const company = companies[Math.floor(Math.random() * companies.length)];
-        const jobTitle = jobTitles[Math.floor(Math.random() * jobTitles.length)];
-
-        prospects.push({
-            id: crypto.randomUUID(),
-            name: `${firstName} ${lastName}`,
-            email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@${company.domain}`,
-            jobTitle: jobTitle || 'Executive',
-            company: company.name,
-            companyDomain: company.domain,
-            location: locations[Math.floor(Math.random() * locations.length)],
-            industry: targetIndustry,
-            verified: Math.random() > 0.2
-        });
-    }
-
-    return prospects;
-}
 
 

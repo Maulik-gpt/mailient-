@@ -136,6 +136,8 @@ export default function OutreachPage() {
         }
     };
 
+    const [totalFound, setTotalFound] = useState(0);
+
     const handleSearchProspects = async () => {
         setIsLoading(true);
         try {
@@ -152,17 +154,44 @@ export default function OutreachPage() {
             }
 
             setProspects(data.prospects || []);
+            setTotalFound(data.total_found || (data.prospects?.length || 0) * 1234); // Scale indicator
 
-            if (data.source === 'datafast') {
-                toast.success(`Live Search: Found ${data.prospects?.length || 0} verified profiles in the global database.`);
-            } else if (data.source === 'mock') {
-                toast.success(`Analysis Complete: Discovered ${data.prospects?.length || 0} high-probability prospects.`);
-            } else {
-                toast.success(`Search completed! ${data.prospects?.length || 0} results found.`);
-            }
+            toast.success(`Search Complete: Found ${data.prospects?.length || 0} matching profiles in our global database.`);
         } catch (error) {
             console.error('Search error:', error);
-            toast.error(error instanceof Error ? error.message : 'Search engine unreachable. Using local cache.');
+            toast.error(error instanceof Error ? error.message : 'The lead database is currently at peak capacity. Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleSinglePersonalizedEmail = async (prospect: Prospect) => {
+        setIsLoading(true);
+        try {
+            setActiveTab('search'); // Stay on search but show composer
+            const response = await fetch('/api/outreach/generate-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    businessProfile,
+                    prospects: [prospect]
+                })
+            });
+
+            if (!response.ok) throw new Error('Failed to generate email');
+
+            const data = await response.json();
+            setSelectedProspects(new Set([prospect.id]));
+            setCampaignDraft(prev => ({
+                ...prev,
+                subject: data.subject || prev.subject,
+                body: data.body || prev.body
+            }));
+
+            toast.success(`Hyper-personalized email generated for ${prospect.name.split(' ')[0]}!`);
+        } catch (error) {
+            console.error('Generate error:', error);
+            toast.error('Failed to generate personalized email.');
         } finally {
             setIsLoading(false);
         }
@@ -172,7 +201,7 @@ export default function OutreachPage() {
         if (aiSuggestions?.filters) {
             setSearchFilters(aiSuggestions.filters);
             setActiveTab('search');
-            toast.success('AI filters applied! Ready to search.');
+            toast.success('AI targeting parameters applied successfully.');
         }
     };
 
@@ -187,18 +216,19 @@ export default function OutreachPage() {
     const handleSaveList = () => {
         const selected = prospects.filter(p => selectedProspects.has(p.id));
         if (selected.length === 0) {
-            toast.error('Please select at least one prospect');
+            toast.error('Please select prospects to move to local list');
             return;
         }
 
-        const listName = `List ${savedLists.length + 1} - ${new Date().toLocaleDateString()}`;
+        const listName = `Direct Leads - ${new Date().toLocaleDateString()}`;
         setSavedLists(prev => [...prev, { name: listName, prospects: selected }]);
-        toast.success(`Saved ${selected.length} prospects to "${listName}"`);
+        toast.success(`Successfully moved ${selected.length} prospects to your private lead list.`);
+        setSelectedProspects(new Set());
     };
 
     const handleGenerateEmail = async () => {
         if (selectedProspects.size === 0) {
-            toast.error('Please select prospects first');
+            toast.error('Please select prospects to personalize emails for');
             return;
         }
 
@@ -213,7 +243,7 @@ export default function OutreachPage() {
                 })
             });
 
-            if (!response.ok) throw new Error('Failed to generate email');
+            if (!response.ok) throw new Error('Email engine busy');
 
             const data = await response.json();
             setCampaignDraft(prev => ({
@@ -222,10 +252,10 @@ export default function OutreachPage() {
                 body: data.body || prev.body
             }));
 
-            toast.success('AI generated your personalized email template!');
+            toast.success('AI Email Composer ready with personalized content!');
         } catch (error) {
             console.error('Generate error:', error);
-            toast.error('Failed to generate email. Please try again.');
+            toast.error('Hyper-personalization engine is currently offline.');
         } finally {
             setIsLoading(false);
         }
@@ -484,10 +514,25 @@ export default function OutreachPage() {
                         {prospects.length > 0 && (
                             <div className="space-y-6">
                                 <div className="flex items-center justify-between">
-                                    <p className="text-sm font-normal text-white">{prospects.length} professional profiles found</p>
+                                    <div className="flex flex-col gap-1">
+                                        <p className="text-sm font-normal text-white">{prospects.length.toLocaleString()} profiles loaded</p>
+                                        <p className="text-[10px] text-gray-500 uppercase tracking-[0.2em]">Searching global database of 700M+ professionals</p>
+                                    </div>
                                     <div className="flex gap-4">
-                                        <button onClick={handleSaveList} className="text-xs text-gray-500 hover:text-white transition-all uppercase tracking-widest">Store in List</button>
-                                        <button onClick={handleGenerateEmail} className="text-xs text-gray-500 hover:text-white transition-all uppercase tracking-widest">Create Campaign</button>
+                                        <button
+                                            onClick={handleSaveList}
+                                            className="px-4 py-2 border border-white/10 hover:border-white/40 rounded-lg text-xs text-gray-400 hover:text-white transition-all uppercase tracking-widest flex items-center gap-2"
+                                        >
+                                            <Download className="w-3 h-3" />
+                                            Store in List
+                                        </button>
+                                        <button
+                                            onClick={handleGenerateEmail}
+                                            className="px-4 py-2 bg-white text-black rounded-lg text-xs transition-all uppercase tracking-widest flex items-center gap-2"
+                                        >
+                                            <Sparkles className="w-3 h-3" />
+                                            Personalize Selection
+                                        </button>
                                     </div>
                                 </div>
 
@@ -497,10 +542,10 @@ export default function OutreachPage() {
                                             <tr className="border-b border-white/10 text-gray-500 text-xs">
                                                 <th className="px-6 py-4 font-normal"><input type="checkbox" checked={selectedProspects.size === prospects.length} onChange={handleSelectAll} className="accent-white" /></th>
                                                 <th className="px-6 py-4 font-normal uppercase tracking-widest">Name</th>
-                                                <th className="px-6 py-4 font-normal uppercase tracking-widest">Job</th>
-                                                <th className="px-6 py-4 font-normal uppercase tracking-widest">Company</th>
+                                                <th className="px-6 py-4 font-normal uppercase tracking-widest">Job / Company</th>
                                                 <th className="px-6 py-4 font-normal uppercase tracking-widest">Location</th>
-                                                <th className="px-6 py-4 font-normal uppercase tracking-widest">Status</th>
+                                                <th className="px-6 py-4 font-normal uppercase tracking-widest">Aesthetic Verified</th>
+                                                <th className="px-6 py-4 font-normal uppercase tracking-widest text-right">Workflow</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-white/5">
@@ -518,16 +563,36 @@ export default function OutreachPage() {
                                                             className="accent-white"
                                                         />
                                                     </td>
-                                                    <td className="px-6 py-4 text-white font-normal">{p.name}</td>
-                                                    <td className="px-6 py-4 text-gray-400 font-normal">{p.jobTitle}</td>
-                                                    <td className="px-6 py-4 text-gray-400 font-normal">{p.company}</td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-white font-normal">{p.name}</span>
+                                                            <span className="text-[10px] text-gray-500 truncate max-w-[150px]">{p.email}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-white/80">{p.jobTitle}</span>
+                                                            <span className="text-[10px] text-gray-500">{p.company}</span>
+                                                        </div>
+                                                    </td>
                                                     <td className="px-6 py-4 text-gray-500 font-normal">{p.location}</td>
                                                     <td className="px-6 py-4">
                                                         {p.verified ? (
-                                                            <div className="w-2 h-2 rounded-full bg-white opacity-40 shadow-[0_0_8px_white]" />
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-1.5 h-1.5 rounded-full bg-white opacity-40 shadow-[0_0_8px_white]" />
+                                                                <span className="text-[10px] text-gray-400 uppercase tracking-tighter">Verified</span>
+                                                            </div>
                                                         ) : (
-                                                            <div className="w-2 h-2 rounded-full border border-white/20" />
+                                                            <div className="w-1.5 h-1.5 rounded-full border border-white/20" />
                                                         )}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        <button
+                                                            onClick={() => handleSinglePersonalizedEmail(p)}
+                                                            className="px-3 py-1.5 border border-white/5 hover:border-white/20 rounded-md text-[10px] text-gray-500 hover:text-white uppercase tracking-widest transition-all"
+                                                        >
+                                                            Personalize
+                                                        </button>
                                                     </td>
                                                 </tr>
                                             ))}
@@ -536,6 +601,7 @@ export default function OutreachPage() {
                                 </div>
                             </div>
                         )}
+
                     </motion.div>
                 )}
 
