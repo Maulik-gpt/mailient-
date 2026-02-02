@@ -145,14 +145,17 @@ export default function OutreachPage() {
                 body: JSON.stringify(searchFilters)
             });
 
-            if (!response.ok) throw new Error('Failed to search prospects');
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to search prospects');
+            }
 
             const data = await response.json();
             setProspects(data.prospects || []);
             toast.success(`Found ${data.prospects?.length || 0} prospects!`);
         } catch (error) {
             console.error('Search error:', error);
-            toast.error('Failed to search prospects. Please try again.');
+            toast.error(error instanceof Error ? error.message : 'Failed to search prospects. Please try again.');
         } finally {
             setIsLoading(false);
         }
@@ -268,657 +271,401 @@ export default function OutreachPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[#0a0a0f] via-[#0d0d14] to-[#0a0a0f] text-white p-6">
+        <div className="min-h-screen bg-black text-white p-8">
             {/* Header */}
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mb-8"
+                className="mb-12 border-b border-white/5 pb-8"
             >
-                <div className="flex items-center gap-3 mb-2">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 via-blue-500 to-cyan-500 flex items-center justify-center">
-                        <Rocket className="w-6 h-6 text-white" />
+                <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center">
+                        <Rocket className="w-5 h-5 text-black" />
                     </div>
                     <div>
-                        <h1 className="text-3xl font-bold bg-gradient-to-r from-white via-purple-200 to-blue-200 bg-clip-text text-transparent">
-                            AI Outreach Engine
+                        <h1 className="text-2xl font-normal tracking-tight text-white">
+                            Outreach
                         </h1>
-                        <p className="text-gray-400">Find leads, personalize at scale, send with AI</p>
+                        <p className="text-gray-500 text-sm">Scale your acquisition with AI personalization.</p>
                     </div>
                 </div>
             </motion.div>
 
             {/* Tab Navigation */}
-            <div className="flex gap-2 mb-6 p-1 bg-white/5 rounded-2xl w-fit backdrop-blur-xl border border-white/10">
+            <div className="flex gap-4 mb-10 border-b border-white/5">
                 {[
                     { id: 'ai-setup', label: 'AI Setup', icon: Brain },
-                    { id: 'search', label: 'Find Prospects', icon: Search },
-                    { id: 'lists', label: 'My Lists', icon: Users },
+                    { id: 'search', label: 'Prospects', icon: Search },
+                    { id: 'lists', label: 'Lists', icon: Users },
                     { id: 'campaigns', label: 'Campaigns', icon: Send }
                 ].map(tab => (
-                    <motion.button
+                    <button
                         key={tab.id}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
                         onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                        className={`flex items-center gap-2 px-5 py-3 rounded-xl font-medium transition-all ${activeTab === tab.id
-                                ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg shadow-purple-500/25'
-                                : 'text-gray-400 hover:text-white hover:bg-white/5'
+                        className={`flex items-center gap-2 px-4 py-3 text-sm font-normal transition-all relative ${activeTab === tab.id
+                            ? 'text-white'
+                            : 'text-gray-500 hover:text-gray-300'
                             }`}
                     >
                         <tab.icon className="w-4 h-4" />
                         {tab.label}
-                    </motion.button>
+                        {activeTab === tab.id && (
+                            <motion.div
+                                layoutId="activeTab"
+                                className="absolute bottom-0 left-0 right-0 h-0.5 bg-white"
+                            />
+                        )}
+                    </button>
                 ))}
             </div>
 
             {/* Content */}
             <AnimatePresence mode="wait">
-                {/* AI Setup Tab */}
                 {activeTab === 'ai-setup' && (
                     <motion.div
                         key="ai-setup"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        className="space-y-6"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="max-w-4xl space-y-8"
                     >
-                        {/* Business URL Analyzer */}
-                        <div className="bg-gradient-to-br from-purple-900/30 via-blue-900/20 to-cyan-900/20 rounded-3xl p-8 border border-purple-500/20 backdrop-blur-xl">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
-                                    <ScanLine className="w-5 h-5" />
+                        <div className="space-y-6">
+                            <div className="flex items-center gap-3">
+                                <ScanLine className="w-5 h-5 text-gray-400" />
+                                <h2 className="text-lg font-normal">Business Context</h2>
+                            </div>
+
+                            <div className="grid gap-6 p-8 border border-white/10 rounded-2xl bg-white/[0.02]">
+                                <div className="space-y-4">
+                                    <label className="text-xs uppercase tracking-widest text-gray-500 font-normal">Website URL</label>
+                                    <div className="flex gap-4">
+                                        <input
+                                            type="url"
+                                            value={businessProfile.url}
+                                            onChange={(e) => setBusinessProfile(prev => ({ ...prev, url: e.target.value }))}
+                                            placeholder="https://yourproduct.com"
+                                            className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-sm focus:outline-none focus:border-white/20 transition-all text-white"
+                                        />
+                                        <button
+                                            onClick={handleAnalyzeWebsite}
+                                            disabled={isAnalyzing}
+                                            className="px-6 py-3 bg-white text-black rounded-lg text-sm font-normal hover:bg-gray-200 transition-all disabled:opacity-50 flex items-center gap-2"
+                                        >
+                                            {isAnalyzing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                                            Analyze
+                                        </button>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h2 className="text-xl font-bold">AI Business Analyzer</h2>
-                                    <p className="text-gray-400 text-sm">Enter your product URL and let AI understand your business</p>
+
+                                <div className="grid grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <label className="text-xs uppercase tracking-widest text-gray-500 font-normal">Name</label>
+                                        <input
+                                            type="text"
+                                            value={businessProfile.name}
+                                            onChange={(e) => setBusinessProfile(prev => ({ ...prev, name: e.target.value }))}
+                                            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-sm focus:outline-none focus:border-white/20 text-white"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs uppercase tracking-widest text-gray-500 font-normal">Industry</label>
+                                        <input
+                                            type="text"
+                                            value={businessProfile.industry}
+                                            onChange={(e) => setBusinessProfile(prev => ({ ...prev, industry: e.target.value }))}
+                                            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-sm focus:outline-none focus:border-white/20 text-white"
+                                        />
+                                    </div>
+                                    <div className="col-span-2 space-y-2">
+                                        <label className="text-xs uppercase tracking-widest text-gray-500 font-normal">Value Proposition</label>
+                                        <textarea
+                                            value={businessProfile.valueProposition}
+                                            onChange={(e) => setBusinessProfile(prev => ({ ...prev, valueProposition: e.target.value }))}
+                                            rows={2}
+                                            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-sm focus:outline-none focus:border-white/20 resize-none text-white"
+                                        />
+                                    </div>
+                                    <div className="col-span-2 space-y-2">
+                                        <label className="text-xs uppercase tracking-widest text-gray-500 font-normal">Target Audience</label>
+                                        <textarea
+                                            value={businessProfile.targetAudience}
+                                            onChange={(e) => setBusinessProfile(prev => ({ ...prev, targetAudience: e.target.value }))}
+                                            rows={2}
+                                            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-sm focus:outline-none focus:border-white/20 resize-none text-white"
+                                        />
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="flex gap-4 mb-6">
-                                <div className="flex-1 relative">
-                                    <Link2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                    <input
-                                        type="url"
-                                        value={businessProfile.url}
-                                        onChange={(e) => setBusinessProfile(prev => ({ ...prev, url: e.target.value }))}
-                                        placeholder="https://yourproduct.com"
-                                        className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition-all"
-                                    />
-                                </div>
-                                <motion.button
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    onClick={handleAnalyzeWebsite}
-                                    disabled={isAnalyzing}
-                                    className="px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl font-semibold flex items-center gap-2 hover:shadow-lg hover:shadow-purple-500/25 transition-all disabled:opacity-50"
-                                >
-                                    {isAnalyzing ? (
-                                        <>
-                                            <Loader2 className="w-5 h-5 animate-spin" />
-                                            Analyzing...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Sparkles className="w-5 h-5" />
-                                            Analyze with AI
-                                        </>
-                                    )}
-                                </motion.button>
-                            </div>
-
-                            {/* Business Profile Form */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm text-gray-400 mb-2">Business Name</label>
-                                    <input
-                                        type="text"
-                                        value={businessProfile.name}
-                                        onChange={(e) => setBusinessProfile(prev => ({ ...prev, name: e.target.value }))}
-                                        placeholder="Your Business Name"
-                                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 transition-all"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm text-gray-400 mb-2">Industry</label>
-                                    <select
-                                        value={businessProfile.industry}
-                                        onChange={(e) => setBusinessProfile(prev => ({ ...prev, industry: e.target.value }))}
-                                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-purple-500/50 transition-all"
-                                    >
-                                        <option value="">Select Industry</option>
-                                        <option value="saas">SaaS / Software</option>
-                                        <option value="ecommerce">E-commerce</option>
-                                        <option value="fintech">Fintech</option>
-                                        <option value="healthcare">Healthcare</option>
-                                        <option value="education">Education</option>
-                                        <option value="marketing">Marketing / Agency</option>
-                                        <option value="consulting">Consulting</option>
-                                        <option value="other">Other</option>
-                                    </select>
-                                </div>
-                                <div className="col-span-2">
-                                    <label className="block text-sm text-gray-400 mb-2">Value Proposition</label>
-                                    <textarea
-                                        value={businessProfile.valueProposition}
-                                        onChange={(e) => setBusinessProfile(prev => ({ ...prev, valueProposition: e.target.value }))}
-                                        placeholder="What unique value does your product provide?"
-                                        rows={3}
-                                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 transition-all resize-none"
-                                    />
-                                </div>
-                                <div className="col-span-2">
-                                    <label className="block text-sm text-gray-400 mb-2">Target Audience</label>
-                                    <textarea
-                                        value={businessProfile.targetAudience}
-                                        onChange={(e) => setBusinessProfile(prev => ({ ...prev, targetAudience: e.target.value }))}
-                                        placeholder="Who are your ideal customers? (e.g., SaaS founders, marketing managers...)"
-                                        rows={2}
-                                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 transition-all resize-none"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm text-gray-400 mb-2">Email Tone</label>
-                                    <select
-                                        value={businessProfile.tone}
-                                        onChange={(e) => setBusinessProfile(prev => ({ ...prev, tone: e.target.value }))}
-                                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-purple-500/50 transition-all"
-                                    >
-                                        <option value="professional">Professional</option>
-                                        <option value="friendly">Friendly & Casual</option>
-                                        <option value="bold">Bold & Direct</option>
-                                        <option value="consultative">Consultative</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            {/* AI Suggestions */}
                             {aiSuggestions && (
                                 <motion.div
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="mt-6 p-6 bg-gradient-to-r from-green-900/30 to-emerald-900/30 rounded-2xl border border-green-500/20"
+                                    initial={{ opacity: 0, scale: 0.98 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    className="p-8 border border-white/10 rounded-2xl bg-white/[0.01] flex items-center justify-between"
                                 >
-                                    <div className="flex items-center gap-2 mb-4">
-                                        <Sparkles className="w-5 h-5 text-green-400" />
-                                        <h3 className="font-semibold text-green-400">AI Suggestions Ready!</h3>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="p-4 bg-white/5 rounded-xl">
-                                            <p className="text-sm text-gray-400 mb-2">Suggested Target Filters</p>
-                                            <p className="text-white">{aiSuggestions.filters.jobTitle || 'Marketing, Sales, Founders'}</p>
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center">
+                                            <Sparkles className="w-4 h-4 text-white" />
                                         </div>
-                                        <div className="p-4 bg-white/5 rounded-xl">
-                                            <p className="text-sm text-gray-400 mb-2">Email Subject Lines</p>
-                                            {aiSuggestions.subjectLines.slice(0, 2).map((line, i) => (
-                                                <p key={i} className="text-white text-sm">• {line}</p>
-                                            ))}
+                                        <div>
+                                            <p className="text-sm font-normal text-white">AI Recommendation Ready</p>
+                                            <p className="text-xs text-gray-500">Suggested audience segments and copy are calibrated.</p>
                                         </div>
                                     </div>
-                                    <motion.button
-                                        whileHover={{ scale: 1.02 }}
-                                        whileTap={{ scale: 0.98 }}
+                                    <button
                                         onClick={handleApplyAiFilters}
-                                        className="mt-4 px-6 py-3 bg-green-600 hover:bg-green-500 rounded-xl font-semibold flex items-center gap-2 transition-colors"
+                                        className="px-6 py-2 border border-white text-white rounded-lg text-xs font-normal hover:bg-white hover:text-black transition-all"
                                     >
-                                        <Target className="w-4 h-4" />
-                                        Apply AI Filters & Start Searching
-                                        <ArrowRight className="w-4 h-4" />
-                                    </motion.button>
+                                        Apply Calibration
+                                    </button>
                                 </motion.div>
                             )}
                         </div>
                     </motion.div>
                 )}
 
-                {/* Search Tab */}
                 {activeTab === 'search' && (
                     <motion.div
                         key="search"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        className="space-y-6"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="space-y-8"
                     >
-                        {/* Search Filters */}
-                        <div className="bg-white/5 rounded-3xl p-6 border border-white/10 backdrop-blur-xl">
-                            <div className="flex items-center justify-between mb-6">
-                                <div className="flex items-center gap-3">
-                                    <Filter className="w-5 h-5 text-purple-400" />
-                                    <h2 className="text-lg font-semibold">Search Filters</h2>
-                                </div>
-                                <span className="text-sm text-gray-400">Access to 700M+ professionals globally</span>
-                            </div>
-
-                            <div className="grid grid-cols-4 gap-4 mb-6">
-                                <div>
-                                    <label className="block text-sm text-gray-400 mb-2">Job Title</label>
+                        <div className="p-8 border border-white/10 rounded-2xl bg-white/[0.02]">
+                            <div className="grid grid-cols-4 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-xs uppercase tracking-widest text-gray-500 font-normal">Job Title</label>
                                     <input
                                         type="text"
                                         value={searchFilters.jobTitle}
                                         onChange={(e) => setSearchFilters(prev => ({ ...prev, jobTitle: e.target.value }))}
-                                        placeholder="e.g., CEO, Marketing Manager"
-                                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 transition-all"
+                                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-sm focus:outline-none focus:border-white/20 text-white"
                                     />
                                 </div>
-                                <div>
-                                    <label className="block text-sm text-gray-400 mb-2">Company</label>
+                                <div className="space-y-2">
+                                    <label className="text-xs uppercase tracking-widest text-gray-500 font-normal">Industry</label>
                                     <input
                                         type="text"
-                                        value={searchFilters.company}
-                                        onChange={(e) => setSearchFilters(prev => ({ ...prev, company: e.target.value }))}
-                                        placeholder="e.g., Google, Stripe"
-                                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 transition-all"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm text-gray-400 mb-2">Industry</label>
-                                    <select
                                         value={searchFilters.industry}
                                         onChange={(e) => setSearchFilters(prev => ({ ...prev, industry: e.target.value }))}
-                                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-purple-500/50 transition-all"
-                                    >
-                                        <option value="">All Industries</option>
-                                        <option value="technology">Technology</option>
-                                        <option value="finance">Finance</option>
-                                        <option value="healthcare">Healthcare</option>
-                                        <option value="retail">Retail</option>
-                                        <option value="manufacturing">Manufacturing</option>
-                                        <option value="education">Education</option>
-                                        <option value="consulting">Consulting</option>
-                                    </select>
+                                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-sm focus:outline-none focus:border-white/20 text-white"
+                                    />
                                 </div>
-                                <div>
-                                    <label className="block text-sm text-gray-400 mb-2">Location</label>
+                                <div className="space-y-2">
+                                    <label className="text-xs uppercase tracking-widest text-gray-500 font-normal">Location</label>
                                     <input
                                         type="text"
                                         value={searchFilters.location}
                                         onChange={(e) => setSearchFilters(prev => ({ ...prev, location: e.target.value }))}
-                                        placeholder="e.g., San Francisco, USA"
-                                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 transition-all"
+                                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-sm focus:outline-none focus:border-white/20 text-white"
                                     />
                                 </div>
-                                <div>
-                                    <label className="block text-sm text-gray-400 mb-2">Company Size</label>
-                                    <select
-                                        value={searchFilters.companySize}
-                                        onChange={(e) => setSearchFilters(prev => ({ ...prev, companySize: e.target.value }))}
-                                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-purple-500/50 transition-all"
-                                    >
-                                        <option value="">Any Size</option>
-                                        <option value="1-10">1-10 employees</option>
-                                        <option value="11-50">11-50 employees</option>
-                                        <option value="51-200">51-200 employees</option>
-                                        <option value="201-500">201-500 employees</option>
-                                        <option value="501-1000">501-1000 employees</option>
-                                        <option value="1001+">1001+ employees</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm text-gray-400 mb-2">Seniority Level</label>
-                                    <select
-                                        value={searchFilters.seniorityLevel}
-                                        onChange={(e) => setSearchFilters(prev => ({ ...prev, seniorityLevel: e.target.value }))}
-                                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-purple-500/50 transition-all"
-                                    >
-                                        <option value="">Any Level</option>
-                                        <option value="entry">Entry Level</option>
-                                        <option value="mid">Mid Level</option>
-                                        <option value="senior">Senior Level</option>
-                                        <option value="director">Director</option>
-                                        <option value="vp">VP</option>
-                                        <option value="c-level">C-Level</option>
-                                        <option value="founder">Founder / Owner</option>
-                                    </select>
-                                </div>
-                                <div className="col-span-2 flex items-end">
-                                    <motion.button
-                                        whileHover={{ scale: 1.02 }}
-                                        whileTap={{ scale: 0.98 }}
+                                <div className="flex items-end">
+                                    <button
                                         onClick={handleSearchProspects}
                                         disabled={isLoading}
-                                        className="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl font-semibold flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-purple-500/25 transition-all disabled:opacity-50"
+                                        className="w-full h-[46px] bg-white text-black rounded-lg text-sm font-normal hover:bg-gray-200 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                                     >
-                                        {isLoading ? (
-                                            <>
-                                                <Loader2 className="w-5 h-5 animate-spin" />
-                                                Searching...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Search className="w-5 h-5" />
-                                                Search Prospects
-                                            </>
-                                        )}
-                                    </motion.button>
+                                        {isLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                                        Run Search
+                                    </button>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Results */}
                         {prospects.length > 0 && (
-                            <div className="bg-white/5 rounded-3xl p-6 border border-white/10 backdrop-blur-xl">
-                                <div className="flex items-center justify-between mb-6">
-                                    <div className="flex items-center gap-3">
-                                        <Users className="w-5 h-5 text-blue-400" />
-                                        <h2 className="text-lg font-semibold">
-                                            {prospects.length} Prospects Found
-                                        </h2>
-                                        <span className="text-sm text-gray-400">
-                                            ({selectedProspects.size} selected)
-                                        </span>
-                                    </div>
-                                    <div className="flex gap-3">
-                                        <motion.button
-                                            whileHover={{ scale: 1.02 }}
-                                            whileTap={{ scale: 0.98 }}
-                                            onClick={handleSelectAll}
-                                            className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm font-medium transition-colors"
-                                        >
-                                            {selectedProspects.size === prospects.length ? 'Deselect All' : 'Select All'}
-                                        </motion.button>
-                                        <motion.button
-                                            whileHover={{ scale: 1.02 }}
-                                            whileTap={{ scale: 0.98 }}
-                                            onClick={handleSaveList}
-                                            className="px-4 py-2 bg-green-600 hover:bg-green-500 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors"
-                                        >
-                                            <Plus className="w-4 h-4" />
-                                            Save to List
-                                        </motion.button>
-                                        <motion.button
-                                            whileHover={{ scale: 1.02 }}
-                                            whileTap={{ scale: 0.98 }}
-                                            onClick={handleGenerateEmail}
-                                            className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors"
-                                        >
-                                            <Sparkles className="w-4 h-4" />
-                                            Generate Email
-                                        </motion.button>
+                            <div className="space-y-6">
+                                <div className="flex items-center justify-between">
+                                    <p className="text-sm font-normal text-white">{prospects.length} professional profiles found</p>
+                                    <div className="flex gap-4">
+                                        <button onClick={handleSaveList} className="text-xs text-gray-500 hover:text-white transition-all uppercase tracking-widest">Store in List</button>
+                                        <button onClick={handleGenerateEmail} className="text-xs text-gray-500 hover:text-white transition-all uppercase tracking-widest">Create Campaign</button>
                                     </div>
                                 </div>
 
-                                {/* Prospects Table */}
-                                <div className="overflow-hidden rounded-2xl border border-white/10">
-                                    <table className="w-full">
-                                        <thead className="bg-white/5">
-                                            <tr>
-                                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={selectedProspects.size === prospects.length}
-                                                        onChange={handleSelectAll}
-                                                        className="rounded"
-                                                    />
-                                                </th>
-                                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Name</th>
-                                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Email</th>
-                                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Job Title</th>
-                                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Company</th>
-                                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Location</th>
-                                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Status</th>
+                                <div className="border border-white/10 rounded-2xl overflow-hidden bg-white/[0.01]">
+                                    <table className="w-full text-left text-sm">
+                                        <thead>
+                                            <tr className="border-b border-white/10 text-gray-500 text-xs">
+                                                <th className="px-6 py-4 font-normal"><input type="checkbox" checked={selectedProspects.size === prospects.length} onChange={handleSelectAll} className="accent-white" /></th>
+                                                <th className="px-6 py-4 font-normal uppercase tracking-widest">Name</th>
+                                                <th className="px-6 py-4 font-normal uppercase tracking-widest">Job</th>
+                                                <th className="px-6 py-4 font-normal uppercase tracking-widest">Company</th>
+                                                <th className="px-6 py-4 font-normal uppercase tracking-widest">Location</th>
+                                                <th className="px-6 py-4 font-normal uppercase tracking-widest">Status</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-white/5">
-                                            {prospects.map((prospect) => (
-                                                <motion.tr
-                                                    key={prospect.id}
-                                                    initial={{ opacity: 0 }}
-                                                    animate={{ opacity: 1 }}
-                                                    className={`hover:bg-white/5 transition-colors ${selectedProspects.has(prospect.id) ? 'bg-purple-900/20' : ''
-                                                        }`}
-                                                >
-                                                    <td className="px-4 py-3">
+                                            {prospects.map((p) => (
+                                                <tr key={p.id} className="hover:bg-white/[0.02] transition-colors group">
+                                                    <td className="px-6 py-4">
                                                         <input
                                                             type="checkbox"
-                                                            checked={selectedProspects.has(prospect.id)}
-                                                            onChange={(e) => {
-                                                                const newSelected = new Set(selectedProspects);
-                                                                if (e.target.checked) {
-                                                                    newSelected.add(prospect.id);
-                                                                } else {
-                                                                    newSelected.delete(prospect.id);
-                                                                }
-                                                                setSelectedProspects(newSelected);
+                                                            checked={selectedProspects.has(p.id)}
+                                                            onChange={() => {
+                                                                const s = new Set(selectedProspects);
+                                                                s.has(p.id) ? s.delete(p.id) : s.add(p.id);
+                                                                setSelectedProspects(s);
                                                             }}
-                                                            className="rounded"
+                                                            className="accent-white"
                                                         />
                                                     </td>
-                                                    <td className="px-4 py-3 font-medium">{prospect.name}</td>
-                                                    <td className="px-4 py-3 text-gray-400">{prospect.email}</td>
-                                                    <td className="px-4 py-3">{prospect.jobTitle}</td>
-                                                    <td className="px-4 py-3 text-gray-300">{prospect.company}</td>
-                                                    <td className="px-4 py-3 text-gray-400">{prospect.location}</td>
-                                                    <td className="px-4 py-3">
-                                                        {prospect.verified ? (
-                                                            <span className="flex items-center gap-1 text-green-400 text-sm">
-                                                                <CheckCircle2 className="w-4 h-4" />
-                                                                Verified
-                                                            </span>
+                                                    <td className="px-6 py-4 text-white font-normal">{p.name}</td>
+                                                    <td className="px-6 py-4 text-gray-400 font-normal">{p.jobTitle}</td>
+                                                    <td className="px-6 py-4 text-gray-400 font-normal">{p.company}</td>
+                                                    <td className="px-6 py-4 text-gray-500 font-normal">{p.location}</td>
+                                                    <td className="px-6 py-4">
+                                                        {p.verified ? (
+                                                            <div className="w-2 h-2 rounded-full bg-white opacity-40 shadow-[0_0_8px_white]" />
                                                         ) : (
-                                                            <span className="flex items-center gap-1 text-yellow-400 text-sm">
-                                                                <AlertCircle className="w-4 h-4" />
-                                                                Unverified
-                                                            </span>
+                                                            <div className="w-2 h-2 rounded-full border border-white/20" />
                                                         )}
                                                     </td>
-                                                </motion.tr>
+                                                </tr>
                                             ))}
                                         </tbody>
                                     </table>
                                 </div>
                             </div>
                         )}
-
-                        {/* Email Composer (shows when prospects are selected) */}
-                        {selectedProspects.size > 0 && campaignDraft.body && (
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="bg-gradient-to-br from-purple-900/30 via-blue-900/20 to-cyan-900/20 rounded-3xl p-6 border border-purple-500/20 backdrop-blur-xl"
-                            >
-                                <div className="flex items-center gap-3 mb-6">
-                                    <Mail className="w-5 h-5 text-purple-400" />
-                                    <h2 className="text-lg font-semibold">AI-Generated Email Template</h2>
-                                </div>
-
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-sm text-gray-400 mb-2">Campaign Name</label>
-                                        <input
-                                            type="text"
-                                            value={campaignDraft.name}
-                                            onChange={(e) => setCampaignDraft(prev => ({ ...prev, name: e.target.value }))}
-                                            placeholder="e.g., Q1 SaaS Outreach"
-                                            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 transition-all"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm text-gray-400 mb-2">Subject Line</label>
-                                        <input
-                                            type="text"
-                                            value={campaignDraft.subject}
-                                            onChange={(e) => setCampaignDraft(prev => ({ ...prev, subject: e.target.value }))}
-                                            placeholder="Email subject..."
-                                            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 transition-all"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm text-gray-400 mb-2">Email Body</label>
-                                        <textarea
-                                            value={campaignDraft.body}
-                                            onChange={(e) => setCampaignDraft(prev => ({ ...prev, body: e.target.value }))}
-                                            rows={8}
-                                            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 transition-all resize-none font-mono text-sm"
-                                        />
-                                        <p className="mt-2 text-sm text-gray-500">
-                                            Use variables: {'{{name}}'}, {'{{company}}'}, {'{{jobTitle}}'} for personalization
-                                        </p>
-                                    </div>
-                                    <div className="flex justify-between items-center pt-4">
-                                        <div className="text-sm text-gray-400">
-                                            Ready to send to <span className="text-white font-semibold">{selectedProspects.size}</span> prospects
-                                        </div>
-                                        <motion.button
-                                            whileHover={{ scale: 1.02 }}
-                                            whileTap={{ scale: 0.98 }}
-                                            onClick={handleSendCampaign}
-                                            disabled={isLoading}
-                                            className="px-8 py-4 bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl font-semibold flex items-center gap-2 hover:shadow-lg hover:shadow-green-500/25 transition-all disabled:opacity-50"
-                                        >
-                                            {isLoading ? (
-                                                <>
-                                                    <Loader2 className="w-5 h-5 animate-spin" />
-                                                    Launching...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Send className="w-5 h-5" />
-                                                    Launch Campaign
-                                                </>
-                                            )}
-                                        </motion.button>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        )}
                     </motion.div>
                 )}
 
-                {/* Lists Tab */}
                 {activeTab === 'lists' && (
                     <motion.div
                         key="lists"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        className="space-y-6"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="space-y-8"
                     >
-                        <div className="bg-white/5 rounded-3xl p-6 border border-white/10 backdrop-blur-xl">
-                            <div className="flex items-center gap-3 mb-6">
-                                <Users className="w-5 h-5 text-blue-400" />
-                                <h2 className="text-lg font-semibold">My Prospect Lists</h2>
-                            </div>
-
-                            {savedLists.length === 0 ? (
-                                <div className="text-center py-12">
-                                    <Users className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-                                    <p className="text-gray-400">No lists yet. Search and save prospects to create a list.</p>
-                                    <motion.button
-                                        whileHover={{ scale: 1.02 }}
-                                        whileTap={{ scale: 0.98 }}
-                                        onClick={() => setActiveTab('search')}
-                                        className="mt-4 px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl font-semibold"
-                                    >
-                                        Start Searching
-                                    </motion.button>
-                                </div>
-                            ) : (
-                                <div className="grid grid-cols-3 gap-4">
-                                    {savedLists.map((list, index) => (
-                                        <motion.div
-                                            key={index}
-                                            whileHover={{ scale: 1.02 }}
-                                            className="p-6 bg-white/5 rounded-2xl border border-white/10 cursor-pointer hover:border-purple-500/50 transition-all"
-                                        >
-                                            <h3 className="font-semibold mb-2">{list.name}</h3>
-                                            <p className="text-sm text-gray-400 mb-4">{list.prospects.length} prospects</p>
-                                            <div className="flex gap-2">
-                                                <button className="px-3 py-1.5 bg-purple-600/20 text-purple-400 rounded-lg text-sm hover:bg-purple-600/30 transition-colors">
-                                                    View
-                                                </button>
-                                                <button className="px-3 py-1.5 bg-green-600/20 text-green-400 rounded-lg text-sm hover:bg-green-600/30 transition-colors">
-                                                    Export
-                                                </button>
+                        <div className="grid grid-cols-3 gap-6">
+                            {savedLists.length > 0 ? (
+                                savedLists.map((list, i) => (
+                                    <div key={i} className="p-6 border border-white/10 rounded-2xl bg-white/[0.02] space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <div className="w-8 h-8 rounded-lg border border-white/10 flex items-center justify-center">
+                                                <Users className="w-4 h-4 text-gray-400" />
                                             </div>
-                                        </motion.div>
-                                    ))}
+                                            <span className="text-[10px] uppercase tracking-widest text-gray-500 font-normal">{list.prospects.length} Profiles</span>
+                                        </div>
+                                        <h3 className="text-sm font-normal text-white">{list.name}</h3>
+                                        <div className="flex gap-4 pt-2">
+                                            <button className="text-[10px] uppercase tracking-widest text-gray-500 hover:text-white transition-all font-normal">View</button>
+                                            <button className="text-[10px] uppercase tracking-widest text-gray-500 hover:text-white transition-all font-normal">Campaign</button>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="col-span-3 py-20 text-center border border-dashed border-white/10 rounded-2xl">
+                                    <p className="text-sm text-gray-500">No prospect lists discovered yet.</p>
                                 </div>
                             )}
                         </div>
                     </motion.div>
                 )}
 
-                {/* Campaigns Tab */}
                 {activeTab === 'campaigns' && (
                     <motion.div
                         key="campaigns"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        className="space-y-6"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="space-y-8"
                     >
-                        <div className="bg-white/5 rounded-3xl p-6 border border-white/10 backdrop-blur-xl">
-                            <div className="flex items-center justify-between mb-6">
-                                <div className="flex items-center gap-3">
-                                    <BarChart3 className="w-5 h-5 text-green-400" />
-                                    <h2 className="text-lg font-semibold">Campaign Performance</h2>
-                                </div>
-                            </div>
-
-                            {campaigns.length === 0 ? (
-                                <div className="text-center py-12">
-                                    <Send className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-                                    <p className="text-gray-400">No campaigns yet. Create your first outreach campaign.</p>
-                                    <motion.button
-                                        whileHover={{ scale: 1.02 }}
-                                        whileTap={{ scale: 0.98 }}
-                                        onClick={() => setActiveTab('ai-setup')}
-                                        className="mt-4 px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl font-semibold"
-                                    >
-                                        Setup AI & Start
-                                    </motion.button>
-                                </div>
+                        <div className="flex flex-col gap-6">
+                            {campaigns.length > 0 ? (
+                                campaigns.map((campaign) => (
+                                    <div key={campaign.id} className="p-8 border border-white/10 rounded-2xl bg-white/[0.02] flex items-center justify-between">
+                                        <div className="flex items-center gap-6">
+                                            <div className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center">
+                                                <Send className="w-5 h-5 text-gray-400" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-sm font-normal text-white">{campaign.name}</h3>
+                                                <p className="text-xs text-gray-500">Sent {new Date(campaign.createdAt).toLocaleDateString()}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-12 text-center">
+                                            <div>
+                                                <p className="text-lg font-normal text-white">{campaign.prospects}</p>
+                                                <p className="text-[10px] uppercase tracking-widest text-gray-500 font-normal">Profiles</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-lg font-normal text-white">{campaign.opened}</p>
+                                                <p className="text-[10px] uppercase tracking-widest text-gray-500 font-normal">Opens</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-lg font-normal text-white">{campaign.replied}</p>
+                                                <p className="text-[10px] uppercase tracking-widest text-gray-500 font-normal">Replies</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-2 h-2 rounded-full bg-white opacity-40 animate-pulse" />
+                                            <span className="text-[10px] uppercase tracking-widest text-gray-500 font-normal">{campaign.status}</span>
+                                        </div>
+                                    </div>
+                                ))
                             ) : (
-                                <div className="space-y-4">
-                                    {campaigns.map((campaign) => (
-                                        <motion.div
-                                            key={campaign.id}
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            className="p-6 bg-white/5 rounded-2xl border border-white/10"
-                                        >
-                                            <div className="flex items-center justify-between mb-4">
-                                                <div>
-                                                    <h3 className="font-semibold text-lg">{campaign.name}</h3>
-                                                    <p className="text-sm text-gray-400">
-                                                        Created {new Date(campaign.createdAt).toLocaleDateString()}
-                                                    </p>
-                                                </div>
-                                                <span className={`px-3 py-1 rounded-full text-sm font-medium ${campaign.status === 'active' ? 'bg-green-500/20 text-green-400' :
-                                                        campaign.status === 'completed' ? 'bg-blue-500/20 text-blue-400' :
-                                                            campaign.status === 'paused' ? 'bg-yellow-500/20 text-yellow-400' :
-                                                                'bg-gray-500/20 text-gray-400'
-                                                    }`}>
-                                                    {campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1)}
-                                                </span>
-                                            </div>
-                                            <div className="grid grid-cols-4 gap-4">
-                                                <div className="p-4 bg-white/5 rounded-xl text-center">
-                                                    <p className="text-2xl font-bold text-white">{campaign.prospects}</p>
-                                                    <p className="text-sm text-gray-400">Total Prospects</p>
-                                                </div>
-                                                <div className="p-4 bg-white/5 rounded-xl text-center">
-                                                    <p className="text-2xl font-bold text-blue-400">{campaign.sent}</p>
-                                                    <p className="text-sm text-gray-400">Emails Sent</p>
-                                                </div>
-                                                <div className="p-4 bg-white/5 rounded-xl text-center">
-                                                    <p className="text-2xl font-bold text-green-400">{campaign.opened}</p>
-                                                    <p className="text-sm text-gray-400">Opened</p>
-                                                </div>
-                                                <div className="p-4 bg-white/5 rounded-xl text-center">
-                                                    <p className="text-2xl font-bold text-purple-400">{campaign.replied}</p>
-                                                    <p className="text-sm text-gray-400">Replied</p>
-                                                </div>
-                                            </div>
-                                        </motion.div>
-                                    ))}
+                                <div className="py-20 text-center border border-dashed border-white/10 rounded-2xl">
+                                    <p className="text-sm text-gray-500">No active campaigns running.</p>
                                 </div>
                             )}
                         </div>
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* Email Composer Overlay */}
+            {selectedProspects.size > 0 && campaignDraft.body && (
+                <motion.div
+                    initial={{ opacity: 0, y: 100 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="fixed bottom-8 left-1/2 -translate-x-1/2 w-full max-w-2xl bg-black border border-white/10 rounded-2xl shadow-2xl p-8 z-50 backdrop-blur-xl"
+                >
+                    <div className="flex items-center justify-between mb-8">
+                        <div className="flex items-center gap-3">
+                            <Sparkles className="w-5 h-5 text-white" />
+                            <h2 className="text-lg font-normal text-white">Campaign Composer</h2>
+                        </div>
+                        <button onClick={() => setCampaignDraft(prev => ({ ...prev, body: '' }))} className="text-gray-500 hover:text-white">
+                            <RefreshCw className="w-4 h-4" />
+                        </button>
+                    </div>
+
+                    <div className="space-y-6">
+                        <div className="space-y-2">
+                            <label className="text-[10px] uppercase tracking-widest text-gray-500 font-normal">Subject</label>
+                            <input
+                                type="text"
+                                value={campaignDraft.subject}
+                                onChange={(e) => setCampaignDraft(prev => ({ ...prev, subject: e.target.value }))}
+                                className="w-full bg-transparent border-b border-white/10 py-2 text-white focus:outline-none focus:border-white transition-all text-sm font-normal"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] uppercase tracking-widest text-gray-500 font-normal">Content</label>
+                            <textarea
+                                value={campaignDraft.body}
+                                onChange={(e) => setCampaignDraft(prev => ({ ...prev, body: e.target.value }))}
+                                rows={8}
+                                className="w-full bg-white/[0.02] border border-white/10 rounded-lg p-4 text-white focus:outline-none focus:border-white/20 transition-all text-sm font-normal resize-none"
+                            />
+                        </div>
+                        <div className="flex items-center justify-between pt-4">
+                            <p className="text-xs text-gray-500 font-normal">Targeting {selectedProspects.size} curated profiles</p>
+                            <button
+                                onClick={handleSendCampaign}
+                                disabled={isLoading}
+                                className="px-8 py-3 bg-white text-black rounded-lg text-sm font-normal hover:bg-gray-200 transition-all disabled:opacity-50"
+                            >
+                                {isLoading ? 'Launching...' : 'Deploy Campaign'}
+                            </button>
+                        </div>
+                    </div>
+                </motion.div>
+            )}
         </div>
     );
 }

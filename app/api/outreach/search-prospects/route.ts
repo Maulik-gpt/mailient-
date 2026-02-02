@@ -1,27 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/lib/auth';
+import crypto from 'node:crypto';
 
 const DATAFAST_API_KEY = process.env.DATAFAST_API_KEY;
 
 export async function POST(req: NextRequest) {
     try {
+        const session = await auth();
+        if (!session?.user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
         const filters = await req.json();
+        console.log('Search filters:', filters);
 
         // Try DataFast API first, fallback to mock data
         let prospects = [];
 
         if (DATAFAST_API_KEY) {
+            console.log('Using DataFast API');
             prospects = await searchWithDataFast(filters);
         }
 
         // If no results from API, use mock data
-        if (prospects.length === 0) {
+        if (!prospects || prospects.length === 0) {
+            console.log('Using mock data fallback');
             prospects = generateMockProspects(filters);
         }
 
-        return NextResponse.json({ prospects, total: prospects.length });
+        return NextResponse.json({ prospects, total: prospects?.length || 0 });
     } catch (error) {
-        console.error('Search error:', error);
-        return NextResponse.json({ error: 'Search failed' }, { status: 500 });
+        console.error('SEARCH_PROSPECTS_ERROR:', error);
+        return NextResponse.json({
+            error: 'Failed to search prospects',
+            details: error instanceof Error ? error.message : String(error)
+        }, { status: 500 });
     }
 }
 
