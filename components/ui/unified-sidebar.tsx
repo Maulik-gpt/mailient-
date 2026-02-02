@@ -27,7 +27,8 @@ import {
   TrendingUp,
   Sparkles,
   MoreHorizontal,
-  LogOut
+  LogOut,
+  Rocket
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -125,6 +126,7 @@ export function UnifiedSidebar({
     { id: 'home-feed', name: 'Feed', icon: Mail, isRoute: true, route: '/home-feed' },
     { id: 'notifications', name: 'Notifications', icon: Bell, isRoute: true, route: '/notifications' },
     { id: 'agent-talk', name: 'Arcus', icon: Sparkles, isRoute: true, route: '/dashboard/agent-talk' },
+    { id: 'outreach', name: 'Outreach', icon: Rocket, isRoute: true, route: '/dashboard/outreach' },
   ];
 
   const handleLogout = async () => {
