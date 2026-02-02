@@ -35,7 +35,8 @@ async function generateEmailWithAI(businessProfile: any, prospects: any[]) {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                model: 'google/gemini-2.0-flash-001',
+                // Use a high-quality free model from OpenRouter
+                model: 'qwen/qwen3-coder:free',
                 messages: [
                     {
                         role: 'system',
