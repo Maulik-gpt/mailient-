@@ -66,13 +66,15 @@ export async function POST(req: NextRequest) {
 }
 
 async function searchWithDataFast(filters: any) {
+    const getSafeString = (val: any) => (typeof val === 'string' ? val : Array.isArray(val) ? val.join(', ') : undefined);
+
     const payload = {
-        job_title: filters.jobTitle || undefined,
-        company: filters.company || undefined,
-        industry: filters.industry || undefined,
-        location: filters.location || undefined,
-        company_size: filters.companySize || undefined,
-        seniority: filters.seniorityLevel || undefined,
+        job_title: getSafeString(filters.jobTitle),
+        company: getSafeString(filters.company),
+        industry: getSafeString(filters.industry),
+        location: getSafeString(filters.location),
+        company_size: getSafeString(filters.companySize),
+        seniority: getSafeString(filters.seniorityLevel),
         limit: 100
     };
 
@@ -107,10 +109,17 @@ async function searchWithDataFast(filters: any) {
 }
 
 function generateMockProspects(filters: any) {
-    // Clean filters - if they are empty strings, treat as null
-    const targetJob = filters.jobTitle && filters.jobTitle.trim() !== '' ? filters.jobTitle : null;
-    const targetIndustry = filters.industry && filters.industry.trim() !== '' ? filters.industry : 'Technology';
-    const targetLocation = filters.location && filters.location.trim() !== '' ? filters.location : null;
+    // Helper to safely get a string from a filter field
+    const getSafeString = (val: any) => (typeof val === 'string' ? val : Array.isArray(val) ? val.join(', ') : '');
+
+    // Clean filters - ensure they are strings before trimming
+    const jobTitleRaw = getSafeString(filters.jobTitle);
+    const industryRaw = getSafeString(filters.industry);
+    const locationRaw = getSafeString(filters.location);
+
+    const targetJob = jobTitleRaw.trim() !== '' ? jobTitleRaw : null;
+    const targetIndustry = industryRaw.trim() !== '' ? industryRaw : 'Technology';
+    const targetLocation = locationRaw.trim() !== '' ? locationRaw : null;
 
     const jobTitles = targetJob?.split(',').map((t: string) => t.trim()) ||
         ['CEO', 'Founding Engineer', 'CTO', 'VP Production', 'Marketing Lead', 'Growth Director'];
@@ -154,4 +163,5 @@ function generateMockProspects(filters: any) {
 
     return prospects;
 }
+
 
