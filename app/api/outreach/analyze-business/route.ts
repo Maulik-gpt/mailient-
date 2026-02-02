@@ -29,47 +29,126 @@ export async function POST(req: NextRequest) {
 async function fetchWebsiteContent(url: string): Promise<string | null> {
     try {
         const fullUrl = url.startsWith('http') ? url : `https://${url}`;
+        console.log(`Fetching website content for: ${fullUrl}`);
+
         const response = await fetch(fullUrl, {
-            headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Mailient/1.0)' },
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache'
+            },
+            next: { revalidate: 0 } // Don't cache for analysis
         });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        if (!response.ok) {
+            console.error(`Failed to fetch website: ${response.status} ${response.statusText}`);
+            throw new Error(`HTTP ${response.status}`);
+        }
+
         const html = await response.text();
+
+        // Basic noise reduction
         let text = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
         text = text.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+        text = text.replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, '');
+        text = text.replace(/<footer[^>]*>[\s\S]*?<\/footer>/gi, '');
+
+        // Extract plain text
         text = text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-        return text.slice(0, 12000);
+
+        if (text.length < 100) {
+            console.warn('Extracted website content seems too thin.');
+        }
+
+        return text.slice(0, 15000); // Increased context window
     } catch (error) {
-        console.error('Fetch error:', error);
+        console.error('Website fetch critical failure:', error);
         return null;
     }
 }
 
 async function analyzeBusinessWithAI(content: string, url: string) {
     const apiKey = process.env.OPENROUTER_API_KEY;
-    if (!apiKey) return generateMockAnalysis(url);
+    if (!apiKey) {
+        console.warn('OPENROUTER_API_KEY missing - falling back to mock analysis.');
+        return generateMockAnalysis(url);
+    }
 
     try {
+        console.log(`Initiating AI analysis for ${url} (Content length: ${content.length})...`);
         const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json',
+                'HTTP-Referer': 'https://mailient.xyz',
+                'X-Title': 'Mailient Business Intelligence'
             },
             body: JSON.stringify({
                 model: 'google/gemini-2.0-flash-001',
                 messages: [
-                    { role: 'system', content: 'Analyze website and return JSON: {businessName, description, valueProposition, targetAudience, industry, suggestedFilters: {jobTitle, industry, companySize, seniorityLevel}, emailTemplate, subjectLines: []}' },
-                    { role: 'user', content: `URL: ${url}\nContent: ${content}` }
+                    {
+                        role: 'system',
+                        content: 'You are a professional business strategist. Analyze the provided website content and extract deep business insights. You MUST return a valid JSON object only.'
+                    },
+                    {
+                        role: 'user',
+                        content: `Analyze this business from its website content. 
+                        Target URL: ${url}
+                        
+                        Website Content:
+                        ${content}
+                        
+                        Return JSON format:
+                        {
+                            "businessName": "Official name of the company",
+                            "description": "Succinct 2-sentence description of what they do",
+                            "valueProposition": "The core problem they solve and why they are better than competitors",
+                            "targetAudience": "Specific decision makers and company types they serve",
+                            "industry": "The primary industry (e.g., SaaS, FinTech, E-commerce)",
+                            "suggestedFilters": {
+                                "jobTitle": "Comma separated list of 5 ideal personas (e.g. CEO, Head of Growth, CTO)",
+                                "industry": "Ideal target industry to sell to",
+                                "companySize": "Ideal company size range (e.g. 11-50, 51-200)",
+                                "seniorityLevel": "Ideal seniority level (e.g. director, c-level)"
+                            },
+                            "emailTemplate": "A high-converting, personalized cold email template using {{name}}, {{company}}, and {{jobTitle}} variables",
+                            "subjectLines": ["Subject Line 1", "Subject Line 2", "Subject Line 3"]
+                        }`
+                    }
                 ],
-                max_tokens: 1500
+                max_tokens: 2000,
+                temperature: 0.3
             })
         });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error('OpenRouter API error:', errorData);
+            throw new Error(`AI Engine error: ${response.status}`);
+        }
+
         const data = await response.json();
         const text = data.choices?.[0]?.message?.content;
-        const match = text?.match(/\{[\s\S]*\}/);
-        return match ? JSON.parse(match[0]) : generateMockAnalysis(url);
-    } catch {
-        return generateMockAnalysis(url);
+
+        if (!text) throw new Error('AI returned an empty response');
+
+        const match = text.match(/\{[\s\S]*\}/);
+        if (!match) throw new Error('AI failed to return valid JSON context');
+
+        const analysis = JSON.parse(match[0]);
+        console.log('Successfully generated business analysis via AI.');
+        return analysis;
+    } catch (error) {
+        console.error('Business analysis engine failure:', error);
+        // Only fallback to mock if it's a transient failure, but log it clearly
+        if (process.env.NODE_ENV === 'development') {
+            console.warn('DEBUG: Falling back to mock due to AI error');
+            return generateMockAnalysis(url);
+        }
+        throw error;
     }
 }
 
