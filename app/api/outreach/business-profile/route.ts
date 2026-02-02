@@ -15,22 +15,13 @@ export async function GET(req: NextRequest) {
             process.env.SUPABASE_SERVICE_ROLE_KEY!
         );
 
-        // Get user ID
-        const { data: user } = await supabase
-            .from('users')
-            .select('id')
-            .eq('email', session.user.email)
-            .single();
-
-        if (!user) {
-            return NextResponse.json({ error: 'User not found' }, { status: 404 });
-        }
+        const userId = session.user.email;
 
         // Get business profile
         const { data: profile, error } = await supabase
             .from('business_profiles')
             .select('*')
-            .eq('user_id', user.id)
+            .eq('user_id', userId)
             .single();
 
         if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
@@ -61,22 +52,13 @@ export async function POST(req: NextRequest) {
             process.env.SUPABASE_SERVICE_ROLE_KEY!
         );
 
-        // Get user ID
-        const { data: user } = await supabase
-            .from('users')
-            .select('id')
-            .eq('email', session.user.email)
-            .single();
-
-        if (!user) {
-            return NextResponse.json({ error: 'User not found' }, { status: 404 });
-        }
+        const userId = session.user.email;
 
         // Upsert business profile
         const { data: profile, error } = await supabase
             .from('business_profiles')
             .upsert({
-                user_id: user.id,
+                user_id: userId,
                 name: body.name,
                 url: body.url,
                 description: body.description,

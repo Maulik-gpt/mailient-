@@ -15,22 +15,13 @@ export async function GET(req: NextRequest) {
             process.env.SUPABASE_SERVICE_ROLE_KEY!
         );
 
-        // Get user ID
-        const { data: user } = await supabase
-            .from('users')
-            .select('id')
-            .eq('email', session.user.email)
-            .single();
-
-        if (!user) {
-            return NextResponse.json({ error: 'User not found' }, { status: 404 });
-        }
+        const userId = session.user.email;
 
         // Get all email templates for the user
         const { data: templates, error } = await supabase
             .from('email_templates')
             .select('*')
-            .eq('user_id', user.id)
+            .eq('user_id', userId)
             .order('updated_at', { ascending: false });
 
         if (error) {
@@ -65,22 +56,13 @@ export async function POST(req: NextRequest) {
             process.env.SUPABASE_SERVICE_ROLE_KEY!
         );
 
-        // Get user ID
-        const { data: user } = await supabase
-            .from('users')
-            .select('id')
-            .eq('email', session.user.email)
-            .single();
-
-        if (!user) {
-            return NextResponse.json({ error: 'User not found' }, { status: 404 });
-        }
+        const userId = session.user.email;
 
         // Create the template
         const { data: template, error } = await supabase
             .from('email_templates')
             .insert({
-                user_id: user.id,
+                user_id: userId,
                 name,
                 subject,
                 body,

@@ -15,16 +15,7 @@ export async function GET(req: NextRequest) {
             process.env.SUPABASE_SERVICE_ROLE_KEY!
         );
 
-        // Get user ID
-        const { data: user } = await supabase
-            .from('users')
-            .select('id')
-            .eq('email', session.user.email)
-            .single();
-
-        if (!user) {
-            return NextResponse.json({ error: 'User not found' }, { status: 404 });
-        }
+        const userId = session.user.email;
 
         // Get all prospect lists for the user
         const { data: lists, error } = await supabase
@@ -33,7 +24,7 @@ export async function GET(req: NextRequest) {
         *,
         prospects:prospects(count)
       `)
-            .eq('user_id', user.id)
+            .eq('user_id', userId)
             .order('created_at', { ascending: false });
 
         if (error) {
@@ -68,22 +59,13 @@ export async function POST(req: NextRequest) {
             process.env.SUPABASE_SERVICE_ROLE_KEY!
         );
 
-        // Get user ID
-        const { data: user } = await supabase
-            .from('users')
-            .select('id')
-            .eq('email', session.user.email)
-            .single();
-
-        if (!user) {
-            return NextResponse.json({ error: 'User not found' }, { status: 404 });
-        }
+        const userId = session.user.email;
 
         // Create the list
         const { data: list, error: listError } = await supabase
             .from('prospect_lists')
             .insert({
-                user_id: user.id,
+                user_id: userId,
                 name,
                 description: description || '',
                 prospect_count: prospects?.length || 0
@@ -100,7 +82,7 @@ export async function POST(req: NextRequest) {
         if (prospects && prospects.length > 0) {
             const prospectRecords = prospects.map((p: any) => ({
                 list_id: list.id,
-                user_id: user.id,
+                user_id: userId,
                 name: p.name,
                 email: p.email,
                 job_title: p.jobTitle,

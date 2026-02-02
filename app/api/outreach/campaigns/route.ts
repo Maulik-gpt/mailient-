@@ -15,22 +15,13 @@ export async function GET(req: NextRequest) {
             process.env.SUPABASE_SERVICE_ROLE_KEY!
         );
 
-        // Get user ID
-        const { data: user } = await supabase
-            .from('users')
-            .select('id')
-            .eq('email', session.user.email)
-            .single();
-
-        if (!user) {
-            return NextResponse.json({ error: 'User not found' }, { status: 404 });
-        }
+        const userId = session.user.email;
 
         // Get all campaigns for the user
         const { data: campaigns, error } = await supabase
             .from('outreach_campaigns')
             .select('*')
-            .eq('user_id', user.id)
+            .eq('user_id', userId)
             .order('created_at', { ascending: false });
 
         if (error) {
@@ -66,22 +57,13 @@ export async function POST(req: NextRequest) {
             process.env.SUPABASE_SERVICE_ROLE_KEY!
         );
 
-        // Get user ID
-        const { data: user } = await supabase
-            .from('users')
-            .select('id')
-            .eq('email', session.user.email)
-            .single();
-
-        if (!user) {
-            return NextResponse.json({ error: 'User not found' }, { status: 404 });
-        }
+        const userId = session.user.email;
 
         // Create the campaign
         const { data: campaign, error } = await supabase
             .from('outreach_campaigns')
             .insert({
-                user_id: user.id,
+                user_id: userId,
                 name,
                 subject,
                 body: emailBody,

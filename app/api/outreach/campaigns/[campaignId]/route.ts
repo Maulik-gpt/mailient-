@@ -18,23 +18,14 @@ export async function GET(
             process.env.SUPABASE_SERVICE_ROLE_KEY!
         );
 
-        // Get user ID
-        const { data: user } = await supabase
-            .from('users')
-            .select('id')
-            .eq('email', session.user.email)
-            .single();
-
-        if (!user) {
-            return NextResponse.json({ error: 'User not found' }, { status: 404 });
-        }
+        const userId = session.user.email;
 
         // Get campaign
         const { data: campaign, error: campaignError } = await supabase
             .from('outreach_campaigns')
             .select('*')
             .eq('id', params.campaignId)
-            .eq('user_id', user.id)
+            .eq('user_id', userId)
             .single();
 
         if (campaignError || !campaign) {
@@ -73,23 +64,14 @@ export async function DELETE(
             process.env.SUPABASE_SERVICE_ROLE_KEY!
         );
 
-        // Get user ID
-        const { data: user } = await supabase
-            .from('users')
-            .select('id')
-            .eq('email', session.user.email)
-            .single();
-
-        if (!user) {
-            return NextResponse.json({ error: 'User not found' }, { status: 404 });
-        }
+        const userId = session.user.email;
 
         // Delete campaign (cascade will delete emails)
         const { error } = await supabase
             .from('outreach_campaigns')
             .delete()
             .eq('id', params.campaignId)
-            .eq('user_id', user.id);
+            .eq('user_id', userId);
 
         if (error) {
             console.error('Delete campaign error:', error);

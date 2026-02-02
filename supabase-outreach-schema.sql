@@ -4,7 +4,7 @@
 -- Prospect Lists Table
 CREATE TABLE IF NOT EXISTS prospect_lists (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL,
     name VARCHAR(255) NOT NULL,
     description TEXT,
     prospect_count INTEGER DEFAULT 0,
@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS prospect_lists (
 CREATE TABLE IF NOT EXISTS prospects (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     list_id UUID REFERENCES prospect_lists(id) ON DELETE CASCADE,
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL,
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,
     job_title VARCHAR(255),
@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS prospects (
 -- Business Profiles Table (user's business info for AI)
 CREATE TABLE IF NOT EXISTS business_profiles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL,
     name VARCHAR(255),
     url TEXT,
     description TEXT,
@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS business_profiles (
 -- Campaigns Table
 CREATE TABLE IF NOT EXISTS outreach_campaigns (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL,
     name VARCHAR(255) NOT NULL,
     subject TEXT NOT NULL,
     body TEXT NOT NULL,
@@ -86,7 +86,7 @@ CREATE TABLE IF NOT EXISTS campaign_emails (
 -- Email Templates Table (saved templates)
 CREATE TABLE IF NOT EXISTS email_templates (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL,
     name VARCHAR(255) NOT NULL,
     subject TEXT NOT NULL,
     body TEXT NOT NULL,
@@ -113,27 +113,33 @@ ALTER TABLE outreach_campaigns ENABLE ROW LEVEL SECURITY;
 ALTER TABLE campaign_emails ENABLE ROW LEVEL SECURITY;
 ALTER TABLE email_templates ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies (users can only access their own data)
+-- RLS Policies (using text comparison to match project pattern)
+DROP POLICY IF EXISTS prospect_lists_policy ON prospect_lists;
 CREATE POLICY prospect_lists_policy ON prospect_lists
-    FOR ALL USING (user_id = auth.uid());
+    FOR ALL USING (user_id = auth.uid()::text);
 
+DROP POLICY IF EXISTS prospects_policy ON prospects;
 CREATE POLICY prospects_policy ON prospects
-    FOR ALL USING (user_id = auth.uid());
+    FOR ALL USING (user_id = auth.uid()::text);
 
+DROP POLICY IF EXISTS business_profiles_policy ON business_profiles;
 CREATE POLICY business_profiles_policy ON business_profiles
-    FOR ALL USING (user_id = auth.uid());
+    FOR ALL USING (user_id = auth.uid()::text);
 
+DROP POLICY IF EXISTS outreach_campaigns_policy ON outreach_campaigns;
 CREATE POLICY outreach_campaigns_policy ON outreach_campaigns
-    FOR ALL USING (user_id = auth.uid());
+    FOR ALL USING (user_id = auth.uid()::text);
 
+DROP POLICY IF EXISTS email_templates_policy ON email_templates;
 CREATE POLICY email_templates_policy ON email_templates
-    FOR ALL USING (user_id = auth.uid());
+    FOR ALL USING (user_id = auth.uid()::text);
 
+DROP POLICY IF EXISTS campaign_emails_policy ON campaign_emails;
 CREATE POLICY campaign_emails_policy ON campaign_emails
     FOR ALL USING (EXISTS (
         SELECT 1 FROM outreach_campaigns 
         WHERE outreach_campaigns.id = campaign_emails.campaign_id 
-        AND outreach_campaigns.user_id = auth.uid()
+        AND outreach_campaigns.user_id = auth.uid()::text
     ));
 
 -- Functions for atomic increments

@@ -24,16 +24,7 @@ export async function PATCH(
             process.env.SUPABASE_SERVICE_ROLE_KEY!
         );
 
-        // Get user ID
-        const { data: user } = await supabase
-            .from('users')
-            .select('id')
-            .eq('email', session.user.email)
-            .single();
-
-        if (!user) {
-            return NextResponse.json({ error: 'User not found' }, { status: 404 });
-        }
+        const userId = session.user.email;
 
         // Update campaign status
         const updateData: any = {
@@ -49,7 +40,7 @@ export async function PATCH(
             .from('outreach_campaigns')
             .update(updateData)
             .eq('id', params.campaignId)
-            .eq('user_id', user.id)
+            .eq('user_id', userId)
             .select()
             .single();
 

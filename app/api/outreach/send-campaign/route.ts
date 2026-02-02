@@ -29,16 +29,7 @@ export async function POST(req: NextRequest) {
             process.env.SUPABASE_SERVICE_ROLE_KEY!
         );
 
-        // Get user ID
-        const { data: user } = await supabase
-            .from('users')
-            .select('id')
-            .eq('email', session.user.email)
-            .single();
-
-        if (!user) {
-            return NextResponse.json({ error: 'User not found' }, { status: 404 });
-        }
+        const userId = session.user.email;
 
         // Get user's Gmail tokens
         const tokens = await getGmailTokens(session.user.email);
@@ -51,7 +42,7 @@ export async function POST(req: NextRequest) {
         const { data: campaign, error: campaignError } = await supabase
             .from('outreach_campaigns')
             .insert({
-                user_id: user.id,
+                user_id: userId,
                 name: name || `Campaign ${new Date().toLocaleDateString()}`,
                 subject,
                 body,
@@ -74,7 +65,7 @@ export async function POST(req: NextRequest) {
             body,
             session.user.email,
             campaign.id,
-            user.id
+            userId
         );
 
         return NextResponse.json({
@@ -98,12 +89,18 @@ async function getGmailTokens(email: string) {
     );
 
     const { data } = await supabase
-        .from('users')
-        .select('access_token, refresh_token')
-        .eq('email', email)
+        .from('user_tokens')
+        .select('encrypted_access_token, encrypted_refresh_token')
+        .eq('google_email', email)
         .single();
 
-    return data ? { accessToken: data.access_token, refreshToken: data.refresh_token } : null;
+    if (!data) return null;
+
+    const { decrypt } = await import('@/lib/crypto');
+    return {
+        accessToken: decrypt(data.encrypted_access_token),
+        refreshToken: decrypt(data.encrypted_refresh_token)
+    };
 }
 
 async function sendCampaignEmails(
