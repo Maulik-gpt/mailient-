@@ -191,8 +191,8 @@ class AIEmailWriterService {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    // Use a high-quality free model from OpenRouter
-                    model: 'qwen/qwen3-coder:free',
+                    // Use the faster and more accurate free model from OpenRouter
+                    model: 'arcee-ai/trinity-large-preview:free',
                     messages: [
                         {
                             role: 'system',
