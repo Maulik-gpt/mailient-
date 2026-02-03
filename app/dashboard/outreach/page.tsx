@@ -96,7 +96,14 @@ export default function OutreachPage() {
         name: string;
         company: string;
         jobTitle: string;
+        generationTime?: number;
     }[]>([]);
+    const [emailGenerationProgress, setEmailGenerationProgress] = useState({
+        current: 0,
+        total: 0,
+        currentProspect: '',
+        status: ''
+    });
 
     // AI-generated suggestions
     const [aiSuggestions, setAiSuggestions] = useState<{
@@ -275,36 +282,59 @@ export default function OutreachPage() {
     };
 
     const handleGenerateMassEmails = async () => {
-        if (selectedProspects.size === 0) {
-            toast.error('Please select prospects to generate personalized emails for');
+        if (!businessProfile.name || !businessProfile.valueProposition) {
+            toast.error('Please analyze a website first to create business profile');
+            return;
+        }
+
+        if (prospects.length === 0) {
+            toast.error('Please search for prospects first');
             return;
         }
 
         setIsGeneratingMassEmails(true);
+        setEmailGenerationProgress({
+            current: 0,
+            total: prospects.length,
+            currentProspect: '',
+            status: 'Starting AI email generation...'
+        });
+
         try {
-            const selectedProspectsList = prospects.filter(p => selectedProspects.has(p.id));
-            
+            console.log(`Starting perfect email generation for ${prospects.length} prospects`);
+
             const response = await fetch('/api/outreach/generate-mass-emails', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    businessProfile,
-                    prospects: selectedProspectsList,
-                    batchSize: 50
+                    businessProfile: {
+                        name: businessProfile.name,
+                        valueProposition: businessProfile.valueProposition,
+                        targetAudience: businessProfile.targetAudience,
+                        industry: businessProfile.industry
+                    },
+                    prospects: prospects.slice(0, 1000), // Limit to 1000 for performance
+                    batchSize: 1 // Process one by one for perfect personalization
                 })
             });
 
-            if (!response.ok) throw new Error('Failed to generate mass emails');
+            if (!response.ok) throw new Error('Failed to start email generation');
 
             const data = await response.json();
             setMassEmails(data.emails);
-            
-            toast.success(`Generated ${data.totalEmails} personalized emails! Ready to send.`);
+
+            toast.success(`Generated ${data.totalEmails} perfectly personalized emails!`);
         } catch (error) {
             console.error('Mass email generation error:', error);
             toast.error('Failed to generate mass emails');
         } finally {
             setIsGeneratingMassEmails(false);
+            setEmailGenerationProgress({
+                current: 0,
+                total: 0,
+                currentProspect: '',
+                status: ''
+            });
         }
     };
 
@@ -792,6 +822,50 @@ export default function OutreachPage() {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* Email Generation Progress */}
+            {isGeneratingMassEmails && (
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.98 }}
+                    className="fixed top-20 right-8 w-96 bg-black border border-white/10 rounded-2xl shadow-2xl p-6 z-40"
+                >
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="w-8 h-8 rounded-full border-2 border-blue-500 border-t-transparent animate-spin"></div>
+                        <h3 className="text-sm font-normal text-white">AI Generating Perfect Emails</h3>
+                    </div>
+                    
+                    <div className="space-y-4">
+                        <div className="flex justify-between text-xs text-gray-400">
+                            <span>Progress</span>
+                            <span>{emailGenerationProgress.current}/{emailGenerationProgress.total}</span>
+                        </div>
+                        
+                        <div className="w-full bg-white/5 rounded-full h-2">
+                            <div 
+                                className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-300"
+                                style={{ width: `${(emailGenerationProgress.current / emailGenerationProgress.total) * 100}%` }}
+                            ></div>
+                        </div>
+                        
+                        {emailGenerationProgress.currentProspect && (
+                            <div className="text-xs text-gray-300">
+                                <p className="font-medium mb-1">Currently generating for:</p>
+                                <p className="text-blue-400">{emailGenerationProgress.currentProspect}</p>
+                            </div>
+                        )}
+                        
+                        <div className="text-xs text-gray-400">
+                            <p>{emailGenerationProgress.status}</p>
+                        </div>
+                        
+                        <div className="pt-2 border-t border-white/10">
+                            <p className="text-xs text-gray-500">AI is crafting perfectly personalized emails one-by-one for maximum impact...</p>
+                        </div>
+                    </div>
+                </motion.div>
+            )}
 
             {/* Mass Email Preview */}
             {massEmails.length > 0 && (

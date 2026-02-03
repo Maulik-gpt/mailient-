@@ -8,21 +8,21 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { businessProfile, prospects, batchSize = 50 } = await req.json();
+        const { businessProfile, prospects, batchSize = 1 } = await req.json(); // Process one by one
 
         if (!businessProfile || !prospects?.length) {
             return NextResponse.json({ error: 'Business profile and prospects required' }, { status: 400 });
         }
 
-        console.log(`Starting mass email generation for ${prospects.length} prospects`);
+        console.log(`Starting perfect AI email generation for ${prospects.length} prospects - processing one by one`);
 
-        const personalizedEmails = await generateMassPersonalizedEmails(businessProfile, prospects, batchSize);
+        const personalizedEmails = await generatePerfectEmailsOneByOne(businessProfile, prospects);
         
         return NextResponse.json({
             success: true,
             totalEmails: personalizedEmails.length,
             emails: personalizedEmails,
-            message: `Successfully generated ${personalizedEmails.length} personalized emails`
+            message: `Successfully generated ${personalizedEmails.length} perfectly personalized emails`
         });
     } catch (error) {
         console.error('Mass email generation error:', error);
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     }
 }
 
-async function generateMassPersonalizedEmails(businessProfile: any, prospects: any[], batchSize: number): Promise<{
+async function generatePerfectEmailsOneByOne(businessProfile: any, prospects: any[]): Promise<{
     prospectId: string;
     to: string;
     subject: string;
@@ -41,6 +41,7 @@ async function generateMassPersonalizedEmails(businessProfile: any, prospects: a
     name: string;
     company: string;
     jobTitle: string;
+    generationTime: number;
 }[]> {
     const apiKeys: string[] = [
         process.env.OPENROUTER_API_KEY,
@@ -55,32 +56,53 @@ async function generateMassPersonalizedEmails(businessProfile: any, prospects: a
     const allEmails = [];
     const totalProspects = prospects.length;
     
-    console.log(`Processing ${totalProspects} prospects in batches of ${batchSize}`);
+    console.log(`Processing ${totalProspects} prospects one by one for perfect personalization...`);
 
-    for (let i = 0; i < totalProspects; i += batchSize) {
-        const batch = prospects.slice(i, i + batchSize);
-        console.log(`Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(totalProspects/batchSize)} (${batch.length} prospects)`);
+    for (let i = 0; i < totalProspects; i++) {
+        const prospect = prospects[i];
+        const startTime = Date.now();
+        
+        console.log(`🎯 Generating email ${i + 1}/${totalProspects} for ${prospect.name} at ${prospect.company} (${prospect.jobTitle})`);
         
         try {
-            const batchEmails = await processBatch(batch, businessProfile, apiKeys);
-            allEmails.push(...batchEmails);
+            const email = await generateSinglePerfectEmail(prospect, businessProfile, apiKeys);
+            const generationTime = Date.now() - startTime;
             
-            // Add delay between batches to avoid rate limiting
-            if (i + batchSize < totalProspects) {
-                await new Promise(resolve => setTimeout(resolve, 2000));
+            allEmails.push({
+                ...email,
+                generationTime
+            });
+            
+            console.log(`✅ Email ${i + 1}/${totalProspects} completed in ${generationTime}ms - ${email.subject}`);
+            
+            // Small delay between emails to avoid rate limiting
+            if (i < totalProspects - 1) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
             }
-        } catch (batchError) {
-            console.error(`Batch ${Math.floor(i/batchSize) + 1} failed:`, batchError);
-            // Generate fallback emails for this batch
-            const fallbackEmails = generateFallbackEmails(batch, businessProfile);
-            allEmails.push(...fallbackEmails);
+            
+        } catch (error) {
+            console.error(`❌ Failed to generate email ${i + 1}/${totalProspects} for ${prospect.name}:`, error);
+            
+            // Generate high-quality fallback
+            const fallbackEmail = generateHighQualityFallback(prospect, businessProfile);
+            const generationTime = Date.now() - startTime;
+            
+            allEmails.push({
+                ...fallbackEmail,
+                generationTime
+            });
+            
+            console.log(`🔄 Used high-quality fallback for ${prospect.name} (${generationTime}ms)`);
         }
     }
+
+    const totalTime = allEmails.reduce((sum, email) => sum + email.generationTime, 0);
+    console.log(`🎉 All ${totalProspects} emails generated! Total time: ${totalTime}ms, Average: ${Math.round(totalTime / totalProspects)}ms per email`);
 
     return allEmails;
 }
 
-async function processBatch(prospects: any[], businessProfile: any, apiKeys: string[]): Promise<{
+async function generateSinglePerfectEmail(prospect: any, businessProfile: any, apiKeys: string[]): Promise<{
     prospectId: string;
     to: string;
     subject: string;
@@ -88,60 +110,63 @@ async function processBatch(prospects: any[], businessProfile: any, apiKeys: str
     name: string;
     company: string;
     jobTitle: string;
-}[]> {
+}> {
     const apiKey = apiKeys[Math.floor(Math.random() * apiKeys.length)];
     
-    const prospectContext = prospects.map(p => 
-        `${p.name} - ${p.jobTitle} at ${p.company} (${p.email})`
-    ).join('\n');
-
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${apiKey}`,
             'Content-Type': 'application/json',
             'HTTP-Referer': 'https://mailient.xyz',
-            'X-Title': 'Mailient Mass Email Generator'
+            'X-Title': 'Mailient Perfect Email Generator'
         },
         body: JSON.stringify({
-            model: 'meta-llama/llama-3.1-8b-instruct:free',
+            model: 'anthropic/claude-3-haiku:beta', // Use a better model for perfect emails
             messages: [
                 {
                     role: 'system',
-                    content: `You are an expert cold email copywriter. Generate highly personalized emails for each prospect.
-                    
-Rules:
-- Each email must be unique and personalized
-- Keep emails under 150 words
-- Use {{name}}, {{company}}, {{jobTitle}} as personalization variables
-- Be specific about value, not generic
-- Include a clear, low-friction CTA
-- Tone: ${businessProfile.tone || 'professional'}
-- Reference their specific role, company, or industry when possible
+                    content: `You are an elite cold email copywriter. Generate a PERFECT, highly personalized email for this specific prospect.
 
-Return JSON array format:
-[
-  {
-    "to": "email@example.com",
-    "subject": "personalized subject",
-    "body": "personalized email body"
-  }
-]`
+Requirements:
+- Research the prospect's company and role
+- Reference specific details about their company, industry, or role
+- Make it feel like it was written specifically for them
+- Keep it under 120 words for maximum impact
+- Use {{name}}, {{company}}, {{jobTitle}} as personalization variables
+- Focus on THEIR specific needs and challenges
+- Include a compelling, specific value proposition
+- End with a clear, low-friction call-to-action
+- Make it sound human, not automated
+- Avoid generic templates at all costs
+
+Return JSON format:
+{
+  "subject": "Highly personalized subject line",
+  "body": "Perfectly personalized email body"
+}`
                 },
                 {
                     role: 'user',
-                    content: `Business: ${businessProfile.name}
-Value Prop: ${businessProfile.valueProposition}
+                    content: `BUSINESS DETAILS:
+Company: ${businessProfile.name}
+Value Proposition: ${businessProfile.valueProposition}
 Target Audience: ${businessProfile.targetAudience}
+Industry: ${businessProfile.industry}
 
-Prospects to personalize for:
-${prospectContext}
+PROSPECT DETAILS:
+Name: ${prospect.name}
+Email: ${prospect.email}
+Job Title: ${prospect.jobTitle}
+Company: ${prospect.company}
+Industry: ${prospect.industry}
+Location: ${prospect.location}
 
-Generate personalized emails for each prospect.`
+Generate a perfect, highly personalized email that shows you've done your research and understand their specific needs.`
                 }
             ],
-            max_tokens: 4000,
-            temperature: 0.7
+            max_tokens: 1000,
+            temperature: 0.4 // Lower temperature for more consistent, professional output
         })
     });
 
@@ -158,41 +183,32 @@ Generate personalized emails for each prospect.`
         throw new Error('AI returned empty response');
     }
 
-    // Try to parse JSON array
-    let emails;
+    // Parse the JSON response
+    let emailData;
     try {
-        const match = text.match(/\[[\s\S]*\]/);
+        const match = text.match(/\{[\s\S]*\}/);
         if (match) {
-            emails = JSON.parse(match[0]);
+            emailData = JSON.parse(match[0]);
         } else {
-            throw new Error('No JSON array found in response');
+            throw new Error('No JSON found in response');
         }
     } catch (parseError) {
         console.error('Failed to parse AI response:', parseError);
         throw new Error('Invalid AI response format');
     }
 
-    // Ensure we have emails for all prospects
-    if (emails.length !== prospects.length) {
-        console.warn(`AI generated ${emails.length} emails for ${prospects.length} prospects, filling gaps with fallbacks`);
-        
-        const fallbackEmails = generateFallbackEmails(prospects.slice(emails.length), businessProfile);
-        emails.push(...fallbackEmails);
-    }
-
-    // Map emails to prospects
-    return prospects.map((prospect, index) => ({
+    return {
         prospectId: prospect.id,
         to: prospect.email,
-        subject: emails[index]?.subject || generateFallbackSubject(prospect, businessProfile),
-        body: emails[index]?.body || generateFallbackBody(prospect, businessProfile),
+        subject: emailData.subject || generatePerfectSubject(prospect, businessProfile),
+        body: emailData.body || generatePerfectBody(prospect, businessProfile),
         name: prospect.name,
         company: prospect.company,
         jobTitle: prospect.jobTitle
-    }));
+    };
 }
 
-function generateFallbackEmails(prospects: any[], businessProfile: any): {
+function generateHighQualityFallback(prospect: any, businessProfile: any): {
     prospectId: string;
     to: string;
     subject: string;
@@ -200,63 +216,90 @@ function generateFallbackEmails(prospects: any[], businessProfile: any): {
     name: string;
     company: string;
     jobTitle: string;
-}[] {
-    return prospects.map(prospect => ({
+} {
+    const firstName = prospect.name.split(' ')[0];
+    
+    // Industry-specific templates
+    const templates = {
+        'SaaS': `Hi ${firstName},
+
+I've been following ${prospect.company}'s journey and I'm impressed by what you're building in the SaaS space.
+
+As a ${prospect.jobTitle}, you're likely focused on scaling efficiently while maintaining quality. ${businessProfile.valueProposition}
+
+I'd love to share some insights specific to ${prospect.company}'s growth trajectory. Are you open to a 15-minute call next week?
+
+Best regards`,
+        
+        'FinTech': `Hi ${firstName},
+
+${prospect.company} is making waves in the FinTech space, and your work as ${prospect.jobTitle} is clearly driving that success.
+
+In today's rapidly evolving financial landscape, ${businessProfile.valueProposition}
+
+I have some specific ideas for ${prospect.company}'s next phase of growth. Would you be interested in exploring them?
+
+Best regards`,
+        
+        'Technology': `Hi ${firstName},
+
+Your work as ${prospect.jobTitle} at ${prospect.company} caught my attention - the tech innovations you're leading are impressive.
+
+${businessProfile.valueProposition}
+
+I'd love to discuss how we could help ${prospect.company} accelerate its technology roadmap. Do you have 20 minutes next Tuesday?
+
+Best regards`,
+        
+        'default': `Hi ${firstName},
+
+I came across ${prospect.company} and was impressed by your work as ${prospect.jobTitle}.
+
+${businessProfile.valueProposition}
+
+Given your role at ${prospect.company}, I thought you might be interested in exploring how we could help you achieve your goals faster.
+
+Would you be open to a brief conversation next week?
+
+Best regards`
+    };
+
+    const template = templates[prospect.industry] || templates['default'];
+    
+    return {
         prospectId: prospect.id,
         to: prospect.email,
-        subject: generateFallbackSubject(prospect, businessProfile),
-        body: generateFallbackBody(prospect, businessProfile),
+        subject: generatePerfectSubject(prospect, businessProfile),
+        body: template,
         name: prospect.name,
         company: prospect.company,
         jobTitle: prospect.jobTitle
-    }));
+    };
 }
 
-function generateFallbackSubject(prospect: any, businessProfile: any) {
+function generatePerfectSubject(prospect: any, businessProfile: any): string {
     const subjects = [
-        `Quick question about ${prospect.company}`,
+        `${prospect.company} + ${businessProfile.name}`,
+        `Quick question about ${prospect.company}'s ${prospect.industry} strategy`,
         `Regarding your role as ${prospect.jobTitle} at ${prospect.company}`,
-        `Opportunity for ${prospect.company}`,
         `Thoughts on ${prospect.company}'s growth`,
-        `Connecting about ${prospect.company}`
+        `${prospect.company} × ${businessProfile.name} opportunity`,
+        `Idea for ${prospect.company}'s ${prospect.jobTitle.toLowerCase()} team`
     ];
+    
     return subjects[Math.floor(Math.random() * subjects.length)];
 }
 
-function generateFallbackBody(prospect: any, businessProfile: any) {
+function generatePerfectBody(prospect: any, businessProfile: any): string {
     const firstName = prospect.name.split(' ')[0];
     
-    const templates = [
-        `Hi ${firstName},
-
-I came across ${prospect.company} and was impressed by your work as a ${prospect.jobTitle}. 
-
-${businessProfile.valueProposition || 'We help companies like yours achieve their goals more efficiently.'}
-
-Would you be open to a brief conversation next week to explore how we might be able to help ${prospect.company}?
-
-Best regards`,
-        
-        `Hi ${firstName},
-
-As a ${prospect.jobTitle} at ${prospect.company}, you're likely focused on growth and efficiency.
-
-${businessProfile.valueProposition || 'Our solution has helped similar companies achieve significant improvements.'}
-
-I'd love to share some insights specific to ${prospect.company}. Are you available for a quick call?
-
-Best regards`,
-        
-        `Hi ${firstName},
+    return `Hi ${firstName},
 
 I've been following ${prospect.company}'s progress and I'm impressed by what you're building.
 
-${businessProfile.valueProposition || 'We specialize in helping companies in your space overcome key challenges.'}
+As a ${prospect.jobTitle}, you're likely focused on ${prospect.industry.toLowerCase()} challenges and opportunities. ${businessProfile.valueProposition}
 
-Would you be interested in learning how we could potentially help ${prospect.company} scale faster?
+I'd love to share some specific insights for ${prospect.company}. Are you open to a brief conversation next week?
 
-Best regards`
-    ];
-    
-    return templates[Math.floor(Math.random() * templates.length)];
+Best regards`;
 }

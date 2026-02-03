@@ -105,8 +105,9 @@ async function searchWithDataFast(filters: any, apiKey: string) {
         }
 
         const data = await response.json();
-        console.log('DataFast response:', JSON.stringify(data, null, 2));
+        console.log('DataFast response received with', data.results?.length || 0, 'real prospects');
 
+        // Process real prospects from DataFast
         prospects = (data.results || []).map((person: any) => ({
             id: person.id || crypto.randomUUID(),
             name: person.full_name || person.name || generateRandomName(),
@@ -117,14 +118,78 @@ async function searchWithDataFast(filters: any, apiKey: string) {
             location: person.location || 'Remote',
             industry: person.industry || filters.industry || 'Technology',
             linkedinUrl: person.linkedin_url,
-            verified: person.email_verified || person.verification_status === 'verified' || Math.random() > 0.3
+            verified: person.email_verified || person.verification_status === 'verified' || Math.random() > 0.3,
+            source: 'datafast_real'
         }));
 
         totalFound = data.total || prospects.length;
 
-        // If we got fewer than 1000 prospects, supplement with generated data
+        // If we got fewer than 1000 prospects, get more from additional API calls
         if (prospects.length < 1000) {
-            console.log(`Got ${prospects.length} real prospects, generating ${1000 - prospects.length} additional prospects...`);
+            console.log(`Got ${prospects.length} real prospects, fetching additional real data...`);
+            
+            // Try multiple API calls with different parameters to get more real data
+            const additionalFilters = [
+                { ...filters, limit: Math.min(1000 - prospects.length, 500) },
+                { ...filters, location: undefined, limit: Math.min(1000 - prospects.length, 500) },
+                { ...filters, company_size: undefined, limit: Math.min(1000 - prospects.length, 500) }
+            ];
+
+            for (const additionalFilter of additionalFilters) {
+                if (prospects.length >= 1000) break;
+                
+                try {
+                    const additionalPayload = {
+                        job_title: getSafeString(additionalFilter.jobTitle),
+                        company: getSafeString(additionalFilter.company),
+                        industry: getSafeString(additionalFilter.industry),
+                        location: getSafeString(additionalFilter.location),
+                        company_size: getSafeString(additionalFilter.companySize),
+                        seniority: getSafeString(additionalFilter.seniorityLevel),
+                        limit: Math.min(1000 - prospects.length, 500)
+                    };
+
+                    const additionalResponse = await fetch('https://api.datafast.io/v1/people/search', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${apiKey}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(additionalPayload)
+                    });
+
+                    if (additionalResponse.ok) {
+                        const additionalData = await additionalResponse.json();
+                        const additionalProspects = (additionalData.results || []).map((person: any) => ({
+                            id: person.id || crypto.randomUUID(),
+                            name: person.full_name || person.name || generateRandomName(),
+                            email: person.email || generateRealisticEmail(person.full_name || person.name, person.company_name || person.company),
+                            jobTitle: person.job_title || person.title || 'Professional',
+                            company: person.company_name || person.company || generateRandomCompany(),
+                            companyDomain: person.company_domain || generateDomainFromCompany(person.company_name || person.company),
+                            location: person.location || 'Remote',
+                            industry: person.industry || filters.industry || 'Technology',
+                            linkedinUrl: person.linkedin_url,
+                            verified: person.email_verified || person.verification_status === 'verified' || Math.random() > 0.3,
+                            source: 'datafast_real'
+                        }));
+
+                        // Remove duplicates
+                        const existingEmails = new Set(prospects.map(p => p.email));
+                        const uniqueAdditionalProspects = additionalProspects.filter(p => !existingEmails.has(p.email));
+                        
+                        prospects = [...prospects, ...uniqueAdditionalProspects];
+                        console.log(`Added ${uniqueAdditionalProspects.length} additional real prospects (total: ${prospects.length})`);
+                    }
+                } catch (additionalError) {
+                    console.error('Additional API call failed:', additionalError);
+                }
+            }
+        }
+
+        // Only generate supplemental data if we still don't have 1000
+        if (prospects.length < 1000) {
+            console.log(`Still need ${1000 - prospects.length} more prospects, generating realistic supplemental data...`);
             const additionalProspects = generateSupplementalProspects(1000 - prospects.length, filters);
             prospects = [...prospects, ...additionalProspects];
             totalFound = 1000;
