@@ -249,22 +249,51 @@ export function GmailInterfaceFixed() {
     const arcusPanelAnimControls = useAnimation();
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
+    // --- Debouncing for API calls ---
+    const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const lastFetchTimeRef = useRef<number>(0);
+
     // --- All Callbacks (useCallback) ---
 
-    const fetchUsage = useCallback(async () => {
-        try {
-            const res = await fetch('/api/subscription/usage');
-            if (res.ok) {
-                const data = await res.json();
-                setUsageData({
-                    planType: data.planType || 'none',
-                    features: data.features || {}
-                });
-            }
-        } catch (e) {
-            console.warn('Failed to fetch usage', e);
+    const fetchUsage = useCallback(async (force: boolean = false) => {
+        const now = Date.now();
+        
+        // Debounce: Only allow fetch every 2 seconds unless forced
+        if (!force && now - lastFetchTimeRef.current < 2000) {
+            console.log('🔄 fetchUsage debounced, skipping call');
+            return;
         }
+        
+        // Clear any existing timeout
+        if (fetchTimeoutRef.current) {
+            clearTimeout(fetchTimeoutRef.current);
+        }
+        
+        // Set timeout for debounced call
+        fetchTimeoutRef.current = setTimeout(async () => {
+            try {
+                console.log('📡 Fetching usage data...');
+                const res = await fetch('/api/subscription/usage');
+                if (res.ok) {
+                    const data = await res.json();
+                    setUsageData({
+                        planType: data.planType || 'none',
+                        features: data.features || {}
+                    });
+                    lastFetchTimeRef.current = Date.now();
+                } else {
+                    console.warn('fetchUsage failed:', res.status);
+                }
+            } catch (e) {
+                console.warn('Failed to fetch usage', e);
+            }
+        }, force ? 0 : 500); // 500ms debounce delay, immediate if forced
     }, [setUsageData]);
+
+    // Force fetch usage (for immediate updates after AI operations)
+    const forceFetchUsage = useCallback(() => {
+        fetchUsage(true);
+    }, [fetchUsage]);
 
     const fetchContacts = useCallback(async (query: string = '') => {
         setIsLoadingContacts(true);
@@ -307,8 +336,9 @@ export function GmailInterfaceFixed() {
     }, [viewMode, peopleSearchQuery, fetchContacts]);
 
     useEffect(() => {
-        fetchUsage();
-    }, [fetchUsage]);
+        // Force fetch usage on component mount to get initial state
+        forceFetchUsage();
+    }, [forceFetchUsage]);
 
 
     useEffect(() => {
@@ -324,7 +354,14 @@ export function GmailInterfaceFixed() {
         };
         computeHeight();
         window.addEventListener('resize', computeHeight);
-        return () => window.removeEventListener('resize', computeHeight);
+        
+        // Cleanup fetch timeout on unmount
+        return () => {
+            window.removeEventListener('resize', computeHeight);
+            if (fetchTimeoutRef.current) {
+                clearTimeout(fetchTimeoutRef.current);
+            }
+        };
     }, []);
 
     useEffect(() => {
@@ -479,7 +516,7 @@ export function GmailInterfaceFixed() {
                 throw new Error(data?.error || 'Failed to fetch summary');
             }
             setEmailSummary(decodeEntities(data.summary));
-            fetchUsage();
+            forceFetchUsage();
         } catch (error) {
             console.error('Error fetching summary:', error);
             setEmailSummary("Failed to generate summary. Please try again.");
@@ -602,7 +639,7 @@ export function GmailInterfaceFixed() {
                 throw new Error(data?.error || 'Failed to generate draft');
             }
             setDraftContent(decodeEntities(data.draftReply));
-            fetchUsage();
+            forceFetchUsage();
         } catch (error) {
             console.error('Error generating draft:', error);
             toast.error('Failed to generate draft');
@@ -692,7 +729,7 @@ export function GmailInterfaceFixed() {
             };
             setArcusMessages(prev => [...prev, assistantMsg]);
             setArcusQuery('');
-            fetchUsage();
+            forceFetchUsage();
         } catch (error) {
             console.error('Error asking AI:', error);
             const errorMsg = {
@@ -799,7 +836,7 @@ export function GmailInterfaceFixed() {
                 throw new Error(data?.error || 'Failed to generate repair reply');
             }
             setDraftContent(data.repairReply);
-            fetchUsage();
+            forceFetchUsage();
         } catch (error) {
             console.error('Error generating repair reply:', error);
             setDraftContent("Dear there,\n\nThank you for reaching out. I appreciate your message and will respond shortly.\n\nWith gratitude,\n" + (session?.user?.name || 'User'));
@@ -953,7 +990,7 @@ export function GmailInterfaceFixed() {
             if (result.note?.id) {
                 window.location.href = `/i/notes/${result.note.id}`;
             }
-            fetchUsage();
+            forceFetchUsage();
 
             // Reset and close
             setNoteContent('');
