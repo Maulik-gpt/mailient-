@@ -1062,7 +1062,7 @@ export function LinearLanding() {
                                 transition={{ delay: 0.3 }}
                             >
                                 <Button variant="outline" className="rounded-full border-white/10 bg-white/5 hover:bg-white/10 text-white px-8 h-12" asChild>
-                                    <a href="https://x.com/Maulik_5" target="_blank" className="flex items-center gap-2">
+                                    <a href="https://x.com/Maulik_055" target="_blank" className="flex items-center gap-2">
                                         Connect with me
                                         <ArrowRight className="w-4 h-4" />
                                     </a>
@@ -1151,7 +1151,7 @@ export function LinearLanding() {
                                 </GlassButton>
                                 <Button
                                     variant="outline"
-                                    onClick={() => window.open('https://x.com/Maulik_5', '_blank')}
+                                    onClick={() => window.open('https://x.com/Maulik_055', '_blank')}
                                     size="lg"
                                     className="border-white/10 bg-transparent text-white hover:bg-white/5 rounded-2xl px-12 py-7 text-lg font-bold transition-all"
                                 >
@@ -1271,7 +1271,7 @@ export function LinearLanding() {
                         <span className="font-bold tracking-tight text-white">Mailient</span>
                     </div>
                     <div className="flex gap-8 text-sm font-bold text-zinc-500 uppercase tracking-widest">
-                        <a href="https://x.com/Maulik_5" target="_blank" className="hover:text-white transition-colors">Twitter</a>
+                        <a href="https://x.com/Maulik_055" target="_blank" className="hover:text-white transition-colors">Twitter</a>
                         <a href="/founders-guide" className="hover:text-[#D97757] transition-colors">Founders Guide</a>
                         <a href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</a>
                         <a href="/terms-of-service" className="hover:text-white transition-colors">Terms of Service</a>
