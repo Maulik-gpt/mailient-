@@ -22,15 +22,39 @@ export async function GET(request) {
         const allUsage = await subscriptionService.getAllFeatureUsage(userId);
         const isEndingSoon = await subscriptionService.isSubscriptionEndingSoon(userId);
 
-        // Get plan details
-        const plan = planType !== 'none' ? PLANS[planType] : null;
+        // Enhanced logging for debugging
+        console.log('🔍 Subscription Status Debug:', {
+            userId,
+            subscription,
+            isActive,
+            planType,
+            subscriptionEndsAt: subscription?.subscription_ends_at,
+            subscriptionStatus: subscription?.status
+        });
+
+        // Get plan details with enhanced error checking
+        let plan = null;
+        let planName = 'No Plan';
+        
+        if (planType && planType !== 'none') {
+            plan = PLANS[planType];
+            if (plan) {
+                planName = plan.name;
+            } else {
+                console.error('❌ Plan type found but not in PLANS config:', planType);
+                console.error('❌ Available plan types:', Object.keys(PLANS));
+                planName = `Unknown Plan (${planType})`;
+            }
+        } else {
+            console.log('ℹ️ No valid plan type found:', { planType, subscription });
+        }
 
         return NextResponse.json({
             success: true,
             subscription: {
                 hasActiveSubscription: isActive,
                 planType,
-                planName: plan?.name || 'No Plan',
+                planName: planName,
                 planPrice: plan?.price || 0,
                 subscriptionStartedAt: subscription?.subscription_started_at || null,
                 subscriptionEndsAt: subscription?.subscription_ends_at || null,
@@ -39,7 +63,12 @@ export async function GET(request) {
                 isEndingSoon
             },
             features: allUsage.features || {},
-            upgradeToPro: planType === 'starter' ? PLANS.pro.whopCheckoutUrl : null
+            upgradeToPro: planType === 'starter' ? PLANS.pro.whopCheckoutUrl : null,
+            debugInfo: {
+                rawPlanType: planType,
+                hasPlanObject: !!plan,
+                availablePlans: Object.keys(PLANS)
+            }
         });
     } catch (error) {
         console.error('Error getting subscription status:', error);

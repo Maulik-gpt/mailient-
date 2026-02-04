@@ -573,7 +573,15 @@ export default function SettingsPage() {
     // Fetch subscription data
     fetch("/api/subscription/status")
       .then((r) => (r.ok ? r.json() : null))
-      .then((data) => data && setSubscriptionData(data))
+      .then((data) => {
+        if (data) {
+          console.log('🔍 Settings Page - Subscription Data Received:', data);
+          console.log('🔍 Plan Name:', data.subscription?.planName);
+          console.log('🔍 Plan Type:', data.subscription?.planType);
+          console.log('🔍 Debug Info:', data.debugInfo);
+        }
+        setSubscriptionData(data);
+      })
       .catch(() => { });
   }, [session?.user?.email]);
 
