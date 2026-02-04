@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { HomeFeedSidebar } from "@/components/ui/home-feed-sidebar";
 import { EditProfileDialog, type EditProfileFormData } from "@/components/ui/edit-profile-dialog";
+import { CancellationConfirmationDialog } from "@/components/ui/cancellation-confirmation-dialog";
 import { Button } from "@/components/ui/button";
 import { WebsiteLink } from "@/components/ui/website-link";
 import { cn } from "@/lib/utils";
@@ -552,6 +553,7 @@ export default function SettingsPage() {
   const [streakRefreshing, setStreakRefreshing] = useState(false);
   const [subscriptionData, setSubscriptionData] = useState<any>(null);
   const [cancellingSubscription, setCancellingSubscription] = useState(false);
+  const [showCancellationDialog, setShowCancellationDialog] = useState(false);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -683,14 +685,28 @@ export default function SettingsPage() {
     }
   };
 
-  const handleCancelSubscription = async () => {
-    if (cancellingSubscription) return;
+  const handleCancelSubscription = async (reasons: string[] = [], feedback: string = "") => {
     setCancellingSubscription(true);
     try {
-      const res = await fetch("/api/subscription/cancel", { method: "POST" });
+      const res = await fetch("/api/subscription/cancel", { 
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ reasons, feedback })
+      });
+      
       if (res.ok) {
         const data = await res.json();
         toast.success(data.message);
+        
+        // Show additional info if Whop integration had issues
+        if (data.whopIntegration && !data.whopIntegration.success) {
+          toast.info(`Note: ${data.whopIntegration.error}`, {
+            duration: 5000,
+          });
+        }
+        
         // Refresh subscription data
         const updatedSub = await fetch("/api/subscription/status").then(r => r.json());
         setSubscriptionData(updatedSub);
@@ -702,6 +718,7 @@ export default function SettingsPage() {
       toast.error("An error occurred while cancelling subscription");
     } finally {
       setCancellingSubscription(false);
+      setShowCancellationDialog(false);
     }
   };
 
@@ -1001,7 +1018,7 @@ export default function SettingsPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={handleCancelSubscription}
+                          onClick={() => setShowCancellationDialog(true)}
                           disabled={cancellingSubscription || subscriptionData?.subscription?.status === 'cancelled'}
                           className="shrink-0 border-red-500/50 text-red-400 hover:bg-red-500/10"
                         >
@@ -1162,6 +1179,15 @@ export default function SettingsPage() {
           )}
         </div>
       </main>
+
+      {/* Cancellation Confirmation Dialog */}
+      <CancellationConfirmationDialog
+        isOpen={showCancellationDialog}
+        onClose={() => setShowCancellationDialog(false)}
+        onConfirm={handleCancelSubscription}
+        subscriptionEndsAt={subscriptionData?.subscription?.subscriptionEndsAt}
+        daysRemaining={subscriptionData?.subscription?.daysRemaining}
+      />
     </div>
   );
 }
