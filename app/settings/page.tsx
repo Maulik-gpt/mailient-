@@ -550,6 +550,8 @@ export default function SettingsPage() {
   const [avatarImageError, setAvatarImageError] = useState(false);
   const [bannerImageError, setBannerImageError] = useState(false);
   const [streakRefreshing, setStreakRefreshing] = useState(false);
+  const [subscriptionData, setSubscriptionData] = useState<any>(null);
+  const [cancellingSubscription, setCancellingSubscription] = useState(false);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -564,6 +566,12 @@ export default function SettingsPage() {
     fetch("/api/profile")
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => data && setProfile(data))
+      .catch(() => { });
+
+    // Fetch subscription data
+    fetch("/api/subscription/status")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => data && setSubscriptionData(data))
       .catch(() => { });
   }, [session?.user?.email]);
 
@@ -672,6 +680,28 @@ export default function SettingsPage() {
       }
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleCancelSubscription = async () => {
+    if (cancellingSubscription) return;
+    setCancellingSubscription(true);
+    try {
+      const res = await fetch("/api/subscription/cancel", { method: "POST" });
+      if (res.ok) {
+        const data = await res.json();
+        toast.success(data.message);
+        // Refresh subscription data
+        const updatedSub = await fetch("/api/subscription/status").then(r => r.json());
+        setSubscriptionData(updatedSub);
+      } else {
+        const error = await res.json();
+        toast.error(error.error || "Failed to cancel subscription");
+      }
+    } catch (error) {
+      toast.error("An error occurred while cancelling subscription");
+    } finally {
+      setCancellingSubscription(false);
     }
   };
 
@@ -934,15 +964,79 @@ export default function SettingsPage() {
                 </div>
                 <div className="mt-4 p-4 rounded-xl bg-white/5 border border-[var(--glass-border)] flex items-center gap-4">
                   <CreditCard className="w-10 h-10 text-[var(--settings-text-tertiary)] shrink-0" />
-                  <div>
+                  <div className="flex-1">
                     <p className="text-xs font-medium text-[var(--settings-text-tertiary)] uppercase tracking-wider">Subscription plan</p>
                     <p className="text-lg font-semibold text-[var(--settings-text)] mt-0.5">
-                      {profile?.plan ?? profile?.preferences?.plan ?? "Free Plan"}
+                      {subscriptionData?.subscription?.planName || profile?.plan || profile?.preferences?.plan || "Free Plan"}
                     </p>
+                    {subscriptionData?.subscription?.hasActiveSubscription && (
+                      <p className="text-sm text-[var(--settings-text-secondary)] mt-1">
+                        {subscriptionData?.subscription?.daysRemaining > 0 
+                          ? `${subscriptionData.subscription.daysRemaining} days remaining`
+                          : "Expires soon"
+                        }
+                      </p>
+                    )}
                   </div>
                   <Button className="ml-auto glass-button-secondary" onClick={() => router.push("/pricing")}>
                     View plans
                   </Button>
+                </div>
+
+                {/* Subscription Management */}
+                {subscriptionData?.subscription?.hasActiveSubscription && (
+                  <div className="mt-4 p-4 rounded-xl bg-white/5 border border-[var(--glass-border)]">
+                    <h3 className="text-base font-semibold text-[var(--settings-text)] mb-3 flex items-center gap-2">
+                      <CreditCard className="w-5 h-5 text-[var(--settings-text-tertiary)]" />
+                      Subscription Management
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-[var(--glass-border)]">
+                        <div>
+                          <p className="font-medium text-[var(--settings-text)]">Cancel Subscription</p>
+                          <p className="text-sm text-[var(--settings-text-secondary)]">
+                            Cancel your subscription and continue using until the end of your billing period
+                          </p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleCancelSubscription}
+                          disabled={cancellingSubscription || subscriptionData?.subscription?.status === 'cancelled'}
+                          className="shrink-0 border-red-500/50 text-red-400 hover:bg-red-500/10"
+                        >
+                          {cancellingSubscription ? "Cancelling..." : 
+                           subscriptionData?.subscription?.status === 'cancelled' ? "Cancelled" : "Cancel"}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Talk to Founder */}
+                <div className="mt-4 p-4 rounded-xl bg-white/5 border border-[var(--glass-border)]">
+                  <h3 className="text-base font-semibold text-[var(--settings-text)] mb-3 flex items-center gap-2">
+                    <span className="text-lg">👨‍💼</span>
+                    Support & Feedback
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-[var(--glass-border)]">
+                      <div>
+                        <p className="font-medium text-[var(--settings-text)]">Talk to Founder</p>
+                        <p className="text-sm text-[var(--settings-text-secondary)]">
+                          Have questions or feedback? Reach out directly to our founder
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open("https://x.com/@Maulik_055", "_blank")}
+                        className="shrink-0 border-[var(--settings-accent)] text-[var(--settings-accent)] hover:bg-[var(--settings-accent)]/10"
+                      >
+                        Contact
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </section>
