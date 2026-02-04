@@ -554,6 +554,7 @@ export default function SettingsPage() {
   const [subscriptionData, setSubscriptionData] = useState<any>(null);
   const [cancellingSubscription, setCancellingSubscription] = useState(false);
   const [showCancellationDialog, setShowCancellationDialog] = useState(false);
+  const [refreshingSubscription, setRefreshingSubscription] = useState(false);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -579,6 +580,26 @@ export default function SettingsPage() {
           console.log('🔍 Plan Name:', data.subscription?.planName);
           console.log('🔍 Plan Type:', data.subscription?.planType);
           console.log('🔍 Debug Info:', data.debugInfo);
+          
+          // IMMEDIATE FIX: If planName is still "No Plan" but subscription exists, force correct display
+          if (data.subscription?.planName === 'No Plan' && data.subscription?.hasActiveSubscription) {
+            console.log('🔧 Applying immediate fix for plan display');
+            
+            // Try to determine plan from subscription data or debug info
+            const rawPlanType = data.debugInfo?.rawPlanType || data.subscription?.planType;
+            if (rawPlanType && rawPlanType !== 'none') {
+              // Force the correct plan name based on plan type
+              const forcedPlanName = rawPlanType === 'pro' ? 'Pro' : 
+                                   rawPlanType === 'starter' ? 'Starter' : 
+                                   `${rawPlanType} Plan`;
+              
+              console.log(`🔧 Forcing plan name: ${forcedPlanName} (from ${rawPlanType})`);
+              
+              // Override the plan name
+              data.subscription.planName = forcedPlanName;
+              data.debugInfo.forcedOverride = true;
+            }
+          }
         }
         setSubscriptionData(data);
       })
@@ -600,6 +621,39 @@ export default function SettingsPage() {
       toast.error("Error refreshing streak");
     } finally {
       setStreakRefreshing(false);
+    }
+  };
+
+  const handleRefreshSubscription = async () => {
+    setRefreshingSubscription(true);
+    try {
+      const res = await fetch("/api/subscription/status");
+      if (res.ok) {
+        const data = await res.json();
+        console.log('🔄 Refreshed subscription data:', data);
+        
+        // Apply the same immediate fix
+        if (data.subscription?.planName === 'No Plan' && data.subscription?.hasActiveSubscription) {
+          const rawPlanType = data.debugInfo?.rawPlanType || data.subscription?.planType;
+          if (rawPlanType && rawPlanType !== 'none') {
+            const forcedPlanName = rawPlanType === 'pro' ? 'Pro' : 
+                                 rawPlanType === 'starter' ? 'Starter' : 
+                                 `${rawPlanType} Plan`;
+            data.subscription.planName = forcedPlanName;
+            data.debugInfo.forcedOverride = true;
+            console.log(`🔧 Refresh: Forced plan name: ${forcedPlanName}`);
+          }
+        }
+        
+        setSubscriptionData(data);
+        toast.success("Subscription data refreshed!");
+      } else {
+        toast.error("Failed to refresh subscription data");
+      }
+    } catch (e) {
+      toast.error("Error refreshing subscription");
+    } finally {
+      setRefreshingSubscription(false);
     }
   };
 
@@ -992,7 +1046,10 @@ export default function SettingsPage() {
                   <div className="flex-1">
                     <p className="text-xs font-medium text-[var(--settings-text-tertiary)] uppercase tracking-wider">Subscription plan</p>
                     <p className="text-lg font-semibold text-[var(--settings-text)] mt-0.5">
-                      {subscriptionData?.subscription?.planName || profile?.plan || profile?.preferences?.plan || "Free Plan"}
+                      {subscriptionData?.subscription?.planName || profile?.plan || profile?.preferences?.plan || "No Plan"}
+                      {subscriptionData?.debugInfo?.forcedOverride && (
+                        <span className="ml-2 text-xs bg-orange-500/20 text-orange-400 px-2 py-1 rounded">Fixed</span>
+                      )}
                     </p>
                     {subscriptionData?.subscription?.hasActiveSubscription && (
                       <p className="text-sm text-[var(--settings-text-secondary)] mt-1">
@@ -1003,9 +1060,20 @@ export default function SettingsPage() {
                       </p>
                     )}
                   </div>
-                  <Button className="ml-auto glass-button-secondary" onClick={() => router.push("/pricing")}>
-                    View plans
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRefreshSubscription}
+                      disabled={refreshingSubscription}
+                      className="shrink-0 border-[var(--glass-border)] text-[var(--settings-text)] hover:bg-white/10"
+                    >
+                      <RefreshCw className={cn("w-4 h-4", refreshingSubscription && "animate-spin")} />
+                    </Button>
+                    <Button className="shrink-0 glass-button-secondary" onClick={() => router.push("/pricing")}>
+                      View plans
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Subscription Management */}
