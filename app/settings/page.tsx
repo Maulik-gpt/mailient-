@@ -1053,6 +1053,26 @@ export default function SettingsPage() {
                         Contact
                       </Button>
                     </div>
+                    
+                    {/* Debug Subscription Info - Temporary */}
+                    {process.env.NODE_ENV === 'development' && (
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-orange-500/10 border border-orange-500/20">
+                        <div>
+                          <p className="font-medium text-[var(--settings-text)]">Debug Subscription</p>
+                          <p className="text-sm text-[var(--settings-text-secondary)]">
+                            Check subscription data and debug display issues
+                          </p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open("/api/subscription/debug", "_blank")}
+                          className="shrink-0 border-orange-500/50 text-orange-400 hover:bg-orange-500/10"
+                        >
+                          Debug
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
