@@ -571,39 +571,50 @@ export default function SettingsPage() {
       .then((data) => data && setProfile(data))
       .catch(() => { });
 
-    // Fetch subscription data
-    fetch("/api/subscription/status")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
+    // Fetch subscription data - TRY DIRECT ENDPOINT FIRST
+    const fetchSubscriptionData = async () => {
+      try {
+        // Try direct endpoint first
+        let response = await fetch("/api/subscription/direct");
+        let data = await response.json();
+        
+        if (data.success && data.subscription?.hasActiveSubscription) {
+          console.log('✅ Direct endpoint success:', data);
+          return data;
+        }
+        
+        // Fallback to original endpoint
+        console.log('⚠️ Direct endpoint failed, trying original...');
+        response = await fetch("/api/subscription/status");
+        data = await response.json();
+        
         if (data) {
-          console.log('🔍 Settings Page - Subscription Data Received:', data);
-          console.log('🔍 Plan Name:', data.subscription?.planName);
-          console.log('🔍 Plan Type:', data.subscription?.planType);
-          console.log('🔍 Debug Info:', data.debugInfo);
+          console.log('� Original endpoint data:', data);
           
-          // IMMEDIATE FIX: If planName is still "No Plan" but subscription exists, force correct display
+          // Apply immediate fix if needed
           if (data.subscription?.planName === 'No Plan' && data.subscription?.hasActiveSubscription) {
-            console.log('🔧 Applying immediate fix for plan display');
-            
-            // Try to determine plan from subscription data or debug info
             const rawPlanType = data.debugInfo?.rawPlanType || data.subscription?.planType;
             if (rawPlanType && rawPlanType !== 'none') {
-              // Force the correct plan name based on plan type
               const forcedPlanName = rawPlanType === 'pro' ? 'Pro' : 
                                    rawPlanType === 'starter' ? 'Starter' : 
                                    `${rawPlanType} Plan`;
-              
-              console.log(`🔧 Forcing plan name: ${forcedPlanName} (from ${rawPlanType})`);
-              
-              // Override the plan name
               data.subscription.planName = forcedPlanName;
               data.debugInfo.forcedOverride = true;
+              console.log(`🔧 Forced plan name: ${forcedPlanName}`);
             }
           }
         }
-        setSubscriptionData(data);
-      })
-      .catch(() => { });
+        
+        return data;
+      } catch (error) {
+        console.error('❌ All subscription endpoints failed:', error);
+        return null;
+      }
+    };
+
+    fetchSubscriptionData().then((data) => {
+      setSubscriptionData(data);
+    });
   }, [session?.user?.email]);
 
   const handleRefreshStreak = async () => {
@@ -627,24 +638,50 @@ export default function SettingsPage() {
   const handleRefreshSubscription = async () => {
     setRefreshingSubscription(true);
     try {
-      const res = await fetch("/api/subscription/status");
-      if (res.ok) {
-        const data = await res.json();
-        console.log('🔄 Refreshed subscription data:', data);
-        
-        // Apply the same immediate fix
-        if (data.subscription?.planName === 'No Plan' && data.subscription?.hasActiveSubscription) {
-          const rawPlanType = data.debugInfo?.rawPlanType || data.subscription?.planType;
-          if (rawPlanType && rawPlanType !== 'none') {
-            const forcedPlanName = rawPlanType === 'pro' ? 'Pro' : 
-                                 rawPlanType === 'starter' ? 'Starter' : 
-                                 `${rawPlanType} Plan`;
-            data.subscription.planName = forcedPlanName;
-            data.debugInfo.forcedOverride = true;
-            console.log(`🔧 Refresh: Forced plan name: ${forcedPlanName}`);
+      // Use the same fetch logic as initial load
+      const fetchSubscriptionData = async () => {
+        try {
+          // Try direct endpoint first
+          let response = await fetch("/api/subscription/direct");
+          let data = await response.json();
+          
+          if (data.success && data.subscription?.hasActiveSubscription) {
+            console.log('✅ Refresh: Direct endpoint success:', data);
+            return data;
           }
+          
+          // Fallback to original endpoint
+          console.log('⚠️ Refresh: Direct endpoint failed, trying original...');
+          response = await fetch("/api/subscription/status");
+          data = await response.json();
+          
+          if (data) {
+            console.log('🔄 Refresh: Original endpoint data:', data);
+            
+            // Apply immediate fix if needed
+            if (data.subscription?.planName === 'No Plan' && data.subscription?.hasActiveSubscription) {
+              const rawPlanType = data.debugInfo?.rawPlanType || data.subscription?.planType;
+              if (rawPlanType && rawPlanType !== 'none') {
+                const forcedPlanName = rawPlanType === 'pro' ? 'Pro' : 
+                                     rawPlanType === 'starter' ? 'Starter' : 
+                                     `${rawPlanType} Plan`;
+                data.subscription.planName = forcedPlanName;
+                data.debugInfo.forcedOverride = true;
+                console.log(`🔧 Refresh: Forced plan name: ${forcedPlanName}`);
+              }
+            }
+          }
+          
+          return data;
+        } catch (error) {
+          console.error('❌ Refresh: All endpoints failed:', error);
+          return null;
         }
-        
+      };
+
+      const data = await fetchSubscriptionData();
+      
+      if (data) {
         setSubscriptionData(data);
         toast.success("Subscription data refreshed!");
       } else {
@@ -1049,6 +1086,9 @@ export default function SettingsPage() {
                       {subscriptionData?.subscription?.planName || profile?.plan || profile?.preferences?.plan || "No Plan"}
                       {subscriptionData?.debugInfo?.forcedOverride && (
                         <span className="ml-2 text-xs bg-orange-500/20 text-orange-400 px-2 py-1 rounded">Fixed</span>
+                      )}
+                      {subscriptionData?.direct && (
+                        <span className="ml-2 text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">Direct</span>
                       )}
                     </p>
                     {subscriptionData?.subscription?.hasActiveSubscription && (
