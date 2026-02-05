@@ -253,10 +253,7 @@ export function LinearLanding() {
                             <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-400 flex-shrink-0" />
                             <span className="whitespace-nowrap">Encrypted</span>
                         </div>
-                        <div className="flex items-center gap-1.5 sm:gap-2 justify-center">
-                            <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-400 flex-shrink-0" />
-                            <span className="whitespace-nowrap">500+ Users</span>
-                        </div>
+
                         <div className="flex items-center gap-1.5 sm:gap-2 justify-center">
                             <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-400 flex-shrink-0" />
                             <span className="whitespace-nowrap">2 Min Setup</span>
@@ -567,7 +564,7 @@ export function LinearLanding() {
                             <div className="inline-flex items-center gap-6 p-8 rounded-3xl border border-white/10 bg-white/[0.02] backdrop-blur-sm">
                                 <div className="text-left">
                                     <h3 className="text-2xl font-bold text-white mb-2">Ready to save 10+ hours/week?</h3>
-                                    <p className="text-zinc-400">Join 500+ founders who transformed their inbox.</p>
+                                    <p className="text-zinc-400">Join founders who transformed their inbox.</p>
                                 </div>
                                 <Button
                                     onClick={() => signIn('google')}
