@@ -11,13 +11,12 @@ const vertexShader = `
   varying vec2 vUv;
   varying vec3 vPosition;
   
-  void main() {
+    void main() {
     vUv = uv;
     vPosition = position;
     
     vec3 pos = position;
-    pos.y += sin(pos.x * 10.0 + time) * 0.1 * intensity;
-    pos.x += cos(pos.y * 8.0 + time * 1.5) * 0.05 * intensity;
+    pos.y += sin(pos.x * 5.0 + time * 0.5) * 0.05 * intensity;
     
     gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
   }

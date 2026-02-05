@@ -119,15 +119,12 @@ export function LinearLanding() {
         return () => clearInterval(interval)
     }, [])
 
-    const opacity = useTransform(scrollYProgress, [0, 0.1], [1, 0])
-    const scale = useTransform(scrollYProgress, [0, 0.1], [1, 0.95])
-
     return (
-        <div ref={containerRef} className="relative min-h-screen bg-black text-white selection:bg-white selection:text-black font-satoshi overflow-x-hidden">
-            {/* Background Layer */}
-            <div className="fixed inset-0 z-0">
+        <div ref={containerRef} className="relative min-h-screen bg-black text-white selection:bg-white selection:text-black font-satoshi overflow-x-hidden scroll-smooth">
+            {/* Background Layer - Optimized */}
+            <div className="fixed inset-0 z-0 pointer-events-none select-none" style={{ willChange: "transform" }}>
                 <BackgroundShaders />
-                <div className="absolute inset-0 bg-black/60" />
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
             </div>
 
             {/* Navigation */}
@@ -163,10 +160,11 @@ export function LinearLanding() {
                 }}
                 transition={{
                     type: "spring",
-                    stiffness: 280,
-                    damping: 30,
-                    mass: 0.8
+                    stiffness: 400,
+                    damping: 40,
+                    mass: 1
                 }}
+                style={{ willChange: "transform, width, padding" }}
                 className="fixed top-0 left-1/2 -translate-x-1/2 z-50 overflow-hidden"
             >
                 <div className="w-full px-4 md:px-8 flex items-center justify-between">

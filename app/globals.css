@@ -4,6 +4,18 @@
 /* External Satoshi font declarations from Fontshare CDN */
 @import url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900,300,100&display=swap');
 
+html {
+  scroll-behavior: smooth;
+  overscroll-behavior: none;
+}
+
+body {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
 @font-face {
   font-family: 'Satoshi';
   src: url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900,300,100&display=swap') format('woff2'),
