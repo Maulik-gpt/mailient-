@@ -17,6 +17,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const MILESTONES = [
     { invites: 5, reward: "Day 1 Badge", description: "Early supporter recognition" },
@@ -291,7 +297,16 @@ export function RewardsSection({
                                                 )}>
                                                     {row.reward}
                                                 </span>
-                                                <Info className="w-4 h-4 text-neutral-600 hover:text-neutral-400 transition-colors cursor-help" />
+                                                <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Info className="w-4 h-4 text-neutral-600 hover:text-neutral-400 transition-colors cursor-help" />
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>
+                                                            <p>{row.description}</p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
                                             </div>
                                         </td>
                                     </tr>
@@ -302,14 +317,26 @@ export function RewardsSection({
                 </div>
             </div>
 
-            {/* FAQ / Info */}
-            <div className="p-6 rounded-2xl bg-blue-500/5 border border-blue-500/10 flex items-start gap-4">
-                <Info className="w-6 h-6 text-blue-400 shrink-0" />
-                <div>
-                    <h4 className="font-bold text-white">How rewards work</h4>
-                    <p className="text-sm text-neutral-400 mt-1 leading-relaxed">
-                        Rewards are credited to your account after the referred friend joins Mailient. Milestone rewards like badges and roles are granted automatically. Career-level rewards involve a direct review from our team.
-                    </p>
+            {/* Info Footer */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-6 rounded-2xl bg-blue-500/5 border border-blue-500/10 flex items-start gap-4">
+                    <Info className="w-6 h-6 text-blue-400 shrink-0" />
+                    <div>
+                        <h4 className="font-bold text-white">How rewards work</h4>
+                        <p className="text-sm text-neutral-400 mt-1 leading-relaxed">
+                            Rewards are credited to your account instantly when the referred friend signs up and verifies their account. Milestone rewards like badges and roles are granted automatically.
+                        </p>
+                    </div>
+                </div>
+
+                <div className="p-6 rounded-2xl bg-orange-500/5 border border-orange-500/10 flex items-start gap-4">
+                    <Zap className="w-6 h-6 text-orange-400 shrink-0" />
+                    <div>
+                        <h4 className="font-bold text-white">Rewards vs. Streaks</h4>
+                        <p className="text-sm text-neutral-400 mt-1 leading-relaxed">
+                            <strong>Note:</strong> These invite rewards are separate from your Daily Streak Badges. Streak badges found in your profile are earned by using Mailient every day, while these are exclusive to growing our community.
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
