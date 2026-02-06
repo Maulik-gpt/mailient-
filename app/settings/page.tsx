@@ -32,6 +32,8 @@ import { WebsiteLink } from "@/components/ui/website-link";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Confetti } from "@/components/ui/confetti";
+import { RewardsSection } from "@/components/RewardsSection";
+
 
 // XP Configuration
 const XP_PER_ACTION = {
@@ -74,6 +76,12 @@ const SPECIAL_BADGES = [
   { id: "early_bird", name: "Early Bird", emoji: "🐦", rarity: "uncommon", description: "Active before 6 AM", condition: "morning_activity" },
   { id: "inbox_zero", name: "Inbox Zero Hero", emoji: "✨", rarity: "epic", description: "Cleared all emails", condition: "inbox_zero" },
   { id: "power_user", name: "Power User", emoji: "⚡", rarity: "legendary", description: "Used 5+ features daily", condition: "power_usage" },
+  // Invite-based badges (Mixed rewards)
+  { id: "recruiter", name: "Recruiter", emoji: "🎫", rarity: "common", description: "Invited 5 friends", condition: "5_invites" },
+  { id: "ambassador", name: "Ambassador", emoji: "📣", rarity: "rare", description: "Invited 25 friends", condition: "25_invites" },
+  { id: "founding_partner", name: "Founding Partner", emoji: "🏢", rarity: "epic", description: "Invited 50 friends", condition: "50_invites" },
+  { id: "influencer", name: "Influencer", emoji: "🌎", rarity: "legendary", description: "Invited 100 friends", condition: "100_invites" },
+  { id: "stakeholder", name: "Stakeholder", emoji: "💎", rarity: "mythic", description: "Invited 250 friends", condition: "250_invites" },
 ];
 
 const RARITY_COLORS: Record<string, { bg: string; border: string; glow: string; text: string }> = {
@@ -468,7 +476,7 @@ function AchievementsCard({ earnedBadges = [] }: { earnedBadges?: string[] }) {
                   : "bg-neutral-900/50 border-neutral-800/50 opacity-50 grayscale"
               )}
             >
-              <span className={cn("text-3xl", !isEarned && "opacity-40")}>{badge.emoji}</span>
+              <span className={cn("text-3xl", isEarned ? "" : "opacity-40")}>{badge.emoji}</span>
               <p className={cn("text-xs font-medium text-center", isEarned ? colors.text : "text-neutral-600")}>
                 {badge.name}
               </p>
@@ -477,7 +485,7 @@ function AchievementsCard({ earnedBadges = [] }: { earnedBadges?: string[] }) {
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
                 <p className="text-xs font-medium text-neutral-200">{badge.name}</p>
                 <p className="text-[10px] text-neutral-500">{badge.description}</p>
-                {!isEarned && (
+                {isEarned ? null : (
                   <p className="text-[10px] text-amber-400 mt-1">🔒 Complete challenge to unlock</p>
                 )}
               </div>
@@ -516,9 +524,10 @@ type UserProfile = {
   activity_history?: Array<{ activity_date: string, count: number }>;
   xp?: number;
   earned_badges?: string[];
+  invite_count?: number;
 };
 
-const SECTIONS = ["profile", "account", "security", "legal"] as const;
+const SECTIONS = ["profile", "account", "rewards", "security", "legal"] as const;
 type Section = (typeof SECTIONS)[number];
 
 /** Mock profile data so Profile section matches reference images when real data is empty */
@@ -577,34 +586,34 @@ export default function SettingsPage() {
         // Try direct endpoint first
         let response = await fetch("/api/subscription/direct");
         let data = await response.json();
-        
+
         if (data.success && data.subscription?.hasActiveSubscription) {
           console.log('✅ Direct endpoint success:', data);
           return data;
         }
-        
+
         // Fallback to original endpoint
         console.log('⚠️ Direct endpoint failed, trying original...');
         response = await fetch("/api/subscription/status");
         data = await response.json();
-        
+
         if (data) {
           console.log('� Original endpoint data:', data);
-          
+
           // Apply immediate fix if needed
           if (data.subscription?.planName === 'No Plan' && data.subscription?.hasActiveSubscription) {
             const rawPlanType = data.debugInfo?.rawPlanType || data.subscription?.planType;
             if (rawPlanType && rawPlanType !== 'none') {
-              const forcedPlanName = rawPlanType === 'pro' ? 'Pro' : 
-                                   rawPlanType === 'starter' ? 'Starter' : 
-                                   `${rawPlanType} Plan`;
+              const forcedPlanName = rawPlanType === 'pro' ? 'Pro' :
+                rawPlanType === 'starter' ? 'Starter' :
+                  `${rawPlanType} Plan`;
               data.subscription.planName = forcedPlanName;
               data.debugInfo.forcedOverride = true;
               console.log(`🔧 Forced plan name: ${forcedPlanName}`);
             }
           }
         }
-        
+
         return data;
       } catch (error) {
         console.error('❌ All subscription endpoints failed:', error);
@@ -644,34 +653,34 @@ export default function SettingsPage() {
           // Try direct endpoint first
           let response = await fetch("/api/subscription/direct");
           let data = await response.json();
-          
+
           if (data.success && data.subscription?.hasActiveSubscription) {
             console.log('✅ Refresh: Direct endpoint success:', data);
             return data;
           }
-          
+
           // Fallback to original endpoint
           console.log('⚠️ Refresh: Direct endpoint failed, trying original...');
           response = await fetch("/api/subscription/status");
           data = await response.json();
-          
+
           if (data) {
             console.log('🔄 Refresh: Original endpoint data:', data);
-            
+
             // Apply immediate fix if needed
             if (data.subscription?.planName === 'No Plan' && data.subscription?.hasActiveSubscription) {
               const rawPlanType = data.debugInfo?.rawPlanType || data.subscription?.planType;
               if (rawPlanType && rawPlanType !== 'none') {
-                const forcedPlanName = rawPlanType === 'pro' ? 'Pro' : 
-                                     rawPlanType === 'starter' ? 'Starter' : 
-                                     `${rawPlanType} Plan`;
+                const forcedPlanName = rawPlanType === 'pro' ? 'Pro' :
+                  rawPlanType === 'starter' ? 'Starter' :
+                    `${rawPlanType} Plan`;
                 data.subscription.planName = forcedPlanName;
                 data.debugInfo.forcedOverride = true;
                 console.log(`🔧 Refresh: Forced plan name: ${forcedPlanName}`);
               }
             }
           }
-          
+
           return data;
         } catch (error) {
           console.error('❌ Refresh: All endpoints failed:', error);
@@ -680,7 +689,7 @@ export default function SettingsPage() {
       };
 
       const data = await fetchSubscriptionData();
-      
+
       if (data) {
         setSubscriptionData(data);
         toast.success("Subscription data refreshed!");
@@ -787,25 +796,25 @@ export default function SettingsPage() {
   const handleCancelSubscription = async (reasons: string[] = [], feedback: string = "") => {
     setCancellingSubscription(true);
     try {
-      const res = await fetch("/api/subscription/cancel", { 
+      const res = await fetch("/api/subscription/cancel", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ reasons, feedback })
       });
-      
+
       if (res.ok) {
         const data = await res.json();
         toast.success(data.message);
-        
+
         // Show additional info if Whop integration had issues
         if (data.whopIntegration && !data.whopIntegration.success) {
           toast.info(`Note: ${data.whopIntegration.error}`, {
             duration: 5000,
           });
         }
-        
+
         // Refresh subscription data
         const updatedSub = await fetch("/api/subscription/status").then(r => r.json());
         setSubscriptionData(updatedSub);
@@ -1093,7 +1102,7 @@ export default function SettingsPage() {
                     </p>
                     {subscriptionData?.subscription?.hasActiveSubscription && (
                       <p className="text-sm text-[var(--settings-text-secondary)] mt-1">
-                        {subscriptionData?.subscription?.daysRemaining > 0 
+                        {subscriptionData?.subscription?.daysRemaining > 0
                           ? `${subscriptionData.subscription.daysRemaining} days remaining`
                           : "Expires soon"
                         }
@@ -1138,8 +1147,8 @@ export default function SettingsPage() {
                           disabled={cancellingSubscription || subscriptionData?.subscription?.status === 'cancelled'}
                           className="shrink-0 border-red-500/50 text-red-400 hover:bg-red-500/10"
                         >
-                          {cancellingSubscription ? "Cancelling..." : 
-                           subscriptionData?.subscription?.status === 'cancelled' ? "Cancelled" : "Cancel"}
+                          {cancellingSubscription ? "Cancelling..." :
+                            subscriptionData?.subscription?.status === 'cancelled' ? "Cancelled" : "Cancel"}
                         </Button>
                       </div>
                     </div>
@@ -1169,7 +1178,7 @@ export default function SettingsPage() {
                         Contact
                       </Button>
                     </div>
-                    
+
                     {/* Debug Subscription Info - Temporary */}
                     {process.env.NODE_ENV === 'development' && (
                       <div className="flex items-center justify-between p-3 rounded-lg bg-orange-500/10 border border-orange-500/20">
@@ -1313,6 +1322,17 @@ export default function SettingsPage() {
               </div>
             </section>
           )}
+
+          {/* Rewards (Gamification / Referrals) */}
+          {section === "rewards" ? (
+            <section className="glass-fade-up">
+              <RewardsSection
+                username={displayHandle}
+                inviteCount={profile?.invite_count || 0}
+              />
+            </section>
+          ) : null}
+
         </div>
       </main>
 
