@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     Trophy,
     Users,
@@ -17,19 +17,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-
-interface LeaderboardUser {
-    rank: number;
-    username: string;
-    invites: number;
-    reward: string;
-}
-
-const LEADERBOARD_DATA: LeaderboardUser[] = [
-    { rank: 1, username: "victortenold", invites: 45, reward: "$500" },
-    { rank: 2, username: "leifstrand", invites: 10, reward: "$350" },
-    { rank: 3, username: "kamal", invites: 4, reward: "$150" },
-];
 
 const MILESTONES = [
     { invites: 5, reward: "Day 1 Badge", description: "Early supporter recognition" },
@@ -48,7 +35,19 @@ export function RewardsSection({
     inviteCount?: number;
 }) {
     const [copied, setCopied] = useState(false);
+    const [leaderboard, setLeaderboard] = useState<any[]>([]);
+    const [loadingLeaderboard, setLoadingLeaderboard] = useState(true);
     const referralLink = `https://mailient.com?ref=${username}`;
+
+    useEffect(() => {
+        fetch("/api/leaderboard")
+            .then(res => res.json())
+            .then(data => {
+                setLeaderboard(data.users || []);
+            })
+            .catch(() => { })
+            .finally(() => setLoadingLeaderboard(false));
+    }, []);
 
     const handleCopyLink = () => {
         navigator.clipboard.writeText(referralLink);
@@ -67,12 +66,12 @@ export function RewardsSection({
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                         </span>
-                        Earn 30%
+                        Exclusive Program
                     </div>
                 </div>
 
                 <div className="max-w-xl">
-                    <h2 className="text-3xl font-bold text-white mb-4">Refer friends, earn rewards</h2>
+                    <h2 className="text-3xl font-bold text-white mb-4">Refer friends, unlock rewards</h2>
                     <div className="flex items-center gap-3 mb-6">
                         <div className="px-4 py-2 rounded-2xl bg-white/5 border border-white/10">
                             <p className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest">Your Invites</p>
@@ -92,7 +91,7 @@ export function RewardsSection({
                         </div>
                     </div>
                     <p className="text-neutral-400 text-lg mb-8">
-                        Share the magic of Mailient with your network and unlock exclusive perks, lifetime earnings, and career opportunities.
+                        Share the magic of Mailient with your network and unlock exclusive perks, lifetime status, and career opportunities.
                     </p>
 
                     <div className="flex flex-col sm:flex-row gap-3">
@@ -111,59 +110,67 @@ export function RewardsSection({
                 </div>
             </div>
 
-            {/* Leaderboard Podium */}
-            <div className="space-y-6 relative">
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-12 w-64 h-64 bg-emerald-500/10 blur-[100px] rounded-full pointer-events-none" />
+            {/* Leaderboard Podium - Only show if there's data */}
+            {leaderboard.length > 0 ? (
+                <div className="space-y-6 relative">
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-12 w-64 h-64 bg-emerald-500/10 blur-[100px] rounded-full pointer-events-none" />
 
-                <div className="flex items-end justify-center gap-2 sm:gap-6 pt-16 pb-8 px-2">
-                    {/* 2nd Place */}
-                    <div className="flex flex-col items-center w-full max-w-[120px] sm:max-w-none">
-                        <div className="mb-4 text-center">
-                            <div className="inline-block px-3 py-1 rounded-full bg-neutral-100 text-black text-[10px] sm:text-xs font-bold mb-3 shadow-[0_4px_12px_rgba(255,255,255,0.1)]">
-                                {LEADERBOARD_DATA[1].reward}
+                    <div className="flex items-end justify-center gap-2 sm:gap-6 pt-16 pb-8 px-2">
+                        {/* 2nd Place */}
+                        {leaderboard[1] ? (
+                            <div className="flex flex-col items-center w-full max-w-[120px] sm:max-w-none">
+                                <div className="mb-4 text-center">
+                                    <div className="inline-block px-3 py-1 rounded-full bg-neutral-100 text-black text-[10px] sm:text-xs font-bold mb-3 shadow-[0_4px_12px_rgba(255,255,255,0.1)]">
+                                        Active
+                                    </div>
+                                    <p className="font-semibold text-white text-xs sm:text-base truncate w-full">{leaderboard[1].username}</p>
+                                    <p className="text-[10px] sm:text-xs text-neutral-500">{leaderboard[1].invite_count} invites</p>
+                                </div>
+                                <div className="w-24 sm:w-40 h-24 sm:h-36 rounded-t-2xl bg-gradient-to-b from-neutral-200/20 to-neutral-200/5 border-x border-t border-white/10 flex items-center justify-center relative">
+                                    <span className="text-4xl sm:text-6xl font-bold text-white/10">2</span>
+                                    <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-black to-transparent" />
+                                </div>
                             </div>
-                            <p className="font-semibold text-white text-xs sm:text-base truncate w-full">{LEADERBOARD_DATA[1].username}</p>
-                            <p className="text-[10px] sm:text-xs text-neutral-500">{LEADERBOARD_DATA[1].invites} invites</p>
-                        </div>
-                        <div className="w-24 sm:w-40 h-24 sm:h-36 rounded-t-2xl bg-gradient-to-b from-neutral-200/20 to-neutral-200/5 border-x border-t border-white/10 flex items-center justify-center relative">
-                            <span className="text-4xl sm:text-6xl font-bold text-white/10">2</span>
-                            <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-black to-transparent" />
-                        </div>
-                    </div>
+                        ) : null}
 
-                    {/* 1st Place */}
-                    <div className="flex flex-col items-center w-full max-w-[140px] sm:max-w-none -mb-1">
-                        <div className="mb-4 text-center">
-                            <div className="inline-block px-4 py-1.5 rounded-full bg-neutral-950 border border-white/20 text-white text-xs sm:text-sm font-bold mb-3 shadow-[0_8px_20px_rgba(0,0,0,0.5)]">
-                                {LEADERBOARD_DATA[0].reward}
+                        {/* 1st Place */}
+                        {leaderboard[0] ? (
+                            <div className="flex flex-col items-center w-full max-w-[140px] sm:max-w-none -mb-1">
+                                <div className="mb-4 text-center">
+                                    <div className="inline-block px-4 py-1.5 rounded-full bg-neutral-950 border border-white/20 text-white text-xs sm:text-sm font-bold mb-3 shadow-[0_8px_20px_rgba(0,0,0,0.5)]">
+                                        Top Inviter
+                                    </div>
+                                    <p className="font-bold text-white text-sm sm:text-xl truncate w-full">{leaderboard[0].username}</p>
+                                    <p className="text-[10px] sm:text-sm text-neutral-500">{leaderboard[0].invite_count} invites</p>
+                                </div>
+                                <div className="w-28 sm:w-48 h-32 sm:h-52 rounded-t-2xl bg-gradient-to-b from-neutral-400/30 to-neutral-400/5 border-x border-t border-white/20 flex items-center justify-center relative">
+                                    <span className="text-6xl sm:text-8xl font-bold text-white/20">1</span>
+                                    <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent opacity-20" />
+                                    <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-black to-transparent" />
+                                </div>
                             </div>
-                            <p className="font-bold text-white text-sm sm:text-xl truncate w-full">{LEADERBOARD_DATA[0].username}</p>
-                            <p className="text-[10px] sm:text-sm text-neutral-500">{LEADERBOARD_DATA[0].invites} invites</p>
-                        </div>
-                        <div className="w-28 sm:w-48 h-32 sm:h-52 rounded-t-2xl bg-gradient-to-b from-neutral-400/30 to-neutral-400/5 border-x border-t border-white/20 flex items-center justify-center relative">
-                            <span className="text-6xl sm:text-8xl font-bold text-white/20">1</span>
-                            <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent opacity-20" />
-                            <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-black to-transparent" />
-                        </div>
-                    </div>
+                        ) : null}
 
-                    {/* 3rd Place */}
-                    <div className="flex flex-col items-center w-full max-w-[110px] sm:max-w-none">
-                        <div className="mb-4 text-center">
-                            <div className="inline-block px-3 py-1 rounded-full bg-neutral-200/80 text-black text-[10px] sm:text-xs font-bold mb-3 shadow-[0_4px_12px_rgba(255,255,255,0.05)]">
-                                {LEADERBOARD_DATA[2].reward}
+                        {/* 3rd Place */}
+                        {leaderboard[2] ? (
+                            <div className="flex flex-col items-center w-full max-w-[110px] sm:max-w-none">
+                                <div className="mb-4 text-center">
+                                    <div className="inline-block px-3 py-1 rounded-full bg-neutral-200/80 text-black text-[10px] sm:text-xs font-bold mb-3 shadow-[0_4px_12px_rgba(255,255,255,0.05)]">
+                                        Active
+                                    </div>
+                                    <p className="font-semibold text-white text-xs sm:text-base truncate w-full">{leaderboard[2].username}</p>
+                                    <p className="text-[10px] sm:text-xs text-neutral-500">{leaderboard[2].invite_count} invites</p>
+                                </div>
+                                <div className="w-20 sm:w-36 h-20 sm:h-28 rounded-t-2xl bg-gradient-to-b from-neutral-200/10 to-neutral-200/5 border-x border-t border-white/5 flex items-center justify-center relative">
+                                    <span className="text-3xl sm:text-5xl font-bold text-white/5">3</span>
+                                    <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-black to-transparent" />
+                                </div>
                             </div>
-                            <p className="font-semibold text-white text-xs sm:text-base truncate w-full">{LEADERBOARD_DATA[2].username}</p>
-                            <p className="text-[10px] sm:text-xs text-neutral-500">{LEADERBOARD_DATA[2].invites} invites</p>
-                        </div>
-                        <div className="w-20 sm:w-36 h-20 sm:h-28 rounded-t-2xl bg-gradient-to-b from-neutral-200/10 to-neutral-200/5 border-x border-t border-white/5 flex items-center justify-center relative">
-                            <span className="text-3xl sm:text-5xl font-bold text-white/5">3</span>
-                            <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-black to-transparent" />
-                        </div>
+                        ) : null}
                     </div>
+                    <div className="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
                 </div>
-                <div className="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-            </div>
+            ) : null}
 
             {/* How it works */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -182,7 +189,7 @@ export function RewardsSection({
                     {
                         step: 2,
                         title: "Friends join",
-                        desc: "When they sign up with your link, you get 30% of their purchase.",
+                        desc: "When they sign up with your link, you unlock exclusive rewards.",
                         icon: <Users className="w-6 h-6 text-emerald-400" />,
                         preview: (
                             <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-2">
@@ -197,8 +204,8 @@ export function RewardsSection({
                     },
                     {
                         step: 3,
-                        title: "Earn rewards",
-                        desc: "Unlock perks at each milestone you reach.",
+                        title: "Unlock Rewards",
+                        desc: "Grant perks at each milestone you reach.",
                         icon: <Gift className="w-6 h-6 text-purple-400" />,
                         preview: (
                             <div className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center gap-3">
@@ -301,7 +308,7 @@ export function RewardsSection({
                 <div>
                     <h4 className="font-bold text-white">How rewards work</h4>
                     <p className="text-sm text-neutral-400 mt-1 leading-relaxed">
-                        Rewards are credited to your account after the referred friend makes their first subscription purchase. Milestone rewards like badges and roles are granted automatically. Career-level rewards involve a direct review from our team.
+                        Rewards are credited to your account after the referred friend joins Mailient. Milestone rewards like badges and roles are granted automatically. Career-level rewards involve a direct review from our team.
                     </p>
                 </div>
             </div>

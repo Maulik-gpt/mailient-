@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS pending_connections (
 
 -- Add invited_by column to user_profiles table
 ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS invited_by TEXT;
+-- Add invite_count column for tracking number of successful invites
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS invite_count INTEGER DEFAULT 0;
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_pending_connections_inviter_id ON pending_connections(inviter_id);

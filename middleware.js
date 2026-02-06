@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
+  const ref = request.nextUrl.searchParams.get('ref');
 
   // Skip middleware for auth routes, API routes, static files, and onboarding
   // Authentication and onboarding checks are handled at the page level
@@ -13,7 +14,18 @@ export async function middleware(request) {
     pathname.startsWith('/onboarding') ||
     pathname === '/'
   ) {
+    if (ref) {
+      const response = NextResponse.next();
+      response.cookies.set('mailient_referral', ref, { maxAge: 60 * 60 * 24 * 30, path: '/' }); // 30 days
+      return response;
+    }
     return NextResponse.next();
+  }
+
+  if (ref) {
+    const response = NextResponse.next();
+    response.cookies.set('mailient_referral', ref, { maxAge: 60 * 60 * 24 * 30, path: '/' });
+    return response;
   }
 
   // All other routes pass through - auth checks happen at page level

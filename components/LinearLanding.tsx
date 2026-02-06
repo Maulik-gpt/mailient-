@@ -28,7 +28,8 @@ import {
     Inbox,
     Filter,
     ChevronDown,
-    Quote
+    Quote,
+    ArrowRightLeft
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -965,6 +966,8 @@ export function LinearLanding() {
                 </div>
             </section>
 
+            {/* Comparison Section */}
+            <ComparisonSection />
 
             {/* Security Section */}
             <section id="integration" className="py-32 px-6 bg-zinc-950/30 z-10 relative">
@@ -1332,6 +1335,152 @@ function SecurityCard({ icon, title, desc }: { icon: React.ReactNode, title: str
             <h3 className="text-xl font-bold mb-4">{title}</h3>
             <p className="text-zinc-500 text-sm leading-relaxed">{desc}</p>
         </div>
+    );
+}
+
+
+function ComparisonSection() {
+    const mailientFeatures = [
+        "Automated AI workflows",
+        "Personalized neural voice strategies",
+        "Real-time relationship intelligence",
+        "Scalable AI-native systems",
+        "Advanced context-aware chatbots",
+        "Rapid, high-fidelity AI replies",
+        "Real-time inbox data analysis"
+    ];
+
+    const otherFeatures = [
+        "Manual triage workflows",
+        "Generic, one-size-fits-all templates",
+        "Basic chronological email views",
+        "Lacks relationship scalability",
+        "Standard keyword-based bots",
+        "Time-consuming manual drafting",
+        "Static and disconnected data"
+    ];
+
+    return (
+        <section className="py-32 px-6 z-10 relative overflow-hidden bg-black">
+            <div className="max-w-7xl mx-auto">
+                {/* Header */}
+                <div className="flex flex-col items-center mb-20 text-center">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.08] mb-8"
+                    >
+                        <ArrowRightLeft className="h-3.5 w-3.5 text-white/60" />
+                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/60">Comparison</span>
+                    </motion.div>
+
+                    <motion.h2
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: 0.1 }}
+                        className="text-5xl md:text-7xl font-bold tracking-tight mb-6 bg-gradient-to-b from-white to-white/40 bg-clip-text text-transparent"
+                    >
+                        Precision vs Basic
+                    </motion.h2>
+                    <motion.p
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: 0.2 }}
+                        className="text-zinc-500 max-w-xl mx-auto text-lg leading-relaxed"
+                    >
+                        See how our AI outperforms traditional tools with speed and intelligence.
+                    </motion.p>
+                </div>
+
+                {/* Cards Container */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto relative">
+                    {/* Background Glow for Mailient */}
+                    <div className="absolute top-1/2 left-0 -translate-y-1/2 -translate-x-1/2 w-64 h-64 bg-white/5 blur-[100px] pointer-events-none" />
+
+                    {/* Mailient Card */}
+                    <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true }}
+                        className="group relative p-8 md:p-12 rounded-[2.5rem] border border-white/10 bg-zinc-950/50 backdrop-blur-xl shadow-[0_0_50px_-12px_rgba(255,255,255,0.05)] overflow-hidden"
+                    >
+                        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
+
+                        <div className="mb-12 relative">
+                            <h3 className="text-4xl font-bold tracking-tight flex items-center">
+                                Mailient
+                                <motion.span
+                                    animate={{ opacity: [1, 0] }}
+                                    transition={{ duration: 0.8, repeat: Infinity }}
+                                    className="inline-block w-[2px] h-8 bg-white ml-1"
+                                />
+                            </h3>
+                            <div className="h-px w-full bg-gradient-to-r from-white/10 to-transparent mt-8" />
+                        </div>
+
+                        <ul className="space-y-5 mb-12">
+                            {mailientFeatures.map((feature, i) => (
+                                <motion.li
+                                    key={i}
+                                    initial={{ opacity: 0, x: -10 }}
+                                    whileInView={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: i * 0.1 }}
+                                    className="flex items-center gap-3 text-zinc-300"
+                                >
+                                    <div className="flex-shrink-0 w-5 h-5 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
+                                        <Check className="w-3 h-3 text-white" />
+                                    </div>
+                                    <span className="text-sm font-medium">{feature}</span>
+                                </motion.li>
+                            ))}
+                        </ul>
+
+                        <Button
+                            className="w-full bg-white text-black hover:bg-zinc-200 rounded-2xl py-6 text-base font-bold group/btn shadow-[0_20px_40px_-15px_rgba(255,255,255,0.15)]"
+                            asChild
+                        >
+                            <a href="/auth/signin">
+                                Get Started
+                                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                            </a>
+                        </Button>
+                    </motion.div>
+
+                    {/* Others Card */}
+                    <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true }}
+                        className="relative p-8 md:p-12 rounded-[2.5rem] border border-white/5 bg-zinc-950/20 backdrop-blur-sm grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all duration-500"
+                    >
+                        <div className="mb-12">
+                            <h3 className="text-4xl font-bold tracking-tight text-zinc-400">Others</h3>
+                            <div className="h-px w-full bg-gradient-to-r from-white/5 to-transparent mt-8 border-dashed border-b border-zinc-800" />
+                        </div>
+
+                        <ul className="space-y-5">
+                            {otherFeatures.map((feature, i) => (
+                                <motion.li
+                                    key={i}
+                                    initial={{ opacity: 0, x: 10 }}
+                                    whileInView={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: i * 0.1 }}
+                                    className="flex items-center gap-3 text-zinc-500"
+                                >
+                                    <div className="flex-shrink-0 w-5 h-5 rounded-full bg-white/5 border border-white/5 flex items-center justify-center">
+                                        <Check className="w-3 h-3 text-zinc-600" />
+                                    </div>
+                                    <span className="text-sm">{feature}</span>
+                                </motion.li>
+                            ))}
+                        </ul>
+                    </motion.div>
+                </div>
+            </div>
+        </section>
     );
 }
 
