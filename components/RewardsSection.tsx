@@ -37,7 +37,7 @@ export function RewardsSection({
     const [copied, setCopied] = useState(false);
     const [leaderboard, setLeaderboard] = useState<any[]>([]);
     const [loadingLeaderboard, setLoadingLeaderboard] = useState(true);
-    const referralLink = `https://mailient.com?ref=${username}`;
+    const referralLink = `https://mailient.xyz?ref=${username}`;
 
     useEffect(() => {
         fetch("/api/leaderboard")
@@ -97,7 +97,7 @@ export function RewardsSection({
                     <div className="flex flex-col sm:flex-row gap-3">
                         <div className="flex-1 flex items-center gap-3 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-neutral-300 font-mono text-sm overflow-hidden whitespace-nowrap">
                             <span className="opacity-50 select-none">https://</span>
-                            <span>mailient.com?ref={username}</span>
+                            <span>mailient.xyz?ref={username}</span>
                         </div>
                         <Button
                             onClick={handleCopyLink}
@@ -182,7 +182,7 @@ export function RewardsSection({
                         icon: <Share2 className="w-6 h-6 text-blue-400" />,
                         preview: (
                             <div className="p-4 rounded-xl bg-white/5 border border-white/10 font-mono text-xs text-neutral-400">
-                                https://mailient.com?ref="{username}"
+                                https://mailient.xyz?ref="{username}"
                             </div>
                         )
                     },
