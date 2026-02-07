@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS pending_connections (
 ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS invited_by TEXT;
 -- Add invite_count column for tracking number of successful invites
 ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS invite_count INTEGER DEFAULT 0;
+-- Add earned_badges column for tracking achievements
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS earned_badges TEXT[] DEFAULT '{}';
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_pending_connections_inviter_id ON pending_connections(inviter_id);
