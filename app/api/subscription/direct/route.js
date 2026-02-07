@@ -31,7 +31,7 @@ export async function GET(request) {
         }
 
         const subscription = subscriptions?.[0] || null;
-        
+
         // Determine subscription status directly
         let isActive = false;
         let planName = 'No Plan';
@@ -42,10 +42,10 @@ export async function GET(request) {
             const endDate = new Date(subscription.subscription_ends_at);
             const isExpired = endDate <= now;
             daysRemaining = Math.max(0, Math.ceil((endDate - now) / (1000 * 60 * 60 * 24)));
-            
-            isActive = subscription.status === 'active' && !isExpired;
+
+            isActive = (subscription.status === 'active' || subscription.status === 'cancelled') && !isExpired;
             planType = subscription.plan_type || 'none';
-            
+
             // Direct plan name mapping
             if (isActive && planType) {
                 const normalizedPlanType = planType.toString().trim().toLowerCase();
