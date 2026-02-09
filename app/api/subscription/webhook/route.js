@@ -39,7 +39,9 @@ function validatePolarWebhook(payload, headers, secret) {
 
         // Decode secret
         let key = secret.trim();
-        if (key.startsWith('whsec_')) {
+        if (key.startsWith('polar_whs_')) {
+            key = key.slice('polar_whs_'.length);
+        } else if (key.startsWith('whsec_')) {
             key = key.slice('whsec_'.length);
         }
         const keyBytes = Buffer.from(key, 'base64');
@@ -69,27 +71,37 @@ function validatePolarWebhook(payload, headers, secret) {
  * Determine plan type from Polar product/price data
  */
 function determinePlanType(data) {
-    // Check product name for plan type
-    const productName = data.product?.name?.toLowerCase() || '';
-    const priceName = data.price?.name?.toLowerCase() || '';
-    const priceAmount = data.price?.price_amount || data.amount || 0;
+    // 1. Check by exact Polar Product ID or Price ID (Most reliable)
+    const productId = data.product_id || (typeof data.product === 'string' ? data.product : data.product?.id);
+    const priceId = data.price_id || (typeof data.price === 'string' ? data.price : data.price?.id);
 
-    console.log('🔍 Determining plan type:', { productName, priceName, priceAmount });
+    console.log('🔍 Detecting plan by IDs:', { productId, priceId });
 
-    // Check by name
-    if (productName.includes('pro') || priceName.includes('pro')) {
+    if (productId === PLANS.pro.polarProductId || priceId === PLANS.pro.polarPriceId) {
         return 'pro';
     }
-    if (productName.includes('starter') || priceName.includes('starter')) {
+    if (productId === PLANS.starter.polarProductId || priceId === PLANS.starter.polarPriceId) {
         return 'starter';
     }
 
-    // Check by price (in cents) - Pro is ~$29.99, Starter is ~$7.99
-    if (priceAmount >= 2000) { // $20 or more = Pro
+    // 2. Check by name (Fallback)
+    const productName = data.product?.name?.toLowerCase() || '';
+    const priceName = data.price?.name?.toLowerCase() || '';
+
+    if (productName.includes('pro') || priceName.includes('pro')) {
         return 'pro';
     }
 
-    // Default to starter
+    // 3. Check by price amount (Fallback)
+    const priceAmount = data.price?.price_amount || data.amount || 0;
+    if (priceAmount >= 2000) { // $20+ usually Pro
+        return 'pro';
+    }
+
+    // Default to 'starter' if we're unsure, but log a warning
+    console.warn('⚠️ Could not definitively determine plan type, defaulting to starter', {
+        productId, priceId, productName, priceAmount
+    });
     return 'starter';
 }
 
@@ -172,16 +184,17 @@ export async function POST(request) {
 
                 console.log(`✅ Activating ${planType} plan for ${userEmail}`);
                 console.log('📅 Polar dates:', polarDates);
+                console.log('🆔 Subscription ID:', subscriptionId);
 
                 // Activate subscription
-                await subscriptionService.activateSubscription(
+                const activated = await subscriptionService.activateSubscription(
                     userEmail,
                     planType,
                     subscriptionId,
                     polarDates
                 );
 
-                console.log(`✅ Subscription activated for ${userEmail}: ${planType}`);
+                console.log(`✅ Subscription activation result:`, !!activated);
                 break;
             }
 
