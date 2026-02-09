@@ -336,7 +336,7 @@ function transformAIIntelligenceToCategories(aiIntelligence, emailDetails) {
             subject: email.subject,
             riskLevel: intelligence.priority === 'urgent' ? 'high' : 'medium',
             riskFactors: intelligence.action_recommendations || ['Conversation risk detected'],
-            recommendedAction: intelligence.action_recommendations?.[0] || 'Immediate outreach needed',
+            recommendedAction: intelligence.action_recommendations?.[0] || 'Immediate response needed',
             emailId: email.id
           });
           break;

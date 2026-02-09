@@ -126,7 +126,6 @@ export function UnifiedSidebar({
   const universalNavItems: SidebarItem[] = [
     { id: 'home-feed', name: 'Feed', icon: Mail, isRoute: true, route: '/home-feed' },
     { id: 'notifications', name: 'Notifications', icon: Bell, isRoute: true, route: '/notifications' },
-    { id: 'outreach', name: 'Outreach', icon: Rocket, isRoute: true, route: '/dashboard/outreach' },
     { id: 'agent-talk', name: 'Arcus', icon: Sparkles, isRoute: true, route: '/dashboard/agent-talk' },
   ];
 
@@ -259,7 +258,7 @@ export function UnifiedSidebar({
         <div className="flex flex-col items-center gap-6 w-full">
           {universalNavItems.map((item) => {
             const Icon = item.icon;
-            const isActive = activeItem === item.id || (item.id === 'outreach' && pathname?.includes('outreach'));
+            const isActive = activeItem === item.id;
 
             if (item.id === 'agent-talk') {
               return (

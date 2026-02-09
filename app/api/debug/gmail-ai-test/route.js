@@ -31,7 +31,7 @@ export async function GET(request) {
       try {
         const db = new DatabaseService();
         const userTokens = await db.getUserTokens(userEmail);
-        
+
         if (userTokens?.encrypted_access_token) {
           accessToken = decrypt(userTokens.encrypted_access_token);
           refreshToken = userTokens.encrypted_refresh_token ? decrypt(userTokens.encrypted_refresh_token) : '';
@@ -58,7 +58,7 @@ export async function GET(request) {
     // Step 2: Test Gmail service
     console.log('📋 Step 2: Gmail Service Test');
     const gmailService = new GmailService(accessToken, refreshToken || '');
-    
+
     let gmailTestResult = {};
     try {
       const profile = await gmailService.getProfile();
@@ -88,7 +88,7 @@ export async function GET(request) {
     console.log('📋 Step 3: Email Fetching');
     let emailFetchResult = {};
     let emailDetails = [];
-    
+
     try {
       const [recentEmails, unreadEmails, importantEmails] = await Promise.all([
         gmailService.getEmails(20, 'newer_than:7d'),
@@ -101,7 +101,7 @@ export async function GET(request) {
         ...(unreadEmails.messages || []),
         ...(importantEmails.messages || [])
       ];
-      
+
       const uniqueMessages = [...new Set(allMessages.map(m => m.id))]
         .map(id => allMessages.find(m => m.id === id))
         .slice(0, 15); // Limit to 15 most relevant emails
@@ -352,7 +352,7 @@ function transformAIIntelligenceToSiftCategories(aiIntelligence, emailDetails) {
             subject: email.subject,
             riskLevel: intelligence.priority === 'urgent' ? 'high' : 'medium',
             riskFactors: intelligence.action_recommendations || ['Conversation risk detected'],
-            recommendedAction: intelligence.action_recommendations?.[0] || 'Immediate outreach needed',
+            recommendedAction: intelligence.action_recommendations?.[0] || 'Immediate response needed',
             emailId: email.id
           });
           break;
@@ -360,7 +360,7 @@ function transformAIIntelligenceToSiftCategories(aiIntelligence, emailDetails) {
         default:
           // For other categories, analyze content for classification
           const content = `${email.subject} ${email.snippet} ${email.body}`.toLowerCase();
-          
+
           if (content.includes('follow') || content.includes('schedule') || content.includes('send')) {
             categories.missed_follow_ups.push({
               id: email.id,
@@ -425,7 +425,7 @@ function transformRealAIInsightsToHomeFeedCards(realAIInsights) {
       type: 'opportunity',
       title: `${realAIInsights.opportunities_detected.length} Opportunities Detected`,
       subtitle: 'Buying signals, partnerships, investments',
-      content: realAIInsights.opportunities_detected.map(opp => 
+      content: realAIInsights.opportunities_detected.map(opp =>
         `${opp.sender}: ${opp.description}`
       ).join(' • '),
       timestamp,
@@ -433,7 +433,7 @@ function transformRealAIInsightsToHomeFeedCards(realAIInsights) {
         opportunityCount: realAIInsights.opportunities_detected.length,
         opportunityDetails: realAIInsights.opportunities_detected,
         avgScore: Math.round(
-          realAIInsights.opportunities_detected.reduce((sum, opp) => sum + (opp.score || 0), 0) / 
+          realAIInsights.opportunities_detected.reduce((sum, opp) => sum + (opp.score || 0), 0) /
           realAIInsights.opportunities_detected.length
         )
       },
@@ -447,7 +447,7 @@ function transformRealAIInsightsToHomeFeedCards(realAIInsights) {
       type: 'inbox-intelligence',
       title: `${realAIInsights.urgent_action_required.length} Items Need Urgent Action`,
       subtitle: 'Deadlines, waiting responses, critical issues',
-      content: realAIInsights.urgent_action_required.map(item => 
+      content: realAIInsights.urgent_action_required.map(item =>
         `${item.subject} - ${item.recommendedAction}`
       ).join(' • '),
       timestamp,
@@ -466,7 +466,7 @@ function transformRealAIInsightsToHomeFeedCards(realAIInsights) {
       type: 'inbox-intelligence',
       title: `${realAIInsights.hot_leads_heating_up.length} Hot Leads Heating Up`,
       subtitle: 'High engagement, multiple opens, renewed interest',
-      content: realAIInsights.hot_leads_heating_up.map(lead => 
+      content: realAIInsights.hot_leads_heating_up.map(lead =>
         `${lead.name} (${lead.engagementScore}% engagement)`
       ).join(' • '),
       timestamp,
@@ -474,7 +474,7 @@ function transformRealAIInsightsToHomeFeedCards(realAIInsights) {
         hotLeadsCount: realAIInsights.hot_leads_heating_up.length,
         hotLeads: realAIInsights.hot_leads_heating_up,
         avgEngagementScore: Math.round(
-          realAIInsights.hot_leads_heating_up.reduce((sum, lead) => sum + (lead.engagementScore || 0), 0) / 
+          realAIInsights.hot_leads_heating_up.reduce((sum, lead) => sum + (lead.engagementScore || 0), 0) /
           realAIInsights.hot_leads_heating_up.length
         )
       },
@@ -488,7 +488,7 @@ function transformRealAIInsightsToHomeFeedCards(realAIInsights) {
       type: 'inbox-intelligence',
       title: `${realAIInsights.conversations_at_risk.length} Conversations At Risk`,
       subtitle: 'No response, negative tone, stalled momentum',
-      content: realAIInsights.conversations_at_risk.map(risk => 
+      content: realAIInsights.conversations_at_risk.map(risk =>
         `${risk.subject} (${risk.riskLevel} risk)`
       ).join(' • '),
       timestamp,
@@ -507,7 +507,7 @@ function transformRealAIInsightsToHomeFeedCards(realAIInsights) {
       type: 'inbox-intelligence',
       title: `${realAIInsights.missed_follow_ups.length} Missed Follow-Ups`,
       subtitle: 'Promised actions, overdue responses',
-      content: realAIInsights.missed_follow_ups.map(missed => 
+      content: realAIInsights.missed_follow_ups.map(missed =>
         `${missed.subject} (${missed.daysOverdue} days overdue)`
       ).join(' • '),
       timestamp,
@@ -515,7 +515,7 @@ function transformRealAIInsightsToHomeFeedCards(realAIInsights) {
         missedCount: realAIInsights.missed_follow_ups.length,
         missedFollowUps: realAIInsights.missed_follow_ups,
         avgDaysOverdue: Math.round(
-          realAIInsights.missed_follow_ups.reduce((sum, missed) => sum + (missed.daysOverdue || 0), 0) / 
+          realAIInsights.missed_follow_ups.reduce((sum, missed) => sum + (missed.daysOverdue || 0), 0) /
           realAIInsights.missed_follow_ups.length
         )
       },
@@ -529,7 +529,7 @@ function transformRealAIInsightsToHomeFeedCards(realAIInsights) {
       type: 'inbox-intelligence',
       title: `${realAIInsights.unread_but_important.length} Unread But Important`,
       subtitle: 'Revenue impact, strategic value, deadlines',
-      content: realAIInsights.unread_but_important.map(important => 
+      content: realAIInsights.unread_but_important.map(important =>
         `${important.subject} (${important.importance} priority)`
       ).join(' • '),
       timestamp,
