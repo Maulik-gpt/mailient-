@@ -21,6 +21,9 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 
 # Whop Payment Integration (CRITICAL for subscriptions)
 WHOP_WEBHOOK_SECRET=your_whop_webhook_secret
+# WHOP_API_KEY is required for "Verify My Payment" fallback feature
+# Get this from your Whop dashboard -> Developer -> API Keys
+WHOP_API_KEY=your_whop_api_key
 
 # For production, update NEXTAUTH_URL to your actual domain:
 # NEXTAUTH_URL=https://yourdomain.com
