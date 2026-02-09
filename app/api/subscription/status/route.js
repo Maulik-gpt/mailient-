@@ -35,7 +35,7 @@ export async function GET(request) {
         // Get plan details with enhanced error checking
         let plan = null;
         let planName = 'No Plan';
-        
+
         if (planType && planType !== 'none') {
             plan = PLANS[planType];
             if (plan) {
@@ -63,7 +63,7 @@ export async function GET(request) {
                 isEndingSoon
             },
             features: allUsage.features || {},
-            upgradeToPro: planType === 'starter' ? PLANS.pro.whopCheckoutUrl : null,
+            upgradeToPro: planType === 'starter' ? PLANS.pro.checkoutUrl : null,
             debugInfo: {
                 rawPlanType: planType,
                 hasPlanObject: !!plan,
@@ -81,7 +81,7 @@ export async function GET(request) {
  * 
  * SECURITY FIX: This endpoint was exploitable - anyone could activate any plan
  * by simply calling this endpoint. Subscriptions are now ONLY activated via 
- * the Whop webhook (/api/subscription/webhook) after verified payment.
+ * the Polar webhook (/api/subscription/webhook) after verified payment.
  * 
  * If you need to manually activate a subscription for a user, use the
  * /api/subscription/activate endpoint which requires admin verification.
@@ -90,7 +90,7 @@ export async function POST(request) {
     console.warn('⚠️ SECURITY: Blocked client-side subscription activation attempt');
 
     return NextResponse.json({
-        error: 'Client-side subscription activation is disabled for security reasons. Subscriptions are activated automatically via Whop webhook after payment verification.',
+        error: 'Client-side subscription activation is disabled for security reasons. Subscriptions are activated automatically via Polar webhook after payment verification.',
         help: 'If you just completed a payment, please wait a moment for the webhook to process. If the issue persists, contact support.'
     }, { status: 403 });
 }

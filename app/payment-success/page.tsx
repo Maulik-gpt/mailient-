@@ -13,7 +13,7 @@ function PaymentSuccessContent() {
     const [error, setError] = useState<string | null>(null);
     const [retryCount, setRetryCount] = useState(0);
     const [showRetryMessage, setShowRetryMessage] = useState(false);
-    const [isVerifyingWithWhop, setIsVerifyingWithWhop] = useState(false);
+    const [isVerifyingWithPolar, setIsVerifyingWithPolar] = useState(false);
     const [verificationMessage, setVerificationMessage] = useState<string | null>(null);
 
     // Maximum retries and timing configuration
@@ -84,7 +84,7 @@ function PaymentSuccessContent() {
 
             } catch (err) {
                 console.error('Error checking subscription status:', err);
-                setError('There was an issue verifying your subscription. Please try verifying with Whop below.');
+                setError('There was an issue verifying your subscription. Please try verifying with Polar below.');
                 setIsActivating(false);
                 setShowRetryMessage(true);
             }
@@ -99,15 +99,15 @@ function PaymentSuccessContent() {
         };
     }, [router]);
 
-    // Handler to verify directly with Whop API
-    const handleVerifyWithWhop = async () => {
-        setIsVerifyingWithWhop(true);
+    // Handler to verify directly with Polar API
+    const handleVerifyWithPolar = async () => {
+        setIsVerifyingWithPolar(true);
         setVerificationMessage(null);
 
         try {
-            console.log('🔍 Verifying payment directly with Whop...');
+            console.log('🔍 Verifying payment directly with Polar...');
 
-            const response = await fetch('/api/subscription/verify-whop', {
+            const response = await fetch('/api/subscription/verify', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -118,22 +118,22 @@ function PaymentSuccessContent() {
 
             if (response.ok && data.success) {
                 // Success! The verification endpoint activated the subscription
-                console.log('✅ Whop verification successful!');
+                console.log('✅ Polar verification successful!');
                 celebrateSuccess(data.subscription.planType);
             } else if (response.status === 404) {
                 // No valid subscription found in Whop
                 setVerificationMessage(data.suggestion || 'No valid subscription found. Please ensure your payment was completed.');
             } else if (response.status === 503) {
-                // Whop API not configured
+                // Polar API not configured
                 setVerificationMessage('Payment verification is temporarily unavailable. Please contact support.');
             } else {
                 setVerificationMessage(data.error || 'Verification failed. Please contact support.');
             }
         } catch (err) {
-            console.error('Error verifying with Whop:', err);
+            console.error('Error verifying with Polar:', err);
             setVerificationMessage('Unable to verify payment. Please contact support.');
         } finally {
-            setIsVerifyingWithWhop(false);
+            setIsVerifyingWithPolar(false);
         }
     };
 
@@ -207,7 +207,7 @@ function PaymentSuccessContent() {
                             <h1 className="text-2xl font-bold text-white mb-2">Almost There!</h1>
                             <p className="text-white/60 mb-6">
                                 Your payment was likely received, but we're having trouble confirming it automatically.
-                                Click below to verify directly with Whop.
+                                Click below to verify directly with Polar.
                             </p>
 
                             {verificationMessage && (
@@ -217,16 +217,16 @@ function PaymentSuccessContent() {
                             )}
 
                             <div className="space-y-3">
-                                {/* Primary action - verify with Whop */}
+                                {/* Primary action - verify with Polar */}
                                 <button
-                                    onClick={handleVerifyWithWhop}
-                                    disabled={isVerifyingWithWhop}
+                                    onClick={handleVerifyWithPolar}
+                                    disabled={isVerifyingWithPolar}
                                     className="w-full py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50"
                                 >
-                                    {isVerifyingWithWhop ? (
+                                    {isVerifyingWithPolar ? (
                                         <>
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                            Verifying with Whop...
+                                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                            Verifying with Polar...
                                         </>
                                     ) : (
                                         <>
@@ -270,8 +270,8 @@ function PaymentSuccessContent() {
                             <p className="text-white/60 mb-6">{error}</p>
                             <div className="space-y-3">
                                 <button
-                                    onClick={handleVerifyWithWhop}
-                                    disabled={isVerifyingWithWhop}
+                                    onClick={handleVerifyWithPolar}
+                                    disabled={isVerifyingWithPolar}
                                     className="w-full py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-all"
                                 >
                                     <Shield className="w-4 h-4" />

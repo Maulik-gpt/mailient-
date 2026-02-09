@@ -31,7 +31,9 @@ export async function GET(request) {
             hasSupabaseUrl: !!(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL),
             hasSupabaseAnonKey: !!(process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
             hasSupabaseServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-            hasWhopWebhookSecret: !!process.env.WHOP_WEBHOOK_SECRET,
+            hasPolarWebhookSecret: !!process.env.POLAR_WEBHOOK_SECRET,
+            hasPolarAccessToken: !!process.env.POLAR_ACCESS_TOKEN,
+            hasPolarOrgId: !!process.env.POLAR_ORGANIZATION_ID,
             nodeEnv: process.env.NODE_ENV
         };
 
@@ -116,7 +118,7 @@ export async function GET(request) {
                     status: subscription.status,
                     subscription_started_at: subscription.subscription_started_at,
                     subscription_ends_at: subscription.subscription_ends_at,
-                    whop_membership_id: subscription.whop_membership_id ? 'present' : 'missing',
+                    provider_subscription_id: subscription.whop_membership_id ? 'present' : 'missing',
                     updated_at: subscription.updated_at
                 } : null
             };
@@ -128,10 +130,14 @@ export async function GET(request) {
 
         // Check PLANS configuration
         debugInfo.plansConfig = {
-            starterProductId: PLANS.starter.whopProductId,
-            proProductId: PLANS.pro.whopProductId,
-            starterCheckoutUrl: PLANS.starter.whopCheckoutUrl,
-            proCheckoutUrl: PLANS.pro.whopCheckoutUrl
+            starter: {
+                productId: PLANS.starter.polarProductId || PLANS.starter.whopProductId,
+                checkoutUrl: PLANS.starter.checkoutUrl
+            },
+            pro: {
+                productId: PLANS.pro.polarProductId || PLANS.pro.whopProductId,
+                checkoutUrl: PLANS.pro.checkoutUrl
+            }
         };
 
         return NextResponse.json({

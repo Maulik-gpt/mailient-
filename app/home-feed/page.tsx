@@ -32,10 +32,10 @@ function HomeFeedContent() {
             const pendingPlan = localStorage.getItem('pending_plan');
             const pendingTimestamp = localStorage.getItem('pending_plan_timestamp');
 
-            // Check if referrer is from Whop or payment-related pages
-            const isFromPayment = referrer.includes('whop.com') ||
+            // Check if referrer is from Polar or payment-related pages
+            const isFromPayment = referrer.includes('polar.sh') ||
+              referrer.includes('whop.com') ||
               referrer.includes('/payment-success') ||
-              referrer.includes('/whop-callback') ||
               referrer.includes('/pricing');
 
             // Check if there's a recent pending plan (within last 5 minutes)

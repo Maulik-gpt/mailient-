@@ -59,9 +59,9 @@ const GOALS = [
   { id: "unimportant", title: "Too many unimportant emails", description: "Focus on human-to-human sync." },
 ];
 
-const WHOP_CHECKOUT_URLS = {
-  starter: 'https://whop.com/checkout/plan_OXtDPFaYlmYWN',
-  pro: 'https://whop.com/checkout/plan_HjjXVb5SWxdOK'
+const POLAR_CHECKOUT_URLS = {
+  starter: 'https://buy.polar.sh/polar_cl_B9DSDJSz1EeVhR8rtLcVgn1vVvjvizMvp0yOs3IQOJW',
+  pro: 'https://buy.polar.sh/polar_cl_B9DSDJSz1EeVhR8rtLcVgn1vVvjvizMvp0yOs3IQOJW'
 };
 
 const plans = [
@@ -429,16 +429,21 @@ export default function SiftOnboardingPage() {
 
       console.log('📋 Set localStorage flags for onboarding completion');
 
-      // Redirect to Whop
-      const checkoutUrl = WHOP_CHECKOUT_URLS[plan as keyof typeof WHOP_CHECKOUT_URLS];
+      // Redirect to Polar
+      const checkoutUrl = POLAR_CHECKOUT_URLS[plan as keyof typeof POLAR_CHECKOUT_URLS];
       if (checkoutUrl) {
         const params = new URLSearchParams();
-        if (session?.user?.email) params.set('email', session.user.email);
-        console.log('🚀 Redirecting to Whop:', `${checkoutUrl}?${params.toString()}`);
+        // Polar uses customer_email and success_url
+        if (session?.user?.email) params.set('customer_email', session.user.email);
+
+        const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://mailient.xyz';
+        params.set('success_url', `${baseUrl}/payment-success`);
+
+        console.log('🚀 Redirecting to Polar:', `${checkoutUrl}?${params.toString()}`);
         window.location.href = `${checkoutUrl}?${params.toString()}`;
       } else {
         // Fallback to dashboard if checkout URL is missing
-        console.log('⚠️ No Whop URL, redirecting to home-feed');
+        console.log('⚠️ No Polar URL, redirecting to home-feed');
         router.push("/home-feed");
       }
     } catch (error) {

@@ -19,11 +19,10 @@ SUPABASE_URL=your_supabase_project_url
 SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 
-# Whop Payment Integration (CRITICAL for subscriptions)
-WHOP_WEBHOOK_SECRET=your_whop_webhook_secret
-# WHOP_API_KEY is required for "Verify My Payment" fallback feature
-# Get this from your Whop dashboard -> Developer -> API Keys
-WHOP_API_KEY=your_whop_api_key
+# Polar Payment Integration (CRITICAL for subscriptions)
+# Get these from your Polar dashboard -> Settings -> Developer
+POLAR_WEBHOOK_SECRET=your_polar_webhook_secret
+POLAR_ACCESS_TOKEN=your_polar_access_token # Used for direct verification fallback
 
 # For production, update NEXTAUTH_URL to your actual domain:
 # NEXTAUTH_URL=https://yourdomain.com
@@ -48,34 +47,60 @@ WHOP_API_KEY=your_whop_api_key
 5. Go to Settings > API to get your project URL, anon key, and service role key
 6. Add the Supabase environment variables to your `.env.local` file
 
-## Whop Webhook Setup (For Subscriptions)
+## Polar Payment Setup
 
-1. Create an account at [Whop](https://whop.com/)
-2. Go to your Whop dashboard > Developer Settings > Webhooks
-3. Add a new webhook endpoint: `https://yourdomain.com/api/subscription/webhook`
-4. Select the following events:
-   - `membership.went_valid`
-   - `membership.renewed`
-   - `membership.went_invalid`
-   - `membership.cancelled`
-5. Copy the webhook secret and add it to your `.env.local` as `WHOP_WEBHOOK_SECRET`
+### Step 1: Create Polar Account
+1. Go to [Polar](https://polar.sh/) and sign up
+2. Create your organization/store
+3. Create products for your subscription plans (Starter and Pro)
+
+### Step 2: Get Your Polar Credentials
+1. Go to Polar Dashboard → Settings → Developer
+2. Create an Access Token (for API calls)
+3. Copy it to your `.env.local` as `POLAR_ACCESS_TOKEN`
+
+### Step 3: Set Up Webhooks
+1. Go to Polar Dashboard → Settings → Webhooks
+2. Add a new webhook endpoint: `https://yourdomain.com/api/subscription/webhook`
+3. Select events:
+   - `subscription.created`
+   - `subscription.updated`
+   - `subscription.active`
+   - `subscription.canceled`
+   - `checkout.completed`
+   - `order.created`
+4. Copy the webhook secret to your `.env.local` as `POLAR_WEBHOOK_SECRET`
+
+### Step 4: Get Your Checkout Link
+Your Polar checkout link format:
+```
+https://buy.polar.sh/polar_cl_XXXXXXXXXXXX
+```
+This is configured in `app/pricing/page.tsx` and `app/onboarding/sift-onboarding.tsx`.
 
 ## Testing Your Setup
 
-After setting up your environment, you can test the Supabase connection by visiting:
+After setting up your environment, you can test the webhook endpoint status by visiting:
 ```
 GET /api/subscription/webhook
 ```
 
 This will return the connection status and whether all required environment variables are set.
 
+You can also test the debug endpoint:
+```
+GET /api/subscription/debug
+```
+(Requires being logged in)
+
 ## Troubleshooting
 
 ### Subscription not activating after payment
-1. Check that `WHOP_WEBHOOK_SECRET` is set correctly
-2. Verify the webhook is configured in Whop dashboard
+1. Check that `POLAR_WEBHOOK_SECRET` is set correctly
+2. Verify the webhook is configured in Polar dashboard
 3. Check server logs for webhook errors
-4. Visit `/api/subscription/webhook` to verify Supabase connection
+4. Have user click "Verify My Payment" button on payment success page
+5. Visit `/api/subscription/webhook` to verify database connection
 
 ### Supabase Connection Issues
 1. Ensure `SUPABASE_URL` is the correct project URL (not localhost)
@@ -83,11 +108,27 @@ This will return the connection status and whether all required environment vari
 3. The service role key starts with `eyJ...` and is much longer than the anon key
 4. Check that `user_subscriptions` table exists (run the migration SQL)
 
+### Polar API Issues
+1. Ensure `POLAR_ACCESS_TOKEN` is set correctly
+2. Verify the token has correct permissions
+3. Check Polar dashboard for any account issues
+
 ## Important Notes
 
-- The app now uses NextAuth for authentication with secure database storage
-- Gmail scopes are automatically included in the NextAuth configuration
-- User tokens and emails are stored securely in Supabase database
-- Row Level Security (RLS) ensures users can only access their own data
-- No more insecure localStorage or URL parameter token passing
-- **Subscriptions are ONLY activated via Whop webhook** - client-side activation is blocked for security
+- The app uses NextAuth for authentication with secure database storage
+- Gmail scopes are automatically handled
+- User tokens and emails are stored securely in Supabase
+- Row Level Security (RLS) ensures data privacy
+- **Subscriptions are primarily activated via Polar webhook**
+- Users can click "Verify My Payment" as a fallback if webhooks fail
+
+## API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/subscription/webhook` | POST | Receives Polar webhooks |
+| `/api/subscription/webhook` | GET | Check webhook status |
+| `/api/subscription/verify` | POST | Direct verification fallback |
+| `/api/subscription/cancel` | POST | Cancel subscription |
+| `/api/subscription/status` | GET | Get subscription status |
+| `/api/subscription/debug` | GET | Debug subscription issues |

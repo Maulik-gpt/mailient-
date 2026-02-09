@@ -7,10 +7,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
-// Whop checkout URLs
-const WHOP_CHECKOUT_URLS = {
-	starter: 'https://whop.com/checkout/plan_OXtDPFaYlmYWN',
-	pro: 'https://whop.com/checkout/plan_HjjXVb5SWxdOK'
+// Polar checkout URLs (migrated from Whop)
+const POLAR_CHECKOUT_URLS = {
+	starter: 'https://buy.polar.sh/polar_cl_B9DSDJSz1EeVhR8rtLcVgn1vVvjvizMvp0yOs3IQOJW',
+	pro: 'https://buy.polar.sh/polar_cl_B9DSDJSz1EeVhR8rtLcVgn1vVvjvizMvp0yOs3IQOJW'
 };
 
 // Helper function to get cookie value
@@ -38,7 +38,7 @@ const PLANS = [
 		],
 		buttonText: 'Get Started with Starter',
 		isPopular: false,
-		checkoutUrl: WHOP_CHECKOUT_URLS.starter
+		checkoutUrl: POLAR_CHECKOUT_URLS.starter
 	},
 	{
 		id: 'pro',
@@ -54,7 +54,7 @@ const PLANS = [
 		],
 		buttonText: 'Level up with Pro',
 		isPopular: true,
-		checkoutUrl: WHOP_CHECKOUT_URLS.pro
+		checkoutUrl: POLAR_CHECKOUT_URLS.pro
 	}
 ];
 
@@ -71,7 +71,7 @@ export default function PricingPage() {
 	}, []);
 
 	// SECURITY FIX: Clear any stale pending plan data on page load
-	// Subscriptions are ONLY activated via Whop webhook after verified payment
+	// Subscriptions are ONLY activated via Polar webhook after verified payment
 	useEffect(() => {
 		const urlParams = new URLSearchParams(window.location.search);
 		const paymentStatus = urlParams.get('payment');
@@ -312,7 +312,7 @@ export default function PricingPage() {
 					/>
 					<FAQItem
 						question="Can I cancel my subscription anytime?"
-						answer="Yes, absolutely. You can cancel your subscription at any time through your account settings or the Whop dashboard. You will continue to have access to your plan until the end of your current billing period."
+						answer="Yes, absolutely. You can cancel your subscription at any time through your account settings or the payment provider dashboard. You will continue to have access to your plan until the end of your current billing period."
 					/>
 					<FAQItem
 						question="Does Mailient train its AI on my personal emails?"

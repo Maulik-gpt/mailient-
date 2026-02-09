@@ -808,9 +808,9 @@ export default function SettingsPage() {
         const data = await res.json();
         toast.success(data.message);
 
-        // Show additional info if Whop integration had issues
-        if (data.whopIntegration && !data.whopIntegration.success) {
-          toast.info(`Note: ${data.whopIntegration.error}`, {
+        // Show additional info if payment provider integration had issues
+        if (data.providerIntegration && !data.providerIntegration.success) {
+          toast.info(`Note: ${data.providerIntegration.error}`, {
             duration: 5000,
           });
         }
@@ -1133,6 +1133,23 @@ export default function SettingsPage() {
                       Subscription Management
                     </h3>
                     <div className="space-y-3">
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-[var(--glass-border)]">
+                        <div>
+                          <p className="font-medium text-[var(--settings-text)]">Billing Portal</p>
+                          <p className="text-sm text-[var(--settings-text-secondary)]">
+                            Manage your payment methods and view your invoices on Polar
+                          </p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open('https://polar.sh/mailient/portal', '_blank')}
+                          className="shrink-0 border-[var(--settings-accent)] text-[var(--settings-accent)] hover:bg-[var(--settings-accent)]/10"
+                        >
+                          Open Portal
+                        </Button>
+                      </div>
+
                       <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-[var(--glass-border)]">
                         <div>
                           <p className="font-medium text-[var(--settings-text)]">Cancel Subscription</p>
