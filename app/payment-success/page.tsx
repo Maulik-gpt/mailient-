@@ -70,6 +70,12 @@ function PaymentSuccessContent() {
                     currentRetry++;
                     setRetryCount(currentRetry);
 
+                    // If we've tried 3 times and still nothing, try direct verification automatically
+                    if (currentRetry === 3) {
+                        console.log('⚡ Proactive check: Triggering direct verification...');
+                        handleVerifyWithPolar();
+                    }
+
                     if (currentRetry >= MAX_RETRIES) {
                         // Max retries reached - show helpful message instead of error
                         console.log('⚠️ Max retries reached, showing verification options...');

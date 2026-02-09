@@ -67,43 +67,7 @@ function validatePolarWebhook(payload, headers, secret) {
     }
 }
 
-/**
- * Determine plan type from Polar product/price data
- */
-function determinePlanType(data) {
-    // 1. Check by exact Polar Product ID or Price ID (Most reliable)
-    const productId = data.product_id || (typeof data.product === 'string' ? data.product : data.product?.id);
-    const priceId = data.price_id || (typeof data.price === 'string' ? data.price : data.price?.id);
 
-    console.log('🔍 Detecting plan by IDs:', { productId, priceId });
-
-    if (productId === PLANS.pro.polarProductId || priceId === PLANS.pro.polarPriceId) {
-        return 'pro';
-    }
-    if (productId === PLANS.starter.polarProductId || priceId === PLANS.starter.polarPriceId) {
-        return 'starter';
-    }
-
-    // 2. Check by name (Fallback)
-    const productName = data.product?.name?.toLowerCase() || '';
-    const priceName = data.price?.name?.toLowerCase() || '';
-
-    if (productName.includes('pro') || priceName.includes('pro')) {
-        return 'pro';
-    }
-
-    // 3. Check by price amount (Fallback)
-    const priceAmount = data.price?.price_amount || data.amount || 0;
-    if (priceAmount >= 2000) { // $20+ usually Pro
-        return 'pro';
-    }
-
-    // Default to 'starter' if we're unsure, but log a warning
-    console.warn('⚠️ Could not definitively determine plan type, defaulting to starter', {
-        productId, priceId, productName, priceAmount
-    });
-    return 'starter';
-}
 
 export async function POST(request) {
     try {
@@ -158,12 +122,14 @@ export async function POST(request) {
             case 'subscription.active':
             case 'checkout.completed':
             case 'order.created': {
-                // Get user email from various possible locations
+                // Get user email from various possible locations (exhaustive search)
                 const userEmail = data.customer?.email ||
                     data.user?.email ||
                     data.email ||
                     data.customer_email ||
-                    data.metadata?.email;
+                    data.metadata?.email ||
+                    data.customer?.metadata?.email ||
+                    (data.customer?.id && !data.customer.email ? null : data.customer?.email);
 
                 if (!userEmail) {
                     console.error('❌ No user email found in webhook data');
@@ -171,7 +137,7 @@ export async function POST(request) {
                     return NextResponse.json({ error: 'No user email in payload' }, { status: 400 });
                 }
 
-                const planType = determinePlanType(data);
+                const planType = subscriptionService.determinePlanType(data);
                 const subscriptionId = data.id || data.subscription_id || data.order_id;
 
                 // Get dates from Polar
@@ -200,7 +166,8 @@ export async function POST(request) {
 
             case 'subscription.canceled':
             case 'subscription.cancelled':
-            case 'subscription.revoked': {
+            case 'subscription.revoked':
+            case 'subscription.deleted': {
                 const cancelEmail = data.customer?.email || data.user?.email || data.email;
                 if (cancelEmail) {
                     console.log(`❌ Cancelling subscription for: ${cancelEmail}`);

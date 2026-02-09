@@ -111,15 +111,7 @@ async function activateFromPolarData(userId, data, source) {
     console.log(`✅ Found valid Polar ${source}:`, data.id);
 
     // Detect plan type from product/price
-    let planType = 'starter';
-    const productId = data.product_id || (typeof data.product === 'string' ? data.product : data.product?.id);
-    const priceId = data.price_id || (typeof data.price === 'string' ? data.price : data.price?.id);
-    const productName = data.product?.name?.toLowerCase() || '';
-    const priceAmount = data.price?.price_amount || data.amount || 0;
-
-    if (productId === PLANS.pro.polarProductId || priceId === PLANS.pro.polarPriceId || productName.includes('pro') || priceAmount >= 2000) {
-        planType = 'pro';
-    }
+    const planType = subscriptionService.determinePlanType(data);
 
     // Create dates for subscription
     const polarDates = {
