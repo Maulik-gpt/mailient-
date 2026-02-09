@@ -4,8 +4,10 @@ import { subscriptionService, PLANS } from '@/lib/subscription-service';
 import { getSupabaseAdmin } from '@/lib/supabase';
 
 /**
- * DEBUG ENDPOINT - Check subscription data directly from Supabase
- * This helps diagnose subscription display issues
+ * Debug endpoint for subscription system
+ * Helps diagnose issues with Supabase connection and subscription state
+ * 
+ * Only accessible to authenticated users for security
  */
 export async function GET(request) {
     try {
@@ -14,113 +16,134 @@ export async function GET(request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const userId = session.user.email.toLowerCase();
-        const supabase = getSupabaseAdmin();
-
-        // Query 1: Direct Supabase query for this user
-        const { data: directData, error: directError } = await supabase
-            .from('user_subscriptions')
-            .select('*')
-            .ilike('user_id', userId)
-            .order('updated_at', { ascending: false })
-            .limit(1);
-
-        // Query 2: Through subscription service
-        const serviceData = await subscriptionService.getUserSubscription(userId);
-        const planType = await subscriptionService.getUserPlanType(userId);
-        const isActive = await subscriptionService.isSubscriptionActive(userId);
-        const allUsage = await subscriptionService.getAllFeatureUsage(userId);
-
-        // Query 3: Get plan details
-        const plan = planType !== 'none' ? PLANS[planType] : null;
-
-        // Query 4: Check what the status API would return
-        const statusApiResponse = {
-            hasActiveSubscription: isActive,
-            planType,
-            planName: plan?.name || 'No Plan',
-            planPrice: plan?.price || 0,
-            subscriptionStartedAt: serviceData?.subscription_started_at || null,
-            subscriptionEndsAt: serviceData?.subscription_ends_at || null,
-            daysRemaining: allUsage.daysRemaining || 0,
-            status: serviceData?.status || 'inactive'
+        const userId = session.user.email;
+        const debugInfo = {
+            timestamp: new Date().toISOString(),
+            userId,
+            environment: {},
+            supabase: {},
+            subscription: {},
+            tables: {}
         };
 
-        // Query 5: Get ALL subscriptions (to check if everyone is Pro)
-        const { data: allSubs, error: allError } = await supabase
-            .from('user_subscriptions')
-            .select('user_id, plan_type, plan_price, status, subscription_started_at, subscription_ends_at')
-            .eq('status', 'active')
-            .order('updated_at', { ascending: false })
-            .limit(20);
+        // Check environment variables
+        debugInfo.environment = {
+            hasSupabaseUrl: !!(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL),
+            hasSupabaseAnonKey: !!(process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
+            hasSupabaseServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+            hasWhopWebhookSecret: !!process.env.WHOP_WEBHOOK_SECRET,
+            nodeEnv: process.env.NODE_ENV
+        };
 
-        // Count by plan type
-        const planCounts = allSubs?.reduce((acc, sub) => {
-            acc[sub.plan_type] = (acc[sub.plan_type] || 0) + 1;
-            return acc;
-        }, {});
+        // Test Supabase connection
+        try {
+            const connectionOk = await subscriptionService.testConnection();
+            debugInfo.supabase.connectionStatus = connectionOk ? 'connected' : 'failed';
+        } catch (error) {
+            debugInfo.supabase.connectionStatus = 'error';
+            debugInfo.supabase.connectionError = error.message;
+        }
 
-        // Detailed analysis for current user
-        const now = new Date();
-        const subEndsAt = serviceData?.subscription_ends_at ? new Date(serviceData.subscription_ends_at) : null;
-        const isExpired = subEndsAt ? subEndsAt <= now : true;
-        const daysRemaining = subEndsAt ? Math.ceil((subEndsAt - now) / (1000 * 60 * 60 * 24)) : 0;
+        // Check if tables exist
+        const supabase = getSupabaseAdmin();
+
+        // Test user_subscriptions table
+        try {
+            const { data, error } = await supabase
+                .from('user_subscriptions')
+                .select('user_id')
+                .limit(1);
+
+            if (error) {
+                debugInfo.tables.user_subscriptions = {
+                    exists: false,
+                    error: error.message,
+                    code: error.code
+                };
+            } else {
+                debugInfo.tables.user_subscriptions = {
+                    exists: true,
+                    canQuery: true
+                };
+            }
+        } catch (e) {
+            debugInfo.tables.user_subscriptions = {
+                exists: false,
+                error: e.message
+            };
+        }
+
+        // Test user_feature_usage table
+        try {
+            const { data, error } = await supabase
+                .from('user_feature_usage')
+                .select('user_id')
+                .limit(1);
+
+            if (error) {
+                debugInfo.tables.user_feature_usage = {
+                    exists: false,
+                    error: error.message,
+                    code: error.code
+                };
+            } else {
+                debugInfo.tables.user_feature_usage = {
+                    exists: true,
+                    canQuery: true
+                };
+            }
+        } catch (e) {
+            debugInfo.tables.user_feature_usage = {
+                exists: false,
+                error: e.message
+            };
+        }
+
+        // Get current user's subscription
+        try {
+            const subscription = await subscriptionService.getUserSubscription(userId);
+            const isActive = await subscriptionService.isSubscriptionActive(userId);
+            const planType = await subscriptionService.getUserPlanType(userId);
+
+            debugInfo.subscription = {
+                found: !!subscription,
+                isActive,
+                planType,
+                rawSubscription: subscription ? {
+                    id: subscription.id,
+                    user_id: subscription.user_id,
+                    plan_type: subscription.plan_type,
+                    status: subscription.status,
+                    subscription_started_at: subscription.subscription_started_at,
+                    subscription_ends_at: subscription.subscription_ends_at,
+                    whop_membership_id: subscription.whop_membership_id ? 'present' : 'missing',
+                    updated_at: subscription.updated_at
+                } : null
+            };
+        } catch (error) {
+            debugInfo.subscription = {
+                error: error.message
+            };
+        }
+
+        // Check PLANS configuration
+        debugInfo.plansConfig = {
+            starterProductId: PLANS.starter.whopProductId,
+            proProductId: PLANS.pro.whopProductId,
+            starterCheckoutUrl: PLANS.starter.whopCheckoutUrl,
+            proCheckoutUrl: PLANS.pro.whopCheckoutUrl
+        };
 
         return NextResponse.json({
-            currentUser: {
-                email: userId,
-                timestamp: now.toISOString(),
-                directQuery: {
-                    data: directData?.[0] || null,
-                    error: directError?.message || null
-                },
-                viaService: {
-                    subscription: serviceData,
-                    planType,
-                    isActive,
-                    allUsage
-                },
-                statusApiResponse,
-                detailedAnalysis: {
-                    hasSubscription: !!serviceData,
-                    subscriptionStatus: serviceData?.status,
-                    planTypeFromDb: serviceData?.plan_type,
-                    endsAt: serviceData?.subscription_ends_at,
-                    isExpired,
-                    daysRemaining,
-                    shouldShowAsActive: serviceData?.status === 'active' && !isExpired
-                }
-            },
-            allActiveSubscriptions: {
-                total: allSubs?.length || 0,
-                planDistribution: planCounts || {},
-                sample: allSubs?.slice(0, 5).map(s => ({
-                    user: s.user_id.substring(0, 10) + '...',
-                    plan: s.plan_type,
-                    price: s.plan_price,
-                    status: s.status
-                })) || []
-            },
-            availablePlans: Object.keys(PLANS).map(key => ({
-                id: key,
-                name: PLANS[key].name,
-                price: PLANS[key].price
-            })),
-            diagnosis: {
-                isProbablyBug: allSubs?.every(s => s.plan_type === 'pro') && allSubs.length > 1,
-                message: allSubs?.every(s => s.plan_type === 'pro') && allSubs.length > 1
-                    ? '⚠️ WARNING: All active subscriptions are Pro - this might be a bug!'
-                    : '✅ Plan types look varied - no obvious bug',
-                whyShowingNoPlan: !statusApiResponse.planName || statusApiResponse.planName === 'No Plan'
-                    ? '🔍 Plan name is "No Plan" - check planType and PLANS mapping'
-                    : '✅ Plan name looks correct'
-            }
+            success: true,
+            debug: debugInfo
         });
+
     } catch (error) {
         console.error('Debug endpoint error:', error);
         return NextResponse.json({
-            error: error.message,
-            stack: error.stack
+            success: false,
+            error: error.message
         }, { status: 500 });
     }
 }

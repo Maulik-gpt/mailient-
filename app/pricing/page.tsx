@@ -161,6 +161,11 @@ export default function PricingPage() {
 			params.set('datafast_visitor_id', datafastVisitorId);
 		}
 
+		// CRITICAL: Set redirect URL so users come back to our payment success page
+		// This ensures proper subscription verification after payment
+		const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://mailient.xyz';
+		params.set('redirect_url', `${baseUrl}/payment-success`);
+
 		window.location.href = `${checkoutUrl}?${params.toString()}`;
 	};
 

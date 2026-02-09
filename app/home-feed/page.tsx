@@ -25,46 +25,84 @@ function HomeFeedContent() {
           // IMMEDIATE CHECK: If localStorage says we are done, check subscription
           const isDone = localStorage.getItem('onboarding_completed') === 'true';
 
-          // Check subscription status FIRST
-          console.log('📡 [HomeFeed] Checking subscription status...');
-          try {
-            const subResponse = await fetch('/api/subscription/status');
-            if (subResponse.ok) {
-              const subData = await subResponse.json();
-              console.log('💳 [HomeFeed] Subscription status:', subData);
+          // Detect if user might have just returned from payment
+          // This helps handle webhook delays after completing payment
+          const mightHaveJustPaid = () => {
+            const referrer = document.referrer || '';
+            const pendingPlan = localStorage.getItem('pending_plan');
+            const pendingTimestamp = localStorage.getItem('pending_plan_timestamp');
 
-              // Extract from the nested subscription object
-              const isActive = subData.subscription?.hasActiveSubscription;
-              const planType = subData.subscription?.planType;
+            // Check if referrer is from Whop or payment-related pages
+            const isFromPayment = referrer.includes('whop.com') ||
+              referrer.includes('/payment-success') ||
+              referrer.includes('/whop-callback') ||
+              referrer.includes('/pricing');
 
-              // If user has an active subscription OR has a valid plan type, allow access
-              if (isActive || planType === 'starter' || planType === 'pro') {
-                localStorage.setItem('onboarding_completed', 'true');
-                console.log('✅ [HomeFeed] Subscription active, access granted', { isActive, planType });
-                return;
-              }
+            // Check if there's a recent pending plan (within last 5 minutes)
+            const hasPendingPlan = pendingPlan && pendingTimestamp &&
+              (Date.now() - parseInt(pendingTimestamp)) < 5 * 60 * 1000;
 
-              // No active subscription - check onboarding status before forcing pricing
-              console.log('🚫 [HomeFeed] No active subscription, checking onboarding completion...');
+            return isFromPayment || hasPendingPlan;
+          };
 
-              const onboardingResp = await fetch("/api/onboarding/status");
-              if (onboardingResp.ok) {
-                const onboardingData = await onboardingResp.json();
-                if (!onboardingData.completed) {
-                  console.log('🚀 [HomeFeed] Onboarding incomplete, redirecting to /onboarding');
-                  router.push('/onboarding');
+          const justPaid = mightHaveJustPaid();
+          const maxRetries = justPaid ? 5 : 1; // More retries if coming from payment
+          const retryDelay = 2000; // 2 seconds between retries
+
+          // Check subscription status with potential retries
+          console.log('📡 [HomeFeed] Checking subscription status...', { justPaid, maxRetries });
+
+          for (let attempt = 0; attempt < maxRetries; attempt++) {
+            if (attempt > 0) {
+              console.log(`⏳ [HomeFeed] Retry ${attempt}/${maxRetries - 1}, waiting for webhook...`);
+              await new Promise(resolve => setTimeout(resolve, retryDelay));
+            }
+
+            try {
+              const subResponse = await fetch('/api/subscription/status');
+              if (subResponse.ok) {
+                const subData = await subResponse.json();
+                console.log('💳 [HomeFeed] Subscription status:', subData);
+
+                // Extract from the nested subscription object
+                const isActive = subData.subscription?.hasActiveSubscription;
+                const planType = subData.subscription?.planType;
+
+                // If user has an active subscription OR has a valid plan type, allow access
+                if (isActive || planType === 'starter' || planType === 'pro') {
+                  localStorage.setItem('onboarding_completed', 'true');
+                  // Clean up pending plan data on success
+                  localStorage.removeItem('pending_plan');
+                  localStorage.removeItem('pending_plan_timestamp');
+                  console.log('✅ [HomeFeed] Subscription active, access granted', { isActive, planType });
                   return;
                 }
-              }
 
-              console.log('🚫 [HomeFeed] No active subscription, redirecting to /pricing', { isActive, planType });
-              router.push('/pricing');
-              return;
-            } else {
-              console.error('❌ [HomeFeed] Subscription API failed:', subResponse.status);
+                // If this is the last retry and still no subscription, continue to pricing redirect
+                if (attempt === maxRetries - 1) {
+                  // No active subscription - check onboarding status before forcing pricing
+                  console.log('🚫 [HomeFeed] No active subscription after retries, checking onboarding completion...');
+
+                  const onboardingResp = await fetch("/api/onboarding/status");
+                  if (onboardingResp.ok) {
+                    const onboardingData = await onboardingResp.json();
+                    if (!onboardingData.completed) {
+                      console.log('🚀 [HomeFeed] Onboarding incomplete, redirecting to /onboarding');
+                      router.push('/onboarding');
+                      return;
+                    }
+                  }
+
+                  console.log('🚫 [HomeFeed] No active subscription, redirecting to /pricing', { isActive, planType });
+                  router.push('/pricing');
+                  return;
+                }
+              } else {
+                console.error('❌ [HomeFeed] Subscription API failed:', subResponse.status);
+              }
+            } catch (subError) {
+              console.error('⚠️ [HomeFeed] Subscription check error:', subError);
             }
-          } catch (subError) {
-            console.error('⚠️ [HomeFeed] Subscription check error:', subError);
           }
 
           // If we're already marked as completed locally and haven't been redirected, allow access
@@ -86,11 +124,11 @@ function HomeFeedContent() {
           // Check onboarding status from server with retry logic
           console.log('📡 [HomeFeed] Checking server-side onboarding status...');
 
-          const maxRetries = 3;
+          const onboardingMaxRetries = 3;
           let retryCount = 0;
           let serverCompleted = false;
 
-          while (retryCount < maxRetries && !serverCompleted) {
+          while (retryCount < onboardingMaxRetries && !serverCompleted) {
             try {
               const response = await fetch("/api/onboarding/status");
               if (response.ok) {
@@ -115,8 +153,8 @@ function HomeFeedContent() {
                     }
                   }
                 } else {
-                  console.log(`⏳ [HomeFeed] User NOT completed (attempt ${retryCount + 1}/${maxRetries})`);
-                  if (retryCount === maxRetries - 1) {
+                  console.log(`⏳ [HomeFeed] User NOT completed (attempt ${retryCount + 1}/${onboardingMaxRetries})`);
+                  if (retryCount === onboardingMaxRetries - 1) {
                     console.log('🚫 [HomeFeed] All retries exhausted, redirecting to /onboarding');
                     router.push("/onboarding");
                     return;
@@ -127,7 +165,7 @@ function HomeFeedContent() {
               }
             } catch (error) {
               console.error(`⚠️ [HomeFeed] Status check failed (attempt ${retryCount + 1}):`, error);
-              if (retryCount < maxRetries - 1) {
+              if (retryCount < onboardingMaxRetries - 1) {
                 const delay = Math.pow(2, retryCount) * 500;
                 await new Promise(resolve => setTimeout(resolve, delay));
               }

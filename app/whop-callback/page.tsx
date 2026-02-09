@@ -11,6 +11,13 @@ function PaymentCallbackContent() {
     const [isActivating, setIsActivating] = useState(true);
     const [planName, setPlanName] = useState('');
     const [error, setError] = useState<string | null>(null);
+    const [retryCount, setRetryCount] = useState(0);
+    const [showRetryMessage, setShowRetryMessage] = useState(false);
+
+    // Maximum retries and timing configuration
+    const MAX_RETRIES = 15; // 15 retries x 2 seconds = 30 seconds max wait
+    const RETRY_INTERVAL = 2000; // 2 seconds between retries
+    const INITIAL_DELAY = 1500; // 1.5 seconds initial delay
 
     useEffect(() => {
         // Clear any stale localStorage data
@@ -18,8 +25,13 @@ function PaymentCallbackContent() {
         localStorage.removeItem('pending_plan_timestamp');
         localStorage.setItem('onboarding_completed', 'true');
 
+        let currentRetry = 0;
+        let timeoutId: NodeJS.Timeout;
+
         const checkSubscriptionStatus = async () => {
             try {
+                console.log(`🔄 Checking subscription status (attempt ${currentRetry + 1}/${MAX_RETRIES})...`);
+
                 // SECURITY FIX: Check subscription status from server
                 // The Whop webhook should have already activated the subscription
                 const response = await fetch('/api/subscription/status');
@@ -50,9 +62,19 @@ function PaymentCallbackContent() {
                     }, 3000);
                 } else {
                     // Subscription not yet active - webhook may be delayed
-                    // Wait a bit and retry
-                    console.log('⏳ Subscription not yet active, waiting for webhook...');
-                    setTimeout(checkSubscriptionStatus, 2000);
+                    currentRetry++;
+                    setRetryCount(currentRetry);
+
+                    if (currentRetry >= MAX_RETRIES) {
+                        // Max retries reached - show helpful message instead of error
+                        console.log('⚠️ Max retries reached, showing retry options...');
+                        setShowRetryMessage(true);
+                        setIsActivating(false);
+                    } else {
+                        // Wait a bit and retry
+                        console.log(`⏳ Subscription not yet active, retrying in ${RETRY_INTERVAL / 1000}s... (${currentRetry}/${MAX_RETRIES})`);
+                        timeoutId = setTimeout(checkSubscriptionStatus, RETRY_INTERVAL);
+                    }
                 }
 
             } catch (err) {
@@ -63,8 +85,51 @@ function PaymentCallbackContent() {
         };
 
         // Start checking after a brief delay to give webhook time to process
-        setTimeout(checkSubscriptionStatus, 1500);
+        timeoutId = setTimeout(checkSubscriptionStatus, INITIAL_DELAY);
+
+        // Cleanup timeout on unmount
+        return () => {
+            if (timeoutId) clearTimeout(timeoutId);
+        };
     }, [router]);
+
+    // Handler to manually retry subscription check
+    const handleManualRetry = () => {
+        setShowRetryMessage(false);
+        setIsActivating(true);
+        setRetryCount(0);
+
+        // Trigger a fresh check
+        const checkAgain = async () => {
+            try {
+                const response = await fetch('/api/subscription/status');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.subscription?.hasActiveSubscription) {
+                        const plan = data.subscription.planType;
+                        setPlanName(plan === 'pro' ? 'Pro' : 'Starter');
+                        setIsActivating(false);
+                        confetti({
+                            particleCount: 150,
+                            spread: 70,
+                            origin: { y: 0.6 },
+                            colors: ['#ffffff', '#a855f7', '#6366f1']
+                        });
+                        setTimeout(() => router.push('/home-feed'), 3000);
+                        return;
+                    }
+                }
+                // Still not active, show message again
+                setShowRetryMessage(true);
+                setIsActivating(false);
+            } catch (err) {
+                setError('There was an issue verifying your subscription. Please contact support.');
+                setIsActivating(false);
+            }
+        };
+
+        setTimeout(checkAgain, 1000);
+    };
 
     return (
         <div className="min-h-screen bg-black flex items-center justify-center p-6">
@@ -85,7 +150,50 @@ function PaymentCallbackContent() {
                                 <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
                             </div>
                             <h1 className="text-2xl font-bold text-white mb-2">Activating Your Plan</h1>
-                            <p className="text-white/60">Please wait while we set up your {planName} subscription...</p>
+                            <p className="text-white/60 mb-4">Please wait while we verify your subscription...</p>
+                            {retryCount > 0 && (
+                                <div className="space-y-2">
+                                    <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-purple-500 transition-all duration-500"
+                                            style={{ width: `${Math.min((retryCount / MAX_RETRIES) * 100, 100)}%` }}
+                                        />
+                                    </div>
+                                    <p className="text-white/40 text-xs">Verifying payment... ({retryCount}/{MAX_RETRIES})</p>
+                                </div>
+                            )}
+                        </>
+                    ) : showRetryMessage ? (
+                        <>
+                            <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                                <span className="text-3xl">⏳</span>
+                            </div>
+                            <h1 className="text-2xl font-bold text-white mb-2">Almost There!</h1>
+                            <p className="text-white/60 mb-6">
+                                Your payment was received, but our system is still processing it.
+                                This can take a few moments. Please try again or contact support if this persists.
+                            </p>
+                            <div className="space-y-3">
+                                <button
+                                    onClick={handleManualRetry}
+                                    className="w-full py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-all"
+                                >
+                                    <Loader2 className="w-4 h-4" />
+                                    Try Again
+                                </button>
+                                <button
+                                    onClick={() => router.push('/home-feed')}
+                                    className="w-full py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-colors"
+                                >
+                                    Go to Dashboard Anyway
+                                </button>
+                                <p className="text-white/40 text-xs pt-2">
+                                    Need help? Contact us at{' '}
+                                    <a href="mailto:support@mailient.xyz" className="text-purple-400 hover:underline">
+                                        support@mailient.xyz
+                                    </a>
+                                </p>
+                            </div>
                         </>
                     ) : error ? (
                         <>
@@ -94,12 +202,20 @@ function PaymentCallbackContent() {
                             </div>
                             <h1 className="text-2xl font-bold text-white mb-2">Oops!</h1>
                             <p className="text-white/60 mb-6">{error}</p>
-                            <button
-                                onClick={() => router.push('/pricing')}
-                                className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-colors"
-                            >
-                                Go to Pricing
-                            </button>
+                            <div className="space-y-3">
+                                <button
+                                    onClick={handleManualRetry}
+                                    className="w-full py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-semibold rounded-xl transition-all"
+                                >
+                                    Try Again
+                                </button>
+                                <button
+                                    onClick={() => router.push('/pricing')}
+                                    className="w-full py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-colors"
+                                >
+                                    Go to Pricing
+                                </button>
+                            </div>
                         </>
                     ) : (
                         <>
