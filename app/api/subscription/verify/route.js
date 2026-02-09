@@ -78,7 +78,7 @@ export async function POST(request) {
         }
 
         const polarData = await polarResponse.json();
-        console.log('📦 Polar subscriptions for user:', JSON.stringify(polarData, null, 2));
+        console.log(`📦 [VERIFY] Polar subs found for ${userId}:`, (polarData.items || polarData.data || []).length);
 
         // Find valid subscriptions
         const validSubscriptions = (polarData.items || polarData.data || []).filter(s =>
@@ -86,16 +86,16 @@ export async function POST(request) {
         );
 
         if (validSubscriptions.length === 0) {
-            console.log('❌ No valid Polar subscriptions found for:', userId);
+            console.log(`❌ [VERIFY] No active Polar subscriptions for: ${userId}. All items:`, JSON.stringify(polarData.items || polarData.data || [], null, 2));
             return NextResponse.json({
-                error: 'No valid subscription found in Polar. Please ensure your payment was completed.',
-                found: polarData.items?.length || 0,
-                suggestion: 'If you just paid, please wait a moment and try again.'
+                error: 'No valid subscription found. Please ensure your payment on Polar was successful.',
+                suggestion: 'If you just paid, please wait 30 seconds and try again.'
             }, { status: 404 });
         }
 
         // Get the most recent valid subscription
         const subscription = validSubscriptions[0];
+        console.log(`🎯 [VERIFY] Selecting subscription: ${subscription.id} (${subscription.status})`);
         return await activateFromPolarData(userId, subscription, 'subscription');
 
     } catch (error) {
