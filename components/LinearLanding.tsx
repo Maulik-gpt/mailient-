@@ -1312,6 +1312,18 @@ export function LinearLanding() {
                                     className="h-8 w-auto grayscale hover:grayscale-0"
                                 />
                             </a>
+                            <a
+                                href="https://www.launchit.site/project/mailient"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="opacity-40 hover:opacity-100 transition-all duration-500 scale-90 hover:scale-100"
+                            >
+                                <img
+                                    src="/badges/featured-dark.svg"
+                                    alt="Launched on Launchit"
+                                    className="h-8 w-auto grayscale hover:grayscale-0"
+                                />
+                            </a>
                         </div>
                         <p className="text-xs text-zinc-600">© 2026 Mailient Intelligence.</p>
                     </div>

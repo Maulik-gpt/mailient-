@@ -44,7 +44,7 @@ export default function RootLayout({ children }) {
       <head>
         <Script
           async
-          src="https://www.googletagmanager.com/gtag/js?id=G-M03D6M49N8"
+          src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID || 'G-M03D6M49N8'}`}
           strategy="afterInteractive"
         />
         <Script id="google-analytics" strategy="afterInteractive">
@@ -53,7 +53,7 @@ export default function RootLayout({ children }) {
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
 
-            gtag('config', 'G-M03D6M49N8');
+            gtag('config', '${process.env.NEXT_PUBLIC_GA_ID || 'G-M03D6M49N8'}');
           `}
         </Script>
         <Script
@@ -62,6 +62,10 @@ export default function RootLayout({ children }) {
           data-domain="mailient.xyz"
           src="https://datafa.st/js/script.js"
         />
+        {/* Launchit Badge for SEO Authority */}
+        <a href="https://www.launchit.site/project/mailient" target="_blank" className="hidden" aria-hidden="true">
+          <img src="/badges/featured-dark.svg" alt="Launched on Launchit" width="1" height="1" />
+        </a>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400&display=swap" rel="stylesheet" />
