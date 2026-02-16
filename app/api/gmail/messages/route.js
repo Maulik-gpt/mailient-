@@ -17,12 +17,12 @@ export async function GET(request) {
       return Response.json({ error: 'No valid session found' }, { status: 401 });
     }
 
-    // 🔒 SECURITY: Check subscription before allowing email access
-    const hasSubscription = await subscriptionService.isSubscriptionActive(session.user.email);
-    if (!hasSubscription) {
+    // 🔒 SECURITY: Check access before allowing email access
+    const hasAccess = await subscriptionService.checkAccess(session.user.email);
+    if (!hasAccess) {
       return Response.json({
         error: 'subscription_required',
-        message: 'An active subscription is required to access your emails.',
+        message: 'Access required.',
         upgradeUrl: '/pricing'
       }, { status: 403 });
     }

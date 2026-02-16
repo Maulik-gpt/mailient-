@@ -22,12 +22,12 @@ export async function GET(request, { params }) {
       }, { status: 401 });
     }
 
-    // 🔒 SECURITY: Check subscription before allowing email access
-    const hasSubscription = await subscriptionService.isSubscriptionActive(session.user.email);
-    if (!hasSubscription) {
+    // 🔒 SECURITY: Check access before allowing email access
+    const hasAccess = await subscriptionService.checkAccess(session.user.email);
+    if (!hasAccess) {
       return Response.json({
         error: 'subscription_required',
-        message: 'An active subscription is required to access email content.',
+        message: 'Access required.',
         upgradeUrl: '/pricing'
       }, { status: 403 });
     }

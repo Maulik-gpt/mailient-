@@ -91,12 +91,12 @@ export async function POST(request) {
         }
 
         const userId = session.user.email;
-        const isActive = await subscriptionService.isSubscriptionActive(userId);
-        if (!isActive) {
+        const hasAccess = await subscriptionService.checkAccess(userId);
+        if (!hasAccess) {
             return NextResponse.json(
                 {
                     error: 'subscription_required',
-                    message: 'An active subscription is required to use this feature.',
+                    message: 'Access required.',
                     upgradeUrl: '/pricing'
                 },
                 { status: 403 }

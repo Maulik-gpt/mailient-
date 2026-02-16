@@ -31,12 +31,12 @@ export async function POST(request) {
       }, { status: 401 });
     }
 
-    // 🔒 SECURITY: Check subscription before allowing email search
-    const hasSubscription = await subscriptionService.isSubscriptionActive(session.user.email);
-    if (!hasSubscription) {
+    // 🔒 SECURITY: Check access before allowing email search
+    const hasAccess = await subscriptionService.checkAccess(session.user.email);
+    if (!hasAccess) {
       return NextResponse.json({
         error: 'subscription_required',
-        message: 'An active subscription is required to search emails.',
+        message: 'Access required.',
         upgradeUrl: '/pricing'
       }, { status: 403 });
     }
@@ -151,12 +151,12 @@ export async function GET(request) {
       }, { status: 401 });
     }
 
-    // 🔒 SECURITY: Check subscription before allowing label access
-    const hasSubscription = await subscriptionService.isSubscriptionActive(session.user.email);
-    if (!hasSubscription) {
+    // 🔒 SECURITY: Check access before allowing label access
+    const hasAccess = await subscriptionService.checkAccess(session.user.email);
+    if (!hasAccess) {
       return NextResponse.json({
         error: 'subscription_required',
-        message: 'An active subscription is required.',
+        message: 'Access required.',
         upgradeUrl: '/pricing'
       }, { status: 403 });
     }

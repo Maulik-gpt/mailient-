@@ -13,12 +13,12 @@ export async function GET(request, { params }) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // 🔒 SECURITY: Check subscription before allowing thread access
-    const hasSubscription = await subscriptionService.isSubscriptionActive(session.user.email);
-    if (!hasSubscription) {
+    // 🔒 SECURITY: Check access before allowing email access
+    const hasAccess = await subscriptionService.checkAccess(session.user.email);
+    if (!hasAccess) {
       return Response.json({
         error: 'subscription_required',
-        message: 'An active subscription is required to access email threads.',
+        message: 'Access required.',
         upgradeUrl: '/pricing'
       }, { status: 403 });
     }

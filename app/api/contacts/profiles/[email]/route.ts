@@ -53,12 +53,13 @@ export async function GET(
 
         const userEmail = session.user.email.toLowerCase();
 
-        // 🔒 SECURITY: Check subscription
-        const hasSubscription = await subscriptionService.isSubscriptionActive(userEmail);
-        if (!hasSubscription) {
+        // 🔒 SECURITY: Check access before allowing contact access
+        const hasAccess = await subscriptionService.checkAccess(userEmail);
+        if (!hasAccess) {
             return NextResponse.json({
                 error: 'subscription_required',
-                message: 'An active subscription is required to access contact intelligence.'
+                message: 'Access required.',
+                upgradeUrl: '/pricing'
             }, { status: 403 });
         }
 

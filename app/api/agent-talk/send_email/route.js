@@ -36,18 +36,15 @@ export async function POST(request) {
       );
     }
 
-    const isActive = await subscriptionService.isSubscriptionActive(userEmail);
-    if (!isActive) {
-      return NextResponse.json(
-        {
-          error: {
-            code: 'subscription_required',
-            message: 'An active subscription is required to use this tool.',
-            upgradeUrl: '/pricing'
-          }
-        },
-        { status: 403 }
-      );
+    // 🔒 SECURITY: Check access status
+    const hasAccess = await subscriptionService.checkAccess(userEmail);
+    if (!hasAccess) {
+      return NextResponse.json({
+        error: {
+          message: 'Access required.',
+          code: 'subscription_required'
+        }
+      }, { status: 403 });
     }
 
     if (!accessToken) {

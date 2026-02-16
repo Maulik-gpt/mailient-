@@ -63,10 +63,10 @@ export async function GET(request) {
       }, { status: 401 });
     }
 
-    // 🔒 SECURITY: Check subscription before allowing email access
-    console.log('🔒 Checking subscription status for:', session.user.email);
-    const hasSubscription = await subscriptionService.isSubscriptionActive(session.user.email);
-    if (!hasSubscription) {
+    // 🔒 SECURITY: Check access before allowing email access
+    console.log('🔒 Checking access status for:', session.user.email);
+    const hasAccess = await subscriptionService.checkAccess(session.user.email);
+    if (!hasAccess) {
       console.log('❌ No active subscription, denying access');
       return Response.json({
         error: 'subscription_required',
