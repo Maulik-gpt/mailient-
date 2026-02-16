@@ -12,7 +12,7 @@ interface UsageLimitModalProps {
     currentUsage: number;
     limit: number;
     period: 'daily' | 'monthly';
-    currentPlan?: 'starter' | 'pro' | 'none';
+    currentPlan?: 'free' | 'starter' | 'pro' | 'none';
 }
 
 export function UsageLimitModal({
@@ -22,7 +22,7 @@ export function UsageLimitModal({
     currentUsage,
     limit,
     period,
-    currentPlan = 'starter'
+    currentPlan = 'free'
 }: UsageLimitModalProps) {
     const router = useRouter();
 
@@ -32,7 +32,7 @@ export function UsageLimitModal({
     };
 
     const periodText = period === 'daily' ? 'today' : 'this month';
-    const resetText = period === 'daily' ? 'at midnight' : 'when your subscription renews';
+    const resetText = period === 'daily' ? 'at midnight' : (currentPlan === 'free' ? 'at the start of next month' : 'when your subscription renews');
 
     return (
         <AnimatePresence>
@@ -113,18 +113,27 @@ export function UsageLimitModal({
                                                     <Crown className="w-5 h-5 text-white" />
                                                 </div>
                                                 <div>
-                                                    <h4 className="font-medium text-white">Upgrade to Pro</h4>
-                                                    <p className="text-xs text-white/50">Unlimited access to all features</p>
+                                                    <h4 className="font-medium text-white">
+                                                        {currentPlan === 'free' ? 'Upgrade to Starter' : 'Upgrade to Pro'}
+                                                    </h4>
+                                                    <p className="text-xs text-white/50">
+                                                        {currentPlan === 'free' ? 'Get 10x more AI credits starting at $7.99/mo' : 'Unlimited access to all features'}
+                                                    </p>
                                                 </div>
                                             </div>
 
                                             <ul className="space-y-2 mb-4">
-                                                {[
+                                                {(currentPlan === 'free' ? [
+                                                    '10 AI Drafts per day',
+                                                    '10 Sift Analyses per day',
+                                                    '20 Arcus AI queries per day',
+                                                    '30 Email Summaries per day'
+                                                ] : [
                                                     'Unlimited Draft Replies',
                                                     'Unlimited Schedule Calls',
                                                     'Unlimited AI Notes & Analysis',
                                                     'Unlimited Arcus AI Access'
-                                                ].map((feature) => (
+                                                ]).map((feature) => (
                                                     <li key={feature} className="flex items-center gap-2 text-sm text-white/60">
                                                         <Sparkles className="w-3 h-3 text-purple-400" />
                                                         {feature}
@@ -136,7 +145,7 @@ export function UsageLimitModal({
                                                 onClick={handleUpgrade}
                                                 className="w-full py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-all group"
                                             >
-                                                Subscribe to Pro
+                                                {currentPlan === 'free' ? 'View Plans' : 'Subscribe to Pro'}
                                                 <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                                             </button>
                                         </div>
@@ -159,7 +168,7 @@ export function useFeatureUsage() {
         currentUsage: number;
         limit: number;
         period: 'daily' | 'monthly';
-        currentPlan: 'starter' | 'pro' | 'none';
+        currentPlan: 'free' | 'starter' | 'pro' | 'none';
     } | null>(null);
 
     const checkAndUseFeature = async (

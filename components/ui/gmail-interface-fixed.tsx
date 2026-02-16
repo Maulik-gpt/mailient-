@@ -201,7 +201,7 @@ export function GmailInterfaceFixed() {
         currentUsage: number;
         limit: number;
         period: 'daily' | 'monthly';
-        currentPlan: 'starter' | 'pro' | 'none';
+        currentPlan: 'free' | 'starter' | 'pro' | 'none';
     } | null>(null);
 
     // --- All State Hooks ---
@@ -257,18 +257,18 @@ export function GmailInterfaceFixed() {
 
     const fetchUsage = useCallback(async (force: boolean = false) => {
         const now = Date.now();
-        
+
         // Debounce: Only allow fetch every 2 seconds unless forced
         if (!force && now - lastFetchTimeRef.current < 2000) {
             console.log('🔄 fetchUsage debounced, skipping call');
             return;
         }
-        
+
         // Clear any existing timeout
         if (fetchTimeoutRef.current) {
             clearTimeout(fetchTimeoutRef.current);
         }
-        
+
         // Set timeout for debounced call
         fetchTimeoutRef.current = setTimeout(async () => {
             try {
@@ -354,7 +354,7 @@ export function GmailInterfaceFixed() {
         };
         computeHeight();
         window.addEventListener('resize', computeHeight);
-        
+
         // Cleanup fetch timeout on unmount
         return () => {
             window.removeEventListener('resize', computeHeight);

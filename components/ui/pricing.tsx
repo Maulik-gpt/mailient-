@@ -73,7 +73,7 @@ export function PricingSection({
 				)}
 			</div>
 
-			<div className="mx-auto grid w-full max-w-5xl grid-cols-1 gap-8 md:grid-cols-2">
+			<div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-6 md:grid-cols-3">
 				{plans.map((plan) => (
 					<PricingCard plan={plan} key={plan.name} isHighlighted={plan.highlighted} />
 				))}
@@ -138,18 +138,37 @@ export function PricingCard({
 				</div>
 
 				<div className="flex items-baseline gap-1 mb-6">
-					<span className={cn(
-						'text-5xl md:text-6xl font-bold tracking-tight',
-						isHighlighted ? 'text-black' : 'text-white'
-					)}>
-						${plan.price.monthly}
-					</span>
-					<span className={cn(
-						'text-lg font-medium',
-						isHighlighted ? 'text-black/50' : 'text-zinc-500'
-					)}>
-						/month
-					</span>
+					{plan.price.monthly === 0 ? (
+						<>
+							<span className={cn(
+								'text-5xl md:text-6xl font-bold tracking-tight',
+								isHighlighted ? 'text-black' : 'text-white'
+							)}>
+								Free
+							</span>
+							<span className={cn(
+								'text-lg font-medium',
+								isHighlighted ? 'text-black/50' : 'text-zinc-500'
+							)}>
+								forever
+							</span>
+						</>
+					) : (
+						<>
+							<span className={cn(
+								'text-5xl md:text-6xl font-bold tracking-tight',
+								isHighlighted ? 'text-black' : 'text-white'
+							)}>
+								${plan.price.monthly}
+							</span>
+							<span className={cn(
+								'text-lg font-medium',
+								isHighlighted ? 'text-black/50' : 'text-zinc-500'
+							)}>
+								/month
+							</span>
+						</>
+					)}
 				</div>
 
 				<p className={cn(

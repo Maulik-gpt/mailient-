@@ -143,7 +143,7 @@ export default function ChatInterface({
     currentUsage: number;
     limit: number;
     period: 'daily' | 'monthly';
-    currentPlan: 'starter' | 'pro' | 'none';
+    currentPlan: 'free' | 'starter' | 'pro' | 'none';
   } | null>(null);
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(initialConversationId || null);

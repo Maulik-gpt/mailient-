@@ -69,7 +69,7 @@ export default function NoteDetailPage() {
         currentUsage: number;
         limit: number;
         period: 'daily' | 'monthly';
-        currentPlan: 'starter' | 'pro' | 'none';
+        currentPlan: 'free' | 'starter' | 'pro' | 'none';
     } | null>(null);
 
     const getNoteLink = useCallback((id: string) => {

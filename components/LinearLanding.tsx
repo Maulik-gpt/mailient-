@@ -64,21 +64,35 @@ const features = [
 
 const plans = [
     {
+        name: "Free",
+        info: "Experience the power of Mailient AI — no credit card required",
+        price: { monthly: 0, yearly: 0 },
+        features: [
+            { text: "1 AI Draft per day" },
+            { text: "1 Sift Analysis per day" },
+            { text: "3 Email Summaries per day" },
+            { text: "Secure Google OAuth" },
+            { text: "Basic Relationship Tracking" }
+        ],
+        btn: { text: "Start Free", href: "/auth/signin" }
+    },
+    {
         name: "Starter",
-        info: "Ideal for businesses ready to explore AI and intelligent automation",
+        info: "For solopreneurs ready to automate their inbox at scale",
         price: { monthly: 7.99, yearly: 7.99 },
         features: [
-            { text: "AI Sift Intelligence" },
-            { text: "Priority Inbox" },
-            { text: "Basic AI Drafts" },
-            { text: "Secure Google OAuth" },
+            { text: "10 AI Drafts per day" },
+            { text: "10 Sift Analyses per day" },
+            { text: "20 Arcus AI queries per day" },
+            { text: "30 Email Summaries per day" },
             { text: "Standard Relationship Tracking" }
         ],
-        btn: { text: "Unlock My Inbox", href: "/auth/signin" }
+        btn: { text: "Get Started", href: "/auth/signin" },
+        highlighted: true
     },
     {
         name: "Pro",
-        info: "Built for companies that want to gain an edge with AI-powered automation",
+        info: "Unlimited power for teams and power users who demand the best",
         price: { monthly: 29.99, yearly: 29.99 },
         features: [
             { text: "Everything in Starter" },
@@ -88,8 +102,7 @@ const plans = [
             { text: "Priority Support" },
             { text: "Unlimited Draft Replies" }
         ],
-        btn: { text: "Unlock My Inbox", href: "/auth/signin" },
-        highlighted: true
+        btn: { text: "Go Pro", href: "/auth/signin" }
     }
 ];
 

@@ -66,21 +66,35 @@ const POLAR_CHECKOUT_URLS = {
 
 const plans = [
   {
+    name: "Free",
+    info: "Experience the power of Mailient AI — no credit card required",
+    price: { monthly: 0, yearly: 0 },
+    features: [
+      { text: "1 AI Draft per day" },
+      { text: "1 Sift Analysis per day" },
+      { text: "3 Email Summaries per day" },
+      { text: "Secure Google OAuth" },
+      { text: "Basic Relationship Tracking" }
+    ],
+    btn: { text: "Start Free", href: "#" }
+  },
+  {
     name: "Starter",
-    info: "Ideal for businesses ready to explore AI and intelligent automation",
+    info: "For solopreneurs ready to automate their inbox at scale",
     price: { monthly: 7.99, yearly: 7.99 },
     features: [
-      { text: "AI Sift Intelligence" },
-      { text: "Priority Inbox" },
-      { text: "Basic AI Drafts" },
-      { text: "Secure Google OAuth" },
+      { text: "10 AI Drafts per day" },
+      { text: "10 Sift Analyses per day" },
+      { text: "20 Arcus AI queries per day" },
+      { text: "30 Email Summaries per day" },
       { text: "Standard Relationship Tracking" }
     ],
-    btn: { text: "Select Starter", href: "#" }
+    btn: { text: "Select Starter", href: "#" },
+    highlighted: true
   },
   {
     name: "Pro",
-    info: "Built for companies that want to gain an edge with AI-powered automation",
+    info: "Unlimited power for teams and power users who demand the best",
     price: { monthly: 29.99, yearly: 29.99 },
     features: [
       { text: "Everything in Starter" },
@@ -90,8 +104,7 @@ const plans = [
       { text: "Priority Support" },
       { text: "Unlimited Draft Replies" }
     ],
-    btn: { text: "Select Pro", href: "#" },
-    highlighted: true
+    btn: { text: "Select Pro", href: "#" }
   }
 ];
 
@@ -419,7 +432,6 @@ export default function SiftOnboardingPage() {
       console.log('✅ Onboarding completion response:', result);
 
       // Set fallback flags in localStorage to prevent redirection loops
-      // even if the database index or session hasn't updated yet
       localStorage.setItem('onboarding_completed', 'true');
       localStorage.setItem('pending_plan', plan);
       localStorage.setItem('pending_plan_timestamp', Date.now().toString());
@@ -429,11 +441,17 @@ export default function SiftOnboardingPage() {
 
       console.log('📋 Set localStorage flags for onboarding completion');
 
-      // Redirect to Polar
+      // Free plan: skip checkout, go directly to the dashboard
+      if (plan === 'free') {
+        console.log('🆓 Free plan selected — skipping checkout, redirecting to dashboard');
+        router.push('/home-feed');
+        return;
+      }
+
+      // Paid plans: redirect to Polar checkout
       const checkoutUrl = POLAR_CHECKOUT_URLS[plan as keyof typeof POLAR_CHECKOUT_URLS];
       if (checkoutUrl) {
         const params = new URLSearchParams();
-        // Polar uses customer_email and success_url
         if (session?.user?.email) params.set('customer_email', session.user.email);
 
         const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://mailient.xyz';
@@ -908,13 +926,13 @@ export default function SiftOnboardingPage() {
 
       case 8: // Pricing
         return (
-          <motion.div key="step-8" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-16 max-w-5xl mx-auto">
+          <motion.div key="step-8" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-16 max-w-6xl mx-auto">
             <div className="space-y-4 text-center max-w-2xl mx-auto">
-              <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tight leading-tight">To keep using Mailient after Alpha, pick a plan that works for you.</h2>
-              <p className="text-zinc-500 text-lg">Early users get the lowest price we’ll ever offer.</p>
+              <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tight leading-tight">Pick the plan that fits you.</h2>
+              <p className="text-zinc-500 text-lg">Start free — upgrade anytime as you grow.</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {plans.map(plan => (
                 <div key={plan.name}>
                   <PricingCard

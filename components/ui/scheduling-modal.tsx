@@ -38,7 +38,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
         currentUsage: number;
         limit: number;
         period: 'daily' | 'monthly';
-        currentPlan: 'starter' | 'pro' | 'none';
+        currentPlan: 'free' | 'starter' | 'pro' | 'none';
     } | null>(null);
 
     // Cal.com configuration

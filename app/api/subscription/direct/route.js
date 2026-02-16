@@ -34,8 +34,8 @@ export async function GET(request) {
 
         // Determine subscription status directly
         let isActive = false;
-        let planName = 'No Plan';
-        let planType = 'none';
+        let planName = 'Free';
+        let planType = 'free';
         let daysRemaining = 0;
 
         if (subscription) {
@@ -44,7 +44,7 @@ export async function GET(request) {
             daysRemaining = Math.max(0, Math.ceil((endDate - now) / (1000 * 60 * 60 * 24)));
 
             isActive = (subscription.status === 'active' || subscription.status === 'cancelled') && !isExpired;
-            planType = subscription.plan_type || 'none';
+            planType = subscription.plan_type || 'free';
 
             // Direct plan name mapping
             if (isActive && planType) {
@@ -53,9 +53,14 @@ export async function GET(request) {
                     planName = 'Pro';
                 } else if (normalizedPlanType === 'starter' || normalizedPlanType === 'basic') {
                     planName = 'Starter';
+                } else if (normalizedPlanType === 'free') {
+                    planName = 'Free';
                 } else {
                     planName = `${normalizedPlanType} Plan`;
                 }
+            } else if (!isActive) {
+                planType = 'free';
+                planName = 'Free';
             }
         }
 

@@ -56,17 +56,17 @@ export async function POST(request) {
 
     // Fetch subscription info for Arcus context
     let subscriptionInfo = null;
-    let userPlanType = 'none';
+    let userPlanType = 'free';
 
     if (userEmail) {
       try {
         const allUsage = await subscriptionService.getAllFeatureUsage(userEmail);
-        userPlanType = allUsage.planType || 'none';
+        userPlanType = allUsage.planType || 'free';
 
         if (allUsage.hasActiveSubscription) {
           subscriptionInfo = {
             planType: allUsage.planType,
-            planName: allUsage.planType === 'pro' ? 'Pro' : 'Starter',
+            planName: allUsage.planType === 'pro' ? 'Pro' : allUsage.planType === 'starter' ? 'Starter' : 'Free',
             daysRemaining: allUsage.daysRemaining,
             features: allUsage.features,
             isUnlimited: allUsage.planType === 'pro'

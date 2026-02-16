@@ -34,7 +34,7 @@ export async function GET(request) {
 
         // Get plan details with enhanced error checking
         let plan = null;
-        let planName = 'No Plan';
+        let planName = 'Free';
 
         if (planType && planType !== 'none') {
             plan = PLANS[planType];
@@ -63,7 +63,8 @@ export async function GET(request) {
                 isEndingSoon
             },
             features: allUsage.features || {},
-            upgradeToPro: planType === 'starter' ? PLANS.pro.checkoutUrl : null,
+            upgradeToStarter: (planType === 'free' || planType === 'none') ? PLANS.starter.checkoutUrl : null,
+            upgradeToPro: (planType === 'starter' || planType === 'free' || planType === 'none') ? PLANS.pro.checkoutUrl : null,
             debugInfo: {
                 rawPlanType: planType,
                 hasPlanObject: !!plan,

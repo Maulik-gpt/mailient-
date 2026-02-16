@@ -26,18 +26,33 @@ const getCookie = (name: string): string | null => {
 
 const PLANS = [
 	{
+		id: 'free',
+		name: 'Free',
+		price: 0,
+		features: [
+			'1 AI Draft per day',
+			'1 Sift Analysis per day',
+			'3 Email Summaries per day',
+			'Secure Google OAuth',
+			'Basic Relationship Tracking'
+		],
+		buttonText: 'Start Free',
+		isPopular: false,
+		checkoutUrl: '' // No checkout needed — it's free
+	},
+	{
 		id: 'starter',
 		name: 'Starter',
 		price: 7.99,
 		features: [
-			'AI Sift Intelligence',
-			'Priority Inbox',
-			'Basic AI Drafts',
-			'Secure Google OAuth',
+			'10 AI Drafts per day',
+			'10 Sift Analyses per day',
+			'20 Arcus AI queries per day',
+			'30 Email Summaries per day',
 			'Standard Relationship Tracking'
 		],
 		buttonText: 'Get Started with Starter',
-		isPopular: false,
+		isPopular: true,
 		checkoutUrl: POLAR_CHECKOUT_URLS.starter
 	},
 	{
@@ -53,7 +68,7 @@ const PLANS = [
 			'Unlimited Draft Replies'
 		],
 		buttonText: 'Level up with Pro',
-		isPopular: true,
+		isPopular: false,
 		checkoutUrl: POLAR_CHECKOUT_URLS.pro
 	}
 ];
@@ -97,6 +112,10 @@ export default function PricingPage() {
 				if (data.subscription?.hasActiveSubscription) {
 					setCurrentPlan(data.subscription.planType);
 					setSubscriptionEndsAt(data.subscription.subscriptionEndsAt);
+				} else if (data.subscription?.planType === 'free') {
+					// Free tier users don't have an active subscription record,
+					// but we still want to show their current plan
+					setCurrentPlan('free');
 				} else {
 					setCurrentPlan(null);
 				}
@@ -215,7 +234,7 @@ export default function PricingPage() {
 					<div className="flex items-center gap-3">
 						<Crown className="w-5 h-5 text-yellow-400" />
 						<span className="text-sm text-white/80">
-							Current Plan: <span className="text-white font-semibold">{currentPlan === 'pro' ? 'Pro' : 'Starter'}</span>
+							Current Plan: <span className="text-white font-semibold">{currentPlan === 'pro' ? 'Pro' : currentPlan === 'starter' ? 'Starter' : 'Free'}</span>
 						</span>
 						{subscriptionEndsAt && (
 							<span className="text-xs text-white/50 ml-2">
@@ -227,7 +246,7 @@ export default function PricingPage() {
 			)}
 
 			{/* Cards Container */}
-			<div className="relative z-10 w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-8 px-6 mt-8 group">
+			<div className="relative z-10 w-full max-w-6xl grid grid-cols-1 md:grid-cols-3 gap-6 px-6 mt-8 group">
 				{PLANS.map((plan, idx) => (
 					<PricingCard
 						key={idx}
@@ -235,7 +254,13 @@ export default function PricingPage() {
 						index={idx}
 						currentPlan={currentPlan}
 						isLoading={isLoading}
-						onSelect={() => handleSelectPlan(plan.id, plan.checkoutUrl)}
+						onSelect={() => {
+							if (plan.id === 'free') {
+								router.push('/auth/signin');
+							} else {
+								handleSelectPlan(plan.id, plan.checkoutUrl);
+							}
+						}}
 					/>
 				))}
 			</div>
@@ -326,8 +351,8 @@ export default function PricingPage() {
 						answer="Never. We use enterprise-grade AI models that guarantee no customer data is used for training. Your business logic and personal communications remain private and exclusive to you."
 					/>
 					<FAQItem
-						question="What's the difference between Starter and Pro?"
-						answer="Starter is great for individuals managing a moderate volume of email. Pro is designed for power users who need unlimited AI drafting, advanced relationship tracking, and priority processing speeds."
+						question="What's the difference between Free, Starter, and Pro?"
+						answer="Free gives you a daily taste of Mailient's AI to build trust. Starter is great for solopreneurs managing a moderate volume of email with 10x the AI capacity. Pro is designed for power users who need unlimited AI drafting, advanced relationship tracking, and priority processing speeds."
 					/>
 				</div>
 			</section>
@@ -378,10 +403,12 @@ function PricingCard({ plan, index, currentPlan, isLoading, onSelect }: PricingC
 			animate={{ opacity: 1, y: 0 }}
 			transition={{ delay: index * 0.1, duration: 1, ease: [0.23, 1, 0.32, 1] }}
 			className={cn(
-				"relative rounded-[2.5rem] flex flex-col transition-all duration-700 min-h-[620px] group/card",
+				"relative rounded-[2.5rem] flex flex-col transition-all duration-700 min-h-[580px] group/card",
 				plan.id === 'pro'
 					? "bg-white border-white shadow-[0_0_80px_rgba(255,255,255,0.15)]"
-					: "bg-black border-white/10",
+					: plan.isPopular
+						? "bg-black border-white/20 shadow-[0_0_40px_rgba(255,255,255,0.05)]"
+						: "bg-black border-white/10",
 				isCurrentPlan && "ring-2 ring-green-500/50 border-green-500/30"
 			)}
 		>
@@ -419,12 +446,12 @@ function PricingCard({ plan, index, currentPlan, isLoading, onSelect }: PricingC
 						"text-4xl font-black tracking-tighter",
 						plan.id === 'pro' ? "text-black" : "text-white"
 					)}>
-						${plan.price}
+						{plan.price === 0 ? 'Free' : `$${plan.price}`}
 					</span>
 					<span className={cn(
 						"text-sm font-medium",
 						plan.id === 'pro' ? "text-black/20" : "text-white/20"
-					)}>/month</span>
+					)}>{plan.price === 0 ? 'forever' : '/month'}</span>
 				</div>
 			</div>
 
@@ -478,7 +505,7 @@ function PricingCard({ plan, index, currentPlan, isLoading, onSelect }: PricingC
 						)}
 					>
 						<Lock className="w-4 h-4 transition-transform group-hover/locked:scale-110" />
-						{plan.buttonText}
+						Current Plan
 					</div>
 				) : (
 					// No current plan OR upgrade/switch - show button
