@@ -26,7 +26,6 @@ export const MailientSidebar: React.FC<MailientSidebarProps> = ({
   // Navigation items matching Mailient's existing sidebar
   const navItems = [
     { id: 'home', icon: <Mail className="w-6 h-6" />, label: 'Feed', tooltip: 'Home Feed', route: '/home-feed' },
-    { id: 'notifications', icon: <Bell className="w-6 h-6" />, label: 'Notifications', tooltip: 'Notifications', route: '/notifications' },
     { id: 'arcus', icon: <span className="oleo-script-regular text-2xl">A</span>, label: 'Arcus', tooltip: 'AI Assistant', route: '/dashboard/agent-talk' }
   ];
 
@@ -73,25 +72,7 @@ export const MailientSidebar: React.FC<MailientSidebarProps> = ({
 
 
 
-          {/* Notifications Icon */}
-          <Tooltip delayDuration={100}>
-            <TooltipTrigger asChild>
-              <button
-                onClick={() => {
-                  window.location.href = '/notifications';
-                  document.title = 'Notifications / Mailient';
-                }}
-                className={`p-2 hover:bg-[#1a1a1a] rounded-full transition-all duration-300 hover:scale-105 ${activeSection === 'notifications' ? 'bg-[#1a1a1a]' : ''
-                  }`}
-                aria-label="Notifications"
-              >
-                <Bell className="w-6 h-6 text-[#fafafa]" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="right" className="bg-[#363636] border-[#363636]">
-              <p className="text-white text-sm">Notifications</p>
-            </TooltipContent>
-          </Tooltip>
+
 
           {/* Arcus Symbol - AI Assistant */}
           <Tooltip delayDuration={100}>
