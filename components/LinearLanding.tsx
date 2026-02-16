@@ -50,7 +50,7 @@ const features = [
     },
     {
         title: "Neural Drafting",
-        description: "AI that learns your voice and context to draft perfect replies in seconds.",
+        description: "AI that learns your voice and context to draft perfect replies in seconds. All actions require your manual approval.",
         icon: Bot,
         color: "text-zinc-300",
     },
@@ -219,7 +219,7 @@ export function LinearLanding() {
                         Stop triaging. Mailient identifies revenue opportunities, surfaces urgent threads, and drafts replies in your voice—automatically.
                     </p>
 
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
                         {status === "authenticated" ? (
                             <GlassButton onClick={() => router.push('/home-feed?welcome=true')} size="lg">
                                 Continue to Dashboard
@@ -241,6 +241,10 @@ export function LinearLanding() {
                             </>
                         )}
                     </div>
+
+                    <p className="text-[10px] sm:text-xs text-white/30 mb-12 max-w-lg mx-auto italic">
+                        All email sending actions require you to draft and approve each message — Mailient does not send emails automatically without your approval.
+                    </p>
 
                     {/* Trust Signals */}
                     <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-center gap-3 sm:gap-x-6 md:gap-x-8 gap-y-3 mb-10 md:mb-16 text-xs sm:text-sm text-zinc-400 px-2">
@@ -531,6 +535,9 @@ export function LinearLanding() {
                                                     </div>
                                                     <span className="text-zinc-300 font-medium text-sm md:text-base">Archive confidently</span>
                                                 </div>
+                                                <p className="text-[10px] text-zinc-500 italic mt-6 border-l border-white/10 pl-4 py-1">
+                                                    All email sending actions require you to draft and approve each message — Mailient does not send emails automatically without your approval.
+                                                </p>
                                             </div>
                                         </motion.div>
                                     )}
@@ -560,18 +567,23 @@ export function LinearLanding() {
                             transition={{ delay: 0.5 }}
                             className="text-center mt-20"
                         >
-                            <div className="inline-flex items-center gap-6 p-8 rounded-3xl border border-white/10 bg-white/[0.02] backdrop-blur-sm">
-                                <div className="text-left">
-                                    <h3 className="text-2xl font-bold text-white mb-2">Ready to save 10+ hours/week?</h3>
-                                    <p className="text-zinc-400">Join founders who transformed their inbox.</p>
+                            <div className="flex flex-col items-center gap-6">
+                                <div className="inline-flex items-center gap-6 p-8 rounded-3xl border border-white/10 bg-white/[0.02] backdrop-blur-sm">
+                                    <div className="text-left">
+                                        <h3 className="text-2xl font-bold text-white mb-2">Ready to save 10+ hours/week?</h3>
+                                        <p className="text-zinc-400">Join founders who transformed their inbox.</p>
+                                    </div>
+                                    <Button
+                                        onClick={() => signIn('google')}
+                                        className="bg-white text-black hover:bg-zinc-200 rounded-full px-8 py-4 text-lg font-bold"
+                                    >
+                                        Unlock My Inbox
+                                        <ArrowRight className="w-5 h-5 ml-2" />
+                                    </Button>
                                 </div>
-                                <Button
-                                    onClick={() => signIn('google')}
-                                    className="bg-white text-black hover:bg-zinc-200 rounded-full px-8 py-4 text-lg font-bold"
-                                >
-                                    Unlock My Inbox
-                                    <ArrowRight className="w-5 h-5 ml-2" />
-                                </Button>
+                                <p className="text-[10px] sm:text-xs text-white/20 italic max-w-md">
+                                    All email sending actions require you to draft and approve each message — Mailient does not send emails automatically without your approval.
+                                </p>
                             </div>
                         </motion.div>
                     </div>
@@ -1113,7 +1125,7 @@ export function LinearLanding() {
                         />
                         <FAQItem
                             question="How does AI drafting match my unique voice?"
-                            answer="The AI analyzes your previous outgoing threads to learn your tone, signature style, and typical responses. Over time, it drafts replies that are indistinguishable from your own writing."
+                            answer="The AI analyzes your previous outgoing threads to learn your tone, signature style, and typical responses. Over time, it drafts replies that are indistinguishable from your own writing. Note: All email sending actions require you to draft and approve each message — Mailient does not send emails automatically without your approval."
                         />
                     </div>
                 </div>

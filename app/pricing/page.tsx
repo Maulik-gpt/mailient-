@@ -196,8 +196,11 @@ export default function PricingPage() {
 					<h2 className="text-4xl md:text-6xl font-black tracking-tighter text-white mt-4">
 						Reclaim your focus.
 					</h2>
-					<p className="text-neutral-500 max-w-lg mx-auto text-lg md:text-xl font-medium">
+					<p className="text-neutral-500 max-w-lg mx-auto text-lg md:text-xl font-medium mb-4">
 						Choose the plan that fits your workflow. Automate the noise, extract the signal.
+					</p>
+					<p className="text-[10px] sm:text-xs text-white/20 italic max-w-md mx-auto">
+						All email sending actions require you to draft and approve each message — Mailient does not send emails automatically without your approval.
 					</p>
 				</motion.div>
 			</div>
@@ -236,6 +239,10 @@ export default function PricingPage() {
 					/>
 				))}
 			</div>
+
+			<p className="relative z-10 text-[10px] text-white/20 italic mt-12 px-6 text-center max-w-2xl">
+				Compliance Note: All email sending actions require you to draft and approve each message — Mailient does not send emails automatically without your approval.
+			</p>
 
 			{/* Back to Dashboard */}
 			{currentPlan && (
