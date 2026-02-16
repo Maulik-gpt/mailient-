@@ -65,7 +65,7 @@ export function RewardsSection({
     return (
         <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Hero Header */}
-            <div className="relative overflow-hidden rounded-3xl p-8 border border-white/10 bg-gradient-to-br from-neutral-900 via-neutral-950 to-black">
+            <div className="relative overflow-hidden rounded-3xl p-8 border border-white/10 bg-gradient-to-br from-zinc-950 via-black to-black">
                 <div className="absolute top-0 right-0 p-4">
                     <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-medium">
                         <span className="relative flex h-2 w-2">
@@ -132,7 +132,7 @@ export function RewardsSection({
                                     <p className="font-semibold text-white text-xs sm:text-base truncate w-full">{leaderboard[1].username}</p>
                                     <p className="text-[10px] sm:text-xs text-neutral-500">{leaderboard[1].invite_count} invites</p>
                                 </div>
-                                <div className="w-24 sm:w-40 h-24 sm:h-36 rounded-t-2xl bg-gradient-to-b from-neutral-200/20 to-neutral-200/5 border-x border-t border-white/10 flex items-center justify-center relative">
+                                <div className="w-24 sm:w-40 h-24 sm:h-36 rounded-t-2xl bg-gradient-to-b from-white/10 to-transparent border-x border-t border-white/10 flex items-center justify-center relative">
                                     <span className="text-4xl sm:text-6xl font-bold text-white/10">2</span>
                                     <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-black to-transparent" />
                                 </div>
@@ -149,7 +149,7 @@ export function RewardsSection({
                                     <p className="font-bold text-white text-sm sm:text-xl truncate w-full">{leaderboard[0].username}</p>
                                     <p className="text-[10px] sm:text-sm text-neutral-500">{leaderboard[0].invite_count} invites</p>
                                 </div>
-                                <div className="w-28 sm:w-48 h-32 sm:h-52 rounded-t-2xl bg-gradient-to-b from-neutral-400/30 to-neutral-400/5 border-x border-t border-white/20 flex items-center justify-center relative">
+                                <div className="w-28 sm:w-48 h-32 sm:h-52 rounded-t-2xl bg-gradient-to-b from-white/15 to-transparent border-x border-t border-white/20 flex items-center justify-center relative">
                                     <span className="text-6xl sm:text-8xl font-bold text-white/20">1</span>
                                     <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent opacity-20" />
                                     <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-black to-transparent" />
@@ -167,7 +167,7 @@ export function RewardsSection({
                                     <p className="font-semibold text-white text-xs sm:text-base truncate w-full">{leaderboard[2].username}</p>
                                     <p className="text-[10px] sm:text-xs text-neutral-500">{leaderboard[2].invite_count} invites</p>
                                 </div>
-                                <div className="w-20 sm:w-36 h-20 sm:h-28 rounded-t-2xl bg-gradient-to-b from-neutral-200/10 to-neutral-200/5 border-x border-t border-white/5 flex items-center justify-center relative">
+                                <div className="w-20 sm:w-36 h-20 sm:h-28 rounded-t-2xl bg-gradient-to-b from-white/5 to-transparent border-x border-t border-white/5 flex items-center justify-center relative">
                                     <span className="text-3xl sm:text-5xl font-bold text-white/5">3</span>
                                     <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-black to-transparent" />
                                 </div>
@@ -277,7 +277,7 @@ export function RewardsSection({
                                                     "w-8 h-8 rounded-lg border flex items-center justify-center text-sm font-bold transition-colors",
                                                     isCompleted
                                                         ? "bg-emerald-500 border-emerald-400 text-white"
-                                                        : "bg-neutral-900 border-white/10 text-neutral-400 group-hover:text-white"
+                                                        : "bg-black border-white/10 text-neutral-400 group-hover:text-white"
                                                 )}>
                                                     {isCompleted ? <Check className="w-4 h-4" /> : row.invites}
                                                 </div>

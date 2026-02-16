@@ -2530,16 +2530,16 @@ textarea,
 /* Refined dark palette with accessibility contrast */
 :root,
 .dark {
-  --glass-bg: rgba(28, 28, 30, 0.72);
-  --glass-bg-elevated: rgba(44, 44, 46, 0.8);
+  --glass-bg: rgba(9, 9, 11, 0.95);
+  --glass-bg-elevated: rgba(18, 18, 18, 0.98);
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-border-strong: rgba(255, 255, 255, 0.12);
-  --glass-highlight: rgba(255, 255, 255, 0.06);
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-  --glass-blur: 20px;
-  --settings-bg: #0a0a0b;
-  --settings-surface: #111113;
-  --settings-surface-hover: #18181b;
+  --glass-highlight: rgba(255, 255, 255, 0.04);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  --glass-blur: 24px;
+  --settings-bg: #000000;
+  --settings-surface: #0a0a0a;
+  --settings-surface-hover: #121212;
   --settings-text: #fafafa;
   --settings-text-secondary: #a1a1aa;
   --settings-text-tertiary: #71717a;

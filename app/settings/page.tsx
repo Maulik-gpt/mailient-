@@ -85,12 +85,12 @@ const SPECIAL_BADGES = [
 ];
 
 const RARITY_COLORS: Record<string, { bg: string; border: string; glow: string; text: string }> = {
-  common: { bg: "bg-neutral-800/50", border: "border-neutral-600/50", glow: "", text: "text-neutral-400" },
-  uncommon: { bg: "bg-green-950/50", border: "border-green-600/50", glow: "shadow-[0_0_15px_-5px_rgba(34,197,94,0.3)]", text: "text-green-400" },
-  rare: { bg: "bg-blue-950/50", border: "border-blue-500/50", glow: "shadow-[0_0_15px_-5px_rgba(59,130,246,0.4)]", text: "text-blue-400" },
-  epic: { bg: "bg-purple-950/50", border: "border-purple-500/50", glow: "shadow-[0_0_20px_-5px_rgba(168,85,247,0.5)]", text: "text-purple-400" },
-  legendary: { bg: "bg-amber-950/50", border: "border-amber-500/50", glow: "shadow-[0_0_25px_-5px_rgba(245,158,11,0.6)]", text: "text-amber-400" },
-  mythic: { bg: "bg-gradient-to-br from-pink-950/50 to-cyan-950/50", border: "border-pink-500/50", glow: "shadow-[0_0_30px_-5px_rgba(236,72,153,0.7)]", text: "text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-cyan-400" },
+  common: { bg: "bg-zinc-950/50", border: "border-white/5", glow: "", text: "text-neutral-400" },
+  uncommon: { bg: "bg-green-950/40", border: "border-green-600/30", glow: "shadow-[0_0_15px_-5px_rgba(34,197,94,0.3)]", text: "text-green-400" },
+  rare: { bg: "bg-blue-950/40", border: "border-blue-500/30", glow: "shadow-[0_0_15px_-5px_rgba(59,130,246,0.4)]", text: "text-blue-400" },
+  epic: { bg: "bg-purple-950/40", border: "border-purple-500/30", glow: "shadow-[0_0_20px_-5px_rgba(168,85,247,0.5)]", text: "text-purple-400" },
+  legendary: { bg: "bg-amber-950/40", border: "border-amber-500/30", glow: "shadow-[0_0_25px_-5px_rgba(245,158,11,0.6)]", text: "text-amber-400" },
+  mythic: { bg: "bg-gradient-to-br from-pink-950/40 to-cyan-950/40", border: "border-pink-500/30", glow: "shadow-[0_0_30px_-5px_rgba(236,72,153,0.7)]", text: "text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-cyan-400" },
 };
 
 // Sound effects for badge unlocks
@@ -414,7 +414,7 @@ function StreakBadgesCard({ streak = 0 }: { streak?: number }) {
                 "group relative flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all duration-300 cursor-default",
                 isEarned
                   ? `${colors.bg} ${colors.border} ${colors.glow}`
-                  : "bg-neutral-900/50 border-neutral-800/50 opacity-50 grayscale"
+                  : "bg-black/40 border-white/5 opacity-50 grayscale"
               )}
             >
               <span className={cn("text-2xl", !isEarned && "opacity-40")}>{badge.emoji}</span>
@@ -473,7 +473,7 @@ function AchievementsCard({ earnedBadges = [] }: { earnedBadges?: string[] }) {
                 "group relative flex flex-col items-center gap-2 p-4 rounded-xl border transition-all duration-300 cursor-default",
                 isEarned
                   ? `${colors.bg} ${colors.border} ${colors.glow}`
-                  : "bg-neutral-900/50 border-neutral-800/50 opacity-50 grayscale"
+                  : "bg-black/40 border-white/5 opacity-50 grayscale"
               )}
             >
               <span className={cn("text-3xl", isEarned ? "" : "opacity-40")}>{badge.emoji}</span>
