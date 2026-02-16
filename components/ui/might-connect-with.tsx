@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Check, Frown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { addNotification } from '@/lib/notifications';
+
 import { InviteShareModal } from './invite-share-modal';
 
 interface Profile {
@@ -29,7 +29,7 @@ export function MightConnectWith({ profiles, compact = false, hasRealContacts = 
   const [following, setFollowing] = useState<Set<string>>(new Set());
   const [displayProfiles] = useState(compact ? profiles.slice(0, 3) : profiles);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-  
+
   // Get username from session if not provided
   const username = currentUsername || session?.user?.name || (session?.user?.email ? session.user.email.split('@')[0] : 'user');
 
@@ -52,36 +52,14 @@ export function MightConnectWith({ profiles, compact = false, hasRealContacts = 
   const handleFollow = (profile: Profile) => {
     const profileId = profile.id;
     const wasFollowing = following.has(profileId);
-    
-    // Create notification before state update to prevent duplicates
+
+    // Log follow/unfollow action
     if (wasFollowing) {
-      // Create notification when unfollowing
-      addNotification({
-        type: 'follow',
-        user: {
-          name: profile.name,
-          username: profile.username,
-          avatar: profile.avatar,
-          verified: profile.isVerified,
-        },
-        content: `You have unfollowed ${profile.name}`,
-        timestamp: 'just now',
-      });
+      console.log(`Unfollowed ${profile.name}`);
     } else {
-      // Create notification when following
-      addNotification({
-        type: 'follow',
-        user: {
-          name: profile.name,
-          username: profile.username,
-          avatar: profile.avatar,
-          verified: profile.isVerified,
-        },
-        content: `You have successfully followed ${profile.name}`,
-        timestamp: 'just now',
-      });
+      console.log(`Followed ${profile.name}`);
     }
-    
+
     setFollowing(prev => {
       const newSet = new Set(prev);
       if (wasFollowing) {
@@ -89,12 +67,12 @@ export function MightConnectWith({ profiles, compact = false, hasRealContacts = 
       } else {
         newSet.add(profileId);
       }
-      
+
       // Save to localStorage
       if (typeof window !== 'undefined') {
         localStorage.setItem('mailient_following', JSON.stringify(Array.from(newSet)));
       }
-      
+
       return newSet;
     });
   };
@@ -107,20 +85,20 @@ export function MightConnectWith({ profiles, compact = false, hasRealContacts = 
           <div className="p-4 border-b border-[#2f3336]">
             <h2 className="text-white font-bold text-xl">Might Connect With</h2>
           </div>
-          
+
           <div className="p-6 flex flex-col items-center justify-center text-center space-y-4">
             {/* Placeholder Message */}
             <div className="space-y-2">
               <p className="text-white text-[15px]">No contacts found…</p>
               <Frown className="w-8 h-8 text-[#8b98a5] mx-auto" />
             </div>
-            
+
             {/* Invite Button */}
             <button
               onClick={() => setIsInviteModalOpen(true)}
               className="w-full py-2.5 px-4 rounded-full font-bold text-[15px] transition-colors hover:opacity-90 border"
-              style={{ 
-                backgroundColor: '#1c1c1c', 
+              style={{
+                backgroundColor: '#1c1c1c',
                 color: '#fafafa',
                 borderColor: '#787878'
               }}
@@ -129,9 +107,9 @@ export function MightConnectWith({ profiles, compact = false, hasRealContacts = 
             </button>
           </div>
         </div>
-        
-        <InviteShareModal 
-          open={isInviteModalOpen} 
+
+        <InviteShareModal
+          open={isInviteModalOpen}
           onOpenChange={setIsInviteModalOpen}
           username={username}
         />
@@ -145,14 +123,14 @@ export function MightConnectWith({ profiles, compact = false, hasRealContacts = 
         <div className="p-4 border-b border-[#2f3336]">
           <h2 className="text-white font-bold text-xl">Might Connect With</h2>
         </div>
-        
+
         <div className="divide-y divide-[#2f3336]">
           {displayProfiles.map((profile) => {
             const isFollowing = following.has(profile.id);
-            
+
             return (
-              <div 
-                key={profile.id} 
+              <div
+                key={profile.id}
                 className="p-4 hover:bg-[#16181c] transition-colors cursor-pointer"
                 onClick={() => router.push(`/aether/${profile.username}`)}
               >
@@ -178,10 +156,10 @@ export function MightConnectWith({ profiles, compact = false, hasRealContacts = 
                         @{profile.username}
                       </div>
                       {profile.bio && !compact && (
-                        <div className="text-[#8b98a5] text-[15px] mt-1 overflow-hidden" style={{ 
-                          display: '-webkit-box', 
-                          WebkitLineClamp: 2, 
-                          WebkitBoxOrient: 'vertical' 
+                        <div className="text-[#8b98a5] text-[15px] mt-1 overflow-hidden" style={{
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical'
                         }}>
                           {profile.bio}
                         </div>
@@ -193,28 +171,27 @@ export function MightConnectWith({ profiles, compact = false, hasRealContacts = 
                       e.stopPropagation();
                       handleFollow(profile);
                     }}
-                    className={`px-4 py-1.5 rounded-full font-bold text-[15px] transition-all duration-200 flex-shrink-0 relative overflow-hidden group ${
-                      isFollowing
+                    className={`px-4 py-1.5 rounded-full font-bold text-[15px] transition-all duration-200 flex-shrink-0 relative overflow-hidden group ${isFollowing
                         ? ''
                         : 'hover:bg-[#e6e6e6]'
-                    }`}
-                    style={isFollowing 
-                      ? { 
-                          backgroundColor: '#2b2b2b', 
-                          color: '#fafafa',
-                          border: '1px solid #474747'
-                        }
-                      : { 
-                          backgroundColor: '#fafafa', 
-                          color: '#000'
-                        }
+                      }`}
+                    style={isFollowing
+                      ? {
+                        backgroundColor: '#2b2b2b',
+                        color: '#fafafa',
+                        border: '1px solid #474747'
+                      }
+                      : {
+                        backgroundColor: '#fafafa',
+                        color: '#000'
+                      }
                     }
                   >
                     <span className={`transition-opacity duration-200 ${isFollowing ? 'group-hover:opacity-0' : ''}`}>
                       {isFollowing ? 'Following' : 'Follow'}
                     </span>
                     {isFollowing && (
-                      <span 
+                      <span
                         className="absolute inset-0 flex items-center justify-center transition-opacity duration-200 opacity-0 group-hover:opacity-100"
                         style={{ backgroundColor: '#fafafa', color: '#000' }}
                       >
@@ -227,7 +204,7 @@ export function MightConnectWith({ profiles, compact = false, hasRealContacts = 
             );
           })}
         </div>
-        
+
         {compact && profiles.length > 3 && (
           <div className="p-4 border-t border-[#2f3336]">
             <button
