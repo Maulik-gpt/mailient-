@@ -68,13 +68,13 @@ function HomeFeedContent() {
                 const isActive = subData.subscription?.hasActiveSubscription;
                 const planType = subData.subscription?.planType;
 
-                // If user has an active subscription OR has a valid plan type, allow access
-                if (isActive || planType === 'starter' || planType === 'pro') {
+                // If user has an active subscription OR has a valid plan type (including free), allow access
+                if (isActive || planType === 'free' || planType === 'starter' || planType === 'pro') {
                   localStorage.setItem('onboarding_completed', 'true');
                   // Clean up pending plan data on success
                   localStorage.removeItem('pending_plan');
                   localStorage.removeItem('pending_plan_timestamp');
-                  console.log('✅ [HomeFeed] Subscription active, access granted', { isActive, planType });
+                  console.log('✅ [HomeFeed] Access granted', { isActive, planType });
                   return;
                 }
 
@@ -146,8 +146,8 @@ function HomeFeedContent() {
                     const subCheckData = await subCheck.json();
                     const subIsActive = subCheckData.subscription?.hasActiveSubscription;
                     const subPlanType = subCheckData.subscription?.planType;
-                    if (!subIsActive && subPlanType !== 'starter' && subPlanType !== 'pro') {
-                      console.log('🚫 [HomeFeed] Onboarding done but no subscription, redirecting to /pricing');
+                    if (!subIsActive && subPlanType !== 'free' && subPlanType !== 'starter' && subPlanType !== 'pro') {
+                      console.log('🚫 [HomeFeed] Onboarding done but no valid plan, redirecting to /pricing');
                       router.push('/pricing');
                       return;
                     }

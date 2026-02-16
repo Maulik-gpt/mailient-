@@ -208,7 +208,7 @@ export function GmailInterfaceFixed() {
 
     // Usage & Subscription
     const [usageData, setUsageData] = useState<{
-        planType: 'starter' | 'pro' | 'none';
+        planType: 'free' | 'starter' | 'pro' | 'none';
         features: Record<string, { usage: number; limit: number; period: 'daily' | 'monthly'; remaining: number; isUnlimited: boolean }>;
     } | null>(null);
 
@@ -1280,14 +1280,14 @@ export function GmailInterfaceFixed() {
                 <div className="fixed top-4 right-4 z-50">
                     <UsageBadge
                         icon={<Sparkles className="h-4 w-4" />}
-                        planName={usageData.planType === 'starter' ? 'Starter' : 'Free'}
+                        planName={usageData.planType === 'starter' ? 'Starter' : usageData.planType === 'pro' ? 'Pro' : 'Free'}
                         usage={usageData.features?.arcus_ai?.usage || 0}
-                        limit={usageData.features?.arcus_ai?.limit || 10}
+                        limit={usageData.features?.arcus_ai?.limit || 5}
                         tooltipContent={
                             <p>
-                                You are on the {usageData.planType === 'starter' ? 'Starter' : 'Free'} plan.
+                                You are on the {usageData.planType === 'starter' ? 'Starter' : usageData.planType === 'pro' ? 'Pro' : 'Free'} plan.
                                 <br />
-                                {usageData.features?.arcus_ai?.remaining ?? 0}/{usageData.features?.arcus_ai?.limit ?? 10} AI credits left today.
+                                {usageData.features?.arcus_ai?.remaining ?? 5} AI credits left today.
                             </p>
                         }
                     />

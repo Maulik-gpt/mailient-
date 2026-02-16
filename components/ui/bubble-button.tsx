@@ -39,7 +39,7 @@ const Bubbles = () => {
               left: `${Math.random() * 95}%`, // Random horizontal position
               animation: `rise ${2 + Math.random() * 3}s ${ // Random duration
                 Math.random() * 4
-              }s linear infinite`, // Random delay
+                }s linear infinite`, // Random delay
             }}
           />
         ))}
@@ -91,10 +91,10 @@ const UsageBadge = React.forwardRef<HTMLDivElement, UsageBadgeProps>(
               <div className="z-10">
                 <span>{planName}</span>
                 <span className="ml-2 opacity-70">
-                  {usage}/{limit} left
+                  {limit - usage}/{limit} left
                 </span>
               </div>
-              
+
               {/* Progress Bar Background */}
               <div className="absolute inset-0 z-0 h-full w-full bg-secondary" />
 

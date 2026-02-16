@@ -165,7 +165,7 @@ export default function ChatInterface({
   const [activeSearchLabel, setActiveSearchLabel] = useState<string | null>(null);
 
   // Subscription state - to hide upgrade button for Pro users
-  const [currentPlan, setCurrentPlan] = useState<'starter' | 'pro' | 'none' | null>(null);
+  const [currentPlan, setCurrentPlan] = useState<'free' | 'starter' | 'pro' | 'none' | null>(null);
 
   const [arcusCredits, setArcusCredits] = useState<{
     usage: number;
@@ -253,8 +253,8 @@ export default function ChatInterface({
         const response = await fetch('/api/subscription/status');
         if (response.ok) {
           const data = await response.json();
-          if (data.subscription?.hasActiveSubscription) {
-            setCurrentPlan(data.subscription.planType as 'starter' | 'pro');
+          if (data.subscription?.hasActiveSubscription || data.subscription?.planType === 'free') {
+            setCurrentPlan(data.subscription.planType as 'free' | 'starter' | 'pro');
           } else {
             setCurrentPlan('none');
           }

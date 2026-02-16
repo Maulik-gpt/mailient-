@@ -52,7 +52,7 @@ export async function GET(request) {
         return NextResponse.json({
             success: true,
             subscription: {
-                hasActiveSubscription: isActive,
+                hasActiveSubscription: allUsage.hasActiveSubscription,
                 planType,
                 planName: planName,
                 planPrice: plan?.price || 0,
