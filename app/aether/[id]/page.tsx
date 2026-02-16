@@ -14,8 +14,6 @@ import {
   Check
 } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
-import { NotificationIcon } from '@/components/ui/notification-icon';
-import { addNotification } from '@/lib/notifications';
 import { Feed } from '@/components/ui/feed';
 
 interface ProfileUser {
@@ -127,30 +125,8 @@ export default function AetherProfilePage() {
 
       if (wasFollowing) {
         followingSet.delete(userId);
-        addNotification({
-          type: 'follow',
-          user: {
-            name: profile.name,
-            username: profile.username,
-            avatar: profile.avatar,
-            verified: profile.isVerified,
-          },
-          content: `You have unfollowed ${profile.name}`,
-          timestamp: 'just now',
-        });
       } else {
         followingSet.add(userId);
-        addNotification({
-          type: 'follow',
-          user: {
-            name: profile.name,
-            username: profile.username,
-            avatar: profile.avatar,
-            verified: profile.isVerified,
-          },
-          content: `You have successfully followed ${profile.name}`,
-          timestamp: 'just now',
-        });
       }
 
       localStorage.setItem('mailient_following', JSON.stringify(Array.from(followingSet)));
@@ -188,20 +164,6 @@ export default function AetherProfilePage() {
               </TooltipContent>
             </Tooltip>
 
-            <Tooltip delayDuration={100}>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={() => router.push('/notifications')}
-                  className="p-2 hover:bg-[#1a1a1a] rounded-full transition-all duration-300 hover:scale-105"
-                  aria-label="Notifications"
-                >
-                  <NotificationIcon iconClassName="w-6 h-6 text-[#fcfcfc]" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                <p>Notifications</p>
-              </TooltipContent>
-            </Tooltip>
 
           </div>
         </div>
@@ -241,8 +203,8 @@ export default function AetherProfilePage() {
                 <button
                   onClick={handleFollow}
                   className={`px-6 py-2.5 rounded-full font-bold text-[15px] transition-all duration-200 relative overflow-hidden group mt-4 ${following
-                      ? ''
-                      : 'hover:bg-[#e6e6e6]'
+                    ? ''
+                    : 'hover:bg-[#e6e6e6]'
                     }`}
                   style={following
                     ? {
