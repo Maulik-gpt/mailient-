@@ -41,6 +41,7 @@ type EditProfileDialogProps = {
   trigger: React.ReactNode;
   user?: { name?: string | null; email?: string | null };
   profile?: {
+    name?: string | null;
     avatar_url?: string | null;
     banner_url?: string | null;
     bio?: string | null;
@@ -48,6 +49,7 @@ type EditProfileDialogProps = {
     website?: string | null;
     username?: string | null;
     preferences?: {
+      username?: string;
       social_links?: { x?: string; linkedin?: string; instagram?: string; github?: string };
     };
   };
@@ -68,7 +70,7 @@ export function EditProfileDialog({
   const bannerInputRef = React.useRef<HTMLInputElement>(null);
 
   const [form, setForm] = React.useState<EditProfileFormData>({
-    name: profile?.username || user?.name || "",
+    name: profile?.name || user?.name || "",
     username: profile?.preferences?.username ?? profile?.username ?? (user?.email?.split("@")[0] ?? ""),
     bio: profile?.bio ?? "",
     location: profile?.location ?? "",
@@ -84,7 +86,7 @@ export function EditProfileDialog({
   React.useEffect(() => {
     if (open) {
       setForm({
-        name: profile?.username || user?.name || "",
+        name: profile?.name || user?.name || "",
         username: profile?.preferences?.username ?? profile?.username ?? (user?.email?.split("@")[0] ?? ""),
         bio: profile?.bio ?? "",
         location: profile?.location ?? "",
@@ -193,7 +195,7 @@ export function EditProfileDialog({
               <div className="flex items-start gap-8">
                 {/* Profile Photo */}
                 <div className="relative group">
-                  <div className="w-24 h-24 rounded-full overflow-hidden bg-neutral-900 border-2 border-white/10 relative">
+                  <div className="w-24 h-24 rounded-3xl overflow-hidden bg-neutral-900 border-2 border-white/10 relative">
                     {uploadingAvatar ? (
                       <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                         <Loader2 className="w-6 h-6 animate-spin text-white" />

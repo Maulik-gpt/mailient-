@@ -910,7 +910,7 @@ export default function SettingsPage() {
                   <div className="absolute inset-0 profile-banner-overlay" />
                 </div>
                 <div className="relative px-6 pb-6 -mt-12">
-                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border-4 border-[var(--glass-bg-elevated)] bg-[var(--settings-surface)] shadow-xl shrink-0 flex items-center justify-center">
+                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl overflow-hidden border-4 border-[var(--glass-bg-elevated)] bg-[var(--settings-surface)] shadow-xl shrink-0 flex items-center justify-center">
                     {showAvatarImage ? (
                       <img
                         src={avatarUrl!}
@@ -926,7 +926,7 @@ export default function SettingsPage() {
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mt-4">
                     <div>
-                      <h2 className="text-2xl font-medium text-neutral-200 flex items-center gap-2">
+                      <h2 className="text-2xl font-bold text-neutral-200 flex items-center gap-2">
                         {displayName}
                       </h2>
                       <p className="text-neutral-500 text-sm mt-1">@{displayHandle}</p>
@@ -940,6 +940,7 @@ export default function SettingsPage() {
                       }
                       user={{ name: user.name, email: user.email }}
                       profile={{
+                        name: profile?.name ?? undefined,
                         avatar_url: profile?.avatar_url ?? undefined,
                         banner_url: profile?.banner_url ?? undefined,
                         username: profile?.preferences?.username ?? profile?.username ?? undefined,
