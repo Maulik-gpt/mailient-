@@ -17,7 +17,6 @@ import {
   Plug,
   MessageCircle,
   User,
-  Bell,
   Shield,
   Palette,
   Key,

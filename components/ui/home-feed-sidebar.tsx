@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Mail, Bell, User, MoreHorizontal, LogOut, Settings, CreditCard, UserPlus, NotebookPen, Users, Rocket } from 'lucide-react';
+import { Mail, User, MoreHorizontal, LogOut, Settings, CreditCard, UserPlus, NotebookPen, Users, Rocket } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 
 interface HomeFeedSidebarProps {

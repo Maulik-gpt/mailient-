@@ -34,7 +34,6 @@ These routes correctly implement subscription checks via `canUseFeature()`:
 | `/api/notes/save` | AI_NOTES | 20/month | Unlimited |
 | `/api/email/generate-note` | AI_NOTES | 20/month | Unlimited |
 | `/api/home-feed/insights` | SIFT_ANALYSIS | 5/day | Unlimited |
-| `/api/notifications/analyze` | SIFT_ANALYSIS | 5/day | Unlimited |
 | `/api/agent-talk/chat` | ARCUS_AI | 10/day | Unlimited |
 | `/api/agent-talk/chat-arcus` | ARCUS_AI | 10/day | Unlimited |
 | `/api/agent-talk/generate-title` | ARCUS_AI | 10/day | Unlimited |
@@ -232,7 +231,6 @@ import { subscriptionService } from '@/lib/subscription-service';
 const PROTECTED_PATHS = [
     '/dashboard',
     '/i/',
-    '/notifications',
     '/home-feed',
     '/settings'
 ];

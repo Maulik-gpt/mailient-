@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Home, Users, User, Mail, LogOut, Settings, Search, Plus, Bookmark, MessageCircle, Bell, History, DoorOpen, Info, MoreHorizontal } from 'lucide-react';
+import { Home, Users, User, Mail, LogOut, Settings, Search, Plus, Bookmark, MessageCircle, History, DoorOpen, Info, MoreHorizontal } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from './tooltip';
 import { Button } from './button';
 import { useRouter } from 'next/navigation';
