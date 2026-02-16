@@ -195,7 +195,7 @@ export function EditProfileDialog({
               <div className="flex items-start gap-8">
                 {/* Profile Photo */}
                 <div className="relative group">
-                  <div className="w-24 h-24 rounded-3xl overflow-hidden bg-neutral-900 border-2 border-white/10 relative">
+                  <div className="w-24 h-24 squircle bg-neutral-900 border-2 border-white/10 relative">
                     {uploadingAvatar ? (
                       <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                         <Loader2 className="w-6 h-6 animate-spin text-white" />

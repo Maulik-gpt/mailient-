@@ -910,7 +910,7 @@ export default function SettingsPage() {
                   <div className="absolute inset-0 profile-banner-overlay" />
                 </div>
                 <div className="relative px-6 pb-6 -mt-12">
-                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl overflow-hidden border-4 border-[var(--glass-bg-elevated)] bg-[var(--settings-surface)] shadow-xl shrink-0 flex items-center justify-center">
+                  <div className="w-24 h-24 sm:w-28 sm:h-28 squircle border-4 border-[var(--glass-bg-elevated)] bg-[var(--settings-surface)] shadow-xl shrink-0 flex items-center justify-center">
                     {showAvatarImage ? (
                       <img
                         src={avatarUrl!}
