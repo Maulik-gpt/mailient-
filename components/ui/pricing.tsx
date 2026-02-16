@@ -116,7 +116,9 @@ export function PricingCard({
 				'relative flex w-full flex-col rounded-[2.5rem] border p-8 md:p-12 transition-all duration-500',
 				isHighlighted
 					? 'bg-white border-white shadow-[0_0_80px_-15px_rgba(255,255,255,0.1)]'
-					: 'bg-black border-white/10',
+					: plan.price.monthly === 0
+						? 'bg-gradient-to-b from-zinc-900/50 to-black border-white/5 shadow-inner'
+						: 'bg-black border-white/10',
 				className,
 			)}
 			{...props}
@@ -147,8 +149,8 @@ export function PricingCard({
 								Free
 							</span>
 							<span className={cn(
-								'text-lg font-medium',
-								isHighlighted ? 'text-black/50' : 'text-zinc-500'
+								'text-lg font-normal tracking-tight opacity-70',
+								isHighlighted ? 'text-black/60' : 'text-zinc-500'
 							)}>
 								forever
 							</span>
@@ -186,7 +188,9 @@ export function PricingCard({
 							'w-full h-14 rounded-2xl text-lg font-bold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]',
 							isHighlighted
 								? 'bg-black text-white hover:bg-zinc-900 border-none shadow-2xl'
-								: 'bg-white text-black hover:bg-zinc-100'
+								: plan.price.monthly === 0
+									? 'bg-white/5 text-white hover:bg-white/10 border border-white/10 backdrop-blur-sm'
+									: 'bg-white text-black hover:bg-zinc-100'
 						)}
 						onClick={props.onPlanSelect}
 					>
@@ -201,7 +205,9 @@ export function PricingCard({
 							'w-full h-14 rounded-2xl text-lg font-bold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]',
 							isHighlighted
 								? 'bg-black text-white hover:bg-zinc-900 border-none shadow-2xl'
-								: 'bg-white text-black hover:bg-zinc-100'
+								: plan.price.monthly === 0
+									? 'bg-white/5 text-white hover:bg-white/10 border border-white/10 backdrop-blur-sm'
+									: 'bg-white text-black hover:bg-zinc-100'
 						)}
 						asChild
 					>
@@ -217,12 +223,12 @@ export function PricingCard({
 				{plan.features.map((feature, index) => (
 					<div key={index} className="flex items-center gap-3">
 						<Check className={cn(
-							'w-5 h-5',
-							isHighlighted ? 'text-black' : 'text-white'
+							'w-4 h-4',
+							isHighlighted ? 'text-black' : plan.price.monthly === 0 ? 'text-white/40' : 'text-white'
 						)} />
 						<span className={cn(
 							'text-sm font-medium',
-							isHighlighted ? 'text-black/80' : 'text-white'
+							isHighlighted ? 'text-black/80' : plan.price.monthly === 0 ? 'text-white/60' : 'text-white'
 						)}>
 							{feature.text}
 						</span>

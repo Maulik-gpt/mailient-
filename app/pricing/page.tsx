@@ -406,9 +406,11 @@ function PricingCard({ plan, index, currentPlan, isLoading, onSelect }: PricingC
 				"relative rounded-[2.5rem] flex flex-col transition-all duration-700 min-h-[580px] group/card",
 				plan.id === 'pro'
 					? "bg-white border-white shadow-[0_0_80px_rgba(255,255,255,0.15)]"
-					: plan.isPopular
-						? "bg-black border-white/20 shadow-[0_0_40px_rgba(255,255,255,0.05)]"
-						: "bg-black border-white/10",
+					: plan.id === 'free'
+						? "bg-gradient-to-br from-neutral-900/40 to-black border-white/5 shadow-inner"
+						: plan.isPopular
+							? "bg-black border-white/20 shadow-[0_0_40px_rgba(255,255,255,0.05)]"
+							: "bg-black border-white/10",
 				isCurrentPlan && "ring-2 ring-green-500/50 border-green-500/30"
 			)}
 		>
@@ -449,8 +451,8 @@ function PricingCard({ plan, index, currentPlan, isLoading, onSelect }: PricingC
 						{plan.price === 0 ? 'Free' : `$${plan.price}`}
 					</span>
 					<span className={cn(
-						"text-sm font-medium",
-						plan.id === 'pro' ? "text-black/20" : "text-white/20"
+						"text-sm font-normal tracking-tight opacity-50",
+						plan.id === 'pro' ? "text-black/30" : "text-white/30"
 					)}>{plan.price === 0 ? 'forever' : '/month'}</span>
 				</div>
 			</div>
@@ -466,17 +468,17 @@ function PricingCard({ plan, index, currentPlan, isLoading, onSelect }: PricingC
 				{plan.features.map((feature: string) => (
 					<div key={feature} className="flex items-start gap-4 group/feat">
 						<div className={cn(
-							"mt-0.5 w-5 h-5 rounded-full flex items-center justify-center transition-all",
+							"mt-0.5 w-4 h-4 rounded-full flex items-center justify-center transition-all",
 							plan.id === 'pro' ? "bg-black/5 border border-black/10" : "bg-neutral-900 border border-white/5"
 						)}>
 							<Check className={cn(
-								"w-2.5 h-2.5",
-								plan.id === 'pro' ? "text-black" : "text-white"
+								"w-2 h-2",
+								plan.id === 'pro' ? "text-black" : plan.id === 'free' ? "text-white/40" : "text-white"
 							)} strokeWidth={4} />
 						</div>
 						<p className={cn(
-							"text-[13px] font-medium leading-relaxed transition-colors",
-							plan.id === 'pro' ? "text-black/70 group-hover/feat:text-black" : "text-neutral-500 group-hover/feat:text-neutral-300"
+							"text-[13px] font-normal leading-relaxed transition-colors",
+							plan.id === 'pro' ? "text-black/70 group-hover/feat:text-black" : plan.id === 'free' ? "text-neutral-500 group-hover/feat:text-neutral-400" : "text-neutral-500 group-hover/feat:text-neutral-300"
 						)}>
 							{feature}
 						</p>
@@ -515,7 +517,9 @@ function PricingCard({ plan, index, currentPlan, isLoading, onSelect }: PricingC
 							"w-full py-4 rounded-2xl font-black text-[12px] tracking-[0.2em] uppercase transition-all duration-500 relative overflow-hidden shadow-xl hover:scale-[1.02] active:scale-[0.98]",
 							plan.id === 'pro'
 								? "bg-black text-white hover:bg-zinc-900"
-								: "bg-white text-black hover:bg-neutral-200"
+								: plan.id === 'free'
+									? "bg-white/5 text-white hover:bg-white/10 border border-white/10 backdrop-blur-sm"
+									: "bg-white text-black hover:bg-neutral-200"
 						)}
 					>
 						{isUpgrade ? "Upgrade to Pro" : isSwitch ? "Switch to Starter" : plan.buttonText}
