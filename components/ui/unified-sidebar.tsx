@@ -124,6 +124,7 @@ export function UnifiedSidebar({
   // Universal navigation items
   const universalNavItems: SidebarItem[] = [
     { id: 'home-feed', name: 'Feed', icon: Mail, isRoute: true, route: '/home-feed' },
+    { id: 'mission-control', name: 'Mission Control', icon: Rocket, isRoute: true, route: '/dashboard/agent-talk?mode=missions' },
     { id: 'agent-talk', name: 'Arcus', icon: Sparkles, isRoute: true, route: '/dashboard/agent-talk' },
   ];
 

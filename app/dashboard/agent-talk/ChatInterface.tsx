@@ -1,6 +1,6 @@
 "use client";
 
-import { Send, Mail, Upload, User, History, Plus, MessageCircle, Edit, DoorOpen, Bell, Mail as EmailIcon, MoreHorizontal, LogOut, Settings } from 'lucide-react';
+import { Send, Mail, Upload, User, History, Plus, MessageCircle, Edit, DoorOpen, Bell, Mail as EmailIcon, MoreHorizontal, LogOut, Settings, Target, Shield, Zap, CheckCircle2, AlertCircle, Clock, ArrowRight, Activity } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
@@ -18,6 +18,8 @@ import NotesFetchingDisplay from '@/components/ui/notes-fetching-display';
 import { UsageLimitModal } from '@/components/ui/usage-limit-modal';
 import { ShiningText } from '@/components/ui/shining-text';
 import { toast } from 'sonner';
+import { MissionUpdateOnboarding } from './components/MissionUpdateOnboarding';
+import { MissionDashboardDisplay, MissionAgentLoopDisplay, MissionSuggestionsDisplay } from './components/MissionControlUI';
 
 // Detect and wrap URLs in plain text with premium styling for actions
 const linkify = (text: string): string => {
@@ -96,15 +98,20 @@ interface AgentMessage {
   type: 'agent';
   content: {
     text: string;
-    list: string[];
-    footer: string;
-  } | string;
+    list?: string[];
+    footer?: string;
+  };
   time: string;
   meta?: {
-    actionType?: 'notes' | 'email' | 'general' | string;
-    notesResult?: any;
+    actionType?: 'email' | 'notes' | 'schedule_meeting' | 'draft_reply' | 'mission_dashboard' | 'mission_agent_loop' | 'mission_suggestions' | 'mission_created' | 'mission_action';
     emailResult?: any;
-  };
+    notesResult?: any;
+    missionData?: any;
+    loopResult?: any;
+    suggestions?: any;
+    draftData?: any;
+    schedulingData?: any;
+  }
 }
 
 interface UserMessage {
@@ -115,6 +122,8 @@ interface UserMessage {
 }
 
 type Message = AgentMessage | UserMessage;
+
+
 
 interface ChatInterfaceProps {
   initialConversationId?: string | null;
@@ -268,6 +277,14 @@ export default function ChatInterface({
     };
     fetchAndActivateSubscription();
   }, []);
+
+  // Handle mission-control redirect from sidebar
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.get('mode') === 'missions' && messages.length === 0 && !isLoading) {
+      handleSend("show my mission dashboard");
+    }
+  }, [messages.length, isLoading]);
 
   // Draft reply state
   const [currentDraftData, setCurrentDraftData] = useState<{
@@ -1018,6 +1035,7 @@ export default function ChatInterface({
         period={usageLimitModalData?.period || 'daily'}
         currentPlan={usageLimitModalData?.currentPlan || 'starter'}
       />
+      <MissionUpdateOnboarding />
       <div className="flex h-screen w-full text-white overflow-hidden" style={{
         background: '#000000'
       }}>
@@ -1333,6 +1351,39 @@ export default function ChatInterface({
                                     <div className="text-white/70 text-sm">No results found.</div>
                                   )}
                                 </div>
+                              )}
+
+                              {/* Mission Control UI Components */}
+                              {(msg as AgentMessage).meta?.actionType === 'mission_dashboard' && (
+                                <MissionDashboardDisplay
+                                  data={(msg as AgentMessage).meta?.missionData}
+                                  onAction={(action: string) => handleSend(action)}
+                                />
+                              )}
+
+                              {(msg as AgentMessage).meta?.actionType === 'mission_agent_loop' && (
+                                <MissionAgentLoopDisplay
+                                  loopResult={(msg as AgentMessage).meta?.loopResult}
+                                  onReviewDraft={(draft: any) => {
+                                    setCurrentDraftData({
+                                      recipientName: draft.draftTo || 'Recipient',
+                                      recipientEmail: draft.draftTo || '',
+                                      subject: draft.draftSubject || 'Follow-up',
+                                      content: draft.draftContent || '',
+                                      senderName: '',
+                                      threadId: (msg as AgentMessage).meta?.loopResult?.mission?.linked_thread_ids?.[0] || '',
+                                      messageId: (msg as AgentMessage).meta?.loopResult?.mission?.linked_email_ids?.[0] || ''
+                                    });
+                                    setShowDraftBox(true);
+                                  }}
+                                />
+                              )}
+
+                              {(msg as AgentMessage).meta?.actionType === 'mission_suggestions' && (
+                                <MissionSuggestionsDisplay
+                                  suggestions={(msg as AgentMessage).meta?.suggestions || []}
+                                  onAccept={(s: any) => handleSend(`Create a mission to ${s.title}`)}
+                                />
                               )}
                             </div>
                           ) : (
