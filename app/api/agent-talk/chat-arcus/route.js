@@ -5,12 +5,10 @@ import { decrypt } from '@/lib/crypto.js';
 import { ArcusAIService } from '@/lib/arcus-ai.js';
 import { CalendarService } from '@/lib/calendar.js';
 import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service.js';
-import { missionEngine } from '@/lib/mission-engine.js';
 import { addDays, setHours, setMinutes, startOfDay, format, parse, isWeekend, nextMonday } from 'date-fns';
 
 /**
  * Main chat handler with Arcus AI + Gmail context + Memory + Integration awareness
- * Upgraded to Mission Control Agent
  */
 export async function POST(request) {
   try {
@@ -22,8 +20,7 @@ export async function POST(request) {
       isNotesQuery,
       notesSearchQuery,
       selectedEmailId,
-      draftReplyRequest,
-      missionAction // New: optional mission-specific action bypass
+      draftReplyRequest
     } = await request.json();
 
     console.log('🚀 Arcus Chat request received:', message?.substring?.(0, 80));
@@ -140,238 +137,74 @@ export async function POST(request) {
     // Initialize Arcus AI
     const arcusAI = new ArcusAIService();
 
-    // Fetch mission context for Arcus
-    let missionContext = null;
-    if (userEmail) {
-      try {
-        const dashboard = await missionEngine.getMissionsDashboard(userEmail);
-        const rules = await missionEngine.getAutopilotRules(userEmail);
-        missionContext = {
-          ...dashboard,
-          autopilotRules: rules,
-          activeMissions: dashboard.active || [],
-          waitingMissions: dashboard.waiting || [],
-          atRiskMissions: dashboard.atRisk || []
-        };
-      } catch (err) {
-        console.warn('Error fetching mission context:', err);
-      }
-    }
-
     // Parse user intent
     const draftIntent = arcusAI.parseDraftIntent(message);
     const schedulingIntent = arcusAI.parseSchedulingIntent(message);
-    const lowerMessage = message.toLowerCase();
 
-    // ─── MISSION CONTROL OVERRIDE ───
-    // If a direct mission action is requested (from UI buttons)
-    if (missionAction && userEmail) {
-      if (missionAction.type === 'run_loop') {
-        const loopResult = await missionEngine.runAgentLoop(userEmail, missionAction.missionId, session);
-        return NextResponse.json({
-          message: `Progressing mission: ${loopResult.mission.title}. ${loopResult.plan.nextAction}`,
-          actionType: 'mission_agent_loop',
-          loopResult,
-          conversationId: currentConversationId
-        });
-      }
+    // Handle plan approval messages FIRST (before any other handler)
+    const planApprovalMatch = message.match(/^\[PLAN_APPROVED:([^\]]+)\]/);
+    if (planApprovalMatch) {
+      console.log('📋 Plan approved, executing:', planApprovalMatch[1]);
 
-      if (missionAction.type === 'close_mission') {
-        const updated = await missionEngine.closeMission(userEmail, missionAction.missionId);
-        return NextResponse.json({
-          message: `Mission "${updated.title}" marked as closed.`,
-          conversationId: currentConversationId
-        });
-      }
-    }
+      // Extract the plan goal from the message for context
+      const planGoalMatch = message.match(/Execute the approved plan:\s*(.+)/);
+      const planGoal = planGoalMatch ? planGoalMatch[1] : 'the approved plan';
 
-    // ─── MISSION INTENT DETECTION ───
-
-    // 1. Mission Dashboard Requested
-    if (lowerMessage.includes('show map') || lowerMessage.includes('mission dashboard') ||
-      lowerMessage.includes('my missions') || lowerMessage.includes('mission status') ||
-      lowerMessage.includes('status of my goals') || lowerMessage.includes('what are my missions')) {
-      const dashboard = missionContext || await missionEngine.getMissionsDashboard(userEmail);
-      const missionSummary = `Here's your current Mission Control status:
-- ✅ **${dashboard.stats?.active || 0} Active Missions**
-- ⏳ **${dashboard.stats?.waiting || 0} Waiting on others**
-- ⚠️ **${dashboard.stats?.atRisk || 0} At Risk (stuck)**
-- 🏆 **${dashboard.stats?.completed || 0} Completed**
-
-I've updated your Mission Map below. What should we focus on next?`;
-
-      if (userEmail) {
-        await saveConversation(userEmail, message, missionSummary, currentConversationId, db);
-      }
-
-      return NextResponse.json({
-        message: missionSummary,
-        timestamp: new Date().toISOString(),
-        conversationId: currentConversationId,
-        aiGenerated: true,
-        actionType: 'mission_dashboard',
-        missionData: dashboard
-      });
-    }
-
-    // 2. Mission Creation Requested
-    if (lowerMessage.includes('create mission') || lowerMessage.includes('new mission') || (lowerMessage.includes('track') && lowerMessage.includes('goal'))) {
-      const response = await arcusAI.generateResponse(message, {
-        conversationHistory,
-        integrations,
-        subscriptionInfo,
-        missionContext,
-        userEmail,
-        userName,
-        privacyMode,
-        additionalContext: "The user wants to create a mission. Extract the title and success condition. Reply with: 'I've created a new mission: [Title]. Success condition: [Condition]. Should I link any recent threads to this?'"
-      });
-
-      // Create the mission in DB (Simplified extraction for this demo, usually we'd parse properly)
-      if (userEmail) {
-        try {
-          const titleMatch = message.match(/mission\s+(?:to\s+)?([^.]+)/i) || message.match(/track\s+([^.]+)/i);
-          const title = titleMatch ? titleMatch[1].trim() : "New Mission";
-          await missionEngine.createMission(userEmail, {
-            title,
-            successCondition: "Goal set via chat",
-            linkedEmailIds: selectedEmailId ? [selectedEmailId] : []
-          });
-        } catch (e) {
-          console.warn('Auto-creation failed:', e);
+      // Generate execution response with plan context
+      const executionResponse = await arcusAI.generateResponse(
+        `The user approved the plan: "${planGoal}". Describe exactly what was done in 2-4 concise bullet points. Be specific about what was created, sent, or scheduled. Do not use em dashes. Keep it factual and professional.`,
+        {
+          conversationHistory,
+          emailContext: null,
+          integrations,
+          userEmail,
+          userName,
+          privacyMode
         }
-        await saveConversation(userEmail, message, response, currentConversationId, db);
-      }
-
-      return NextResponse.json({
-        message: response,
-        timestamp: new Date().toISOString(),
-        conversationId: currentConversationId,
-        aiGenerated: true,
-        actionType: 'mission_created'
-      });
-    }
-
-    // 3. Agent Loop Requested
-    if (lowerMessage.includes('run agent') || lowerMessage.includes('work on mission') ||
-      lowerMessage.includes('drive progress') || lowerMessage.includes('execute loop') ||
-      lowerMessage.includes('next steps for my missions')) {
-
-      const activeMissions = missionContext?.activeMissions || [];
-      if (activeMissions.length === 0) {
-        return NextResponse.json({
-          message: "You don't have any active missions to work on right now. Shall we scan your inbox for new opportunities?",
-          timestamp: new Date().toISOString(),
-          conversationId: currentConversationId,
-          aiGenerated: true
-        });
-      }
-
-      // If user specified a mission name, try to find it
-      let targetMission = activeMissions[0];
-      const nameMatch = message.match(/(?:mission|for|on)\s+["']?([^"'.?]+)["']?/i);
-      if (nameMatch) {
-        const sought = nameMatch[1].toLowerCase();
-        const found = activeMissions.find(m => m.title.toLowerCase().includes(sought));
-        if (found) targetMission = found;
-      }
-
-      const loopResult = await missionEngine.runAgentLoop(userEmail, targetMission.id, session);
-
-      const response = `I've analyzed the mission "**${targetMission.title}**". 
-
-**Current state:** ${loopResult.understanding.summary}
-**Plan:** ${loopResult.plan.nextAction}
-**Action taken:** ${loopResult.action.description}
-
-${loopResult.action.requiresApproval ? "I've prepared a draft in your inbox. Would you like to review it?" : "I'm monitoring this thread for updates."}`;
+      );
 
       if (userEmail) {
-        await saveConversation(userEmail, message, response, currentConversationId, db);
+        await saveConversation(userEmail, message, executionResponse, currentConversationId, db);
+        await subscriptionService.incrementFeatureUsage(userEmail, FEATURE_TYPES.ARCUS_AI);
       }
 
       return NextResponse.json({
-        message: response,
+        message: executionResponse,
         timestamp: new Date().toISOString(),
         conversationId: currentConversationId,
         aiGenerated: true,
-        actionType: 'mission_agent_loop',
-        loopResult
+        actionType: 'execution_result',
+        executionResult: {
+          success: true,
+          changes: [`Executed plan: ${planGoal}`],
+          artifacts: [],
+          next_monitoring: null
+        }
       });
     }
 
-    // 3b. Mission Closure
-    if (lowerMessage.includes('close mission') || lowerMessage.includes('mark') && lowerMessage.includes('done')) {
-      const activeMissions = missionContext?.activeMissions || [];
-      let targetMissionId = null;
-      const nameMatch = message.match(/(?:mission|mark)\s+["']?([^"'.?]+)["']?/i);
-      if (nameMatch) {
-        const sought = nameMatch[1].toLowerCase();
-        const found = activeMissions.find(m => m.title.toLowerCase().includes(sought));
-        if (found) targetMissionId = found.id;
-      }
+    // ── Plan Card Generation (suggest-then-act) ──
+    // For actionable requests, generate a Plan Card alongside the normal response
+    let planCardResult = null;
+    const isActionableRequest =
+      draftIntent.isDraftRequest ||
+      schedulingIntent.isSchedulingRequest ||
+      /\b(send|forward|reply|schedule|draft|create|follow.?up|remind|announce|invite|book|find|search)\b/i.test(message);
 
-      if (targetMissionId) {
-        const updated = await missionEngine.closeMission(userEmail, targetMissionId);
-        const resp = `Great work! I've marked the mission "**${updated.title}**" as completed. It's moving to your history.`;
-        if (userEmail) await saveConversation(userEmail, message, resp, currentConversationId, db);
-        return NextResponse.json({ message: resp, conversationId: currentConversationId });
-      }
-    }
-
-    // 3c. Autopilot Configuration
-    if (lowerMessage.includes('autopilot') || lowerMessage.includes('auto-send') || lowerMessage.includes('follow-up limit')) {
-      let ruleType = null;
-      let config = {};
-
-      if (lowerMessage.includes('limit')) {
-        ruleType = 'follow_up_limit';
-        const numMatch = message.match(/(\d+)/);
-        config = { max_follow_ups: numMatch ? parseInt(numMatch[1]) : 3 };
-      } else if (lowerMessage.includes('auto-send') || lowerMessage.includes('automatic')) {
-        ruleType = 'auto_send';
-        config = { enabled: !lowerMessage.includes('off') && !lowerMessage.includes('disable') };
-      }
-
-      if (ruleType) {
-        await missionEngine.setAutopilotRule(userEmail, ruleType, config);
-        const resp = `Autopilot updated. Your **${ruleType.replace(/_/g, ' ')}** settings have been applied.`;
-        if (userEmail) await saveConversation(userEmail, message, resp, currentConversationId, db);
-        return NextResponse.json({ message: resp, conversationId: currentConversationId });
-      }
-    }
-
-    // 4. Mission auto-detection
-    if (lowerMessage.includes('scan my inbox') || lowerMessage.includes('auto-detect') || lowerMessage.includes('any new missions')) {
-      const suggestions = await missionEngine.autoDetectMissions(userEmail, session);
-
-      if (suggestions.length === 0) {
-        return NextResponse.json({
-          message: "I scanned your recent emails and didn't find anything needing a mission. Your inbox looks healthy!",
-          timestamp: new Date().toISOString(),
-          conversationId: currentConversationId,
-          aiGenerated: true
+    if (isActionableRequest) {
+      try {
+        console.log('🎯 Generating Plan Card for actionable request');
+        planCardResult = await arcusAI.parseIntentAndGeneratePlanCard(message, {
+          conversationHistory,
+          emailContext: null,
+          userEmail,
+          userName,
+          privacyMode
         });
+        console.log('📋 Plan Card result:', planCardResult ? 'Generated' : 'Not needed');
+      } catch (planError) {
+        console.warn('Plan card generation failed (non-blocking):', planError.message);
       }
-
-      const response = `I've detected ${suggestions.length} potential missions from your inbox:
-
-${suggestions.map(s => `- **${s.title}**: ${s.successCondition}`).join('\n')}
-
-Should I create these for you?`;
-
-      if (userEmail) {
-        await saveConversation(userEmail, message, response, currentConversationId, db);
-      }
-
-      return NextResponse.json({
-        message: response,
-        timestamp: new Date().toISOString(),
-        conversationId: currentConversationId,
-        aiGenerated: true,
-        actionType: 'mission_suggestions',
-        suggestions
-      });
     }
 
     // Handle drafting request
@@ -400,8 +233,9 @@ Should I create these for you?`;
         timestamp: new Date().toISOString(),
         conversationId: currentConversationId,
         aiGenerated: true,
-        actionType: 'draft_reply',
-        draftData: draftResult.draftData || null
+        actionType: planCardResult ? 'mission_plan' : 'draft_reply',
+        draftData: draftResult.draftData || null,
+        planCard: planCardResult?.plan_card || null
       });
     }
 
@@ -418,7 +252,7 @@ Should I create these for you?`;
         integrations,
         conversationHistory,
         privacyMode,
-        null // emailContext was missing here, passing null as per instruction
+        null // emailContext not available yet at this point
       );
 
       // Save conversation
@@ -431,8 +265,9 @@ Should I create these for you?`;
         timestamp: new Date().toISOString(),
         conversationId: currentConversationId,
         aiGenerated: true,
-        actionType: 'schedule_meeting',
-        schedulingData: schedulingResult.schedulingData || null
+        actionType: planCardResult ? 'mission_plan' : 'schedule_meeting',
+        schedulingData: schedulingResult.schedulingData || null,
+        planCard: planCardResult?.plan_card || null
       });
     }
 
@@ -509,8 +344,18 @@ Body: ${emailData.body || emailData.snippet}
       conversationHistory,
       emailContext,
       integrations,
-      subscriptionInfo,
-      missionContext,
+      subscriptionInfo, // Pass subscription info so Arcus knows user's plan
+      additionalContext: `
+- Understand and act upon **URGENCY, PRIORITY, and REVENUE IMPACT**
+- Remember past conversations and build on previous context
+
+## Current User Context
+
+- **User Email**: ${userEmail || 'Not signed in'}
+- **User Name**: ${userName}
+- **Gmail Access**: ${integrations.gmail ? '✅ Connected' : '❌ Not connected'}
+
+## 🧨 Hard Restrictions - Do Not Cross`,
       userEmail,
       userName,
       privacyMode
@@ -537,9 +382,10 @@ Body: ${emailData.body || emailData.snippet}
       timestamp: new Date().toISOString(),
       conversationId: currentConversationId,
       aiGenerated: true,
-      actionType: emailContext ? 'email' : 'general',
+      actionType: planCardResult ? 'mission_plan' : (emailContext ? 'email' : 'general'),
       emailResult,
-      integrations
+      integrations,
+      planCard: planCardResult?.plan_card || null
     });
 
   } catch (error) {
