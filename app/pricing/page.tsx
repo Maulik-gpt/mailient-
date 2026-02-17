@@ -32,9 +32,10 @@ const PLANS = [
 		features: [
 			'1 AI Draft per day',
 			'1 Sift Analysis per day',
+			'5 Arcus AI messages per day',
 			'3 Email Summaries per day',
-			'Secure Google OAuth',
-			'Basic Relationship Tracking'
+			'2 AI Notes per month',
+			'Secure Google OAuth'
 		],
 		buttonText: 'Start Free',
 		isPopular: false,
@@ -47,9 +48,10 @@ const PLANS = [
 		features: [
 			'10 AI Drafts per day',
 			'10 Sift Analyses per day',
-			'20 Arcus AI queries per day',
+			'20 Arcus AI messages per day',
 			'30 Email Summaries per day',
-			'Standard Relationship Tracking'
+			'50 AI Notes per month',
+			'30 Scheduled Calls per month'
 		],
 		buttonText: 'Get Started with Starter',
 		isPopular: true,
@@ -61,11 +63,11 @@ const PLANS = [
 		price: 29.99,
 		features: [
 			'Everything in Starter',
-			'Unlimited AI Processing',
-			'Advanced Relationship Tracking',
-			'Custom Neural Voice',
-			'Priority Support',
-			'Unlimited Draft Replies'
+			'Unlimited AI Drafts',
+			'Unlimited Sift Analyses',
+			'Unlimited Arcus AI messages',
+			'Unlimited Email Summaries',
+			'Priority Support'
 		],
 		buttonText: 'Level up with Pro',
 		isPopular: false,
