@@ -1381,82 +1381,81 @@ export default function ChatInterface({
           <div className="flex-1 flex flex-col relative z-10 min-h-0">
 
             {isInitialMode ? (
-              /* Initial Interface — Mission-oriented */
+              /* Initial Interface */
               <div className="flex-1 overflow-y-auto transition-all duration-300">
                 <div className="h-full flex items-center justify-center px-6">
-                  <div className="w-full max-w-4xl mx-auto">
-                    <div className="text-center mb-8">
-                      <h1 className="text-4xl font-medium text-white mb-2 font-sans">
+                  <div className="w-full max-w-3xl mx-auto">
+                    <div className="text-center mb-10">
+                      <h1 className="text-[32px] font-medium text-white/90 mb-1.5 font-sans tracking-[-0.02em]">
                         What do you want to get done?
                       </h1>
-                      <p className="text-white/40 text-base font-sans">Arcus turns your instructions into missions — search, draft, send, schedule.</p>
+                      <p className="text-white/30 text-sm font-sans">Search, draft, send, schedule. Just tell me.</p>
                     </div>
 
                     <div className="mb-8">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
                         <button
                           onClick={() => handleSend('Find the latest emails I need to reply to and create missions for them')}
-                          className="group bg-[#0a0a0a] backdrop-blur-md border border-[#1a1a1a] rounded-xl p-4 shadow-lg hover:border-blue-500/30 hover:bg-[#0d0d14] transition-all duration-300 cursor-pointer text-left"
+                          className="group bg-[#0c0c0c] border border-white/[0.06] rounded-xl p-4 hover:border-white/[0.12] hover:bg-[#0e0e0e] transition-all duration-200 cursor-pointer text-left"
                         >
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className="bg-blue-500/15 rounded-lg p-2 border border-blue-500/20">
-                              <Target className="w-5 h-5 text-blue-400" />
+                          <div className="flex items-center gap-2.5 mb-2.5">
+                            <div className="bg-blue-500/8 rounded-lg p-2">
+                              <Target className="w-4 h-4 text-blue-400/70" />
                             </div>
-                            <h3 className="text-white font-medium font-sans text-sm">Create Mission</h3>
+                            <h3 className="text-white/70 font-medium font-sans text-[13px] group-hover:text-white/90 transition-colors">Catch up</h3>
                           </div>
-                          <p className="text-white/50 text-xs leading-relaxed font-sans">Turn emails into goals with actionable next steps and follow-ups.</p>
+                          <p className="text-white/25 text-[12px] leading-relaxed font-sans group-hover:text-white/35 transition-colors">Find what needs your attention and set up next steps.</p>
                         </button>
 
                         <button
                           onClick={() => handleSend('Schedule a call for next week')}
-                          className="group bg-[#0a0a0a] backdrop-blur-md border border-[#1a1a1a] rounded-xl p-4 shadow-lg hover:border-emerald-500/30 hover:bg-[#0a0d0a] transition-all duration-300 cursor-pointer text-left"
+                          className="group bg-[#0c0c0c] border border-white/[0.06] rounded-xl p-4 hover:border-white/[0.12] hover:bg-[#0e0e0e] transition-all duration-200 cursor-pointer text-left"
                         >
-                          <div className="flex items-center gap-3 mb-2">
-                            <div className="bg-emerald-500/15 rounded-lg p-2 border border-emerald-500/20">
-                              <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <div className="flex items-center gap-2.5 mb-2.5">
+                            <div className="bg-emerald-500/8 rounded-lg p-2">
+                              <svg className="w-4 h-4 text-emerald-400/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                               </svg>
                             </div>
-                            <h3 className="text-white font-medium font-sans text-sm">Schedule Call</h3>
+                            <h3 className="text-white/70 font-medium font-sans text-[13px] group-hover:text-white/90 transition-colors">Schedule</h3>
                           </div>
-                          <p className="text-white/50 text-xs leading-relaxed font-sans">Schedule meetings with Google Meet invites and email confirmations.</p>
+                          <p className="text-white/25 text-[12px] leading-relaxed font-sans group-hover:text-white/35 transition-colors">Book meetings with invites and calendar events.</p>
                         </button>
 
                         <button
                           onClick={() => handleSend('Draft a reply to the latest important email')}
-                          className="group bg-[#0a0a0a] backdrop-blur-md border border-[#1a1a1a] rounded-xl p-4 shadow-lg hover:border-amber-500/30 hover:bg-[#0d0d0a] transition-all duration-300 cursor-pointer text-left"
+                          className="group bg-[#0c0c0c] border border-white/[0.06] rounded-xl p-4 hover:border-white/[0.12] hover:bg-[#0e0e0e] transition-all duration-200 cursor-pointer text-left"
                         >
-                          <div className="flex items-center gap-3 mb-2">
-                            <div className="bg-amber-500/15 rounded-lg p-2 border border-amber-500/20">
-                              <Mail className="w-5 h-5 text-amber-400" />
+                          <div className="flex items-center gap-2.5 mb-2.5">
+                            <div className="bg-amber-500/8 rounded-lg p-2">
+                              <Mail className="w-4 h-4 text-amber-400/70" />
                             </div>
-                            <h3 className="text-white font-medium font-sans text-sm">Draft & Send</h3>
+                            <h3 className="text-white/70 font-medium font-sans text-[13px] group-hover:text-white/90 transition-colors">Draft reply</h3>
                           </div>
-                          <p className="text-white/50 text-xs leading-relaxed font-sans">Draft context-aware replies, review before sending — you're always in control.</p>
+                          <p className="text-white/25 text-[12px] leading-relaxed font-sans group-hover:text-white/35 transition-colors">Write replies you can review and send when ready.</p>
                         </button>
 
                         <button
                           onClick={() => handleSend('Show me emails I need to follow up on')}
-                          className="group bg-[#0a0a0a] backdrop-blur-md border border-[#1a1a1a] rounded-xl p-4 shadow-lg hover:border-purple-500/30 hover:bg-[#0d0a0d] transition-all duration-300 cursor-pointer text-left"
+                          className="group bg-[#0c0c0c] border border-white/[0.06] rounded-xl p-4 hover:border-white/[0.12] hover:bg-[#0e0e0e] transition-all duration-200 cursor-pointer text-left"
                         >
-                          <div className="flex items-center gap-3 mb-2">
-                            <div className="bg-purple-500/15 rounded-lg p-2 border border-purple-500/20">
-                              <Zap className="w-5 h-5 text-purple-400" />
+                          <div className="flex items-center gap-2.5 mb-2.5">
+                            <div className="bg-violet-500/8 rounded-lg p-2">
+                              <Zap className="w-4 h-4 text-violet-400/70" />
                             </div>
-                            <h3 className="text-white font-medium font-sans text-sm">Follow-ups</h3>
+                            <h3 className="text-white/70 font-medium font-sans text-[13px] group-hover:text-white/90 transition-colors">Follow ups</h3>
                           </div>
-                          <p className="text-white/50 text-xs leading-relaxed font-sans">Detect stale threads, generate nudges, and track who owes you a reply.</p>
+                          <p className="text-white/25 text-[12px] leading-relaxed font-sans group-hover:text-white/35 transition-colors">Find stale threads and send gentle nudges.</p>
                         </button>
                       </div>
                     </div>
 
-                    {/* Active Missions Summary (if any) */}
+                    {/* In-progress items */}
                     {activeMissions.filter(m => m.status !== 'done' && m.status !== 'archived').length > 0 && (
-                      <div className="mb-6 space-y-3">
+                      <div className="mb-6 space-y-2.5">
                         <div className="flex items-center gap-2">
-                          <Target className="w-4 h-4 text-white/30" />
-                          <span className="text-xs uppercase tracking-wider font-bold text-white/30">Active Missions</span>
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400 font-semibold">
+                          <span className="text-[11px] font-medium text-white/20">In progress</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.04] text-white/25 font-medium">
                             {activeMissions.filter(m => m.status !== 'done' && m.status !== 'archived').length}
                           </span>
                         </div>
@@ -1631,7 +1630,7 @@ export default function ChatInterface({
                         </div>
                         <div className="flex-1">
                           <ShiningText
-                            text={activeSearchLabel ? activeSearchLabel : 'Arcus is thinking...'}
+                            text={activeSearchLabel ? activeSearchLabel : 'Working on it...'}
                             className="text-sm relative top-1"
                           />
                         </div>
@@ -1773,21 +1772,21 @@ const AgentActionStatus = ({ status }: { status: 'planning' | 'processing' | 'do
     switch (status) {
       case 'planning':
         return {
-          icon: <History className="w-4 h-4 text-blue-400 animate-spin" />,
-          text: 'Planning action...',
-          color: 'bg-blue-500/10 border-blue-500/20 text-blue-400'
+          dotColor: 'bg-blue-400 animate-pulse',
+          text: 'Setting up...',
+          textColor: 'text-white/40'
         };
       case 'processing':
         return {
-          icon: <Settings className="w-4 h-4 text-purple-400 animate-spin" />,
-          text: 'Processing task...',
-          color: 'bg-purple-500/10 border-purple-500/20 text-purple-400'
+          dotColor: 'bg-violet-400 animate-pulse',
+          text: 'Running...',
+          textColor: 'text-white/40'
         };
       case 'done':
         return {
-          icon: <Bell className="w-4 h-4 text-emerald-400" />,
-          text: 'Action complete',
-          color: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+          dotColor: 'bg-emerald-400',
+          text: 'Done',
+          textColor: 'text-white/30'
         };
       default:
         return null;
@@ -1798,9 +1797,9 @@ const AgentActionStatus = ({ status }: { status: 'planning' | 'processing' | 'do
   if (!info) return null;
 
   return (
-    <div className={`flex items-center gap-3 px-4 py-2 rounded-xl border ${info.color} backdrop-blur-md animate-in fade-in slide-in-from-bottom-2 duration-300 mb-4 ml-14 max-w-xs`}>
-      {info.icon}
-      <span className="text-sm font-medium font-sans tracking-wide">{info.text}</span>
+    <div className="flex items-center gap-2 ml-14 mb-3 animate-in fade-in slide-in-from-bottom-1 duration-200">
+      <span className={`w-1.5 h-1.5 rounded-full ${info.dotColor}`} />
+      <span className={`text-[12px] font-medium font-sans ${info.textColor}`}>{info.text}</span>
     </div>
   );
 };

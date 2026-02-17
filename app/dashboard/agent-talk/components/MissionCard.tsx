@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import {
-    Target, Clock, AlertCircle, CheckCircle2, Archive,
-    ChevronDown, ChevronUp, User, Mail, Calendar,
-    ArrowRight, Zap, FileText, MoreHorizontal, Trash2
+    Clock, AlertCircle, CheckCircle2, Archive,
+    ChevronDown, ChevronUp, User, Mail,
+    ArrowRight, Zap, FileText, MoreHorizontal
 } from 'lucide-react';
 import type { Mission, MissionStatus, MissionPriority } from '../types/mission';
 
@@ -17,38 +17,38 @@ interface MissionCardProps {
     isCompact?: boolean;
 }
 
-const STATUS_CONFIG: Record<MissionStatus, { label: string; color: string; icon: React.ReactNode }> = {
+const STATUS_CONFIG: Record<MissionStatus, { label: string; color: string; dotColor: string }> = {
     active: {
-        label: 'Active',
-        color: 'bg-blue-500/10 border-blue-500/20 text-blue-400',
-        icon: <Zap className="w-3.5 h-3.5" />
+        label: 'In progress',
+        color: 'text-blue-400',
+        dotColor: 'bg-blue-400'
     },
     waiting_on_other: {
         label: 'Waiting',
-        color: 'bg-amber-500/10 border-amber-500/20 text-amber-400',
-        icon: <Clock className="w-3.5 h-3.5" />
+        color: 'text-amber-400',
+        dotColor: 'bg-amber-400'
     },
     needs_user: {
-        label: 'Needs You',
-        color: 'bg-red-500/10 border-red-500/20 text-red-400',
-        icon: <AlertCircle className="w-3.5 h-3.5" />
+        label: 'Action needed',
+        color: 'text-orange-400',
+        dotColor: 'bg-orange-400 animate-pulse'
     },
     done: {
         label: 'Done',
-        color: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400',
-        icon: <CheckCircle2 className="w-3.5 h-3.5" />
+        color: 'text-emerald-400',
+        dotColor: 'bg-emerald-400'
     },
     archived: {
         label: 'Archived',
-        color: 'bg-white/5 border-white/10 text-white/40',
-        icon: <Archive className="w-3.5 h-3.5" />
+        color: 'text-white/30',
+        dotColor: 'bg-white/20'
     }
 };
 
-const PRIORITY_DOTS: Record<MissionPriority, string> = {
-    high: 'bg-red-500',
-    normal: 'bg-blue-500',
-    low: 'bg-white/30',
+const PRIORITY_COLORS: Record<MissionPriority, string> = {
+    high: 'text-red-400',
+    normal: 'text-white/40',
+    low: 'text-white/20',
 };
 
 function isAtRisk(mission: Mission): boolean {
@@ -56,21 +56,18 @@ function isAtRisk(mission: Mission): boolean {
 
     const now = new Date();
 
-    // Due within 48 hours and not done
     if (mission.due_at) {
         const dueDate = new Date(mission.due_at);
         const hoursUntilDue = (dueDate.getTime() - now.getTime()) / (1000 * 60 * 60);
         if (hoursUntilDue <= 48 && hoursUntilDue > 0) return true;
     }
 
-    // Waiting on other and stale > 3 business days
     if (mission.status === 'waiting_on_other' && mission.last_activity_at) {
         const lastActivity = new Date(mission.last_activity_at);
         const daysSinceActivity = (now.getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24);
         if (daysSinceActivity > 3) return true;
     }
 
-    // Needs user and stale > 1 day
     if (mission.status === 'needs_user' && mission.last_activity_at) {
         const lastActivity = new Date(mission.last_activity_at);
         const daysSinceActivity = (now.getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24);
@@ -78,6 +75,21 @@ function isAtRisk(mission: Mission): boolean {
     }
 
     return false;
+}
+
+function timeAgo(dateStr: string): string {
+    const now = new Date();
+    const date = new Date(dateStr);
+    const diffMs = now.getTime() - date.getTime();
+    const minutes = Math.floor(diffMs / 60000);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (minutes < 1) return 'just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 export function MissionCard({
@@ -99,85 +111,87 @@ export function MissionCard({
 
     return (
         <div className={`
-      rounded-2xl border transition-all duration-300 overflow-hidden
+      rounded-xl border transition-all duration-300 overflow-hidden font-sans
       ${atRisk
-                ? 'border-red-500/20 bg-gradient-to-br from-red-950/10 via-[#0d0d0d] to-[#0a0a0a] shadow-[0_0_30px_rgba(239,68,68,0.06)]'
-                : 'border-white/[0.06] bg-gradient-to-br from-[#0d0d0d] via-[#0f0f0f] to-[#0a0a0a]'}
-      hover:border-white/10 hover:shadow-lg
+                ? 'border-orange-500/15 bg-[#0c0c0c]'
+                : 'border-white/[0.06] bg-[#0c0c0c]'}
+      hover:border-white/[0.1]
     `}>
             <div className="p-4 space-y-3">
-                {/* Header */}
+                {/* Header row */}
                 <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3 flex-1 min-w-0">
-                        {/* Priority dot */}
-                        <div className="flex-shrink-0 mt-2">
-                            <div className={`w-2 h-2 rounded-full ${PRIORITY_DOTS[mission.priority]}`} />
-                        </div>
-
                         <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap mb-1">
-                                {/* Status badge */}
-                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider border ${statusConfig.color}`}>
-                                    {statusConfig.icon}
+                                {/* Status */}
+                                <span className={`inline-flex items-center gap-1.5 text-[11px] font-medium ${statusConfig.color}`}>
+                                    <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.dotColor}`} />
                                     {statusConfig.label}
                                 </span>
 
-                                {/* At risk flag */}
+                                {/* At risk */}
                                 {atRisk && (
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-red-500/15 border border-red-500/25 text-red-400 animate-pulse">
-                                        <AlertCircle className="w-3 h-3" />
-                                        At Risk
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-orange-400/80">
+                                        <AlertCircle className="w-2.5 h-2.5" />
+                                        Overdue
                                     </span>
                                 )}
 
                                 {/* Due date */}
                                 {mission.due_at && (
-                                    <span className="text-[10px] text-white/30 font-medium">
+                                    <span className="text-[10px] text-white/25">
                                         Due {new Date(mission.due_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                     </span>
                                 )}
+
+                                {/* Priority indicator for high */}
+                                {mission.priority === 'high' && (
+                                    <span className="text-[10px] text-red-400/60 font-medium">High priority</span>
+                                )}
                             </div>
 
-                            <h3 className="text-white font-semibold text-sm leading-snug">{mission.title}</h3>
-                            <p className="text-white/50 text-xs mt-0.5 leading-relaxed">{mission.goal}</p>
+                            <h3 className="text-white/85 font-medium text-sm leading-snug tracking-[-0.01em]">{mission.title}</h3>
+                            {mission.goal && (
+                                <p className="text-white/35 text-[12px] mt-0.5 leading-relaxed">{mission.goal}</p>
+                            )}
                         </div>
                     </div>
 
-                    {/* Expand/Collapse + More */}
-                    <div className="flex items-center gap-1">
+                    {/* Actions */}
+                    <div className="flex items-center gap-0.5 flex-shrink-0">
                         {!isCompact && (
                             <button
                                 onClick={() => setShowMore(!showMore)}
-                                className="p-1.5 rounded-lg hover:bg-white/5 text-white/30 hover:text-white/60 transition-colors"
+                                className="p-1.5 rounded-lg hover:bg-white/[0.04] text-white/20 hover:text-white/50 transition-colors"
                             >
-                                <MoreHorizontal className="w-4 h-4" />
+                                <MoreHorizontal className="w-3.5 h-3.5" />
                             </button>
                         )}
                         <button
                             onClick={() => setIsExpanded(!isExpanded)}
-                            className="p-1.5 rounded-lg hover:bg-white/5 text-white/30 hover:text-white/60 transition-colors"
+                            className="p-1.5 rounded-lg hover:bg-white/[0.04] text-white/20 hover:text-white/50 transition-colors"
                         >
-                            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                            {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                         </button>
                     </div>
                 </div>
 
-                {/* More actions dropdown */}
+                {/* More actions */}
                 {showMore && (
-                    <div className="flex items-center gap-2 animate-in slide-in-from-top-1 duration-200">
+                    <div className="flex items-center gap-2 animate-in slide-in-from-top-1 duration-150">
                         {mission.status !== 'done' && onMarkDone && (
                             <button
                                 onClick={() => { onMarkDone(mission.mission_id); setShowMore(false); }}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 transition-colors"
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] bg-white/[0.04] text-white/50 hover:bg-white/[0.08] hover:text-white/70 transition-colors"
                             >
                                 <CheckCircle2 className="w-3 h-3" />
-                                Mark Done
+                                Mark done
                             </button>
                         )}
                         {onArchive && (
                             <button
                                 onClick={() => { onArchive(mission.mission_id); setShowMore(false); }}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-white/5 border border-white/10 text-white/50 hover:bg-white/10 transition-colors"
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] bg-white/[0.04] text-white/50 hover:bg-white/[0.08] hover:text-white/70 transition-colors"
                             >
                                 <Archive className="w-3 h-3" />
                                 Archive
@@ -186,67 +200,68 @@ export function MissionCard({
                     </div>
                 )}
 
-                {/* Progress bar */}
+                {/* Progress */}
                 {totalSteps > 0 && (
-                    <div className="space-y-1">
-                        <div className="flex items-center justify-between text-[10px] text-white/30 font-medium">
-                            <span>{completedSteps} of {totalSteps} steps</span>
+                    <div className="space-y-1.5">
+                        <div className="flex items-center justify-between text-[10px] text-white/25 font-medium">
+                            <span>{completedSteps}/{totalSteps} steps</span>
                             <span>{Math.round((completedSteps / totalSteps) * 100)}%</span>
                         </div>
-                        <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+                        <div className="h-[3px] bg-white/[0.04] rounded-full overflow-hidden">
                             <div
-                                className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-400 transition-all duration-700"
+                                className={`h-full rounded-full transition-all duration-700 ${mission.status === 'done' ? 'bg-emerald-400/60' : 'bg-blue-400/50'
+                                    }`}
                                 style={{ width: `${(completedSteps / totalSteps) * 100}%` }}
                             />
                         </div>
                     </div>
                 )}
 
-                {/* Expanded Details */}
+                {/* Expanded */}
                 {isExpanded && (
-                    <div className="space-y-3 pt-1 animate-in slide-in-from-top-2 duration-200">
+                    <div className="space-y-3 pt-1 animate-in slide-in-from-top-1 duration-200">
                         {/* Next Action */}
                         {mission.next_action_reason && mission.status !== 'done' && (
-                            <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-3">
+                            <div className="bg-white/[0.025] border border-white/[0.05] rounded-lg p-3">
                                 <div className="flex items-center gap-2 mb-1">
-                                    <ArrowRight className="w-3.5 h-3.5 text-blue-400" />
-                                    <span className="text-[10px] uppercase tracking-wider font-bold text-blue-400/60">Next Action</span>
+                                    <ArrowRight className="w-3 h-3 text-blue-400/60" />
+                                    <span className="text-[10px] font-medium text-white/25">Next step</span>
                                 </div>
-                                <p className="text-white/70 text-xs leading-relaxed">{mission.next_action_reason}</p>
+                                <p className="text-white/55 text-[12px] leading-relaxed pl-5">{mission.next_action_reason}</p>
                             </div>
                         )}
 
                         {/* Participants */}
                         {mission.participants.length > 0 && (
-                            <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-[10px] uppercase tracking-wider font-bold text-white/25">People</span>
+                            <div className="flex items-center gap-1.5 flex-wrap">
                                 {mission.participants.slice(0, 4).map((p, i) => (
-                                    <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/5 text-[11px] text-white/60 border border-white/[0.06]">
-                                        <User className="w-2.5 h-2.5" />
+                                    <span key={i} className="inline-flex items-center gap-1 px-2 py-[3px] rounded-md bg-white/[0.03] text-[11px] text-white/45">
+                                        <User className="w-2.5 h-2.5 opacity-50" />
                                         {p.display_name || p.email}
                                     </span>
                                 ))}
                                 {mission.participants.length > 4 && (
-                                    <span className="text-[11px] text-white/30">+{mission.participants.length - 4} more</span>
+                                    <span className="text-[11px] text-white/20">+{mission.participants.length - 4}</span>
                                 )}
                             </div>
                         )}
 
                         {/* Linked Threads */}
                         {mission.linked_threads.length > 0 && (
-                            <div className="space-y-1.5">
-                                <span className="text-[10px] uppercase tracking-wider font-bold text-white/25">Linked Threads</span>
+                            <div className="space-y-1">
                                 {mission.linked_threads.slice(0, 3).map((thread) => (
                                     <button
                                         key={thread.thread_id}
                                         onClick={() => onViewThread?.(thread.thread_id)}
-                                        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.04] transition-colors text-left"
+                                        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition-colors text-left group"
                                     >
-                                        <Mail className="w-3.5 h-3.5 text-white/30 flex-shrink-0" />
+                                        <Mail className="w-3 h-3 text-white/20 flex-shrink-0 group-hover:text-white/40 transition-colors" />
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-white/70 text-xs truncate">{thread.messages[0]?.subject || 'Thread'}</p>
-                                            <p className="text-white/30 text-[10px]">{thread.messages.length} messages</p>
+                                            <p className="text-white/50 text-[12px] truncate group-hover:text-white/70 transition-colors">
+                                                {thread.messages[0]?.subject || 'Thread'}
+                                            </p>
                                         </div>
+                                        <span className="text-[10px] text-white/15">{thread.messages.length}</span>
                                     </button>
                                 ))}
                             </div>
@@ -254,32 +269,31 @@ export function MissionCard({
 
                         {/* Artifacts */}
                         {mission.artifacts.length > 0 && (
-                            <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-[10px] uppercase tracking-wider font-bold text-white/25">Artifacts</span>
+                            <div className="flex items-center gap-1.5 flex-wrap">
                                 {mission.artifacts.map((artifact, i) => (
-                                    <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/5 text-[11px] text-white/50 border border-white/[0.06]">
-                                        <FileText className="w-2.5 h-2.5" />
+                                    <span key={i} className="inline-flex items-center gap-1 px-2 py-[3px] rounded-md bg-white/[0.03] text-[10px] text-white/35">
+                                        <FileText className="w-2.5 h-2.5 opacity-50" />
                                         {artifact.type}
                                     </span>
                                 ))}
                             </div>
                         )}
 
-                        {/* Generate Next Step button */}
+                        {/* Next Step CTA */}
                         {mission.status !== 'done' && mission.status !== 'archived' && onGenerateNextStep && (
                             <button
                                 onClick={() => onGenerateNextStep(mission.mission_id)}
-                                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] rounded-xl text-xs text-white/60 hover:text-white/90 font-medium transition-all duration-300 active:scale-[0.98]"
+                                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-white/[0.04] hover:bg-white/[0.07] rounded-lg text-[12px] text-white/45 hover:text-white/70 font-medium transition-all duration-200 active:scale-[0.99]"
                             >
                                 <Zap className="w-3 h-3" />
-                                Generate Next Step
+                                Continue
                             </button>
                         )}
 
-                        {/* Last activity */}
-                        <div className="text-[10px] text-white/20 flex items-center gap-1">
+                        {/* Activity */}
+                        <div className="text-[10px] text-white/15 flex items-center gap-1">
                             <Clock className="w-2.5 h-2.5" />
-                            Last activity {new Date(mission.last_activity_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                            Updated {timeAgo(mission.last_activity_at)}
                         </div>
                     </div>
                 )}
