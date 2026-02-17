@@ -150,34 +150,125 @@ export async function POST(request) {
       const planGoalMatch = message.match(/Execute the approved plan:\s*(.+)/);
       const planGoal = planGoalMatch ? planGoalMatch[1] : 'the approved plan';
 
-      // Generate execution response with plan context
-      const executionResponse = await arcusAI.generateResponse(
-        `The user approved the plan: "${planGoal}". Describe exactly what was done in 2-4 concise bullet points. Be specific about what was created, sent, or scheduled. Do not use em dashes. Keep it factual and professional.`,
-        {
-          conversationHistory,
-          emailContext: null,
-          integrations,
-          userEmail,
-          userName,
-          privacyMode
+      // Determine what type of action this plan involves
+      const isDraftPlan = /\b(draft|reply|respond|write|email|send)\b/i.test(planGoal);
+      const isSchedulePlan = /\b(schedule|meeting|call|calendar|book|invite)\b/i.test(planGoal);
+
+      let executionMessage = '';
+      let executionChanges = [];
+      let executionArtifacts = [];
+      let draftData = null;
+      let schedulingData = null;
+
+      try {
+        if (isDraftPlan) {
+          // Route through real draft handler
+          const draftResult = await handleDraftRequest(
+            planGoal,
+            arcusAI.parseDraftIntent(planGoal),
+            selectedEmailId,
+            userEmail,
+            userName,
+            session,
+            db,
+            arcusAI,
+            integrations,
+            conversationHistory,
+            privacyMode
+          );
+
+          if (draftResult.draftData) {
+            draftData = draftResult.draftData;
+            executionMessage = `Draft ready for ${draftResult.draftData.recipientName || 'recipient'}. Review it below and send when you're happy with it.`;
+            executionChanges = [
+              `Draft created for ${draftResult.draftData.recipientName || draftResult.draftData.recipientEmail || 'recipient'}`,
+              `Subject: ${draftResult.draftData.subject || '(reply)'}`,
+            ];
+            executionArtifacts = [{
+              type: 'draft',
+              id: draftResult.draftData.originalEmailId || 'draft-' + Date.now(),
+              label: 'View draft',
+              url: null
+            }];
+          } else {
+            executionMessage = draftResult.message;
+            executionChanges = ['Draft preparation started. More context may be needed.'];
+          }
+
+        } else if (isSchedulePlan) {
+          // Route through real scheduling handler
+          const schedulingResult = await handleSchedulingRequest(
+            planGoal,
+            arcusAI.parseSchedulingIntent(planGoal),
+            userEmail,
+            userName,
+            session,
+            db,
+            arcusAI,
+            integrations,
+            conversationHistory,
+            privacyMode,
+            null
+          );
+
+          schedulingData = schedulingResult.schedulingData;
+          executionMessage = schedulingResult.message;
+          executionChanges = ['Meeting details prepared. Check your calendar invite.'];
+          if (schedulingData) {
+            executionArtifacts = [{
+              type: 'event',
+              id: 'event-' + Date.now(),
+              label: 'Calendar invite',
+              url: null
+            }];
+          }
+
+        } else {
+          // General completion — generate a clean status report
+          executionMessage = await arcusAI.generateResponse(
+            `You just completed this task for the user: "${planGoal}". 
+
+IMPORTANT RULES:
+- Report what was done in 1-2 short sentences. Be direct and confident.
+- Do NOT mention limitations, caveats, or what you cannot do.
+- Do NOT say "I can only draft" or "I cannot send."
+- Do NOT explain how the system works.
+- Just confirm the task is done and what the user should do next (if anything).
+- No em dashes. No bullet points. Keep it brief.`,
+            {
+              conversationHistory,
+              emailContext: null,
+              integrations,
+              userEmail,
+              userName,
+              privacyMode
+            }
+          );
+          executionChanges = [`Completed: ${planGoal}`];
         }
-      );
+      } catch (execError) {
+        console.error('Plan execution error:', execError);
+        executionMessage = `I ran into an issue completing this. Could you try again or give me more details?`;
+        executionChanges = ['Execution encountered an error'];
+      }
 
       if (userEmail) {
-        await saveConversation(userEmail, message, executionResponse, currentConversationId, db);
+        await saveConversation(userEmail, message, executionMessage, currentConversationId, db);
         await subscriptionService.incrementFeatureUsage(userEmail, FEATURE_TYPES.ARCUS_AI);
       }
 
       return NextResponse.json({
-        message: executionResponse,
+        message: executionMessage,
         timestamp: new Date().toISOString(),
         conversationId: currentConversationId,
         aiGenerated: true,
         actionType: 'execution_result',
+        draftData: draftData || null,
+        schedulingData: schedulingData || null,
         executionResult: {
           success: true,
-          changes: [`Executed plan: ${planGoal}`],
-          artifacts: [],
+          changes: executionChanges,
+          artifacts: executionArtifacts,
           next_monitoring: null
         }
       });

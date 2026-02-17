@@ -429,7 +429,7 @@ export default function ChatInterface({
         setIntegrations(data.integrations);
       }
 
-      if (data.draftData && data.actionType === 'draft_reply') {
+      if (data.draftData && (data.actionType === 'draft_reply' || data.actionType === 'execution_result')) {
         setCurrentDraftData(data.draftData);
         setShowDraftBox(true);
         console.log('Draft data received:', data.draftData);
