@@ -20,33 +20,33 @@ interface MissionCardProps {
 const STATUS_CONFIG: Record<MissionStatus, { label: string; color: string; dotColor: string }> = {
     active: {
         label: 'In progress',
-        color: 'text-blue-400',
-        dotColor: 'bg-blue-400'
+        color: 'text-white/70',
+        dotColor: 'bg-white/70'
     },
     waiting_on_other: {
         label: 'Waiting',
-        color: 'text-amber-400',
-        dotColor: 'bg-amber-400'
+        color: 'text-white/40',
+        dotColor: 'bg-zinc-600'
     },
     needs_user: {
         label: 'Action needed',
-        color: 'text-orange-400',
-        dotColor: 'bg-orange-400 animate-pulse'
+        color: 'text-white',
+        dotColor: 'bg-white animate-pulse'
     },
     done: {
         label: 'Done',
-        color: 'text-emerald-400',
-        dotColor: 'bg-emerald-400'
+        color: 'text-white/40',
+        dotColor: 'bg-zinc-500'
     },
     archived: {
         label: 'Archived',
-        color: 'text-white/30',
-        dotColor: 'bg-white/20'
+        color: 'text-white/20',
+        dotColor: 'bg-white/10'
     }
 };
 
 const PRIORITY_COLORS: Record<MissionPriority, string> = {
-    high: 'text-red-400',
+    high: 'text-white/80',
     normal: 'text-white/40',
     low: 'text-white/20',
 };
@@ -113,7 +113,7 @@ export function MissionCard({
         <div className={`
       rounded-xl border transition-all duration-300 overflow-hidden font-sans
       ${atRisk
-                ? 'border-orange-500/15 bg-[#0c0c0c]'
+                ? 'border-white/20 bg-[#0c0c0c]'
                 : 'border-white/[0.06] bg-[#0c0c0c]'}
       hover:border-white/[0.1]
     `}>
@@ -131,7 +131,7 @@ export function MissionCard({
 
                                 {/* At risk */}
                                 {atRisk && (
-                                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-orange-400/80">
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-white/50">
                                         <AlertCircle className="w-2.5 h-2.5" />
                                         Overdue
                                     </span>
@@ -146,7 +146,7 @@ export function MissionCard({
 
                                 {/* Priority indicator for high */}
                                 {mission.priority === 'high' && (
-                                    <span className="text-[10px] text-red-400/60 font-medium">High priority</span>
+                                    <span className="text-[10px] text-white/60 font-medium">High priority</span>
                                 )}
                             </div>
 
@@ -209,7 +209,7 @@ export function MissionCard({
                         </div>
                         <div className="h-[3px] bg-white/[0.04] rounded-full overflow-hidden">
                             <div
-                                className={`h-full rounded-full transition-all duration-700 ${mission.status === 'done' ? 'bg-emerald-400/60' : 'bg-blue-400/50'
+                                className={`h-full rounded-full transition-all duration-700 ${mission.status === 'done' ? 'bg-white/40' : 'bg-white/20'
                                     }`}
                                 style={{ width: `${(completedSteps / totalSteps) * 100}%` }}
                             />
@@ -224,7 +224,7 @@ export function MissionCard({
                         {mission.next_action_reason && mission.status !== 'done' && (
                             <div className="bg-white/[0.025] border border-white/[0.05] rounded-lg p-3">
                                 <div className="flex items-center gap-2 mb-1">
-                                    <ArrowRight className="w-3 h-3 text-blue-400/60" />
+                                    <ArrowRight className="w-3 h-3 text-white/40" />
                                     <span className="text-[10px] font-medium text-white/25">Next step</span>
                                 </div>
                                 <p className="text-white/55 text-[12px] leading-relaxed pl-5">{mission.next_action_reason}</p>

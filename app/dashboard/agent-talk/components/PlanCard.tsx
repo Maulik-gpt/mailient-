@@ -19,13 +19,13 @@ interface PlanCardProps {
 }
 
 const TOOL_LABELS: Record<ToolType, { label: string; icon: React.ReactNode; color: string }> = {
-    email_search: { label: 'Search', icon: <Search className="w-3 h-3" />, color: 'text-sky-400 bg-sky-500/8 border-sky-500/15' },
-    email_read: { label: 'Read', icon: <Mail className="w-3 h-3" />, color: 'text-sky-400 bg-sky-500/8 border-sky-500/15' },
-    send_email: { label: 'Send', icon: <Send className="w-3 h-3" />, color: 'text-emerald-400 bg-emerald-500/8 border-emerald-500/15' },
-    create_draft: { label: 'Draft', icon: <FileText className="w-3 h-3" />, color: 'text-amber-400 bg-amber-500/8 border-amber-500/15' },
-    calendar_availability: { label: 'Calendar', icon: <Calendar className="w-3 h-3" />, color: 'text-violet-400 bg-violet-500/8 border-violet-500/15' },
-    create_meeting: { label: 'Meeting', icon: <Video className="w-3 h-3" />, color: 'text-pink-400 bg-pink-500/8 border-pink-500/15' },
-    schedule_check: { label: 'Follow-up', icon: <Clock className="w-3 h-3" />, color: 'text-orange-400 bg-orange-500/8 border-orange-500/15' },
+    email_search: { label: 'Search', icon: <Search className="w-3 h-3" />, color: 'text-white/60 bg-white/5 border-white/10' },
+    email_read: { label: 'Read', icon: <Mail className="w-3 h-3" />, color: 'text-white/60 bg-white/5 border-white/10' },
+    send_email: { label: 'Send', icon: <Send className="w-3 h-3" />, color: 'text-white/60 bg-white/5 border-white/10' },
+    create_draft: { label: 'Draft', icon: <FileText className="w-3 h-3" />, color: 'text-white/60 bg-white/5 border-white/10' },
+    calendar_availability: { label: 'Calendar', icon: <Calendar className="w-3 h-3" />, color: 'text-white/60 bg-white/5 border-white/10' },
+    create_meeting: { label: 'Meeting', icon: <Video className="w-3 h-3" />, color: 'text-white/60 bg-white/5 border-white/10' },
+    schedule_check: { label: 'Follow-up', icon: <Clock className="w-3 h-3" />, color: 'text-white/60 bg-white/5 border-white/10' },
 };
 
 const RISK_LABELS: Record<RiskFlag, { label: string; severity: 'low' | 'medium' | 'high' }> = {
@@ -60,16 +60,16 @@ export function PlanCard({ plan, onApprove, onReject, onEdit, isExecuting, execu
         <div className={`
       relative overflow-hidden rounded-2xl border transition-all duration-500 font-sans
       ${isPending ? 'border-white/[0.08] bg-[#0c0c0c]' : ''}
-      ${isApproved || isExecuting ? 'border-blue-500/20 bg-[#0c0c0c]' : ''}
-      ${isDone ? 'border-emerald-500/20 bg-[#0c0c0c]' : ''}
-      ${isFailed ? 'border-red-500/20 bg-[#0c0c0c]' : ''}
+      ${isApproved || isExecuting ? 'border-white/20 bg-[#0c0c0c]' : ''}
+      ${isDone ? 'border-white/10 bg-[#0c0c0c]' : ''}
+      ${isFailed ? 'border-white/5 bg-[#0c0c0c]' : ''}
       ${isRejected ? 'border-white/[0.04] bg-[#0a0a0a] opacity-50' : ''}
     `}>
             {/* Execution progress */}
             {isExecuting && (
                 <div className="absolute top-0 left-0 right-0 h-[2px] bg-white/[0.04]">
                     <div
-                        className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 transition-all duration-1000"
+                        className="h-full bg-gradient-to-r from-white/40 to-white/10 transition-all duration-1000"
                         style={{ width: `${executionProgress || 30}%` }}
                     />
                 </div>
@@ -77,7 +77,7 @@ export function PlanCard({ plan, onApprove, onReject, onEdit, isExecuting, execu
 
             {/* Done accent */}
             {isDone && (
-                <div className="absolute top-0 left-0 right-0 h-[2px] bg-emerald-500/40" />
+                <div className="absolute top-0 left-0 right-0 h-[2px] bg-white/20" />
             )}
 
             <div className="p-5 space-y-4">
@@ -86,18 +86,18 @@ export function PlanCard({ plan, onApprove, onReject, onEdit, isExecuting, execu
                     <div className="flex items-start gap-3 flex-1 min-w-0">
                         <div className={`
               flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center
-              ${isPending ? 'bg-blue-500/10' : ''}
-              ${isApproved || isExecuting ? 'bg-blue-500/15' : ''}
-              ${isDone ? 'bg-emerald-500/15' : ''}
-              ${isFailed ? 'bg-red-500/15' : ''}
+              ${isPending ? 'bg-white/[0.08]' : ''}
+              ${isApproved || isExecuting ? 'bg-white/[0.08]' : ''}
+              ${isDone ? 'bg-white/[0.08]' : ''}
+              ${isFailed ? 'bg-white/[0.08]' : ''}
               ${isRejected ? 'bg-white/[0.04]' : ''}
             `}>
-                            {isPending && <Play className="w-3.5 h-3.5 text-blue-400" />}
-                            {isExecuting && <Loader2 className="w-3.5 h-3.5 text-blue-400 animate-spin" />}
-                            {isDone && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
-                            {isFailed && <XCircle className="w-3.5 h-3.5 text-red-400" />}
+                            {isPending && <Play className="w-3.5 h-3.5 text-white/60" />}
+                            {isExecuting && <Loader2 className="w-3.5 h-3.5 text-white animate-spin" />}
+                            {isDone && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+                            {isFailed && <XCircle className="w-3.5 h-3.5 text-white/40" />}
                             {isRejected && <X className="w-3.5 h-3.5 text-white/30" />}
-                            {isApproved && !isExecuting && <Play className="w-3.5 h-3.5 text-blue-400" />}
+                            {isApproved && !isExecuting && <Play className="w-3.5 h-3.5 text-white/60" />}
                         </div>
                         <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-0.5">
@@ -105,7 +105,7 @@ export function PlanCard({ plan, onApprove, onReject, onEdit, isExecuting, execu
                                     {isPending ? 'Proposed action' : isExecuting ? 'Running' : isDone ? 'Completed' : isFailed ? 'Failed' : isRejected ? 'Cancelled' : 'Approved'}
                                 </span>
                                 {plan.confidence < 0.7 && isPending && (
-                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/8 text-amber-400/80 font-medium">
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/40 font-medium">
                                         Review needed
                                     </span>
                                 )}
@@ -121,9 +121,9 @@ export function PlanCard({ plan, onApprove, onReject, onEdit, isExecuting, execu
                         <div key={i} className="flex items-start gap-2.5 group">
                             <div className={`
                 flex-shrink-0 w-[18px] h-[18px] rounded flex items-center justify-center text-[10px] font-semibold mt-[2px]
-                ${isDone ? 'bg-emerald-500/15 text-emerald-400' :
+                ${isDone ? 'bg-white/10 text-white' :
                                     isExecuting && executionProgress && (i / plan.steps.length * 100) < executionProgress
-                                        ? 'bg-blue-500/15 text-blue-400'
+                                        ? 'bg-white/10 text-white/80'
                                         : 'bg-white/[0.04] text-white/30'}
               `}>
                                 {isDone || (isExecuting && executionProgress && (i / plan.steps.length * 100) < (executionProgress || 0))
@@ -203,7 +203,7 @@ export function PlanCard({ plan, onApprove, onReject, onEdit, isExecuting, execu
                         {showInvitePreview && (
                             <div className="bg-white/[0.025] border border-white/[0.05] rounded-xl p-4 space-y-2.5 animate-in slide-in-from-top-1 duration-200">
                                 <div className="flex items-center gap-2">
-                                    <Video className="w-4 h-4 text-blue-400/70" />
+                                    <Video className="w-4 h-4 text-white/60" />
                                     <span className="text-white/80 font-medium text-sm">{plan.invite_preview.title}</span>
                                 </div>
                                 <div className="text-[12px] text-white/45 space-y-1.5 pl-6">
@@ -218,7 +218,7 @@ export function PlanCard({ plan, onApprove, onReject, onEdit, isExecuting, execu
                                     {plan.invite_preview.meet_link && (
                                         <div className="flex items-center gap-2">
                                             <ExternalLink className="w-3 h-3" />
-                                            <span className="text-blue-400/70">{plan.invite_preview.meet_link}</span>
+                                            <span className="text-white/40">{plan.invite_preview.meet_link}</span>
                                         </div>
                                     )}
                                 </div>
@@ -236,10 +236,7 @@ export function PlanCard({ plan, onApprove, onReject, onEdit, isExecuting, execu
                             return (
                                 <div
                                     key={flag}
-                                    className={`flex items-center gap-2 text-[12px] px-3 py-[6px] rounded-lg
-                    ${info.severity === 'high' ? 'bg-red-500/[0.04] text-red-400/70' :
-                                            info.severity === 'medium' ? 'bg-amber-500/[0.04] text-amber-400/70' :
-                                                'bg-white/[0.02] text-white/40'}`}
+                                    className={`flex items-center gap-2 text-[12px] px-3 py-[6px] rounded-lg bg-white/[0.03] text-white/50 border border-white/5`}
                                 >
                                     <Shield className="w-3 h-3 flex-shrink-0 opacity-60" />
                                     {info.label}
@@ -251,12 +248,12 @@ export function PlanCard({ plan, onApprove, onReject, onEdit, isExecuting, execu
 
                 {/* Questions */}
                 {plan.questions_for_user.length > 0 && (
-                    <div className="pl-11 bg-blue-500/[0.03] border border-blue-500/10 rounded-xl p-4 space-y-2">
-                        <span className="text-[11px] font-medium text-blue-400/50">Before proceeding</span>
+                    <div className="pl-11 bg-white/[0.03] border border-white/10 rounded-xl p-4 space-y-2">
+                        <span className="text-[11px] font-medium text-white/40">Before proceeding</span>
                         <ul className="space-y-1.5">
                             {plan.questions_for_user.map((q, i) => (
-                                <li key={i} className="text-[13px] text-blue-300/60 flex items-start gap-2">
-                                    <span className="text-blue-400/40 mt-[2px] text-[10px]">?</span>
+                                <li key={i} className="text-[13px] text-white/60 flex items-start gap-2">
+                                    <span className="text-white/30 mt-[2px] text-[10px]">?</span>
                                     {q}
                                 </li>
                             ))}

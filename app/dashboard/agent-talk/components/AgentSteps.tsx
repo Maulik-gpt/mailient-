@@ -39,14 +39,14 @@ const STEP_ICON: Record<StepType, React.ReactNode> = {
 };
 
 const STEP_COLORS: Record<StepType, string> = {
-    think: 'text-purple-400',
-    clarify: 'text-orange-400',
-    search_email: 'text-blue-400',
-    read_email: 'text-cyan-400',
-    create_draft: 'text-emerald-400',
-    send_email: 'text-indigo-400',
-    book_meeting: 'text-rose-400',
-    done: 'text-emerald-400',
+    think: 'text-zinc-400',
+    clarify: 'text-zinc-400',
+    search_email: 'text-zinc-400',
+    read_email: 'text-zinc-400',
+    create_draft: 'text-zinc-400',
+    send_email: 'text-zinc-400',
+    book_meeting: 'text-zinc-400',
+    done: 'text-white',
 };
 
 const STEP_LABEL_RUNNING: Record<StepType, string> = {
@@ -75,9 +75,9 @@ function StatusDot({ status }: { status: StepStatus }) {
                         key="done"
                         initial={{ scale: 0, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        className="text-emerald-400"
+                        className="text-white"
                     >
-                        <CheckCircle2 className="w-4 h-4 shadow-[0_0_10px_rgba(52,211,153,0.3)]" />
+                        <CheckCircle2 className="w-4 h-4 shadow-[0_0_10px_rgba(255,255,255,0.2)]" />
                     </motion.div>
                 )}
                 {status === 'failed' && (
@@ -85,7 +85,7 @@ function StatusDot({ status }: { status: StepStatus }) {
                         key="failed"
                         initial={{ scale: 0, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        className="text-red-400"
+                        className="text-white/40"
                     >
                         <XCircle className="w-4 h-4" />
                     </motion.div>
@@ -97,8 +97,8 @@ function StatusDot({ status }: { status: StepStatus }) {
                         animate={{ opacity: 1 }}
                         className="relative"
                     >
-                        <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
-                        <div className="absolute inset-0 bg-blue-400/20 blur-md rounded-full animate-pulse" />
+                        <Loader2 className="w-4 h-4 text-white/80 animate-spin" />
+                        <div className="absolute inset-0 bg-white/10 blur-md rounded-full animate-pulse" />
                     </motion.div>
                 )}
                 {status === 'pending' && (
@@ -112,7 +112,7 @@ function StatusDot({ status }: { status: StepStatus }) {
                         key="waiting"
                         animate={{ scale: [1, 1.2, 1] }}
                         transition={{ duration: 1.5, repeat: Infinity }}
-                        className="w-2.5 h-2.5 rounded-full bg-orange-400/50 border border-orange-400/30"
+                        className="w-2.5 h-2.5 rounded-full bg-white/10 border border-white/20"
                     />
                 )}
             </AnimatePresence>
@@ -141,7 +141,7 @@ function StepRow({ step, index }: { step: AgentStep; index: number }) {
             transition={{ delay: index * 0.1, duration: 0.4 }}
             className={`
                 group relative rounded-xl border transition-all duration-500 overflow-hidden mb-1.5
-                ${isRunning ? 'border-blue-500/30 bg-blue-500/[0.04] shadow-[0_0_20px_rgba(59,130,246,0.05)]' : 'border-white/[0.04] bg-white/[0.01]'}
+                ${isRunning ? 'border-white/20 bg-white/[0.04] shadow-[0_0_20px_rgba(255,255,255,0.05)]' : 'border-white/[0.04] bg-white/[0.01]'}
                 ${isDone ? 'opacity-60' : ''}
                 ${step.status === 'pending' ? 'opacity-30 grayscale' : ''}
             `}
@@ -153,7 +153,7 @@ function StepRow({ step, index }: { step: AgentStep; index: number }) {
 
                 <div className={`
                     flex items-center justify-center w-8 h-8 rounded-lg border transition-colors duration-500
-                    ${isRunning ? 'border-blue-500/20 bg-blue-500/10' : 'border-white/[0.05] bg-white/[0.03]'}
+                    ${isRunning ? 'border-white/10 bg-white/5' : 'border-white/[0.05] bg-white/[0.03]'}
                     ${STEP_COLORS[step.type]}
                 `}>
                     {STEP_ICON[step.type]}
@@ -181,7 +181,7 @@ function StepRow({ step, index }: { step: AgentStep; index: number }) {
                             initial={{ width: 0 }}
                             animate={{ width: "100%" }}
                             transition={{ duration: 3, repeat: Infinity }}
-                            className="h-[1px] bg-gradient-to-r from-blue-500/50 to-transparent mt-1"
+                            className="h-[1px] bg-gradient-to-r from-white/20 to-transparent mt-1"
                         />
                     )}
                 </div>
@@ -225,10 +225,10 @@ function StepRow({ step, index }: { step: AgentStep; index: number }) {
                                 )}
 
                                 {step.result?.thought && (
-                                    <div className="mt-2 p-3 rounded-lg bg-purple-500/[0.03] border border-purple-500/10 shadow-[inner_0_1px_3px_rgba(0,0,0,0.2)]">
+                                    <div className="mt-2 p-3 rounded-lg bg-white/[0.02] border border-white/5 shadow-[inner_0_1px_3px_rgba(0,0,0,0.2)]">
                                         <div className="flex items-center gap-2 mb-1.5">
-                                            <Brain className="w-3 h-3 text-purple-400" />
-                                            <span className="text-[9px] font-bold text-purple-400/80 uppercase tracking-[0.1em]">Internal Reasoning</span>
+                                            <Brain className="w-3 h-3 text-white/60" />
+                                            <span className="text-[9px] font-bold text-white/40 uppercase tracking-[0.1em]">Internal Reasoning</span>
                                         </div>
                                         <p className="text-[11px] text-white/30 leading-relaxed font-sans whitespace-pre-wrap">
                                             {step.result.thought}
@@ -237,7 +237,7 @@ function StepRow({ step, index }: { step: AgentStep; index: number }) {
                                 )}
 
                                 {step.error && (
-                                    <div className="flex items-start gap-2 p-2 rounded bg-red-500/5 text-red-400/80 text-[11px] border border-red-500/10">
+                                    <div className="flex items-start gap-2 p-2 rounded bg-white/5 text-white/60 text-[11px] border border-white/10">
                                         <XCircle className="w-3 h-3 mt-0.5 flex-shrink-0" />
                                         <span>{step.error}</span>
                                     </div>
@@ -260,7 +260,7 @@ function StepRow({ step, index }: { step: AgentStep; index: number }) {
                                         whileHover={{ x: 5 }}
                                         href={step.result.bookingUrl}
                                         target="_blank"
-                                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[11px] font-medium"
+                                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/60 text-[11px] font-medium"
                                     >
                                         <Calendar className="w-3 h-3" />
                                         Confirm Meeting Link
@@ -288,7 +288,7 @@ export function AgentSteps({ steps, goal, isComplete }: AgentStepsProps) {
                 particleCount: 40,
                 spread: 70,
                 origin: { y: 0.8 },
-                colors: ['#3b82f6', '#10b981', '#ffffff'],
+                colors: ['#ffffff', '#a1a1aa', '#71717a'],
                 zIndex: 1000,
                 disableForReducedMotion: true
             });
@@ -311,7 +311,7 @@ export function AgentSteps({ steps, goal, isComplete }: AgentStepsProps) {
                 <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${progress}%` }}
-                    className={`h-full transition-all duration-1000 ${isComplete ? 'bg-emerald-500' : 'bg-blue-500'}`}
+                    className={`h-full transition-all duration-1000 ${isComplete ? 'bg-white' : 'bg-white/40'}`}
                 />
             </div>
 
@@ -323,22 +323,22 @@ export function AgentSteps({ steps, goal, isComplete }: AgentStepsProps) {
                 <div className="relative">
                     <AnimatePresence mode="wait">
                         {isComplete ? (
-                            <motion.div key="c" initial={{ scale: 0 }} animate={{ scale: 1 }} className="p-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                            <motion.div key="c" initial={{ scale: 0 }} animate={{ scale: 1 }} className="p-2 rounded-full bg-white/10 border border-white/20 text-white shadow-[0_0_15px_rgba(255,255,255,0.1)]">
                                 <CheckCircle2 className="w-4 h-4" />
                             </motion.div>
                         ) : (
-                            <motion.div key="l" initial={{ scale: 0 }} animate={{ scale: 1 }} className="p-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400">
+                            <motion.div key="l" initial={{ scale: 0 }} animate={{ scale: 1 }} className="p-2 rounded-full bg-white/5 border border-white/10 text-white/80">
                                 <Activity className="w-4 h-4 animate-pulse" />
                             </motion.div>
                         )}
                     </AnimatePresence>
                     {!isComplete && (
-                        <div className="absolute -inset-1 bg-blue-500/10 blur-xl animate-pulse rounded-full" />
+                        <div className="absolute -inset-1 bg-white/5 blur-xl animate-pulse rounded-full" />
                     )}
                 </div>
 
                 <div className="flex-1 min-w-0">
-                    <h3 className={`text-[14px] font-semibold tracking-tight transition-colors duration-500 ${isComplete ? 'text-emerald-400/90' : 'text-white/90'}`}>
+                    <h3 className={`text-[14px] font-semibold tracking-tight transition-colors duration-500 ${isComplete ? 'text-white' : 'text-white/90'}`}>
                         {isComplete ? 'Mission Accomplished' : activeStep ? `Executing: ${activeStep.label}` : goal}
                     </h3>
                     <div className="flex items-center gap-2 mt-0.5">
@@ -347,7 +347,7 @@ export function AgentSteps({ steps, goal, isComplete }: AgentStepsProps) {
                         </span>
                         <div className="flex gap-0.5">
                             {steps.map((s, i) => (
-                                <div key={i} className={`w-1 h-1 rounded-full ${s.status === 'done' ? 'bg-emerald-500/50' : s.status === 'running' ? 'bg-blue-500 animate-pulse' : 'bg-white/5'}`} />
+                                <div key={i} className={`w-1 h-1 rounded-full ${s.status === 'done' ? 'bg-white/60' : s.status === 'running' ? 'bg-white animate-pulse' : 'bg-white/5'}`} />
                             ))}
                         </div>
                     </div>

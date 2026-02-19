@@ -893,7 +893,7 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
           {/* Recording indicator */}
           {(recordingState === 'recording' || recordingState === 'paused') && (
             <div className="absolute -top-3 left-10 px-3 py-1 bg-neutral-900 border border-neutral-800 rounded-full flex items-center gap-2 z-10">
-              <div className={`w-2 h-2 rounded-full ${recordingState === 'recording' ? 'bg-red-500 animate-pulse' : 'bg-yellow-500'}`}></div>
+              <div className={`w-2 h-2 rounded-full ${recordingState === 'recording' ? 'bg-white animate-pulse' : 'bg-neutral-500'}`}></div>
               <span className="text-[10px] uppercase tracking-widest text-neutral-400 font-medium">
                 {recordingState === 'recording' ? 'Recording' : 'Paused'}
               </span>
@@ -914,7 +914,7 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
                   </span>
                   <button
                     onClick={() => removeSelectedEmail(email.id)}
-                    className="ml-2 p-0.5 hover:bg-neutral-800 rounded-full text-neutral-600 hover:text-red-400 transition-all"
+                    className="ml-2 p-0.5 hover:bg-neutral-800 rounded-full text-neutral-600 hover:text-white transition-all"
                   >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -952,7 +952,7 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
                       className="w-10 h-10 flex items-center justify-center text-neutral-500 hover:text-white hover:bg-neutral-800 rounded-full transition-all duration-200 relative outline-none border-none focus:ring-0 focus:outline-none"
                     >
                       <EmailIcon className="w-5 h-5" strokeWidth={1.5} />
-                      <div className="absolute top-2 right-2 w-2 h-2 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.6)]"></div>
+                      <div className="absolute top-2 right-2 w-2 h-2 bg-white rounded-full shadow-[0_0_8px_rgba(255,255,255,0.6)]"></div>
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="top">
@@ -982,7 +982,7 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
                 <div className="flex items-center gap-1">
                   <button
                     onClick={cancelRecording}
-                    className="w-8 h-8 flex items-center justify-center text-red-500 hover:bg-red-500/10 rounded-full transition-all outline-none focus:ring-0"
+                    className="w-8 h-8 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/5 rounded-full transition-all outline-none focus:ring-0"
                     title="Cancel"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -991,11 +991,11 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
                   </button>
                   <button
                     onClick={() => { setIsTranscribing(true); confirmRecording(); }}
-                    className="w-8 h-8 flex items-center justify-center text-green-500 hover:bg-green-500/10 rounded-full transition-all outline-none focus:ring-0"
+                    className="w-8 h-8 flex items-center justify-center text-white hover:bg-white/10 rounded-full transition-all outline-none focus:ring-0"
                     disabled={isTranscribing}
                   >
                     {isTranscribing ? (
-                      <div className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     ) : (
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -1010,10 +1010,10 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
                       <button
                         onClick={startRecording}
                         disabled={disabled}
-                        className={`w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300 outline-none border-none focus:ring-0 focus:outline-none ${isListening ? 'text-red-500 bg-red-500/10 animate-pulse' : 'text-neutral-500 hover:text-white hover:bg-neutral-800'}`}
+                        className={`w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300 outline-none border-none focus:ring-0 focus:outline-none ${isListening ? 'text-white bg-white/10 animate-pulse' : 'text-neutral-500 hover:text-white hover:bg-neutral-800'}`}
                       >
                         {isListening ? (
-                          <div className="w-4 h-4 rounded-full bg-red-500" />
+                          <div className="w-4 h-4 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.4)]" />
                         ) : (
                           <Mic className="w-5 h-5" strokeWidth={1.5} />
                         )}

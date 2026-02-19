@@ -33,6 +33,7 @@ import confetti from "canvas-confetti";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { PricingCard } from "@/components/ui/pricing";
+import posthog from "posthog-js";
 
 const STEPS = [
   "Welcome",
@@ -430,6 +431,14 @@ export default function SiftOnboardingPage() {
 
       const result = await response.json();
       console.log('✅ Onboarding completion response:', result);
+
+      // Track onboarding completion event
+      posthog.capture('onboarding_completed', {
+        plan: plan,
+        role: role,
+        goals: selectedGoals,
+        email: session?.user?.email,
+      });
 
       // Set fallback flags in localStorage to prevent redirection loops
       localStorage.setItem('onboarding_completed', 'true');

@@ -75,8 +75,8 @@ export function DraftReplyBox({
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 bg-[#0f0f0f] border-b border-[#2a2a2a]">
                 <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
-                        <Mail className="w-4 h-4 text-blue-400" />
+                    <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center border border-white/5">
+                        <Mail className="w-4 h-4 text-white/60" />
                     </div>
                     <div>
                         <h3 className="text-white font-medium text-sm">Draft Reply</h3>
@@ -101,7 +101,7 @@ export function DraftReplyBox({
                         className="p-2 hover:bg-white/10 rounded-lg transition-colors"
                         title={isEditing ? 'Save edits' : 'Edit draft'}
                     >
-                        <Edit2 className={`w-4 h-4 ${isEditing ? 'text-blue-400' : 'text-white/50'}`} />
+                        <Edit2 className={`w-4 h-4 ${isEditing ? 'text-white' : 'text-white/50'}`} />
                     </button>
                     <button
                         onClick={onDismiss}
@@ -125,7 +125,7 @@ export function DraftReplyBox({
                     <textarea
                         value={editedContent}
                         onChange={(e) => setEditedContent(e.target.value)}
-                        className="w-full min-h-[150px] bg-[#0f0f0f] border border-[#2a2a2a] rounded-lg p-3 text-white text-sm resize-none focus:outline-none focus:border-blue-500/50 transition-colors"
+                        className="w-full min-h-[150px] bg-[#0f0f0f] border border-[#2a2a2a] rounded-lg p-3 text-white text-sm resize-none focus:outline-none focus:border-white/20 transition-colors"
                         placeholder="Edit your reply..."
                     />
                 ) : (
@@ -139,10 +139,10 @@ export function DraftReplyBox({
             <div className="px-4 py-3 bg-[#0f0f0f] border-t border-[#2a2a2a] flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     {sendError && (
-                        <span className="text-red-400 text-xs">{sendError}</span>
+                        <span className="text-white/40 text-xs">{sendError}</span>
                     )}
                     {sendSuccess && (
-                        <span className="text-green-400 text-xs flex items-center gap-1">
+                        <span className="text-white text-xs flex items-center gap-1">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>
@@ -157,7 +157,7 @@ export function DraftReplyBox({
                         ? 'bg-gray-600 text-gray-300 cursor-not-allowed'
                         : !draftData.recipientEmail
                             ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                            : 'bg-blue-600 hover:bg-blue-500 text-white'
+                            : 'bg-white text-black hover:bg-white/90'
                         }`}
                 >
                     {isSending ? (

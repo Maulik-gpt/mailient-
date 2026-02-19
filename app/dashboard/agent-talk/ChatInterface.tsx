@@ -39,12 +39,12 @@ const linkify = (text: string): string => {
       lowerUrl.includes('password');
 
     if (isAction && url.length > 50) {
-      // Premium Action Button Layout
-      return `<div class="my-6 p-[2px] bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-3xl shadow-2xl overflow-hidden"><div class="bg-neutral-900 rounded-[1.4rem] p-6 flex flex-col items-center text-center"><div class="w-12 h-12 bg-blue-500/10 rounded-full flex items-center justify-center mb-4 border border-blue-500/20"><svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div><h4 class="text-white font-bold text-lg mb-2">Priority Action</h4><p class="text-neutral-400 text-xs mb-6 max-w-[250px]">Secure action link detected in conversation</p><a href="${url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-12 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl transition-all transform hover:scale-105 active:scale-95 shadow-[0_0_25px_rgba(37,99,235,0.4)] no-underline">Confirm & Proceed</a><div class="mt-4 text-[9px] text-neutral-600 font-mono break-all opacity-40 hover:opacity-100 transition-opacity select-all cursor-text py-2 px-4 bg-black/20 rounded-lg">${url}</div></div></div>`;
+      // Premium Action Button Layout — Monochrome Re-skin
+      return `<div class="my-6 p-[2px] bg-white/10 rounded-3xl shadow-2xl overflow-hidden"><div class="bg-neutral-900 rounded-[1.4rem] p-6 flex flex-col items-center text-center"><div class="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mb-4 border border-white/10"><svg class="w-6 h-6 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div><h4 class="text-white font-bold text-lg mb-2">Priority Action</h4><p class="text-neutral-400 text-xs mb-6 max-w-[250px]">Secure action link detected in conversation</p><a href="${url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-12 py-3 bg-white text-black font-bold rounded-2xl transition-all transform hover:scale-105 active:scale-95 shadow-[0_0_25px_rgba(255,255,255,0.1)] no-underline">Confirm & Proceed</a><div class="mt-4 text-[9px] text-neutral-600 font-mono break-all opacity-40 hover:opacity-100 transition-opacity select-all cursor-text py-2 px-4 bg-black/20 rounded-lg">${url}</div></div></div>`;
     }
 
     const displayUrl = url.length > 55 ? url.substring(0, 52) + '...' : url;
-    return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:text-blue-300 underline underline-offset-4 decoration-blue-500/30 transition-all font-medium break-all" title="${url}">${displayUrl}</a>`;
+    return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-white/60 hover:text-white underline underline-offset-4 decoration-white/20 transition-all font-medium break-all" title="${url}">${displayUrl}</a>`;
   });
 };
 
@@ -370,24 +370,18 @@ export default function ChatInterface({
       setIsNotesQuery(notesQuery);
 
       if (notesQuery || emailQuery) {
-        setActiveSearchLabel('Searching...');
+        // We handle loading state via isLoading
       }
 
       let extractedQuery = '';
       if (notesQuery) {
         actionTriggered = true;
-        setActionStatus('planning');
         extractedQuery = extractSearchTerm(messageText);
         setNotesSearchQuery(extractedQuery);
         setShowNotesFetching(true);
         setNotesResults([]);
-
-        // Simulate planning phase
-        statusTimeout = setTimeout(() => setActionStatus('processing'), 1500);
       } else if (isSchedulingRequest(messageText) || /^(yes|yeah|yep|correct|do it|confirm|proceed|ok|okay|sure|that works|go ahead)$/i.test(messageText.trim())) {
         actionTriggered = true;
-        setActionStatus('planning');
-        statusTimeout = setTimeout(() => setActionStatus('processing'), 1000);
       }
 
       const requestBody = {
@@ -609,8 +603,7 @@ export default function ChatInterface({
       if (statusTimeout) clearTimeout(statusTimeout);
 
       if (actionTriggered) {
-        setActionStatus('done');
-        setTimeout(() => setActionStatus(null), 3000);
+        setTimeout(() => scrollToBottom(true), 100);
       }
       setTimeout(() => scrollToBottom(true), 100);
     }
@@ -1122,7 +1115,8 @@ export default function ChatInterface({
               success: true,
               changes: ['Plan executed successfully'],
               artifacts: [],
-            }
+            },
+            agentSteps: data.agentSteps || []
           }
         };
         setMessages(prev => [...prev, resultMessage]);
@@ -1603,9 +1597,9 @@ export default function ChatInterface({
 
                               {/* Cal.com scheduling link card */}
                               {(msg as AgentMessage).meta?.schedulingData?.bookingUrl && (
-                                <div className="mt-3 flex items-center gap-3 p-3 rounded-xl border border-blue-500/15 bg-blue-500/[0.04]">
-                                  <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
-                                    <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <div className="mt-3 flex items-center gap-3 p-3 rounded-xl border border-white/10 bg-white/[0.03]">
+                                  <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0">
+                                    <svg className="w-4 h-4 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                     </svg>
                                   </div>
@@ -1617,7 +1611,7 @@ export default function ChatInterface({
                                     href={(msg as AgentMessage).meta!.schedulingData!.bookingUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex-shrink-0 text-[12px] text-blue-400 hover:text-blue-300 font-medium transition-colors px-3 py-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20"
+                                    className="flex-shrink-0 text-[12px] text-white hover:text-white/80 font-medium transition-colors px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/5"
                                   >
                                     Open link
                                   </a>
@@ -1700,10 +1694,7 @@ export default function ChatInterface({
                       />
                     )}
 
-                    {/* Agent Action Status */}
-                    {actionStatus && (
-                      <AgentActionStatus status={actionStatus} />
-                    )}
+                    {/* Agent Action Status moved to AgentSteps component */}
 
                     <div ref={messagesEndRef} />
                   </div>
@@ -1822,42 +1813,7 @@ export default function ChatInterface({
   );
 }
 
-const AgentActionStatus = ({ status }: { status: 'planning' | 'processing' | 'done' }) => {
-  const getStatusInfo = () => {
-    switch (status) {
-      case 'planning':
-        return {
-          dotColor: 'bg-blue-400 animate-pulse',
-          text: 'Setting up...',
-          textColor: 'text-white/40'
-        };
-      case 'processing':
-        return {
-          dotColor: 'bg-violet-400 animate-pulse',
-          text: 'Running...',
-          textColor: 'text-white/40'
-        };
-      case 'done':
-        return {
-          dotColor: 'bg-emerald-400',
-          text: 'Done',
-          textColor: 'text-white/30'
-        };
-      default:
-        return null;
-    }
-  };
 
-  const info = getStatusInfo();
-  if (!info) return null;
-
-  return (
-    <div className="flex items-center gap-2 ml-14 mb-3 animate-in fade-in slide-in-from-bottom-1 duration-200">
-      <span className={`w-1.5 h-1.5 rounded-full ${info.dotColor}`} />
-      <span className={`text-[12px] font-medium font-sans ${info.textColor}`}>{info.text}</span>
-    </div>
-  );
-};
 
 const isSchedulingRequest = (message: string) => {
   const keywords = ['schedule', 'meeting', 'calendar', 'meet', 'call', 'appointment', 'event'];

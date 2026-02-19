@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import SiftOnboardingPage from "./sift-onboarding";
+import posthog from "posthog-js";
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -22,6 +23,17 @@ export default function OnboardingPage() {
     if (status === "authenticated" && session?.user?.email) {
       const userEmail = session?.user?.email;
       console.log(`📋 [Onboarding] Checking status for: ${userEmail}`);
+
+      // Identify user in PostHog
+      posthog.identify(userEmail, {
+        email: userEmail,
+        name: session.user.name || undefined,
+      });
+
+      // Capture login event
+      posthog.capture('user_logged_in', {
+        email: userEmail,
+      });
 
       const checkOnboardingStatus = async () => {
         try {

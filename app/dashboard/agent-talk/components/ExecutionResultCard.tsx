@@ -15,22 +15,22 @@ export function ExecutionResultCard({ result }: ExecutionResultCardProps) {
         <div className={`
       rounded-xl border overflow-hidden font-sans transition-all duration-300
       ${result.success
-                ? 'border-emerald-500/15 bg-[#0c0c0c]'
-                : 'border-red-500/15 bg-[#0c0c0c]'}
+                ? 'border-white/10 bg-[#0c0c0c]'
+                : 'border-white/5 bg-[#0c0c0c]'}
     `}>
             {/* Top accent line */}
-            <div className={`h-[2px] ${result.success ? 'bg-emerald-400/30' : 'bg-red-400/30'}`} />
+            <div className={`h-[2px] ${result.success ? 'bg-white/20' : 'bg-white/5'}`} />
 
             <div className="p-4 space-y-3">
                 {/* Header */}
                 <div className="flex items-center gap-3">
                     <div className={`
             w-7 h-7 rounded-lg flex items-center justify-center
-            ${result.success ? 'bg-emerald-500/10' : 'bg-red-500/10'}
+            ${result.success ? 'bg-white/10' : 'bg-white/5'}
           `}>
                         {result.success
-                            ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                            : <XCircle className="w-3.5 h-3.5 text-red-400" />}
+                            ? <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                            : <XCircle className="w-3.5 h-3.5 text-white/40" />}
                     </div>
                     <div>
                         <h3 className="text-white/80 font-medium text-[14px] tracking-[-0.01em]">
@@ -44,7 +44,7 @@ export function ExecutionResultCard({ result }: ExecutionResultCardProps) {
                     <div className="space-y-1.5 pl-10">
                         {result.changes.map((change, i) => (
                             <div key={i} className="flex items-start gap-2">
-                                <CheckCircle2 className="w-3 h-3 text-emerald-400/50 flex-shrink-0 mt-[3px]" />
+                                <CheckCircle2 className="w-3 h-3 text-white/30 flex-shrink-0 mt-[3px]" />
                                 <span className="text-white/55 text-[13px] leading-relaxed">{change}</span>
                             </div>
                         ))}
@@ -93,7 +93,7 @@ export function ExecutionResultCard({ result }: ExecutionResultCardProps) {
 
                 {/* Error */}
                 {result.error && (
-                    <div className="pl-10 flex items-start gap-2 text-[12px] text-red-400/60">
+                    <div className="pl-10 flex items-start gap-2 text-[12px] text-white/40">
                         <XCircle className="w-3 h-3 flex-shrink-0 mt-[2px]" />
                         <span>{result.error}</span>
                     </div>

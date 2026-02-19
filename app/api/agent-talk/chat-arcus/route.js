@@ -435,6 +435,24 @@ export async function POST(request) {
       }
     }
 
+    // ── Build agentSteps for EVERY response (Billion-Dollar UI Trace) ──
+    let stepIdx = 0;
+    const mkStep = (type, label, status = 'pending', detail = null) => ({
+      id: `step_${type}_${stepIdx++}_${Date.now()}`,
+      type, label, status, detail, result: null, error: null,
+      started_at: status !== 'pending' ? new Date().toISOString() : null,
+      completed_at: status === 'done' ? new Date().toISOString() : null,
+    });
+
+    const agentSteps = [
+      mkStep('think', 'De-constructing intent', 'done', `Analyzing: "${message.substring(0, 80)}${message.length > 80 ? '...' : ''}"`),
+      mkStep('clarify', 'Calibrating response logic', 'done', 'Mapping context to high-value outcomes...'),
+    ];
+
+    if (planCardResult?.thought) {
+      agentSteps[0].result = { thought: planCardResult.thought };
+    }
+
     // Handle drafting request
     if (draftIntent.isDraftRequest || draftReplyRequest) {
       const draftResult = await handleDraftRequest(
@@ -456,6 +474,9 @@ export async function POST(request) {
         await saveConversation(userEmail, message, draftResult.message, currentConversationId, db);
       }
 
+      agentSteps.push(mkStep('create_draft', 'Synthesizing response', 'done', 'Prepared draft ready for review'));
+      agentSteps.push(mkStep('done', 'Mission accomplished', 'done'));
+
       return NextResponse.json({
         message: draftResult.message,
         timestamp: new Date().toISOString(),
@@ -463,7 +484,8 @@ export async function POST(request) {
         aiGenerated: true,
         actionType: planCardResult ? 'mission_plan' : 'draft_reply',
         draftData: draftResult.draftData || null,
-        planCard: planCardResult?.plan_card || null
+        planCard: planCardResult?.plan_card || null,
+        agentSteps
       });
     }
 
@@ -488,6 +510,9 @@ export async function POST(request) {
         await saveConversation(userEmail, message, schedulingResult.message, currentConversationId, db);
       }
 
+      agentSteps.push(mkStep('book_meeting', 'Calibrating schedule', 'done', 'Meeting details and logistics mapped'));
+      agentSteps.push(mkStep('done', 'Mission accomplished', 'done'));
+
       return NextResponse.json({
         message: schedulingResult.message,
         timestamp: new Date().toISOString(),
@@ -495,7 +520,8 @@ export async function POST(request) {
         aiGenerated: true,
         actionType: planCardResult ? 'mission_plan' : 'schedule_meeting',
         schedulingData: schedulingResult.schedulingData || null,
-        planCard: planCardResult?.plan_card || null
+        planCard: planCardResult?.plan_card || null,
+        agentSteps
       });
     }
 
@@ -567,19 +593,9 @@ Body: ${emailData.body || emailData.snippet}
       }
     }
 
-    // ── Build agentSteps for EVERY response (Billion-Dollar UI Trace) ──
-    let stepIdx = 0;
-    const mkStep = (type, label, status = 'pending', detail = null) => ({
-      id: `step_${type}_${stepIdx++}_${Date.now()}`,
-      type, label, status, detail, result: null, error: null,
-      started_at: status !== 'pending' ? new Date().toISOString() : null,
-      completed_at: status === 'done' ? new Date().toISOString() : null,
-    });
+    // (agentSteps already initialized above for specialized handlers)
+    // If not specialized, we continue building for general responses
 
-    const agentSteps = [
-      mkStep('think', 'De-constructing intent', 'done', `Analyzing: "${message.substring(0, 80)}${message.length > 80 ? '...' : ''}"`),
-      mkStep('clarify', 'Calibrating response logic', 'done', 'Mapping context to high-value outcomes...'),
-    ];
 
     // Add search step if we searched email
     if (emailContext && emailResult) {
