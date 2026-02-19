@@ -141,136 +141,198 @@ export async function POST(request) {
     const draftIntent = arcusAI.parseDraftIntent(message);
     const schedulingIntent = arcusAI.parseSchedulingIntent(message);
 
-    // Handle plan approval messages FIRST (before any other handler)
+    // ── Plan Approval: real step-by-step execution ──
     const planApprovalMatch = message.match(/^\[PLAN_APPROVED:([^\]]+)\]/);
     if (planApprovalMatch) {
-      console.log('📋 Plan approved, executing:', planApprovalMatch[1]);
+      console.log('📋 Plan approved, executing step-by-step:', planApprovalMatch[1]);
 
-      // Extract the plan goal from the message for context
       const planGoalMatch = message.match(/Execute the approved plan:\s*(.+)/);
-      const planGoal = planGoalMatch ? planGoalMatch[1] : 'the approved plan';
+      const planGoal = planGoalMatch ? planGoalMatch[1].trim() : 'the approved plan';
 
-      // Determine what type of action this plan involves
+      // Detect action types from goal text
       const isDraftPlan = /\b(draft|reply|respond|write|email|send)\b/i.test(planGoal);
-      const isSchedulePlan = /\b(schedule|meeting|call|calendar|book|invite)\b/i.test(planGoal);
+      const isSchedulePlan = /\b(schedule|meeting|call|book|invite)\b/i.test(planGoal);
+      const isSearchPlan = /\b(find|search|look|show|get|fetch|check)\b/i.test(planGoal);
 
-      let executionMessage = '';
-      let executionChanges = [];
-      let executionArtifacts = [];
+      // Get Gmail tokens for server-side API calls
+      let gmailTokenDecrypted = null;
+      let gmailRefreshDecrypted = null;
+      if (userEmail) {
+        try {
+          const tokens = await db.getUserTokens(userEmail);
+          if (tokens?.encrypted_access_token) gmailTokenDecrypted = decrypt(tokens.encrypted_access_token);
+          if (tokens?.encrypted_refresh_token) gmailRefreshDecrypted = decrypt(tokens.encrypted_refresh_token);
+        } catch (e) { console.warn('Token fetch error:', e.message); }
+      }
+
+      // Build step list
+      let stepIdx = 0;
+      const mkStep = (type, label) => ({
+        id: `step_${type}_${stepIdx++}_${Date.now()}`,
+        type, label, status: 'pending', result: null, detail: null, error: null,
+        started_at: null, completed_at: null,
+      });
+
+      const agentSteps = [
+        { ...mkStep('think', 'Reviewing your request'), status: 'done', detail: planGoal, completed_at: new Date().toISOString() },
+        ...(isSearchPlan || isDraftPlan ? [mkStep('search_email', 'Searching your inbox')] : []),
+        ...(isDraftPlan ? [mkStep('create_draft', 'Writing the reply')] : []),
+        ...(isSchedulePlan ? [mkStep('book_meeting', 'Creating meeting link')] : []),
+        mkStep('done', 'All done'),
+      ];
+
+      // Execute steps sequentially
+      const prevResults = {};
       let draftData = null;
       let schedulingData = null;
+      let execOk = true;
+      let execErr = null;
 
-      try {
-        if (isDraftPlan) {
-          // Route through real draft handler
-          const draftResult = await handleDraftRequest(
-            planGoal,
-            arcusAI.parseDraftIntent(planGoal),
-            selectedEmailId,
-            userEmail,
-            userName,
-            session,
-            db,
-            arcusAI,
-            integrations,
-            conversationHistory,
-            privacyMode
-          );
+      const baseUrl = process.env.NEXTAUTH_URL || process.env.HOST || 'http://localhost:3000';
 
-          if (draftResult.draftData) {
-            draftData = draftResult.draftData;
-            executionMessage = `Draft ready for ${draftResult.draftData.recipientName || 'recipient'}. Review it below and send when you're happy with it.`;
-            executionChanges = [
-              `Draft created for ${draftResult.draftData.recipientName || draftResult.draftData.recipientEmail || 'recipient'}`,
-              `Subject: ${draftResult.draftData.subject || '(reply)'}`,
-            ];
-            executionArtifacts = [{
-              type: 'draft',
-              id: draftResult.draftData.originalEmailId || 'draft-' + Date.now(),
-              label: 'View draft',
-              url: null
-            }];
-          } else {
-            executionMessage = draftResult.message;
-            executionChanges = ['Draft preparation started. More context may be needed.'];
-          }
-
-        } else if (isSchedulePlan) {
-          // Route through real scheduling handler
-          const schedulingResult = await handleSchedulingRequest(
-            planGoal,
-            arcusAI.parseSchedulingIntent(planGoal),
-            userEmail,
-            userName,
-            session,
-            db,
-            arcusAI,
-            integrations,
-            conversationHistory,
-            privacyMode,
-            null
-          );
-
-          schedulingData = schedulingResult.schedulingData;
-          executionMessage = schedulingResult.message;
-          executionChanges = ['Meeting details prepared. Check your calendar invite.'];
-          if (schedulingData) {
-            executionArtifacts = [{
-              type: 'event',
-              id: 'event-' + Date.now(),
-              label: 'Calendar invite',
-              url: null
-            }];
-          }
-
-        } else {
-          // General completion — generate a clean status report
-          executionMessage = await arcusAI.generateResponse(
-            `You just completed this task for the user: "${planGoal}". 
-
-IMPORTANT RULES:
-- Report what was done in 1-2 short sentences. Be direct and confident.
-- Do NOT mention limitations, caveats, or what you cannot do.
-- Do NOT say "I can only draft" or "I cannot send."
-- Do NOT explain how the system works.
-- Just confirm the task is done and what the user should do next (if anything).
-- No em dashes. No bullet points. Keep it brief.`,
-            {
-              conversationHistory,
-              emailContext: null,
-              integrations,
-              userEmail,
-              userName,
-              privacyMode
-            }
-          );
-          executionChanges = [`Completed: ${planGoal}`];
+      for (let i = 0; i < agentSteps.length; i++) {
+        const step = agentSteps[i];
+        if (step.type === 'think' || step.type === 'done') {
+          agentSteps[i] = { ...step, status: 'done', completed_at: new Date().toISOString() };
+          continue;
         }
-      } catch (execError) {
-        console.error('Plan execution error:', execError);
-        executionMessage = `I ran into an issue completing this. Could you try again or give me more details?`;
-        executionChanges = ['Execution encountered an error'];
+
+        agentSteps[i] = { ...step, status: 'running', started_at: new Date().toISOString() };
+
+        try {
+          // ── STEP: search_email ──
+          if (step.type === 'search_email') {
+            const headers = {
+              'Content-Type': 'application/json',
+              'x-user-email': userEmail || '',
+              ...(gmailTokenDecrypted ? { 'x-gmail-access-token': gmailTokenDecrypted } : {}),
+              ...(gmailRefreshDecrypted ? { 'x-gmail-refresh-token': gmailRefreshDecrypted } : {}),
+            };
+            const res = await fetch(`${baseUrl}/api/agent-talk/read_gmail`, {
+              method: 'POST', headers,
+              body: JSON.stringify({ query: 'newer_than:7d', max_results: 5, include_body: true }),
+            });
+            if (!res.ok) throw new Error(`Gmail search failed (${res.status})`);
+            const data = await res.json();
+            prevResults.search_email = data;
+            agentSteps[i] = {
+              ...agentSteps[i], status: 'done', result: data,
+              detail: `Found ${data.count || 0} recent email${data.count !== 1 ? 's' : ''}`,
+              completed_at: new Date().toISOString()
+            };
+
+            // ── STEP: create_draft ──
+          } else if (step.type === 'create_draft') {
+            const latestEmail = prevResults.search_email?.emails?.[0];
+            const emailCtx = latestEmail
+              ? `From: ${latestEmail.from}\nSubject: ${latestEmail.subject}\nDate: ${latestEmail.date}\n\n${latestEmail.body_text || latestEmail.snippet || ''}`
+              : null;
+
+            const dr = await arcusAI.generateDraftReply(emailCtx || planGoal, {
+              userName, userEmail,
+              replyInstructions: planGoal,
+              conversationHistory, privacyMode,
+            });
+
+            if (!dr?.draftContent) throw new Error('Draft generation returned no content');
+            draftData = {
+              content: dr.draftContent,
+              recipientName: dr.recipientName || latestEmail?.from || 'Recipient',
+              recipientEmail: dr.recipientEmail || latestEmail?.from || '',
+              senderName: dr.senderName || userName,
+              originalEmailId: latestEmail?.id || null,
+              threadId: latestEmail?.thread_id || null,
+              messageId: latestEmail?.id || null,
+              subject: latestEmail?.subject
+                ? `Re: ${latestEmail.subject.replace(/^Re:\s*/i, '')}`
+                : 'Re: Your email',
+            };
+            prevResults.create_draft = draftData;
+            agentSteps[i] = {
+              ...agentSteps[i], status: 'done', result: draftData,
+              detail: `Draft ready for ${draftData.recipientName}`,
+              completed_at: new Date().toISOString()
+            };
+
+            // ── STEP: book_meeting (Cal.com) ──
+          } else if (step.type === 'book_meeting') {
+            const { calService } = await import('@/lib/cal-service');
+            const durationMin = /\b(15|30|45|60|90)\s*min/i.test(planGoal)
+              ? parseInt(planGoal.match(/\b(15|30|45|60|90)\s*min/i)[1])
+              : 30;
+
+            const link = await calService.getBookingLink(durationMin, planGoal);
+            if (!link) throw new Error('Cal.com link could not be created');
+
+            schedulingData = {
+              bookingUrl: link.bookingUrl,
+              durationMinutes: link.durationMinutes,
+              title: link.title,
+              type: 'scheduling_link',
+            };
+            prevResults.book_meeting = schedulingData;
+            agentSteps[i] = {
+              ...agentSteps[i], status: 'done', result: schedulingData,
+              detail: `${durationMin}-min scheduling link via Cal.com`,
+              completed_at: new Date().toISOString()
+            };
+          }
+
+        } catch (stepErr) {
+          console.error(`Step ${step.type} failed:`, stepErr.message);
+          agentSteps[i] = {
+            ...agentSteps[i], status: 'failed', error: stepErr.message,
+            completed_at: new Date().toISOString()
+          };
+          execOk = false;
+          execErr = stepErr.message;
+          break;
+        }
+      }
+
+      // Build summary from REAL results only
+      let execMsg = '';
+      let execChanges = [];
+      let execArtifacts = [];
+
+      if (draftData) {
+        execMsg = `Done. Draft for ${draftData.recipientName} is ready below. Review and send when you're happy.`;
+        execChanges = [`Draft written for ${draftData.recipientName}`, `Subject: ${draftData.subject}`];
+        execArtifacts = [{ type: 'draft', id: draftData.originalEmailId || 'draft-' + Date.now(), label: 'View draft', url: null }];
+      } else if (schedulingData) {
+        execMsg = `Meeting link created. Share it with your attendee so they can pick a time.`;
+        execChanges = [`${schedulingData.durationMinutes}-min Cal.com link created`];
+        execArtifacts = [{ type: 'event', id: 'cal-' + Date.now(), label: 'Open scheduling link', url: schedulingData.bookingUrl }];
+      } else if (prevResults.search_email?.count > 0) {
+        const c = prevResults.search_email.count;
+        execMsg = `Found ${c} recent email${c !== 1 ? 's' : ''}. Here they are.`;
+        execChanges = [`${c} emails retrieved from inbox`];
+      } else if (!execOk) {
+        execMsg = `Ran into a problem: ${execErr || 'something went wrong'}. Try again or give me more details.`;
+      } else {
+        execMsg = `Done with "${planGoal}".`;
       }
 
       if (userEmail) {
-        await saveConversation(userEmail, message, executionMessage, currentConversationId, db);
+        await saveConversation(userEmail, message, execMsg, currentConversationId, db);
         await subscriptionService.incrementFeatureUsage(userEmail, FEATURE_TYPES.ARCUS_AI);
       }
 
       return NextResponse.json({
-        message: executionMessage,
+        message: execMsg,
         timestamp: new Date().toISOString(),
         conversationId: currentConversationId,
         aiGenerated: true,
         actionType: 'execution_result',
+        agentSteps,
         draftData: draftData || null,
         schedulingData: schedulingData || null,
         executionResult: {
-          success: true,
-          changes: executionChanges,
-          artifacts: executionArtifacts,
-          next_monitoring: null
-        }
+          success: execOk,
+          changes: execChanges,
+          artifacts: execArtifacts,
+          next_monitoring: null,
+        },
       });
     }
 

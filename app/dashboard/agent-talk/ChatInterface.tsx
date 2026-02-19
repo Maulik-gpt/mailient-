@@ -10,6 +10,7 @@ import { DraftReplyBox } from './components/DraftReplyBox';
 import { PlanCard } from './components/PlanCard';
 import { MissionCard } from './components/MissionCard';
 import { ExecutionResultCard } from './components/ExecutionResultCard';
+import { AgentSteps } from './components/AgentSteps';
 import { IntegrationsModal } from '@/components/ui/integrations-modal';
 import { EmailSelectionModal } from '@/components/ui/email-selection-modal';
 import { PersonalitySettingsModal } from '@/components/ui/personality-settings-modal';
@@ -111,6 +112,13 @@ interface AgentMessage {
     planCard?: PlanCardType;
     mission?: Mission;
     executionResult?: ExecutionResult;
+    agentSteps?: any[];
+    schedulingData?: {
+      bookingUrl: string;
+      durationMinutes: number;
+      title: string;
+      type: string;
+    };
   };
 }
 
@@ -466,7 +474,9 @@ export default function ChatInterface({
           emailResult: data.emailResult,
           planCard: data.planCard || undefined,
           mission: data.mission || undefined,
-          executionResult: data.executionResult || undefined
+          executionResult: data.executionResult || undefined,
+          agentSteps: data.agentSteps || undefined,
+          schedulingData: data.schedulingData || undefined,
         }
       };
 
@@ -1562,10 +1572,44 @@ export default function ChatInterface({
                                 </div>
                               )}
 
+                              {/* Agent Steps — Notion AI-style execution trace */}
+                              {(msg as AgentMessage).meta?.agentSteps && (msg as AgentMessage).meta!.agentSteps!.length > 0 && (
+                                <div className="mt-4">
+                                  <AgentSteps
+                                    steps={(msg as AgentMessage).meta!.agentSteps!}
+                                    goal={(msg as AgentMessage).meta?.executionResult ? 'Task complete' : 'Working...'}
+                                    isComplete={(msg as AgentMessage).meta?.executionResult?.success === true}
+                                  />
+                                </div>
+                              )}
+
                               {/* Execution Result rendering */}
                               {(msg as AgentMessage).meta?.executionResult && (
                                 <div className="mt-4">
                                   <ExecutionResultCard result={(msg as AgentMessage).meta!.executionResult!} />
+                                </div>
+                              )}
+
+                              {/* Cal.com scheduling link card */}
+                              {(msg as AgentMessage).meta?.schedulingData?.bookingUrl && (
+                                <div className="mt-3 flex items-center gap-3 p-3 rounded-xl border border-blue-500/15 bg-blue-500/[0.04]">
+                                  <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
+                                    <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-[13px] text-white/70 font-medium">{(msg as AgentMessage).meta!.schedulingData!.title || 'Meeting'}</p>
+                                    <p className="text-[11px] text-white/35 mt-0.5">{(msg as AgentMessage).meta!.schedulingData!.durationMinutes}min via Cal.com</p>
+                                  </div>
+                                  <a
+                                    href={(msg as AgentMessage).meta!.schedulingData!.bookingUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex-shrink-0 text-[12px] text-blue-400 hover:text-blue-300 font-medium transition-colors px-3 py-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20"
+                                  >
+                                    Open link
+                                  </a>
                                 </div>
                               )}
 
