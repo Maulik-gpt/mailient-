@@ -471,12 +471,15 @@ export async function POST(request) {
 
       // If we have a Plan Card, we generally prefer its orchestration,
       // UNLESS the draftResult found a clear email to reply to and generated a draft.
-      // If draftResult is just asking for clarification but we have a Plan Card, SKIP early return.
-      // NEW: If we have a multi-step plan (more than 1 tool), also SKIP early return to allow the Plan Card to show the orchestration.
+      // We skip early return if: 
+      // 1. It's an error message ("trouble drafting")
+      // 2. It's a clarification ("Which would you prefer") AND we have a Plan Card
+      // 3. We have a multi-step plan
+      const isError = draftResult.message.includes('had trouble drafting') || draftResult.message.includes('ran into an issue');
       const isJustClarification = draftResult.message.includes('Which would you prefer') || draftResult.message.includes('Could you tell me');
       const isMultiStep = planCardResult?.plan_card?.steps?.length > 1 || planCardResult?.plan_card?.tools?.length > 1;
 
-      if ((!isJustClarification && !isMultiStep) || !planCardResult) {
+      if (!isError && ((!isJustClarification && !isMultiStep) || !planCardResult)) {
         // Save conversation
         if (userEmail) {
           await saveConversation(userEmail, message, draftResult.message, currentConversationId, db);
@@ -516,11 +519,12 @@ export async function POST(request) {
         null // emailContext not available yet at this point
       );
 
-      // Same logic for scheduling: skip early return if we have a multi-step Plan Card
+      // Same logic for scheduling: skip early return if we have a multi-step Plan Card or error
+      const isError = schedulingResult.message.includes('had trouble scheduling') || schedulingResult.message.includes('ran into an issue');
       const isJustClarification = schedulingResult.message.includes('could you tell me') || schedulingResult.message.includes('Who should attend');
       const isMultiStep = planCardResult?.plan_card?.steps?.length > 1 || planCardResult?.plan_card?.tools?.length > 1;
 
-      if ((!isJustClarification && !isMultiStep) || !planCardResult) {
+      if (!isError && ((!isJustClarification && !isMultiStep) || !planCardResult)) {
         // Save conversation
         if (userEmail) {
           await saveConversation(userEmail, message, schedulingResult.message, currentConversationId, db);
