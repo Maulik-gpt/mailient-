@@ -81,27 +81,32 @@ export async function POST(request) {
     // Check subscription and feature usage for Arcus AI
     // Pro users have unlimited access, Starter users have 10/day limit
     if (userEmail) {
-      const canUse = await subscriptionService.canUseFeature(userEmail, FEATURE_TYPES.ARCUS_AI);
-      if (!canUse) {
-        const usage = await subscriptionService.getFeatureUsage(userEmail, FEATURE_TYPES.ARCUS_AI);
-        const limitMessage = usage.reason === 'subscription_expired'
-          ? "Your subscription has expired. Please renew to continue using Arcus AI."
-          : usage.reason === 'no_subscription'
-            ? "You need an active subscription to use Arcus AI. Visit /pricing to subscribe."
-            : `Sorry, but you've exhausted all the credits of ${usage.period === 'daily' ? 'the day' : 'the month'}.`;
+      try {
+        const canUse = await subscriptionService.canUseFeature(userEmail, FEATURE_TYPES.ARCUS_AI);
+        if (!canUse) {
+          const usage = await subscriptionService.getFeatureUsage(userEmail, FEATURE_TYPES.ARCUS_AI);
+          const limitMessage = usage.reason === 'subscription_expired'
+            ? "Your subscription has expired. Please renew to continue using Arcus AI."
+            : usage.reason === 'no_subscription'
+              ? "You need an active subscription to use Arcus AI. Visit /pricing to subscribe."
+              : `Sorry, but you've exhausted all the credits of ${usage.period === 'daily' ? 'the day' : 'the month'}.`;
 
-        return NextResponse.json({
-          message: limitMessage,
-          error: 'limit_reached',
-          usage: usage.usage,
-          limit: usage.limit,
-          period: usage.period,
-          planType: usage.planType,
-          reason: usage.reason,
-          upgradeUrl: '/pricing',
-          timestamp: new Date().toISOString(),
-          conversationId: currentConversationId
-        }, { status: 403 });
+          return NextResponse.json({
+            message: limitMessage,
+            error: 'limit_reached',
+            usage: usage.usage,
+            limit: usage.limit,
+            period: usage.period,
+            planType: usage.planType,
+            reason: usage.reason,
+            upgradeUrl: '/pricing',
+            timestamp: new Date().toISOString(),
+            conversationId: currentConversationId
+          }, { status: 403 });
+        }
+      } catch (subErr) {
+        console.warn('⚠️ Subscription check failed (non-blocking):', subErr.message);
+        // Don't block chat if subscription check fails
       }
     }
 
@@ -493,12 +498,14 @@ Body: ${emailData.body || emailData.snippet}
     }
 
     // Generate AI response with full context
-    const response = await arcusAI.generateResponse(message, {
-      conversationHistory,
-      emailContext,
-      integrations,
-      subscriptionInfo, // Pass subscription info so Arcus knows user's plan
-      additionalContext: `
+    let response = '';
+    try {
+      response = await arcusAI.generateResponse(message, {
+        conversationHistory,
+        emailContext,
+        integrations,
+        subscriptionInfo, // Pass subscription info so Arcus knows user's plan
+        additionalContext: `
 - Understand and act upon **URGENCY, PRIORITY, and REVENUE IMPACT**
 - Remember past conversations and build on previous context
 
@@ -509,10 +516,14 @@ Body: ${emailData.body || emailData.snippet}
 - **Gmail Access**: ${integrations.gmail ? '✅ Connected' : '❌ Not connected'}
 
 ## 🧨 Hard Restrictions - Do Not Cross`,
-      userEmail,
-      userName,
-      privacyMode
-    });
+        userEmail,
+        userName,
+        privacyMode
+      });
+    } catch (aiErr) {
+      console.error('❌ Arcus AI generateResponse failed:', aiErr?.message);
+      response = '';
+    }
 
     const finalResponse = response && response.trim()
       ? response
@@ -542,11 +553,12 @@ Body: ${emailData.body || emailData.snippet}
     });
 
   } catch (error) {
-    console.error('💥 Arcus Chat API error:', error);
+    console.error('💥 Arcus Chat API error:', error?.message, error?.stack);
     return NextResponse.json({
-      message: "I ran into a temporary issue. Could you try that again? If the problem persists, it might be worth refreshing the page.",
+      message: `I ran into an issue: ${error?.message || 'Unknown error'}. Please try again or refresh the page.`,
       timestamp: new Date().toISOString(),
       error: 'Internal server error',
+      errorDetail: error?.message || 'Unknown',
     });
   }
 }
