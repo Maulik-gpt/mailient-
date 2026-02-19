@@ -366,25 +366,42 @@ export default function ChatInterface({
     try {
       setIsLoading(true);
 
-      // Initialize Live Agent Steps for the Billion-Dollar UI Trace
+      // Initialize Live Agent Steps with a "Mission Protocol" feel
       const initialSteps = [
         {
-          id: `step_think_${Date.now()}`,
+          id: `step_ack_${Date.now()}`,
           type: 'think',
-          label: 'De-constructing intent...',
+          label: 'Acknowledge: Mission Initialized',
+          status: 'done',
+          detail: 'Intent verified and mapped to protocol.',
+          started_at: new Date().toISOString(),
+          completed_at: new Date().toISOString()
+        },
+        {
+          id: `step_think_${Date.now() + 1}`,
+          type: 'think',
+          label: 'Cognitive Planning...',
           status: 'running',
-          detail: `Analyzing: "${messageText.substring(0, 50)}${messageText.length > 50 ? '...' : ''}"`,
+          detail: `Synthesizing steps for: "${messageText.substring(0, 40)}${messageText.length > 40 ? '...' : ''}"`,
           started_at: new Date().toISOString()
         },
         {
-          id: `step_clarify_${Date.now() + 1}`,
-          type: 'think', // Use think for now, will map to clarify in trace
-          label: 'Calibrating secure logic...',
+          id: `step_proto_${Date.now() + 2}`,
+          type: 'think',
+          label: 'Protocol Execution',
           status: 'pending',
-          detail: 'Mapping context to high-fidelity outcomes'
+          detail: 'Waiting for cognitive alignment...'
         }
       ];
       setLiveAgentSteps(initialSteps);
+
+      // Sequential simulated progression for a more agentic "working" feel
+      setTimeout(() => {
+        setLiveAgentSteps(prev => prev.map((s, i) =>
+          i === 1 ? { ...s, status: 'done', completed_at: new Date().toISOString() } :
+            i === 2 ? { ...s, status: 'running', started_at: new Date().toISOString(), label: 'Synthesizing Response Protocol...' } : s
+        ));
+      }, 1200);
 
       const notesQuery = isNotesRelatedQuery(messageText);
       const emailQuery = isEmailRelatedQuery(messageText);
@@ -1110,6 +1127,25 @@ export default function ChatInterface({
       if (response.ok) {
         const data = await response.json();
 
+        // Staggered "To-do List" Replay for the Billion-Dollar Agent Feel
+        if (data.agentSteps && data.agentSteps.length > 0) {
+          // Temporarily show the steps in a "live" way before finalizing the result message
+          setLiveAgentSteps(data.agentSteps.map((s: any) => ({ ...s, status: 'pending', started_at: null, completed_at: null })));
+          setIsLoading(true);
+
+          for (let i = 0; i < data.agentSteps.length; i++) {
+            await new Promise(r => setTimeout(r, 800)); // Deliberate speed for agentic feel
+            setLiveAgentSteps(prev => prev.map((s, idx) =>
+              idx < i ? { ...s, status: 'done', completed_at: new Date().toISOString() } :
+                idx === i ? { ...s, status: 'running', started_at: new Date().toISOString() } : s
+            ));
+          }
+
+          await new Promise(r => setTimeout(r, 1000));
+          setIsLoading(false);
+          setLiveAgentSteps([]);
+        }
+
         // Update plan to done
         setPlanCards(prev => ({
           ...prev,
@@ -1708,7 +1744,7 @@ export default function ChatInterface({
                           <div className="flex-1">
                             <AgentSteps
                               steps={liveAgentSteps}
-                              goal="Synthesizing..."
+                              goal="Mission Protocol Active..."
                               isComplete={false}
                             />
                           </div>
