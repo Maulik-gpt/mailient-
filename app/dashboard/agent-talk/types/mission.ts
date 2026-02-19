@@ -1,156 +1,185 @@
-// ── Mission Domain Model ──
-// Based on the Arcus Spec: Chat-to-Mission "Goal Inbox"
+// ============================================================
+// Arcus Mission System Types
+// Chat-to-Mission "Goal Inbox" — Agentic Email + Scheduling
+// ============================================================
 
-export type MissionStatus = 'active' | 'waiting_on_other' | 'needs_user' | 'done' | 'archived';
-export type MissionPriority = 'high' | 'normal' | 'low';
-export type NextAction =
-    | 'draft_reply'
-    | 'draft_follow_up'
-    | 'ask_clarifying_question'
-    | 'schedule_times'
-    | 'send_attachment_again'
-    | 'close_as_done';
+/** Mission status state machine */
+export type MissionStatus =
+    | 'draft'
+    | 'waiting_on_user'
+    | 'waiting_on_other'
+    | 'done'
+    | 'archived';
 
-export type IntentType =
-    | 'create_mission'
-    | 'update_mission'
-    | 'ask_question'
-    | 'execute_action'
-    | 'multi_step_plan';
-
+/** Risk flags for safety gating */
 export type RiskFlag =
     | 'new_recipient'
     | 'external_domain'
-    | 'money_legal'
+    | 'mentions_money'
+    | 'mentions_legal'
+    | 'mentions_medical'
     | 'attachment_forwarding'
     | 'large_recipient_list';
 
-export type ToolType =
-    | 'email_search'
-    | 'email_read'
+/** Action types Arcus can perform */
+export type ActionType =
+    | 'search_email'
+    | 'read_thread'
+    | 'draft_reply'
     | 'send_email'
-    | 'create_draft'
-    | 'calendar_availability'
+    | 'get_availability'
     | 'create_meeting'
-    | 'schedule_check';
+    | 'schedule_check'
+    | 'clarify';
 
-// ── Thread Snapshot (privacy-minimal) ──
-export interface ThreadMessage {
-    message_id: string;
-    from: string;
-    to: string[];
-    cc: string[];
-    date: string;
-    subject: string;
-    has_attachments: boolean;
-    body_excerpt: string;
-}
+/** Step status */
+export type StepStatus = 'pending' | 'running' | 'done' | 'failed' | 'skipped';
 
-export interface ThreadSnapshot {
-    thread_id: string;
-    message_ids: string[];
-    messages: ThreadMessage[];
-    latest_message_id: string;
-    latest_date: string;
-}
-
-// ── Execution Step ──
-export interface ExecutionStep {
+/** A single step in a Mission plan */
+export interface MissionStep {
     id: string;
-    description: string;
-    tool: ToolType;
-    status: 'pending' | 'running' | 'done' | 'failed';
-    result?: string;
-    error?: string;
-    started_at?: string;
-    completed_at?: string;
+    order: number;
+    actionType: ActionType;
+    label: string;            // Human-readable: "Search for Sarah's email"
+    description?: string;     // Details
+    status: StepStatus;
+    result?: any;             // Output of the step
+    error?: string;           // Error message if failed
+    startedAt?: string;
+    completedAt?: string;
 }
 
-// ── Audit Log Entry ──
-export interface AuditLogEntry {
-    timestamp: string;
-    action_type: string;
-    target_thread?: string;
-    target_event?: string;
-    tool_inputs?: Record<string, any>;
-    tool_outputs?: Record<string, any>;
-    approved_by: 'user' | 'autopilot';
-}
-
-// ── Plan Card (required for every action) ──
+/** A Plan Card shown to the user for approval */
 export interface PlanCard {
     id: string;
-    goal: string;
-    steps: string[]; // "What I will do" (2–5 bullets)
-    tools: ToolType[];
-    draft_preview?: {
-        to: string[];
-        cc: string[];
-        subject: string;
-        body: string;
-    };
-    invite_preview?: {
+    missionId: string;
+    actionType: ActionType;
+    recipients?: string[];
+    cc?: string[];
+    subject?: string;
+    body?: string;
+    meetingDetails?: {
         title: string;
         attendees: string[];
         slot: string;
-        duration: string;
+        duration: number;
         location: string;
-        meet_link?: string;
+        notes?: string;
     };
-    risk_flags: RiskFlag[];
-    status: 'pending' | 'approved' | 'rejected' | 'executing' | 'done' | 'failed';
-    confidence: number; // 0-1
+    confidence: number;       // 0–1
     assumptions: string[];
-    questions_for_user: string[];
-    created_at: string;
+    questionsForUser: string[];
+    safetyFlags: RiskFlag[];
+    status: 'pending' | 'approved' | 'edited' | 'rejected';
+    createdAt: string;
 }
 
-// ── Mission ──
+/** Audit log entry */
+export interface AuditEntry {
+    id: string;
+    missionId: string;
+    timestamp: string;
+    actionType: ActionType | 'mission_created' | 'status_change' | 'user_approval' | 'user_edit';
+    targetThreadId?: string;
+    targetEventId?: string;
+    inputs?: Record<string, any>;
+    outputs?: Record<string, any>;
+    approvedBy: 'user' | 'autopilot';
+}
+
+/** A Mission: trackable outcome tied to email threads */
 export interface Mission {
-    mission_id: string;
-    title: string;
-    goal: string;
+    id: string;
+    goal: string;             // User-editable, plain language
     status: MissionStatus;
-    priority: MissionPriority;
-    due_at: string | null;
-    created_at: string;
-    updated_at: string;
-    linked_threads: ThreadSnapshot[];
-    participants: { email: string; display_name: string }[];
-    last_activity_at: string;
-    next_action: NextAction;
-    next_action_reason: string;
-    followup_plan?: string;
-    execution_steps: ExecutionStep[];
-    artifacts: { type: string; id: string; url?: string }[];
-    audit_log: AuditLogEntry[];
-    plan_card?: PlanCard;
+    linkedThreadIds: string[];
+    steps: MissionStep[];
+    planCards: PlanCard[];
+    auditTrail: AuditEntry[];
+    createdAt: string;
+    updatedAt: string;
+    conversationId: string;
+    maxNudges?: number;
+    nudgeCount?: number;
 }
 
-// ── Structured intent from AI parsing ──
-export interface StructuredIntent {
-    intent_type: IntentType;
-    mission_proposal?: {
-        title: string;
-        goal: string;
-        linked_threads_candidates: { thread_id: string; reason: string }[];
-        participants_candidates: string[];
-        due_at?: string;
-        next_action?: NextAction;
-    };
-    required_clarifications: string[];
-    proposed_actions: string[];
-    plan_card?: PlanCard;
+// ============================================================
+// AI Agent Thinking/Process UI Types
+// ============================================================
+
+/** Thinking phase */
+export type ThinkingPhase = 'thinking' | 'planning' | 'executing' | 'done';
+
+/** A single thought during the thinking phase */
+export interface ThoughtEntry {
+    id: string;
+    text: string;
+    timestamp: string;
+    phase: ThinkingPhase;
 }
 
-// ── Execution Result (after running) ──
-export interface ExecutionResult {
-    success: boolean;
-    changes: string[]; // "What changed" bullets
-    artifacts: { type: string; id: string; label: string; url?: string }[];
-    next_monitoring?: {
-        description: string;
-        check_at: string;
-    };
-    error?: string;
+/** Agent process state — drives the expandable UI */
+export interface AgentProcess {
+    id: string;
+    phase: ThinkingPhase;
+    label: string;            // "Working on it..." / "Setting up..." / "Running..."
+    thoughts: ThoughtEntry[];
+    steps: MissionStep[];
+    isExpanded: boolean;
+    startedAt: string;
+    completedAt?: string;
+}
+
+// ============================================================
+// Enhanced Message Types (extends existing)
+// ============================================================
+
+export interface AgentMessageMeta {
+    actionType?: string;
+    notesResult?: any;
+    emailResult?: any;
+    mission?: Mission;
+    planCard?: PlanCard;
+    agentProcess?: AgentProcess;
+    searchResults?: SearchCandidate[];
+    clarificationNeeded?: boolean;
+    clarificationOptions?: ClarificationOption[];
+}
+
+export interface SearchCandidate {
+    id: string;
+    subject: string;
+    from: string;
+    date: string;
+    snippet: string;
+    threadId?: string;
+    participants?: string[];
+}
+
+export interface ClarificationOption {
+    id: string;
+    label: string;
+    description?: string;
+    value: any;
+}
+
+// ============================================================
+// API Response Types
+// ============================================================
+
+export interface ArcusAgentResponse {
+    message: string;
+    nextAction?: ActionType;
+    draftSubject?: string;
+    draftBody?: string;
+    confidence?: number;
+    assumptions?: string[];
+    questionsForUser?: string[];
+    sendTo?: string[];
+    cc?: string[];
+    safetyFlags?: RiskFlag[];
+    mission?: Mission;
+    planCard?: PlanCard;
+    agentProcess?: AgentProcess;
+    searchResults?: SearchCandidate[];
 }

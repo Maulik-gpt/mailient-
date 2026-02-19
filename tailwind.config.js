@@ -9,7 +9,7 @@ export default {
     './components/**/*.{ts,tsx}',
     './app/**/*.{ts,tsx}',
     './src/**/*.{ts,tsx}',
-	],
+  ],
   prefix: "",
   theme: {
     container: {
@@ -105,6 +105,10 @@ export default {
         "rainbow": {
           "0%": { "background-position": "0%" },
           "100%": { "background-position": "200%" },
+        },
+        "arcus-pulse": {
+          "0%, 100%": { opacity: "0.3", transform: "scale(0.8)" },
+          "50%": { opacity: "1", transform: "scale(1.2)" },
         },
       },
       animation: {

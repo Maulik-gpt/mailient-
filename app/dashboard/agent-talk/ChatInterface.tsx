@@ -1,16 +1,16 @@
 "use client";
 
-import { Send, Mail, Upload, User, History, Plus, MessageCircle, Edit, DoorOpen, Bell, Mail as EmailIcon, MoreHorizontal, LogOut, Settings, Target, Zap } from 'lucide-react';
+import { Send, Mail, Upload, User, History, Plus, MessageCircle, Edit, DoorOpen, Bell, Mail as EmailIcon, MoreHorizontal, LogOut, Settings } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { ChatHistoryModal } from './components/ChatHistoryModal';
 import { ChatInput } from './components/ChatInput';
 import { DraftReplyBox } from './components/DraftReplyBox';
-import { PlanCard } from './components/PlanCard';
-import { MissionCard } from './components/MissionCard';
-import { ExecutionResultCard } from './components/ExecutionResultCard';
-import { AgentSteps } from './components/AgentSteps';
+import AgentThinkingBlock from './components/AgentThinkingBlock';
+import PlanCardComponent from './components/PlanCard';
+import MissionCard from './components/MissionCard';
+import ClarificationCard from './components/ClarificationCard';
 import { IntegrationsModal } from '@/components/ui/integrations-modal';
 import { EmailSelectionModal } from '@/components/ui/email-selection-modal';
 import { PersonalitySettingsModal } from '@/components/ui/personality-settings-modal';
@@ -22,7 +22,7 @@ import NotesFetchingDisplay from '@/components/ui/notes-fetching-display';
 import { UsageLimitModal } from '@/components/ui/usage-limit-modal';
 import { ShiningText } from '@/components/ui/shining-text';
 import { toast } from 'sonner';
-import type { PlanCard as PlanCardType, Mission, ExecutionResult } from './types/mission';
+import type { AgentProcess, Mission, PlanCard, ThinkingPhase, MissionStep, SearchCandidate, ClarificationOption } from './types/mission';
 
 // Detect and wrap URLs in plain text with premium styling for actions
 const linkify = (text: string): string => {
@@ -39,12 +39,12 @@ const linkify = (text: string): string => {
       lowerUrl.includes('password');
 
     if (isAction && url.length > 50) {
-      // Premium Action Button Layout — Monochrome Re-skin
-      return `<div class="my-6 p-[2px] bg-white/10 rounded-3xl shadow-2xl overflow-hidden"><div class="bg-neutral-900 rounded-[1.4rem] p-6 flex flex-col items-center text-center"><div class="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mb-4 border border-white/10"><svg class="w-6 h-6 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div><h4 class="text-white font-bold text-lg mb-2">Priority Action</h4><p class="text-neutral-400 text-xs mb-6 max-w-[250px]">Secure action link detected in conversation</p><a href="${url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-12 py-3 bg-white text-black font-bold rounded-2xl transition-all transform hover:scale-105 active:scale-95 shadow-[0_0_25px_rgba(255,255,255,0.1)] no-underline">Confirm & Proceed</a><div class="mt-4 text-[9px] text-neutral-600 font-mono break-all opacity-40 hover:opacity-100 transition-opacity select-all cursor-text py-2 px-4 bg-black/20 rounded-lg">${url}</div></div></div>`;
+      // Premium Action Button Layout
+      return `<div class="my-6 p-[2px] bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-3xl shadow-2xl overflow-hidden"><div class="bg-neutral-900 rounded-[1.4rem] p-6 flex flex-col items-center text-center"><div class="w-12 h-12 bg-blue-500/10 rounded-full flex items-center justify-center mb-4 border border-blue-500/20"><svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div><h4 class="text-white font-bold text-lg mb-2">Priority Action</h4><p class="text-neutral-400 text-xs mb-6 max-w-[250px]">Secure action link detected in conversation</p><a href="${url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-12 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl transition-all transform hover:scale-105 active:scale-95 shadow-[0_0_25px_rgba(37,99,235,0.4)] no-underline">Confirm & Proceed</a><div class="mt-4 text-[9px] text-neutral-600 font-mono break-all opacity-40 hover:opacity-100 transition-opacity select-all cursor-text py-2 px-4 bg-black/20 rounded-lg">${url}</div></div></div>`;
     }
 
     const displayUrl = url.length > 55 ? url.substring(0, 52) + '...' : url;
-    return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-white/60 hover:text-white underline underline-offset-4 decoration-white/20 transition-all font-medium break-all" title="${url}">${displayUrl}</a>`;
+    return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:text-blue-300 underline underline-offset-4 decoration-blue-500/30 transition-all font-medium break-all" title="${url}">${displayUrl}</a>`;
   });
 };
 
@@ -106,19 +106,16 @@ interface AgentMessage {
   } | string;
   time: string;
   meta?: {
-    actionType?: 'notes' | 'email' | 'general' | 'mission_plan' | 'mission_created' | 'execution_result' | string;
+    actionType?: 'notes' | 'email' | 'general' | 'draft_reply' | 'schedule_meeting' | 'mission' | string;
     notesResult?: any;
     emailResult?: any;
-    planCard?: PlanCardType;
     mission?: Mission;
-    executionResult?: ExecutionResult;
-    agentSteps?: any[];
-    schedulingData?: {
-      bookingUrl: string;
-      durationMinutes: number;
-      title: string;
-      type: string;
-    };
+    planCard?: PlanCard;
+    agentProcess?: AgentProcess;
+    searchResults?: SearchCandidate[];
+    clarificationNeeded?: boolean;
+    clarificationOptions?: ClarificationOption[];
+    clarificationQuestion?: string;
   };
 }
 
@@ -176,13 +173,18 @@ export default function ChatInterface({
   const [notesSearchQuery, setNotesSearchQuery] = useState<string>('');
   const [showNotesFetching, setShowNotesFetching] = useState<boolean>(false);
   const [notesResults, setNotesResults] = useState<any[]>([]);
-  const [actionStatus, setActionStatus] = useState<'planning' | 'processing' | 'done' | null>(null); // Execution Trace
+  const [actionStatus, setActionStatus] = useState<'planning' | 'processing' | 'done' | null>(null);
   const [activeSearchLabel, setActiveSearchLabel] = useState<string | null>(null);
-  const [liveAgentSteps, setLiveAgentSteps] = useState<any[]>([]);
 
-  // Mission & Plan Card state
-  const [activeMissions, setActiveMissions] = useState<Mission[]>([]);
-  const [planCards, setPlanCards] = useState<Record<string, PlanCardType>>({});
+  // Agentic Mission system state
+  const [activeProcess, setActiveProcess] = useState<AgentProcess | null>(null);
+  const [activeMission, setActiveMission] = useState<Mission | null>(null);
+  const [activePlanCard, setActivePlanCard] = useState<PlanCard | null>(null);
+  const [clarification, setClarification] = useState<{
+    question: string;
+    emailCandidates?: SearchCandidate[];
+    options?: ClarificationOption[];
+  } | null>(null);
 
   // Subscription state - to hide upgrade button for Pro users
   const [currentPlan, setCurrentPlan] = useState<'free' | 'starter' | 'pro' | 'none' | null>(null);
@@ -366,60 +368,29 @@ export default function ChatInterface({
     try {
       setIsLoading(true);
 
-      // Initialize Live Agent Steps with a "Mission Protocol" feel
-      const initialSteps = [
-        {
-          id: `step_ack_${Date.now()}`,
-          type: 'think',
-          label: 'Acknowledge: Mission Initialized',
-          status: 'done',
-          detail: 'Intent verified and mapped to protocol.',
-          started_at: new Date().toISOString(),
-          completed_at: new Date().toISOString()
-        },
-        {
-          id: `step_think_${Date.now() + 1}`,
-          type: 'think',
-          label: 'Cognitive Planning...',
-          status: 'running',
-          detail: `Synthesizing steps for: "${messageText.substring(0, 40)}${messageText.length > 40 ? '...' : ''}"`,
-          started_at: new Date().toISOString()
-        },
-        {
-          id: `step_proto_${Date.now() + 2}`,
-          type: 'think',
-          label: 'Protocol Execution',
-          status: 'pending',
-          detail: 'Waiting for cognitive alignment...'
-        }
-      ];
-      setLiveAgentSteps(initialSteps);
-
-      // Sequential simulated progression for a more agentic "working" feel
-      setTimeout(() => {
-        setLiveAgentSteps(prev => prev.map((s, i) =>
-          i === 1 ? { ...s, status: 'done', completed_at: new Date().toISOString() } :
-            i === 2 ? { ...s, status: 'running', started_at: new Date().toISOString(), label: 'Synthesizing Response Protocol...' } : s
-        ));
-      }, 1200);
-
       const notesQuery = isNotesRelatedQuery(messageText);
       const emailQuery = isEmailRelatedQuery(messageText);
       setIsNotesQuery(notesQuery);
 
       if (notesQuery || emailQuery) {
-        // We handle loading state via isLoading
+        setActiveSearchLabel('Searching...');
       }
 
       let extractedQuery = '';
       if (notesQuery) {
         actionTriggered = true;
+        setActionStatus('planning');
         extractedQuery = extractSearchTerm(messageText);
         setNotesSearchQuery(extractedQuery);
         setShowNotesFetching(true);
         setNotesResults([]);
+
+        // Simulate planning phase
+        statusTimeout = setTimeout(() => setActionStatus('processing'), 1500);
       } else if (isSchedulingRequest(messageText) || /^(yes|yeah|yep|correct|do it|confirm|proceed|ok|okay|sure|that works|go ahead)$/i.test(messageText.trim())) {
         actionTriggered = true;
+        setActionStatus('planning');
+        statusTimeout = setTimeout(() => setActionStatus('processing'), 1000);
       }
 
       const requestBody = {
@@ -428,7 +399,8 @@ export default function ChatInterface({
         isNewConversation: isNew,
         gmailAccessToken,
         isNotesQuery: notesQuery,
-        notesSearchQuery: extractedQuery
+        notesSearchQuery: extractedQuery,
+        activeMission: activeMission
       };
 
       const response = await fetch('/api/agent-talk/chat-arcus', {
@@ -469,30 +441,30 @@ export default function ChatInterface({
         setIntegrations(data.integrations);
       }
 
-      if (data.draftData && (data.actionType === 'draft_reply' || data.actionType === 'execution_result')) {
+      // Handle Mission / Agent Process updates
+      if (data.actionType === 'mission') {
+        if (data.mission) {
+          setActiveMission(data.mission);
+          // Check for pending plan cards in the mission
+          if (data.mission.planCards && data.mission.planCards.length > 0) {
+            const pending = data.mission.planCards.find((c: PlanCard) => c.status === 'pending');
+            if (pending) setActivePlanCard(pending);
+          }
+        }
+        if (data.agentProcess) setActiveProcess(data.agentProcess);
+      }
+
+      if (data.draftData && data.actionType === 'draft_reply') {
         setCurrentDraftData(data.draftData);
         setShowDraftBox(true);
         console.log('Draft data received:', data.draftData);
       }
-      // Handle Plan Card response from API
-      if (data.planCard) {
-        setPlanCards(prev => ({ ...prev, [data.planCard.id]: data.planCard }));
-      }
 
-      // If a Plan Card was generated, it should handle the interaction flow
-      // we only proceed to individual intent handlers if NO plan card was proposed
-      // and NO clarifications are needed
-      const hasPlanCard = !!data.planCard;
-      const needsClarification = data.planCard?.required_clarifications?.length > 0;
-
-      // Handle Mission creation
-      if (data.mission) {
-        setActiveMissions(prev => {
-          const exists = prev.find(m => m.mission_id === data.mission.mission_id);
-          if (exists) {
-            return prev.map(m => m.mission_id === data.mission.mission_id ? data.mission : m);
-          }
-          return [data.mission, ...prev];
+      // Handle Search Results (for Clarification)
+      if (data.searchResults) {
+        setClarification({
+          question: data.clarificationQuestion || "Which email are you referring to?",
+          emailCandidates: data.searchResults
         });
       }
 
@@ -509,17 +481,15 @@ export default function ChatInterface({
           actionType: data.actionType,
           notesResult: data.notesResult,
           emailResult: data.emailResult,
-          planCard: data.planCard || undefined,
-          mission: data.mission || undefined,
-          executionResult: data.executionResult || undefined,
-          agentSteps: data.agentSteps || undefined,
-          schedulingData: data.schedulingData || undefined,
+          mission: data.mission,
+          agentProcess: data.agentProcess,
+          planCard: data.mission?.planCards?.find((c: PlanCard) => c.status === 'pending'),
+          searchResults: data.searchResults
         }
       };
 
       // First stop loading to show the message
       setIsLoading(false);
-      setLiveAgentSteps([]); // Clear live steps as the final message has them now
 
       // Add agent message to state
       setMessages(prev => [...prev, agentMessage]);
@@ -647,7 +617,8 @@ export default function ChatInterface({
       if (statusTimeout) clearTimeout(statusTimeout);
 
       if (actionTriggered) {
-        setTimeout(() => scrollToBottom(true), 100);
+        setActionStatus('done');
+        setTimeout(() => setActionStatus(null), 3000);
       }
       setTimeout(() => scrollToBottom(true), 100);
     }
@@ -1067,6 +1038,138 @@ export default function ChatInterface({
     }
   };
 
+  // --- Agent Interaction Handlers ---
+
+  const updateMessageMeta = (cardId: string, updates: any) => {
+    setMessages(prev => prev.map(msg => {
+      if (msg.type === 'agent' && msg.meta) {
+        // If updating a plan card
+        if (msg.meta.planCard && msg.meta.planCard.id === cardId) {
+          return {
+            ...msg,
+            meta: {
+              ...msg.meta,
+              planCard: { ...msg.meta.planCard, ...updates }
+            }
+          };
+        }
+        // If updating a mission
+        if (msg.meta.mission && msg.meta.mission.id === cardId) {
+          return {
+            ...msg,
+            meta: {
+              ...msg.meta,
+              mission: { ...msg.meta.mission, ...updates }
+            }
+          };
+        }
+      }
+      return msg;
+    }));
+  };
+
+  const handleMissionStatusChange = (missionId: string, status: any) => {
+    console.log('Mission status changed:', missionId, status);
+    updateMessageMeta(missionId, { status });
+    // TODO: Call API to update mission status in DB
+  };
+
+  const handlePlanCardApprove = async (cardId: string) => {
+    console.log('Approved plan card:', cardId);
+
+    // Find the current message and card for context from state
+    // Note: using state here instead of activePlanCard to be more specific to the clicked card
+    const agentMsg = messages.find(m => m.type === 'agent' && m.meta?.planCard?.id === cardId) as AgentMessage;
+    const card = agentMsg?.meta?.planCard;
+
+    if (!card) {
+      console.warn("Card not found in messages");
+      return;
+    }
+
+    try {
+      // Optimistic update
+      const cardAction = card.actionType;
+      updateMessageMeta(cardId, { status: 'approved' });
+      if (activePlanCard?.id === cardId) {
+        setActivePlanCard(prev => prev ? { ...prev, status: 'approved' } : null);
+      }
+
+      toast.success(`Action '${cardAction}' approved. Processing...`);
+
+      if (cardAction === 'draft_reply') {
+        const response = await fetch('/api/agent-talk/send-reply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: card.recipients?.[0],
+            subject: card.subject,
+            content: card.body,
+            threadId: card.threadId || (agentMsg.meta?.mission?.linkedThreadIds?.[0])
+          })
+        });
+
+        if (!response.ok) throw new Error("Failed to send email");
+
+        toast.success("Email sent successfully!");
+
+        // Add system outcome message
+        const successMsg: AgentMessage = {
+          id: Date.now(),
+          type: 'agent',
+          content: {
+            text: `I've sent the email to ${card.recipients?.join(', ')}. Mission accomplished!`,
+            list: [],
+            footer: ''
+          },
+          time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+        };
+        setMessages(prev => [...prev, successMsg]);
+      }
+    } catch (error) {
+      console.error("Execution failed:", error);
+      toast.error("Failed to execute action.");
+      updateMessageMeta(cardId, { status: 'pending' }); // Revert
+      if (activePlanCard?.id === cardId) {
+        setActivePlanCard(prev => prev ? { ...prev, status: 'pending' } : null);
+      }
+    }
+  };
+
+  const handlePlanCardEdit = (cardId: string, updates: any) => {
+    console.log('Edited plan card:', cardId, updates);
+    updateMessageMeta(cardId, updates);
+    if (activePlanCard && activePlanCard.id === cardId) {
+      setActivePlanCard(prev => prev ? { ...prev, ...updates } : null);
+    }
+  };
+
+  const handlePlanCardReject = (cardId: string) => {
+    console.log('Rejected plan card:', cardId);
+    updateMessageMeta(cardId, { status: 'rejected' });
+    if (activePlanCard && activePlanCard.id === cardId) {
+      setActivePlanCard(null);
+    }
+  };
+
+  const handleClarificationSelect = (value: any) => {
+    console.log('Clarification selected:', value);
+    setClarification(null);
+    // Send selection back to chat
+    const responseText = value.subject ? `I mean the email "${value.subject}" from ${value.from}` : `I choose: ${value.label || value}`;
+    handleSend(responseText);
+  };
+
+  const handleClarificationNone = () => {
+    setClarification(null);
+    handleSend("None of those options are correct.");
+  };
+
+  const handleGenerateNextStep = (missionId: string) => {
+    console.log('Generating next step for mission:', missionId);
+    handleSend("Please proceed with the next step.");
+  };
+
   // Auto-save conversation periodically
   useEffect(() => {
     if (messages.length > 0) {
@@ -1082,202 +1185,6 @@ export default function ChatInterface({
         saveConversation();
       }
     };
-  }, []);
-
-  // ── Plan Card handlers ──
-  const handlePlanApprove = useCallback(async (planId: string) => {
-    const plan = planCards[planId];
-    if (!plan) return;
-
-    // Update plan status to executing
-    setPlanCards(prev => ({
-      ...prev,
-      [planId]: { ...prev[planId], status: 'executing' }
-    }));
-
-    // Also update the plan in any message meta
-    setMessages(prev => prev.map(msg => {
-      if (msg.type === 'agent' && (msg as AgentMessage).meta?.planCard?.id === planId) {
-        return {
-          ...msg,
-          meta: {
-            ...(msg as AgentMessage).meta,
-            planCard: { ...(msg as AgentMessage).meta!.planCard!, status: 'executing' }
-          }
-        } as AgentMessage;
-      }
-      return msg;
-    }));
-
-    toast.success('Plan approved! Executing...', { description: plan.goal });
-
-    try {
-      const response = await fetch('/api/agent-talk/chat-arcus', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: `[PLAN_APPROVED:${planId}] Execute the approved plan: ${plan.goal}`,
-          conversationId: currentConversationId,
-          isNewConversation: false,
-          gmailAccessToken,
-          planApproval: { planId, action: 'approve' }
-        })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-
-        // Staggered "To-do List" Replay for the Billion-Dollar Agent Feel
-        if (data.agentSteps && data.agentSteps.length > 0) {
-          // Temporarily show the steps in a "live" way before finalizing the result message
-          setLiveAgentSteps(data.agentSteps.map((s: any) => ({ ...s, status: 'pending', started_at: null, completed_at: null })));
-          setIsLoading(true);
-
-          for (let i = 0; i < data.agentSteps.length; i++) {
-            await new Promise(r => setTimeout(r, 800)); // Deliberate speed for agentic feel
-            setLiveAgentSteps(prev => prev.map((s, idx) =>
-              idx < i ? { ...s, status: 'done', completed_at: new Date().toISOString() } :
-                idx === i ? { ...s, status: 'running', started_at: new Date().toISOString() } : s
-            ));
-          }
-
-          await new Promise(r => setTimeout(r, 1000));
-          setIsLoading(false);
-          setLiveAgentSteps([]);
-        }
-
-        // Update plan to done
-        setPlanCards(prev => ({
-          ...prev,
-          [planId]: { ...prev[planId], status: 'done' }
-        }));
-
-        // Update message with done status
-        setMessages(prev => prev.map(msg => {
-          if (msg.type === 'agent' && (msg as AgentMessage).meta?.planCard?.id === planId) {
-            return {
-              ...msg,
-              meta: {
-                ...(msg as AgentMessage).meta,
-                planCard: { ...(msg as AgentMessage).meta!.planCard!, status: 'done' }
-              }
-            } as AgentMessage;
-          }
-          return msg;
-        }));
-
-        // Add execution result message
-        const resultMessage: AgentMessage = {
-          id: Date.now() + 2,
-          type: 'agent',
-          content: { text: data.message, list: [], footer: '' },
-          time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true }),
-          meta: {
-            actionType: 'execution_result',
-            executionResult: data.executionResult || {
-              success: true,
-              changes: ['Plan executed successfully'],
-              artifacts: [],
-            },
-            agentSteps: data.agentSteps || []
-          }
-        };
-        setMessages(prev => [...prev, resultMessage]);
-        await refreshArcusCredits(true);
-        toast.success('Mission complete!', { description: plan.goal });
-      } else {
-        // Handle non-200 API responses
-        const errorData = await response.json().catch(() => ({}));
-
-        setPlanCards(prev => ({
-          ...prev,
-          [planId]: { ...prev[planId], status: 'failed' }
-        }));
-
-        setMessages(prev => prev.map(msg => {
-          if (msg.type === 'agent' && (msg as AgentMessage).meta?.planCard?.id === planId) {
-            return {
-              ...msg,
-              meta: {
-                ...(msg as AgentMessage).meta,
-                planCard: { ...(msg as AgentMessage).meta!.planCard!, status: 'failed' }
-              }
-            } as AgentMessage;
-          }
-          return msg;
-        }));
-
-        toast.error('Plan execution failed', {
-          description: errorData?.message || 'The server returned an error. Please try again.'
-        });
-      }
-    } catch (error) {
-      console.error('Plan execution error:', error);
-      setPlanCards(prev => ({
-        ...prev,
-        [planId]: { ...prev[planId], status: 'failed' }
-      }));
-
-      // Also update in messages
-      setMessages(prev => prev.map(msg => {
-        if (msg.type === 'agent' && (msg as AgentMessage).meta?.planCard?.id === planId) {
-          return {
-            ...msg,
-            meta: {
-              ...(msg as AgentMessage).meta,
-              planCard: { ...(msg as AgentMessage).meta!.planCard!, status: 'failed' }
-            }
-          } as AgentMessage;
-        }
-        return msg;
-      }));
-
-      toast.error('Plan execution failed', { description: 'Something went wrong. Please try again.' });
-    }
-  }, [planCards, currentConversationId, gmailAccessToken]);
-
-  const handlePlanReject = useCallback((planId: string) => {
-    setPlanCards(prev => ({
-      ...prev,
-      [planId]: { ...prev[planId], status: 'rejected' }
-    }));
-
-    setMessages(prev => prev.map(msg => {
-      if (msg.type === 'agent' && (msg as AgentMessage).meta?.planCard?.id === planId) {
-        return {
-          ...msg,
-          meta: {
-            ...(msg as AgentMessage).meta,
-            planCard: { ...(msg as AgentMessage).meta!.planCard!, status: 'rejected' }
-          }
-        } as AgentMessage;
-      }
-      return msg;
-    }));
-
-    toast('Plan cancelled', { description: 'No actions were taken.' });
-  }, []);
-
-  const handlePlanEdit = useCallback((planId: string, instructions: string) => {
-    handleSend(`Adjust the plan: ${instructions}`);
-  }, [handleSend]);
-
-  const handleMissionGenerateNextStep = useCallback((missionId: string) => {
-    handleSend(`Generate the next step for mission ${missionId}`);
-  }, [handleSend]);
-
-  const handleMissionMarkDone = useCallback((missionId: string) => {
-    setActiveMissions(prev => prev.map(m =>
-      m.mission_id === missionId ? { ...m, status: 'done' as const } : m
-    ));
-    toast.success('Mission marked as done!');
-  }, []);
-
-  const handleMissionArchive = useCallback((missionId: string) => {
-    setActiveMissions(prev => prev.map(m =>
-      m.mission_id === missionId ? { ...m, status: 'archived' as const } : m
-    ));
-    toast('Mission archived');
   }, []);
 
   return (
@@ -1392,7 +1299,7 @@ export default function ChatInterface({
                         )}
                       </div>
                       <p className="text-sm text-white/60 font-sans">
-                        Chat-to-Mission · Email · Scheduling
+                        Intelligent email analysis and agentic AI
                       </p>
                     </div>
                   </div>
@@ -1451,93 +1358,64 @@ export default function ChatInterface({
               /* Initial Interface */
               <div className="flex-1 overflow-y-auto transition-all duration-300">
                 <div className="h-full flex items-center justify-center px-6">
-                  <div className="w-full max-w-3xl mx-auto">
-                    <div className="text-center mb-10">
-                      <h1 className="text-[32px] font-medium text-white/90 mb-1.5 font-sans tracking-[-0.02em]">
-                        What do you want to get done?
+                  <div className="w-full max-w-4xl mx-auto">
+                    <div className="text-center mb-8">
+                      <h1 className="text-4xl font-medium text-white mb-2 font-sans">
+                        Ask about your emails
                       </h1>
-                      <p className="text-white/30 text-sm font-sans">Search, draft, send, schedule. Just tell me.</p>
                     </div>
 
                     <div className="mb-8">
-                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-                        <button
-                          onClick={() => handleSend('Find the latest emails I need to reply to and create missions for them')}
-                          className="group bg-[#0c0c0c] border border-white/[0.06] rounded-xl p-4 hover:border-white/[0.12] hover:bg-[#0e0e0e] transition-all duration-200 cursor-pointer text-left"
-                        >
-                          <div className="flex items-center gap-2.5 mb-2.5">
-                            <div className="bg-blue-500/8 rounded-lg p-2">
-                              <Target className="w-4 h-4 text-blue-400/70" />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                        <div className="group bg-[#0a0a0a] backdrop-blur-md border border-[#1a1a1a] rounded-xl p-4 shadow-lg hover:border-[#2a2a2a] hover:bg-[#151515] transition-all duration-300 cursor-pointer">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="bg-blue-500/20 rounded-lg p-2">
+                              <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                              </svg>
                             </div>
-                            <h3 className="text-white/70 font-medium font-sans text-[13px] group-hover:text-white/90 transition-colors">Catch up</h3>
+                            <h3 className="text-white font-medium font-sans text-sm">Email Campaigns</h3>
                           </div>
-                          <p className="text-white/25 text-[12px] leading-relaxed font-sans group-hover:text-white/35 transition-colors">Find what needs your attention and set up next steps.</p>
-                        </button>
+                          <p className="text-white/60 text-sm leading-relaxed font-sans">Create and manage high-performing email campaigns effortlessly.</p>
+                        </div>
 
-                        <button
-                          onClick={() => handleSend('Schedule a call for next week')}
-                          className="group bg-[#0c0c0c] border border-white/[0.06] rounded-xl p-4 hover:border-white/[0.12] hover:bg-[#0e0e0e] transition-all duration-200 cursor-pointer text-left"
-                        >
-                          <div className="flex items-center gap-2.5 mb-2.5">
-                            <div className="bg-emerald-500/8 rounded-lg p-2">
-                              <svg className="w-4 h-4 text-emerald-400/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="group bg-[#0a0a0a] backdrop-blur-md border border-[#1a1a1a] rounded-xl p-4 shadow-lg hover:border-[#2a2a2a] hover:bg-[#151515] transition-all duration-300 cursor-pointer">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="bg-green-500/20 rounded-lg p-2">
+                              <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                               </svg>
                             </div>
-                            <h3 className="text-white/70 font-medium font-sans text-[13px] group-hover:text-white/90 transition-colors">Schedule</h3>
+                            <h3 className="text-white font-medium font-sans text-sm">Smart Scheduling</h3>
                           </div>
-                          <p className="text-white/25 text-[12px] leading-relaxed font-sans group-hover:text-white/35 transition-colors">Book meetings with invites and calendar events.</p>
-                        </button>
+                          <p className="text-white/60 text-xs leading-relaxed font-sans">Automatically schedule meetings or email deliveries via Google Calendar and Meet.</p>
+                        </div>
 
-                        <button
-                          onClick={() => handleSend('Draft a reply to the latest important email')}
-                          className="group bg-[#0c0c0c] border border-white/[0.06] rounded-xl p-4 hover:border-white/[0.12] hover:bg-[#0e0e0e] transition-all duration-200 cursor-pointer text-left"
-                        >
-                          <div className="flex items-center gap-2.5 mb-2.5">
-                            <div className="bg-amber-500/8 rounded-lg p-2">
-                              <Mail className="w-4 h-4 text-amber-400/70" />
+                        <div className="group bg-[#0a0a0a] backdrop-blur-md border border-[#1a1a1a] rounded-xl p-4 shadow-lg hover:border-[#2a2a2a] hover:bg-[#151515] transition-all duration-300 cursor-pointer">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="bg-orange-500/20 rounded-lg p-2">
+                              <svg className="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                              </svg>
                             </div>
-                            <h3 className="text-white/70 font-medium font-sans text-[13px] group-hover:text-white/90 transition-colors">Draft reply</h3>
+                            <h3 className="text-white font-medium font-sans text-sm">Analytics</h3>
                           </div>
-                          <p className="text-white/25 text-[12px] leading-relaxed font-sans group-hover:text-white/35 transition-colors">Write replies you can review and send when ready.</p>
-                        </button>
+                          <p className="text-white/60 text-xs leading-relaxed font-sans">Track performance metrics and uncover insights from your email activity.</p>
+                        </div>
 
-                        <button
-                          onClick={() => handleSend('Show me emails I need to follow up on')}
-                          className="group bg-[#0c0c0c] border border-white/[0.06] rounded-xl p-4 hover:border-white/[0.12] hover:bg-[#0e0e0e] transition-all duration-200 cursor-pointer text-left"
-                        >
-                          <div className="flex items-center gap-2.5 mb-2.5">
-                            <div className="bg-violet-500/8 rounded-lg p-2">
-                              <Zap className="w-4 h-4 text-violet-400/70" />
+                        <div className="group bg-[#0a0a0a] backdrop-blur-md border border-[#1a1a1a] rounded-xl p-4 shadow-lg hover:border-[#2a2a2a] hover:bg-[#151515] transition-all duration-300 cursor-pointer">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="bg-purple-500/20 rounded-lg p-2">
+                              <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                              </svg>
                             </div>
-                            <h3 className="text-white/70 font-medium font-sans text-[13px] group-hover:text-white/90 transition-colors">Follow ups</h3>
+                            <h3 className="text-white font-medium font-sans text-sm">Auto-replies</h3>
                           </div>
-                          <p className="text-white/25 text-[12px] leading-relaxed font-sans group-hover:text-white/35 transition-colors">Find stale threads and send gentle nudges.</p>
-                        </button>
+                          <p className="text-white/60 text-xs leading-relaxed font-sans">AI that crafts smart, context-aware replies to repetitive emails.</p>
+                        </div>
                       </div>
                     </div>
-
-                    {/* In-progress items */}
-                    {activeMissions.filter(m => m.status !== 'done' && m.status !== 'archived').length > 0 && (
-                      <div className="mb-6 space-y-2.5">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[11px] font-medium text-white/20">In progress</span>
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.04] text-white/25 font-medium">
-                            {activeMissions.filter(m => m.status !== 'done' && m.status !== 'archived').length}
-                          </span>
-                        </div>
-                        {activeMissions.filter(m => m.status !== 'done' && m.status !== 'archived').slice(0, 3).map(mission => (
-                          <MissionCard
-                            key={mission.mission_id}
-                            mission={mission}
-                            isCompact
-                            onGenerateNextStep={handleMissionGenerateNextStep}
-                            onMarkDone={handleMissionMarkDone}
-                            onArchive={handleMissionArchive}
-                          />
-                        ))}
-                      </div>
-                    )}
 
                     <div className="relative">
                       <ChatInput
@@ -1545,7 +1423,7 @@ export default function ChatInterface({
                           handleSend(msg);
                         }}
                         disabled={isLoading}
-                        placeholder="Tell Arcus what you want to get done..."
+                        placeholder="Ask anything about your emails"
                         onModalStateChange={setIsIntegrationsModalOpen}
                         onEmailModalStateChange={setIsEmailSelectionModalOpen}
                         selectedEmails={selectedEmails}
@@ -1573,6 +1451,50 @@ export default function ChatInterface({
                         <div className={`flex-1 ${msg.type === 'user' ? 'flex justify-end' : ''}`}>
                           {msg.type === 'agent' ? (
                             <div className="space-y-1 pt-1">
+                              {/* Mission Card */}
+                              {(msg as AgentMessage).meta?.mission && (
+                                <div className="mb-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                                  <MissionCard
+                                    mission={(msg as AgentMessage).meta!.mission!}
+                                    onStatusChange={handleMissionStatusChange}
+                                    onGenerateNextStep={handleGenerateNextStep}
+                                  />
+                                </div>
+                              )}
+
+                              {/* Process / Thinking */}
+                              {(msg as AgentMessage).meta?.agentProcess && (
+                                <div className="mb-4 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-100">
+                                  <AgentThinkingBlock
+                                    process={(msg as AgentMessage).meta!.agentProcess!}
+                                  />
+                                </div>
+                              )}
+
+                              {/* Plan Card (Proposal) */}
+                              {(msg as AgentMessage).meta?.planCard && (
+                                <div className="mb-4 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-200">
+                                  <PlanCardComponent
+                                    card={(msg as AgentMessage).meta!.planCard!}
+                                    onApprove={handlePlanCardApprove}
+                                    onEdit={handlePlanCardEdit}
+                                    onReject={handlePlanCardReject}
+                                  />
+                                </div>
+                              )}
+
+                              {/* Clarification / Selection */}
+                              {(msg as AgentMessage).meta?.searchResults && (msg as AgentMessage).meta?.searchResults!.length > 0 && (
+                                <div className="mb-4 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-100">
+                                  <ClarificationCard
+                                    question={(msg as AgentMessage).meta?.clarificationQuestion || "Which email are you referring to?"}
+                                    emailCandidates={(msg as AgentMessage).meta!.searchResults!}
+                                    onSelect={handleClarificationSelect}
+                                    onNone={handleClarificationNone}
+                                  />
+                                </div>
+                              )}
+
                               {typeof msg.content === 'string' ? (
                                 <div
                                   className="text-white/90 text-base leading-[1.9] font-sans prose prose-invert max-w-none"
@@ -1603,83 +1525,6 @@ export default function ChatInterface({
                                 </>
                               )}
                               <p className="text-white/40 text-xs font-medium pt-3">{msg.time}</p>
-
-                              {/* Plan Card rendering */}
-                              {(msg as AgentMessage).meta?.planCard && (
-                                <div className="mt-4">
-                                  <PlanCard
-                                    plan={planCards[(msg as AgentMessage).meta!.planCard!.id] || (msg as AgentMessage).meta!.planCard!}
-                                    onApprove={handlePlanApprove}
-                                    onReject={handlePlanReject}
-                                    onEdit={handlePlanEdit}
-                                    isExecuting={planCards[(msg as AgentMessage).meta!.planCard!.id]?.status === 'executing'}
-                                  />
-                                </div>
-                              )}
-
-                              {/* Mission Card rendering */}
-                              {(msg as AgentMessage).meta?.mission && (
-                                <div className="mt-4">
-                                  <MissionCard
-                                    mission={activeMissions.find(m => m.mission_id === (msg as AgentMessage).meta?.mission?.mission_id) || (msg as AgentMessage).meta!.mission!}
-                                    onGenerateNextStep={handleMissionGenerateNextStep}
-                                    onMarkDone={handleMissionMarkDone}
-                                    onArchive={handleMissionArchive}
-                                  />
-                                </div>
-                              )}
-
-                              {/* Agent Steps — Notion AI-style execution trace */}
-                              {(msg as AgentMessage).meta?.agentSteps && (msg as AgentMessage).meta!.agentSteps!.length > 0 && (
-                                <div className="mt-4">
-                                  {(() => {
-                                    const meta = (msg as AgentMessage).meta;
-                                    const steps = meta?.agentSteps || [];
-                                    const isExecComplete = meta?.executionResult?.success === true;
-                                    const isStepsComplete = steps.some(s => s.type === 'done' && s.status === 'done');
-                                    const isComplete = isExecComplete || isStepsComplete;
-                                    const goal = meta?.executionResult ? 'Task complete' : isComplete ? 'Complete' : 'Working...';
-
-                                    return (
-                                      <AgentSteps
-                                        steps={steps}
-                                        goal={goal}
-                                        isComplete={isComplete}
-                                      />
-                                    );
-                                  })()}
-                                </div>
-                              )}
-
-                              {/* Execution Result rendering */}
-                              {(msg as AgentMessage).meta?.executionResult && (
-                                <div className="mt-4">
-                                  <ExecutionResultCard result={(msg as AgentMessage).meta!.executionResult!} />
-                                </div>
-                              )}
-
-                              {/* Cal.com scheduling link card */}
-                              {(msg as AgentMessage).meta?.schedulingData?.bookingUrl && (
-                                <div className="mt-3 flex items-center gap-3 p-3 rounded-xl border border-white/10 bg-white/[0.03]">
-                                  <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0">
-                                    <svg className="w-4 h-4 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                    </svg>
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-[13px] text-white/70 font-medium">{(msg as AgentMessage).meta!.schedulingData!.title || 'Meeting'}</p>
-                                    <p className="text-[11px] text-white/35 mt-0.5">{(msg as AgentMessage).meta!.schedulingData!.durationMinutes}min via Cal.com</p>
-                                  </div>
-                                  <a
-                                    href={(msg as AgentMessage).meta!.schedulingData!.bookingUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex-shrink-0 text-[12px] text-white hover:text-white/80 font-medium transition-colors px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/5"
-                                  >
-                                    Open link
-                                  </a>
-                                </div>
-                              )}
 
                               {(msg as AgentMessage).meta?.actionType === 'email' && (msg as AgentMessage).meta?.emailResult?.success && (
                                 <div className="mt-4 space-y-3">
@@ -1734,20 +1579,17 @@ export default function ChatInterface({
                       </div>
                     ))}
                     {isLoading && (
-                      <div className="flex flex-col gap-4 animate-fade-in max-w-2xl">
-                        <div className="flex items-start gap-4">
-                          <div className="flex-shrink-0 mt-1">
-                            <div className="bg-neutral-800 rounded-full w-11 h-11 flex items-center justify-center backdrop-blur-sm border border-white/10 shadow-lg overflow-hidden">
-                              <img src="/arcus-ai-icon.jpg" alt="Arcus AI" className="w-full h-full object-cover" />
-                            </div>
+                      <div className="flex items-start gap-4 animate-fade-in">
+                        <div className="flex-shrink-0 mt-1">
+                          <div className="bg-neutral-800 rounded-full w-11 h-11 flex items-center justify-center backdrop-blur-sm border border-white/10 shadow-lg overflow-hidden">
+                            <img src="/arcus-ai-icon.jpg" alt="Arcus AI" className="w-full h-full object-cover" />
                           </div>
-                          <div className="flex-1">
-                            <AgentSteps
-                              steps={liveAgentSteps}
-                              goal="Mission Protocol Active..."
-                              isComplete={false}
-                            />
-                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <ShiningText
+                            text={activeSearchLabel ? activeSearchLabel : 'Arcus is thinking...'}
+                            className="text-sm relative top-1"
+                          />
                         </div>
                       </div>
                     )}
@@ -1760,7 +1602,10 @@ export default function ChatInterface({
                       />
                     )}
 
-                    {/* Agent Action Status moved to AgentSteps component */}
+                    {/* Agent Action Status */}
+                    {actionStatus && (
+                      <AgentActionStatus status={actionStatus} />
+                    )}
 
                     <div ref={messagesEndRef} />
                   </div>
@@ -1879,7 +1724,42 @@ export default function ChatInterface({
   );
 }
 
+const AgentActionStatus = ({ status }: { status: 'planning' | 'processing' | 'done' }) => {
+  const getStatusInfo = () => {
+    switch (status) {
+      case 'planning':
+        return {
+          icon: <History className="w-4 h-4 text-blue-400 animate-spin" />,
+          text: 'Planning action...',
+          color: 'bg-blue-500/10 border-blue-500/20 text-blue-400'
+        };
+      case 'processing':
+        return {
+          icon: <Settings className="w-4 h-4 text-purple-400 animate-spin" />,
+          text: 'Processing task...',
+          color: 'bg-purple-500/10 border-purple-500/20 text-purple-400'
+        };
+      case 'done':
+        return {
+          icon: <Bell className="w-4 h-4 text-emerald-400" />,
+          text: 'Action complete',
+          color: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+        };
+      default:
+        return null;
+    }
+  };
 
+  const info = getStatusInfo();
+  if (!info) return null;
+
+  return (
+    <div className={`flex items-center gap-3 px-4 py-2 rounded-xl border ${info.color} backdrop-blur-md animate-in fade-in slide-in-from-bottom-2 duration-300 mb-4 ml-14 max-w-xs`}>
+      {info.icon}
+      <span className="text-sm font-medium font-sans tracking-wide">{info.text}</span>
+    </div>
+  );
+};
 
 const isSchedulingRequest = (message: string) => {
   const keywords = ['schedule', 'meeting', 'calendar', 'meet', 'call', 'appointment', 'event'];

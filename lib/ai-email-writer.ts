@@ -184,57 +184,32 @@ class AIEmailWriterService {
         try {
             const sampleProspects = prospects.slice(0, 3);
 
-            // Fallback chain of free models
-            const models = [
-                'arcee-ai/trinity-large-preview:free',
-                'qwen/qwen3-coder:free',
-                'nvidia/nemotron-nano-9b-v2:free',
-                'openai/gpt-oss-20b:free',
-            ];
-
-            let data: any = null;
-            for (const modelId of models) {
-                try {
-                    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${this.apiKey}`,
-                            'Content-Type': 'application/json',
+            const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${this.apiKey}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    // Use the faster and more accurate free model from OpenRouter
+                    model: 'arcee-ai/trinity-large-preview:free',
+                    messages: [
+                        {
+                            role: 'system',
+                            content: this.getSystemPrompt(businessProfile.tone)
                         },
-                        body: JSON.stringify({
-                            model: modelId,
-                            messages: [
-                                {
-                                    role: 'system',
-                                    content: this.getSystemPrompt(businessProfile.tone)
-                                },
-                                {
-                                    role: 'user',
-                                    content: this.getUserPrompt(businessProfile, sampleProspects)
-                                }
-                            ],
-                            max_tokens: 1500,
-                            temperature: 0.7
-                        })
-                    });
+                        {
+                            role: 'user',
+                            content: this.getUserPrompt(businessProfile, sampleProspects)
+                        }
+                    ],
+                    max_tokens: 1500,
+                    temperature: 0.7
+                })
+            });
 
-                    if (!response.ok) {
-                        console.warn(`⚠️ Email writer model ${modelId} failed (${response.status})`);
-                        continue;
-                    }
-
-                    data = await response.json();
-                    if (data.choices?.[0]?.message?.content) {
-                        console.log(`✅ Email writer success with ${modelId}`);
-                        break;
-                    }
-                } catch (e: any) {
-                    console.warn(`❌ Email writer ${modelId} error: ${e.message}`);
-                    continue;
-                }
-            }
-
-            const text = data?.choices?.[0]?.message?.content;
+            const data = await response.json();
+            const text = data.choices?.[0]?.message?.content;
 
             // Parse the AI response
             const match = text?.match(/\{[\s\S]*\}/);

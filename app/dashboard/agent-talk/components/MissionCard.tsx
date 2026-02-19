@@ -1,303 +1,234 @@
-"use client";
+'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import {
-    Clock, AlertCircle, CheckCircle2, Archive,
-    ChevronDown, ChevronUp, User, Mail,
-    ArrowRight, Zap, FileText, MoreHorizontal
+    Target,
+    ChevronDown,
+    ChevronUp,
+    Clock,
+    CheckCircle2,
+    AlertCircle,
+    Archive,
+    FileEdit,
+    Link2,
+    Sparkles,
 } from 'lucide-react';
-import type { Mission, MissionStatus, MissionPriority } from '../types/mission';
+import type { Mission, MissionStatus, MissionStep } from '../types/mission';
 
 interface MissionCardProps {
     mission: Mission;
-    onGenerateNextStep?: (missionId: string) => void;
-    onMarkDone?: (missionId: string) => void;
-    onArchive?: (missionId: string) => void;
-    onViewThread?: (threadId: string) => void;
     isCompact?: boolean;
+    onStatusChange?: (missionId: string, status: MissionStatus) => void;
+    onGoalEdit?: (missionId: string, newGoal: string) => void;
+    onGenerateNextStep?: (missionId: string) => void;
 }
 
-const STATUS_CONFIG: Record<MissionStatus, { label: string; color: string; dotColor: string }> = {
-    active: {
-        label: 'In progress',
-        color: 'text-white/70',
-        dotColor: 'bg-white/70'
+const statusConfig: Record<MissionStatus, {
+    label: string;
+    icon: React.ReactNode;
+    color: string;
+    bg: string;
+    border: string;
+}> = {
+    draft: {
+        label: 'Draft',
+        icon: <FileEdit className="w-3 h-3" />,
+        color: 'text-white/50',
+        bg: 'bg-white/5',
+        border: 'border-white/10',
+    },
+    waiting_on_user: {
+        label: 'Needs your input',
+        icon: <AlertCircle className="w-3 h-3" />,
+        color: 'text-amber-400',
+        bg: 'bg-amber-500/10',
+        border: 'border-amber-500/20',
     },
     waiting_on_other: {
-        label: 'Waiting',
-        color: 'text-white/40',
-        dotColor: 'bg-zinc-600'
-    },
-    needs_user: {
-        label: 'Action needed',
-        color: 'text-white',
-        dotColor: 'bg-white animate-pulse'
+        label: 'Waiting on reply',
+        icon: <Clock className="w-3 h-3" />,
+        color: 'text-blue-400',
+        bg: 'bg-blue-500/10',
+        border: 'border-blue-500/20',
     },
     done: {
         label: 'Done',
-        color: 'text-white/40',
-        dotColor: 'bg-zinc-500'
+        icon: <CheckCircle2 className="w-3 h-3" />,
+        color: 'text-emerald-400',
+        bg: 'bg-emerald-500/10',
+        border: 'border-emerald-500/20',
     },
     archived: {
         label: 'Archived',
-        color: 'text-white/20',
-        dotColor: 'bg-white/10'
-    }
+        icon: <Archive className="w-3 h-3" />,
+        color: 'text-white/30',
+        bg: 'bg-white/[0.03]',
+        border: 'border-white/5',
+    },
 };
 
-const PRIORITY_COLORS: Record<MissionPriority, string> = {
-    high: 'text-white/80',
-    normal: 'text-white/40',
-    low: 'text-white/20',
-};
-
-function isAtRisk(mission: Mission): boolean {
-    if (mission.status === 'done' || mission.status === 'archived') return false;
-
-    const now = new Date();
-
-    if (mission.due_at) {
-        const dueDate = new Date(mission.due_at);
-        const hoursUntilDue = (dueDate.getTime() - now.getTime()) / (1000 * 60 * 60);
-        if (hoursUntilDue <= 48 && hoursUntilDue > 0) return true;
-    }
-
-    if (mission.status === 'waiting_on_other' && mission.last_activity_at) {
-        const lastActivity = new Date(mission.last_activity_at);
-        const daysSinceActivity = (now.getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24);
-        if (daysSinceActivity > 3) return true;
-    }
-
-    if (mission.status === 'needs_user' && mission.last_activity_at) {
-        const lastActivity = new Date(mission.last_activity_at);
-        const daysSinceActivity = (now.getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24);
-        if (daysSinceActivity > 1) return true;
-    }
-
-    return false;
-}
-
-function timeAgo(dateStr: string): string {
-    const now = new Date();
-    const date = new Date(dateStr);
-    const diffMs = now.getTime() - date.getTime();
-    const minutes = Math.floor(diffMs / 60000);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
-
-    if (minutes < 1) return 'just now';
-    if (minutes < 60) return `${minutes}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-    if (days < 7) return `${days}d ago`;
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
-export function MissionCard({
-    mission,
-    onGenerateNextStep,
-    onMarkDone,
-    onArchive,
-    onViewThread,
-    isCompact = false
-}: MissionCardProps) {
-    const [isExpanded, setIsExpanded] = useState(!isCompact);
-    const [showMore, setShowMore] = useState(false);
-
-    const statusConfig = STATUS_CONFIG[mission.status];
-    const atRisk = isAtRisk(mission);
-
-    const completedSteps = mission.execution_steps.filter(s => s.status === 'done').length;
-    const totalSteps = mission.execution_steps.length;
+function StepProgress({ steps }: { steps: MissionStep[] }) {
+    const total = steps.length;
+    const done = steps.filter(s => s.status === 'done').length;
+    const progress = total > 0 ? (done / total) * 100 : 0;
 
     return (
-        <div className={`
-      rounded-xl border transition-all duration-300 overflow-hidden font-sans
-      ${atRisk
-                ? 'border-white/20 bg-[#0c0c0c]'
-                : 'border-white/[0.06] bg-[#0c0c0c]'}
-      hover:border-white/[0.1]
-    `}>
-            <div className="p-4 space-y-3">
-                {/* Header row */}
-                <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-3 flex-1 min-w-0">
-                        <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap mb-1">
-                                {/* Status */}
-                                <span className={`inline-flex items-center gap-1.5 text-[11px] font-medium ${statusConfig.color}`}>
-                                    <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.dotColor}`} />
-                                    {statusConfig.label}
-                                </span>
+        <div className="flex items-center gap-2">
+            <div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
+                <div
+                    className="h-full bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full transition-all duration-500 ease-out"
+                    style={{ width: `${progress}%` }}
+                />
+            </div>
+            <span className="text-[10px] text-white/30 tabular-nums">
+                {done}/{total}
+            </span>
+        </div>
+    );
+}
 
-                                {/* At risk */}
-                                {atRisk && (
-                                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-white/50">
-                                        <AlertCircle className="w-2.5 h-2.5" />
-                                        Overdue
-                                    </span>
-                                )}
+export default function MissionCard({
+    mission,
+    isCompact = false,
+    onStatusChange,
+    onGoalEdit,
+    onGenerateNextStep,
+}: MissionCardProps) {
+    const [isExpanded, setIsExpanded] = useState(!isCompact);
+    const [isEditingGoal, setIsEditingGoal] = useState(false);
+    const [editedGoal, setEditedGoal] = useState(mission.goal);
 
-                                {/* Due date */}
-                                {mission.due_at && (
-                                    <span className="text-[10px] text-white/25">
-                                        Due {new Date(mission.due_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                                    </span>
-                                )}
+    const status = statusConfig[mission.status];
+    const isDone = mission.status === 'done' || mission.status === 'archived';
+    const currentStep = mission.steps.find(s => s.status === 'running');
+    const nextPendingStep = mission.steps.find(s => s.status === 'pending');
 
-                                {/* Priority indicator for high */}
-                                {mission.priority === 'high' && (
-                                    <span className="text-[10px] text-white/60 font-medium">High priority</span>
-                                )}
-                            </div>
+    const handleGoalSave = () => {
+        onGoalEdit?.(mission.id, editedGoal);
+        setIsEditingGoal(false);
+    };
 
-                            <h3 className="text-white/85 font-medium text-sm leading-snug tracking-[-0.01em]">{mission.title}</h3>
-                            {mission.goal && (
-                                <p className="text-white/35 text-[12px] mt-0.5 leading-relaxed">{mission.goal}</p>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-0.5 flex-shrink-0">
-                        {!isCompact && (
-                            <button
-                                onClick={() => setShowMore(!showMore)}
-                                className="p-1.5 rounded-lg hover:bg-white/[0.04] text-white/20 hover:text-white/50 transition-colors"
-                            >
-                                <MoreHorizontal className="w-3.5 h-3.5" />
-                            </button>
-                        )}
-                        <button
-                            onClick={() => setIsExpanded(!isExpanded)}
-                            className="p-1.5 rounded-lg hover:bg-white/[0.04] text-white/20 hover:text-white/50 transition-colors"
-                        >
-                            {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                        </button>
-                    </div>
+    return (
+        <div
+            className={`ml-[60px] mb-5 rounded-2xl border transition-all duration-300 ${isDone ? 'border-white/5 opacity-70' : 'border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.3)]'
+                }`}
+        >
+            {/* Header */}
+            <div
+                className="flex items-start gap-3 px-5 py-4 cursor-pointer bg-[#0a0a0a] rounded-t-2xl"
+                onClick={() => setIsExpanded(!isExpanded)}
+            >
+                {/* Mission icon */}
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-blue-500/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Target className="w-4 h-4 text-blue-400" />
                 </div>
 
-                {/* More actions */}
-                {showMore && (
-                    <div className="flex items-center gap-2 animate-in slide-in-from-top-1 duration-150">
-                        {mission.status !== 'done' && onMarkDone && (
-                            <button
-                                onClick={() => { onMarkDone(mission.mission_id); setShowMore(false); }}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] bg-white/[0.04] text-white/50 hover:bg-white/[0.08] hover:text-white/70 transition-colors"
-                            >
-                                <CheckCircle2 className="w-3 h-3" />
-                                Mark done
-                            </button>
-                        )}
-                        {onArchive && (
-                            <button
-                                onClick={() => { onArchive(mission.mission_id); setShowMore(false); }}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] bg-white/[0.04] text-white/50 hover:bg-white/[0.08] hover:text-white/70 transition-colors"
-                            >
-                                <Archive className="w-3 h-3" />
-                                Archive
-                            </button>
-                        )}
-                    </div>
-                )}
-
-                {/* Progress */}
-                {totalSteps > 0 && (
-                    <div className="space-y-1.5">
-                        <div className="flex items-center justify-between text-[10px] text-white/25 font-medium">
-                            <span>{completedSteps}/{totalSteps} steps</span>
-                            <span>{Math.round((completedSteps / totalSteps) * 100)}%</span>
-                        </div>
-                        <div className="h-[3px] bg-white/[0.04] rounded-full overflow-hidden">
-                            <div
-                                className={`h-full rounded-full transition-all duration-700 ${mission.status === 'done' ? 'bg-white/40' : 'bg-white/20'
-                                    }`}
-                                style={{ width: `${(completedSteps / totalSteps) * 100}%` }}
+                <div className="flex-1 min-w-0">
+                    {/* Goal */}
+                    {isEditingGoal ? (
+                        <div className="flex items-center gap-2">
+                            <input
+                                value={editedGoal}
+                                onChange={(e) => setEditedGoal(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleGoalSave()}
+                                onBlur={handleGoalSave}
+                                className="flex-1 bg-[#151515] border border-white/10 rounded-lg px-2 py-1 text-sm text-white focus:outline-none focus:border-blue-500/40"
+                                autoFocus
                             />
                         </div>
+                    ) : (
+                        <h3
+                            className="text-white text-sm font-semibold leading-snug truncate pr-4"
+                            onDoubleClick={() => !isDone && setIsEditingGoal(true)}
+                        >
+                            {mission.goal}
+                        </h3>
+                    )}
+
+                    {/* Status badge + thread count */}
+                    <div className="flex items-center gap-2 mt-1.5">
+                        <span className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full ${status.bg} ${status.border} border ${status.color}`}>
+                            {status.icon}
+                            {status.label}
+                        </span>
+                        {mission.linkedThreadIds.length > 0 && (
+                            <span className="inline-flex items-center gap-1 text-[10px] text-white/25">
+                                <Link2 className="w-2.5 h-2.5" />
+                                {mission.linkedThreadIds.length} thread{mission.linkedThreadIds.length > 1 ? 's' : ''}
+                            </span>
+                        )}
                     </div>
-                )}
 
-                {/* Expanded */}
-                {isExpanded && (
-                    <div className="space-y-3 pt-1 animate-in slide-in-from-top-1 duration-200">
-                        {/* Next Action */}
-                        {mission.next_action_reason && mission.status !== 'done' && (
-                            <div className="bg-white/[0.025] border border-white/[0.05] rounded-lg p-3">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <ArrowRight className="w-3 h-3 text-white/40" />
-                                    <span className="text-[10px] font-medium text-white/25">Next step</span>
-                                </div>
-                                <p className="text-white/55 text-[12px] leading-relaxed pl-5">{mission.next_action_reason}</p>
-                            </div>
-                        )}
-
-                        {/* Participants */}
-                        {mission.participants.length > 0 && (
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                                {mission.participants.slice(0, 4).map((p, i) => (
-                                    <span key={i} className="inline-flex items-center gap-1 px-2 py-[3px] rounded-md bg-white/[0.03] text-[11px] text-white/45">
-                                        <User className="w-2.5 h-2.5 opacity-50" />
-                                        {p.display_name || p.email}
-                                    </span>
-                                ))}
-                                {mission.participants.length > 4 && (
-                                    <span className="text-[11px] text-white/20">+{mission.participants.length - 4}</span>
-                                )}
-                            </div>
-                        )}
-
-                        {/* Linked Threads */}
-                        {mission.linked_threads.length > 0 && (
-                            <div className="space-y-1">
-                                {mission.linked_threads.slice(0, 3).map((thread) => (
-                                    <button
-                                        key={thread.thread_id}
-                                        onClick={() => onViewThread?.(thread.thread_id)}
-                                        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition-colors text-left group"
-                                    >
-                                        <Mail className="w-3 h-3 text-white/20 flex-shrink-0 group-hover:text-white/40 transition-colors" />
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-white/50 text-[12px] truncate group-hover:text-white/70 transition-colors">
-                                                {thread.messages[0]?.subject || 'Thread'}
-                                            </p>
-                                        </div>
-                                        <span className="text-[10px] text-white/15">{thread.messages.length}</span>
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-
-                        {/* Artifacts */}
-                        {mission.artifacts.length > 0 && (
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                                {mission.artifacts.map((artifact, i) => (
-                                    <span key={i} className="inline-flex items-center gap-1 px-2 py-[3px] rounded-md bg-white/[0.03] text-[10px] text-white/35">
-                                        <FileText className="w-2.5 h-2.5 opacity-50" />
-                                        {artifact.type}
-                                    </span>
-                                ))}
-                            </div>
-                        )}
-
-                        {/* Next Step CTA */}
-                        {mission.status !== 'done' && mission.status !== 'archived' && onGenerateNextStep && (
-                            <button
-                                onClick={() => onGenerateNextStep(mission.mission_id)}
-                                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-white/[0.04] hover:bg-white/[0.07] rounded-lg text-[12px] text-white/45 hover:text-white/70 font-medium transition-all duration-200 active:scale-[0.99]"
-                            >
-                                <Zap className="w-3 h-3" />
-                                Continue
-                            </button>
-                        )}
-
-                        {/* Activity */}
-                        <div className="text-[10px] text-white/15 flex items-center gap-1">
-                            <Clock className="w-2.5 h-2.5" />
-                            Updated {timeAgo(mission.last_activity_at)}
+                    {/* Step progress bar */}
+                    {mission.steps.length > 0 && (
+                        <div className="mt-2.5">
+                            <StepProgress steps={mission.steps} />
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
+
+                {/* Expand chevron */}
+                <button className="text-white/20 hover:text-white/40 transition-colors mt-1">
+                    {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </button>
             </div>
+
+            {/* Expanded content */}
+            {isExpanded && (
+                <div className="px-5 pb-4 bg-[#080808] rounded-b-2xl border-t border-white/5 animate-in fade-in duration-200">
+                    {/* Steps list */}
+                    {mission.steps.length > 0 && (
+                        <div className="mt-3 space-y-1">
+                            {mission.steps.map((step, i) => (
+                                <div
+                                    key={step.id}
+                                    className={`flex items-center gap-3 py-1.5 ${step.status === 'running' ? 'opacity-100' : step.status === 'done' ? 'opacity-60' : 'opacity-35'
+                                        }`}
+                                >
+                                    {step.status === 'done' ? (
+                                        <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                                    ) : step.status === 'running' ? (
+                                        <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                                    ) : step.status === 'failed' ? (
+                                        <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+                                    ) : (
+                                        <div className="w-4 h-4 rounded-full border border-white/15 flex-shrink-0" />
+                                    )}
+                                    <span
+                                        className={`text-xs ${step.status === 'done'
+                                                ? 'text-white/40 line-through decoration-white/15'
+                                                : step.status === 'running'
+                                                    ? 'text-white/80'
+                                                    : 'text-white/30'
+                                            }`}
+                                    >
+                                        {step.label}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Current activity */}
+                    {currentStep && (
+                        <div className="mt-3 flex items-center gap-2 text-xs text-blue-400/70 bg-blue-500/5 border border-blue-500/10 rounded-lg px-3 py-2">
+                            <div className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                            {currentStep.label}
+                        </div>
+                    )}
+
+                    {/* Generate next step button */}
+                    {!isDone && nextPendingStep && (
+                        <button
+                            onClick={() => onGenerateNextStep?.(mission.id)}
+                            className="mt-3 flex items-center gap-2 text-xs text-white/40 hover:text-white/70 bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 hover:border-white/10 rounded-lg px-3 py-2 transition-all duration-200 w-full justify-center"
+                        >
+                            <Sparkles className="w-3 h-3" />
+                            Run next step
+                        </button>
+                    )}
+                </div>
+            )}
         </div>
     );
 }

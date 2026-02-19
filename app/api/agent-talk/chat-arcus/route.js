@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth.js';
 import { DatabaseService } from '@/lib/supabase.js';
 import { decrypt } from '@/lib/crypto.js';
 import { ArcusAIService } from '@/lib/arcus-ai.js';
+import { ArcusMissionService } from '@/lib/arcus-mission.js';
 import { CalendarService } from '@/lib/calendar.js';
 import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service.js';
 import { addDays, setHours, setMinutes, startOfDay, format, parse, isWeekend, nextMonday } from 'date-fns';
@@ -20,7 +21,8 @@ export async function POST(request) {
       isNotesQuery,
       notesSearchQuery,
       selectedEmailId,
-      draftReplyRequest
+      draftReplyRequest,
+      activeMission
     } = await request.json();
 
     console.log('🚀 Arcus Chat request received:', message?.substring?.(0, 80));
@@ -81,32 +83,27 @@ export async function POST(request) {
     // Check subscription and feature usage for Arcus AI
     // Pro users have unlimited access, Starter users have 10/day limit
     if (userEmail) {
-      try {
-        const canUse = await subscriptionService.canUseFeature(userEmail, FEATURE_TYPES.ARCUS_AI);
-        if (!canUse) {
-          const usage = await subscriptionService.getFeatureUsage(userEmail, FEATURE_TYPES.ARCUS_AI);
-          const limitMessage = usage.reason === 'subscription_expired'
-            ? "Your subscription has expired. Please renew to continue using Arcus AI."
-            : usage.reason === 'no_subscription'
-              ? "You need an active subscription to use Arcus AI. Visit /pricing to subscribe."
-              : `Sorry, but you've exhausted all the credits of ${usage.period === 'daily' ? 'the day' : 'the month'}.`;
+      const canUse = await subscriptionService.canUseFeature(userEmail, FEATURE_TYPES.ARCUS_AI);
+      if (!canUse) {
+        const usage = await subscriptionService.getFeatureUsage(userEmail, FEATURE_TYPES.ARCUS_AI);
+        const limitMessage = usage.reason === 'subscription_expired'
+          ? "Your subscription has expired. Please renew to continue using Arcus AI."
+          : usage.reason === 'no_subscription'
+            ? "You need an active subscription to use Arcus AI. Visit /pricing to subscribe."
+            : `Sorry, but you've exhausted all the credits of ${usage.period === 'daily' ? 'the day' : 'the month'}.`;
 
-          return NextResponse.json({
-            message: limitMessage,
-            error: 'limit_reached',
-            usage: usage.usage,
-            limit: usage.limit,
-            period: usage.period,
-            planType: usage.planType,
-            reason: usage.reason,
-            upgradeUrl: '/pricing',
-            timestamp: new Date().toISOString(),
-            conversationId: currentConversationId
-          }, { status: 403 });
-        }
-      } catch (subErr) {
-        console.warn('⚠️ Subscription check failed (non-blocking):', subErr.message);
-        // Don't block chat if subscription check fails
+        return NextResponse.json({
+          message: limitMessage,
+          error: 'limit_reached',
+          usage: usage.usage,
+          limit: usage.limit,
+          period: usage.period,
+          planType: usage.planType,
+          reason: usage.reason,
+          upgradeUrl: '/pricing',
+          timestamp: new Date().toISOString(),
+          conversationId: currentConversationId
+        }, { status: 403 });
       }
     }
 
@@ -146,313 +143,6 @@ export async function POST(request) {
     const draftIntent = arcusAI.parseDraftIntent(message);
     const schedulingIntent = arcusAI.parseSchedulingIntent(message);
 
-    // ── Plan Approval: real step-by-step execution ──
-    const planApprovalMatch = message.match(/^\[PLAN_APPROVED:([^\]]+)\]/);
-    if (planApprovalMatch) {
-      console.log('📋 Plan approved, executing step-by-step:', planApprovalMatch[1]);
-
-      const planGoalMatch = message.match(/Execute the approved plan:\s*(.+)/);
-      const planGoal = planGoalMatch ? planGoalMatch[1].trim() : 'the approved plan';
-
-      // High-precision Intent Detection
-      const isSendPlan = /\b(send|dispatch|email\s+john|email\s+to|send\s+to|reply\s+and\s+send)\b/i.test(planGoal);
-      const isDraftPlan = /\b(draft|write|compose|generate|prepare)\b/i.test(planGoal) || isSendPlan;
-      const isSchedulePlan = /\b(schedule|meeting|call|book|invite|calendar)\b/i.test(planGoal);
-      const isSearchPlan = /\b(find|search|look|show|get|fetch|check|read)\b/i.test(planGoal) || isDraftPlan || isSchedulePlan;
-
-      // Decrypt tokens for execution context
-      let gmailTokenDecrypted = null;
-      let gmailRefreshDecrypted = null;
-      if (userEmail) {
-        try {
-          const tokens = await db.getUserTokens(userEmail);
-          if (tokens?.encrypted_access_token) gmailTokenDecrypted = decrypt(tokens.encrypted_access_token);
-          if (tokens?.encrypted_refresh_token) gmailRefreshDecrypted = decrypt(tokens.encrypted_refresh_token);
-        } catch (e) { console.warn('Token fetch error:', e.message); }
-      }
-
-      let stepIdx = 0;
-      const mkStep = (type, label) => ({
-        id: `step_${type}_${stepIdx++}_${Date.now()}`,
-        type, label, status: 'pending', result: null, detail: null, error: null,
-        started_at: null, completed_at: null,
-      });
-
-      const agentSteps = [
-        { ...mkStep('think', 'De-constructing intent'), status: 'done', detail: planGoal, started_at: new Date().toISOString(), completed_at: new Date().toISOString() },
-        ...(isSearchPlan ? [mkStep('search_email', 'Semantic mailbox search')] : []),
-        ...(isDraftPlan ? [mkStep('create_draft', 'Synthesizing response draft')] : []),
-        ...(isSendPlan ? [mkStep('send_email', 'Dispatching secure packet')] : []),
-        ...(isSchedulePlan ? [mkStep('book_meeting', 'Calibrating schedule')] : []),
-        mkStep('done', 'Goal achieved'),
-      ];
-
-      const prevResults = {};
-      let draftData = null;
-      let schedulingData = null;
-      let sendResult = null;
-      let execOk = true;
-      let execErr = null;
-
-      const baseUrl = process.env.NEXTAUTH_URL || process.env.HOST || 'http://localhost:3000';
-
-      for (let i = 0; i < agentSteps.length; i++) {
-        const step = agentSteps[i];
-        if (step.type === 'think' || step.type === 'done') {
-          if (step.status !== 'done') {
-            agentSteps[i] = { ...step, status: 'done', started_at: new Date().toISOString(), completed_at: new Date().toISOString() };
-          }
-          continue;
-        }
-
-        const stepStartTime = new Date().toISOString();
-        agentSteps[i] = { ...step, status: 'running', started_at: stepStartTime };
-
-        try {
-          // ── STEP: search_email ──
-          if (step.type === 'search_email') {
-            const headers = {
-              'Content-Type': 'application/json',
-              'x-user-email': userEmail || '',
-              ...(gmailTokenDecrypted ? { 'x-gmail-access-token': gmailTokenDecrypted } : {}),
-              ...(gmailRefreshDecrypted ? { 'x-gmail-refresh-token': gmailRefreshDecrypted } : {}),
-            };
-            const query = 'newer_than:7d';
-            const res = await fetch(`${baseUrl}/api/agent-talk/read_gmail`, {
-              method: 'POST', headers,
-              body: JSON.stringify({ query, max_results: 5, include_body: true }),
-            });
-            if (!res.ok) throw new Error(`Search failed (${res.status})`);
-            const data = await res.json();
-            prevResults.search_email = data;
-            agentSteps[i] = {
-              ...agentSteps[i], status: 'done',
-              result: { ...data, query }, // Include query in result
-              detail: `Semantic scan identified ${data.count || 0} relative packets`,
-              completed_at: new Date().toISOString()
-            };
-
-            // ── STEP: create_draft ──
-          } else if (step.type === 'create_draft') {
-            const latestEmail = prevResults.search_email?.emails?.[0];
-            const emailCtx = latestEmail
-              ? `From: ${latestEmail.from}\nSubject: ${latestEmail.subject}\nDate: ${latestEmail.date}\n\n${latestEmail.body_text || latestEmail.snippet || ''}`
-              : null;
-
-            const { draftContent, thought } = await arcusAI.generateDraftReply(emailCtx || planGoal, {
-              userName, userEmail,
-              replyInstructions: planGoal,
-              conversationHistory, privacyMode,
-            });
-
-            if (!draftContent) throw new Error('Synthesis failed');
-            draftData = {
-              content: draftContent,
-              thought: thought,
-              recipientName: latestEmail?.from?.split('<')[0]?.trim() || 'Recipient',
-              recipientEmail: latestEmail?.from?.match(/<([^>]+)>/)?.[1] || latestEmail?.from || '',
-              senderName: userName,
-              originalEmailId: latestEmail?.id || null,
-              threadId: latestEmail?.thread_id || null,
-              messageId: latestEmail?.id || null,
-              subject: latestEmail?.subject ? `Re: ${latestEmail.subject}` : 'Re: Your email',
-            };
-            prevResults.create_draft = draftData;
-            agentSteps[i] = {
-              ...agentSteps[i], status: 'done', result: { ...draftData, thought }, // Store thought in result for UI
-              detail: `Synthesized response for ${draftData.recipientName}`,
-              completed_at: new Date().toISOString()
-            };
-
-            // ── STEP: send_email ──
-          } else if (step.type === 'send_email') {
-            if (!draftData) throw new Error('No draft to send — synthesis must complete first');
-
-            const res = await fetch(`${baseUrl}/api/agent-talk/send-reply`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                to: draftData.recipientEmail,
-                subject: draftData.subject,
-                content: draftData.content,
-                replyToMessageId: draftData.messageId,
-                threadId: draftData.threadId
-              }),
-            });
-
-            if (!res.ok) {
-              const errData = await res.json().catch(() => ({}));
-              throw new Error(errData.error || `Dispatch failed (${res.status})`);
-            }
-
-            const data = await res.json();
-            sendResult = data;
-            prevResults.send_email = data;
-            agentSteps[i] = {
-              ...agentSteps[i], status: 'done', result: data,
-              detail: `Securely dispatched to ${draftData.recipientEmail}`,
-              completed_at: new Date().toISOString()
-            };
-
-            // ── STEP: book_meeting (Google Meet / Cal.com) ──
-          } else if (step.type === 'book_meeting') {
-            const timeMatch = planGoal.match(/(?:at|for|on)\s+([0-9:apm\/\-\s,]+(?:today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday)?)/i);
-
-            if (timeMatch && gmailTokenDecrypted) {
-              const { GoogleCalendarService } = await import('@/lib/google-calendar.ts');
-              const calendar = new GoogleCalendarService(gmailTokenDecrypted);
-
-              // Simple duration detection
-              const durationMin = /\b(15|30|45|60|90)\s*min/i.test(planGoal)
-                ? parseInt(planGoal.match(/\b(15|30|45|60|90)\s*min/i)[1])
-                : 30;
-
-              // Mocking a start time for now since parsing natural language dates is complex
-              // In a real app we would use a library like 'chrono-node'
-              const startTime = new Date(Date.now() + 24 * 60 * 60 * 1000); // Default to tomorrow
-              startTime.setHours(14, 0, 0, 0); // Default to 2 PM
-              const endTime = new Date(startTime.getTime() + durationMin * 60 * 1000);
-
-              const meeting = await calendar.createMeeting({
-                summary: `Meeting with Arcus: ${planGoal}`,
-                startTime: startTime.toISOString(),
-                endTime: endTime.toISOString()
-              });
-
-              if (meeting) {
-                schedulingData = { bookingUrl: meeting.meetLink || meeting.htmlLink, durationMinutes: durationMin, title: meeting.summary, type: 'google_meet' };
-                prevResults.book_meeting = schedulingData;
-                agentSteps[i] = {
-                  ...agentSteps[i], status: 'done', result: schedulingData,
-                  detail: `Google Meet bridge established: ${meeting.summary}`,
-                  completed_at: new Date().toISOString()
-                };
-                continue;
-              }
-            }
-
-            // Fallback to Cal.com scheduling link
-            const { calService } = await import('@/lib/cal-service');
-            const durationMin = /\b(15|30|45|60|90)\s*min/i.test(planGoal)
-              ? parseInt(planGoal.match(/\b(15|30|45|60|90)\s*min/i)[1])
-              : 30;
-
-            const link = await calService.getBookingLink(durationMin, planGoal);
-            if (!link) throw new Error('Schedule calibration failed');
-
-            schedulingData = { bookingUrl: link.bookingUrl, durationMinutes: link.durationMinutes, title: link.title, type: 'scheduling_link' };
-            prevResults.book_meeting = schedulingData;
-            agentSteps[i] = {
-              ...agentSteps[i], status: 'done', result: schedulingData,
-              detail: `Scheduling link active via Cal.com`,
-              completed_at: new Date().toISOString()
-            };
-          }
-
-        } catch (stepErr) {
-          console.error(`Step ${step.type} failed:`, stepErr.message);
-          agentSteps[i] = {
-            ...agentSteps[i], status: 'failed', error: stepErr.message,
-            completed_at: new Date().toISOString()
-          };
-          execOk = false;
-          execErr = stepErr.message;
-          break;
-        }
-      }
-
-      // Build summary from REAL results only
-      let execMsg = '';
-      let execChanges = [];
-      let execArtifacts = [];
-
-      if (sendResult) {
-        execMsg = `Success. I've dispatched that email to ${draftData.recipientName} (${draftData.recipientEmail}). The thread is now up to date.`;
-        execChanges = [`Email dispatched to ${draftData.recipientEmail}`, `Subject: ${draftData.subject}`];
-        execArtifacts = [{ type: 'email', id: sendResult.messageId, label: 'View sent email', url: null }];
-      } else if (draftData) {
-        execMsg = `Done. I've prepared a draft for ${draftData.recipientName}. You can review it below and send it whenever you're ready.`;
-        execChanges = [`Draft context synthesized for ${draftData.recipientName}`, `Subject: ${draftData.subject}`];
-        execArtifacts = [{ type: 'draft', id: draftData.originalEmailId || 'draft-' + Date.now(), label: 'Review draft', url: null }];
-      } else if (schedulingData) {
-        execMsg = `Mission complete. I've calibrated the schedule and established a ${schedulingData.type === 'google_meet' ? 'Google Meet' : 'Cal.com'} bridge.`;
-        execChanges = [`${schedulingData.durationMinutes}-min session configured`];
-        execArtifacts = [{ type: 'event', id: 'cal-' + Date.now(), label: 'Open coordinates', url: schedulingData.bookingUrl }];
-      } else if (prevResults.search_email?.count > 0) {
-        const c = prevResults.search_email.count;
-        execMsg = `I've analyzed your mailbox and identified ${c} relevant relative packets. How would you like to proceed?`;
-        execChanges = [`${c} email packets identified and analyzed`];
-      } else if (!execOk) {
-        execMsg = `The execution sequence was interrupted: ${execErr || 'unknown system error'}. I've logged the trace for review.`;
-      } else {
-        execMsg = `Mission accomplished: "${planGoal}". All systems operational.`;
-      }
-
-      if (userEmail) {
-        await saveConversation(userEmail, message, execMsg, currentConversationId, db);
-        await subscriptionService.incrementFeatureUsage(userEmail, FEATURE_TYPES.ARCUS_AI);
-      }
-
-      return NextResponse.json({
-        message: execMsg,
-        timestamp: new Date().toISOString(),
-        conversationId: currentConversationId,
-        aiGenerated: true,
-        actionType: 'execution_result',
-        agentSteps,
-        draftData: draftData || null,
-        schedulingData: schedulingData || null,
-        executionResult: {
-          success: execOk,
-          changes: execChanges,
-          artifacts: execArtifacts,
-          next_monitoring: null,
-        },
-      });
-    }
-
-    // ── Plan Card Generation (suggest-then-act) ──
-    // For actionable requests, generate a Plan Card alongside the normal response
-    let planCardResult = null;
-    const isActionableRequest =
-      draftIntent.isDraftRequest ||
-      schedulingIntent.isSchedulingRequest ||
-      /\b(send|forward|reply|schedule|draft|create|follow.?up|remind|announce|invite|book|find|search)\b/i.test(message);
-
-    if (isActionableRequest) {
-      try {
-        console.log('🎯 Generating Plan Card for actionable request');
-        planCardResult = await arcusAI.parseIntentAndGeneratePlanCard(message, {
-          conversationHistory,
-          emailContext: null,
-          userEmail,
-          userName,
-          privacyMode
-        });
-        console.log('📋 Plan Card result:', planCardResult ? 'Generated' : 'Not needed');
-      } catch (planError) {
-        console.warn('Plan card generation failed (non-blocking):', planError.message);
-      }
-    }
-
-    // ── Build agentSteps for EVERY response (Billion-Dollar UI Trace) ──
-    let stepIdx = 0;
-    const mkStep = (type, label, status = 'pending', detail = null) => ({
-      id: `step_${type}_${stepIdx++}_${Date.now()}`,
-      type, label, status, detail, result: null, error: null,
-      started_at: status !== 'pending' ? new Date().toISOString() : null,
-      completed_at: status === 'done' ? new Date().toISOString() : null,
-    });
-
-    const agentSteps = [
-      mkStep('think', 'De-constructing intent', 'done', `Analyzing: "${message.substring(0, 80)}${message.length > 80 ? '...' : ''}"`),
-      mkStep('clarify', 'Calibrating response logic', 'done', 'Mapping context to high-value outcomes...'),
-    ];
-
-    if (planCardResult?.thought) {
-      agentSteps[0].result = { thought: planCardResult.thought };
-    }
-
     // Handle drafting request
     if (draftIntent.isDraftRequest || draftReplyRequest) {
       const draftResult = await handleDraftRequest(
@@ -469,38 +159,19 @@ export async function POST(request) {
         privacyMode
       );
 
-      // If we have a Plan Card, we generally prefer its orchestration,
-      // UNLESS the draftResult found a clear email to reply to and generated a draft.
-      // We skip early return if: 
-      // 1. It's an error message ("trouble drafting")
-      // 2. It's a clarification ("Which would you prefer") AND we have a Plan Card
-      // 3. We have a multi-step plan
-      const isError = draftResult.message.includes('had trouble drafting') || draftResult.message.includes('ran into an issue');
-      const isJustClarification = draftResult.message.includes('Which would you prefer') || draftResult.message.includes('Could you tell me');
-      const isMultiStep = planCardResult?.plan_card?.steps?.length > 1 || planCardResult?.plan_card?.tools?.length > 1;
-
-      if (!isError && ((!isJustClarification && !isMultiStep) || !planCardResult)) {
-        // Save conversation
-        if (userEmail) {
-          await saveConversation(userEmail, message, draftResult.message, currentConversationId, db);
-        }
-
-        agentSteps.push(mkStep('create_draft', 'Synthesizing response', 'done', 'Prepared draft ready for review'));
-        agentSteps.push(mkStep('done', 'Mission accomplished', 'done'));
-
-        return NextResponse.json({
-          message: draftResult.message,
-          timestamp: new Date().toISOString(),
-          conversationId: currentConversationId,
-          aiGenerated: true,
-          actionType: planCardResult ? 'mission_plan' : 'draft_reply',
-          draftData: draftResult.draftData || null,
-          planCard: planCardResult?.plan_card || null,
-          agentSteps
-        });
+      // Save conversation
+      if (userEmail) {
+        await saveConversation(userEmail, message, draftResult.message, currentConversationId, db);
       }
-      // If it WAS just a clarification and we HAVE a plan card, we fall through to the general response logic
-      // which will present the Plan Card and a better AI-generated message.
+
+      return NextResponse.json({
+        message: draftResult.message,
+        timestamp: new Date().toISOString(),
+        conversationId: currentConversationId,
+        aiGenerated: true,
+        actionType: 'draft_reply',
+        draftData: draftResult.draftData || null
+      });
     }
 
     // Handle scheduling request
@@ -516,34 +187,22 @@ export async function POST(request) {
         integrations,
         conversationHistory,
         privacyMode,
-        null // emailContext not available yet at this point
+        emailContext
       );
 
-      // Same logic for scheduling: skip early return if we have a multi-step Plan Card or error
-      const isError = schedulingResult.message.includes('had trouble scheduling') || schedulingResult.message.includes('ran into an issue');
-      const isJustClarification = schedulingResult.message.includes('could you tell me') || schedulingResult.message.includes('Who should attend');
-      const isMultiStep = planCardResult?.plan_card?.steps?.length > 1 || planCardResult?.plan_card?.tools?.length > 1;
-
-      if (!isError && ((!isJustClarification && !isMultiStep) || !planCardResult)) {
-        // Save conversation
-        if (userEmail) {
-          await saveConversation(userEmail, message, schedulingResult.message, currentConversationId, db);
-        }
-
-        agentSteps.push(mkStep('book_meeting', 'Calibrating schedule', 'done', 'Meeting details and logistics mapped'));
-        agentSteps.push(mkStep('done', 'Mission accomplished', 'done'));
-
-        return NextResponse.json({
-          message: schedulingResult.message,
-          timestamp: new Date().toISOString(),
-          conversationId: currentConversationId,
-          aiGenerated: true,
-          actionType: planCardResult ? 'mission_plan' : 'schedule_meeting',
-          schedulingData: schedulingResult.schedulingData || null,
-          planCard: planCardResult?.plan_card || null,
-          agentSteps
-        });
+      // Save conversation
+      if (userEmail) {
+        await saveConversation(userEmail, message, schedulingResult.message, currentConversationId, db);
       }
+
+      return NextResponse.json({
+        message: schedulingResult.message,
+        timestamp: new Date().toISOString(),
+        conversationId: currentConversationId,
+        aiGenerated: true,
+        actionType: 'schedule_meeting',
+        schedulingData: schedulingResult.schedulingData || null
+      });
     }
 
     // Handle notes query
@@ -576,6 +235,86 @@ export async function POST(request) {
         });
       } catch (error) {
         console.error('Notes action failed:', error);
+      }
+    }
+
+    // Handle Mission Proceeding / Continuation
+    const isProceedRequest = /^(proceed|continue|next step|do it|go ahead|okay|ok|sure)$/i.test(message.trim());
+
+    if (userEmail && activeMission && isProceedRequest) {
+      try {
+        console.log('🔄 Continuing Arcus Mission:', activeMission.id);
+        const missionService = new ArcusMissionService(userEmail, gmailAccessToken);
+
+        // Execute next step of the existing mission
+        const { mission: updatedMission, result, error, process } = await missionService.executeNextStep(activeMission);
+
+        // Generate AI response for current state
+        let responseMsg = `Progressing with mission: **${activeMission.goal}**.\n\n`;
+        const currentStep = updatedMission.steps.find(s => s.status === 'running');
+        const lastStep = updatedMission.steps.filter(s => s.status === 'done').pop();
+
+        if (currentStep) {
+          responseMsg += `Now working on: **${currentStep.label}**`;
+        } else if (updatedMission.status === 'done') {
+          responseMsg += `Mission completed successfully!`;
+        } else if (lastStep) {
+          responseMsg += `Completed: **${lastStep.label}**.`;
+        }
+
+        if (userEmail) {
+          await saveConversation(userEmail, message, responseMsg, currentConversationId, db);
+        }
+
+        return NextResponse.json({
+          message: responseMsg,
+          timestamp: new Date().toISOString(),
+          conversationId: currentConversationId,
+          aiGenerated: true,
+          actionType: 'mission',
+          mission: updatedMission,
+          agentProcess: process,
+          integrations
+        });
+      } catch (error) {
+        console.error('Mission continuation failed:', error);
+      }
+    }
+
+    // Handle Complex Missions (Multi-step requests)
+    if (userEmail && isComplexRequest(message)) {
+      try {
+        console.log('🚀 Starting new Arcus Mission for:', message);
+        const missionService = new ArcusMissionService(userEmail, gmailAccessToken);
+        const mission = await missionService.createMission(message, currentConversationId);
+
+        // Execute first step immediately
+        const { mission: updatedMission, result, error, process } = await missionService.executeNextStep(mission);
+
+        // Generate AI response explaining the plan
+        let responseMsg = `I've started a mission to help with that: **${mission.goal}**.\n\nI'll handle this step-by-step.`;
+        if (updatedMission.steps.some(s => s.status === 'running')) {
+          responseMsg += ` I'm working on: **${updatedMission.steps.find(s => s.status === 'running').label}**`;
+        }
+
+        if (userEmail) {
+          await saveConversation(userEmail, message, responseMsg, currentConversationId, db);
+        }
+
+        return NextResponse.json({
+          message: responseMsg,
+          timestamp: new Date().toISOString(),
+          conversationId: currentConversationId,
+          aiGenerated: true,
+          actionType: 'mission',
+          mission: updatedMission,
+          agentProcess: process,
+          integrations
+        });
+
+      } catch (error) {
+        console.error('Mission creation failed:', error);
+        // Fall through to normal response
       }
     }
 
@@ -614,34 +353,13 @@ Body: ${emailData.body || emailData.snippet}
       }
     }
 
-    // (agentSteps already initialized above for specialized handlers)
-    // If not specialized, we continue building for general responses
-
-
-    // Add search step if we searched email
-    if (emailContext && emailResult) {
-      const q = emailResult.query || 'recent activity';
-      agentSteps.push(
-        mkStep('search_email', 'Scanning mailbox context', 'done',
-          `Scanned packets for: "${q}" (${emailResult.count || 0} hits)`)
-      );
-      agentSteps[agentSteps.length - 1].result = emailResult;
-    }
-
     // Generate AI response with full context
-    const responseStartTime = new Date().toISOString();
-    agentSteps.push(mkStep('create_draft', 'Synthesizing response', 'running'));
-    agentSteps[agentSteps.length - 1].started_at = responseStartTime;
-    const responseStepIdx = agentSteps.length - 1;
-
-    let response = '';
-    try {
-      const { content, thought } = await arcusAI.generateResponse(message, {
-        conversationHistory,
-        emailContext,
-        integrations,
-        subscriptionInfo,
-        additionalContext: `
+    const response = await arcusAI.generateResponse(message, {
+      conversationHistory,
+      emailContext,
+      integrations,
+      subscriptionInfo, // Pass subscription info so Arcus knows user's plan
+      additionalContext: `
 - Understand and act upon **URGENCY, PRIORITY, and REVENUE IMPACT**
 - Remember past conversations and build on previous context
 
@@ -652,47 +370,14 @@ Body: ${emailData.body || emailData.snippet}
 - **Gmail Access**: ${integrations.gmail ? '✅ Connected' : '❌ Not connected'}
 
 ## 🧨 Hard Restrictions - Do Not Cross`,
-        userEmail,
-        userName,
-        privacyMode
-      });
+      userEmail,
+      userName,
+      privacyMode
+    });
 
-      response = content; // Set the final text response
-
-      agentSteps[responseStepIdx] = {
-        ...agentSteps[responseStepIdx],
-        status: 'done',
-        label: 'Synthesis complete',
-        result: { thought }, // Pass reasoning to UI
-        detail: response ? `${response.substring(0, 60)}...` : 'Output generated',
-        completed_at: new Date().toISOString(),
-      };
-    } catch (aiErr) {
-      console.error('❌ Arcus AI generateResponse failed:', aiErr?.message);
-      agentSteps[responseStepIdx] = {
-        ...agentSteps[responseStepIdx],
-        status: 'failed',
-        error: aiErr?.message || 'Synthesis failed',
-        completed_at: new Date().toISOString(),
-      };
-      response = '';
-    }
-
-    let finalResponse = response && response.trim()
+    const finalResponse = response && response.trim()
       ? response
       : generateFallbackResponse(message, integrations);
-
-    // If we have a plan card with clarifications, prepend them to the response
-    if (planCardResult?.required_clarifications?.length > 0) {
-      const q = planCardResult.required_clarifications[0];
-      finalResponse = `Before I execute this plan, I need one clarification: **${q}**\n\nOnce you confirm, I can proceed with the following strategy:`;
-    } else if (planCardResult?.plan_card?.questions_for_user?.length > 0) {
-      const q = planCardResult.plan_card.questions_for_user[0];
-      finalResponse = `I have a quick question to ensure this is perfect: **${q}**\n\n(I've still outlined a preliminary plan below based on my current understanding).`;
-    }
-
-    // Mark done
-    agentSteps.push(mkStep('done', 'Mission accomplished', 'done'));
 
     // Save conversation
     if (userEmail) {
@@ -711,20 +396,17 @@ Body: ${emailData.body || emailData.snippet}
       timestamp: new Date().toISOString(),
       conversationId: currentConversationId,
       aiGenerated: true,
-      actionType: planCardResult ? 'mission_plan' : (emailContext ? 'email' : 'general'),
+      actionType: emailContext ? 'email' : 'general',
       emailResult,
-      integrations,
-      planCard: planCardResult?.plan_card || null,
-      agentSteps,
+      integrations // Include integration status in response
     });
 
   } catch (error) {
-    console.error('💥 Arcus Chat API error:', error?.message, error?.stack);
+    console.error('💥 Arcus Chat API error:', error);
     return NextResponse.json({
-      message: `I ran into an issue: ${error?.message || 'Unknown error'}. Please try again or refresh the page.`,
+      message: "I ran into a temporary issue. Could you try that again? If the problem persists, it might be worth refreshing the page.",
       timestamp: new Date().toISOString(),
       error: 'Internal server error',
-      errorDetail: error?.message || 'Unknown',
     });
   }
 }
@@ -825,8 +507,8 @@ async function handleDraftRequest(
       }
     }
 
-    if (!emailContent && !draftIntent.isCompose) {
-      // Ask for clarification only if NOT a compose request
+    if (!emailContent) {
+      // Ask for clarification
       return {
         message: `I'd be happy to help you draft a reply! Could you tell me which email you'd like me to respond to? You can either:
 
@@ -836,26 +518,6 @@ async function handleDraftRequest(
 
 Which would you prefer?`,
         draftData: null
-      };
-    } else if (draftIntent.isCompose) {
-      // Create a fresh draft for a new recipient
-      const draftResult = await arcusAI.generateDraftReply(message, {
-        userName,
-        userEmail,
-        replyInstructions: `Compose a new email to ${draftIntent.recipient}. Context: ${message}`,
-        conversationHistory,
-        privacyMode
-      });
-
-      return {
-        message: `I've prepared a new draft for ${draftIntent.recipient}. You can review it below:`,
-        draftData: {
-          content: draftResult.draftContent,
-          recipientName: draftIntent.recipient,
-          recipientEmail: draftIntent.recipient.includes('@') ? draftIntent.recipient : '',
-          senderName: userName,
-          subject: 'New Message'
-        }
       };
     }
 
@@ -1216,6 +878,24 @@ function isEmailRelatedQuery(message) {
   ];
   const lowerMessage = message.toLowerCase();
   return emailKeywords.some(keyword => lowerMessage.includes(keyword));
+}
+
+/**
+ * Check if request is complex/multi-step
+ */
+function isComplexRequest(message) {
+  const complexPatterns = [
+    /and.*then/i,
+    /find.*and/i,
+    /search.*and/i,
+    /first.*then/i,
+    /plan/i,
+    /mission/i,
+    /check.*and/i,
+    /lookup.*and/i,
+    /read.*and/i
+  ];
+  return complexPatterns.some(p => p.test(message));
 }
 
 /**
