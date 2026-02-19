@@ -3,10 +3,10 @@ import { auth } from '@/lib/auth.js';
 import { DatabaseService } from '@/lib/supabase.js';
 import { decrypt } from '@/lib/crypto.js';
 import { ArcusAIService } from '@/lib/arcus-ai.js';
-import { ArcusMissionService } from '@/lib/arcus-mission.js';
 import { CalendarService } from '@/lib/calendar.js';
 import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service.js';
 import { addDays, setHours, setMinutes, startOfDay, format, parse, isWeekend, nextMonday } from 'date-fns';
+import { ArcusMissionService } from '@/lib/arcus-mission.js';
 
 /**
  * Main chat handler with Arcus AI + Gmail context + Memory + Integration awareness
@@ -139,7 +139,85 @@ export async function POST(request) {
     // Initialize Arcus AI
     const arcusAI = new ArcusAIService();
 
-    // Parse user intent
+    // --- Arcus Missions: multi-step Goal Inbox ---
+    const missionService = userEmail ? new ArcusMissionService(userEmail) : null;
+    const isProceedRequest = /^(proceed|continue|next step|do it|go ahead|okay|ok|sure|yes|do that)$/i.test(
+      message.trim()
+    );
+
+    // 1) Continue existing mission when user says "proceed"
+    if (userEmail && missionService && activeMission && isProceedRequest) {
+      try {
+        const { mission, result, error, process, planCard } = await missionService.executeNextStep(
+          activeMission,
+          {
+            userPreferences: {
+              name: userName,
+            },
+          }
+        );
+
+        let responseMsg = `Progressing with your mission: **${mission.goal}**.`;
+        if (process?.label) {
+          responseMsg += `\n\nNow working on: **${process.label}**`;
+        }
+
+        if (userEmail) {
+          await saveConversation(userEmail, message, responseMsg, currentConversationId, db);
+        }
+
+        return NextResponse.json({
+          message: responseMsg,
+          timestamp: new Date().toISOString(),
+          conversationId: currentConversationId,
+          aiGenerated: true,
+          actionType: 'mission',
+          mission,
+          agentProcess: process,
+          planCard: planCard || null,
+          integrations,
+        });
+      } catch (err) {
+        console.error('Mission continuation failed:', err);
+      }
+    }
+
+    // 2) Start a new mission for complex, multi-step requests
+    if (userEmail && missionService && isComplexRequest(message)) {
+      try {
+        const mission = await missionService.createMission(message, currentConversationId);
+        const { mission: updatedMission, result, error, process, planCard } =
+          await missionService.executeNextStep(mission, {
+            userPreferences: { name: userName },
+          });
+
+        let responseMsg = `I've set up a mission to handle this: **${updatedMission.goal}**.\n\nI'm starting with the first step now.`;
+        if (process?.label) {
+          responseMsg += ` Current task: **${process.label}**`;
+        }
+
+        if (userEmail) {
+          await saveConversation(userEmail, message, responseMsg, currentConversationId, db);
+        }
+
+        return NextResponse.json({
+          message: responseMsg,
+          timestamp: new Date().toISOString(),
+          conversationId: currentConversationId,
+          aiGenerated: true,
+          actionType: 'mission',
+          mission: updatedMission,
+          agentProcess: process,
+          planCard: planCard || null,
+          integrations,
+        });
+      } catch (err) {
+        console.error('Mission creation failed:', err);
+      }
+    }
+
+    // --- STANDARD INTENT PARSING ---
+
     const draftIntent = arcusAI.parseDraftIntent(message);
     const schedulingIntent = arcusAI.parseSchedulingIntent(message);
 
@@ -235,86 +313,6 @@ export async function POST(request) {
         });
       } catch (error) {
         console.error('Notes action failed:', error);
-      }
-    }
-
-    // Handle Mission Proceeding / Continuation
-    const isProceedRequest = /^(proceed|continue|next step|do it|go ahead|okay|ok|sure)$/i.test(message.trim());
-
-    if (userEmail && activeMission && isProceedRequest) {
-      try {
-        console.log('🔄 Continuing Arcus Mission:', activeMission.id);
-        const missionService = new ArcusMissionService(userEmail, gmailAccessToken);
-
-        // Execute next step of the existing mission
-        const { mission: updatedMission, result, error, process } = await missionService.executeNextStep(activeMission);
-
-        // Generate AI response for current state
-        let responseMsg = `Progressing with mission: **${activeMission.goal}**.\n\n`;
-        const currentStep = updatedMission.steps.find(s => s.status === 'running');
-        const lastStep = updatedMission.steps.filter(s => s.status === 'done').pop();
-
-        if (currentStep) {
-          responseMsg += `Now working on: **${currentStep.label}**`;
-        } else if (updatedMission.status === 'done') {
-          responseMsg += `Mission completed successfully!`;
-        } else if (lastStep) {
-          responseMsg += `Completed: **${lastStep.label}**.`;
-        }
-
-        if (userEmail) {
-          await saveConversation(userEmail, message, responseMsg, currentConversationId, db);
-        }
-
-        return NextResponse.json({
-          message: responseMsg,
-          timestamp: new Date().toISOString(),
-          conversationId: currentConversationId,
-          aiGenerated: true,
-          actionType: 'mission',
-          mission: updatedMission,
-          agentProcess: process,
-          integrations
-        });
-      } catch (error) {
-        console.error('Mission continuation failed:', error);
-      }
-    }
-
-    // Handle Complex Missions (Multi-step requests)
-    if (userEmail && isComplexRequest(message)) {
-      try {
-        console.log('🚀 Starting new Arcus Mission for:', message);
-        const missionService = new ArcusMissionService(userEmail, gmailAccessToken);
-        const mission = await missionService.createMission(message, currentConversationId);
-
-        // Execute first step immediately
-        const { mission: updatedMission, result, error, process } = await missionService.executeNextStep(mission);
-
-        // Generate AI response explaining the plan
-        let responseMsg = `I've started a mission to help with that: **${mission.goal}**.\n\nI'll handle this step-by-step.`;
-        if (updatedMission.steps.some(s => s.status === 'running')) {
-          responseMsg += ` I'm working on: **${updatedMission.steps.find(s => s.status === 'running').label}**`;
-        }
-
-        if (userEmail) {
-          await saveConversation(userEmail, message, responseMsg, currentConversationId, db);
-        }
-
-        return NextResponse.json({
-          message: responseMsg,
-          timestamp: new Date().toISOString(),
-          conversationId: currentConversationId,
-          aiGenerated: true,
-          actionType: 'mission',
-          mission: updatedMission,
-          agentProcess: process,
-          integrations
-        });
-
-      } catch (error) {
-        console.error('Mission creation failed:', error);
-        // Fall through to normal response
       }
     }
 
@@ -834,6 +832,30 @@ async function executeEmailAction(userMessage, userEmail, session) {
 }
 
 /**
+ * Check if request is complex/multi-step and should become a Mission
+ */
+function isComplexRequest(message) {
+  const complexPatterns = [
+    /\bthen\b/i,
+    /\bafter\b/i,
+    /\bfirst\b.*\bsecond\b/i,
+    /\bfind\b.*\band\b/i,
+    /\bsearch\b.*\band\b/i,
+    /\bcheck\b.*\band\b/i,
+    /\bread\b.*\band\b/i,
+    /\blookup\b.*\band\b/i,
+    /\bplan\b/i,
+    /\bmission\b/i,
+    /\btasks?\b/i,
+    /\bsteps?\b/i,
+    /\bschedule\b.*\band\b/i,
+    /\bdraft\b.*\bafter\b/i
+  ];
+  const lower = message.toLowerCase();
+  return complexPatterns.some((p) => p.test(lower));
+}
+
+/**
  * Format email action result for AI context
  */
 function formatEmailActionResult(result) {
@@ -878,24 +900,6 @@ function isEmailRelatedQuery(message) {
   ];
   const lowerMessage = message.toLowerCase();
   return emailKeywords.some(keyword => lowerMessage.includes(keyword));
-}
-
-/**
- * Check if request is complex/multi-step
- */
-function isComplexRequest(message) {
-  const complexPatterns = [
-    /and.*then/i,
-    /find.*and/i,
-    /search.*and/i,
-    /first.*then/i,
-    /plan/i,
-    /mission/i,
-    /check.*and/i,
-    /lookup.*and/i,
-    /read.*and/i
-  ];
-  return complexPatterns.some(p => p.test(message));
 }
 
 /**

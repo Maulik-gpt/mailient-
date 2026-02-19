@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Send, X, Edit2, User, Mail } from 'lucide-react';
+import { Copy, X, Edit2, Mail } from 'lucide-react';
 
 interface DraftReplyBoxProps {
     draftData: {
@@ -23,7 +23,7 @@ interface DraftReplyBoxProps {
 
 export function DraftReplyBox({
     draftData,
-    onSendReply,
+    onSendReply: _onSendReply,
     onDismiss,
     isVisible
 }: DraftReplyBoxProps) {
@@ -44,7 +44,7 @@ export function DraftReplyBox({
 
     if (!isVisible || !draftData) return null;
 
-    const handleSend = async () => {
+    const handleCopy = async () => {
         if (!draftData.recipientEmail || !editedContent.trim()) {
             setSendError('Missing recipient email or content');
             return;
@@ -54,17 +54,17 @@ export function DraftReplyBox({
         setSendError(null);
 
         try {
-            await onSendReply({
-                content: editedContent,
-                recipientEmail: draftData.recipientEmail,
-                subject: draftData.subject
-            });
+            if (navigator?.clipboard?.writeText) {
+                await navigator.clipboard.writeText(editedContent);
+            } else {
+                throw new Error('Clipboard not available in this browser');
+            }
             setSendSuccess(true);
             setTimeout(() => {
                 onDismiss();
             }, 2000);
         } catch (error) {
-            setSendError(error instanceof Error ? error.message : 'Failed to send email');
+            setSendError(error instanceof Error ? error.message : 'Failed to copy');
         } finally {
             setIsSending(false);
         }
@@ -146,12 +146,12 @@ export function DraftReplyBox({
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>
-                            Email sent successfully!
+                            Copied to clipboard
                         </span>
                     )}
                 </div>
                 <button
-                    onClick={handleSend}
+                    onClick={handleCopy}
                     disabled={isSending || sendSuccess || !draftData.recipientEmail}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${isSending || sendSuccess
                         ? 'bg-gray-600 text-gray-300 cursor-not-allowed'
@@ -163,19 +163,19 @@ export function DraftReplyBox({
                     {isSending ? (
                         <>
                             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            Sending...
+                            Copying...
                         </>
                     ) : sendSuccess ? (
                         <>
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>
-                            Sent!
+                            Copied
                         </>
                     ) : (
                         <>
-                            <Send className="w-4 h-4" />
-                            Send Reply
+                            <Copy className="w-4 h-4" />
+                            Copy Reply
                         </>
                     )}
                 </button>

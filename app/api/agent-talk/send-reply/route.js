@@ -21,6 +21,14 @@ export async function POST(request) {
         const body = await request.json();
         const { to, subject, content, replyToMessageId, threadId } = body;
 
+        return NextResponse.json(
+            {
+                error: 'Email sending is not supported',
+                message: 'Arcus can draft replies, but it cannot send emails. Please copy the draft into Gmail and send it yourself.'
+            },
+            { status: 403 }
+        );
+
         if (!to || !content) {
             return NextResponse.json(
                 { error: 'Recipient (to) and content are required' },
