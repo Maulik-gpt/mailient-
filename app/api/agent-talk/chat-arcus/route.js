@@ -154,12 +154,13 @@ export async function POST(request) {
       const planGoalMatch = message.match(/Execute the approved plan:\s*(.+)/);
       const planGoal = planGoalMatch ? planGoalMatch[1].trim() : 'the approved plan';
 
-      // Advanced Detection
-      const isDraftPlan = /\b(draft|reply|respond|write|email|send)\b/i.test(planGoal);
-      const isSchedulePlan = /\b(schedule|meeting|call|book|invite)\b/i.test(planGoal);
-      const isSearchPlan = /\b(find|search|look|show|get|fetch|check)\b/i.test(planGoal);
+      // High-precision Intent Detection
+      const isSendPlan = /\b(send|dispatch|email\s+john|email\s+to|send\s+to|reply\s+and\s+send)\b/i.test(planGoal);
+      const isDraftPlan = /\b(draft|write|compose|generate|prepare)\b/i.test(planGoal) || isSendPlan;
+      const isSchedulePlan = /\b(schedule|meeting|call|book|invite|calendar)\b/i.test(planGoal);
+      const isSearchPlan = /\b(find|search|look|show|get|fetch|check|read)\b/i.test(planGoal) || isDraftPlan || isSchedulePlan;
 
-      // Decrypt tokens once
+      // Decrypt tokens for execution context
       let gmailTokenDecrypted = null;
       let gmailRefreshDecrypted = null;
       if (userEmail) {
@@ -170,7 +171,6 @@ export async function POST(request) {
         } catch (e) { console.warn('Token fetch error:', e.message); }
       }
 
-      // Build step list with nanosecond-precision intent
       let stepIdx = 0;
       const mkStep = (type, label) => ({
         id: `step_${type}_${stepIdx++}_${Date.now()}`,
@@ -179,16 +179,18 @@ export async function POST(request) {
       });
 
       const agentSteps = [
-        { ...mkStep('think', 'De-constructing your request'), status: 'done', detail: planGoal, started_at: new Date().toISOString(), completed_at: new Date().toISOString() },
-        ...(isSearchPlan || isDraftPlan ? [mkStep('search_email', 'Semantic mailbox search')] : []),
+        { ...mkStep('think', 'De-constructing intent'), status: 'done', detail: planGoal, started_at: new Date().toISOString(), completed_at: new Date().toISOString() },
+        ...(isSearchPlan ? [mkStep('search_email', 'Semantic mailbox search')] : []),
         ...(isDraftPlan ? [mkStep('create_draft', 'Synthesizing response draft')] : []),
+        ...(isSendPlan ? [mkStep('send_email', 'Dispatching secure packet')] : []),
         ...(isSchedulePlan ? [mkStep('book_meeting', 'Calibrating schedule')] : []),
-        mkStep('done', 'Execution complete'),
+        mkStep('done', 'Goal achieved'),
       ];
 
       const prevResults = {};
       let draftData = null;
       let schedulingData = null;
+      let sendResult = null;
       let execOk = true;
       let execErr = null;
 
@@ -226,7 +228,7 @@ export async function POST(request) {
             agentSteps[i] = {
               ...agentSteps[i], status: 'done',
               result: { ...data, query }, // Include query in result
-              detail: `Scanned packets for: "${query}" (${data.count || 0} hits)`,
+              detail: `Semantic scan identified ${data.count || 0} relative packets`,
               completed_at: new Date().toISOString()
             };
 
@@ -247,8 +249,8 @@ export async function POST(request) {
             draftData = {
               content: draftContent,
               thought: thought,
-              recipientName: latestEmail?.from || 'Recipient',
-              recipientEmail: latestEmail?.from || '',
+              recipientName: latestEmail?.from?.split('<')[0]?.trim() || 'Recipient',
+              recipientEmail: latestEmail?.from?.match(/<([^>]+)>/)?.[1] || latestEmail?.from || '',
               senderName: userName,
               originalEmailId: latestEmail?.id || null,
               threadId: latestEmail?.thread_id || null,
@@ -257,9 +259,38 @@ export async function POST(request) {
             };
             prevResults.create_draft = draftData;
             agentSteps[i] = {
-              ...agentSteps[i], status: 'done',
-              result: { ...draftData, thought }, // Store thought in result for UI
+              ...agentSteps[i], status: 'done', result: { ...draftData, thought }, // Store thought in result for UI
               detail: `Synthesized response for ${draftData.recipientName}`,
+              completed_at: new Date().toISOString()
+            };
+
+            // ── STEP: send_email ──
+          } else if (step.type === 'send_email') {
+            if (!draftData) throw new Error('No draft to send — synthesis must complete first');
+
+            const res = await fetch(`${baseUrl}/api/agent-talk/send-reply`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                to: draftData.recipientEmail,
+                subject: draftData.subject,
+                content: draftData.content,
+                replyToMessageId: draftData.messageId,
+                threadId: draftData.threadId
+              }),
+            });
+
+            if (!res.ok) {
+              const errData = await res.json().catch(() => ({}));
+              throw new Error(errData.error || `Dispatch failed (${res.status})`);
+            }
+
+            const data = await res.json();
+            sendResult = data;
+            prevResults.send_email = data;
+            agentSteps[i] = {
+              ...agentSteps[i], status: 'done', result: data,
+              detail: `Securely dispatched to ${draftData.recipientEmail}`,
               completed_at: new Date().toISOString()
             };
 
@@ -307,7 +338,7 @@ export async function POST(request) {
               : 30;
 
             const link = await calService.getBookingLink(durationMin, planGoal);
-            if (!link) throw new Error('Cal.com link failed');
+            if (!link) throw new Error('Schedule calibration failed');
 
             schedulingData = { bookingUrl: link.bookingUrl, durationMinutes: link.durationMinutes, title: link.title, type: 'scheduling_link' };
             prevResults.book_meeting = schedulingData;
@@ -335,22 +366,26 @@ export async function POST(request) {
       let execChanges = [];
       let execArtifacts = [];
 
-      if (draftData) {
-        execMsg = `Done. Draft for ${draftData.recipientName} is ready below. Review and send when you're happy.`;
-        execChanges = [`Draft written for ${draftData.recipientName}`, `Subject: ${draftData.subject}`];
-        execArtifacts = [{ type: 'draft', id: draftData.originalEmailId || 'draft-' + Date.now(), label: 'View draft', url: null }];
+      if (sendResult) {
+        execMsg = `Success. I've dispatched that email to ${draftData.recipientName} (${draftData.recipientEmail}). The thread is now up to date.`;
+        execChanges = [`Email dispatched to ${draftData.recipientEmail}`, `Subject: ${draftData.subject}`];
+        execArtifacts = [{ type: 'email', id: sendResult.messageId, label: 'View sent email', url: null }];
+      } else if (draftData) {
+        execMsg = `Done. I've prepared a draft for ${draftData.recipientName}. You can review it below and send it whenever you're ready.`;
+        execChanges = [`Draft context synthesized for ${draftData.recipientName}`, `Subject: ${draftData.subject}`];
+        execArtifacts = [{ type: 'draft', id: draftData.originalEmailId || 'draft-' + Date.now(), label: 'Review draft', url: null }];
       } else if (schedulingData) {
-        execMsg = `Meeting link created. Share it with your attendee so they can pick a time.`;
-        execChanges = [`${schedulingData.durationMinutes}-min Cal.com link created`];
-        execArtifacts = [{ type: 'event', id: 'cal-' + Date.now(), label: 'Open scheduling link', url: schedulingData.bookingUrl }];
+        execMsg = `Mission complete. I've calibrated the schedule and established a ${schedulingData.type === 'google_meet' ? 'Google Meet' : 'Cal.com'} bridge.`;
+        execChanges = [`${schedulingData.durationMinutes}-min session configured`];
+        execArtifacts = [{ type: 'event', id: 'cal-' + Date.now(), label: 'Open coordinates', url: schedulingData.bookingUrl }];
       } else if (prevResults.search_email?.count > 0) {
         const c = prevResults.search_email.count;
-        execMsg = `Found ${c} recent email${c !== 1 ? 's' : ''}. Here they are.`;
-        execChanges = [`${c} emails retrieved from inbox`];
+        execMsg = `I've analyzed your mailbox and identified ${c} relevant relative packets. How would you like to proceed?`;
+        execChanges = [`${c} email packets identified and analyzed`];
       } else if (!execOk) {
-        execMsg = `Ran into a problem: ${execErr || 'something went wrong'}. Try again or give me more details.`;
+        execMsg = `The execution sequence was interrupted: ${execErr || 'unknown system error'}. I've logged the trace for review.`;
       } else {
-        execMsg = `Done with "${planGoal}".`;
+        execMsg = `Mission accomplished: "${planGoal}". All systems operational.`;
       }
 
       if (userEmail) {
@@ -606,9 +641,18 @@ Body: ${emailData.body || emailData.snippet}
       response = '';
     }
 
-    const finalResponse = response && response.trim()
+    let finalResponse = response && response.trim()
       ? response
       : generateFallbackResponse(message, integrations);
+
+    // If we have a plan card with clarifications, prepend them to the response
+    if (planCardResult?.required_clarifications?.length > 0) {
+      const q = planCardResult.required_clarifications[0];
+      finalResponse = `Before I execute this plan, I need one clarification: **${q}**\n\nOnce you confirm, I can proceed with the following strategy:`;
+    } else if (planCardResult?.plan_card?.questions_for_user?.length > 0) {
+      const q = planCardResult.plan_card.questions_for_user[0];
+      finalResponse = `I have a quick question to ensure this is perfect: **${q}**\n\n(I've still outlined a preliminary plan below based on my current understanding).`;
+    }
 
     // Mark done
     agentSteps.push(mkStep('done', 'Mission accomplished', 'done'));
