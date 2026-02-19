@@ -469,24 +469,35 @@ export async function POST(request) {
         privacyMode
       );
 
-      // Save conversation
-      if (userEmail) {
-        await saveConversation(userEmail, message, draftResult.message, currentConversationId, db);
+      // If we have a Plan Card, we generally prefer its orchestration,
+      // UNLESS the draftResult found a clear email to reply to and generated a draft.
+      // If draftResult is just asking for clarification but we have a Plan Card, SKIP early return.
+      // NEW: If we have a multi-step plan (more than 1 tool), also SKIP early return to allow the Plan Card to show the orchestration.
+      const isJustClarification = draftResult.message.includes('Which would you prefer') || draftResult.message.includes('Could you tell me');
+      const isMultiStep = planCardResult?.plan_card?.steps?.length > 1 || planCardResult?.plan_card?.tools?.length > 1;
+
+      if ((!isJustClarification && !isMultiStep) || !planCardResult) {
+        // Save conversation
+        if (userEmail) {
+          await saveConversation(userEmail, message, draftResult.message, currentConversationId, db);
+        }
+
+        agentSteps.push(mkStep('create_draft', 'Synthesizing response', 'done', 'Prepared draft ready for review'));
+        agentSteps.push(mkStep('done', 'Mission accomplished', 'done'));
+
+        return NextResponse.json({
+          message: draftResult.message,
+          timestamp: new Date().toISOString(),
+          conversationId: currentConversationId,
+          aiGenerated: true,
+          actionType: planCardResult ? 'mission_plan' : 'draft_reply',
+          draftData: draftResult.draftData || null,
+          planCard: planCardResult?.plan_card || null,
+          agentSteps
+        });
       }
-
-      agentSteps.push(mkStep('create_draft', 'Synthesizing response', 'done', 'Prepared draft ready for review'));
-      agentSteps.push(mkStep('done', 'Mission accomplished', 'done'));
-
-      return NextResponse.json({
-        message: draftResult.message,
-        timestamp: new Date().toISOString(),
-        conversationId: currentConversationId,
-        aiGenerated: true,
-        actionType: planCardResult ? 'mission_plan' : 'draft_reply',
-        draftData: draftResult.draftData || null,
-        planCard: planCardResult?.plan_card || null,
-        agentSteps
-      });
+      // If it WAS just a clarification and we HAVE a plan card, we fall through to the general response logic
+      // which will present the Plan Card and a better AI-generated message.
     }
 
     // Handle scheduling request
@@ -505,24 +516,30 @@ export async function POST(request) {
         null // emailContext not available yet at this point
       );
 
-      // Save conversation
-      if (userEmail) {
-        await saveConversation(userEmail, message, schedulingResult.message, currentConversationId, db);
+      // Same logic for scheduling: skip early return if we have a multi-step Plan Card
+      const isJustClarification = schedulingResult.message.includes('could you tell me') || schedulingResult.message.includes('Who should attend');
+      const isMultiStep = planCardResult?.plan_card?.steps?.length > 1 || planCardResult?.plan_card?.tools?.length > 1;
+
+      if ((!isJustClarification && !isMultiStep) || !planCardResult) {
+        // Save conversation
+        if (userEmail) {
+          await saveConversation(userEmail, message, schedulingResult.message, currentConversationId, db);
+        }
+
+        agentSteps.push(mkStep('book_meeting', 'Calibrating schedule', 'done', 'Meeting details and logistics mapped'));
+        agentSteps.push(mkStep('done', 'Mission accomplished', 'done'));
+
+        return NextResponse.json({
+          message: schedulingResult.message,
+          timestamp: new Date().toISOString(),
+          conversationId: currentConversationId,
+          aiGenerated: true,
+          actionType: planCardResult ? 'mission_plan' : 'schedule_meeting',
+          schedulingData: schedulingResult.schedulingData || null,
+          planCard: planCardResult?.plan_card || null,
+          agentSteps
+        });
       }
-
-      agentSteps.push(mkStep('book_meeting', 'Calibrating schedule', 'done', 'Meeting details and logistics mapped'));
-      agentSteps.push(mkStep('done', 'Mission accomplished', 'done'));
-
-      return NextResponse.json({
-        message: schedulingResult.message,
-        timestamp: new Date().toISOString(),
-        conversationId: currentConversationId,
-        aiGenerated: true,
-        actionType: planCardResult ? 'mission_plan' : 'schedule_meeting',
-        schedulingData: schedulingResult.schedulingData || null,
-        planCard: planCardResult?.plan_card || null,
-        agentSteps
-      });
     }
 
     // Handle notes query
@@ -804,8 +821,8 @@ async function handleDraftRequest(
       }
     }
 
-    if (!emailContent) {
-      // Ask for clarification
+    if (!emailContent && !draftIntent.isCompose) {
+      // Ask for clarification only if NOT a compose request
       return {
         message: `I'd be happy to help you draft a reply! Could you tell me which email you'd like me to respond to? You can either:
 
@@ -815,6 +832,26 @@ async function handleDraftRequest(
 
 Which would you prefer?`,
         draftData: null
+      };
+    } else if (draftIntent.isCompose) {
+      // Create a fresh draft for a new recipient
+      const draftResult = await arcusAI.generateDraftReply(message, {
+        userName,
+        userEmail,
+        replyInstructions: `Compose a new email to ${draftIntent.recipient}. Context: ${message}`,
+        conversationHistory,
+        privacyMode
+      });
+
+      return {
+        message: `I've prepared a new draft for ${draftIntent.recipient}. You can review it below:`,
+        draftData: {
+          content: draftResult.draftContent,
+          recipientName: draftIntent.recipient,
+          recipientEmail: draftIntent.recipient.includes('@') ? draftIntent.recipient : '',
+          senderName: userName,
+          subject: 'New Message'
+        }
       };
     }
 

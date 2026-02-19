@@ -176,8 +176,9 @@ export default function ChatInterface({
   const [notesSearchQuery, setNotesSearchQuery] = useState<string>('');
   const [showNotesFetching, setShowNotesFetching] = useState<boolean>(false);
   const [notesResults, setNotesResults] = useState<any[]>([]);
-  const [actionStatus, setActionStatus] = useState<'planning' | 'processing' | 'done' | null>(null);
+  const [actionStatus, setActionStatus] = useState<'planning' | 'processing' | 'done' | null>(null); // Execution Trace
   const [activeSearchLabel, setActiveSearchLabel] = useState<string | null>(null);
+  const [liveAgentSteps, setLiveAgentSteps] = useState<any[]>([]);
 
   // Mission & Plan Card state
   const [activeMissions, setActiveMissions] = useState<Mission[]>([]);
@@ -365,6 +366,26 @@ export default function ChatInterface({
     try {
       setIsLoading(true);
 
+      // Initialize Live Agent Steps for the Billion-Dollar UI Trace
+      const initialSteps = [
+        {
+          id: `step_think_${Date.now()}`,
+          type: 'think',
+          label: 'De-constructing intent...',
+          status: 'running',
+          detail: `Analyzing: "${messageText.substring(0, 50)}${messageText.length > 50 ? '...' : ''}"`,
+          started_at: new Date().toISOString()
+        },
+        {
+          id: `step_clarify_${Date.now() + 1}`,
+          type: 'think', // Use think for now, will map to clarify in trace
+          label: 'Calibrating secure logic...',
+          status: 'pending',
+          detail: 'Mapping context to high-fidelity outcomes'
+        }
+      ];
+      setLiveAgentSteps(initialSteps);
+
       const notesQuery = isNotesRelatedQuery(messageText);
       const emailQuery = isEmailRelatedQuery(messageText);
       setIsNotesQuery(notesQuery);
@@ -436,11 +457,16 @@ export default function ChatInterface({
         setShowDraftBox(true);
         console.log('Draft data received:', data.draftData);
       }
-
       // Handle Plan Card response from API
       if (data.planCard) {
         setPlanCards(prev => ({ ...prev, [data.planCard.id]: data.planCard }));
       }
+
+      // If a Plan Card was generated, it should handle the interaction flow
+      // we only proceed to individual intent handlers if NO plan card was proposed
+      // and NO clarifications are needed
+      const hasPlanCard = !!data.planCard;
+      const needsClarification = data.planCard?.required_clarifications?.length > 0;
 
       // Handle Mission creation
       if (data.mission) {
@@ -476,6 +502,7 @@ export default function ChatInterface({
 
       // First stop loading to show the message
       setIsLoading(false);
+      setLiveAgentSteps([]); // Clear live steps as the final message has them now
 
       // Add agent message to state
       setMessages(prev => [...prev, agentMessage]);
@@ -1671,17 +1698,20 @@ export default function ChatInterface({
                       </div>
                     ))}
                     {isLoading && (
-                      <div className="flex items-start gap-4 animate-fade-in">
-                        <div className="flex-shrink-0 mt-1">
-                          <div className="bg-neutral-800 rounded-full w-11 h-11 flex items-center justify-center backdrop-blur-sm border border-white/10 shadow-lg overflow-hidden">
-                            <img src="/arcus-ai-icon.jpg" alt="Arcus AI" className="w-full h-full object-cover" />
+                      <div className="flex flex-col gap-4 animate-fade-in max-w-2xl">
+                        <div className="flex items-start gap-4">
+                          <div className="flex-shrink-0 mt-1">
+                            <div className="bg-neutral-800 rounded-full w-11 h-11 flex items-center justify-center backdrop-blur-sm border border-white/10 shadow-lg overflow-hidden">
+                              <img src="/arcus-ai-icon.jpg" alt="Arcus AI" className="w-full h-full object-cover" />
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex-1">
-                          <ShiningText
-                            text={activeSearchLabel ? activeSearchLabel : 'Working on it...'}
-                            className="text-sm relative top-1"
-                          />
+                          <div className="flex-1">
+                            <AgentSteps
+                              steps={liveAgentSteps}
+                              goal="Synthesizing..."
+                              isComplete={false}
+                            />
+                          </div>
                         </div>
                       </div>
                     )}

@@ -193,11 +193,13 @@ function StepRow({ step, index }: { step: AgentStep; index: number }) {
                             setIsOpen(!isOpen);
                         }}
                         className={`
-                            p-1.5 px-2.5 rounded-lg border transition-all duration-300
-                            ${isOpen ? 'bg-white/10 border-white/10 text-white/70 shadow-lg' : 'bg-white/[0.03] border-white/[0.05] text-white/30 hover:bg-white/10 hover:border-white/20 hover:text-white/50'}
+                            p-1.5 px-2 rounded-lg border transition-all duration-300 flex items-center gap-1.5
+                            ${isOpen ? 'bg-white/10 border-white/20 text-white shadow-lg' : 'bg-white/[0.05] border-white/10 text-white/50 hover:bg-white/10 hover:border-white/30 hover:text-white/80'}
+                            active:scale-95
                         `}
                         title={isOpen ? "Hide details" : "Peep internal process"}
                     >
+                        <span className="text-[9px] uppercase tracking-wider font-bold opacity-60 hidden sm:inline">{isOpen ? 'Close' : 'Think'}</span>
                         <motion.div
                             animate={{ rotate: isOpen ? 180 : 0 }}
                             transition={{ type: "spring", stiffness: 300, damping: 20 }}
