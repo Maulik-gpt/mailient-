@@ -188,10 +188,22 @@ function StepRow({ step, index }: { step: AgentStep; index: number }) {
 
                 {hasDetail && (
                     <button
-                        onClick={() => setIsOpen(!isOpen)}
-                        className="p-1 px-2 rounded-md hover:bg-white/5 text-white/20 hover:text-white/40 transition-all"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setIsOpen(!isOpen);
+                        }}
+                        className={`
+                            p-1.5 px-2.5 rounded-lg border transition-all duration-300
+                            ${isOpen ? 'bg-white/10 border-white/10 text-white/70 shadow-lg' : 'bg-white/[0.03] border-white/[0.05] text-white/30 hover:bg-white/10 hover:border-white/20 hover:text-white/50'}
+                        `}
+                        title={isOpen ? "Hide details" : "Peep internal process"}
                     >
-                        {isOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                        <motion.div
+                            animate={{ rotate: isOpen ? 180 : 0 }}
+                            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                        >
+                            <ChevronDown className="w-3.5 h-3.5" />
+                        </motion.div>
                     </button>
                 )}
             </div>
@@ -210,6 +222,18 @@ function StepRow({ step, index }: { step: AgentStep; index: number }) {
                                     <p className="text-[12px] text-white/40 leading-relaxed font-light italic">
                                         "{step.detail}"
                                     </p>
+                                )}
+
+                                {step.result?.thought && (
+                                    <div className="mt-2 p-3 rounded-lg bg-purple-500/[0.03] border border-purple-500/10 shadow-[inner_0_1px_3px_rgba(0,0,0,0.2)]">
+                                        <div className="flex items-center gap-2 mb-1.5">
+                                            <Brain className="w-3 h-3 text-purple-400" />
+                                            <span className="text-[9px] font-bold text-purple-400/80 uppercase tracking-[0.1em]">Internal Reasoning</span>
+                                        </div>
+                                        <p className="text-[11px] text-white/30 leading-relaxed font-sans whitespace-pre-wrap">
+                                            {step.result.thought}
+                                        </p>
+                                    </div>
                                 )}
 
                                 {step.error && (
@@ -334,7 +358,14 @@ export function AgentSteps({ steps, goal, isComplete }: AgentStepsProps) {
                         <div className="text-[11px] font-medium text-white/40">{Math.round(progress)}%</div>
                         <div className="text-[9px] text-white/10 uppercase tracking-tighter">Verified Logic</div>
                     </div>
-                    <ChevronDown className={`w-4 h-4 text-white/20 transition-transform duration-500 ${isHeaderOpen ? 'rotate-180' : ''}`} />
+                    <div className={`p-1.5 px-2 rounded-lg border transition-all duration-300 ${isHeaderOpen ? 'bg-white/10 border-white/10 text-white/70' : 'bg-white/[0.03] border-white/[0.05] text-white/30'}`}>
+                        <motion.div
+                            animate={{ rotate: isHeaderOpen ? 180 : 0 }}
+                            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                        >
+                            <ChevronDown className="w-4 h-4" />
+                        </motion.div>
+                    </div>
                 </div>
             </div>
 

@@ -215,16 +215,18 @@ export async function POST(request) {
               ...(gmailTokenDecrypted ? { 'x-gmail-access-token': gmailTokenDecrypted } : {}),
               ...(gmailRefreshDecrypted ? { 'x-gmail-refresh-token': gmailRefreshDecrypted } : {}),
             };
+            const query = 'newer_than:7d';
             const res = await fetch(`${baseUrl}/api/agent-talk/read_gmail`, {
               method: 'POST', headers,
-              body: JSON.stringify({ query: 'newer_than:7d', max_results: 5, include_body: true }),
+              body: JSON.stringify({ query, max_results: 5, include_body: true }),
             });
             if (!res.ok) throw new Error(`Search failed (${res.status})`);
             const data = await res.json();
             prevResults.search_email = data;
             agentSteps[i] = {
-              ...agentSteps[i], status: 'done', result: data,
-              detail: `Analyzed ${data.count || 0} relative email packets`,
+              ...agentSteps[i], status: 'done',
+              result: { ...data, query }, // Include query in result
+              detail: `Scanned packets for: "${query}" (${data.count || 0} hits)`,
               completed_at: new Date().toISOString()
             };
 
@@ -235,18 +237,19 @@ export async function POST(request) {
               ? `From: ${latestEmail.from}\nSubject: ${latestEmail.subject}\nDate: ${latestEmail.date}\n\n${latestEmail.body_text || latestEmail.snippet || ''}`
               : null;
 
-            const dr = await arcusAI.generateDraftReply(emailCtx || planGoal, {
+            const { draftContent, thought } = await arcusAI.generateDraftReply(emailCtx || planGoal, {
               userName, userEmail,
               replyInstructions: planGoal,
               conversationHistory, privacyMode,
             });
 
-            if (!dr?.draftContent) throw new Error('Synthesis failed');
+            if (!draftContent) throw new Error('Synthesis failed');
             draftData = {
-              content: dr.draftContent,
-              recipientName: dr.recipientName || latestEmail?.from || 'Recipient',
-              recipientEmail: dr.recipientEmail || latestEmail?.from || '',
-              senderName: dr.senderName || userName,
+              content: draftContent,
+              thought: thought,
+              recipientName: latestEmail?.from || 'Recipient',
+              recipientEmail: latestEmail?.from || '',
+              senderName: userName,
               originalEmailId: latestEmail?.id || null,
               threadId: latestEmail?.thread_id || null,
               messageId: latestEmail?.id || null,
@@ -254,8 +257,9 @@ export async function POST(request) {
             };
             prevResults.create_draft = draftData;
             agentSteps[i] = {
-              ...agentSteps[i], status: 'done', result: draftData,
-              detail: `Synthesized perfect response for ${draftData.recipientName}`,
+              ...agentSteps[i], status: 'done',
+              result: { ...draftData, thought }, // Store thought in result for UI
+              detail: `Synthesized response for ${draftData.recipientName}`,
               completed_at: new Date().toISOString()
             };
 
@@ -544,9 +548,10 @@ Body: ${emailData.body || emailData.snippet}
 
     // Add search step if we searched email
     if (emailContext && emailResult) {
+      const q = emailResult.query || 'recent activity';
       agentSteps.push(
         mkStep('search_email', 'Scanning mailbox context', 'done',
-          emailResult.count ? `Analyzed ${emailResult.count} relevant email packets` : 'Validated inbox state')
+          `Scanned packets for: "${q}" (${emailResult.count || 0} hits)`)
       );
       agentSteps[agentSteps.length - 1].result = emailResult;
     }
@@ -559,7 +564,7 @@ Body: ${emailData.body || emailData.snippet}
 
     let response = '';
     try {
-      response = await arcusAI.generateResponse(message, {
+      const { content, thought } = await arcusAI.generateResponse(message, {
         conversationHistory,
         emailContext,
         integrations,
@@ -580,10 +585,13 @@ Body: ${emailData.body || emailData.snippet}
         privacyMode
       });
 
+      response = content; // Set the final text response
+
       agentSteps[responseStepIdx] = {
         ...agentSteps[responseStepIdx],
         status: 'done',
         label: 'Synthesis complete',
+        result: { thought }, // Pass reasoning to UI
         detail: response ? `${response.substring(0, 60)}...` : 'Output generated',
         completed_at: new Date().toISOString(),
       };
