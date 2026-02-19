@@ -1575,11 +1575,22 @@ export default function ChatInterface({
                               {/* Agent Steps — Notion AI-style execution trace */}
                               {(msg as AgentMessage).meta?.agentSteps && (msg as AgentMessage).meta!.agentSteps!.length > 0 && (
                                 <div className="mt-4">
-                                  <AgentSteps
-                                    steps={(msg as AgentMessage).meta!.agentSteps!}
-                                    goal={(msg as AgentMessage).meta?.executionResult ? 'Task complete' : 'Working...'}
-                                    isComplete={(msg as AgentMessage).meta?.executionResult?.success === true}
-                                  />
+                                  {(() => {
+                                    const meta = (msg as AgentMessage).meta;
+                                    const steps = meta?.agentSteps || [];
+                                    const isExecComplete = meta?.executionResult?.success === true;
+                                    const isStepsComplete = steps.some(s => s.type === 'done' && s.status === 'done');
+                                    const isComplete = isExecComplete || isStepsComplete;
+                                    const goal = meta?.executionResult ? 'Task complete' : isComplete ? 'Complete' : 'Working...';
+
+                                    return (
+                                      <AgentSteps
+                                        steps={steps}
+                                        goal={goal}
+                                        isComplete={isComplete}
+                                      />
+                                    );
+                                  })()}
                                 </div>
                               )}
 
