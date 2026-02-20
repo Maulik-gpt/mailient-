@@ -136,10 +136,46 @@ export async function POST(request) {
       }
     }
 
-    // Initialize Arcus AI
+    // Initialize Arcus AI and Mission Service
     const arcusAI = new ArcusAIService();
+    const missionService = userEmail ? new ArcusMissionService(userEmail) : null;
 
-    // --- CONTEXT SEARCH (Knows all your emails) ---
+    // --- MISSION DETECTION & EXECUTION ---
+    let mission = activeMission;
+    let missionResult = null;
+    let missionProcess = null;
+
+    // 1. Detect if we should start a new mission if no active one exists
+    if (!mission && userEmail && !isNotesQuery) {
+      try {
+        const detection = await arcusAI.detectMissionGoal(message, conversationHistory);
+        if (detection.isMission) {
+          console.log('🎯 Mission Detected:', detection.goal);
+          mission = await missionService.createMission(detection.goal, currentConversationId);
+        }
+      } catch (err) {
+        console.warn('Mission detection failed:', err);
+      }
+    }
+
+    // 2. If we have a mission, execute the next step
+    if (mission && missionService) {
+      try {
+        console.log('⚡ Executing Mission Step for:', mission.id);
+        // Execute the mission logic until intervention is needed
+        missionResult = await missionService.executeMission(mission, {
+          userPreferences: { name: userName }
+        });
+
+        // Update mission state from result
+        mission = missionResult.mission;
+        missionProcess = missionResult.process;
+      } catch (err) {
+        console.error('Mission execution error:', err);
+      }
+    }
+
+    // --- CONTEXT SEARCH (For general chat or fallback) ---
 
     // Detect if this is an email or notes query to fetch relevant context
     const detectedIsNotesQuery = isNotesQuery !== undefined ? isNotesQuery : isNotesRelatedQuery(message);
@@ -150,8 +186,15 @@ export async function POST(request) {
     let notesResult = null;
     let actionType = 'general';
 
+    // If mission result had searching results, use those as context
+    if (missionResult?.result?.threads) {
+      emailResult = missionResult.result;
+      emailContext = formatEmailActionResult(emailResult);
+      actionType = 'email';
+    }
+
     // Handle notes context
-    if (detectedIsNotesQuery && userEmail) {
+    if (detectedIsNotesQuery && userEmail && !emailContext) {
       try {
         notesResult = await executeNotesAction(message, userEmail, notesSearchQuery);
         emailContext = formatNotesActionResult(notesResult);
@@ -162,7 +205,7 @@ export async function POST(request) {
     }
 
     // IF a specific email is selected (from the Traditional View "Ask AI" button)
-    if (selectedEmailId && userEmail) {
+    if (selectedEmailId && userEmail && !emailContext) {
       try {
         console.log('📧 Arcus: Fetching specific email context for:', selectedEmailId);
         const emailData = await getEmailById(selectedEmailId, userEmail, session);
@@ -181,7 +224,7 @@ Body: ${emailData.body || emailData.snippet}
       }
     }
     // Otherwise, handle general email queries by searching
-    else if (userEmail && detectedIsEmailQuery) {
+    else if (userEmail && detectedIsEmailQuery && !emailContext) {
       try {
         const emailActionResult = await executeEmailAction(message, userEmail, session);
         emailResult = emailActionResult;
@@ -195,11 +238,22 @@ Body: ${emailData.body || emailData.snippet}
     }
 
     // Generate AI response with full context
-    const response = await arcusAI.generateResponse(message, {
+    // If mission is done or waiting, Arcus should summarize the mission status
+    let aiPrompt = message;
+    if (mission) {
+      aiPrompt = `The user goal is: "${mission.goal}". 
+      Current status: ${mission.status}. 
+      Last action taken: ${missionResult?.process?.label || 'none'}.
+      Original message: "${message}"
+      
+      Please provide a clean confirmation reply. If a draft was created or a meeting scheduled, include the details. Confirm what was done and ask what's next.`;
+    }
+
+    const response = await arcusAI.generateResponse(aiPrompt, {
       conversationHistory,
       emailContext,
       integrations,
-      subscriptionInfo, // Pass subscription info so Arcus knows user's plan
+      subscriptionInfo,
       userEmail,
       userName,
       privacyMode
@@ -226,10 +280,12 @@ Body: ${emailData.body || emailData.snippet}
       timestamp: new Date().toISOString(),
       conversationId: currentConversationId,
       aiGenerated: true,
-      actionType: actionType, // Use the detected action type (email, notes, or general)
+      actionType: actionType,
       emailResult,
       notesResult,
-      integrations // Include integration status in response
+      integrations,
+      activeMission: mission,
+      missionProcess: missionProcess
     });
 
   } catch (error) {

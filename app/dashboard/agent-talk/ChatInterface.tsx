@@ -166,6 +166,7 @@ export default function ChatInterface({
   const [notesResults, setNotesResults] = useState<any[]>([]);
 
   // Arcus Agentic Process State
+  const [activeMission, setActiveMission] = useState<any>(null);
   const [activeProcess, setActiveProcess] = useState<{
     thinking?: { content: string; isExpanded: boolean; isActive: boolean };
     searching?: { content: string; isExpanded: boolean; isActive: boolean };
@@ -409,7 +410,8 @@ export default function ChatInterface({
         isNewConversation: isNew,
         gmailAccessToken,
         isNotesQuery: notesQuery,
-        notesSearchQuery: extractedQuery
+        notesSearchQuery: extractedQuery,
+        activeMission
       };
 
       const response = await fetch('/api/agent-talk/chat-arcus', {
@@ -439,19 +441,49 @@ export default function ChatInterface({
 
       const data = await response.json();
 
-      // Update execution to final state before clearing
-      setActiveProcess(prev => ({
-        ...prev,
-        executing: {
-          steps: [
-            { text: "Collected all required information", done: true },
-            { text: "Synthesizing final response", done: true },
-            { text: "Verifying facts and links", done: true }
-          ],
-          isExpanded: false,
-          isActive: false
-        }
-      }));
+      // Update Mission State
+      if (data.activeMission) {
+        setActiveMission(data.activeMission);
+      }
+
+      // Ground the indicators in real data if available
+      if (data.missionProcess) {
+        const proc = data.missionProcess;
+        setActiveProcess({
+          thinking: {
+            content: proc.thoughts?.[0]?.text || 'Analyzed goal and context.',
+            isExpanded: false,
+            isActive: false
+          },
+          searching: proc.steps.some((s: any) => s.actionType === 'search_email') ? {
+            content: proc.steps.find((s: any) => s.actionType === 'search_email')?.result?.query || 'Searched Gmail context.',
+            isExpanded: false,
+            isActive: false
+          } : undefined,
+          executing: {
+            steps: proc.steps.map((s: any) => ({
+              text: s.label,
+              done: s.status === 'done'
+            })),
+            isExpanded: false,
+            isActive: false
+          }
+        });
+      } else {
+        // Fallback for general chat completions
+        setActiveProcess(prev => ({
+          ...prev,
+          executing: {
+            steps: [
+              { text: "Collected all required information", done: true },
+              { text: "Synthesizing final response", done: true },
+              { text: "Verifying facts and links", done: true }
+            ],
+            isExpanded: false,
+            isActive: false
+          }
+        }));
+      }
 
       await refreshArcusCredits(true);
 
