@@ -1251,7 +1251,10 @@ export default function ChatInterface({
 
                     <div className="mb-8">
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                        <div className="group bg-[#0a0a0a] backdrop-blur-md border border-[#1a1a1a] rounded-xl p-4 shadow-lg hover:border-[#2a2a2a] hover:bg-[#151515] transition-all duration-300 cursor-pointer">
+                        <div
+                          className="group bg-[#0a0a0a] backdrop-blur-md border border-[#1a1a1a] rounded-xl p-4 shadow-lg hover:border-[#2a2a2a] hover:bg-[#151515] transition-all duration-300 cursor-pointer"
+                          onClick={() => handleSend("Catch me up on my recent emails and highlight what I missed.")}
+                        >
                           <div className="flex items-center gap-3 mb-3">
                             <div className="bg-blue-500/20 rounded-lg p-2">
                               <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1263,7 +1266,10 @@ export default function ChatInterface({
                           <p className="text-white/60 text-sm leading-relaxed font-sans">Summarize threads and highlight what you missed.</p>
                         </div>
 
-                        <div className="group bg-[#0a0a0a] backdrop-blur-md border border-[#1a1a1a] rounded-xl p-4 shadow-lg hover:border-[#2a2a2a] hover:bg-[#151515] transition-all duration-300 cursor-pointer">
+                        <div
+                          className="group bg-[#0a0a0a] backdrop-blur-md border border-[#1a1a1a] rounded-xl p-4 shadow-lg hover:border-[#2a2a2a] hover:bg-[#151515] transition-all duration-300 cursor-pointer"
+                          onClick={() => handleSend("Help me schedule a meeting.")}
+                        >
                           <div className="flex items-center gap-3 mb-2">
                             <div className="bg-green-500/20 rounded-lg p-2">
                               <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1275,7 +1281,10 @@ export default function ChatInterface({
                           <p className="text-white/60 text-xs leading-relaxed font-sans">Automatically schedule meetings or email deliveries via Google Calendar and Meet.</p>
                         </div>
 
-                        <div className="group bg-[#0a0a0a] backdrop-blur-md border border-[#1a1a1a] rounded-xl p-4 shadow-lg hover:border-[#2a2a2a] hover:bg-[#151515] transition-all duration-300 cursor-pointer">
+                        <div
+                          className="group bg-[#0a0a0a] backdrop-blur-md border border-[#1a1a1a] rounded-xl p-4 shadow-lg hover:border-[#2a2a2a] hover:bg-[#151515] transition-all duration-300 cursor-pointer"
+                          onClick={() => handleSend("Show me my email analytics and activity insights.")}
+                        >
                           <div className="flex items-center gap-3 mb-2">
                             <div className="bg-orange-500/20 rounded-lg p-2">
                               <svg className="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1287,7 +1296,10 @@ export default function ChatInterface({
                           <p className="text-white/60 text-xs leading-relaxed font-sans">Track performance metrics and uncover insights from your email activity.</p>
                         </div>
 
-                        <div className="group bg-[#0a0a0a] backdrop-blur-md border border-[#1a1a1a] rounded-xl p-4 shadow-lg hover:border-[#2a2a2a] hover:bg-[#151515] transition-all duration-300 cursor-pointer">
+                        <div
+                          className="group bg-[#0a0a0a] backdrop-blur-md border border-[#1a1a1a] rounded-xl p-4 shadow-lg hover:border-[#2a2a2a] hover:bg-[#151515] transition-all duration-300 cursor-pointer"
+                          onClick={() => handleSend("Help me draft a reply to my latest thread.")}
+                        >
                           <div className="flex items-center gap-3 mb-2">
                             <div className="bg-purple-500/20 rounded-lg p-2">
                               <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

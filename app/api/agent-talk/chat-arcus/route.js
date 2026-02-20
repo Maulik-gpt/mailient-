@@ -146,8 +146,8 @@ export async function POST(request) {
     let missionResult = null;
     let missionProcess = null;
 
-    // 1. Detect if we should start a new mission if no active one exists
-    if (!mission && userEmail && !isNotesQuery) {
+    // 1. Detect if we should start a new mission if no active one exists (or previous one is done)
+    if ((!mission || mission.status === 'done') && userEmail && !isNotesQuery) {
       try {
         const detection = await arcusAI.detectMissionGoal(message, conversationHistory);
         if (detection.isMission) {
@@ -532,6 +532,9 @@ async function executeEmailAction(userMessage, userEmail, session) {
       query = 'in:sent newer_than:7d';
     } else if (lowerMessage.includes('today')) {
       query = 'newer_than:1d';
+    } else if (lowerMessage.includes('analytics') || lowerMessage.includes('insights')) {
+      query = 'newer_than:30d';
+      maxResults = 20;
     }
 
     const fromMatch = userMessage.match(/from\s+([^\s,]+)/i);
