@@ -169,9 +169,9 @@ export default function ChatInterface({
   // Arcus Agentic Process State
   const [activeMission, setActiveMission] = useState<any>(null);
   const [activeProcess, setActiveProcess] = useState<{
-    thinking?: { content: string; isExpanded: boolean; isActive: boolean };
-    searching?: { content: string; isExpanded: boolean; isActive: boolean };
-    executing?: { steps: { text: string; done: boolean }[]; isExpanded: boolean; isActive: boolean };
+    thinking?: { label: string; content: string; isExpanded: boolean; isActive: boolean };
+    searching?: { label: string; content: string; isExpanded: boolean; isActive: boolean };
+    executing?: { label: string; steps: { text: string; done: boolean }[]; isExpanded: boolean; isActive: boolean };
   } | null>(null);
   const [pendingReplyProposal, setPendingReplyProposal] = useState<any>(null);
 
@@ -357,7 +357,8 @@ export default function ChatInterface({
       // Show a single Thinking indicator — this is the ONLY pre-API indicator
       setActiveProcess({
         thinking: {
-          content: "Thinking...",
+          label: "Analyzing request...",
+          content: "Engaging intelligence engine and preparing mission steps...",
           isExpanded: false,
           isActive: true
         }
@@ -413,24 +414,27 @@ export default function ChatInterface({
 
         setActiveProcess({
           thinking: {
-            content: proc.thoughts?.[0]?.text || 'Analyzed goal and context.',
+            label: proc.phase === 'thinking' ? proc.label : 'Thinking',
+            content: proc.thoughts?.[proc.thoughts.length - 1]?.text || 'Analyzed goal and context.',
             isExpanded: false,
-            isActive: false
+            isActive: proc.phase === 'thinking'
           },
           searching: searchStep ? {
+            label: proc.phase === 'searching' ? proc.label : (searchStep.label || 'Searching'),
             content: searchResult?.count > 0
               ? `Found ${searchResult.count} threads for query: "${searchResult.query}"`
               : `No results for: "${searchResult?.query || 'search'}"`,
             isExpanded: false,
-            isActive: false
+            isActive: proc.phase === 'searching'
           } : undefined,
           executing: {
+            label: proc.phase === 'executing' ? proc.label : 'Executing',
             steps: proc.steps.map((s: any) => ({
               text: s.label,
               done: s.status === 'done'
             })),
             isExpanded: true,
-            isActive: false
+            isActive: proc.phase === 'executing'
           }
         });
 
@@ -1474,7 +1478,7 @@ export default function ChatInterface({
                         <div className="flex-1 space-y-1 pt-1">
                           {activeProcess.thinking && (
                             <ProcessIndicator
-                              label="Thinking..."
+                              label={activeProcess.thinking.label}
                               content={activeProcess.thinking.content}
                               isExpanded={activeProcess.thinking.isExpanded}
                               isActive={activeProcess.thinking.isActive}
@@ -1486,7 +1490,7 @@ export default function ChatInterface({
                           )}
                           {activeProcess.searching && (
                             <ProcessIndicator
-                              label="Searching..."
+                              label={activeProcess.searching.label}
                               content={activeProcess.searching.content}
                               isExpanded={activeProcess.searching.isExpanded}
                               isActive={activeProcess.searching.isActive}
@@ -1498,7 +1502,7 @@ export default function ChatInterface({
                           )}
                           {activeProcess.executing && (
                             <ProcessIndicator
-                              label="Executing..."
+                              label={activeProcess.executing.label}
                               isExpanded={activeProcess.executing.isExpanded}
                               isActive={activeProcess.executing.isActive}
                               onToggle={() => setActiveProcess(prev => ({
