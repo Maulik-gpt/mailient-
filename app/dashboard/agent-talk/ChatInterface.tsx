@@ -43,113 +43,6 @@ const linkify = (text: string): string => {
   });
 };
 
-const AgentTransparencyPanel = ({
-  expanded,
-  onToggle,
-  isThinking,
-  label,
-  process,
-  planCard,
-  mission,
-}: {
-  expanded: boolean;
-  onToggle: () => void;
-  isThinking: boolean;
-  label?: string | null;
-  process?: any;
-  planCard?: any;
-  mission?: any;
-}) => {
-  const thoughts: any[] = Array.isArray(process?.thoughts) ? process.thoughts : [];
-  const steps: any[] = Array.isArray(mission?.steps) ? mission.steps : [];
-  const hasPlan = !!planCard;
-  const hasTodos = steps.length > 0;
-  const hasThinkingText = thoughts.length > 0;
-
-  return (
-    <div className="ml-14 mb-2 max-w-xl">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="w-full flex items-center gap-2 text-left px-3 py-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors"
-      >
-        <span className="text-white/70">
-          {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-        </span>
-        <span className="text-white/80 text-sm font-medium">
-          {isThinking ? (label || 'Thinking...') : (label || 'Working...')}
-        </span>
-        {isThinking && (
-          <span className="ml-auto text-white/50 text-xs">thinking…</span>
-        )}
-      </button>
-
-      {expanded && (
-        <div className="mt-2 rounded-xl border border-white/10 bg-black/40 backdrop-blur-md px-4 py-3 space-y-4">
-          {(isThinking || hasThinkingText) && (
-            <div>
-              <div className="text-white/60 text-xs font-medium mb-2">Thinking</div>
-              {hasThinkingText ? (
-                <div className="space-y-2">
-                  {thoughts.slice(-8).map((t) => (
-                    <div key={t.id || t.timestamp} className="text-white/80 text-sm leading-relaxed">
-                      {t.text}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-white/70 text-sm">{isThinking ? 'Working through the next step…' : 'No thinking trace available.'}</div>
-              )}
-            </div>
-          )}
-
-          {hasPlan && (
-            <div>
-              <div className="text-white/60 text-xs font-medium mb-2">Plan</div>
-              <div className="text-white/85 text-sm">
-                {planCard.subject ? <div className="mb-1"><span className="text-white/50">Subject:</span> {planCard.subject}</div> : null}
-                {Array.isArray(planCard.questionsForUser) && planCard.questionsForUser.length > 0 ? (
-                  <div className="mt-2">
-                    <div className="text-white/50 text-xs mb-1">Needs your confirmation</div>
-                    <div className="space-y-1">
-                      {planCard.questionsForUser.slice(0, 5).map((q: string, idx: number) => (
-                        <div key={idx} className="text-white/80 text-sm">{q}</div>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          )}
-
-          {hasTodos && (
-            <div>
-              <div className="text-white/60 text-xs font-medium mb-2">To-do</div>
-              <div className="space-y-2">
-                {steps.map((s) => {
-                  const done = s?.status === 'done';
-                  return (
-                    <div key={s.id} className="flex items-start gap-2">
-                      {done ? (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5" />
-                      ) : (
-                        <Circle className="w-4 h-4 text-white/40 mt-0.5" />
-                      )}
-                      <div className="text-white/80 text-sm leading-relaxed">
-                        {s.label || s.actionType}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-};
-
 // Rich markdown renderer for AI messages
 const renderMarkdown = (text: string): string => {
   if (!text) return text;
@@ -271,19 +164,6 @@ export default function ChatInterface({
   const [notesSearchQuery, setNotesSearchQuery] = useState<string>('');
   const [showNotesFetching, setShowNotesFetching] = useState<boolean>(false);
   const [notesResults, setNotesResults] = useState<any[]>([]);
-  const [actionStatus, setActionStatus] = useState<'planning' | 'processing' | 'running' | 'done' | null>(null);
-  const [activeSearchLabel, setActiveSearchLabel] = useState<string | null>(null);
-
-  const [traceExpanded, setTraceExpanded] = useState<boolean>(false);
-  const [agentTrace, setAgentTrace] = useState<{
-    process?: any;
-    planCard?: any;
-    mission?: any;
-    phase?: string;
-    label?: string;
-    updatedAt: number;
-  } | null>(null);
-
   // Subscription state - to hide upgrade button for Pro users
   const [currentPlan, setCurrentPlan] = useState<'free' | 'starter' | 'pro' | 'none' | null>(null);
 
@@ -389,17 +269,6 @@ export default function ChatInterface({
     fetchAndActivateSubscription();
   }, []);
 
-  // Draft reply state
-  const [currentDraftData, setCurrentDraftData] = useState<{
-    content: string;
-    recipientName: string;
-    recipientEmail: string;
-    senderName: string;
-    originalEmailId?: string;
-    threadId?: string;
-    messageId?: string;
-    subject: string;
-  } | null>(null);
   const [showDraftBox, setShowDraftBox] = useState<boolean>(false);
 
   // Integration status
@@ -460,35 +329,17 @@ export default function ChatInterface({
   };
 
   const processAIMessage = async (messageText: string, conversationIdToUse: string, isNew: boolean) => {
-    let actionTriggered = false;
-    let statusTimeout: any = null;
-
     try {
       setIsLoading(true);
-
       const notesQuery = isNotesRelatedQuery(messageText);
-      const emailQuery = isEmailRelatedQuery(messageText);
       setIsNotesQuery(notesQuery);
-
-      if (notesQuery || emailQuery) {
-        setActiveSearchLabel('Searching...');
-      }
 
       let extractedQuery = '';
       if (notesQuery) {
-        actionTriggered = true;
-        setActionStatus('planning');
         extractedQuery = extractSearchTerm(messageText);
         setNotesSearchQuery(extractedQuery);
         setShowNotesFetching(true);
         setNotesResults([]);
-
-        // Simulate planning phase
-        statusTimeout = setTimeout(() => setActionStatus('processing'), 1500);
-      } else if (isSchedulingRequest(messageText) || /^(yes|yeah|yep|correct|do it|confirm|proceed|ok|okay|sure|that works|go ahead)$/i.test(messageText.trim())) {
-        actionTriggered = true;
-        setActionStatus('planning');
-        statusTimeout = setTimeout(() => setActionStatus('processing'), 1000);
       }
 
       const requestBody = {
@@ -538,12 +389,6 @@ export default function ChatInterface({
         setIntegrations(data.integrations);
       }
 
-      if (data.draftData && data.actionType === 'draft_reply') {
-        setCurrentDraftData(data.draftData);
-        setShowDraftBox(true);
-        console.log('Draft data received:', data.draftData);
-      }
-
       const agentMessage: AgentMessage = {
         id: Date.now() + 1,
         type: 'agent',
@@ -556,10 +401,7 @@ export default function ChatInterface({
         meta: {
           actionType: data.actionType,
           notesResult: data.notesResult,
-          emailResult: data.emailResult,
-          mission: data.mission || null,
-          planCard: data.planCard || null,
-          agentProcess: data.agentProcess || null
+          emailResult: data.emailResult
         }
       };
 
@@ -630,10 +472,7 @@ export default function ChatInterface({
         existingTitle = messageText.trim().split(' ').slice(0, 5).join(' ');
       }
 
-      // Build the updated messages list - use current messages state
-      // Note: We need to access the current messages state synchronously
-      // The messages already include all prior messages + the new user message we added in handleSend
-      // Now we need to add the agent message
+      // Build the updated messages list
       const userMessage: UserMessage = {
         id: Date.now() - 1,
         type: 'user',
@@ -659,7 +498,7 @@ export default function ChatInterface({
       const finalConversationData = {
         id: conversationIdToUse,
         messages: uniqueMessages,
-        title: existingTitle, // Use AI-generated title or preserved original
+        title: existingTitle,
         lastUpdated: new Date().toISOString(),
         messageCount: uniqueMessages.length
       };
@@ -687,32 +526,10 @@ export default function ChatInterface({
       setMessages(prev => [...prev, errorAgentMessage]);
     } finally {
       setIsLoading(false);
-      setActiveSearchLabel(null);
       setShowNotesFetching(false);
-      if (statusTimeout) clearTimeout(statusTimeout);
-
-      if (actionTriggered) {
-        setActionStatus('done');
-        setTimeout(() => setActionStatus(null), 3000);
-      }
       setTimeout(() => scrollToBottom(true), 100);
     }
   };
-
-  useEffect(() => {
-    if (!agentTrace) return;
-
-    const steps: any[] = Array.isArray(agentTrace.mission?.steps) ? agentTrace.mission.steps : [];
-    const isMissionDone = steps.length > 0 && steps.every((s) => s?.status === 'done');
-    if (!isMissionDone) return;
-
-    const t = setTimeout(() => {
-      setAgentTrace(null);
-      setTraceExpanded(false);
-    }, 3500);
-
-    return () => clearTimeout(t);
-  }, [agentTrace]);
 
   const loadConversation = (conversationId: string) => {
     console.log('DEBUG: loadConversation called with:', conversationId);
@@ -1395,18 +1212,7 @@ export default function ChatInterface({
               /* Conversation Interface */
               <>
                 <div className="flex-1 overflow-y-auto px-6 py-8 min-h-0 transition-all duration-300">
-                <div className="max-w-3xl mx-auto space-y-8">
-                    {(isLoading || agentTrace) && (
-                      <AgentTransparencyPanel
-                        expanded={traceExpanded}
-                        onToggle={() => setTraceExpanded((v) => !v)}
-                        isThinking={isLoading}
-                        label={activeSearchLabel ? activeSearchLabel : agentTrace?.label}
-                        process={agentTrace?.process}
-                        planCard={agentTrace?.planCard}
-                        mission={agentTrace?.mission}
-                      />
-                    )}
+                  <div className="max-w-3xl mx-auto space-y-8">
                     {messages.map((msg) => (
                       <div key={msg.id} className={`flex items-start gap-4 ${newMessageIds.has(msg.id) ? 'animate-fade-in' : ''}`}>
                         {msg.type === 'agent' && (
@@ -1503,35 +1309,6 @@ export default function ChatInterface({
                         )}
                       </div>
                     ))}
-                    {isLoading && (
-                      <div className="flex items-start gap-4 animate-fade-in">
-                        <div className="flex-shrink-0 mt-1">
-                          <div className="bg-neutral-800 rounded-full w-11 h-11 flex items-center justify-center backdrop-blur-sm border border-white/10 shadow-lg overflow-hidden">
-                            <img src="/arcus-ai-icon.jpg" alt="Arcus AI" className="w-full h-full object-cover" />
-                          </div>
-                        </div>
-                        <div className="flex-1">
-                          <ShiningText
-                            text={activeSearchLabel ? activeSearchLabel : 'Arcus is thinking...'}
-                            className="text-sm relative top-1"
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Notes Fetching Display */}
-                    {showNotesFetching && (
-                      <NotesFetchingDisplay
-                        searchQuery={notesSearchQuery}
-                        isVisible={showNotesFetching}
-                      />
-                    )}
-
-                    {/* Agent Action Status */}
-                    {actionStatus && (
-                      <AgentActionStatus status={actionStatus} />
-                    )}
-
                     <div ref={messagesEndRef} />
                   </div>
                 </div>
@@ -1540,7 +1317,7 @@ export default function ChatInterface({
                 <div className="sticky bottom-0 z-20 w-full px-6 pb-12 mt-auto pointer-events-none">
                   {/* Progressive blur overlay */}
                   <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none" />
-              <div className="max-w-3xl mx-auto relative z-10 pointer-events-auto">
+                  <div className="max-w-3xl mx-auto relative z-10 pointer-events-auto">
                     <ChatInput
                       onSendMessage={(msg) => {
                         handleSend(msg);
@@ -1585,59 +1362,6 @@ export default function ChatInterface({
         initialPersonality={savedPersonality}
       />
 
-      {/* Draft Reply Box */}
-      {showDraftBox && currentDraftData && (
-        <div className="fixed bottom-24 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-2xl px-4">
-          <DraftReplyBox
-            draftData={currentDraftData}
-            isVisible={showDraftBox}
-            onDismiss={() => {
-              setShowDraftBox(false);
-              setCurrentDraftData(null);
-            }}
-            onSendReply={async (replyData) => {
-              try {
-                const response = await fetch('/api/agent-talk/send-reply', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    to: replyData.recipientEmail,
-                    subject: replyData.subject,
-                    content: replyData.content,
-                    threadId: currentDraftData.threadId,
-                    replyToMessageId: currentDraftData.messageId
-                  })
-                });
-
-                if (!response.ok) {
-                  const errorData = await response.json();
-                  throw new Error(errorData.error || 'Failed to send email');
-                }
-
-                const result = await response.json();
-                console.log('Email sent successfully:', result);
-
-                // Add confirmation message to chat
-                const successMessage: AgentMessage = {
-                  id: Date.now(),
-                  type: 'agent',
-                  content: {
-                    text: `Your reply is ready to send to ${currentDraftData.recipientName}. Please review it and hit Send in Gmail.`,
-                    list: [],
-                    footer: ''
-                  },
-                  time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true })
-                };
-                setMessages(prev => [...prev, successMessage]);
-
-              } catch (error) {
-                console.error('Failed to send reply:', error);
-                throw error;
-              }
-            }}
-          />
-        </div>
-      )}
       <style jsx global>{`
         @keyframes arcus-dot-pulse {
           0% { transform: scale(0.7); opacity: 0.8; }
@@ -1649,53 +1373,7 @@ export default function ChatInterface({
   );
 }
 
-const AgentActionStatus = ({ status }: { status: 'planning' | 'processing' | 'running' | 'done' }) => {
-  const getStatusInfo = () => {
-    switch (status) {
-      case 'planning':
-        return {
-          icon: <History className="w-4 h-4 text-blue-400 animate-spin" />,
-          text: 'Setting up...',
-          color: 'bg-blue-500/10 border-blue-500/20 text-blue-400'
-        };
-      case 'processing':
-        return {
-          icon: <Settings className="w-4 h-4 text-purple-400 animate-spin" />,
-          text: 'Working on it...',
-          color: 'bg-purple-500/10 border-purple-500/20 text-purple-400'
-        };
-      case 'running':
-        return {
-          icon: <Settings className="w-4 h-4 text-purple-400 animate-spin" />,
-          text: 'Running...',
-          color: 'bg-purple-500/10 border-purple-500/20 text-purple-400'
-        };
-      case 'done':
-        return {
-          icon: <Bell className="w-4 h-4 text-emerald-400" />,
-          text: 'Action complete',
-          color: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-        };
-      default:
-        return null;
-    }
-  };
 
-  const info = getStatusInfo();
-  if (!info) return null;
-
-  return (
-    <div className={`flex items-center gap-3 px-4 py-2 rounded-xl border ${info.color} backdrop-blur-md animate-in fade-in slide-in-from-bottom-2 duration-300 mb-4 ml-14 max-w-xs`}>
-      {info.icon}
-      <span className="text-sm font-medium font-sans tracking-wide">{info.text}</span>
-    </div>
-  );
-};
-
-const isSchedulingRequest = (message: string) => {
-  const keywords = ['schedule', 'meeting', 'calendar', 'meet', 'call', 'appointment', 'event'];
-  return keywords.some(k => message.toLowerCase().includes(k));
-};
 
 /**
  * Helper functions for notes detection and search

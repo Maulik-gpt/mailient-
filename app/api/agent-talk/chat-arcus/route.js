@@ -139,186 +139,27 @@ export async function POST(request) {
     // Initialize Arcus AI
     const arcusAI = new ArcusAIService();
 
-    // --- Arcus Missions: multi-step Goal Inbox ---
-    const missionService = userEmail ? new ArcusMissionService(userEmail) : null;
-    const isProceedRequest = /^(proceed|continue|next step|do it|go ahead|okay|ok|sure|yes|do that)$/i.test(
-      message.trim()
-    );
+    // --- CONTEXT SEARCH (Knows all your emails) ---
 
-    // 1) Continue existing mission when user says "proceed"
-    if (userEmail && missionService && activeMission && isProceedRequest) {
-      try {
-        const { mission, result, error, process, planCard } = await missionService.executeNextStep(
-          activeMission,
-          {
-            userPreferences: {
-              name: userName,
-            },
-          }
-        );
-
-        let responseMsg = `Progressing with your mission: **${mission.goal}**.`;
-        if (process?.label) {
-          responseMsg += `\n\nNow working on: **${process.label}**`;
-        }
-
-        if (userEmail) {
-          await saveConversation(userEmail, message, responseMsg, currentConversationId, db);
-        }
-
-        return NextResponse.json({
-          message: responseMsg,
-          timestamp: new Date().toISOString(),
-          conversationId: currentConversationId,
-          aiGenerated: true,
-          actionType: 'mission',
-          mission,
-          agentProcess: process,
-          planCard: planCard || null,
-          integrations,
-        });
-      } catch (err) {
-        console.error('Mission continuation failed:', err);
-      }
-    }
-
-    // 2) Start a new mission for complex, multi-step requests
-    if (userEmail && missionService && isComplexRequest(message)) {
-      try {
-        const mission = await missionService.createMission(message, currentConversationId);
-        const { mission: updatedMission, result, error, process, planCard } =
-          await missionService.executeNextStep(mission, {
-            userPreferences: { name: userName },
-          });
-
-        let responseMsg = `I've set up a mission to handle this: **${updatedMission.goal}**.\n\nI'm starting with the first step now.`;
-        if (process?.label) {
-          responseMsg += ` Current task: **${process.label}**`;
-        }
-
-        if (userEmail) {
-          await saveConversation(userEmail, message, responseMsg, currentConversationId, db);
-        }
-
-        return NextResponse.json({
-          message: responseMsg,
-          timestamp: new Date().toISOString(),
-          conversationId: currentConversationId,
-          aiGenerated: true,
-          actionType: 'mission',
-          mission: updatedMission,
-          agentProcess: process,
-          planCard: planCard || null,
-          integrations,
-        });
-      } catch (err) {
-        console.error('Mission creation failed:', err);
-      }
-    }
-
-    // --- STANDARD INTENT PARSING ---
-
-    const draftIntent = arcusAI.parseDraftIntent(message);
-    const schedulingIntent = arcusAI.parseSchedulingIntent(message);
-
-    // Handle drafting request
-    if (draftIntent.isDraftRequest || draftReplyRequest) {
-      const draftResult = await handleDraftRequest(
-        message,
-        draftIntent,
-        selectedEmailId,
-        userEmail,
-        userName,
-        session,
-        db,
-        arcusAI,
-        integrations,
-        conversationHistory,
-        privacyMode
-      );
-
-      // Save conversation
-      if (userEmail) {
-        await saveConversation(userEmail, message, draftResult.message, currentConversationId, db);
-      }
-
-      return NextResponse.json({
-        message: draftResult.message,
-        timestamp: new Date().toISOString(),
-        conversationId: currentConversationId,
-        aiGenerated: true,
-        actionType: 'draft_reply',
-        draftData: draftResult.draftData || null
-      });
-    }
-
-    // Handle scheduling request
-    if (schedulingIntent.isSchedulingRequest) {
-      const schedulingResult = await handleSchedulingRequest(
-        message,
-        schedulingIntent,
-        userEmail,
-        userName,
-        session,
-        db,
-        arcusAI,
-        integrations,
-        conversationHistory,
-        privacyMode,
-        emailContext
-      );
-
-      // Save conversation
-      if (userEmail) {
-        await saveConversation(userEmail, message, schedulingResult.message, currentConversationId, db);
-      }
-
-      return NextResponse.json({
-        message: schedulingResult.message,
-        timestamp: new Date().toISOString(),
-        conversationId: currentConversationId,
-        aiGenerated: true,
-        actionType: 'schedule_meeting',
-        schedulingData: schedulingResult.schedulingData || null
-      });
-    }
-
-    // Handle notes query
+    // Detect if this is an email or notes query to fetch relevant context
     const detectedIsNotesQuery = isNotesQuery !== undefined ? isNotesQuery : isNotesRelatedQuery(message);
+    const detectedIsEmailQuery = isEmailRelatedQuery(message);
+
+    let emailContext = null;
+    let emailResult = null;
+    let notesResult = null;
+    let actionType = 'general';
+
+    // Handle notes context
     if (detectedIsNotesQuery && userEmail) {
       try {
-        const notesResult = await executeNotesAction(message, userEmail, notesSearchQuery);
-        const notesContext = formatNotesActionResult(notesResult);
-
-        const response = await arcusAI.generateResponse(message, {
-          conversationHistory,
-          emailContext: notesContext,
-          integrations,
-          userEmail,
-          userName,
-          privacyMode
-        });
-
-        if (userEmail) {
-          await saveConversation(userEmail, message, response, currentConversationId, db);
-        }
-
-        return NextResponse.json({
-          message: response,
-          timestamp: new Date().toISOString(),
-          conversationId: currentConversationId,
-          aiGenerated: true,
-          actionType: 'notes',
-          notesResult
-        });
+        notesResult = await executeNotesAction(message, userEmail, notesSearchQuery);
+        emailContext = formatNotesActionResult(notesResult);
+        actionType = 'notes';
       } catch (error) {
         console.error('Notes action failed:', error);
       }
     }
-
-    // Handle email context
-    let emailContext = null;
-    let emailResult = null;
 
     // IF a specific email is selected (from the Traditional View "Ask AI" button)
     if (selectedEmailId && userEmail) {
@@ -333,18 +174,20 @@ Subject: ${emailData.subject}
 Date: ${emailData.date}
 Body: ${emailData.body || emailData.snippet}
 ============================`;
+          actionType = 'email';
         }
       } catch (error) {
         console.error('Error fetching selected email context:', error);
       }
     }
     // Otherwise, handle general email queries by searching
-    else if (userEmail && isEmailRelatedQuery(message)) {
+    else if (userEmail && detectedIsEmailQuery) {
       try {
         const emailActionResult = await executeEmailAction(message, userEmail, session);
         emailResult = emailActionResult;
         if (emailActionResult && emailActionResult.success) {
           emailContext = formatEmailActionResult(emailActionResult);
+          actionType = 'email';
         }
       } catch (error) {
         console.error('Email action failed:', error);
@@ -357,17 +200,6 @@ Body: ${emailData.body || emailData.snippet}
       emailContext,
       integrations,
       subscriptionInfo, // Pass subscription info so Arcus knows user's plan
-      additionalContext: `
-- Understand and act upon **URGENCY, PRIORITY, and REVENUE IMPACT**
-- Remember past conversations and build on previous context
-
-## Current User Context
-
-- **User Email**: ${userEmail || 'Not signed in'}
-- **User Name**: ${userName}
-- **Gmail Access**: ${integrations.gmail ? '✅ Connected' : '❌ Not connected'}
-
-## 🧨 Hard Restrictions - Do Not Cross`,
       userEmail,
       userName,
       privacyMode
@@ -394,8 +226,9 @@ Body: ${emailData.body || emailData.snippet}
       timestamp: new Date().toISOString(),
       conversationId: currentConversationId,
       aiGenerated: true,
-      actionType: emailContext ? 'email' : 'general',
+      actionType: actionType, // Use the detected action type (email, notes, or general)
       emailResult,
+      notesResult,
       integrations // Include integration status in response
     });
 
@@ -468,158 +301,6 @@ async function getConversationHistory(userEmail, conversationId, db) {
   } catch (error) {
     console.error('Error fetching conversation history:', error);
     return [];
-  }
-}
-
-/**
- * Handle draft reply request
- */
-async function handleDraftRequest(
-  message,
-  draftIntent,
-  selectedEmailId,
-  userEmail,
-  userName,
-  session,
-  db,
-  arcusAI,
-  integrations,
-  conversationHistory,
-  privacyMode
-) {
-  try {
-    // Get email content to reply to
-    let emailContent = null;
-    let emailData = null;
-
-    if (selectedEmailId) {
-      emailData = await getEmailById(selectedEmailId, userEmail, session);
-      if (emailData) {
-        emailContent = formatEmailForDraft(emailData);
-      }
-    } else if (draftIntent.replyTo) {
-      // Search for email by sender name
-      emailData = await searchEmailBySender(draftIntent.replyTo, userEmail, session);
-      if (emailData) {
-        emailContent = formatEmailForDraft(emailData);
-      }
-    }
-
-    if (!emailContent) {
-      // Ask for clarification
-      return {
-        message: `I'd be happy to help you draft a reply! Could you tell me which email you'd like me to respond to? You can either:
-
-1. Select an email from your inbox using the email selector
-2. Tell me the sender's name (e.g., "draft a reply to John's email")
-3. Describe what the email was about
-
-Which would you prefer?`,
-        draftData: null
-      };
-    }
-
-    // Generate draft reply
-    const draftResult = await arcusAI.generateDraftReply(emailContent, {
-      userName,
-      userEmail,
-      replyInstructions: draftIntent.instructions || message,
-      conversationHistory,
-      privacyMode
-    });
-
-    const responseMessage = `I've drafted a reply for you. Here's what I came up with:
-
----
-
-${draftResult.draftContent}
-
----
-
-Feel free to edit this before sending. When you're ready, you can click "Send Reply" to deliver it to ${draftResult.recipientName}.`;
-
-    return {
-      message: responseMessage,
-      draftData: {
-        content: draftResult.draftContent,
-        recipientName: draftResult.recipientName,
-        recipientEmail: draftResult.recipientEmail,
-        senderName: draftResult.senderName,
-        originalEmailId: selectedEmailId || emailData?.id,
-        threadId: emailData?.threadId,
-        messageId: emailData?.messageId || emailData?.id,
-        subject: emailData?.subject ? `Re: ${emailData.subject.replace(/^Re:\s*/i, '')}` : 'Re: Your email'
-      }
-    };
-  } catch (error) {
-    console.error('Error handling draft request:', error);
-    return {
-      message: `I had trouble drafting that reply. Could you provide a bit more context about what you'd like to say? That will help me create a better draft for you.`,
-      draftData: null
-    };
-  }
-}
-
-/**
- * Handle scheduling request
- */
-async function handleSchedulingRequest(
-  message,
-  schedulingIntent,
-  userEmail,
-  userName,
-  session,
-  db,
-  arcusAI,
-  integrations,
-  conversationHistory,
-  privacyMode,
-  emailContext
-) {
-  try {
-    console.log('📅 Handling scheduling request:', schedulingIntent);
-
-    // Generate meeting details using AI
-    const meetingDetails = await arcusAI.generateMeetingDetails(
-      schedulingIntent.context,
-      emailContext || ''
-    );
-
-    console.log('✅ Generated meeting details:', meetingDetails);
-
-    // Build response with AI-generated details
-    const responseMessage = `I've set up the meeting details for you:
-
-**Meeting Title:** ${meetingDetails.suggested_title}
-**Objective:** ${meetingDetails.suggested_description}
-**Duration:** ${meetingDetails.suggested_duration} minutes
-
-${schedulingIntent.attendees.length > 0 ? `**Attendees:** ${schedulingIntent.attendees.join(', ')}` : ''}
-${schedulingIntent.date ? `**Date:** ${schedulingIntent.date}` : ''}
-${schedulingIntent.time ? `**Time:** ${schedulingIntent.time}` : ''}
-
-I can help you draft an email to send this invitation to the attendees. Would you like me to do that?`;
-
-    return {
-      message: responseMessage,
-      schedulingData: {
-        ...meetingDetails,
-        ...schedulingIntent,
-        status: 'details_generated'
-      }
-    };
-  } catch (error) {
-    console.error('Error handling scheduling request:', error);
-    return {
-      message: `I'd be happy to help you schedule a meeting! To get started, could you tell me:
-
-1. What the meeting is about
-2. Who should attend
-3. When you'd like to meet
-
-Once I have those details, I can suggest a great title and objective for the meeting.`,
-      schedulingData: null
-    };
   }
 }
 
@@ -829,30 +510,6 @@ async function executeEmailAction(userMessage, userEmail, session) {
   } catch (error) {
     return { error: error.message };
   }
-}
-
-/**
- * Check if request is complex/multi-step and should become a Mission
- */
-function isComplexRequest(message) {
-  const complexPatterns = [
-    /\bthen\b/i,
-    /\bafter\b/i,
-    /\bfirst\b.*\bsecond\b/i,
-    /\bfind\b.*\band\b/i,
-    /\bsearch\b.*\band\b/i,
-    /\bcheck\b.*\band\b/i,
-    /\bread\b.*\band\b/i,
-    /\blookup\b.*\band\b/i,
-    /\bplan\b/i,
-    /\bmission\b/i,
-    /\btasks?\b/i,
-    /\bsteps?\b/i,
-    /\bschedule\b.*\band\b/i,
-    /\bdraft\b.*\bafter\b/i
-  ];
-  const lower = message.toLowerCase();
-  return complexPatterns.some((p) => p.test(lower));
 }
 
 /**
