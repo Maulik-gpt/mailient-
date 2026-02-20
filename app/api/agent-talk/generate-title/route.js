@@ -57,8 +57,8 @@ export async function POST(request) {
             });
         }
 
-        // Use Gemini 2.0 Flash for fast, intelligent title generation
-        const model = 'google/gemini-2.0-flash-exp:free';
+        // Use Liquid Thinking for title generation as requested
+        const model = 'liquid/lfm-2.5-1.2b-thinking:free';
 
         const systemPrompt = `You are a chat title generator that creates SHORT, DESCRIPTIVE titles for conversations.
 
@@ -107,13 +107,7 @@ OUTPUT: Just the title, nothing else. No explanations, no quotes, no colons.`;
         if (!response.ok) {
             const errorText = await response.text();
             console.error('❌ OpenRouter title generation failed:', response.status, errorText);
-
-            // Fallback: Use first words of message
-            const fallbackTitle = message.trim().split(' ').slice(0, 5).join(' ');
-            return NextResponse.json({
-                title: fallbackTitle.length > 40 ? fallbackTitle.substring(0, 40) + '...' : fallbackTitle,
-                source: 'fallback'
-            });
+            throw new Error(`Title generation failed: ${response.status}`);
         }
 
         const data = await response.json();
