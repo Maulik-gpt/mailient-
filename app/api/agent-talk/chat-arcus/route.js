@@ -107,11 +107,12 @@ export async function POST(request) {
       }
     }
 
-    // Get user's privacy mode preference
+    // Get user's profile and privacy mode preference
+    let profile = null;
     let privacyMode = false;
     if (userEmail) {
       try {
-        const profile = await db.getUserProfile(userEmail);
+        profile = await db.getUserProfile(userEmail);
         if (profile?.preferences?.ai_privacy_mode === 'enabled') {
           privacyMode = true;
           console.log('🛡️ Arcus: AI Privacy Mode enabled');
@@ -238,22 +239,38 @@ Body: ${emailData.body || emailData.snippet}
     }
 
     // Generate AI response with full context
-    // If mission is done or waiting, Arcus should summarize the mission status
     let aiPrompt = message;
     if (mission) {
-      aiPrompt = `The user goal is: "${mission.goal}". 
-      Current status: ${mission.status}. 
-      Last action taken: ${missionResult?.process?.label || 'none'}.
-      Original message: "${message}"
-      
-      Please provide a clean confirmation reply. If a draft was created or a meeting scheduled, include the details. Confirm what was done and ask what's next.`;
+      const lastActions = mission.auditTrail?.slice(-3).map(a => `- ${a.action}: ${JSON.stringify(a.metadata || {})}`).join('\n') || 'none';
+      const lastResult = missionResult?.result;
+
+      aiPrompt = `USER GOAL: "${mission.goal}"
+CURRENT MISSION STATUS: ${mission.status}
+LAST ACTIONS COMPLETED:
+${lastActions}
+
+EXECUTION RESULT: ${JSON.stringify(lastResult || {})}
+
+YOUR TASK:
+1. Provide a clean, human confirmation of the above outcome.
+2. If searching, show the results briefly and ask for the next step.
+3. If executed (sent/booked), provide the facts (Recipients, Time, Link).
+4. If waiting for clarification or risk-flagged, ask the user naturally in chat.
+5. Keep it under 120 words. No AI fluff. No em dashes.
+
+Original message: "${message}"`;
     }
 
     const response = await arcusAI.generateResponse(aiPrompt, {
       conversationHistory,
       emailContext,
-      integrations,
-      subscriptionInfo,
+      integrations: {
+        gmail: !!gmailAccessToken,
+        calendar: !!gmailAccessToken,
+        'cal.com': !!profile?.integrations?.['cal.com'],
+        'cal.com_link': profile?.integrations?.['cal.com_link']
+      },
+      subscriptionInfo: subscriptionService.getPlanInfo(profile?.plan_type || 'none', profile?.subscription_end_date),
       userEmail,
       userName,
       privacyMode
