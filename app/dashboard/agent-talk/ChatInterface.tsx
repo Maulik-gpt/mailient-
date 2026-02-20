@@ -1322,6 +1322,7 @@ export default function ChatInterface({
               <>
                 <div className="flex-1 overflow-y-auto px-6 py-8 min-h-0 transition-all duration-300">
                   <div className="max-w-3xl mx-auto space-y-8">
+                    {activeMission && <MissionStatusHeader mission={activeMission} />}
                     {messages.map((msg) => (
                       <div key={msg.id} className={`flex items-start gap-4 ${newMessageIds.has(msg.id) ? 'animate-fade-in' : ''}`}>
                         {msg.type === 'agent' && (
@@ -1555,7 +1556,44 @@ export default function ChatInterface({
       `}</style>
     </TooltipProvider>
   );
-}
+};
+
+/**
+ * Mission Status Header Component
+ */
+const MissionStatusHeader = ({ mission }: { mission: any }) => {
+  if (!mission) return null;
+
+  const statusColors: any = {
+    draft: 'bg-white text-black',
+    waiting_on_user: 'bg-white text-black',
+    waiting_on_other: 'bg-neutral-700 text-white',
+    done: 'bg-neutral-800 text-white/60',
+    archived: 'bg-transparent border border-white/10 text-white/30'
+  };
+
+  const statusLabels: any = {
+    draft: 'Draft',
+    waiting_on_user: 'Waiting on you',
+    waiting_on_other: 'Waiting on them',
+    done: 'Done',
+    archived: 'Archived'
+  };
+
+  return (
+    <div className="flex items-center gap-3 px-4 py-2.5 bg-neutral-900/40 border border-white/5 rounded-xl w-fit mx-auto mb-10 backdrop-blur-md animate-fade-in">
+      <div className="flex items-center gap-2">
+        <span className="text-white/40 text-[10px] font-bold uppercase tracking-[0.2em]">Active Mission</span>
+        <span className="text-white/20">/</span>
+        <span className="text-white text-sm font-medium">{mission.goal}</span>
+      </div>
+      <div className="h-3 w-[1px] bg-white/10 mx-1" />
+      <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-tight ${statusColors[mission.status] || 'bg-white text-black'}`}>
+        {statusLabels[mission.status] || mission.status}
+      </span>
+    </div>
+  );
+};
 
 /**
  * Arcus Agentic Process Indicator Component
