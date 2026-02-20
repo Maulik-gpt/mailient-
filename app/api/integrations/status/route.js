@@ -39,8 +39,8 @@ export async function GET(request) {
     const tokenScopes = tokens?.scopes || '';
     const integrations = {
       gmail: !!tokens,
-      'google-calendar': false,
-      'google-meet': false
+      'google-calendar': tokenScopes.includes('calendar'),
+      'google-meet': tokenScopes.includes('calendar')
     };
 
     return Response.json({ integrations });

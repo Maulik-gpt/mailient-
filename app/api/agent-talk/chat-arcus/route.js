@@ -22,7 +22,8 @@ export async function POST(request) {
       notesSearchQuery,
       selectedEmailId,
       draftReplyRequest,
-      activeMission
+      activeMission,
+      approvalPayload
     } = await request.json();
 
     console.log('🚀 Arcus Chat request received:', message?.substring?.(0, 80));
@@ -152,7 +153,8 @@ export async function POST(request) {
         const detection = await arcusAI.detectMissionGoal(message, conversationHistory);
         if (detection.isMission) {
           console.log('🎯 Mission Detected:', detection.goal);
-          mission = await missionService.createMission(detection.goal, currentConversationId);
+          // Pass selectedEmailId (as threadId) to jumpstart if user is already looking at a relevant email
+          mission = await missionService.createMission(detection.goal, currentConversationId, selectedEmailId);
         }
       } catch (err) {
         console.warn('Mission detection failed:', err);
@@ -167,7 +169,8 @@ export async function POST(request) {
         missionResult = await missionService.executeMission(mission, {
           userPreferences: { name: userName },
           conversationHistory: conversationHistory.slice(-5),
-          threadId: mission.linkedThreadIds?.[0] || null
+          threadId: mission.linkedThreadIds?.[0] || null,
+          approvalPayload
         });
 
         // Update mission state from result
@@ -376,8 +379,8 @@ async function getIntegrationStatus(userEmail, db) {
 
     return {
       gmail: !!tokens,
-      'google-calendar': false,
-      'google-meet': false
+      'google-calendar': tokenScopes.includes('calendar'),
+      'google-meet': tokenScopes.includes('calendar')
     };
   } catch (error) {
     console.error('Error getting integration status:', error);
@@ -636,6 +639,27 @@ function formatEmailActionResult(result) {
   if (!result) return '';
   if (result.error) return `Email action issue: ${result.error}`;
 
+  // Handle Arcus Mission Results
+  if (result.type === 'reply_proposal') {
+    return `=== ARCUS REPLY PROPOSAL ===
+Recipient: ${result.recipientName} <${result.recipientEmail}>
+Subject: ${result.subject}
+Content: ${result.content}
+
+Action: I have successfully drafted the reply above. I am now showing it to the user for final approval before sending. If the user clicks 'Send' in the UI, I will execute the delivery.`;
+  }
+
+  if (result.type === 'clarification_required') {
+    return `=== ARCUS CLARIFICATION NEEDED ===
+I need the user to clarify the following before I can proceed:
+${(result.questions || []).map(q => `- ${q}`).join('\n')}
+
+Safety/Alert Flags:
+${(result.flags || []).map(f => `- ${f}`).join('\n')}
+
+Action: I am stopping execution to ask the user these specific questions.`;
+  }
+
   if (result.action === 'read_emails' && result.success) {
     let context = `=== EMAIL CONTEXT (${result.count} emails) ===\n\n`;
 
@@ -655,6 +679,11 @@ function formatEmailActionResult(result) {
       context += 'No emails found matching the query.';
     }
     return context;
+  }
+
+  if (result.messages) {
+    // Thread result
+    return `=== THREAD CONTENT ===\n${result.messages.map(m => `[${m.from}] (${m.date}): ${m.body}`).join('\n---\n')}`;
   }
 
   return JSON.stringify(result);

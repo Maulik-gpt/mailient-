@@ -173,6 +173,7 @@ export default function ChatInterface({
     searching?: { content: string; isExpanded: boolean; isActive: boolean };
     executing?: { steps: { text: string; done: boolean }[]; isExpanded: boolean; isActive: boolean };
   } | null>(null);
+  const [pendingReplyProposal, setPendingReplyProposal] = useState<any>(null);
 
   // Subscription state - to hide upgrade button for Pro users
   const [currentPlan, setCurrentPlan] = useState<'free' | 'starter' | 'pro' | 'none' | null>(null);
@@ -432,6 +433,12 @@ export default function ChatInterface({
             isActive: false
           }
         });
+
+        // Search for a reply proposal in the steps
+        const lastStep = proc.steps[proc.steps.length - 1];
+        if (lastStep?.result?.type === 'reply_proposal' && data.activeMission?.status === 'waiting_on_user') {
+          setPendingReplyProposal(lastStep.result);
+        }
       } else {
         // Non-mission chat: clear indicators entirely (no fake steps)
         setActiveProcess(null);
@@ -985,6 +992,55 @@ export default function ChatInterface({
     }
   };
 
+  const handleSendReply = async (draftData: any) => {
+    if (!currentConversationId || !activeMission) return;
+
+    try {
+      setIsLoading(true);
+      const res = await fetch('/api/agent-talk/chat-arcus', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: `APPROVED: Send this reply to ${draftData.recipientEmail}`, // This triggers the next step
+          conversationId: currentConversationId,
+          activeMission: activeMission,
+          approvalPayload: draftData // Pass the edited content back
+        })
+      });
+
+      if (!res.ok) throw new Error('Failed to send reply');
+
+      const data = await res.json();
+
+      // Update state with result
+      if (data.activeMission) setActiveMission(data.activeMission);
+
+      // Clear proposal
+      setPendingReplyProposal(null);
+
+      const agentMessage: AgentMessage = {
+        id: Date.now() + 1,
+        type: 'agent',
+        content: data.message,
+        time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+        meta: {
+          actionType: data.actionType,
+          emailResult: data.emailResult
+        }
+      };
+
+      setMessages(prev => [...prev, agentMessage]);
+      setNewMessageIds(prev => new Set(prev).add(agentMessage.id));
+
+    } catch (error) {
+      console.error('Error sending reply:', error);
+      toast.error('Failed to send reply');
+    } finally {
+      setIsLoading(false);
+      setTimeout(() => scrollToBottom(true), 100);
+    }
+  };
+
   const handleConversationDelete = (deletedConversationId: string) => {
     console.log('Conversation deleted:', deletedConversationId);
     console.log('Current conversation ID:', currentConversationId);
@@ -1272,6 +1328,23 @@ export default function ChatInterface({
                     </div>
 
                     <div className="relative">
+                      {pendingReplyProposal && (
+                        <div className="mb-4">
+                          <DraftReplyBox
+                            isVisible={!!pendingReplyProposal}
+                            draftData={{
+                              content: pendingReplyProposal.content,
+                              recipientName: pendingReplyProposal.recipientName,
+                              recipientEmail: pendingReplyProposal.recipientEmail,
+                              senderName: 'Me',
+                              subject: pendingReplyProposal.subject,
+                              threadId: pendingReplyProposal.threadId
+                            }}
+                            onSendReply={handleSendReply}
+                            onDismiss={() => setPendingReplyProposal(null)}
+                          />
+                        </div>
+                      )}
                       <ChatInput
                         onSendMessage={(msg) => {
                           handleSend(msg);
