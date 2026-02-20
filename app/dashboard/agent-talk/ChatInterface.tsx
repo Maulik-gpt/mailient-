@@ -1242,7 +1242,7 @@ export default function ChatInterface({
               /* Initial Interface */
               <div className="flex-1 overflow-y-auto transition-all duration-300">
                 <div className="h-full flex items-center justify-center px-6">
-                  <div className="w-full max-w-4xl mx-auto">
+                  <div className="w-full max-w-3xl mx-auto">
                     <div className="text-center mb-8">
                       <h1 className="text-4xl font-medium text-white mb-2 font-sans">
                         Ask about your emails
@@ -1258,9 +1258,9 @@ export default function ChatInterface({
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                               </svg>
                             </div>
-                            <h3 className="text-white font-medium font-sans text-sm">Email Campaigns</h3>
+                            <h3 className="text-white font-medium font-sans text-sm">Catch up</h3>
                           </div>
-                          <p className="text-white/60 text-sm leading-relaxed font-sans">Create and manage high-performing email campaigns effortlessly.</p>
+                          <p className="text-white/60 text-sm leading-relaxed font-sans">Summarize threads and highlight what you missed.</p>
                         </div>
 
                         <div className="group bg-[#0a0a0a] backdrop-blur-md border border-[#1a1a1a] rounded-xl p-4 shadow-lg hover:border-[#2a2a2a] hover:bg-[#151515] transition-all duration-300 cursor-pointer">
@@ -1294,9 +1294,9 @@ export default function ChatInterface({
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
                               </svg>
                             </div>
-                            <h3 className="text-white font-medium font-sans text-sm">Auto-replies</h3>
+                            <h3 className="text-white font-medium font-sans text-sm">Draft reply</h3>
                           </div>
-                          <p className="text-white/60 text-xs leading-relaxed font-sans">AI that crafts smart, context-aware replies to repetitive emails.</p>
+                          <p className="text-white/60 text-xs leading-relaxed font-sans">AI that crafts smart, context-aware replies to your emails.</p>
                         </div>
                       </div>
                     </div>
@@ -1431,7 +1431,7 @@ export default function ChatInterface({
                         <div className="flex-1 space-y-1 pt-1">
                           {activeProcess.thinking && (
                             <ProcessIndicator
-                              label="Thinking"
+                              label="Working on it..."
                               icon="💭"
                               content={activeProcess.thinking.content}
                               isExpanded={activeProcess.thinking.isExpanded}
@@ -1444,7 +1444,7 @@ export default function ChatInterface({
                           )}
                           {activeProcess.searching && (
                             <ProcessIndicator
-                              label="Searching"
+                              label="Setting up..."
                               icon="🔍"
                               content={activeProcess.searching.content}
                               isExpanded={activeProcess.searching.isExpanded}
@@ -1457,7 +1457,7 @@ export default function ChatInterface({
                           )}
                           {activeProcess.executing && (
                             <ProcessIndicator
-                              label="Executing"
+                              label="Running..."
                               icon="⚡"
                               isExpanded={activeProcess.executing.isExpanded}
                               isActive={activeProcess.executing.isActive}
@@ -1573,7 +1573,7 @@ const MissionStatusHeader = ({ mission }: { mission: any }) => {
   };
 
   const statusLabels: any = {
-    draft: 'Draft',
+    draft: 'Draft reply',
     waiting_on_user: 'Waiting on you',
     waiting_on_other: 'Waiting on them',
     done: 'Done',
@@ -1583,7 +1583,7 @@ const MissionStatusHeader = ({ mission }: { mission: any }) => {
   return (
     <div className="flex items-center gap-3 px-4 py-2.5 bg-neutral-900/40 border border-white/5 rounded-xl w-fit mx-auto mb-10 backdrop-blur-md animate-fade-in">
       <div className="flex items-center gap-2">
-        <span className="text-white/40 text-[10px] font-bold uppercase tracking-[0.2em]">Active Mission</span>
+        <span className="text-white/40 text-[10px] font-bold uppercase tracking-[0.2em]">In progress</span>
         <span className="text-white/20">/</span>
         <span className="text-white text-sm font-medium">{mission.goal}</span>
       </div>
