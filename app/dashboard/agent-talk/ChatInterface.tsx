@@ -107,6 +107,7 @@ interface AgentMessage {
     mission?: any;
     planCard?: any;
     agentProcess?: any;
+    completedSteps?: string[];
   };
 }
 
@@ -341,68 +342,25 @@ export default function ChatInterface({
     try {
       setIsLoading(true);
 
-      // Initialize Process Indicators
+      // Initialize — show a single "Thinking..." indicator while the real API call runs.
+      // No fake phases. The real phases come from the backend missionProcess.
       const notesQuery = isNotesRelatedQuery(messageText);
       setIsNotesQuery(notesQuery);
-
-      // 1. Thinking phase
-      setActiveProcess({
-        thinking: {
-          content: `Analyzing: "${messageText.substring(0, 50)}${messageText.length > 50 ? '...' : ''}"\nBreaking down mission goals and identifying required context...`,
-          isExpanded: false,
-          isActive: true
-        }
-      });
-
-      // Small delay to simulate thinking
-      await new Promise(resolve => setTimeout(resolve, 800));
 
       let extractedQuery = '';
       if (notesQuery) {
         extractedQuery = extractSearchTerm(messageText);
         setNotesSearchQuery(extractedQuery);
-
-        // 2. Searching phase
-        setActiveProcess(prev => ({
-          ...prev,
-          thinking: { ...prev!.thinking!, isActive: false },
-          searching: {
-            content: `Searching notes database for: "${extractedQuery}"`,
-            isExpanded: false,
-            isActive: true
-          }
-        }));
-
-        await new Promise(resolve => setTimeout(resolve, 600));
-      } else if (isEmailRelatedQuery(messageText)) {
-        // Search for email context
-        setActiveProcess(prev => ({
-          ...prev,
-          thinking: { ...prev!.thinking!, isActive: false },
-          searching: {
-            content: `Scanning Gmail inbox for relevant threads and contacts...`,
-            isExpanded: false,
-            isActive: true
-          }
-        }));
-        await new Promise(resolve => setTimeout(resolve, 1000));
       }
 
-      // 3. Executing phase
-      setActiveProcess(prev => ({
-        ...prev,
-        searching: prev?.searching ? { ...prev.searching, isActive: false } : undefined,
-        thinking: { ...prev!.thinking!, isActive: false },
-        executing: {
-          steps: [
-            { text: "Collected all required information", done: true },
-            { text: "Synthesizing final response", done: false },
-            { text: "Verifying facts and links", done: false }
-          ],
+      // Show a single Thinking indicator — this is the ONLY pre-API indicator
+      setActiveProcess({
+        thinking: {
+          content: "Thinking...",
           isExpanded: false,
           isActive: true
         }
-      }));
+      });
 
       const requestBody = {
         message: messageText,
@@ -446,17 +404,22 @@ export default function ChatInterface({
         setActiveMission(data.activeMission);
       }
 
-      // Ground the indicators in real data if available
+      // Replace the Thinking indicator with REAL mission data from the backend
       if (data.missionProcess) {
         const proc = data.missionProcess;
+        const searchStep = proc.steps.find((s: any) => s.actionType === 'search_email');
+        const searchResult = searchStep?.result;
+
         setActiveProcess({
           thinking: {
             content: proc.thoughts?.[0]?.text || 'Analyzed goal and context.',
             isExpanded: false,
             isActive: false
           },
-          searching: proc.steps.some((s: any) => s.actionType === 'search_email') ? {
-            content: proc.steps.find((s: any) => s.actionType === 'search_email')?.result?.query || 'Searched Gmail context.',
+          searching: searchStep ? {
+            content: searchResult?.count > 0
+              ? `Found ${searchResult.count} threads for query: "${searchResult.query}"`
+              : `No results for: "${searchResult?.query || 'search'}"`,
             isExpanded: false,
             isActive: false
           } : undefined,
@@ -465,24 +428,13 @@ export default function ChatInterface({
               text: s.label,
               done: s.status === 'done'
             })),
-            isExpanded: false,
+            isExpanded: true,
             isActive: false
           }
         });
       } else {
-        // Fallback for general chat completions
-        setActiveProcess(prev => ({
-          ...prev,
-          executing: {
-            steps: [
-              { text: "Collected all required information", done: true },
-              { text: "Synthesizing final response", done: true },
-              { text: "Verifying facts and links", done: true }
-            ],
-            isExpanded: false,
-            isActive: false
-          }
-        }));
+        // Non-mission chat: clear indicators entirely (no fake steps)
+        setActiveProcess(null);
       }
 
       await refreshArcusCredits(true);
@@ -497,6 +449,11 @@ export default function ChatInterface({
         setIntegrations(data.integrations);
       }
 
+      // Build completed steps list from mission process
+      const completedSteps = data.missionProcess?.steps
+        ?.filter((s: any) => s.status === 'done')
+        ?.map((s: any) => s.label) || [];
+
       const agentMessage: AgentMessage = {
         id: Date.now() + 1,
         type: 'agent',
@@ -509,7 +466,8 @@ export default function ChatInterface({
         meta: {
           actionType: data.actionType,
           notesResult: data.notesResult,
-          emailResult: data.emailResult
+          emailResult: data.emailResult,
+          completedSteps
         }
       };
 
@@ -1443,8 +1401,7 @@ export default function ChatInterface({
                         <div className="flex-1 space-y-1 pt-1">
                           {activeProcess.thinking && (
                             <ProcessIndicator
-                              label="Working on it..."
-                              icon="💭"
+                              label="Thinking..."
                               content={activeProcess.thinking.content}
                               isExpanded={activeProcess.thinking.isExpanded}
                               isActive={activeProcess.thinking.isActive}
@@ -1456,8 +1413,7 @@ export default function ChatInterface({
                           )}
                           {activeProcess.searching && (
                             <ProcessIndicator
-                              label="Setting up..."
-                              icon="🔍"
+                              label="Searching..."
                               content={activeProcess.searching.content}
                               isExpanded={activeProcess.searching.isExpanded}
                               isActive={activeProcess.searching.isActive}
@@ -1469,8 +1425,7 @@ export default function ChatInterface({
                           )}
                           {activeProcess.executing && (
                             <ProcessIndicator
-                              label="Running..."
-                              icon="⚡"
+                              label="Executing..."
                               isExpanded={activeProcess.executing.isExpanded}
                               isActive={activeProcess.executing.isActive}
                               onToggle={() => setActiveProcess(prev => ({
@@ -1482,7 +1437,7 @@ export default function ChatInterface({
                                   {activeProcess.executing.steps.map((step, idx) => (
                                     <div key={idx} className="flex items-center gap-2">
                                       <span className="text-sm">{step.done ? '✅' : '⬜'}</span>
-                                      <span className={`text-sm ${step.done ? 'text-white/60' : 'text-white/80'}`}>
+                                      <span className={`text-sm ${step.done ? 'text-black/40' : 'text-black/80'}`}>
                                         {step.text}
                                       </span>
                                     </div>
@@ -1612,14 +1567,13 @@ const MissionStatusHeader = ({ mission }: { mission: any }) => {
  */
 const ProcessIndicator = ({
   label,
-  icon,
   content,
   isExpanded,
   onToggle,
   isActive
 }: {
   label: string;
-  icon: string;
+  icon?: string;
   content: React.ReactNode;
   isExpanded: boolean;
   onToggle: () => void;
@@ -1628,27 +1582,27 @@ const ProcessIndicator = ({
   return (
     <div className="py-1">
       <div
-        className="flex items-center gap-3 cursor-pointer select-none group w-fit"
+        className="flex items-center gap-3 cursor-pointer select-none group w-fit bg-neutral-100 hover:bg-neutral-200 px-3 py-1.5 rounded-lg border border-neutral-200 transition-colors duration-200"
         onClick={onToggle}
       >
-        <span className="text-white font-medium text-base flex items-center gap-1.5">
-          {icon} {label}
-          {isActive ? (
-            <span className="inline-flex items-center gap-0.5 ml-0.5">
-              <span className="w-1 h-1 bg-white rounded-full animate-dot-pulse" style={{ animationDelay: '0ms' }} />
-              <span className="w-1 h-1 bg-white rounded-full animate-dot-pulse" style={{ animationDelay: '200ms' }} />
-              <span className="w-1 h-1 bg-white rounded-full animate-dot-pulse" style={{ animationDelay: '400ms' }} />
+        <div className="flex items-center gap-2">
+          <span className="text-black font-semibold text-sm tracking-tight mb-[1px]">
+            {label}
+          </span>
+          {isActive && (
+            <span className="inline-flex items-center gap-0.5">
+              <span className="w-1 h-1 bg-black/60 rounded-full animate-dot-pulse" style={{ animationDelay: '0ms' }} />
+              <span className="w-1 h-1 bg-black/60 rounded-full animate-dot-pulse" style={{ animationDelay: '200ms' }} />
+              <span className="w-1 h-1 bg-black/60 rounded-full animate-dot-pulse" style={{ animationDelay: '400ms' }} />
             </span>
-          ) : (
-            <span className="text-white/40 ml-1 text-xs">done</span>
           )}
-        </span>
-        <span className={`text-[10px] text-white/40 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}>
+        </div>
+        <span className={`text-[8px] text-black/30 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}>
           ▶
         </span>
       </div>
       {isExpanded && (
-        <div className="mt-2 pl-[26px] text-white/50 text-sm leading-relaxed whitespace-pre-wrap animate-fade-in border-l border-white/5 ml-2">
+        <div className="mt-2 pl-[26px] text-black/60 text-sm leading-relaxed whitespace-pre-wrap animate-fade-in border-l-2 border-neutral-200 ml-3">
           {content}
         </div>
       )}
@@ -1658,9 +1612,10 @@ const ProcessIndicator = ({
 
 
 
+
 /**
- * Helper functions for notes detection and search
- */
+* Helper functions for notes detection and search
+*/
 function isNotesRelatedQuery(message: string): boolean {
   const notesKeywords = [
     'note', 'notes', 'my notes', 'find note', 'search note', 'look for note',
