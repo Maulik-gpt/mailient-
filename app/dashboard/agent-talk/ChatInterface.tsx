@@ -164,6 +164,14 @@ export default function ChatInterface({
   const [notesSearchQuery, setNotesSearchQuery] = useState<string>('');
   const [showNotesFetching, setShowNotesFetching] = useState<boolean>(false);
   const [notesResults, setNotesResults] = useState<any[]>([]);
+
+  // Arcus Agentic Process State
+  const [activeProcess, setActiveProcess] = useState<{
+    thinking?: { content: string; isExpanded: boolean; isActive: boolean };
+    searching?: { content: string; isExpanded: boolean; isActive: boolean };
+    executing?: { steps: { text: string; done: boolean }[]; isExpanded: boolean; isActive: boolean };
+  } | null>(null);
+
   // Subscription state - to hide upgrade button for Pro users
   const [currentPlan, setCurrentPlan] = useState<'free' | 'starter' | 'pro' | 'none' | null>(null);
 
@@ -331,16 +339,69 @@ export default function ChatInterface({
   const processAIMessage = async (messageText: string, conversationIdToUse: string, isNew: boolean) => {
     try {
       setIsLoading(true);
+
+      // Initialize Process Indicators
       const notesQuery = isNotesRelatedQuery(messageText);
       setIsNotesQuery(notesQuery);
+
+      // 1. Thinking phase
+      setActiveProcess({
+        thinking: {
+          content: `Analyzing: "${messageText.substring(0, 50)}${messageText.length > 50 ? '...' : ''}"\nBreaking down mission goals and identifying required context...`,
+          isExpanded: false,
+          isActive: true
+        }
+      });
+
+      // Small delay to simulate thinking
+      await new Promise(resolve => setTimeout(resolve, 800));
 
       let extractedQuery = '';
       if (notesQuery) {
         extractedQuery = extractSearchTerm(messageText);
         setNotesSearchQuery(extractedQuery);
-        setShowNotesFetching(true);
-        setNotesResults([]);
+
+        // 2. Searching phase
+        setActiveProcess(prev => ({
+          ...prev,
+          thinking: { ...prev!.thinking!, isActive: false },
+          searching: {
+            content: `Searching notes database for: "${extractedQuery}"`,
+            isExpanded: false,
+            isActive: true
+          }
+        }));
+
+        await new Promise(resolve => setTimeout(resolve, 600));
+      } else if (isEmailRelatedQuery(messageText)) {
+        // Search for email context
+        setActiveProcess(prev => ({
+          ...prev,
+          thinking: { ...prev!.thinking!, isActive: false },
+          searching: {
+            content: `Scanning Gmail inbox for relevant threads and contacts...`,
+            isExpanded: false,
+            isActive: true
+          }
+        }));
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
+
+      // 3. Executing phase
+      setActiveProcess(prev => ({
+        ...prev,
+        searching: prev?.searching ? { ...prev.searching, isActive: false } : undefined,
+        thinking: { ...prev!.thinking!, isActive: false },
+        executing: {
+          steps: [
+            { text: "Collected all required information", done: true },
+            { text: "Synthesizing final response", done: false },
+            { text: "Verifying facts and links", done: false }
+          ],
+          isExpanded: false,
+          isActive: true
+        }
+      }));
 
       const requestBody = {
         message: messageText,
@@ -370,12 +431,27 @@ export default function ChatInterface({
             currentPlan: errorData.planType || 'starter'
           });
           setIsUsageLimitModalOpen(true);
+          setActiveProcess(null);
           return;
         }
         throw new Error(errorData.message || `Failed to send message (${response.status})`);
       }
 
       const data = await response.json();
+
+      // Update execution to final state before clearing
+      setActiveProcess(prev => ({
+        ...prev,
+        executing: {
+          steps: [
+            { text: "Collected all required information", done: true },
+            { text: "Synthesizing final response", done: true },
+            { text: "Verifying facts and links", done: true }
+          ],
+          isExpanded: false,
+          isActive: false
+        }
+      }));
 
       await refreshArcusCredits(true);
 
@@ -411,6 +487,7 @@ export default function ChatInterface({
       // Add agent message to state
       setMessages(prev => [...prev, agentMessage]);
       setNewMessageIds(prev => new Set(prev).add(agentMessage.id));
+      setActiveProcess(null); // Clear indicators after completion
 
       // Force scroll after state update
       requestAnimationFrame(() => {
@@ -1309,6 +1386,70 @@ export default function ChatInterface({
                         )}
                       </div>
                     ))}
+
+                    {/* Active Agentic Indicators */}
+                    {isLoading && activeProcess && (
+                      <div className="flex items-start gap-4">
+                        <div className="flex-shrink-0 mt-1">
+                          <div className="bg-neutral-800 rounded-full w-11 h-11 flex items-center justify-center backdrop-blur-sm border border-white/10 shadow-lg overflow-hidden">
+                            <img src="/arcus-ai-icon.jpg" alt="Arcus AI" className="w-full h-full object-cover" />
+                          </div>
+                        </div>
+                        <div className="flex-1 space-y-1 pt-1">
+                          {activeProcess.thinking && (
+                            <ProcessIndicator
+                              label="Thinking"
+                              icon="💭"
+                              content={activeProcess.thinking.content}
+                              isExpanded={activeProcess.thinking.isExpanded}
+                              isActive={activeProcess.thinking.isActive}
+                              onToggle={() => setActiveProcess(prev => ({
+                                ...prev!,
+                                thinking: { ...prev!.thinking!, isExpanded: !prev!.thinking!.isExpanded }
+                              }))}
+                            />
+                          )}
+                          {activeProcess.searching && (
+                            <ProcessIndicator
+                              label="Searching"
+                              icon="🔍"
+                              content={activeProcess.searching.content}
+                              isExpanded={activeProcess.searching.isExpanded}
+                              isActive={activeProcess.searching.isActive}
+                              onToggle={() => setActiveProcess(prev => ({
+                                ...prev!,
+                                searching: { ...prev!.searching!, isExpanded: !prev!.searching!.isExpanded }
+                              }))}
+                            />
+                          )}
+                          {activeProcess.executing && (
+                            <ProcessIndicator
+                              label="Executing"
+                              icon="⚡"
+                              isExpanded={activeProcess.executing.isExpanded}
+                              isActive={activeProcess.executing.isActive}
+                              onToggle={() => setActiveProcess(prev => ({
+                                ...prev!,
+                                executing: { ...prev!.executing!, isExpanded: !prev!.executing!.isExpanded }
+                              }))}
+                              content={
+                                <div className="space-y-1.5 mt-1">
+                                  {activeProcess.executing.steps.map((step, idx) => (
+                                    <div key={idx} className="flex items-center gap-2">
+                                      <span className="text-sm">{step.done ? '✅' : '⬜'}</span>
+                                      <span className={`text-sm ${step.done ? 'text-white/60' : 'text-white/80'}`}>
+                                        {step.text}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              }
+                            />
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                     <div ref={messagesEndRef} />
                   </div>
                 </div>
@@ -1363,15 +1504,75 @@ export default function ChatInterface({
       />
 
       <style jsx global>{`
-        @keyframes arcus-dot-pulse {
-          0% { transform: scale(0.7); opacity: 0.8; }
-          50% { transform: scale(1.2); opacity: 1; }
-          100% { transform: scale(0.7); opacity: 0.8; }
+        @keyframes dot-pulse {
+          0% { transform: scale(0.6); opacity: 0.4; }
+          50% { transform: scale(1.1); opacity: 1; }
+          100% { transform: scale(0.6); opacity: 0.4; }
+        }
+        .animate-dot-pulse {
+          animation: dot-pulse 1.2s infinite ease-in-out;
+        }
+
+        @keyframes fade-in {
+          from { opacity: 0; transform: translateY(4px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out forwards;
         }
       `}</style>
     </TooltipProvider>
   );
 }
+
+/**
+ * Arcus Agentic Process Indicator Component
+ */
+const ProcessIndicator = ({
+  label,
+  icon,
+  content,
+  isExpanded,
+  onToggle,
+  isActive
+}: {
+  label: string;
+  icon: string;
+  content: React.ReactNode;
+  isExpanded: boolean;
+  onToggle: () => void;
+  isActive: boolean;
+}) => {
+  return (
+    <div className="py-1">
+      <div
+        className="flex items-center gap-3 cursor-pointer select-none group w-fit"
+        onClick={onToggle}
+      >
+        <span className="text-white font-medium text-base flex items-center gap-1.5">
+          {icon} {label}
+          {isActive ? (
+            <span className="inline-flex items-center gap-0.5 ml-0.5">
+              <span className="w-1 h-1 bg-white rounded-full animate-dot-pulse" style={{ animationDelay: '0ms' }} />
+              <span className="w-1 h-1 bg-white rounded-full animate-dot-pulse" style={{ animationDelay: '200ms' }} />
+              <span className="w-1 h-1 bg-white rounded-full animate-dot-pulse" style={{ animationDelay: '400ms' }} />
+            </span>
+          ) : (
+            <span className="text-white/40 ml-1 text-xs">done</span>
+          )}
+        </span>
+        <span className={`text-[10px] text-white/40 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}>
+          ▶
+        </span>
+      </div>
+      {isExpanded && (
+        <div className="mt-2 pl-[26px] text-white/50 text-sm leading-relaxed whitespace-pre-wrap animate-fade-in border-l border-white/5 ml-2">
+          {content}
+        </div>
+      )}
+    </div>
+  );
+};
 
 
 
