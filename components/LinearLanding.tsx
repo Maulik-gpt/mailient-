@@ -2,35 +2,8 @@
 
 import { useState, useEffect, useRef } from "react"
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion"
-import {
-    Mail,
-    Zap,
-    Shield,
-    ArrowRight,
-    ChevronRight,
-    Layout,
-    MousePointer2,
-    Search,
-    Command,
-    Sparkles,
-    Check,
-    ShieldCheck,
-    Lock,
-    Globe,
-    BarChart3,
-    Activity,
-    Cpu,
-    RefreshCw,
-    Bot,
-    Layers,
-    Star,
-    Plus,
-    Inbox,
-    Filter,
-    ChevronDown,
-    Quote,
-    ArrowRightLeft
-} from "lucide-react"
+import { Mail, Zap, Shield, ArrowRight, ChevronRight, Layout, MousePointer2, Search, Command, Sparkles, Check, ShieldCheck, Lock, Globe, BarChart3, Activity, Cpu, RefreshCw, Bot, Layers, Star, Plus, Inbox, Filter, ChevronDown, Quote, ArrowRightLeft } from "lucide-react"
+import confetti from "canvas-confetti"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { BackgroundShaders } from "@/components/ui/background-paper-shaders"
@@ -183,8 +156,16 @@ export function LinearLanding() {
             >
                 <div className="w-full px-4 md:px-8 flex items-center justify-between">
                     <div className="flex items-center gap-4 md:gap-8">
-                        <div className="flex items-center gap-2 group cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-                            <div className="w-7 h-7 md:w-8 md:h-8 rounded flex items-center justify-center group-hover:rotate-6 transition-transform overflow-hidden relative">
+                        <div className="flex items-center gap-2 group cursor-pointer" onClick={() => {
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                            confetti({
+                                particleCount: 150,
+                                spread: 70,
+                                origin: { y: 0.6 },
+                                colors: ['#ffffff', '#D97757', '#000000']
+                            });
+                        }}>
+                            <div className="w-7 h-7 md:w-8 md:h-8 rounded flex items-center justify-center group-hover:rotate-[360deg] transition-transform duration-700 overflow-hidden relative">
                                 <img
                                     src="/logo-new.png"
                                     alt="Mailient Logo"

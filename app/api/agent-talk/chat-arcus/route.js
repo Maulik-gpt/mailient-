@@ -352,9 +352,9 @@ Original message: "${message}"`;
   } catch (error) {
     console.error('💥 Arcus Chat API error:', error);
     return NextResponse.json({
-      message: "I ran into a temporary issue. Could you try that again? If the problem persists, it might be worth refreshing the page.",
+      message: `I ran into a temporary issue (${error.message}). Could you try that again? If the problem persists, it might be worth refreshing the page.`,
       timestamp: new Date().toISOString(),
-      error: 'Internal server error',
+      error: error.message,
     });
   }
 }
