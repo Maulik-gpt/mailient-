@@ -364,9 +364,7 @@ Original message: "${message}"`;
  */
 async function getIntegrationStatus(userEmail, db) {
   const defaultStatus = {
-    gmail: false,
-    'google-calendar': false,
-    'google-meet': false
+    gmail: false
   };
 
   if (!userEmail) return defaultStatus;
@@ -378,9 +376,7 @@ async function getIntegrationStatus(userEmail, db) {
     const tokenScopes = tokens?.scopes || '';
 
     return {
-      gmail: !!tokens,
-      'google-calendar': tokenScopes.includes('calendar'),
-      'google-meet': tokenScopes.includes('calendar')
+      gmail: !!tokens
     };
   } catch (error) {
     console.error('Error getting integration status:', error);
