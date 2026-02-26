@@ -33,6 +33,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Confetti } from "@/components/ui/confetti";
 import { RewardsSection } from "@/components/RewardsSection";
+import WorkspaceSetupGuide from "@/components/WorkspaceSetupGuide";
 
 
 // XP Configuration
@@ -1172,6 +1173,9 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 )}
+
+                {/* Google Workspace Setup Guide */}
+                <WorkspaceSetupGuide className="mt-4" />
 
                 {/* Talk to Founder */}
                 <div className="mt-4 p-4 rounded-xl bg-white/5 border border-[var(--glass-border)]">
