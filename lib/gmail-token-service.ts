@@ -121,7 +121,7 @@ export class GmailTokenService {
               refresh_token: encrypt(session.refreshToken),
               expires_in: 3600, // Assume 1 hour
               token_type: 'Bearer',
-              scopes: 'gmail.readonly gmail.send'
+              scopes: 'gmail.send'
             });
             console.log('GmailTokenService: Session tokens stored in database');
           } catch (storeError) {
@@ -172,7 +172,7 @@ export class GmailTokenService {
         refresh_token: tokens.refreshToken ? encrypt(tokens.refreshToken) : null,
         expires_in: this.calculateExpiresIn(tokens.expiresAt),
         token_type: tokens.tokenType || 'Bearer',
-        scopes: 'gmail.readonly gmail.send'
+        scopes: 'gmail.send'
       };
 
       const result = await this.db.storeUserTokens(userId, tokenStoreData);
