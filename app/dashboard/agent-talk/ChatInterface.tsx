@@ -166,13 +166,8 @@ export default function ChatInterface({
   const [showNotesFetching, setShowNotesFetching] = useState<boolean>(false);
   const [notesResults, setNotesResults] = useState<any[]>([]);
 
-  // Arcus Agentic Process State
+  // Arcus State (simplified — no mission UI)
   const [activeMission, setActiveMission] = useState<any>(null);
-  const [activeProcess, setActiveProcess] = useState<{
-    thinking?: { label: string; content: string; isExpanded: boolean; isActive: boolean };
-    searching?: { label: string; content: string; isExpanded: boolean; isActive: boolean };
-    executing?: { label: string; steps: { text: string; done: boolean }[]; isExpanded: boolean; isActive: boolean };
-  } | null>(null);
   const [pendingReplyProposal, setPendingReplyProposal] = useState<any>(null);
 
   // Subscription state - to hide upgrade button for Pro users
@@ -343,8 +338,6 @@ export default function ChatInterface({
     try {
       setIsLoading(true);
 
-      // Initialize — show a single "Thinking..." indicator while the real API call runs.
-      // No fake phases. The real phases come from the backend missionProcess.
       const notesQuery = isNotesRelatedQuery(messageText);
       setIsNotesQuery(notesQuery);
 
@@ -353,16 +346,6 @@ export default function ChatInterface({
         extractedQuery = extractSearchTerm(messageText);
         setNotesSearchQuery(extractedQuery);
       }
-
-      // Show a single Thinking indicator — this is the ONLY pre-API indicator
-      setActiveProcess({
-        thinking: {
-          label: "Analyzing request...",
-          content: "Engaging intelligence engine and preparing mission steps...",
-          isExpanded: false,
-          isActive: true
-        }
-      });
 
       const requestBody = {
         message: messageText,
@@ -393,7 +376,6 @@ export default function ChatInterface({
             currentPlan: errorData.planType || 'starter'
           });
           setIsUsageLimitModalOpen(true);
-          setActiveProcess(null);
           return;
         }
         throw new Error(errorData.message || `Failed to send message (${response.status})`);
@@ -404,48 +386,6 @@ export default function ChatInterface({
       // Update Mission State
       if (data.activeMission) {
         setActiveMission(data.activeMission);
-      }
-
-      // Replace the Thinking indicator with REAL mission data from the backend
-      if (data.missionProcess) {
-        const proc = data.missionProcess;
-        const searchStep = proc.steps.find((s: any) => s.actionType === 'search_email');
-        const searchResult = searchStep?.result;
-
-        setActiveProcess({
-          thinking: {
-            label: proc.phase === 'thinking' ? proc.label : 'Thinking',
-            content: proc.thoughts?.[proc.thoughts.length - 1]?.text || 'Analyzed goal and context.',
-            isExpanded: false,
-            isActive: proc.phase === 'thinking'
-          },
-          searching: searchStep ? {
-            label: proc.phase === 'searching' ? proc.label : (searchStep.label || 'Searching'),
-            content: searchResult?.count > 0
-              ? `Found ${searchResult.count} threads for query: "${searchResult.query}"`
-              : `No results for: "${searchResult?.query || 'search'}"`,
-            isExpanded: false,
-            isActive: proc.phase === 'searching'
-          } : undefined,
-          executing: {
-            label: proc.phase === 'executing' ? proc.label : 'Executing',
-            steps: proc.steps.map((s: any) => ({
-              text: s.label,
-              done: s.status === 'done'
-            })),
-            isExpanded: true,
-            isActive: proc.phase === 'executing'
-          }
-        });
-
-        // Search for a reply proposal in the steps
-        const lastStep = proc.steps[proc.steps.length - 1];
-        if (lastStep?.result?.type === 'reply_proposal' && data.activeMission?.status === 'waiting_on_user') {
-          setPendingReplyProposal(lastStep.result);
-        }
-      } else {
-        // Non-mission chat: clear indicators entirely (no fake steps)
-        setActiveProcess(null);
       }
 
       await refreshArcusCredits(true);
@@ -460,11 +400,6 @@ export default function ChatInterface({
         setIntegrations(data.integrations);
       }
 
-      // Build completed steps list from mission process
-      const completedSteps = data.missionProcess?.steps
-        ?.filter((s: any) => s.status === 'done')
-        ?.map((s: any) => s.label) || [];
-
       const agentMessage: AgentMessage = {
         id: Date.now() + 1,
         type: 'agent',
@@ -477,8 +412,7 @@ export default function ChatInterface({
         meta: {
           actionType: data.actionType,
           notesResult: data.notesResult,
-          emailResult: data.emailResult,
-          completedSteps
+          emailResult: data.emailResult
         }
       };
 
@@ -488,7 +422,6 @@ export default function ChatInterface({
       // Add agent message to state
       setMessages(prev => [...prev, agentMessage]);
       setNewMessageIds(prev => new Set(prev).add(agentMessage.id));
-      setActiveProcess(null); // Clear indicators after completion
 
       // Force scroll after state update
       requestAnimationFrame(() => {
@@ -1467,62 +1400,20 @@ export default function ChatInterface({
                       </div>
                     ))}
 
-                    {/* Active Agentic Indicators */}
-                    {isLoading && activeProcess && (
+                    {/* Minimal loading indicator while waiting for response */}
+                    {isLoading && (
                       <div className="flex items-start gap-4">
                         <div className="flex-shrink-0 mt-1">
                           <div className="bg-neutral-800 rounded-full w-11 h-11 flex items-center justify-center backdrop-blur-sm border border-white/10 shadow-lg overflow-hidden">
                             <img src="/arcus-ai-icon.jpg" alt="Arcus AI" className="w-full h-full object-cover" />
                           </div>
                         </div>
-                        <div className="flex-1 space-y-1 pt-1">
-                          {activeProcess.thinking && (
-                            <ProcessIndicator
-                              label={activeProcess.thinking.label}
-                              content={activeProcess.thinking.content}
-                              isExpanded={activeProcess.thinking.isExpanded}
-                              isActive={activeProcess.thinking.isActive}
-                              onToggle={() => setActiveProcess(prev => ({
-                                ...prev!,
-                                thinking: { ...prev!.thinking!, isExpanded: !prev!.thinking!.isExpanded }
-                              }))}
-                            />
-                          )}
-                          {activeProcess.searching && (
-                            <ProcessIndicator
-                              label={activeProcess.searching.label}
-                              content={activeProcess.searching.content}
-                              isExpanded={activeProcess.searching.isExpanded}
-                              isActive={activeProcess.searching.isActive}
-                              onToggle={() => setActiveProcess(prev => ({
-                                ...prev!,
-                                searching: { ...prev!.searching!, isExpanded: !prev!.searching!.isExpanded }
-                              }))}
-                            />
-                          )}
-                          {activeProcess.executing && (
-                            <ProcessIndicator
-                              label={activeProcess.executing.label}
-                              isExpanded={activeProcess.executing.isExpanded}
-                              isActive={activeProcess.executing.isActive}
-                              onToggle={() => setActiveProcess(prev => ({
-                                ...prev!,
-                                executing: { ...prev!.executing!, isExpanded: !prev!.executing!.isExpanded }
-                              }))}
-                              content={
-                                <div className="space-y-1.5 mt-1">
-                                  {activeProcess.executing.steps.map((step, idx) => (
-                                    <div key={idx} className="flex items-center gap-2">
-                                      <span className="text-sm">{step.done ? '✅' : '⬜'}</span>
-                                      <span className={`text-sm ${step.done ? 'text-black/40' : 'text-black/80'}`}>
-                                        {step.text}
-                                      </span>
-                                    </div>
-                                  ))}
-                                </div>
-                              }
-                            />
-                          )}
+                        <div className="flex-1 pt-3">
+                          <span className="inline-flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 bg-white/50 rounded-full animate-dot-pulse" style={{ animationDelay: '0ms' }} />
+                            <span className="w-1.5 h-1.5 bg-white/50 rounded-full animate-dot-pulse" style={{ animationDelay: '200ms' }} />
+                            <span className="w-1.5 h-1.5 bg-white/50 rounded-full animate-dot-pulse" style={{ animationDelay: '400ms' }} />
+                          </span>
                         </div>
                       </div>
                     )}
@@ -1639,53 +1530,7 @@ const MissionStatusHeader = ({ mission }: { mission: any }) => {
   );
 };
 
-/**
- * Arcus Agentic Process Indicator Component
- */
-const ProcessIndicator = ({
-  label,
-  content,
-  isExpanded,
-  onToggle,
-  isActive
-}: {
-  label: string;
-  icon?: string;
-  content: React.ReactNode;
-  isExpanded: boolean;
-  onToggle: () => void;
-  isActive: boolean;
-}) => {
-  return (
-    <div className="py-1">
-      <div
-        className="flex items-center gap-3 cursor-pointer select-none group w-fit bg-neutral-100 hover:bg-neutral-200 px-3 py-1.5 rounded-lg border border-neutral-200 transition-colors duration-200"
-        onClick={onToggle}
-      >
-        <div className="flex items-center gap-2">
-          <span className="text-black font-semibold text-sm tracking-tight mb-[1px]">
-            {label}
-          </span>
-          {isActive && (
-            <span className="inline-flex items-center gap-0.5">
-              <span className="w-1 h-1 bg-black/60 rounded-full animate-dot-pulse" style={{ animationDelay: '0ms' }} />
-              <span className="w-1 h-1 bg-black/60 rounded-full animate-dot-pulse" style={{ animationDelay: '200ms' }} />
-              <span className="w-1 h-1 bg-black/60 rounded-full animate-dot-pulse" style={{ animationDelay: '400ms' }} />
-            </span>
-          )}
-        </div>
-        <span className={`text-[8px] text-black/30 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}>
-          ▶
-        </span>
-      </div>
-      {isExpanded && (
-        <div className="mt-2 pl-[26px] text-black/60 text-sm leading-relaxed whitespace-pre-wrap animate-fade-in border-l-2 border-neutral-200 ml-3">
-          {content}
-        </div>
-      )}
-    </div>
-  );
-};
+
 
 
 

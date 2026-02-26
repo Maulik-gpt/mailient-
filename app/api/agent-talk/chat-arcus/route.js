@@ -142,46 +142,12 @@ export async function POST(request) {
     const arcusAI = new ArcusAIService();
     const missionService = userEmail ? new ArcusMissionService(userEmail) : null;
 
-    // --- MISSION DETECTION & EXECUTION ---
-    let mission = activeMission;
+    // --- MISSION ENGINE DISABLED (direct chat mode) ---
+    // Mission detection and execution are bypassed for a fast, direct AI response.
+    // The mission infrastructure remains available for future re-enablement.
+    let mission = null;
     let missionResult = null;
     let missionProcess = null;
-
-    // 1. Detect if we should start a new mission if no active one exists (or previous one is done)
-    if ((!mission || mission.status === 'done') && userEmail && !isNotesQuery) {
-      try {
-        const detection = await arcusAI.detectMissionGoal(message, conversationHistory);
-        if (detection.isMission) {
-          console.log('🎯 Mission Detected:', detection.goal);
-          // Pass selectedEmailId (as threadId) to jumpstart if user is already looking at a relevant email
-          mission = await missionService.createMission(detection.goal, currentConversationId, selectedEmailId);
-        }
-      } catch (err) {
-        console.warn('Mission detection failed:', err);
-      }
-    }
-
-    // 2. If we have a mission, execute the next step
-    if (mission && missionService) {
-      try {
-        console.log('⚡ Executing Mission Step for:', mission.id);
-        // Execute the mission logic until intervention is needed
-        missionResult = await missionService.executeMission(mission, {
-          userPreferences: { name: userName },
-          conversationHistory: conversationHistory.slice(-5),
-          threadId: mission.linkedThreadIds?.[0] || null,
-          approvalPayload
-        });
-
-        // Update mission state from result
-        mission = missionResult.mission;
-        missionProcess = missionResult.process;
-      } catch (err) {
-        console.error('Mission execution error:', err);
-        // Ensure the error gets passed to the AI prompt builder
-        missionResult = { mission, result: null, error: err, process: null };
-      }
-    }
 
     // --- CONTEXT SEARCH (For general chat or fallback) ---
 
