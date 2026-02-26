@@ -196,6 +196,24 @@ function SignInContent() {
             )}
           </Button>
 
+          {/* Workspace Notice */}
+          <div className="mt-5 p-3.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+            <div className="flex items-start gap-2.5">
+              <svg className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 7h-3a2 2 0 0 1-2-2V2" /><path d="M9 18a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h7l4 4v10a2 2 0 0 1-2 2Z" /><path d="M3 7.6v12.8A1.6 1.6 0 0 0 4.6 22h9.8" />
+              </svg>
+              <div>
+                <p className="text-[11px] font-semibold text-gray-300 leading-relaxed">
+                  Optimized for Google Workspace
+                </p>
+                <p className="text-[10px] text-gray-500 leading-relaxed mt-1">
+                  Workspace accounts (<span className="text-gray-400">@yourcompany.com</span>) get seamless access when your admin trusts Mailient.
+                  Personal <span className="text-gray-400">@gmail.com</span> accounts will see a Google verification step — click <span className="text-gray-400">"Advanced → Go to Mailient"</span> to continue safely.
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* Divider */}
           <div className="relative my-8">
             <div className="absolute inset-0 flex items-center">
