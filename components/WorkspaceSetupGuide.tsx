@@ -11,8 +11,8 @@ import {
     ChevronUp,
     Building2,
     Key,
-    Lock,
-    Zap,
+    UserCheck,
+    Settings,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -20,57 +20,47 @@ import { toast } from "sonner";
 
 interface WorkspaceSetupGuideProps {
     className?: string;
-    clientId?: string;
 }
 
-const SCOPES = [
-    "https://www.googleapis.com/auth/gmail.readonly",
-    "https://www.googleapis.com/auth/gmail.send",
-];
+const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 
 const SETUP_STEPS = [
     {
         number: 1,
         title: "Open Admin Console",
         description:
-            "Go to your Google Workspace Admin Console and navigate to Security settings.",
+            "Your Google Workspace admin opens the Admin Console and goes to API Controls.",
         action: {
-            label: "Open Admin Console",
-            url: "https://admin.google.com/ac/owl/domainwidedelegation",
+            label: "Open API Controls",
+            url: "https://admin.google.com/ac/owl/list?tab=apps",
         },
     },
     {
         number: 2,
-        title: "Add API Client",
+        title: "Add Mailient as Trusted App",
         description:
-            'Click "Add new" in the Domain-Wide Delegation section and paste the Client ID below.',
+            'Click "Add app" → "OAuth App Name or Client ID", then search for',
         copyField: "clientId",
     },
     {
         number: 3,
-        title: "Authorize Scopes",
+        title: "Set Access to Trusted",
         description:
-            "Paste the following scopes to grant Mailient read and send access for your domain.",
-        copyField: "scopes",
+            'Select Mailient from the results, then set access to "Trusted". This allows all users in your organization to sign in without any warnings.',
     },
     {
         number: 4,
-        title: "Done",
+        title: "Done — Users can sign in",
         description:
-            "Click Authorize. Your team can now sign in to Mailient — no extra steps needed.",
+            'Your team can now click "Continue with Google" on Mailient with zero warnings and full email access.',
     },
 ];
 
 export default function WorkspaceSetupGuide({
     className,
-    clientId,
 }: WorkspaceSetupGuideProps) {
     const [expanded, setExpanded] = useState(false);
     const [copiedField, setCopiedField] = useState<string | null>(null);
-
-    const displayClientId =
-        clientId || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "YOUR_CLIENT_ID";
-    const scopesString = SCOPES.join(",");
 
     const copyToClipboard = (text: string, field: string) => {
         navigator.clipboard.writeText(text);
@@ -103,7 +93,7 @@ export default function WorkspaceSetupGuide({
                             </span>
                         </h3>
                         <p className="text-sm text-[var(--settings-text-secondary)] mt-0.5">
-                            Connect your organization's Gmail to Mailient in 60 seconds.
+                            Ask your IT admin to trust Mailient — then your whole team can sign in instantly.
                         </p>
                     </div>
                 </div>
@@ -127,6 +117,21 @@ export default function WorkspaceSetupGuide({
                         className="overflow-hidden"
                     >
                         <div className="px-6 pb-6 space-y-5">
+                            {/* Info box */}
+                            <div className="flex items-start gap-3 p-4 rounded-xl bg-blue-500/5 border border-blue-500/10">
+                                <UserCheck className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+                                <div>
+                                    <p className="text-sm font-medium text-blue-400">
+                                        How it works
+                                    </p>
+                                    <p className="text-xs text-zinc-500 mt-1">
+                                        Mailient uses the same "Continue with Google" button for everyone.
+                                        When your Workspace admin marks Mailient as "Trusted", the unverified app warning disappears for your entire team.
+                                        No extra software or browser extensions needed.
+                                    </p>
+                                </div>
+                            </div>
+
                             {/* Divider */}
                             <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
@@ -180,17 +185,17 @@ export default function WorkspaceSetupGuide({
                                             )}
 
                                             {/* Copy field — Client ID */}
-                                            {step.copyField === "clientId" && (
+                                            {step.copyField === "clientId" && CLIENT_ID && (
                                                 <div className="mt-3 flex items-center gap-2">
                                                     <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg bg-black/40 border border-white/10 overflow-hidden">
                                                         <Key className="w-4 h-4 text-zinc-500 shrink-0" />
                                                         <code className="text-sm text-white font-mono truncate">
-                                                            {displayClientId}
+                                                            {CLIENT_ID}
                                                         </code>
                                                     </div>
                                                     <button
                                                         onClick={() =>
-                                                            copyToClipboard(displayClientId, "clientId")
+                                                            copyToClipboard(CLIENT_ID, "clientId")
                                                         }
                                                         className="p-2 rounded-lg hover:bg-white/10 transition-colors shrink-0"
                                                     >
@@ -200,31 +205,6 @@ export default function WorkspaceSetupGuide({
                                                             <Copy className="w-4 h-4 text-zinc-400" />
                                                         )}
                                                     </button>
-                                                </div>
-                                            )}
-
-                                            {/* Copy field — Scopes */}
-                                            {step.copyField === "scopes" && (
-                                                <div className="mt-3 space-y-2">
-                                                    <div className="flex items-start gap-2">
-                                                        <div className="flex-1 px-3 py-2 rounded-lg bg-black/40 border border-white/10 overflow-hidden">
-                                                            <code className="text-xs text-zinc-300 font-mono break-all leading-relaxed">
-                                                                {scopesString}
-                                                            </code>
-                                                        </div>
-                                                        <button
-                                                            onClick={() =>
-                                                                copyToClipboard(scopesString, "scopes")
-                                                            }
-                                                            className="p-2 rounded-lg hover:bg-white/10 transition-colors shrink-0 mt-0.5"
-                                                        >
-                                                            {copiedField === "scopes" ? (
-                                                                <Check className="w-4 h-4 text-emerald-400" />
-                                                            ) : (
-                                                                <Copy className="w-4 h-4 text-zinc-400" />
-                                                            )}
-                                                        </button>
-                                                    </div>
                                                 </div>
                                             )}
                                         </div>
@@ -242,7 +222,8 @@ export default function WorkspaceSetupGuide({
                                     <p className="text-xs text-zinc-500 mt-1">
                                         All email data is encrypted end-to-end. Mailient processes
                                         emails only to power AI features — we never store raw email
-                                        content beyond the current session.
+                                        content beyond the current session. Your admin retains full
+                                        control and can revoke access at any time.
                                     </p>
                                 </div>
                             </div>
