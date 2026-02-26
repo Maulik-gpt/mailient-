@@ -150,10 +150,10 @@ function SignInContent() {
 
           {/* Brand Heading */}
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-100">
+            <h1 className="text-3xl font-bold text-white">
               Welcome Back
             </h1>
-            <p className="text-gray-400 font-medium mt-2">
+            <p className="text-white/70 font-medium mt-2">
               Sign in to your intelligent workspace
             </p>
           </div>
@@ -203,12 +203,12 @@ function SignInContent() {
                 <path d="M20 7h-3a2 2 0 0 1-2-2V2" /><path d="M9 18a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h7l4 4v10a2 2 0 0 1-2 2Z" /><path d="M3 7.6v12.8A1.6 1.6 0 0 0 4.6 22h9.8" />
               </svg>
               <div>
-                <p className="text-[11px] font-semibold text-gray-300 leading-relaxed">
+                <p className="text-[11px] font-semibold text-white leading-relaxed">
                   Optimized for Google Workspace
                 </p>
-                <p className="text-[10px] text-gray-500 leading-relaxed mt-1">
-                  Workspace accounts (<span className="text-gray-400">@yourcompany.com</span>) get seamless access when your admin trusts Mailient.
-                  Personal <span className="text-gray-400">@gmail.com</span> accounts will see a Google verification step — click <span className="text-gray-400">"Advanced → Go to Mailient"</span> to continue safely.
+                <p className="text-[10px] text-white/50 leading-relaxed mt-1">
+                  Workspace accounts (<span className="text-white/70">@yourcompany.com</span>) get seamless access when your admin trusts Mailient.
+                  Personal <span className="text-white/70">@gmail.com</span> accounts will see a Google verification step — click <span className="text-white/70">"Advanced → Go to Mailient"</span> to continue safely.
                 </p>
               </div>
             </div>
@@ -220,7 +220,7 @@ function SignInContent() {
               <div className="w-full border-t border-gray-600/50" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-[#171717] text-gray-100">
+              <span className="px-4 bg-[#171717] text-white">
                 New to Mailient?
               </span>
             </div>
@@ -231,7 +231,7 @@ function SignInContent() {
             <Button
               variant="ghost"
               onClick={() => router.push('/auth/signup')}
-              className="text-gray-100 hover:text-white transition-colors"
+              className="text-white hover:text-white/80 transition-colors"
             >
               Create an account
             </Button>
@@ -250,12 +250,12 @@ function SignInContent() {
               <div className="flex items-start justify-between">
                 <div className="flex items-center space-x-3">
                   <div className="flex-shrink-0">
-                    <svg className="w-5 h-5 text-gray-100" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                     </svg>
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-100">
+                    <p className="text-sm font-medium text-white">
                       {toast.message}
                     </p>
                   </div>

@@ -36,10 +36,10 @@ export default function GetStarted() {
         <div className="bg-[#242424]/20 backdrop-blur-xl border border-gray-700/30 rounded-2xl p-8 shadow-2xl animate-fade-in">
           {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-100 mb-2">
+            <h1 className="text-3xl font-bold text-white mb-2">
               Mailient
             </h1>
-            <p className="text-gray-400 font-medium">
+            <p className="text-white/70 font-medium">
               Create your account and get started
             </p>
           </div>
@@ -52,9 +52,9 @@ export default function GetStarted() {
               "24/7 customer support",
             ].map((feature, index) => (
               <div key={index} className="flex items-center gap-3 text-sm">
-                <div className="w-5 h-5 rounded-full bg-gray-500/20 flex items-center justify-center flex-shrink-0">
+                <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
                   <svg
-                    className="w-3 h-3 text-gray-100"
+                    className="w-3 h-3 text-white"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -67,7 +67,7 @@ export default function GetStarted() {
                     />
                   </svg>
                 </div>
-                <span className="text-gray-100">{feature}</span>
+                <span className="text-white">{feature}</span>
               </div>
             ))}
           </div>
@@ -110,12 +110,12 @@ export default function GetStarted() {
                 <path d="M20 7h-3a2 2 0 0 1-2-2V2" /><path d="M9 18a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h7l4 4v10a2 2 0 0 1-2 2Z" /><path d="M3 7.6v12.8A1.6 1.6 0 0 0 4.6 22h9.8" />
               </svg>
               <div>
-                <p className="text-[11px] font-semibold text-gray-300 leading-relaxed">
+                <p className="text-[11px] font-semibold text-white leading-relaxed">
                   Optimized for Google Workspace
                 </p>
-                <p className="text-[10px] text-gray-500 leading-relaxed mt-1">
-                  Workspace accounts (<span className="text-gray-400">@yourcompany.com</span>) get seamless access when your admin trusts Mailient.
-                  Personal <span className="text-gray-400">@gmail.com</span> accounts will see a Google verification step — click <span className="text-gray-400">"Advanced → Go to Mailient"</span> to continue safely.
+                <p className="text-[10px] text-white/50 leading-relaxed mt-1">
+                  Workspace accounts (<span className="text-white/70">@yourcompany.com</span>) get seamless access when your admin trusts Mailient.
+                  Personal <span className="text-white/70">@gmail.com</span> accounts will see a Google verification step — click <span className="text-white/70">"Advanced → Go to Mailient"</span> to continue safely.
                 </p>
               </div>
             </div>
@@ -127,7 +127,7 @@ export default function GetStarted() {
               <div className="w-full border-t border-gray-600/50" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-gray-900 text-gray-100">
+              <span className="px-4 bg-gray-900 text-white">
                 Already have an account?
               </span>
             </div>
@@ -138,14 +138,14 @@ export default function GetStarted() {
             <Button
               variant="ghost"
               onClick={() => router.push('/auth/signin')}
-              className="text-gray-100 hover:text-white transition-colors"
+              className="text-white hover:text-white/80 transition-colors"
             >
               Sign in instead
             </Button>
           </div>
 
           {/* Terms */}
-          <p className="text-xs text-gray-400 text-center mt-6 uppercase tracking-widest font-bold italic">
+          <p className="text-xs text-white/40 text-center mt-6 uppercase tracking-widest font-bold italic">
             By continuing, you agree to our{" "}
             <Link href="/terms-of-service" className="underline hover:text-white transition-colors">
               Terms of Service
