@@ -92,6 +92,51 @@ body {
   --font-sans: "Satoshi", var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --color-destructive-foreground: var(--destructive-foreground);
+
+  /* Note / Button-1 design system color tokens */
+  --color-context-card-border: var(--context-card-border);
+  --color-blue-100: var(--ds-blue-100);
+  --color-blue-200: var(--ds-blue-200);
+  --color-blue-400: var(--ds-blue-400);
+  --color-blue-700: var(--ds-blue-700);
+  --color-blue-900: var(--ds-blue-900);
+  --color-blue-1000: var(--ds-blue-1000);
+  --color-red-100: var(--ds-red-100);
+  --color-red-200: var(--ds-red-200);
+  --color-red-400: var(--ds-red-400);
+  --color-red-800: var(--ds-red-800);
+  --color-red-900: var(--ds-red-900);
+  --color-red-1000: var(--ds-red-1000);
+  --color-amber-100: var(--ds-amber-100);
+  --color-amber-200: var(--ds-amber-200);
+  --color-amber-400: var(--ds-amber-400);
+  --color-amber-900: var(--ds-amber-900);
+  --color-amber-1000: var(--ds-amber-1000);
+  --color-teal-100: var(--ds-teal-100);
+  --color-teal-200: var(--ds-teal-200);
+  --color-teal-400: var(--ds-teal-400);
+  --color-teal-900: var(--ds-teal-900);
+  --color-teal-1000: var(--ds-teal-1000);
+  --color-purple-100: var(--ds-purple-100);
+  --color-purple-200: var(--ds-purple-200);
+  --color-purple-400: var(--ds-purple-400);
+  --color-purple-900: var(--ds-purple-900);
+  --color-purple-1000: var(--ds-purple-1000);
+  --color-pink-100: var(--ds-pink-100);
+  --color-gray-400: var(--ds-gray-400);
+  --color-gray-700: var(--ds-gray-700);
+  --color-gray-900: var(--ds-gray-900);
+  --color-gray-1000: var(--ds-gray-1000);
+  --color-gray-alpha-200: var(--ds-gray-alpha-200);
+  --color-gray-alpha-400: var(--ds-gray-alpha-400);
+  --color-amber-800: var(--ds-amber-800);
+  --color-amber-850: var(--ds-amber-850);
+  --color-gray-100: var(--ds-gray-100);
+  --color-gray-1000-h: var(--ds-gray-1000-h);
+  --color-background-100: var(--ds-background-100);
+  --shadow-focus-ring: var(--ds-focus-ring);
+  --shadow-border-small: var(--ds-shadow-border-small);
+  --animate-fade-spin: fade-spin 1.2s linear infinite;
 }
 
 :root {
@@ -138,6 +183,53 @@ body {
   --color-3: 210 100% 63%;
   --color-4: 195 100% 63%;
   --color-5: 90 100% 63%;
+
+  /* Note / Button-1 design system tokens (light) */
+  --context-card-border: hsla(0, 0%, 92%, 1);
+  --ds-blue-100: oklch(97.32% 0.0141 251.56);
+  --ds-blue-200: oklch(96.29% 0.0195 250.59);
+  --ds-blue-400: oklch(91.58% 0.0473 245.11621922481282);
+  --ds-blue-700: oklch(57.61% 0.2508 258.23);
+  --ds-blue-900: oklch(53.18% 0.2399 256.9900584162342);
+  --ds-blue-1000: oklch(26.67% 0.1099 254.34);
+  --ds-red-100: oklch(96.5% 0.0223 13.09);
+  --ds-red-200: oklch(95.41% 0.0299 14.252646656611997);
+  --ds-red-400: oklch(91.51% 0.0471 19.8);
+  --ds-red-800: oklch(58.19% 0.2482 25.15);
+  --ds-red-900: oklch(54.99% 0.232 25.29);
+  --ds-red-1000: oklch(24.8% 0.1041 18.86);
+  --ds-amber-100: oklch(97.48% 0.0331 85.79);
+  --ds-amber-200: oklch(96.81% 0.0495 90.24227879900472);
+  --ds-amber-400: oklch(91.02% 0.1322 88.25);
+  --ds-amber-900: oklch(52.79% 0.1496 54.65);
+  --ds-amber-1000: oklch(30.83% 0.099 45.48);
+  --ds-teal-100: oklch(97.72% 0.0359 186.7);
+  --ds-teal-200: oklch(97.06% 0.0347 180.66);
+  --ds-teal-400: oklch(92.76% 0.0718 183.78);
+  --ds-teal-900: oklch(52.08% 0.1251 182.93);
+  --ds-teal-1000: oklch(32.11% 0.0788 179.82);
+  --ds-purple-100: oklch(96.65% 0.0244 312.1890119359961);
+  --ds-purple-200: oklch(96.73% 0.0228 309.8);
+  --ds-purple-400: oklch(91.77% 0.0614 312.82);
+  --ds-purple-900: oklch(47.18% 0.2579 304);
+  --ds-purple-1000: oklch(23.96% 0.13 305.66);
+  --ds-pink-100: oklch(96.5% 0.0223 13.09);
+  --ds-gray-100: hsla(0, 0%, 95%, 1);
+  --ds-gray-400: hsla(0, 0%, 92%, 1);
+  --ds-gray-700: hsla(0, 0%, 56%, 1);
+  --ds-gray-900: hsla(0, 0%, 40%, 1);
+  --ds-gray-1000: hsla(0, 0%, 9%, 1);
+  --ds-gray-alpha-200: hsla(0, 0%, 0%, 0.08);
+  --ds-gray-alpha-400: hsla(0, 0%, 0%, 0.08);
+  --ds-amber-800: oklch(77.21% 0.1991 64.28);
+  --ds-amber-850: hsl(33, 96%, 42%);
+  --ds-gray-1000-h: hsl(0, 0%, 22%);
+  --ds-background-100: hsla(0, 0%, 100%, 1);
+  --ds-focus-color: var(--ds-blue-700);
+  --ds-focus-ring: 0 0 0 2px var(--ds-background-100), 0 0 0 4px var(--ds-focus-color);
+  --ds-shadow-border: 0 0 0 1px rgba(0, 0, 0, 0.08);
+  --ds-shadow-small: 0px 2px 2px rgba(0, 0, 0, 0.04);
+  --ds-shadow-border-small: var(--ds-shadow-border), var(--ds-shadow-small);
 }
 
 .satoshi-app {
@@ -177,6 +269,49 @@ body {
   --sidebar-accent-foreground: oklch(1 0 0);
   --sidebar-border: oklch(1 0 0 / 0.2);
   --sidebar-ring: oklch(1 0 0 / 0.3);
+
+  /* Note / Button-1 design system tokens (dark) */
+  --context-card-border: hsla(0, 0%, 18%, 1);
+  --ds-blue-100: oklch(22.17% 0.069 259.89);
+  --ds-blue-200: oklch(25.45% 0.0811 255.8);
+  --ds-blue-400: oklch(34.1% 0.121 254.74);
+  --ds-blue-700: oklch(57.61% 0.2321 258.23);
+  --ds-blue-900: oklch(71.7% 0.1648 250.79360374054167);
+  --ds-blue-1000: oklch(96.75% 0.0179 242.4234217368056);
+  --ds-red-100: oklch(22.1% 0.0657 15.11);
+  --ds-red-200: oklch(25.93% 0.0834 19.02);
+  --ds-red-400: oklch(35.27% 0.1273 21.23);
+  --ds-red-800: oklch(58.01% 0.227 25.12);
+  --ds-red-900: oklch(69.96% 0.2136 22.03);
+  --ds-red-1000: oklch(95.6% 0.0293 6.61);
+  --ds-amber-100: oklch(22.46% 0.0538 76.04);
+  --ds-amber-200: oklch(24.95% 0.0642 64.78);
+  --ds-amber-400: oklch(35.53% 0.0903 66.29707162673735);
+  --ds-amber-900: oklch(77.21% 0.1991 64.28);
+  --ds-amber-1000: oklch(96.7% 0.0418 84.59);
+  --ds-teal-100: oklch(22.1% 0.0544 178.74);
+  --ds-teal-200: oklch(25.06% 0.062 178.76);
+  --ds-teal-400: oklch(32.43% 0.0763 180.13);
+  --ds-teal-900: oklch(74.56% 0.1765 182.8);
+  --ds-teal-1000: oklch(96.46% 0.056 180.29);
+  --ds-purple-100: oklch(22.34% 0.0779 316.87);
+  --ds-purple-200: oklch(25.91% 0.0921 314.41);
+  --ds-purple-400: oklch(35.93% 0.1504 309.78);
+  --ds-purple-900: oklch(69.87% 0.2037 309.51);
+  --ds-purple-1000: oklch(96.1% 0.0304 316.46);
+  --ds-gray-100: hsla(0, 0%, 10%, 1);
+  --ds-gray-400: hsla(0, 0%, 18%, 1);
+  --ds-gray-700: hsla(0, 0%, 56%, 1);
+  --ds-gray-900: hsla(0, 0%, 63%, 1);
+  --ds-gray-1000: hsla(0, 0%, 93%, 1);
+  --ds-gray-alpha-200: hsla(0, 0%, 100%, 0.09);
+  --ds-gray-alpha-400: hsla(0, 0%, 100%, 0.14);
+  --ds-amber-800: oklch(77.21% 0.1991 64.28);
+  --ds-gray-1000-h: hsl(0, 0%, 80%);
+  --ds-background-100: hsla(0, 0%, 4%, 1);
+  --ds-shadow-border: 0 0 0 1px rgba(255, 255, 255, 0.145);
+  --ds-shadow-small: 0px 1px 2px rgba(0, 0, 0, 0.16);
+  --ds-shadow-border-small: var(--ds-shadow-border), 0px 1px 2px rgba(0, 0, 0, 0.16);
 }
 
 /* Sidebar color variables are defined above in :root and .dark selectors */
@@ -2799,4 +2934,15 @@ textarea,
 
 .animate-sparkle {
   animation: sparkle 2s ease-in-out infinite;
+}
+
+/* Fade-spin animation for Spinner-1 component */
+@keyframes fade-spin {
+  0% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.15;
+  }
 }

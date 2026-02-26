@@ -17,6 +17,9 @@ import { HomeFeedSidebar } from "@/components/ui/home-feed-sidebar";
 import NotesFetchingDisplay from '@/components/ui/notes-fetching-display';
 import { UsageLimitModal } from '@/components/ui/usage-limit-modal';
 import { ShiningText } from '@/components/ui/shining-text';
+import { Note } from '@/components/ui/note';
+import { Button as Button1 } from '@/components/ui/button-1';
+import { MorphingSquare } from '@/components/ui/morphing-square';
 import { toast } from 'sonner';
 
 // Detect and wrap URLs in plain text with premium styling for actions
@@ -1282,6 +1285,24 @@ export default function ChatInterface({
                           />
                         </div>
                       )}
+                      {currentPlan !== null && currentPlan !== 'pro' && (
+                        <div className="mb-3">
+                          <Note
+                            type="secondary"
+                            size="small"
+                            action={
+                              <Button1
+                                size="small"
+                                onClick={() => window.location.href = '/pricing'}
+                              >
+                                Upgrade
+                              </Button1>
+                            }
+                          >
+                            You&apos;re on the free plan. Upgrade for unlimited Arcus AI access.
+                          </Note>
+                        </div>
+                      )}
                       <ChatInput
                         onSendMessage={(msg) => {
                           handleSend(msg);
@@ -1400,20 +1421,20 @@ export default function ChatInterface({
                       </div>
                     ))}
 
-                    {/* Minimal loading indicator while waiting for response */}
+                    {/* Modern morphing square loading indicator while waiting for response */}
                     {isLoading && (
-                      <div className="flex items-start gap-4">
-                        <div className="flex-shrink-0 mt-1">
-                          <div className="bg-neutral-800 rounded-full w-11 h-11 flex items-center justify-center backdrop-blur-sm border border-white/10 shadow-lg overflow-hidden">
-                            <img src="/arcus-ai-icon.jpg" alt="Arcus AI" className="w-full h-full object-cover" />
+                      <div className="flex items-start gap-3 mt-4 animate-fade-in">
+                        <div className="flex-shrink-0">
+                          <div className="bg-neutral-800 rounded-full w-10 h-10 flex items-center justify-center backdrop-blur-sm border border-white/10 shadow-lg overflow-hidden">
+                            <img src="/arcus-ai-icon.jpg" alt="Arcus AI" className="w-full h-full object-cover opacity-80" />
                           </div>
                         </div>
-                        <div className="flex-1 pt-3">
-                          <span className="inline-flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 bg-white/50 rounded-full animate-dot-pulse" style={{ animationDelay: '0ms' }} />
-                            <span className="w-1.5 h-1.5 bg-white/50 rounded-full animate-dot-pulse" style={{ animationDelay: '200ms' }} />
-                            <span className="w-1.5 h-1.5 bg-white/50 rounded-full animate-dot-pulse" style={{ animationDelay: '400ms' }} />
-                          </span>
+                        <div className="flex flex-col items-start gap-2 pt-1">
+                          <MorphingSquare
+                            className="w-4 h-4 bg-blue-500/80 shadow-[0_0_10px_rgba(59,130,246,0.5)]"
+                            message="Arcus is thinking..."
+                            messagePlacement="right"
+                          />
                         </div>
                       </div>
                     )}
@@ -1427,6 +1448,24 @@ export default function ChatInterface({
                   {/* Progressive blur overlay */}
                   <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none" />
                   <div className="max-w-3xl mx-auto relative z-10 pointer-events-auto">
+                    {currentPlan !== null && currentPlan !== 'pro' && (
+                      <div className="mb-3">
+                        <Note
+                          type="secondary"
+                          size="small"
+                          action={
+                            <Button1
+                              size="small"
+                              onClick={() => window.location.href = '/pricing'}
+                            >
+                              Upgrade
+                            </Button1>
+                          }
+                        >
+                          You&apos;re on the free plan. Upgrade for unlimited Arcus AI access.
+                        </Note>
+                      </div>
+                    )}
                     <ChatInput
                       onSendMessage={(msg) => {
                         handleSend(msg);
