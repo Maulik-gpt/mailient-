@@ -204,7 +204,7 @@ export function LinearLanding() {
 
             {/* Hero Section */}
             <HeroGeometric
-                badge="AI-Powered Email for Founders"
+                badge="AI Email Agent for Google Workspace Teams"
                 title1="Email That Thinks"
                 title2="Like You Do."
             >
@@ -253,7 +253,7 @@ export function LinearLanding() {
 
                         <div className="flex items-center gap-1.5 sm:gap-2 justify-center">
                             <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-400 flex-shrink-0" />
-                            <span className="whitespace-nowrap">2 Min Setup</span>
+                            <span className="whitespace-nowrap">Google Workspace</span>
                         </div>
                     </div>
 
@@ -981,7 +981,7 @@ export function LinearLanding() {
                     <Badge variant="outline" className="rounded-full mb-6 border-white/10 text-zinc-500">Data Integrity</Badge>
                     <h2 className="text-5xl md:text-7xl font-bold mb-8 tracking-tighter">Gmail Native Security.</h2>
                     <p className="text-xl text-zinc-400 leading-relaxed italic">
-                        Mailient respects your privacy perimeter. We use enterprise Google OAuth 2.0 to process data in real-time without storing a single byte of your private content.
+                        Mailient connects through Google Workspace Domain-Wide Delegation — enterprise-grade OAuth 2.0 with zero access to your password and full admin control over permissions.
                     </p>
                 </div>
                 <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
