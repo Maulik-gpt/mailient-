@@ -54,7 +54,8 @@ export default function GetStarted() {
   const benefits = [
     "100 AI-handled emails free",
     "Founder-grade response engine",
-    "No credit card required"
+    "No credit card required",
+    "Enterprise-level security"
   ];
 
   return (
@@ -112,9 +113,6 @@ export default function GetStarted() {
               </div>
             </div>
 
-            <div className="mt-12 md:mt-0">
-              <p className="text-[10px] uppercase tracking-[0.3em] text-white/20 font-medium">Next-Gen Intelligence</p>
-            </div>
           </div>
 
           {/* Right Section: Auth Flows */}
