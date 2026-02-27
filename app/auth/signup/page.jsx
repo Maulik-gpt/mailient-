@@ -55,7 +55,7 @@ export default function GetStarted() {
     "100 AI-handled emails free",
     "Founder-grade response engine",
     "No credit card required",
-    "Enterprise-level security"
+    "Enterprise-level automation"
   ];
 
   return (
