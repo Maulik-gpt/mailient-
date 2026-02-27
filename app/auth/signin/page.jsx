@@ -3,9 +3,8 @@
 import { useEffect, useState, Suspense, useRef } from 'react';
 import { signIn, getSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Button } from '../../../components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, Mail, ArrowRight, Shield, AlertCircle, Copy, ArrowLeft } from 'lucide-react';
+import { Check, ArrowRight, AlertCircle, Copy, ArrowLeft, Shield, ExternalLink, Building2, UserCog, CheckCircle2 } from 'lucide-react';
 
 const PERSONAL_DOMAINS = [
   'gmail.com', 'googlemail.com', 'yahoo.com', 'yahoo.co.in',
@@ -17,17 +16,37 @@ const PERSONAL_DOMAINS = [
 
 const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 
+// Admin email template for requesting Mailient approval
+const ADMIN_EMAIL_TEMPLATE = `Subject: Approve Mailient for Google Workspace
+
+Hi [Admin Name],
+
+I'd like to use Mailient — an AI email assistant — with our Google Workspace.
+
+It requires admin approval to connect. Here's what's needed:
+
+1. Go to Google Admin → Security → API Controls
+2. Select "Manage Third-Party App Access"
+3. Add Mailient using Client ID: ${CLIENT_ID}
+4. Set access to "Trusted"
+
+It takes about 2 minutes. Mailient only requests read and send access to Gmail — no data is stored externally.
+
+Thanks!`;
+
 function SignInContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [emailDomain, setEmailDomain] = useState('');
   const [isWorkspace, setIsWorkspace] = useState(null);
+  const [isGmail, setIsGmail] = useState(false);
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [copiedField, setCopiedField] = useState(null);
   const [step, setStep] = useState(1);
+  const [showAdminGuide, setShowAdminGuide] = useState(false);
   const emailInputRef = useRef(null);
 
   const callbackUrl = searchParams?.get('callbackUrl') || '/onboarding';
@@ -36,7 +55,9 @@ function SignInContent() {
     const urlError = searchParams?.get('error');
     if (urlError) {
       if (urlError === 'access-denied' || urlError === 'org_internal') {
+        // OAuth was blocked — show admin approval modal
         setShowAdminModal(true);
+        setStep(2);
       } else {
         setError(urlError === 'configuration' ? 'Authentication configuration error.' : 'An authentication error occurred.');
       }
@@ -63,6 +84,16 @@ function SignInContent() {
     if (!trimmed || !trimmed.includes('@')) return;
     const domain = trimmed.split('@')[1];
     setEmailDomain(domain);
+
+    // Check if it's a personal Gmail (not workspace)
+    if (domain === 'gmail.com' || domain === 'googlemail.com') {
+      setIsGmail(true);
+      setIsWorkspace(false);
+      setStep(2); // Show the Gmail notice on step 2
+      return;
+    }
+
+    setIsGmail(false);
     setIsWorkspace(!PERSONAL_DOMAINS.includes(domain));
     setStep(2);
   };
@@ -81,12 +112,15 @@ function SignInContent() {
   const copyToClipboard = (text, field) => {
     navigator.clipboard.writeText(text);
     setCopiedField(field);
-    setTimeout(() => setCopiedField(null), 2000);
+    setTimeout(() => setCopiedField(null), 2500);
   };
 
   const backToStep1 = () => {
     setStep(1);
     setError(null);
+    setIsGmail(false);
+    setShowAdminModal(false);
+    setShowAdminGuide(false);
   };
 
   const benefits = [
@@ -95,6 +129,27 @@ function SignInContent() {
     "No credit card required",
     "Enterprise-level automation"
   ];
+
+  // Step indicator
+  const StepIndicator = ({ currentStep }) => (
+    <div className="flex items-center gap-2 mb-10">
+      {[1, 2, 3].map((s) => (
+        <div key={s} className="flex items-center gap-2">
+          <div className={`
+            w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-medium transition-all duration-500
+            ${s < currentStep ? 'bg-white text-black' :
+              s === currentStep ? 'bg-white/10 text-white border border-white/20' :
+                'bg-white/[0.03] text-white/20 border border-white/[0.06]'}
+          `}>
+            {s < currentStep ? <Check className="w-3 h-3" strokeWidth={2.5} /> : s}
+          </div>
+          {s < 3 && (
+            <div className={`w-8 h-px transition-all duration-500 ${s < currentStep ? 'bg-white/30' : 'bg-white/[0.06]'}`} />
+          )}
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4 relative overflow-hidden font-sans selection:bg-white selection:text-black">
@@ -113,19 +168,13 @@ function SignInContent() {
       >
         <div className="flex flex-col md:flex-row min-h-[540px]">
 
-          {/* Left Section: Branding & Benefits (Horizontal split) */}
+          {/* Left Section: Branding & Benefits */}
           <div className="md:w-[48%] p-10 sm:p-14 flex flex-col justify-between border-b md:border-b-0 md:border-r border-white/[0.05]">
             <div>
               <div className="mb-16 relative h-28 w-full rounded-2xl overflow-hidden border border-white/10 shadow-2xl group">
-                {/* Cinematic Graphite/B&W Gradient */}
                 <div className="absolute inset-0 z-0 bg-gradient-to-br from-[#080808] via-[#1A1A1A] to-[#0F0F0F]" />
-
-                {/* Dynamic Grain/Noise */}
                 <div className="absolute inset-0 z-0 opacity-60 mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-repeat scale-150 group-hover:scale-100 transition-transform duration-[10s] ease-linear" />
-
-                {/* Light streak for cinematic feel */}
                 <div className="absolute inset-0 z-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-[3s] ease-in-out" />
-
                 <div className="relative z-10 w-full h-full flex items-end justify-start p-6">
                   <span className="text-white text-2xl font-light tracking-[0.3em] lowercase select-none">mailient</span>
                 </div>
@@ -150,13 +199,14 @@ function SignInContent() {
                 ))}
               </div>
             </div>
-
           </div>
 
           {/* Right Section: Auth Flows */}
           <div className="flex-1 p-10 sm:p-14 flex flex-col justify-center bg-white/[0.01]">
             <AnimatePresence mode="wait">
-              {step === 1 ? (
+
+              {/* ──────────── STEP 1: Email Entry ──────────── */}
+              {step === 1 && (
                 <motion.div
                   key="step1"
                   initial={{ opacity: 0, x: 10 }}
@@ -165,6 +215,8 @@ function SignInContent() {
                   transition={{ duration: 0.4, ease: "easeOut" }}
                   className="w-full max-w-[340px] mx-auto md:mx-0"
                 >
+                  <StepIndicator currentStep={1} />
+
                   <div className="mb-10">
                     <h2 className="text-white text-lg font-light tracking-tight mb-2">Welcome back</h2>
                     <p className="text-white/30 text-xs font-light">Enter your workspace email address to securely access your inbox.</p>
@@ -210,7 +262,10 @@ function SignInContent() {
                     </button>
                   </div>
                 </motion.div>
-              ) : (
+              )}
+
+              {/* ──────────── STEP 2: Install for Workspace / Gmail Notice ──────────── */}
+              {step === 2 && (
                 <motion.div
                   key="step2"
                   initial={{ opacity: 0, x: 10 }}
@@ -219,67 +274,244 @@ function SignInContent() {
                   transition={{ duration: 0.4, ease: "easeOut" }}
                   className="w-full max-w-[340px] mx-auto md:mx-0"
                 >
-                  <div className="flex flex-col">
-                    <button
-                      onClick={backToStep1}
-                      className="flex items-center gap-2 text-white/30 hover:text-white transition-colors text-xs font-light mb-10 group w-fit"
-                    >
-                      <ArrowLeft className="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" />
-                      use different email
-                    </button>
+                  <StepIndicator currentStep={2} />
 
-                    <div className="p-6 bg-white/[0.02] border border-white/[0.05] rounded-2xl mb-10">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-[10px] font-medium uppercase tracking-widest text-white/20">Identity</span>
-                        <span className={`text-[10px] font-medium uppercase tracking-widest ${isWorkspace ? 'text-white/50' : 'text-white/20'}`}>
-                          {isWorkspace ? 'Workspace' : 'Personal'}
-                        </span>
-                      </div>
-                      <div className="text-white font-medium truncate text-sm tracking-tight">
-                        {email}
-                      </div>
+                  <button
+                    onClick={backToStep1}
+                    className="flex items-center gap-2 text-white/30 hover:text-white transition-colors text-xs font-light mb-8 group w-fit"
+                  >
+                    <ArrowLeft className="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" />
+                    use different email
+                  </button>
+
+                  {/* Email identity card */}
+                  <div className="p-5 bg-white/[0.02] border border-white/[0.05] rounded-2xl mb-8">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-medium uppercase tracking-widest text-white/20">Identity</span>
+                      <span className={`text-[10px] font-medium uppercase tracking-widest ${isWorkspace ? 'text-white/50' : isGmail ? 'text-white/25' : 'text-white/20'}`}>
+                        {isWorkspace ? 'Workspace' : isGmail ? 'Personal Gmail' : 'Personal'}
+                      </span>
+                    </div>
+                    <div className="text-white font-medium truncate text-sm tracking-tight">
+                      {email}
                     </div>
                   </div>
 
-                  <div className="space-y-4">
+                  {/* ── Gmail: Show workspace-only notice ── */}
+                  {isGmail ? (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5, delay: 0.1 }}
+                    >
+                      <div className="p-6 bg-white/[0.02] border border-white/[0.08] rounded-2xl space-y-5">
+                        <div className="flex items-start gap-4">
+                          <div className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center shrink-0">
+                            <Building2 className="w-5 h-5 text-white/40" strokeWidth={1.5} />
+                          </div>
+                          <div>
+                            <h3 className="text-white text-sm font-medium tracking-tight mb-2">Google Workspace Required</h3>
+                            <p className="text-white/35 text-xs leading-relaxed font-light">
+                              Mailient currently supports <span className="text-white/60">Google Workspace</span> accounts only.
+                              Personal Gmail accounts (<span className="text-white/50 font-mono text-[11px]">@gmail.com</span>) are not supported at this time.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="border-t border-white/[0.06] pt-5 space-y-3">
+                          <p className="text-[11px] text-white/25 font-light leading-relaxed">
+                            If you have a Google Workspace account through your organization, please use that email address instead.
+                          </p>
+                          <button
+                            onClick={backToStep1}
+                            className="w-full h-10 bg-white/[0.06] hover:bg-white/[0.1] text-white/70 rounded-xl text-xs font-medium transition-all flex items-center justify-center gap-2"
+                          >
+                            <ArrowLeft className="w-3 h-3" />
+                            Use a different email
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ) : (
+                    /* ── Workspace: Show Install button ── */
+                    <motion.div
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5, delay: 0.1 }}
+                      className="space-y-4"
+                    >
+                      <button
+                        onClick={handleGoogleSignIn}
+                        disabled={isLoading}
+                        className="w-full h-12 bg-white text-black rounded-[14px] font-semibold text-sm hover:bg-[#F5F5F5] hover:-translate-y-0.5 transition-all flex items-center justify-center gap-3 shadow-lg disabled:opacity-50 active:scale-[0.98]"
+                      >
+                        {isLoading ? (
+                          <div className="w-4 h-4 border-2 border-black/20 border-t-black animate-spin rounded-full" />
+                        ) : (
+                          <>
+                            <svg className="w-4 h-4" viewBox="0 0 24 24">
+                              <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                              <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                              <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                              <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                            </svg>
+                            Install for Workspace
+                          </>
+                        )}
+                      </button>
+
+                      {/* Helper text for personal (non-gmail) accounts */}
+                      {!isWorkspace && (
+                        <div className="p-4 bg-white/[0.01] border border-white/[0.05] rounded-xl flex gap-3">
+                          <AlertCircle className="w-4 h-4 text-white/20 shrink-0 mt-0.5" strokeWidth={1.5} />
+                          <p className="text-[11px] text-white/30 leading-relaxed font-light">
+                            Personal accounts require manual confirmation on the Google consent screen. Click &apos;Advanced&apos; if prompted.
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Workspace-specific: approval needed link */}
+                      {isWorkspace && (
+                        <button
+                          onClick={() => setShowAdminModal(true)}
+                          className="w-full text-center text-[10px] font-medium text-white/20 hover:text-white/50 transition-colors py-2 uppercase tracking-[0.2em]"
+                        >
+                          need admin approval?
+                        </button>
+                      )}
+                    </motion.div>
+                  )}
+                </motion.div>
+              )}
+
+              {/* ──────────── STEP 3: Admin Direct Install ──────────── */}
+              {step === 3 && (
+                <motion.div
+                  key="step3"
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  transition={{ duration: 0.4, ease: "easeOut" }}
+                  className="w-full max-w-[340px] mx-auto md:mx-0"
+                >
+                  <StepIndicator currentStep={3} />
+
+                  <button
+                    onClick={() => { setStep(2); setShowAdminGuide(false); }}
+                    className="flex items-center gap-2 text-white/30 hover:text-white transition-colors text-xs font-light mb-8 group w-fit"
+                  >
+                    <ArrowLeft className="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" />
+                    back
+                  </button>
+
+                  <div className="mb-8">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-8 h-8 rounded-lg bg-white/[0.06] border border-white/[0.1] flex items-center justify-center">
+                        <UserCog className="w-4 h-4 text-white/60" strokeWidth={1.5} />
+                      </div>
+                      <h2 className="text-white text-base font-light tracking-tight">Admin Setup</h2>
+                    </div>
+                    <p className="text-white/30 text-xs font-light leading-relaxed">
+                      Since you&apos;re the admin, follow these steps to approve Mailient for your workspace, then connect your account.
+                    </p>
+                  </div>
+
+                  {/* Admin steps */}
+                  <div className="space-y-4 mb-8">
+                    {[
+                      {
+                        step: '1',
+                        title: 'Open Google Admin Console',
+                        desc: 'Navigate to Security → API Controls → Manage Third-Party App Access',
+                        link: 'https://admin.google.com/ac/owl/list?tab=configuredApps',
+                        linkText: 'Open Admin Console'
+                      },
+                      {
+                        step: '2',
+                        title: 'Add Mailient',
+                        desc: 'Click "Configure new app" → search by Client ID:',
+                        copyable: CLIENT_ID
+                      },
+                      {
+                        step: '3',
+                        title: 'Set access to Trusted',
+                        desc: 'Select the app, choose your organizational unit, and set access to "Trusted".'
+                      }
+                    ].map((item, i) => (
+                      <motion.div
+                        key={i}
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4, delay: i * 0.1 }}
+                        className="p-4 bg-white/[0.02] border border-white/[0.06] rounded-xl space-y-3"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="w-5 h-5 rounded-full bg-white/[0.06] flex items-center justify-center shrink-0 mt-0.5">
+                            <span className="text-[10px] font-semibold text-white/50">{item.step}</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white/80 text-xs font-medium tracking-tight mb-1">{item.title}</p>
+                            <p className="text-white/30 text-[11px] leading-relaxed font-light">{item.desc}</p>
+
+                            {item.copyable && (
+                              <div className="mt-2 flex items-center gap-2">
+                                <code className="flex-1 text-[10px] font-mono text-white/60 bg-white/[0.03] border border-white/[0.08] rounded-lg px-3 py-2 truncate">
+                                  {item.copyable || 'unconfigured'}
+                                </code>
+                                <button
+                                  onClick={() => copyToClipboard(item.copyable, `step${item.step}`)}
+                                  className="shrink-0 p-2 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] rounded-lg transition-all"
+                                >
+                                  {copiedField === `step${item.step}` ? (
+                                    <CheckCircle2 className="w-3 h-3 text-white/60" />
+                                  ) : (
+                                    <Copy className="w-3 h-3 text-white/40" />
+                                  )}
+                                </button>
+                              </div>
+                            )}
+
+                            {item.link && (
+                              <a
+                                href={item.link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="mt-2 inline-flex items-center gap-1.5 text-[11px] text-white/40 hover:text-white/70 transition-colors font-light"
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                                {item.linkText}
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+
+                  {/* After approval, connect */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: 0.4 }}
+                  >
                     <button
                       onClick={handleGoogleSignIn}
                       disabled={isLoading}
-                      className="w-full h-11 bg-white text-black rounded-[14px] font-semibold text-sm hover:bg-[#F5F5F5] hover:-translate-y-0.5 transition-all flex items-center justify-center gap-3 shadow-lg disabled:opacity-50 active:scale-[0.98]"
+                      className="w-full h-12 bg-white text-black rounded-[14px] font-semibold text-sm hover:bg-[#F5F5F5] hover:-translate-y-0.5 transition-all flex items-center justify-center gap-3 shadow-lg disabled:opacity-50 active:scale-[0.98]"
                     >
                       {isLoading ? (
                         <div className="w-4 h-4 border-2 border-black/20 border-t-black animate-spin rounded-full" />
                       ) : (
                         <>
-                          <svg className="w-4 h-4" viewBox="0 0 24 24">
-                            <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                            <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                            <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                            <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-                          </svg>
-                          Connect with Google
+                          <CheckCircle2 className="w-4 h-4" />
+                          I&apos;ve approved — Connect now
                         </>
                       )}
                     </button>
-
-                    {isWorkspace && (
-                      <button
-                        onClick={() => setShowAdminModal(true)}
-                        className="w-full text-center text-[10px] font-medium text-white/20 hover:text-white/50 transition-colors py-2 uppercase tracking-[0.2em]"
-                      >
-                        manual approval needed?
-                      </button>
-                    )}
-                  </div>
-
-                  {!isWorkspace && (
-                    <div className="mt-8 p-4 bg-white/[0.01] border border-white/[0.05] rounded-xl flex gap-3">
-                      <AlertCircle className="w-4 h-4 text-white/20 shrink-0 mt-0.5" strokeWidth={1.5} />
-                      <p className="text-[11px] text-white/30 leading-relaxed font-light">
-                        personal accounts require manual confirmation on the google consent screen. click 'advanced' if prompted.
-                      </p>
-                    </div>
-                  )}
+                    <p className="text-center text-[10px] text-white/15 mt-3 font-light">
+                      Make sure you&apos;ve completed the steps above before connecting.
+                    </p>
+                  </motion.div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -287,54 +519,108 @@ function SignInContent() {
         </div>
       </motion.div>
 
-      {/* Admin Modal - Monochrome version */}
+      {/* ──────────── Admin Approval Modal (shown on OAuth block) ──────────── */}
       <AnimatePresence>
         {showAdminModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/95 backdrop-blur-sm">
             <motion.div
-              initial={{ opacity: 0, scale: 0.99 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.99 }}
+              initial={{ opacity: 0, scale: 0.97, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.97, y: 10 }}
+              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
               className="w-full max-w-lg bg-[#0E0E0E] border border-white/[0.08] border-t-white/10 rounded-[20px] shadow-[0_45px_120px_rgba(0,0,0,0.95)] overflow-hidden"
             >
-              <div className="p-10 sm:p-14 space-y-10">
-                <div className="flex items-center justify-between font-light">
-                  <h2 className="text-2xl text-white tracking-tight">Admin Approval Needed</h2>
-                  <button onClick={() => setShowAdminModal(false)} className="text-[#333333] hover:text-white transition-colors">
-                    <ArrowRight className="w-6 h-6 rotate-[-45deg]" strokeWidth={1} />
+              <div className="p-10 sm:p-12 space-y-8">
+                {/* Header */}
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center">
+                      <Shield className="w-6 h-6 text-white/50" strokeWidth={1.5} />
+                    </div>
+                    <div>
+                      <h2 className="text-xl text-white font-light tracking-tight">Admin Approval Required</h2>
+                      <p className="text-white/25 text-xs font-light mt-1">
+                        Your workspace admin must authorize Mailient.
+                      </p>
+                    </div>
+                  </div>
+                  <button onClick={() => setShowAdminModal(false)} className="text-white/15 hover:text-white/50 transition-colors p-1">
+                    <ArrowRight className="w-5 h-5 rotate-[-45deg]" strokeWidth={1.5} />
                   </button>
                 </div>
 
-                <div className="space-y-8">
-                  <div className="p-6 bg-transparent border border-white/[0.08] rounded-2xl space-y-5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-medium uppercase tracking-widest text-white/30">OAuth Client ID</span>
-                      <button
-                        onClick={() => copyToClipboard(CLIENT_ID, 'clientid')}
-                        className="text-[10px] font-semibold uppercase tracking-widest text-white/40 hover:text-white transition-colors flex items-center gap-2"
-                      >
-                        {copiedField === 'clientid' ? 'copied' : 'copy'}
-                      </button>
-                    </div>
-                    <div className="text-[11px] font-mono text-white/80 break-all bg-white/[0.02] p-4 border border-white/[0.08] rounded-xl leading-relaxed">
-                      {CLIENT_ID || 'unconfigured_client_id'}
-                    </div>
+                {/* Email Template */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-medium uppercase tracking-widest text-white/25">Email Template for Admin</span>
+                    <button
+                      onClick={() => copyToClipboard(ADMIN_EMAIL_TEMPLATE, 'template')}
+                      className="text-[10px] font-semibold uppercase tracking-widest text-white/40 hover:text-white transition-colors flex items-center gap-2"
+                    >
+                      {copiedField === 'template' ? (
+                        <><CheckCircle2 className="w-3 h-3" /> copied</>
+                      ) : (
+                        <><Copy className="w-3 h-3" /> copy template</>
+                      )}
+                    </button>
                   </div>
-
-                  <div className="space-y-4 text-xs text-white/30 font-light leading-relaxed tracking-tight">
-                    <p>1. Open Google Admin → Security → API Controls</p>
-                    <p>2. Select 'Manage Third-Party App Access'</p>
-                    <p>3. Add 'Mailient' using the Client ID above</p>
-                    <p>4. Set access level to 'Trusted'</p>
+                  <div className="text-[11px] font-mono text-white/50 bg-white/[0.02] p-5 border border-white/[0.06] rounded-xl leading-relaxed max-h-[160px] overflow-y-auto whitespace-pre-wrap custom-scrollbar">
+                    {ADMIN_EMAIL_TEMPLATE}
                   </div>
                 </div>
 
-                <div className="flex gap-4 pt-4">
+                {/* Admin Guide Steps */}
+                <div className="space-y-3">
+                  <span className="text-[10px] font-medium uppercase tracking-widest text-white/25">Admin Guide (3 Steps)</span>
+                  <div className="space-y-2">
+                    {[
+                      'Open Google Admin → Security → API Controls',
+                      "Select 'Manage Third-Party App Access' → Add Mailient by Client ID",
+                      "Set access level to 'Trusted' for your organization"
+                    ].map((stepText, i) => (
+                      <div key={i} className="flex items-start gap-3 p-3 bg-white/[0.015] border border-white/[0.05] rounded-xl">
+                        <div className="w-5 h-5 rounded-full bg-white/[0.06] flex items-center justify-center shrink-0">
+                          <span className="text-[10px] font-semibold text-white/50">{i + 1}</span>
+                        </div>
+                        <p className="text-[11px] text-white/40 font-light leading-relaxed">{stepText}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Client ID for reference */}
+                <div className="p-4 bg-white/[0.015] border border-white/[0.06] rounded-xl">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-medium uppercase tracking-widest text-white/25">OAuth Client ID</span>
+                    <button
+                      onClick={() => copyToClipboard(CLIENT_ID, 'clientid')}
+                      className="text-[10px] font-semibold uppercase tracking-widest text-white/40 hover:text-white transition-colors flex items-center gap-2"
+                    >
+                      {copiedField === 'clientid' ? 'copied' : 'copy'}
+                    </button>
+                  </div>
+                  <code className="text-[11px] font-mono text-white/60 break-all leading-relaxed">
+                    {CLIENT_ID || 'unconfigured_client_id'}
+                  </code>
+                </div>
+
+                {/* Action buttons */}
+                <div className="flex gap-3 pt-2">
                   <button
                     onClick={() => setShowAdminModal(false)}
-                    className="flex-1 h-11 bg-white text-black rounded-[14px] font-semibold text-sm hover:bg-[#F5F5F5] hover:-translate-y-0.5 transition-all shadow-lg"
+                    className="flex-1 h-11 bg-white/[0.04] hover:bg-white/[0.08] text-white/60 rounded-[14px] font-medium text-sm transition-all border border-white/[0.06]"
                   >
-                    Got it
+                    Close
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowAdminModal(false);
+                      setStep(3);
+                    }}
+                    className="flex-1 h-11 bg-white text-black rounded-[14px] font-semibold text-sm hover:bg-[#F5F5F5] hover:-translate-y-0.5 transition-all shadow-lg flex items-center justify-center gap-2"
+                  >
+                    <UserCog className="w-4 h-4" />
+                    I am the Admin
                   </button>
                 </div>
               </div>
