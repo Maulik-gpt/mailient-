@@ -1431,7 +1431,7 @@ export default function ChatInterface({
                         </div>
                         <div className="flex flex-col items-start gap-2 pt-1">
                           <MorphingSquare
-                            className="w-4 h-4 bg-blue-500/80 shadow-[0_0_10px_rgba(59,130,246,0.5)]"
+                            className="w-4 h-4 bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)]"
                             message="Arcus is thinking..."
                             messagePlacement="right"
                           />
