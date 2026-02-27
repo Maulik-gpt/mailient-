@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
     serverComponentsExternalPackages: ['@supabase/supabase-js'],
   },
   images: {
-    domains: ['localhost', 'mailient.xyz', 'avatars.githubusercontent.com'],
+    domains: ['localhost', 'mailient.xyz', 'avatars.githubusercontent.com', 'xubohuah.github.io'],
   },
   typescript: {
     ignoreBuildErrors: true,
