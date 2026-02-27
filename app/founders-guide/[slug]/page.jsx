@@ -204,7 +204,7 @@ export default function GuidePage() {
                     <article
                         className="
                             prose-zinc prose-invert max-w-none
-                            [&_h2]:text-2xl [&_h2]:font-medium [&_h2]:mt-24 [&_h2]:mb-8 [&_h2]:uppercase [&_h2]:text-[13px] [&_h2]:font-mono [&_h2]:tracking-[0.3em] [&_h2]:text-zinc-500 [&_h2]:border-b [&_h2]:border-white/10 [&_h2]:pb-4
+                            [&_h2]:text-2xl [&_h2]:font-medium [&_h2]:mt-24 [&_h2]:mb-8 [&_h2]:tracking-tight [&_h2]:uppercase [&_h2]:text-[13px] [&_h2]:font-mono [&_h2]:tracking-[0.3em] [&_h2]:text-zinc-500 [&_h2]:border-b [&_h2]:border-white/10 [&_h2]:pb-4
                             [&_p]:text-zinc-400 [&_p]:text-[15px] [&_p]:leading-[1.8] [&_p]:mb-10 [&_p]:font-light
                             [&_strong]:text-white [&_strong]:font-medium
                             [&_ul]:list-none [&_ul]:p-0 [&_ul]:mb-12

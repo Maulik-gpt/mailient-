@@ -4,11 +4,6 @@ import { useEffect, useState, Suspense, useRef } from 'react';
 import { signIn, getSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '../../../components/ui/button';
-import { motion, AnimatePresence } from 'framer-motion';
-import {
-  ArrowLeft, Check, AlertCircle, Copy, CheckCircle2, Shield, Info,
-  ArrowRight, ExternalLink, Globe, Lock, Workflow, Mail
-} from 'lucide-react';
 
 // Domains that are personal (not Workspace)
 const PERSONAL_DOMAINS = [
@@ -36,11 +31,12 @@ function SignInContent() {
 
   const callbackUrl = searchParams?.get('callbackUrl') || '/onboarding';
 
-  // Check for OAuth errors
+  // Check for OAuth errors (e.g., admin blocked the app)
   useEffect(() => {
     const urlError = searchParams?.get('error');
     if (urlError) {
       if (urlError === 'access-denied' || urlError === 'org_internal') {
+        // Likely blocked by Workspace admin
         setShowAdminModal(true);
       } else {
         switch (urlError) {
@@ -80,6 +76,7 @@ function SignInContent() {
     checkSession();
   }, [router, callbackUrl, searchParams]);
 
+  // Handle email submission
   const handleEmailSubmit = (e) => {
     e.preventDefault();
     const trimmed = email.trim().toLowerCase();
@@ -97,12 +94,13 @@ function SignInContent() {
     }
   };
 
+  // Handle Google sign-in
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     setError(null);
     try {
       await signIn('google', {
-        callbackUrl: '/onboarding',
+        redirectTo: '/onboarding',
         login_hint: email.trim().toLowerCase(),
       });
     } catch (error) {
@@ -112,12 +110,32 @@ function SignInContent() {
     }
   };
 
+  // Copy to clipboard
   const copyToClipboard = (text, field) => {
     navigator.clipboard.writeText(text);
     setCopiedField(field);
     setTimeout(() => setCopiedField(null), 2000);
   };
 
+  // Generate admin email template
+  const adminEmailTemplate = `Hi,
+
+I'd like to use Mailient (mailient.xyz) for AI-powered email management with our team.
+
+Could you please approve it in our Google Workspace Admin Console? Here's how:
+
+1. Go to admin.google.com → Security → API Controls → App Access Control
+2. Click "Add app" → "OAuth App Name or Client ID"
+3. Search for Client ID: ${CLIENT_ID || '[Ask your developer for the OAuth Client ID]'}
+4. Set access to "Trusted"
+
+This takes about 60 seconds. Once done, our team can sign in immediately.
+
+More info: https://mailient.xyz
+
+Thanks!`;
+
+  // Reset to email input
   const handleBack = () => {
     setStep(1);
     setIsWorkspace(null);
@@ -126,285 +144,360 @@ function SignInContent() {
   };
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-4 relative overflow-hidden font-sans">
-      {/* Dynamic Blurred Background */}
-      <div className="fixed inset-0 z-0">
-        <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-purple-600/20 rounded-full blur-[120px] animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[130px] animate-pulse" style={{ animationDelay: '2s' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-zinc-900/40 rounded-full blur-[100px]" />
-      </div>
+    <div className="min-h-screen flex items-center justify-center bg-black relative overflow-hidden">
+      {/* Background effects */}
+      <div className="absolute inset-0 bg-gradient-mesh opacity-30 animate-float" />
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#404040]/20 rounded-full blur-[120px] animate-pulse" />
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#404040]/15 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: "1s" }} />
 
-      {/* Grid Pattern overlay for depth */}
-      <div className="fixed inset-0 z-0 opacity-[0.03] pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-repeat" />
+      <div className="relative z-10 w-full max-w-md px-6">
+        <div className="bg-[#171717]/40 backdrop-blur-xl border border-gray-600/30 rounded-2xl p-8 shadow-2xl animate-fade-in">
 
-      {/* Main Modal */}
-      <motion.div
-        initial={{ opacity: 0, y: 20, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="relative z-10 w-full max-w-[440px] bg-white rounded-[28px] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.5)] overflow-hidden"
-      >
-        {/* Modal Header with Grainy Gradient */}
-        <div className="relative h-44 flex flex-col items-center justify-center overflow-hidden">
-          <div className="absolute inset-0 z-0 bg-gradient-to-br from-[#1a1a1a] via-[#3a1c71] to-[#ffaf7b] opacity-90" />
-          <div className="absolute inset-0 z-0 opacity-40 mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-repeat scale-150" />
-
-          {/* Logo Container */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="relative z-10 flex flex-col items-center gap-3"
-          >
-            <div className="w-12 h-12 bg-white rounded-xl border border-white/20 flex items-center justify-center shadow-inner overflow-hidden">
-              <img src="/logo-new.png" alt="Mailient" className="w-full h-full object-cover" />
+          {/* Error message */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-900/20 border border-red-500/30 rounded-lg">
+              <p className="text-red-300 text-sm">{error}</p>
             </div>
-            <span className="text-white font-medium tracking-[0.2em] text-[10px] uppercase opacity-80 font-mono">Mailient</span>
-          </motion.div>
-        </div>
+          )}
 
-        {/* Modal Body */}
-        <div className="p-8 pt-10 sm:p-10">
-          <div className="text-center mb-10">
-            <h2 className="text-2xl font-semibold text-[#1a1a1a] tracking-tight">Sign in to continue</h2>
-          </div>
-
-          <AnimatePresence mode="wait">
-            {step === 1 ? (
-              <motion.div
-                key="step1"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-8"
-              >
-                {/* Features List */}
-                <div className="space-y-4 mb-8">
-                  {[
-                    { icon: <Check className="w-4 h-4 text-emerald-500" />, text: "AI email prioritization for teams" },
-                    { icon: <Check className="w-4 h-4 text-emerald-500" />, text: "Secure Workspace integration" },
-                    { icon: <Check className="w-4 h-4 text-emerald-500" />, text: "Draft replies in your voice" }
-                  ].map((feature, i) => (
-                    <div key={i} className="flex items-center gap-3 text-sm text-zinc-600">
-                      <div className="flex-shrink-0 w-5 h-5 rounded-full bg-emerald-50 flex items-center justify-center">
-                        {feature.icon}
-                      </div>
-                      <span className="font-medium">{feature.text}</span>
-                    </div>
-                  ))}
+          {/* ─── STEP 1: Email Input ─── */}
+          {step === 1 && (
+            <>
+              <div className="text-center mb-8">
+                <div className="w-12 h-12 mx-auto mb-4 rounded-2xl border border-white/10 overflow-hidden">
+                  <img src="/logo-new.png" alt="Mailient" className="w-full h-full object-cover" />
                 </div>
+                <h1 className="text-2xl font-bold text-gray-100">
+                  Sign in to Mailient
+                </h1>
+                <p className="text-gray-500 text-sm mt-2">
+                  Enter your work email to get started
+                </p>
+              </div>
 
-                {/* Email Form */}
-                <form onSubmit={handleEmailSubmit} className="space-y-4">
-                  <div className="relative">
-                    <input
-                      ref={emailInputRef}
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Work email address"
-                      className="w-full h-14 px-5 bg-zinc-50 border border-zinc-200 rounded-2xl text-[#1a1a1a] placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-base"
-                      autoFocus
-                      required
-                    />
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-300">
-                      <Mail className="w-5 h-5" />
-                    </div>
-                  </div>
+              <form onSubmit={handleEmailSubmit} className="space-y-4">
+                <div>
+                  <input
+                    ref={emailInputRef}
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@company.com"
+                    className="w-full h-12 px-4 bg-black/60 border border-white/10 rounded-xl text-white placeholder:text-gray-600 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/10 transition-all text-sm"
+                    autoFocus
+                    required
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full h-12 bg-white text-black hover:bg-gray-200 font-semibold transition-all duration-300 hover:scale-[1.01]"
+                  disabled={!email.includes('@')}
+                >
+                  Continue
+                </Button>
+              </form>
 
-                  <button
-                    type="submit"
-                    disabled={!email.includes('@')}
-                    className="w-full h-14 bg-[#1a1a1a] text-white rounded-full font-semibold text-base hover:bg-zinc-800 transition-all flex items-center justify-center gap-2 shadow-lg shadow-black/5 disabled:opacity-50 disabled:hover:bg-[#1a1a1a] group"
-                  >
-                    Continue
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </button>
-                </form>
+              {/* Workspace badge */}
+              <div className="mt-6 flex items-center justify-center gap-2 text-[11px] text-gray-600">
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+                Built for Google Workspace teams
+              </div>
+            </>
+          )}
 
-                <div className="text-center">
-                  <p className="text-xs text-zinc-400 font-medium tracking-wide">
-                    OR CONTINUE WITH
-                  </p>
-                  <div className="mt-4 flex justify-center gap-3">
-                    <button
-                      onClick={() => handleGoogleSignIn()}
-                      className="flex items-center gap-2 px-6 py-2.5 rounded-full border border-zinc-200 hover:bg-zinc-50 transition-colors text-sm font-medium text-zinc-700"
-                    >
-                      <svg className="w-4 h-4" viewBox="0 0 24 24">
-                        <path fill="#EA4335" d="M12 5.04c1.74 0 3.3.6 4.53 1.76l3.39-3.39C17.85 1.53 15.15 0 12 0 7.31 0 3.26 2.69 1.18 6.61l3.96 3.07C6.1 7.24 8.84 5.04 12 5.04z" />
-                        <path fill="#4285F4" d="M23.52 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.59-5.17 3.59-8.82z" />
-                        <path fill="#FBBC05" d="M5.14 14.68c-.25-.74-.4-1.54-.4-2.38s.15-1.64.4-2.38l-4.14-3.21C.37 8.21 0 10.05 0 12s.37 3.79 1 5.31l4.14-3.32z" />
-                        <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3C15.01 18.77 13.62 19.2 12 19.2c-3.13 0-5.8-2.12-6.76-4.99l-3.97 3.07C3.33 21.31 7.35 24 12 24z" />
+          {/* ─── STEP 2: Connect or Blocked ─── */}
+          {step === 2 && (
+            <>
+              {/* Back button */}
+              <button
+                onClick={handleBack}
+                className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-white transition-colors mb-6 group"
+              >
+                <svg className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m15 18-6-6 6-6" />
+                </svg>
+                Change email
+              </button>
+
+              {isWorkspace ? (
+                /* ── Workspace domain detected ── */
+                <>
+                  <div className="text-center mb-8">
+                    <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                      <svg className="w-7 h-7 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                        <polyline points="22 4 12 14.01 9 11.01" />
                       </svg>
-                      Google
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="step2"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-8"
-              >
-                <div className="flex flex-col items-center">
-                  <button
-                    onClick={handleBack}
-                    className="flex items-center gap-2 text-zinc-400 hover:text-[#1a1a1a] transition-colors text-sm font-medium mb-6 group"
-                  >
-                    <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                    Edit email address
-                  </button>
-
-                  <div className="w-full p-6 bg-zinc-50 border border-zinc-100 rounded-2xl mb-8">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Workspace status</span>
-                      <span className={`text-[10px] font-bold uppercase tracking-wider ${isWorkspace ? 'text-emerald-500' : 'text-amber-500'}`}>
-                        {isWorkspace ? 'Verified Domain' : 'Personal Domain'}
-                      </span>
                     </div>
-                    <div className="text-[#1a1a1a] font-medium truncate">
-                      {email}
-                    </div>
+                    <h2 className="text-xl font-bold text-white">
+                      Workspace detected
+                    </h2>
+                    <p className="text-gray-500 text-sm mt-2">
+                      Signing in as <span className="text-gray-300 font-medium">{email.trim().toLowerCase()}</span>
+                    </p>
                   </div>
-                </div>
 
-                <div className="space-y-4">
-                  <button
+                  <Button
                     onClick={handleGoogleSignIn}
                     disabled={isLoading}
-                    className="w-full h-15 bg-[#1a1a1a] text-white rounded-full font-semibold text-base hover:bg-zinc-800 transition-all flex items-center justify-center gap-3 shadow-lg shadow-black/10 disabled:opacity-50"
+                    className="w-full h-12 bg-white text-gray-900 hover:bg-gray-100 border border-gray-300 hover:border-gray-400 transition-all duration-300 hover:scale-[1.01] font-medium"
+                    size="lg"
                   >
                     {isLoading ? (
-                      <div className="w-5 h-5 border-2 border-white/20 border-t-white animate-spin rounded-full" />
+                      <div className="w-5 h-5 border-2 border-gray-600/30 border-t-gray-900 rounded-full animate-spin" />
                     ) : (
                       <>
-                        <svg className="w-5 h-5" viewBox="0 0 24 24">
-                          <path fill="#EA4335" d="M12 5.04c1.74 0 3.3.6 4.53 1.76l3.39-3.39C17.85 1.53 15.15 0 12 0 7.31 0 3.26 2.69 1.18 6.61l3.96 3.07C6.1 7.24 8.84 5.04 12 5.04z" />
-                          <path fill="#4285F4" d="M23.52 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.59-5.17 3.59-8.82z" />
-                          <path fill="#FBBC05" d="M5.14 14.68c-.25-.74-.4-1.54-.4-2.38s.15-1.64.4-2.38l-4.14-3.21C.37 8.21 0 10.05 0 12s.37 3.79 1 5.31l4.14-3.32z" />
-                          <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3C15.01 18.77 13.62 19.2 12 19.2c-3.13 0-5.8-2.12-6.76-4.99l-3.97 3.07C3.33 21.31 7.35 24 12 24z" />
+                        <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                          <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                          <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                          <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                         </svg>
-                        Continue with Google
+                        Connect Workspace Account
                       </>
                     )}
-                  </button>
+                  </Button>
 
+                  {/* What if blocked */}
                   <button
                     onClick={() => setShowAdminModal(true)}
-                    className="w-full text-center text-xs font-semibold text-zinc-400 hover:text-zinc-600 transition-colors py-2 uppercase tracking-wide"
+                    className="w-full mt-4 text-center text-xs text-gray-600 hover:text-gray-400 transition-colors"
                   >
-                    Need admin approval?
+                    Blocked by your organization? Get admin approval →
                   </button>
-                </div>
+                </>
+              ) : (
+                /* ── Personal email detected ── */
+                <>
+                  <div className="text-center mb-6">
+                    <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+                      <svg className="w-7 h-7 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="8" x2="12" y2="12" />
+                        <line x1="12" y1="16" x2="12.01" y2="16" />
+                      </svg>
+                    </div>
+                    <h2 className="text-xl font-bold text-white">
+                      Personal email detected
+                    </h2>
+                    <p className="text-gray-500 text-sm mt-2 max-w-xs mx-auto leading-relaxed">
+                      Mailient is optimized for <span className="text-white font-medium">Google Workspace</span> teams.
+                      Personal accounts like <span className="text-gray-300">@{emailDomain}</span> will see an extra verification step from Google.
+                    </p>
+                  </div>
 
-                {!isWorkspace && (
-                  <div className="p-5 border border-amber-100 bg-amber-50/50 rounded-2xl flex gap-3">
-                    <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-xs font-bold text-amber-800 uppercase tracking-tight mb-1">Personal Account Detected</p>
-                      <p className="text-[11px] text-amber-700 leading-relaxed font-medium">
-                        Access requires manual verification from Google for non-Workspace domains.
-                        Click 'Advanced' → 'Go to Mailient' if prompted.
-                      </p>
+                  {/* Continue anyway */}
+                  <div className="space-y-3">
+                    <Button
+                      onClick={handleGoogleSignIn}
+                      disabled={isLoading}
+                      className="w-full h-12 bg-white/10 text-white hover:bg-white/20 border border-white/10 transition-all duration-300 font-medium"
+                      size="lg"
+                    >
+                      {isLoading ? (
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          Continue with @{emailDomain}
+                        </>
+                      )}
+                    </Button>
+
+                    <p className="text-[10px] text-gray-600 text-center leading-relaxed px-4">
+                      You'll see a "Google hasn't verified this app" screen.
+                      Click <span className="text-gray-400">Advanced</span> → <span className="text-gray-400">Go to Mailient</span> to continue safely.
+                    </p>
+                  </div>
+
+                  {/* Separator */}
+                  <div className="relative my-6">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-gray-700/50" />
+                    </div>
+                    <div className="relative flex justify-center text-[10px]">
+                      <span className="px-3 bg-[#171717] text-gray-600 uppercase tracking-widest font-bold">
+                        Recommended
+                      </span>
                     </div>
                   </div>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
 
-          {/* Footer Branding */}
-          <div className="mt-12 pt-8 border-t border-zinc-100 flex items-center justify-between text-[10px] font-bold text-zinc-300 uppercase tracking-[0.2em] sm:px-2">
-            <span>OAuth 2.0</span>
-            <div className="w-1.5 h-1.5 bg-zinc-100 rounded-full" />
-            <span>Vault Secure</span>
-            <div className="w-1.5 h-1.5 bg-zinc-100 rounded-full" />
-            <span>Privacy</span>
+                  {/* Use work email instead */}
+                  <button
+                    onClick={handleBack}
+                    className="w-full h-12 rounded-xl border border-emerald-500/20 bg-emerald-500/5 text-emerald-400 text-sm font-semibold hover:bg-emerald-500/10 transition-all flex items-center justify-center gap-2"
+                  >
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="2" y="4" width="20" height="16" rx="2" />
+                      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                    </svg>
+                    Use a work email instead
+                  </button>
+                </>
+              )}
+            </>
+          )}
+
+          {/* Sign up / Sign in toggle (step 1 only) */}
+          {step === 1 && (
+            <>
+              <div className="relative my-8">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-600/50" />
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-4 bg-[#171717] text-gray-100">New to Mailient?</span>
+                </div>
+              </div>
+              <div className="text-center">
+                <Button
+                  variant="ghost"
+                  onClick={() => router.push('/auth/signup')}
+                  className="text-gray-100 hover:text-white transition-colors"
+                >
+                  Create an account
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* ─── Admin Approval Modal ─── */}
+      {showAdminModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setShowAdminModal(false)}>
+          <div
+            className="w-full max-w-lg bg-[#141414] border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-fade-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal header */}
+            <div className="px-6 pt-6 pb-4 border-b border-white/5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                    <svg className="w-5 h-5 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                      <circle cx="9" cy="7" r="4" />
+                      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white">Admin Approval Required</h3>
+                    <p className="text-xs text-gray-500">Share these instructions with your IT admin</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowAdminModal(false)} className="p-2 rounded-lg hover:bg-white/5 transition-colors">
+                  <svg className="w-5 h-5 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Modal body */}
+            <div className="px-6 py-5 space-y-5 max-h-[60vh] overflow-y-auto">
+              {/* 3-Step Guide */}
+              <div className="space-y-4">
+                {[
+                  {
+                    num: 1,
+                    title: "Open API Controls",
+                    desc: "Go to admin.google.com → Security → API Controls → App Access Control",
+                  },
+                  {
+                    num: 2,
+                    title: "Add Mailient by Client ID",
+                    desc: `Click "Add app" → "OAuth App Name or Client ID" → paste:`,
+                    copyable: CLIENT_ID,
+                  },
+                  {
+                    num: 3,
+                    title: 'Set to "Trusted"',
+                    desc: "Select Mailient, set access to Trusted. Your entire team can now sign in.",
+                  },
+                ].map((s) => (
+                  <div key={s.num} className="flex gap-3">
+                    <div className="w-7 h-7 rounded-full bg-white/10 border border-white/10 flex items-center justify-center shrink-0 text-sm font-bold text-white">
+                      {s.num}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-white">{s.title}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{s.desc}</p>
+                      {s.copyable && (
+                        <div className="mt-2 flex items-center gap-2">
+                          <code className="flex-1 text-xs text-white font-mono bg-black/50 border border-white/10 rounded-lg px-3 py-2 truncate">
+                            {s.copyable}
+                          </code>
+                          <button
+                            onClick={() => copyToClipboard(s.copyable, 'clientId')}
+                            className="p-2 rounded-lg hover:bg-white/10 transition-colors shrink-0"
+                          >
+                            {copiedField === 'clientId' ? (
+                              <svg className="w-4 h-4 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg>
+                            ) : (
+                              <svg className="w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+                            )}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Divider */}
+              <div className="h-px bg-white/5" />
+
+              {/* Copy Email Template */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Email template for your admin</p>
+                  <button
+                    onClick={() => copyToClipboard(adminEmailTemplate, 'email')}
+                    className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 transition-colors font-medium"
+                  >
+                    {copiedField === 'email' ? (
+                      <><svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg> Copied!</>
+                    ) : (
+                      <><svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg> Copy email</>
+                    )}
+                  </button>
+                </div>
+                <div className="bg-black/40 border border-white/5 rounded-xl p-4 text-xs text-gray-400 leading-relaxed whitespace-pre-wrap font-mono max-h-40 overflow-y-auto">
+                  {adminEmailTemplate}
+                </div>
+              </div>
+            </div>
+
+            {/* Modal footer */}
+            <div className="px-6 py-4 border-t border-white/5 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-[10px] text-gray-600">
+                <svg className="w-3.5 h-3.5 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+                Takes ~60 seconds for your admin
+              </div>
+              <div className="flex items-center gap-3">
+                <a
+                  href="/workspace-setup"
+                  target="_blank"
+                  className="text-xs text-blue-400 hover:text-blue-300 font-medium transition-colors"
+                >
+                  Full guide ↗
+                </a>
+                <Button
+                  onClick={() => setShowAdminModal(false)}
+                  className="bg-white text-black hover:bg-gray-200 rounded-xl px-6 h-9 text-sm font-semibold"
+                >
+                  Got it
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
-      </motion.div>
-
-      {/* Admin Approval Modal - Redesigned to match */}
-      <AnimatePresence>
-        {showAdminModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-xl">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-xl bg-white rounded-[32px] overflow-hidden"
-            >
-              <div className="h-32 bg-[#1a1a1a] flex items-center justify-center relative">
-                <div className="absolute inset-0 opacity-10 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-repeat" />
-                <Shield className="w-12 h-12 text-white/20" />
-              </div>
-
-              <div className="p-8 sm:p-12 space-y-10">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-bold text-[#1a1a1a] tracking-tight">Admin Protocol Required</h2>
-                  <button onClick={() => setShowAdminModal(false)} className="text-zinc-300 hover:text-zinc-800 transition-colors">
-                    <AlertCircle className="w-6 h-6 rotate-45" />
-                  </button>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="p-6 bg-zinc-950 rounded-2xl space-y-4 border border-zinc-800">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Client ID</span>
-                      <button
-                        onClick={() => copyToClipboard(CLIENT_ID, 'clientid')}
-                        className="text-[10px] font-bold uppercase tracking-widest text-white hover:text-zinc-400 transition-colors flex items-center gap-2"
-                      >
-                        {copiedField === 'clientid' ? 'Copied' : 'Copy'}
-                        {copiedField === 'clientid' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                      </button>
-                    </div>
-                    <div className="text-xs font-mono text-emerald-400 break-all bg-black/50 p-4 border border-emerald-900/10 rounded-xl leading-relaxed">
-                      {CLIENT_ID || 'UNCONFIGURED'}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {[
-                      { step: '01', title: 'Open Console', desc: 'Go to Admin Security' },
-                      { step: '02', title: 'App Control', desc: 'Search via Client ID' },
-                      { step: '03', title: 'Set Trust', desc: 'Mark as Trusted' }
-                    ].map((item, i) => (
-                      <div key={i} className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100">
-                        <span className="text-[10px] font-black text-zinc-200 block mb-1">{item.step}</span>
-                        <h4 className="text-[11px] font-bold text-[#1a1a1a] uppercase mb-1">{item.title}</h4>
-                        <p className="text-[10px] text-zinc-500 font-medium leading-tight">{item.desc}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                  <a
-                    href="/workspace-setup"
-                    target="_blank"
-                    className="flex-1 h-14 rounded-2xl border border-zinc-200 flex items-center justify-center gap-2 text-sm font-bold text-zinc-600 hover:bg-zinc-50 transition-colors"
-                  >
-                    <ExternalLink className="w-4 h-4" /> Full Documentation
-                  </a>
-                  <button
-                    onClick={() => setShowAdminModal(false)}
-                    className="flex-1 h-14 bg-[#1a1a1a] text-white rounded-2xl font-bold text-sm hover:bg-zinc-800 transition-all"
-                  >
-                    Acknowledge
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      )}
     </div>
   );
 }
@@ -413,7 +506,7 @@ export default function SignInPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-zinc-800 border-t-white animate-spin rounded-full" />
+        <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
       </div>
     }>
       <SignInContent />
