@@ -479,12 +479,21 @@ Thanks!`;
                 </svg>
                 Takes ~60 seconds for your admin
               </div>
-              <Button
-                onClick={() => setShowAdminModal(false)}
-                className="bg-white text-black hover:bg-gray-200 rounded-xl px-6 h-9 text-sm font-semibold"
-              >
-                Got it
-              </Button>
+              <div className="flex items-center gap-3">
+                <a
+                  href="/workspace-setup"
+                  target="_blank"
+                  className="text-xs text-blue-400 hover:text-blue-300 font-medium transition-colors"
+                >
+                  Full guide ↗
+                </a>
+                <Button
+                  onClick={() => setShowAdminModal(false)}
+                  className="bg-white text-black hover:bg-gray-200 rounded-xl px-6 h-9 text-sm font-semibold"
+                >
+                  Got it
+                </Button>
+              </div>
             </div>
           </div>
         </div>
