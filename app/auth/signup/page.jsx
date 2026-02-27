@@ -77,8 +77,19 @@ export default function GetStarted() {
           {/* Left Section: Branding & Benefits */}
           <div className="md:w-[48%] p-10 sm:p-14 flex flex-col justify-between border-b md:border-b-0 md:border-r border-white/[0.05]">
             <div>
-              <div className="mb-16">
-                <span className="text-white text-xl font-light tracking-[0.2em] lowercase">mailient</span>
+              <div className="mb-16 relative h-28 w-full rounded-2xl overflow-hidden border border-white/10 shadow-2xl group">
+                {/* Cinematic Graphite/B&W Gradient */}
+                <div className="absolute inset-0 z-0 bg-gradient-to-br from-[#080808] via-[#1A1A1A] to-[#0F0F0F]" />
+
+                {/* Dynamic Grain/Noise */}
+                <div className="absolute inset-0 z-0 opacity-60 mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-repeat scale-150 group-hover:scale-100 transition-transform duration-[10s] ease-linear" />
+
+                {/* Light streak for cinematic feel */}
+                <div className="absolute inset-0 z-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-[3s] ease-in-out" />
+
+                <div className="relative z-10 w-full h-full flex items-center justify-center">
+                  <span className="text-white text-2xl font-light tracking-[0.3em] lowercase select-none">mailient</span>
+                </div>
               </div>
 
               <h1 className="text-4xl sm:text-5xl font-medium text-white mb-8 tracking-tighter leading-[1.1]">
