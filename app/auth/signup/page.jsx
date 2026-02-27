@@ -58,19 +58,19 @@ export default function GetStarted() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#141414] to-[#0B0B0B] flex items-center justify-center p-6 relative overflow-hidden font-sans selection:bg-white selection:text-black">
-      {/* Grain texture overlay */}
-      <div className="absolute inset-0 z-0 opacity-[0.04] pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-repeat" />
+    <div className="min-h-screen bg-[#080808] flex items-center justify-center p-6 relative overflow-hidden font-sans selection:bg-white selection:text-black">
+      {/* Ultra-subtle monochrome film grain */}
+      <div className="absolute inset-0 z-0 opacity-[0.035] pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-repeat mix-blend-overlay" />
 
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        className="relative z-10 w-full max-w-[460px] bg-[#111111] border border-[#1F1F1F] rounded-[16px] shadow-[0_24px_48px_-12px_rgba(0,0,0,0.5)] p-10 sm:p-12"
+        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        className="relative z-10 w-full max-w-[460px] bg-[#121212] border border-[#1F1F1F] border-t-white/5 rounded-[16px] shadow-[0_40px_100px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.02)] p-10 sm:p-14"
       >
         {/* Logo */}
-        <div className="mb-10 text-center sm:text-left">
-          <span className="text-white text-lg font-light tracking-[0.1em] lowercase">mailient</span>
+        <div className="mb-12 text-center sm:text-left">
+          <span className="text-white text-lg font-light tracking-[0.2em] lowercase">mailient</span>
         </div>
 
         <AnimatePresence mode="wait">
@@ -82,18 +82,18 @@ export default function GetStarted() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
             >
-              <h1 className="text-2xl sm:text-3xl font-medium text-white mb-6 tracking-tight">Create your account</h1>
+              <h1 className="text-4xl font-medium text-white mb-8 tracking-tighter leading-tight">Create your account</h1>
 
-              <div className="space-y-4 mb-10">
+              <div className="space-y-6 mb-12">
                 {benefits.map((benefit, i) => (
-                  <div key={i} className="flex items-center gap-3 text-sm text-[#777777]">
-                    <Check className="w-4 h-4 text-white" strokeWidth={3} />
-                    <span>{benefit}</span>
+                  <div key={i} className="flex items-center gap-4 text-sm text-white/80">
+                    <Check className="w-4 h-4 text-white" strokeWidth={1.5} />
+                    <span className="font-light tracking-tight">{benefit}</span>
                   </div>
                 ))}
               </div>
 
-              <form onSubmit={handleEmailSubmit} className="space-y-4">
+              <form onSubmit={handleEmailSubmit} className="space-y-5">
                 <div className="relative group">
                   <input
                     ref={emailInputRef}
@@ -101,7 +101,7 @@ export default function GetStarted() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Work email address"
-                    className="w-full h-12 px-4 bg-transparent border border-[#1F1F1F] rounded-xl text-white placeholder:text-[#333333] focus:outline-none focus:border-white transition-all text-sm group-hover:border-[#333333]"
+                    className="w-full h-11 px-4 bg-transparent border border-[#1F1F1F] rounded-xl text-white placeholder:text-[#333333] focus:outline-none focus:border-white/40 transition-all text-sm group-hover:border-[#333333] font-light"
                     autoFocus
                     required
                   />
@@ -110,16 +110,16 @@ export default function GetStarted() {
                 <button
                   type="submit"
                   disabled={!email.includes('@')}
-                  className="w-full h-12 bg-white text-black rounded-[14px] font-medium text-sm hover:bg-[#E5E5E5] transition-all flex items-center justify-center gap-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] disabled:opacity-50 active:scale-[0.98]"
+                  className="w-full h-11 bg-white text-black rounded-[14px] font-semibold text-sm hover:bg-[#F5F5F5] hover:-translate-y-0.5 hover:shadow-lg transition-all flex items-center justify-center gap-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.4),0_1px_2px_rgba(0,0,0,0.1)] disabled:opacity-50 active:scale-[0.98]"
                 >
                   Get Started
                 </button>
               </form>
 
-              <div className="mt-8 text-center sm:text-left">
+              <div className="mt-10 text-center sm:text-left">
                 <button
                   onClick={() => router.push('/auth/signin')}
-                  className="text-[#777777] hover:text-white text-sm font-light transition-colors"
+                  className="text-[#444444] hover:text-white text-xs font-light tracking-tight transition-colors"
                 >
                   or sign in to your account
                 </button>
@@ -137,20 +137,20 @@ export default function GetStarted() {
               <div className="flex flex-col">
                 <button
                   onClick={backToStep1}
-                  className="flex items-center gap-2 text-[#777777] hover:text-white transition-colors text-xs font-light mb-8 group w-fit"
+                  className="flex items-center gap-2 text-[#444444] hover:text-white transition-colors text-xs font-light mb-8 group w-fit"
                 >
                   <ArrowLeft className="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" />
                   use different email
                 </button>
 
-                <div className="p-6 bg-white/[0.02] border border-[#1F1F1F] rounded-2xl mb-8">
+                <div className="p-6 bg-white/[0.01] border border-[#1F1F1F] rounded-2xl mb-8">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-[10px] font-medium uppercase tracking-widest text-[#333333]">Identity</span>
-                    <span className={`text-[10px] font-medium uppercase tracking-widest ${isWorkspace ? 'text-white' : 'text-[#777777]'}`}>
+                    <span className={`text-[10px] font-medium uppercase tracking-widest ${isWorkspace ? 'text-white/40' : 'text-[#333333]'}`}>
                       {isWorkspace ? 'Workspace' : 'Personal'}
                     </span>
                   </div>
-                  <div className="text-white font-medium truncate text-sm">
+                  <div className="text-white font-medium truncate text-sm tracking-tight">
                     {email}
                   </div>
                 </div>
@@ -160,7 +160,7 @@ export default function GetStarted() {
                 <button
                   onClick={handleGoogleSignUp}
                   disabled={isLoading}
-                  className="w-full h-12 bg-white text-black rounded-[14px] font-medium text-sm hover:bg-[#E5E5E5] transition-all flex items-center justify-center gap-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] disabled:opacity-50 active:scale-[0.98]"
+                  className="w-full h-11 bg-white text-black rounded-[14px] font-semibold text-sm hover:bg-[#F5F5F5] hover:-translate-y-0.5 hover:shadow-lg transition-all flex items-center justify-center gap-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.4),0_1px_2px_rgba(0,0,0,0.1)] disabled:opacity-50 active:scale-[0.98]"
                 >
                   {isLoading ? (
                     <div className="w-4 h-4 border-2 border-black/20 border-t-black animate-spin rounded-full" />
@@ -180,8 +180,8 @@ export default function GetStarted() {
 
               {!isWorkspace && (
                 <div className="p-4 bg-white/[0.01] border border-[#1F1F1F] rounded-xl flex gap-3">
-                  <AlertCircle className="w-4 h-4 text-[#777777] shrink-0 mt-0.5" />
-                  <p className="text-[11px] text-[#777777] leading-relaxed">
+                  <AlertCircle className="w-4 h-4 text-[#333333] shrink-0 mt-0.5" strokeWidth={1.5} />
+                  <p className="text-[11px] text-[#444444] leading-relaxed font-light">
                     personal accounts require manual confirmation on the google consent screen. click 'advanced' if prompted.
                   </p>
                 </div>
