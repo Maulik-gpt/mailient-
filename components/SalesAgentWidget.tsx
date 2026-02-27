@@ -12,10 +12,10 @@ export function SalesAgentWidget() {
     const animFrameRef = useRef<number>(0)
 
     const conversation = useConversation({
-        onConnect: () => console.log("[MailientIntelligence] Connected"),
-        onDisconnect: () => console.log("[MailientIntelligence] Disconnected"),
-        onMessage: (message) => console.log("[MailientIntelligence] Message:", message),
-        onError: (error) => console.error("[MailientIntelligence] Error:", error),
+        onConnect: () => console.log("[Arcus] Connected"),
+        onDisconnect: () => console.log("[Arcus] Disconnected"),
+        onMessage: (message) => console.log("[Arcus] Message:", message),
+        onError: (error) => console.error("[Arcus] Error:", error),
     })
 
     const isConnected = conversation.status === "connected"
@@ -29,7 +29,7 @@ export function SalesAgentWidget() {
                 connectionType: "webrtc",
             })
         } catch (error) {
-            console.error("[MailientIntelligence] Failed to start:", error)
+            console.error("[Arcus] Failed to start:", error)
         }
     }, [conversation])
 
@@ -37,7 +37,7 @@ export function SalesAgentWidget() {
         try {
             await conversation.endSession()
         } catch (error) {
-            console.error("[MailientIntelligence] Failed to stop:", error)
+            console.error("[Arcus] Failed to stop:", error)
         }
     }, [conversation])
 
@@ -148,7 +148,7 @@ export function SalesAgentWidget() {
                         transition={{ type: "spring", stiffness: 400, damping: 25 }}
                         onClick={handleTogglePanel}
                         className="fixed bottom-6 right-6 z-[9999] group cursor-pointer"
-                        aria-label="Talk to Mailient Intelligence"
+                        aria-label="Talk to Arcus"
                         id="sales-agent-trigger"
                     >
                         {/* Ambient glow */}
@@ -181,7 +181,7 @@ export function SalesAgentWidget() {
                             >
                                 <span className="flex items-center gap-1.5">
                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                                    Talk to Mailient Intelligence
+                                    Talk to Arcus
                                 </span>
                                 <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1 w-2 h-2 bg-zinc-900/90 border-r border-t border-white/10 rotate-45" />
                             </motion.div>
@@ -215,7 +215,7 @@ export function SalesAgentWidget() {
                                     <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-zinc-900 ${isConnected ? "bg-emerald-400" : "bg-zinc-600"}`} />
                                 </div>
                                 <div>
-                                    <h3 className="text-sm font-bold text-white leading-none">Mailient Intelligence</h3>
+                                    <h3 className="text-sm font-bold text-white leading-none">Arcus</h3>
                                     <p className={`text-[10px] font-medium mt-0.5 ${isConnected ? "text-emerald-400/80" : isConnecting ? "text-amber-400/80" : "text-zinc-500"}`}>
                                         {isConnected
                                             ? conversation.isSpeaking
