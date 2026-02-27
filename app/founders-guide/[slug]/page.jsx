@@ -4,9 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { guides } from "@/lib/guides";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Share2, Bookmark, Mail, Check, Sparkles, BookOpen, Volume2, Pause, Play, Loader2 } from "lucide-react";
-import { BackgroundShaders } from "@/components/ui/background-paper-shaders";
-import { GlassButton } from "@/components/ui/glass-button";
+import { ArrowLeft, ArrowUpRight, Share2, Bookmark, Check, Volume2, Pause, Play, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
@@ -67,10 +65,10 @@ export default function GuidePage() {
             if (res.ok) {
                 const data = await res.json();
                 setIsBookmarked(data.bookmarked);
-                toast.success(data.bookmarked ? "Saved to your Hub" : "Removed from bookmarks");
+                toast.success(data.bookmarked ? "Protocol saved" : "Protocol removed");
             }
         } catch (error) {
-            toast.error("Failed to update bookmark");
+            toast.error("Network error");
         } finally {
             setIsSaving(false);
         }
@@ -92,7 +90,6 @@ export default function GuidePage() {
             return;
         }
 
-        // Generate Audio: try ElevenLabs first, fall back to browser TTS if unavailable
         setIsLoadingAudio(true);
         const fallbackToBrowserVoice = () => {
             const raw = (guide?.content ?? "") || `${guide?.title ?? ""} ${guide?.description ?? ""}`;
@@ -100,13 +97,12 @@ export default function GuidePage() {
             if (!plainText || !("speechSynthesis" in window)) return false;
             window.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(plainText);
-            utterance.rate = 0.92;
+            utterance.rate = 0.95;
             utterance.pitch = 1;
             utterance.onend = () => setIsPlaying(false);
             utterance.onerror = () => setIsPlaying(false);
             window.speechSynthesis.speak(utterance);
             setIsPlaying(true);
-            toast.info("Playing with browser voice.");
             return true;
         };
 
@@ -117,33 +113,21 @@ export default function GuidePage() {
                 body: JSON.stringify({ text: guide?.content })
             });
 
-            const contentType = res.headers.get("content-type") || "";
-            const isJson = contentType.includes("application/json");
-
-            if (res.ok && !isJson) {
+            if (res.ok) {
                 const blob = await res.blob();
-                if (blob.size === 0) throw new Error("Empty audio");
                 const url = URL.createObjectURL(blob);
                 setAudioUrl(url);
                 if (audioRef.current) {
-                    audioRef.current.onerror = () => {
-                        URL.revokeObjectURL(url);
-                        setAudioUrl(null);
-                        if (fallbackToBrowserVoice()) return;
-                        toast.error("Audio failed to play. Try again.");
-                    };
                     audioRef.current.src = url;
                     audioRef.current.play();
                     setIsPlaying(true);
                 }
             } else {
-                const data = isJson ? await res.json().catch(() => ({})) : {};
-                console.warn("TTS API error:", res.status, data?.code ?? data?.error);
-                throw new Error(data?.code ?? "API_FAILED");
+                throw new Error("TTS_FAILED");
             }
         } catch (error) {
             if (!fallbackToBrowserVoice()) {
-                toast.error("Audio unavailable. Try again or check your connection.");
+                toast.error("Audio playback unavailable");
             }
         } finally {
             setIsLoadingAudio(false);
@@ -151,230 +135,127 @@ export default function GuidePage() {
     };
 
     const handleShare = () => {
-        if (navigator.share) {
-            navigator.share({
-                title: guide?.title,
-                text: guide?.description,
-                url: window.location.href,
-            }).catch(() => {
-                copyToClipboard();
-            });
-        } else {
-            copyToClipboard();
-        }
-    };
-
-    const copyToClipboard = () => {
         navigator.clipboard.writeText(window.location.href);
-        toast.success("Link copied to clipboard!");
+        toast.success("Link copied");
     };
 
-    if (!guide) {
-        return (
-            <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6">
-                <h1 className="text-4xl font-bold mb-4">Guide not found</h1>
-                <Button onClick={() => router.push('/founders-guide')} variant="outline">Back to Hub</Button>
-            </div>
-        );
-    }
+    if (!guide) return null;
 
     return (
-        <div className="relative min-h-screen bg-black text-white selection:bg-white selection:text-black font-satoshi overflow-x-hidden">
-            {/* Audio Element */}
-            <audio
-                ref={audioRef}
-                onEnded={() => setIsPlaying(false)}
-                className="hidden"
-            />
+        <div className="min-h-screen bg-black text-white selection:bg-white selection:text-black font-sans">
+            {/* Grid Background */}
+            <div className="fixed inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:60px_60px] pointer-events-none" />
 
-            {/* Background Layer */}
-            <div className="fixed inset-0 z-0">
-                <BackgroundShaders />
-                <div className="absolute inset-0 bg-black/60" />
-            </div>
+            {/* Audio Element */}
+            <audio ref={audioRef} onEnded={() => setIsPlaying(false)} className="hidden" />
 
             <div className="relative z-10">
-                {/* Simple Nav */}
-                <nav className="p-8 flex items-center justify-between max-w-7xl mx-auto">
-                    <Link href="/founders-guide" className="flex items-center gap-2 text-zinc-500 hover:text-white transition-colors group">
-                        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                        <span className="text-sm font-medium">Back to Hub</span>
+                {/* Minimalist Nav */}
+                <nav className="p-8 h-20 flex items-center justify-between max-w-7xl mx-auto border-b border-white/10 font-mono text-[10px] uppercase tracking-[0.2em]">
+                    <Link href="/founders-guide" className="flex items-center gap-4 group hover:text-zinc-400 transition-colors">
+                        <ArrowLeft className="w-3 h-3 group-hover:-translate-x-1 transition-transform" />
+                        <span>Intel Hub</span>
                     </Link>
 
-                    <Link href="/" className="flex items-center gap-2 group">
-                        <div className="w-7 h-7 rounded flex items-center justify-center group-hover:rotate-6 transition-transform overflow-hidden font-bold bg-white text-black text-sm">
-                            M
-                        </div>
-                        <span className="font-bold tracking-tight text-lg">Mailient</span>
+                    <Link href="/" className="flex items-center gap-4 group transition-colors hover:text-zinc-400">
+                        <div className="w-4 h-4 bg-white" />
+                        <span>Mailient</span>
                     </Link>
                 </nav>
 
-                {/* Article Header */}
-                <header className="px-6 pt-16 pb-12 max-w-3xl mx-auto text-center">
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="mb-8 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#D97757]/10 border border-[#D97757]/20"
-                    >
-                        <Sparkles className="h-3 w-3 text-[#D97757]" />
-                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#D97757]">Founder Intel</span>
-                    </motion.div>
-
-                    <motion.h1
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1 }}
-                        className="text-4xl md:text-5xl font-bold tracking-tight mb-8 leading-tight"
-                    >
-                        {guide.title}
-                    </motion.h1>
-
-                    <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2 }}
-                        className="flex flex-col items-center gap-6 mb-12"
-                    >
-                        <div className="flex items-center justify-center gap-6 text-sm text-zinc-500">
-                            <div className="flex items-center gap-2">
-                                <div className="w-6 h-6 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden">
-                                    <img src={`https://api.dicebear.com/7.x/bottts/svg?seed=${guide.slug}`} alt="Author" />
-                                </div>
-                                <span>Mailient Editorial</span>
+                <main className="max-w-4xl mx-auto px-8 pt-32 pb-48">
+                    {/* Header */}
+                    <header className="space-y-12 mb-24">
+                        <div className="space-y-6">
+                            <div className="inline-block border border-white/20 px-3 py-1 text-[10px] uppercase tracking-[0.3em] font-mono text-zinc-500">
+                                Protocol /{guide.slug}
                             </div>
-                            <span>•</span>
-                            <span>{Math.ceil(guide.content.split(/\s+/).length / 200)} min read</span>
+                            <h1 className="text-4xl md:text-6xl font-medium tracking-tight leading-[1.1]">
+                                {guide.title}
+                            </h1>
                         </div>
 
-                        {/* Speaker Button */}
-                        <div className="relative">
+                        <div className="flex flex-wrap items-center gap-12 font-mono text-[10px] uppercase tracking-widest text-zinc-600">
+                            <div className="flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 bg-zinc-800" />
+                                Editorial
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Clock className="w-3.5 h-3.5" />
+                                {Math.ceil(guide.content.split(/\s+/).length / 200)}m Duration
+                            </div>
                             <button
                                 onClick={handleAudioToggle}
-                                disabled={isLoadingAudio}
-                                className={`flex items-center gap-3 px-6 py-3 rounded-2xl border transition-all duration-300 ${isPlaying
-                                    ? "bg-[#D97757] border-[#D97757] text-white shadow-lg shadow-[#D97757]/20 scale-105"
-                                    : "bg-white/5 border-white/10 text-white hover:border-[#D97757]/50"
-                                    }`}
+                                className="flex items-center gap-2 text-white hover:text-zinc-400 transition-colors"
                             >
                                 {isLoadingAudio ? (
-                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                    <Loader2 className="w-3 h-3 animate-spin" />
                                 ) : isPlaying ? (
-                                    <Pause className="w-5 h-5 fill-current" />
+                                    <Pause className="w-3 h-3 fill-current" />
                                 ) : (
-                                    <Volume2 className="w-5 h-5" />
+                                    <Volume2 className="w-3 h-3" />
                                 )}
-                                <span className="font-bold text-sm tracking-tight">
-                                    {isLoadingAudio ? "Preparing Audio..." : isPlaying ? "Listening Now" : "Listen to Article"}
-                                </span>
+                                {isPlaying ? "Active Audio" : "Play Protocol"}
                             </button>
-
-                            {/* Animated Pulse for Playing State */}
-                            {isPlaying && (
-                                <span className="absolute -inset-1 rounded-2xl bg-[#D97757]/20 animate-ping pointer-events-none" />
-                            )}
                         </div>
-                    </motion.div>
-                </header>
+                    </header>
 
-                {/* Article Content — editorial typography and spacing */}
-                <main className="px-6 sm:px-8 max-w-3xl mx-auto pb-4">
-                    <motion.article
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.3 }}
+                    {/* Article Body */}
+                    <article
                         className="
-                            [&_h2]:text-2xl sm:[&_h2]:text-3xl [&_h2]:font-extrabold [&_h2]:tracking-tight [&_h2]:text-white
-                            [&_h2]:mt-16 [&_h2]:mb-6 [&_h2]:pb-2 [&_h2]:border-b [&_h2]:border-white/10
-                            [&_p]:text-zinc-300 [&_p]:text-lg [&_p]:leading-[1.85] [&_p]:mb-8
-                            [&_strong]:text-white [&_strong]:font-bold
-                            [&_em]:text-zinc-200
-                            [&_ul]:my-8 [&_ul]:space-y-3 [&_ul]:list-disc [&_ul]:pl-6 [&_li]:text-zinc-400 [&_li]:leading-relaxed [&_li]:text-base
+                            prose-zinc prose-invert max-w-none
+                            [&_h2]:text-2xl [&_h2]:font-medium [&_h2]:mt-24 [&_h2]:mb-8 [&_h2]:uppercase [&_h2]:text-[13px] [&_h2]:font-mono [&_h2]:tracking-[0.3em] [&_h2]:text-zinc-500 [&_h2]:border-b [&_h2]:border-white/10 [&_h2]:pb-4
+                            [&_p]:text-zinc-400 [&_p]:text-[15px] [&_p]:leading-[1.8] [&_p]:mb-10 [&_p]:font-light
+                            [&_strong]:text-white [&_strong]:font-medium
+                            [&_ul]:list-none [&_ul]:p-0 [&_ul]:mb-12
+                            [&_li]:text-zinc-500 [&_li]:text-[14px] [&_li]:mb-4 [&_li]:flex [&_li]:gap-4
+                            [&_li]:before:content-['—'] [&_li]:before:text-zinc-800
                         "
                         dangerouslySetInnerHTML={{ __html: guide.content }}
                     />
 
-                    {/* Action Bar */}
-                    <div className="mt-16 pt-8 border-t border-white/10 flex items-center justify-between">
-                        <div className="flex gap-4">
-                            <button
-                                onClick={handleShare}
-                                className="p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors text-zinc-400 hover:text-white flex items-center gap-2 text-sm font-medium"
-                            >
-                                <Share2 className="w-4 h-4" />
-                                Share
+                    {/* Tools Area */}
+                    <div className="mt-32 pt-12 border-t border-white/10 flex flex-wrap items-center justify-between gap-8">
+                        <div className="flex gap-8 font-mono text-[10px] uppercase tracking-widest text-zinc-600">
+                            <button onClick={handleShare} className="hover:text-white transition-colors flex items-center gap-2">
+                                <Share2 className="w-3 h-3" /> Share
                             </button>
-                            <button
-                                onClick={toggleBookmark}
-                                disabled={isSaving}
-                                className={`p-3 rounded-xl transition-all flex items-center gap-2 text-sm font-medium ${isBookmarked
-                                    ? "bg-[#D97757] text-white"
-                                    : "bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white"
-                                    }`}
-                            >
-                                <Bookmark className={`w-4 h-4 ${isBookmarked ? "fill-current" : ""}`} />
-                                {isBookmarked ? "Saved" : "Save for later"}
+                            <button onClick={toggleBookmark} className="hover:text-white transition-colors flex items-center gap-2">
+                                <Bookmark className={cn("w-3 h-3", isBookmarked && "fill-current text-white")} />
+                                {isBookmarked ? "Protocol Bookmarked" : "Save Protocol"}
                             </button>
                         </div>
-                        <div className="hidden sm:flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-zinc-600">
-                            Founders Guide / {guide.slug}
+                        <div className="text-[9px] font-mono text-zinc-800 uppercase tracking-[0.4em]">
+                            End of transmission
                         </div>
                     </div>
                 </main>
 
-                {/* CTA Section */}
-                <section className="px-6 py-32 max-w-7xl mx-auto">
-                    <motion.div
-                        initial={{ opacity: 0, y: 40 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        className="relative rounded-[3rem] border border-white/10 bg-zinc-950 overflow-hidden p-8 md:p-16 text-center"
-                    >
-                        <div className="absolute inset-0 bg-gradient-to-b from-[#D97757]/10 to-transparent pointer-events-none" />
-
-                        <div className="relative z-10 max-w-2xl mx-auto">
-                            <div className="mb-8 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.08]">
-                                <Sparkles className="h-3 w-3 text-white/60" />
-                                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/60">Take Action</span>
-                            </div>
-
-                            <h2 className="text-4xl md:text-5xl font-bold mb-6">Stop managing your inbox. <br /> Start automating it.</h2>
-                            <p className="text-zinc-500 text-lg mb-10">
-                                Mailient uses intelligence to identify revenue opportunities and draft replies in your voice—automatically.
-                            </p>
-
-                            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                                <GlassButton onClick={() => router.push('/auth/signin')} className="w-full sm:w-auto rounded-full px-8 py-4">
-                                    Unlock My Inbox
-                                    <ArrowRight className="ml-2 w-5 h-5" />
-                                </GlassButton>
-                                <Link href="/" className="text-zinc-500 hover:text-white transition-colors text-sm font-medium">
-                                    Learn more about Mailient
-                                </Link>
-                            </div>
-                        </div>
+                {/* Footer CTA */}
+                <section className="px-8 py-32 bg-zinc-950 border-t border-white/10 text-center">
+                    <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>
+                        <h2 className="text-2xl font-medium tracking-tight mb-12">Return to the intelligent center.</h2>
+                        <Link
+                            href="/auth/signin"
+                            className="inline-flex items-center justify-center px-10 py-5 bg-white text-black text-xs font-mono uppercase tracking-[0.3em] hover:bg-zinc-200 transition-colors"
+                        >
+                            Access Dashboard
+                        </Link>
                     </motion.div>
                 </section>
 
-                {/* Footer */}
-                <footer className="py-20 px-6 border-t border-zinc-900 bg-zinc-950">
-                    <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
-                        <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 bg-white rounded flex items-center justify-center font-bold text-black text-xs">
-                                M
-                            </div>
-                            <span className="font-bold tracking-tight text-white">Mailient</span>
-                        </div>
-                        <p className="text-zinc-600 text-xs text-center border-l border-zinc-900 pl-8 hidden md:block">
-                            © 2026 Mailient Intelligence. Built for founders.
-                        </p>
-                        <div className="flex gap-8 text-xs font-bold text-zinc-600 uppercase tracking-widest">
-                            <Link href="/founders-guide" className="hover:text-white transition-colors">Hub</Link>
-                            <Link href="/" className="hover:text-white transition-colors">Home</Link>
-                            <Link href="/privacy-policy" className="hover:text-white transition-colors">Privacy</Link>
-                        </div>
+                <footer className="py-12 px-8 border-t border-white/5 flex items-center justify-between font-mono text-[10px] uppercase tracking-widest text-zinc-600">
+                    <span>© 2026 Mailient</span>
+                    <div className="flex gap-10">
+                        <Link href="/founders-guide" className="hover:text-white">Hub</Link>
+                        <Link href="/" className="hover:text-white">Protocol</Link>
                     </div>
                 </footer>
             </div>
         </div>
     );
+}
+
+function cn(...classes) {
+    return classes.filter(Boolean).join(' ');
 }

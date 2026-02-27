@@ -5,6 +5,11 @@ import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { Button } from "../../../components/ui/button";
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  ArrowLeft, Check, AlertCircle, Copy, CheckCircle2, Shield, Info,
+  ArrowRight, ExternalLink, Globe, Lock, Workflow, Mail
+} from 'lucide-react';
 
 // Domains that are personal (not Workspace)
 const PERSONAL_DOMAINS = [
@@ -22,6 +27,7 @@ export default function GetStarted() {
   const [isWorkspace, setIsWorkspace] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState(1);
+  const emailInputRef = useRef(null);
 
   const handleEmailSubmit = (e) => {
     e.preventDefault();
@@ -44,7 +50,7 @@ export default function GetStarted() {
     setIsLoading(true);
     try {
       await signIn('google', {
-        redirectTo: '/onboarding',
+        callbackUrl: '/onboarding',
         login_hint: email.trim().toLowerCase(),
       });
     } catch (error) {
@@ -60,199 +66,206 @@ export default function GetStarted() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-black relative overflow-hidden">
-      {/* Background effects */}
-      <div className="absolute inset-0 bg-gradient-mesh opacity-30 animate-float" />
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#383838]/20 rounded-full blur-[120px] animate-pulse" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#383838]/15 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: "1s" }} />
+    <div className="min-h-screen bg-black flex items-center justify-center p-4 relative overflow-hidden font-sans">
+      {/* Dynamic Blurred Background */}
+      <div className="fixed inset-0 z-0">
+        <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-emerald-600/20 rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[130px] animate-pulse" style={{ animationDelay: '2s' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-zinc-900/40 rounded-full blur-[100px]" />
+      </div>
 
-      <div className="relative z-10 w-full max-w-md px-6">
-        <div className="bg-[#242424]/20 backdrop-blur-xl border border-gray-700/30 rounded-2xl p-8 shadow-2xl animate-fade-in">
+      {/* Grid Pattern overlay for depth */}
+      <div className="fixed inset-0 z-0 opacity-[0.03] pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-repeat" />
 
-          {/* ─── STEP 1: Email Input ─── */}
-          {step === 1 && (
-            <>
-              <div className="text-center mb-8">
-                <div className="w-12 h-12 mx-auto mb-4 rounded-2xl border border-white/10 overflow-hidden">
-                  <img src="/logo-new.png" alt="Mailient" className="w-full h-full object-cover" />
+      {/* Main Modal */}
+      <motion.div
+        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="relative z-10 w-full max-w-[440px] bg-white rounded-[28px] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.5)] overflow-hidden"
+      >
+        {/* Modal Header with Grainy Gradient */}
+        <div className="relative h-44 flex flex-col items-center justify-center overflow-hidden">
+          {/* Using emerald/blue for signup to differentiate slightly while staying premium */}
+          <div className="absolute inset-0 z-0 bg-gradient-to-br from-[#064e3b] via-[#065f46] to-[#0ea5e9] opacity-90" />
+          <div className="absolute inset-0 z-0 opacity-40 mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-repeat scale-150" />
+
+          {/* Logo Container */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="relative z-10 flex flex-col items-center gap-3"
+          >
+            <div className="w-12 h-12 bg-white rounded-xl border border-white/20 flex items-center justify-center shadow-inner overflow-hidden">
+              <img src="/logo-new.png" alt="Mailient" className="w-full h-full object-cover" />
+            </div>
+            <span className="text-white font-medium tracking-[0.2em] text-[10px] uppercase opacity-80 font-mono">Mailient</span>
+          </motion.div>
+        </div>
+
+        {/* Modal Body */}
+        <div className="p-8 pt-10 sm:p-10">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl font-semibold text-[#1a1a1a] tracking-tight">Create your account</h2>
+            <p className="text-zinc-400 text-sm mt-2 font-medium">Join the next generation of email management</p>
+          </div>
+
+          <AnimatePresence mode="wait">
+            {step === 1 ? (
+              <motion.div
+                key="step1"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-8"
+              >
+                {/* Features List */}
+                <div className="space-y-4 mb-8">
+                  {[
+                    { icon: <CheckCircle2 className="w-4 h-4 text-emerald-500" />, text: "Automated inbox prioritization" },
+                    { icon: <CheckCircle2 className="w-4 h-4 text-emerald-500" />, text: "Team-based access control" },
+                    { icon: <CheckCircle2 className="w-4 h-4 text-emerald-500" />, text: "Zero-config Workspace setup" }
+                  ].map((feature, i) => (
+                    <div key={i} className="flex items-center gap-3 text-sm text-zinc-600">
+                      <div className="flex-shrink-0 w-5 h-5 rounded-full bg-emerald-50 flex items-center justify-center">
+                        {feature.icon}
+                      </div>
+                      <span className="font-medium">{feature.text}</span>
+                    </div>
+                  ))}
                 </div>
-                <h1 className="text-2xl font-bold text-gray-100">
-                  Get started with Mailient
-                </h1>
-                <p className="text-gray-500 text-sm mt-2">
-                  Enter your work email to create an account
+
+                {/* Email Form */}
+                <form onSubmit={handleEmailSubmit} className="space-y-4">
+                  <div className="relative">
+                    <input
+                      ref={emailInputRef}
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="Work email address"
+                      className="w-full h-14 px-5 bg-zinc-50 border border-zinc-200 rounded-2xl text-[#1a1a1a] placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-base"
+                      autoFocus
+                      required
+                    />
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-300">
+                      <Mail className="w-5 h-5" />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={!email.includes('@')}
+                    className="w-full h-14 bg-[#1a1a1a] text-white rounded-full font-semibold text-base hover:bg-zinc-800 transition-all flex items-center justify-center gap-2 shadow-lg shadow-black/5 disabled:opacity-50 group"
+                  >
+                    Get Started
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </button>
+                </form>
+
+                <div className="text-center space-y-6">
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-zinc-100"></div></div>
+                    <span className="relative px-4 bg-white text-[10px] font-bold text-zinc-300 uppercase tracking-widest">Already registered?</span>
+                  </div>
+
+                  <button
+                    onClick={() => router.push('/auth/signin')}
+                    className="text-zinc-600 hover:text-[#1a1a1a] text-sm font-bold transition-colors"
+                  >
+                    Sign in to your account
+                  </button>
+                </div>
+
+                {/* Terms */}
+                <p className="text-[10px] text-zinc-400 text-center leading-relaxed font-medium">
+                  By joining, you agree to our{" "}
+                  <Link href="/terms-of-service" className="text-zinc-600 hover:underline">Terms of Service</Link>
+                  {" "}and{" "}
+                  <Link href="/privacy-policy" className="text-zinc-600 hover:underline">Privacy Policy</Link>
                 </p>
-              </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="step2"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-8"
+              >
+                <div className="flex flex-col items-center">
+                  <button
+                    onClick={handleBack}
+                    className="flex items-center gap-2 text-zinc-400 hover:text-[#1a1a1a] transition-colors text-sm font-medium mb-6 group"
+                  >
+                    <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                    Use a different email
+                  </button>
 
-              {/* Features */}
-              <div className="mb-6 space-y-2.5">
-                {[
-                  "AI email prioritization for your team",
-                  "Secure Google Workspace integration",
-                  "Draft replies in your voice",
-                ].map((feature, index) => (
-                  <div key={index} className="flex items-center gap-2.5 text-sm">
-                    <div className="w-5 h-5 rounded-full bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
-                      <svg className="w-3 h-3 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
+                  <div className="w-full p-6 bg-zinc-50 border border-emerald-100 rounded-2xl mb-8">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Account target</span>
+                      <span className={`text-[10px] font-bold uppercase tracking-wider ${isWorkspace ? 'text-emerald-500' : 'text-amber-500'}`}>
+                        {isWorkspace ? 'Workspace' : 'Personal'}
+                      </span>
                     </div>
-                    <span className="text-gray-400">{feature}</span>
-                  </div>
-                ))}
-              </div>
-
-              <form onSubmit={handleEmailSubmit} className="space-y-4">
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@company.com"
-                  className="w-full h-12 px-4 bg-black/60 border border-white/10 rounded-xl text-white placeholder:text-gray-600 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/10 transition-all text-sm"
-                  autoFocus
-                  required
-                />
-                <Button
-                  type="submit"
-                  className="w-full h-12 bg-white text-black hover:bg-gray-200 font-semibold transition-all duration-300 hover:scale-[1.01]"
-                  disabled={!email.includes('@')}
-                >
-                  Continue
-                </Button>
-              </form>
-
-              {/* Workspace badge */}
-              <div className="mt-5 flex items-center justify-center gap-2 text-[11px] text-gray-600">
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                </svg>
-                Built for Google Workspace teams
-              </div>
-
-              {/* Already have account */}
-              <div className="relative my-8">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-600/50" />
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-gray-900 text-gray-100">Already have an account?</span>
-                </div>
-              </div>
-              <div className="text-center">
-                <Button variant="ghost" onClick={() => router.push('/auth/signin')} className="text-gray-100 hover:text-white transition-colors">
-                  Sign in instead
-                </Button>
-              </div>
-
-              {/* Terms */}
-              <p className="text-xs text-gray-500 text-center mt-6 leading-relaxed">
-                By continuing, you agree to our{" "}
-                <Link href="/terms-of-service" className="underline hover:text-white transition-colors">Terms</Link>
-                {" "}and{" "}
-                <Link href="/privacy-policy" className="underline hover:text-white transition-colors">Privacy Policy</Link>
-              </p>
-            </>
-          )}
-
-          {/* ─── STEP 2: Connect ─── */}
-          {step === 2 && (
-            <>
-              <button onClick={handleBack} className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-white transition-colors mb-6 group">
-                <svg className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="m15 18-6-6 6-6" />
-                </svg>
-                Change email
-              </button>
-
-              {isWorkspace ? (
-                <>
-                  <div className="text-center mb-8">
-                    <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                      <svg className="w-7 h-7 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                        <polyline points="22 4 12 14.01 9 11.01" />
-                      </svg>
+                    <div className="text-[#1a1a1a] font-medium truncate">
+                      {email}
                     </div>
-                    <h2 className="text-xl font-bold text-white">Workspace detected</h2>
-                    <p className="text-gray-500 text-sm mt-2">
-                      Creating account for <span className="text-gray-300 font-medium">{email.trim().toLowerCase()}</span>
-                    </p>
                   </div>
-                  <Button
+                </div>
+
+                <div className="space-y-4">
+                  <button
                     onClick={handleGoogleSignUp}
                     disabled={isLoading}
-                    className="w-full h-12 bg-white text-gray-900 hover:bg-gray-100 border border-gray-300 hover:border-gray-400 transition-all duration-300 hover:scale-[1.01] font-medium"
-                    size="lg"
+                    className="w-full h-15 bg-[#1a1a1a] text-white rounded-full font-semibold text-base hover:bg-zinc-800 transition-all flex items-center justify-center gap-3 shadow-lg shadow-black/10 disabled:opacity-50"
                   >
                     {isLoading ? (
-                      <div className="w-5 h-5 border-2 border-gray-600/30 border-t-gray-900 rounded-full animate-spin" />
+                      <div className="w-5 h-5 border-2 border-white/20 border-t-white animate-spin rounded-full" />
                     ) : (
                       <>
-                        <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                          <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                          <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                          <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                        <svg className="w-5 h-5" viewBox="0 0 24 24">
+                          <path fill="#EA4335" d="M12 5.04c1.74 0 3.3.6 4.53 1.76l3.39-3.39C17.85 1.53 15.15 0 12 0 7.31 0 3.26 2.69 1.18 6.61l3.96 3.07C6.1 7.24 8.84 5.04 12 5.04z" />
+                          <path fill="#4285F4" d="M23.52 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.59-5.17 3.59-8.82z" />
+                          <path fill="#FBBC05" d="M5.14 14.68c-.25-.74-.4-1.54-.4-2.38s.15-1.64.4-2.38l-4.14-3.21C.37 8.21 0 10.05 0 12s.37 3.79 1 5.31l4.14-3.32z" />
+                          <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3C15.01 18.77 13.62 19.2 12 19.2c-3.13 0-5.8-2.12-6.76-4.99l-3.97 3.07C3.33 21.31 7.35 24 12 24z" />
                         </svg>
-                        Connect Workspace Account
+                        Connect via Google
                       </>
                     )}
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <div className="text-center mb-6">
-                    <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
-                      <svg className="w-7 h-7 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="10" />
-                        <line x1="12" y1="8" x2="12" y2="12" />
-                        <line x1="12" y1="16" x2="12.01" y2="16" />
-                      </svg>
-                    </div>
-                    <h2 className="text-xl font-bold text-white">Personal email detected</h2>
-                    <p className="text-gray-500 text-sm mt-2 max-w-xs mx-auto leading-relaxed">
-                      Mailient is optimized for <span className="text-white font-medium">Google Workspace</span> teams.
-                      Personal accounts like <span className="text-gray-300">@{emailDomain}</span> will see an extra verification step.
-                    </p>
-                  </div>
-
-                  <div className="space-y-3">
-                    <Button
-                      onClick={handleGoogleSignUp}
-                      disabled={isLoading}
-                      className="w-full h-12 bg-white/10 text-white hover:bg-white/20 border border-white/10 transition-all duration-300 font-medium"
-                      size="lg"
-                    >
-                      {isLoading ? (
-                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      ) : (
-                        <>Continue with @{emailDomain}</>
-                      )}
-                    </Button>
-                    <p className="text-[10px] text-gray-600 text-center leading-relaxed px-4">
-                      Click <span className="text-gray-400">Advanced</span> → <span className="text-gray-400">Go to Mailient</span> on Google's verification screen.
-                    </p>
-                  </div>
-
-                  <div className="relative my-6">
-                    <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-700/50" /></div>
-                    <div className="relative flex justify-center text-[10px]">
-                      <span className="px-3 bg-[#242424] text-gray-600 uppercase tracking-widest font-bold">Recommended</span>
-                    </div>
-                  </div>
-
-                  <button onClick={handleBack} className="w-full h-12 rounded-xl border border-emerald-500/20 bg-emerald-500/5 text-emerald-400 text-sm font-semibold hover:bg-emerald-500/10 transition-all flex items-center justify-center gap-2">
-                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-                    </svg>
-                    Use a work email instead
                   </button>
-                </>
-              )}
-            </>
-          )}
+                </div>
+
+                {!isWorkspace && (
+                  <div className="p-5 border border-amber-100 bg-amber-50/50 rounded-2xl flex gap-3">
+                    <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-bold text-amber-800 uppercase tracking-tight mb-1">Non-Workspace Account</p>
+                      <p className="text-[11px] text-amber-700 leading-relaxed font-medium">
+                        Mailient is best for Google Workspace. Personal emails will work but require
+                        extra confirmation on the Google consent screen.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Footer Branding */}
+          <div className="mt-12 pt-8 border-t border-zinc-100 flex items-center justify-between text-[10px] font-bold text-zinc-300 uppercase tracking-[0.2em] sm:px-2">
+            <span>Enterprise Grade</span>
+            <div className="w-1.5 h-1.5 bg-zinc-100 rounded-full" />
+            <span>GDPR Ready</span>
+            <div className="w-1.5 h-1.5 bg-zinc-100 rounded-full" />
+            <span>Encrypted</span>
+          </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

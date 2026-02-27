@@ -6,22 +6,11 @@ import { guides } from "@/lib/guides";
 import Link from "next/link";
 import {
     ArrowRight,
-    Bookmark,
-    Sparkles,
+    ArrowUpRight,
     Clock,
-    Headphones,
     ChevronRight,
-    LineChart,
-    Zap,
-    Target,
-    Mail,
 } from "lucide-react";
-import { BackgroundShaders } from "@/components/ui/background-paper-shaders";
-import { GlassButton } from "@/components/ui/glass-button";
 import { useSession } from "next-auth/react";
-
-const categoryIcons = [Zap, LineChart, Target];
-const categoryLabels = ["Mindset", "Systems", "Execution"];
 
 export default function FoundersGuideHub() {
     const { data: session } = useSession();
@@ -53,174 +42,100 @@ export default function FoundersGuideHub() {
     };
 
     const bookmarkedGuides = guides.filter((g) => bookmarkedIds.includes(g.slug));
-    const totalWords = guides.reduce((acc, g) => acc + g.content.split(/\s+/).length, 0);
-    const avgReadMin = Math.round(totalWords / guides.length / 200) || 12;
+
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.1,
+                delayChildren: 0.2,
+            },
+        },
+    };
+
+    const itemVariants = {
+        hidden: { opacity: 0, y: 10 },
+        visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.23, 1, 0.32, 1] } },
+    };
 
     return (
-        <div className="relative min-h-screen bg-black text-white selection:bg-white selection:text-black font-satoshi overflow-x-hidden">
-            {/* Background */}
-            <div className="fixed inset-0 z-0">
-                <BackgroundShaders />
-                <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/70 to-black" />
-                <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(217,119,87,0.08),transparent)]" />
-            </div>
+        <div className="relative min-h-screen bg-black text-white selection:bg-white selection:text-black overflow-x-hidden font-sans">
+            {/* Grid Pattern Background */}
+            <div className="fixed inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:60px_60px] pointer-events-none" />
 
             {/* Nav */}
             <motion.nav
                 style={{ opacity: navOpacity }}
-                className="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.06] bg-black/80 backdrop-blur-xl"
+                className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-black/80 backdrop-blur-md"
             >
-                <div className="max-w-7xl mx-auto px-6 sm:px-8 h-16 flex items-center justify-between">
-                    <Link
-                        href="/"
-                        className="flex items-center gap-2.5 group"
-                    >
-                        <div className="w-8 h-8 rounded-lg bg-white text-black flex items-center justify-center font-bold text-sm group-hover:scale-105 transition-transform">
-                            M
-                        </div>
-                        <span className="font-bold tracking-tight text-lg text-white">Mailient</span>
-                        <span className="text-zinc-500 text-sm font-medium hidden sm:inline">/ Founder Hub</span>
+                <div className="max-w-7xl mx-auto px-8 h-16 flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.2em]">
+                    <Link href="/" className="flex items-center gap-4 group transition-colors hover:text-zinc-400">
+                        <div className="w-4 h-4 bg-white" />
+                        <span>Mailient / Intelligence</span>
                     </Link>
-                    <div className="flex items-center gap-4">
-                        <Link
-                            href="/auth/signin"
-                            className="text-sm font-medium text-zinc-400 hover:text-white transition-colors"
-                        >
-                            Sign in
-                        </Link>
-                        <Link
-                            href="/"
-                            className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-white hover:bg-white/10 hover:border-white/20 transition-all"
-                        >
-                            Get started
-                            <ArrowRight className="w-4 h-4" />
-                        </Link>
+                    <div className="flex items-center gap-10">
+                        <Link href="/auth/signin" className="hover:text-zinc-400 transition-colors">Sign in</Link>
+                        <Link href="/" className="hover:text-zinc-400 transition-colors">Workspace</Link>
                     </div>
                 </div>
             </motion.nav>
 
             <div className="relative z-10">
                 {/* Hero */}
-                <header className="pt-32 pb-24 sm:pt-40 sm:pb-32 px-6 sm:px-8 max-w-5xl mx-auto text-center">
+                <header className="pt-40 pb-32 px-8 max-w-5xl mx-auto">
                     <motion.div
-                        initial={{ opacity: 0, y: 16 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5 }}
-                        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.08] mb-10"
+                        initial="hidden"
+                        animate="visible"
+                        variants={containerVariants}
+                        className="space-y-12"
                     >
-                        <Sparkles className="h-3.5 w-3 text-[#D97757]" />
-                        <span className="text-[11px] font-semibold uppercase tracking-[0.25em] text-zinc-400">
-                            Curated for founders
-                        </span>
-                    </motion.div>
+                        <motion.div variants={itemVariants} className="space-y-6">
+                            <div className="inline-block border border-white/20 px-3 py-1 text-[10px] uppercase tracking-[0.3em] font-mono text-zinc-500">
+                                Curated Intel
+                            </div>
+                            <h1 className="text-5xl md:text-7xl font-medium tracking-tighter leading-[1.05]">
+                                Strategic leverage <br /> for founders.
+                            </h1>
+                        </motion.div>
 
-                    <motion.h1
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.08, duration: 0.5 }}
-                        className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.08] mb-6"
-                    >
-                        <span className="text-white">The Founder&apos;s Guide to</span>
-                        <br />
-                        <span className="text-[#D97757] bg-clip-text">Email That Works</span>
-                    </motion.h1>
-
-                    <motion.p
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.14, duration: 0.5 }}
-                        className="text-zinc-400 max-w-xl mx-auto text-lg sm:text-xl leading-relaxed mb-12"
-                    >
-                        Frameworks, systems, and insights to turn your inbox from a bottleneck into a growth engine.
-                    </motion.p>
-
-                    <motion.div
-                        initial={{ opacity: 0, y: 16 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2, duration: 0.5 }}
-                        className="flex flex-wrap items-center justify-center gap-6 text-sm text-zinc-500"
-                    >
-                        <span className="flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#D97757]" />
-                            {guides.length} guides
-                        </span>
-                        <span className="flex items-center gap-2">
-                            <Clock className="w-4 h-4 text-zinc-600" />
-                            ~{avgReadMin} min read each
-                        </span>
-                        <span className="flex items-center gap-2">
-                            <Headphones className="w-4 h-4 text-zinc-600" />
-                            Listen to article
-                        </span>
-                    </motion.div>
-
-                    <motion.div
-                        initial={{ opacity: 0, y: 16 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.26, duration: 0.5 }}
-                        className="mt-14"
-                    >
-                        <GlassButton
-                            onClick={() => document.getElementById("guides")?.scrollIntoView({ behavior: "smooth" })}
-                            className="rounded-full px-8 py-4 text-base font-semibold"
+                        <motion.p
+                            variants={itemVariants}
+                            className="text-zinc-400 max-w-lg text-base md:text-lg leading-relaxed font-light"
                         >
-                            Explore the library
-                            <ArrowRight className="w-4 h-4 ml-2" />
-                        </GlassButton>
+                            Advanced frameworks on high-leverage email management, communication protocols, and executive systems. Information as a competitive advantage.
+                        </motion.p>
+
+                        <motion.div variants={itemVariants} className="pt-8 flex flex-wrap gap-x-12 gap-y-6 text-[10px] font-mono uppercase tracking-widest text-zinc-600">
+                            <span className="flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 bg-white" />
+                                {guides.length} Protocol Guides
+                            </span>
+                            <span className="flex items-center gap-2">
+                                <Clock className="w-3.5 h-3.5" />
+                                Continuous Updates
+                            </span>
+                        </motion.div>
                     </motion.div>
                 </header>
 
-                {/* Saved section (when logged in + has bookmarks) */}
-                <AnimatePresence>
-                    {session && bookmarkedGuides.length > 0 && (
-                        <motion.section
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: "auto" }}
-                            exit={{ opacity: 0, height: 0 }}
-                            transition={{ duration: 0.4 }}
-                            className="px-6 sm:px-8 max-w-7xl mx-auto pb-16"
-                        >
-                            <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-8 sm:p-10">
-                                <div className="flex items-center gap-3 mb-8">
-                                    <div className="w-10 h-10 rounded-xl bg-[#D97757]/10 border border-[#D97757]/20 flex items-center justify-center">
-                                        <Bookmark className="w-5 h-5 text-[#D97757] fill-[#D97757]/20" />
-                                    </div>
-                                    <div>
-                                        <h2 className="text-xl font-bold text-white">Your saved intel</h2>
-                                        <p className="text-sm text-zinc-500">{bookmarkedGuides.length} article{bookmarkedGuides.length !== 1 ? "s" : ""} saved</p>
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {bookmarkedGuides.map((guide, index) => (
-                                        <GuideCard
-                                            key={guide.slug}
-                                            guide={guide}
-                                            index={index}
-                                            isBookmarked={true}
-                                            variant="compact"
-                                        />
-                                    ))}
-                                </div>
-                            </div>
-                        </motion.section>
-                    )}
-                </AnimatePresence>
-
-                {/* Library */}
-                <main id="guides" className="px-6 sm:px-8 max-w-7xl mx-auto py-20 sm:py-28">
-                    <div className="flex items-baseline justify-between gap-4 mb-12">
-                        <div>
-                            <div className="h-px w-12 bg-[#D97757] mb-4" />
-                            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
-                                Full library
-                            </h2>
-                            <p className="text-zinc-500 text-sm mt-1">
-                                Deep dives on inbox, investors, and leverage.
-                            </p>
+                {/* Library Section */}
+                <motion.main
+                    id="guides"
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, margin: "-100px" }}
+                    variants={containerVariants}
+                    className="px-8 max-w-7xl mx-auto py-24 border-t border-white/10"
+                >
+                    <motion.div variants={itemVariants} className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-20">
+                        <div className="space-y-4">
+                            <h2 className="text-[10px] uppercase tracking-[0.4em] font-mono text-zinc-500">Protocol Library</h2>
+                            <p className="text-2xl font-medium tracking-tight">Access essential frameworks</p>
                         </div>
-                    </div>
+                    </motion.div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-px bg-white/10 border border-white/10 overflow-hidden">
                         {guides.map((guide, index) => (
                             <GuideCard
                                 key={guide.slug}
@@ -230,48 +145,43 @@ export default function FoundersGuideHub() {
                             />
                         ))}
                     </div>
-                </main>
+                </motion.main>
 
-                {/* CTA strip */}
-                <section className="px-6 sm:px-8 py-20 sm:py-28">
+                {/* CTA */}
+                <section className="px-8 py-32 md:py-48 max-w-5xl mx-auto text-center border-t border-white/10">
                     <motion.div
-                        initial={{ opacity: 0, y: 24 }}
+                        initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true, margin: "-100px" }}
-                        className="max-w-4xl mx-auto rounded-3xl border border-white/[0.08] bg-gradient-to-b from-white/[0.04] to-transparent p-10 sm:p-14 text-center"
+                        viewport={{ once: true }}
+                        className="space-y-10"
                     >
-                        <p className="text-zinc-400 text-lg mb-6">
-                            Stop managing your inbox. Start automating it.
-                        </p>
-                        <h3 className="text-2xl sm:text-3xl font-bold text-white mb-8">
-                            Unlock your inbox with Mailient
+                        <h3 className="text-3xl md:text-5xl font-medium tracking-tight leading-tight">
+                            Establish executive <br /> email sovereignty.
                         </h3>
-                        <Link
-                            href="/auth/signin"
-                            className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-8 py-4 text-base font-semibold text-white hover:bg-white/10 hover:border-white/20 transition-all"
-                        >
-                            Get started free
-                            <ArrowRight className="w-5 h-5 ml-2" />
-                        </Link>
+                        <div className="flex flex-col items-center gap-6">
+                            <Link
+                                href="/auth/signin"
+                                className="inline-flex items-center justify-center px-10 py-5 bg-white text-black text-xs font-mono uppercase tracking-[0.3em] transition-transform active:scale-95 hover:bg-zinc-200"
+                            >
+                                Deploy Mailient
+                            </Link>
+                            <p className="text-[10px] font-mono uppercase tracking-widest text-zinc-600">
+                                Zero friction / Enterprise Grade
+                            </p>
+                        </div>
                     </motion.div>
                 </section>
 
                 {/* Footer */}
-                <footer className="py-16 px-6 sm:px-8 border-t border-white/[0.06]">
-                    <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-8">
-                        <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded bg-white flex items-center justify-center">
-                                <Mail className="w-3.5 h-3.5 text-black" />
-                            </div>
-                            <span className="font-bold tracking-tight text-white">Mailient</span>
-                        </div>
-                        <p className="text-zinc-500 text-sm text-center sm:text-left">
-                            Built for high-performance founders.
-                        </p>
-                        <div className="flex items-center gap-8 text-xs font-medium text-zinc-500 uppercase tracking-wider">
-                            <Link href="/" className="hover:text-white transition-colors">Home</Link>
-                            <Link href="/auth/signin" className="hover:text-white transition-colors">Sign in</Link>
-                        </div>
+                <footer className="py-16 px-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-10 font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-600">
+                    <div className="flex items-center gap-4">
+                        <div className="w-4 h-4 bg-zinc-800" />
+                        <span>© 2026 Mailient Intelligence</span>
+                    </div>
+                    <div className="flex items-center gap-12">
+                        <Link href="/" className="hover:text-white transition-colors">Protocol</Link>
+                        <Link href="/auth/signin" className="hover:text-white transition-colors">Access</Link>
+                        <Link href="/privacy-policy" className="hover:text-white transition-colors">Privacy</Link>
                     </div>
                 </footer>
             </div>
@@ -279,90 +189,45 @@ export default function FoundersGuideHub() {
     );
 }
 
-function GuideCard({ guide, index, isBookmarked, variant = "default" }) {
-    const Icon = categoryIcons[index % categoryIcons.length];
-    const label = categoryLabels[index % categoryLabels.length];
-    const readMin = Math.ceil(guide.content.split(/\s+/).length / 200);
-
-    if (variant === "compact") {
-        return (
-            <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-            >
-                <Link
-                    href={`/founders-guide/${guide.slug}`}
-                    className="group flex items-center gap-4 p-4 rounded-xl border border-white/[0.06] bg-white/[0.02] hover:border-white/[0.12] hover:bg-white/[0.04] transition-all duration-300"
-                >
-                    <div className="w-10 h-10 rounded-lg bg-white/[0.06] flex items-center justify-center shrink-0 group-hover:bg-[#D97757]/10 transition-colors">
-                        <Icon className="w-5 h-5 text-[#D97757]" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                        <h3 className="font-semibold text-white truncate group-hover:text-[#D97757] transition-colors">
-                            {guide.title}
-                        </h3>
-                        <p className="text-xs text-zinc-500 mt-0.5">{readMin} min read</p>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-zinc-500 group-hover:text-[#D97757] group-hover:translate-x-0.5 transition-all shrink-0" />
-                </Link>
-            </motion.div>
-        );
-    }
-
+function GuideCard({ guide, index, isBookmarked }) {
     return (
         <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-40px" }}
-            transition={{ delay: Math.min(index * 0.06, 0.4), duration: 0.4 }}
+            variants={{
+                hidden: { opacity: 0 },
+                visible: { opacity: 1, transition: { duration: 0.6 } }
+            }}
+            className="group block bg-black hover:bg-white/[0.02] transition-colors relative h-[420px]"
         >
             <Link
                 href={`/founders-guide/${guide.slug}`}
-                className="group block h-full p-6 sm:p-8 rounded-2xl border border-white/[0.06] bg-white/[0.02] hover:border-white/[0.1] hover:bg-white/[0.03] transition-all duration-300 relative overflow-hidden"
+                className="flex flex-col h-full p-10 md:p-12"
             >
-                {/* Subtle hover glow */}
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none bg-gradient-to-br from-[#D97757]/[0.06] via-transparent to-transparent" />
-
-                <div className="relative">
-                    <div className="flex items-start justify-between gap-4 mb-5">
-                        <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
-                            {String(index + 1).padStart(2, "0")}
-                        </span>
-                        <div className="w-9 h-9 rounded-lg bg-white/[0.06] flex items-center justify-center group-hover:bg-[#D97757]/10 transition-colors">
-                            <Icon className="w-4 h-4 text-zinc-400 group-hover:text-[#D97757] transition-colors" />
-                        </div>
-                    </div>
-
-                    <h3 className="text-xl sm:text-2xl font-bold text-white mb-3 leading-tight group-hover:text-[#D97757] transition-colors duration-300">
-                        {guide.title}
-                    </h3>
-
-                    <p className="text-zinc-500 text-sm sm:text-base leading-relaxed mb-6 line-clamp-3">
-                        {guide.description}
-                    </p>
-
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3 text-xs text-zinc-500">
-                            <span className="flex items-center gap-1.5">
-                                <Clock className="w-3.5 h-3.5" />
-                                {readMin} min
-                            </span>
-                            <span className="flex items-center gap-1.5">
-                                <Headphones className="w-3.5 h-3.5" />
-                                Listen
-                            </span>
-                        </div>
-                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#D97757] opacity-0 group-hover:opacity-100 transition-opacity">
-                            Read
-                            <ArrowRight className="w-3.5 h-3.5" />
-                        </span>
-                    </div>
+                <div className="flex items-center justify-between mb-auto">
+                    <span className="font-mono text-[10px] text-zinc-700 tracking-[0.3em]">
+                        {String(index + 1).padStart(2, "0")}
+                    </span>
+                    {isBookmarked && (
+                        <div className="w-1.5 h-1.5 bg-white shrink-0" />
+                    )}
                 </div>
 
-                {isBookmarked && (
-                    <div className="absolute top-5 right-5 w-2 h-2 rounded-full bg-[#D97757] ring-2 ring-black" />
-                )}
+                <div className="space-y-6">
+                    <h3 className="text-2xl font-medium tracking-tight text-white group-hover:text-zinc-300 transition-colors">
+                        {guide.title}
+                    </h3>
+                    <p className="text-sm text-zinc-500 leading-relaxed font-light line-clamp-3">
+                        {guide.description}
+                    </p>
+                </div>
+
+                <div className="mt-12 flex items-center justify-between">
+                    <div className="flex items-center gap-6 font-mono text-[9px] uppercase tracking-widest text-zinc-600">
+                        <span className="flex items-center gap-2">
+                            Protocol v1.0
+                        </span>
+                    </div>
+                    <ArrowUpRight className="w-4 h-4 text-zinc-700 group-hover:text-white transition-all transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                </div>
             </Link>
         </motion.div>
     );

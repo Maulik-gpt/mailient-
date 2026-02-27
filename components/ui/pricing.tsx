@@ -1,19 +1,10 @@
 'use client';
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
-import { ArrowRight, Check, Star } from 'lucide-react';
+import { Check } from 'lucide-react';
 import Link from 'next/link';
-import { motion, Transition, HTMLMotionProps } from 'framer-motion';
-
-type FREQUENCY = 'monthly' | 'yearly';
-const frequencies: FREQUENCY[] = ['monthly', 'yearly'];
+import { motion, HTMLMotionProps } from 'framer-motion';
 
 interface Plan {
 	name: string;
@@ -53,46 +44,32 @@ export function PricingSection({
 			)}
 			{...props}
 		>
-			<div className="max-w-4xl mx-auto mb-20 text-center">
+			<div className="max-w-4xl mx-auto mb-32 text-center space-y-8">
 				<motion.div
-					initial={{ opacity: 0, y: 20 }}
+					initial={{ opacity: 0, y: 10 }}
 					whileInView={{ opacity: 1, y: 0 }}
 					viewport={{ once: true }}
-					className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.08] mb-8"
+					className="inline-block border border-white/10 px-4 py-1.5 text-[9px] uppercase tracking-[0.4em] font-mono text-zinc-500"
 				>
-					<Star className="h-3 w-3 text-white/60" />
-					<span className="text-xs font-bold uppercase tracking-[0.2em] text-white/60">Pricing</span>
+					Pricing / Access
 				</motion.div>
-				<h2 className="text-4xl md:text-7xl font-bold tracking-tight mb-8 bg-gradient-to-b from-white to-white/50 bg-clip-text text-transparent">
+				<h2 className="text-4xl md:text-7xl font-medium tracking-tighter">
 					{heading}
 				</h2>
 				{description && (
-					<p className="text-zinc-500 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
+					<p className="text-zinc-500 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed font-light">
 						{description}
 					</p>
 				)}
 			</div>
 
-			<div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-6 md:grid-cols-3">
+			<div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-px bg-white/5">
 				{plans.map((plan) => (
 					<PricingCard plan={plan} key={plan.name} isHighlighted={plan.highlighted} />
 				))}
 			</div>
 		</motion.div>
 	);
-}
-
-type PricingFrequencyToggleProps = React.ComponentProps<'div'> & {
-	frequency: FREQUENCY;
-	setFrequency: React.Dispatch<React.SetStateAction<FREQUENCY>>;
-};
-
-export function PricingFrequencyToggle({
-	frequency,
-	setFrequency,
-	...props
-}: PricingFrequencyToggleProps) {
-	return null; // Toggle removed entirely
 }
 
 type PricingCardProps = Omit<HTMLMotionProps<'div'>, 'plan'> & {
@@ -109,175 +86,60 @@ export function PricingCard({
 }: PricingCardProps) {
 	return (
 		<motion.div
-			initial={{ opacity: 0, y: 20 }}
-			whileInView={{ opacity: 1, y: 0 }}
+			initial={{ opacity: 0 }}
+			whileInView={{ opacity: 1 }}
 			viewport={{ once: true }}
 			className={cn(
-				'relative flex w-full flex-col rounded-[2.5rem] border p-8 md:p-12 transition-all duration-500',
-				isHighlighted
-					? 'bg-white border-white shadow-[0_0_80px_-15px_rgba(255,255,255,0.1)]'
-					: plan.price.monthly === 0
-						? 'bg-gradient-to-b from-zinc-900/50 to-black border-white/5 shadow-inner'
-						: 'bg-black border-white/10',
+				'relative flex w-full flex-col md:flex-row items-center justify-between p-12 bg-black hover:bg-zinc-950 transition-colors group',
 				className,
 			)}
 			{...props}
 		>
-			<div className="mb-10">
-				<div className="flex items-center justify-between mb-8">
-					<span className={cn(
-						'text-xl font-bold tracking-tight',
-						isHighlighted ? 'text-black' : 'text-white'
-					)}>
-						{plan.name}
-					</span>
-					{plan.highlighted && (
-						<div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-black text-white text-[10px] font-black uppercase tracking-widest shadow-xl">
-							<Star className="w-3 h-3 fill-white" />
-							Popular
-						</div>
-					)}
-				</div>
-
-				<div className="flex items-baseline gap-1 mb-6">
-					{plan.price.monthly === 0 ? (
-						<>
-							<span className={cn(
-								'text-5xl md:text-6xl font-bold tracking-tight',
-								isHighlighted ? 'text-black' : 'text-white'
-							)}>
-								Free
-							</span>
-							<span className={cn(
-								'text-lg font-normal tracking-tight opacity-70',
-								isHighlighted ? 'text-black/60' : 'text-zinc-500'
-							)}>
-								forever
-							</span>
-						</>
-					) : (
-						<>
-							<span className={cn(
-								'text-5xl md:text-6xl font-bold tracking-tight',
-								isHighlighted ? 'text-black' : 'text-white'
-							)}>
-								${plan.price.monthly}
-							</span>
-							<span className={cn(
-								'text-lg font-medium',
-								isHighlighted ? 'text-black/50' : 'text-zinc-500'
-							)}>
-								/month
-							</span>
-						</>
-					)}
-				</div>
-
-				<p className={cn(
-					'text-base leading-relaxed max-w-[280px]',
-					isHighlighted ? 'text-black/60' : 'text-zinc-500'
-				)}>
-					{plan.info}
-				</p>
-			</div>
-
-			<div className="mb-12">
-				{props.onPlanSelect ? (
-					<Button
-						className={cn(
-							'w-full h-14 rounded-2xl text-lg font-bold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]',
-							isHighlighted
-								? 'bg-black text-white hover:bg-zinc-900 border-none shadow-2xl'
-								: plan.price.monthly === 0
-									? 'bg-white/5 text-white hover:bg-white/10 border border-white/10 backdrop-blur-sm'
-									: 'bg-white text-black hover:bg-zinc-100'
+			<div className="flex flex-col md:flex-row items-center gap-12 md:gap-24 flex-1">
+				<div className="space-y-4 text-center md:text-left min-w-[200px]">
+					<div className="flex items-center justify-center md:justify-start gap-4">
+						<h3 className="text-[12px] font-mono uppercase tracking-[0.4em] text-white">
+							{plan.name}
+						</h3>
+						{plan.highlighted && (
+							<span className="text-[8px] font-mono uppercase tracking-[0.4em] text-zinc-500 border border-white/10 px-2 py-0.5">Recommended</span>
 						)}
-						onClick={props.onPlanSelect}
-					>
-						<div className="flex items-center justify-center gap-2">
-							{plan.btn.text}
-							<ArrowRight className="w-5 h-5" />
-						</div>
-					</Button>
-				) : (
-					<Button
-						className={cn(
-							'w-full h-14 rounded-2xl text-lg font-bold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]',
-							isHighlighted
-								? 'bg-black text-white hover:bg-zinc-900 border-none shadow-2xl'
-								: plan.price.monthly === 0
-									? 'bg-white/5 text-white hover:bg-white/10 border border-white/10 backdrop-blur-sm'
-									: 'bg-white text-black hover:bg-zinc-100'
-						)}
-						asChild
-					>
-						<Link href={plan.btn.href} className="flex items-center justify-center gap-2">
-							{plan.btn.text}
-							<ArrowRight className="w-5 h-5" />
-						</Link>
-					</Button>
-				)}
-			</div>
-
-			<div className="space-y-4 pt-8 border-t border-dashed border-zinc-500/20">
-				{plan.features.map((feature, index) => (
-					<div key={index} className="flex items-center gap-3">
-						<Check className={cn(
-							'w-4 h-4',
-							isHighlighted ? 'text-black' : plan.price.monthly === 0 ? 'text-white/40' : 'text-white'
-						)} />
-						<span className={cn(
-							'text-sm font-medium',
-							isHighlighted ? 'text-black/80' : plan.price.monthly === 0 ? 'text-white/60' : 'text-white'
-						)}>
-							{feature.text}
+					</div>
+					<div className="flex items-baseline justify-center md:justify-start gap-2">
+						<span className="text-4xl font-medium tracking-tighter text-white">
+							${plan.price.monthly}
+						</span>
+						<span className="text-[9px] font-mono uppercase tracking-[0.4em] text-zinc-600">
+							/mo
 						</span>
 					</div>
-				))}
+				</div>
+
+				<div className="hidden lg:grid grid-cols-2 gap-x-12 gap-y-4 flex-1">
+					{plan.features.map((feature, index) => (
+						<div key={index} className="flex items-center gap-3">
+							<div className="w-1 h-1 bg-zinc-800" />
+							<span className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500 group-hover:text-zinc-400 transition-colors">
+								{feature.text}
+							</span>
+						</div>
+					))}
+				</div>
+			</div>
+
+			<div className="mt-12 md:mt-0 min-w-[200px]">
+				<Link
+					href={plan.btn.href}
+					className={cn(
+						"flex items-center justify-center px-10 py-5 text-[10px] font-mono uppercase tracking-[0.4em] transition-all",
+						isHighlighted
+							? "bg-white text-black hover:bg-zinc-200"
+							: "border border-white/10 text-white hover:bg-white/5"
+					)}
+				>
+					{plan.btn.text}
+				</Link>
 			</div>
 		</motion.div>
-	);
-}
-
-
-type BorderTrailProps = {
-	className?: string;
-	size?: number;
-	transition?: Transition;
-	delay?: number;
-	onAnimationComplete?: () => void;
-	style?: React.CSSProperties;
-};
-
-export function BorderTrail({
-	className,
-	size = 60,
-	transition,
-	delay,
-	onAnimationComplete,
-	style,
-}: BorderTrailProps) {
-	return (
-		<div className='pointer-events-none absolute inset-0 rounded-[inherit] border border-transparent [mask-clip:padding-box,border-box] [mask-composite:intersect] [mask-image:linear-gradient(transparent,transparent),linear-gradient(#000,#000)]'>
-			<motion.div
-				className={cn('absolute aspect-square bg-zinc-500', className)}
-				style={{
-					width: size,
-					offsetPath: `rect(0 auto auto 0 round ${size}px)`,
-					...style,
-				}}
-				animate={{
-					offsetDistance: ['0%', '100%'],
-				}}
-				transition={{
-					repeat: Infinity,
-					duration: 5,
-					ease: "linear" as const,
-					delay: delay,
-					...transition
-				} as Transition}
-				onAnimationComplete={onAnimationComplete}
-			/>
-		</div>
 	);
 }

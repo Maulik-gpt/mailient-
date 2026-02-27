@@ -6,13 +6,9 @@ import {
     Copy,
     Check,
     ExternalLink,
-    ShieldCheck,
     ChevronDown,
     ChevronUp,
     Building2,
-    Key,
-    UserCheck,
-    Settings,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -26,33 +22,33 @@ const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 
 const SETUP_STEPS = [
     {
-        number: 1,
-        title: "Open Admin Console",
+        number: "01",
+        title: "API Controls",
         description:
-            "Your Google Workspace admin opens the Admin Console and goes to API Controls.",
+            "IT Administration opens the Google Admin Console and navigates to Security > API Controls.",
         action: {
-            label: "Open API Controls",
+            label: "Open Console",
             url: "https://admin.google.com/ac/owl/list?tab=apps",
         },
     },
     {
-        number: 2,
-        title: "Add Mailient as Trusted App",
+        number: "02",
+        title: "Identify Mailient",
         description:
-            'Click "Add app" → "OAuth App Name or Client ID", then search for',
+            'Use "Add app" → "OAuth App Name or Client ID" and authenticate using the unique ID below.',
         copyField: "clientId",
     },
     {
-        number: 3,
-        title: "Set Access to Trusted",
+        number: "03",
+        title: "Authorization",
         description:
-            'Select Mailient from the results, then set access to "Trusted". This allows all users in your organization to sign in without any warnings.',
+            'Set the Mailient application access to "Trusted" for your entire domain.',
     },
     {
-        number: 4,
-        title: "Done — Users can sign in",
+        number: "04",
+        title: "Propagate",
         description:
-            'Your team can now click "Continue with Google" on Mailient with zero warnings and full email access.',
+            "Authentication warnings are removed immediately for all domain members.",
     },
 ];
 
@@ -65,167 +61,123 @@ export default function WorkspaceSetupGuide({
     const copyToClipboard = (text: string, field: string) => {
         navigator.clipboard.writeText(text);
         setCopiedField(field);
-        toast.success("Copied to clipboard!");
+        toast.success("ID Copied");
         setTimeout(() => setCopiedField(null), 2000);
     };
 
     return (
         <div
             className={cn(
-                "glass-panel overflow-hidden transition-all duration-500",
+                "border border-white/10 bg-black overflow-hidden",
                 className
             )}
         >
-            {/* Header — always visible */}
+            {/* Header */}
             <button
                 onClick={() => setExpanded(!expanded)}
-                className="w-full p-6 flex items-center justify-between text-left group"
+                className="w-full p-8 flex items-center justify-between text-left group hover:bg-white/[0.02] transition-colors"
             >
-                <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 border border-blue-500/10 flex items-center justify-center shrink-0">
-                        <Building2 className="w-5 h-5 text-blue-400" />
+                <div className="flex items-center gap-6">
+                    <div className="w-6 h-6 border border-white/20 flex items-center justify-center shrink-0">
+                        <Building2 className="w-3 h-3 text-white" />
                     </div>
                     <div>
-                        <h3 className="text-base font-semibold text-[var(--settings-text)] flex items-center gap-2">
-                            Google Workspace Setup
-                            <span className="text-[10px] font-medium uppercase tracking-widest text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full">
-                                Admin
-                            </span>
-                        </h3>
-                        <p className="text-sm text-[var(--settings-text-secondary)] mt-0.5">
-                            Ask your IT admin to trust Mailient — then your whole team can sign in instantly.
-                        </p>
+                        <div className="flex items-center gap-3">
+                            <h3 className="text-sm font-medium text-white uppercase tracking-widest">
+                                Google Workspace Authorization
+                            </h3>
+                            {expanded && (
+                                <span className="text-[10px] font-mono uppercase tracking-tighter text-zinc-500">
+                                    Admin Action Required
+                                </span>
+                            )}
+                        </div>
+                        {!expanded && (
+                            <p className="text-xs text-zinc-500 mt-1 font-light">
+                                Authorize Mailient for your entire domain to enable seamless authentication.
+                            </p>
+                        )}
                     </div>
                 </div>
-                <div className="p-2 rounded-lg group-hover:bg-white/5 transition-colors">
+                <div className="transition-transform duration-300">
                     {expanded ? (
-                        <ChevronUp className="w-5 h-5 text-[var(--settings-text-tertiary)]" />
+                        <ChevronUp className="w-4 h-4 text-zinc-500" />
                     ) : (
-                        <ChevronDown className="w-5 h-5 text-[var(--settings-text-tertiary)]" />
+                        <ChevronDown className="w-4 h-4 text-zinc-500" />
                     )}
                 </div>
             </button>
 
-            {/* Expanded content */}
+            {/* Content */}
             <AnimatePresence>
                 {expanded && (
                     <motion.div
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: "auto", opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                        transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
                         className="overflow-hidden"
                     >
-                        <div className="px-6 pb-6 space-y-5">
-                            {/* Info box */}
-                            <div className="flex items-start gap-3 p-4 rounded-xl bg-blue-500/5 border border-blue-500/10">
-                                <UserCheck className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
-                                <div>
-                                    <p className="text-sm font-medium text-blue-400">
-                                        How it works
-                                    </p>
-                                    <p className="text-xs text-zinc-500 mt-1">
-                                        Mailient uses the same "Continue with Google" button for everyone.
-                                        When your Workspace admin marks Mailient as "Trusted", the unverified app warning disappears for your entire team.
-                                        No extra software or browser extensions needed.
-                                    </p>
-                                </div>
+                        <div className="px-8 pb-8 space-y-12">
+                            {/* Summary Context */}
+                            <div className="p-6 border border-white/5 bg-white/[0.01]">
+                                <h4 className="text-[10px] uppercase font-mono tracking-widest text-zinc-400 mb-2">Protocol</h4>
+                                <p className="text-xs text-zinc-500 leading-relaxed font-light">
+                                    When an administrator designates Mailient as a Trusted application, Google bypasses individual unverified app warnings for all domain members. This ensures a friction-less enterprise experience.
+                                </p>
                             </div>
 
-                            {/* Divider */}
-                            <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-
-                            {/* Steps */}
-                            <div className="space-y-4">
-                                {SETUP_STEPS.map((step, i) => (
-                                    <div key={step.number} className="flex gap-4">
-                                        {/* Step indicator */}
-                                        <div className="flex flex-col items-center">
-                                            <div
-                                                className={cn(
-                                                    "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 transition-colors",
-                                                    i === SETUP_STEPS.length - 1
-                                                        ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/20"
-                                                        : "bg-white/10 text-white border border-white/10"
-                                                )}
-                                            >
-                                                {i === SETUP_STEPS.length - 1 ? (
-                                                    <Check className="w-4 h-4" />
-                                                ) : (
-                                                    step.number
-                                                )}
-                                            </div>
-                                            {i < SETUP_STEPS.length - 1 && (
-                                                <div className="w-px h-full bg-white/5 mt-1" />
+                            {/* Sequential Steps */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-12">
+                                {SETUP_STEPS.map((step) => (
+                                    <div key={step.number} className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <div className="font-mono text-[10px] text-zinc-600 tracking-widest">{step.number}</div>
+                                            {step.action && (
+                                                <button
+                                                    onClick={() => window.open(step.action!.url, "_blank")}
+                                                    className="inline-flex items-center text-[10px] font-mono uppercase tracking-widest text-zinc-400 hover:text-white transition-colors"
+                                                >
+                                                    Open Console <ExternalLink className="w-2.5 h-2.5 ml-1.5" />
+                                                </button>
                                             )}
                                         </div>
-
-                                        {/* Step content */}
-                                        <div className="pb-5 flex-1 min-w-0">
-                                            <p className="text-sm font-semibold text-[var(--settings-text)]">
-                                                {step.title}
-                                            </p>
-                                            <p className="text-sm text-[var(--settings-text-secondary)] mt-1">
+                                        <div>
+                                            <h5 className="text-xs font-medium text-white uppercase tracking-wider mb-2">{step.title}</h5>
+                                            <p className="text-xs text-zinc-500 leading-relaxed font-light">
                                                 {step.description}
                                             </p>
-
-                                            {/* Action button */}
-                                            {step.action && (
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    onClick={() =>
-                                                        window.open(step.action!.url, "_blank")
-                                                    }
-                                                    className="mt-3 border-blue-500/30 text-blue-400 hover:bg-blue-500/10 rounded-lg"
-                                                >
-                                                    {step.action.label}
-                                                    <ExternalLink className="w-3.5 h-3.5 ml-1.5" />
-                                                </Button>
-                                            )}
-
-                                            {/* Copy field — Client ID */}
-                                            {step.copyField === "clientId" && CLIENT_ID && (
-                                                <div className="mt-3 flex items-center gap-2">
-                                                    <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg bg-black/40 border border-white/10 overflow-hidden">
-                                                        <Key className="w-4 h-4 text-zinc-500 shrink-0" />
-                                                        <code className="text-sm text-white font-mono truncate">
-                                                            {CLIENT_ID}
-                                                        </code>
-                                                    </div>
-                                                    <button
-                                                        onClick={() =>
-                                                            copyToClipboard(CLIENT_ID, "clientId")
-                                                        }
-                                                        className="p-2 rounded-lg hover:bg-white/10 transition-colors shrink-0"
-                                                    >
-                                                        {copiedField === "clientId" ? (
-                                                            <Check className="w-4 h-4 text-emerald-400" />
-                                                        ) : (
-                                                            <Copy className="w-4 h-4 text-zinc-400" />
-                                                        )}
-                                                    </button>
-                                                </div>
-                                            )}
                                         </div>
+
+                                        {step.copyField === "clientId" && CLIENT_ID && (
+                                            <div className="flex items-center justify-between p-3 border border-white/10 bg-black group/copy">
+                                                <code className="text-[11px] font-mono text-zinc-400 truncate pr-4">
+                                                    {CLIENT_ID}
+                                                </code>
+                                                <button
+                                                    onClick={() => copyToClipboard(CLIENT_ID, "clientId")}
+                                                    className="text-[10px] font-mono uppercase tracking-widest text-zinc-600 hover:text-white transition-colors"
+                                                >
+                                                    {copiedField === "clientId" ? "Copied" : "Copy"}
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </div>
 
-                            {/* Privacy footer */}
-                            <div className="flex items-start gap-3 p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
-                                <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
-                                <div>
-                                    <p className="text-sm font-medium text-emerald-400">
-                                        Enterprise-Grade Privacy
-                                    </p>
-                                    <p className="text-xs text-zinc-500 mt-1">
-                                        All email data is encrypted end-to-end. Mailient processes
-                                        emails only to power AI features — we never store raw email
-                                        content beyond the current session. Your admin retains full
-                                        control and can revoke access at any time.
-                                    </p>
-                                </div>
+                            {/* Security Reference */}
+                            <div className="border-t border-white/10 pt-8 flex items-center justify-between">
+                                <p className="text-[10px] font-mono uppercase tracking-widest text-zinc-600">
+                                    Security Status: Verified / Enterprise Ready
+                                </p>
+                                <a
+                                    href="/workspace-setup"
+                                    target="_blank"
+                                    className="text-[10px] font-mono uppercase tracking-widest text-white hover:text-zinc-400 border-b border-white/20 pb-0.5 transition-colors"
+                                >
+                                    Full Documentation ↗
+                                </a>
                             </div>
                         </div>
                     </motion.div>
