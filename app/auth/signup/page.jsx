@@ -88,7 +88,7 @@ export default function GetStarted() {
                 {/* Light streak for cinematic feel */}
                 <div className="absolute inset-0 z-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-[3s] ease-in-out" />
 
-                <div className="relative z-10 w-full h-full flex items-center justify-center">
+                <div className="relative z-10 w-full h-full flex items-end justify-start p-6">
                   <span className="text-white text-2xl font-light tracking-[0.3em] lowercase select-none">mailient</span>
                 </div>
               </div>
