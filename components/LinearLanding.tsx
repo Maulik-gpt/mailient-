@@ -1316,15 +1316,17 @@ export function LinearLanding() {
                                 />
                             </a>
                             <a
-                                href="https://www.foundrlist.com/product/mailient"
+                                href="https://www.foundrlist.com/product/mailient-2"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="opacity-40 hover:opacity-100 transition-all duration-500 scale-90 hover:scale-100"
                             >
                                 <img
-                                    src="https://www.foundrlist.com/api/badge/mailient"
-                                    alt="Maileint - Live on FoundrList"
-                                    className="h-8 w-auto grayscale hover:grayscale-0"
+                                    src="https://www.foundrlist.com/api/badge/mailient-2"
+                                    alt="Live on FoundrList"
+                                    width={160}
+                                    height={64}
+                                    className="w-auto grayscale hover:grayscale-0"
                                 />
                             </a>
                             <a
