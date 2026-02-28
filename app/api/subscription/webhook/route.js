@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { subscriptionService, PLANS } from '@/lib/subscription-service';
+import { sendPlanEmail } from '@/lib/email-service';
 import crypto from 'crypto';
 
 /**
@@ -161,6 +162,18 @@ export async function POST(request) {
                 );
 
                 console.log(`✅ Subscription activation result:`, !!activated);
+
+                // Send welcome email only on brand-new subscriptions (not monthly renewals)
+                const isRenewal = eventType === 'subscription.updated';
+                if (activated && !isRenewal && (planType === 'starter' || planType === 'pro')) {
+                    const customerName = data.customer?.name || data.user?.name || null;
+                    sendPlanEmail({ toEmail: userEmail, toName: customerName, plan: planType })
+                        .then(result => {
+                            if (result.success) console.log(`📧 Welcome email sent for ${planType} plan → ${userEmail}`);
+                            else console.warn(`⚠️ Welcome email failed for ${userEmail}:`, result.error);
+                        })
+                        .catch(err => console.error('❌ Email send threw unexpectedly:', err));
+                }
                 break;
             }
 
@@ -208,7 +221,8 @@ export async function GET() {
         environment: {
             hasWebhookSecret: !!process.env.POLAR_WEBHOOK_SECRET,
             hasSupabaseUrl: !!(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL),
-            hasSupabaseKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+            hasSupabaseKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+            hasResendKey: !!process.env.RESEND_API_KEY
         },
         supported_events: [
             'subscription.created',

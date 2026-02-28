@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 // @ts-ignore
 import { auth } from "@/lib/auth";
 import { DatabaseService } from "@/lib/supabase";
+// @ts-ignore
+import { sendPlanEmail } from "@/lib/email-service";
 
 export async function POST(request: Request) {
   try {
@@ -104,6 +106,17 @@ export async function POST(request: Request) {
 
     console.log(`✅ Onboarding completed successfully for ${userId}`);
     console.log(`📊 Profile ID: ${data.id}, Username: ${data.username}, Completed: ${data.onboarding_completed}`);
+
+    // Send a welcome email for free-plan users (fire-and-forget)
+    if (!plan || plan === 'free') {
+      const displayName = session.user?.name || username || null;
+      sendPlanEmail({ toEmail: userId, toName: displayName, plan: 'free' })
+        .then((result: { success: boolean; error?: string }) => {
+          if (result.success) console.log(`📧 Free welcome email sent → ${userId}`);
+          else console.warn(`⚠️ Free welcome email failed for ${userId}:`, result.error);
+        })
+        .catch((err: unknown) => console.error('❌ Email send threw unexpectedly:', err));
+    }
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
