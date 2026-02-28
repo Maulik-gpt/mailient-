@@ -1351,6 +1351,19 @@ export function LinearLanding() {
                                     className="h-8 w-auto grayscale hover:grayscale-0"
                                 />
                             </a>
+                            <a
+                                href="https://fazier.com/launches/mailient.xyz"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="opacity-40 hover:opacity-100 transition-all duration-500 scale-90 hover:scale-100"
+                            >
+                                <img
+                                    src="https://fazier.com/api/v1//public/badges/launch_badges.svg?badge_type=launched&theme=dark"
+                                    width={120}
+                                    alt="Fazier badge"
+                                    className="w-auto grayscale hover:grayscale-0"
+                                />
+                            </a>
                         </div>
                         <p className="text-xs text-zinc-600">© 2026 Mailient Intelligence.</p>
                     </div>
