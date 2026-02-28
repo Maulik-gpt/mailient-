@@ -63,8 +63,12 @@ export async function GET(request) {
     const pageToken = searchParams.get('pageToken');
     console.log('📧 Fetching traditional emails:', { maxResults, query, pageToken });
 
+    // Only fetch INBOX emails (exclude sent, drafts, etc.)
+    // 'in:inbox' ensures we only get emails received by the user, not sent emails
+    const inboxQuery = query ? `in:inbox ${query}` : 'in:inbox';
+
     // Fetch messages list
-    const messagesResponse = await gmailService.getEmails(maxResults, query, pageToken);
+    const messagesResponse = await gmailService.getEmails(maxResults, inboxQuery, pageToken);
 
     if (!messagesResponse.messages || messagesResponse.messages.length === 0) {
       console.log('📭 No messages found');

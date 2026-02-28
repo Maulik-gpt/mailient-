@@ -46,7 +46,10 @@ export async function GET(request) {
     console.log('=== EMAILS API START ===');
     const { searchParams } = new URL(request.url);
     const maxResults = parseInt(searchParams.get('maxResults')) || 500; // Increased default for processing more emails
-    const query = searchParams.get('query') || '';
+    const queryParam = searchParams.get('query') || '';
+    // Only fetch INBOX emails (exclude sent, drafts, spam, etc.)
+    // 'in:inbox' ensures we only show emails received by the user, not emails they sent
+    const query = queryParam ? `in:inbox ${queryParam}` : 'in:inbox';
     const fetchAll = searchParams.get('all') === 'true';
     const debugReset = searchParams.get('debugReset') === 'true';
     console.log('Request params:', { maxResults, query, fetchAll, debugReset });

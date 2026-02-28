@@ -124,8 +124,9 @@ export async function GET(request: Request) {
 
     console.log('📧 Fetching emails for analysis...');
 
-    // Fetch recent emails
-    const recentEmails = await gmailService.getEmails(50, 'newer_than:60d', pageToken);
+    // Only fetch INBOX emails (exclude sent, drafts, etc.)
+    // 'in:inbox' ensures we only analyze emails received by the user, not ones they sent
+    const recentEmails = await gmailService.getEmails(50, 'in:inbox newer_than:60d', pageToken);
     const allMessages = recentEmails.messages || [];
     const nextPageToken = recentEmails.nextPageToken;
 
