@@ -124,7 +124,7 @@ export async function POST(request) {
             case 'checkout.completed':
             case 'order.created': {
                 // Get user email from various possible locations (exhaustive search)
-                const userEmail = data.customer?.email ||
+                let userEmail = data.customer?.email ||
                     data.user?.email ||
                     data.email ||
                     data.customer_email ||
@@ -137,6 +137,8 @@ export async function POST(request) {
                     console.log('Available data keys:', Object.keys(data));
                     return NextResponse.json({ error: 'No user email in payload' }, { status: 400 });
                 }
+
+                userEmail = userEmail.trim().toLowerCase();
 
                 const planType = subscriptionService.determinePlanType(data);
                 const subscriptionId = data.id || data.subscription_id || data.order_id;
