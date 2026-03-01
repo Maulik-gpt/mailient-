@@ -39,6 +39,7 @@ import { useRouter } from "next/navigation"
 import { signIn, useSession } from "next-auth/react"
 import { HeroGeometric } from "@/components/ui/shape-landing-hero"
 import { GlassButton } from "@/components/ui/glass-button"
+import { CTASection } from "@/components/ui/hero-dithering-card"
 import { useSmoothScroll } from "@/hooks/use-smooth-scroll"
 
 
@@ -223,112 +224,7 @@ export function LinearLanding() {
                 </div>
             </motion.nav>
 
-            {/* Hero Section */}
-            <HeroGeometric
-                badge="AI-Powered Email for Founders"
-                title1="Email That Thinks"
-                title2="Like You Do."
-            >
-                <div className="text-center px-4">
-                    <p className="text-base sm:text-lg md:text-xl text-white/50 max-w-2xl mb-8 md:mb-12 leading-relaxed font-light tracking-wide mx-auto text-center">
-                        Stop triaging. Mailient identifies revenue opportunities, surfaces urgent threads, and drafts replies in your voice—automatically.
-                    </p>
-
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-                        {status === "authenticated" ? (
-                            <GlassButton onClick={() => router.push('/home-feed?welcome=true')} size="lg">
-                                Continue to Dashboard
-                                <ArrowRight className="w-5 h-5 ml-2 inline-block" />
-                            </GlassButton>
-                        ) : (
-                            <>
-                                <GlassButton onClick={() => signIn('google')} size="lg">
-                                    Unlock My Inbox
-                                    <ArrowRight className="w-5 h-5 ml-2 inline-block" />
-                                </GlassButton>
-                                <Button
-                                    variant="outline"
-                                    onClick={(e) => handleClick(e, 'demo-section')}
-                                    className="border-white/10 bg-white/5 text-white hover:bg-white/10 rounded-full px-6"
-                                >
-                                    See Demo First
-                                </Button>
-                            </>
-                        )}
-                    </div>
-
-                    <p className="text-[10px] sm:text-xs text-white/30 mb-12 max-w-lg mx-auto italic">
-                        All email sending actions require you to draft and approve each message — Mailient does not send emails automatically without your approval.
-                    </p>
-
-                    {/* Trust Signals */}
-                    <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-center gap-3 sm:gap-x-6 md:gap-x-8 gap-y-3 mb-10 md:mb-16 text-xs sm:text-sm text-zinc-400 px-2">
-                        <div className="flex items-center gap-1.5 sm:gap-2 justify-center">
-                            <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-400 flex-shrink-0" />
-                            <span className="whitespace-nowrap">Google OAuth</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 sm:gap-2 justify-center">
-                            <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-400 flex-shrink-0" />
-                            <span className="whitespace-nowrap">Encrypted</span>
-                        </div>
-
-                        <div className="flex items-center gap-1.5 sm:gap-2 justify-center">
-                            <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-400 flex-shrink-0" />
-                            <span className="whitespace-nowrap">2 Min Setup</span>
-                        </div>
-                    </div>
-
-                    {/* Product Hunt Featured Badge */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.8, duration: 1 }}
-                        className="flex justify-center mb-16"
-                    >
-                        <a
-                            href="https://www.producthunt.com/products/mailient?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-mailient"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            <img
-                                src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1059008&theme=light&t=1768213643164"
-                                alt="Mailient - Stop managing emails, Start automating them. | Product Hunt"
-                                width="250"
-                                height="54"
-                                className="h-12 md:h-14 w-auto opacity-80 hover:opacity-100 transition-opacity"
-                            />
-                        </a>
-                    </motion.div>
-
-
-                    {/* Hero Video */}
-                    <div className="relative w-full max-w-5xl mx-auto aspect-video rounded-2xl border border-white/10 bg-zinc-900/50 backdrop-blur-sm overflow-hidden group shadow-[0_0_50px_-12px_rgba(255,255,255,0.1)]">
-                        <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none z-10" />
-
-                        {/* Preferred: Local Video (Recommended for performance) */}
-                        {/* 
-                        <video 
-                            src="/videos/hero-demo.mp4" 
-                            autoPlay 
-                            muted 
-                            loop 
-                            playsInline 
-                            className="absolute inset-0 w-full h-full object-cover"
-                        /> 
-                        */}
-
-                        <iframe
-                            src="https://cap.so/embed/rpter2vmzaz3vyk?autoplay=1&muted=1&controls=1&loop=1&playsinline=1"
-                            title="Mailient Product Demo"
-                            className="absolute inset-0 w-full h-full"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                            allowFullScreen
-                            loading="eager"
-                        />
-
-                    </div>
-                </div>
-            </HeroGeometric>
+            <CTASection />
 
             {/* Pain Section - The Consequences */}
             <section className="py-20 md:py-32 px-6 z-10 relative overflow-hidden bg-black">
