@@ -232,7 +232,7 @@ export function LinearLanding() {
                     <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-center gap-3 sm:gap-x-6 md:gap-x-8 gap-y-3 mb-10 md:mb-16 text-xs sm:text-sm text-zinc-400 px-2 mt-4">
                         <div className="flex items-center gap-1.5 sm:gap-2 justify-center">
                             <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-400 flex-shrink-0" />
-                            <span className="whitespace-nowrap">Google OAuth</span>
+                            <span className="whitespace-nowrap">Google Workspace Auth</span>
                         </div>
                         <div className="flex items-center gap-1.5 sm:gap-2 justify-center">
                             <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-400 flex-shrink-0" />
@@ -243,29 +243,6 @@ export function LinearLanding() {
                             <span className="whitespace-nowrap">2 Min Setup</span>
                         </div>
                     </div>
-
-                    {/* Product Hunt Featured Badge */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: 0.2, duration: 1 }}
-                        className="flex justify-center mb-16"
-                    >
-                        <a
-                            href="https://www.producthunt.com/products/mailient?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-mailient"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            <img
-                                src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1059008&theme=light&t=1768213643164"
-                                alt="Mailient - Stop managing emails, Start automating them. | Product Hunt"
-                                width="250"
-                                height="54"
-                                className="h-12 md:h-14 w-auto opacity-80 hover:opacity-100 transition-opacity"
-                            />
-                        </a>
-                    </motion.div>
 
                     {/* Hero Video */}
                     <div className="relative w-full max-w-5xl mx-auto aspect-video rounded-2xl border border-white/10 bg-zinc-900/50 backdrop-blur-sm overflow-hidden group shadow-[0_0_50px_-12px_rgba(255,255,255,0.1)] mb-12">
