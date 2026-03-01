@@ -93,14 +93,11 @@ function LiquidButton({
     className,
     variant,
     size,
-    asChild = false,
     children,
     ...props
 }: React.ComponentProps<"button"> &
-    VariantProps<typeof liquidbuttonVariants> & {
-        asChild?: boolean
-    }) {
-    const Comp = asChild ? Slot : "button"
+    VariantProps<typeof liquidbuttonVariants>) {
+    const Comp = "button"
 
     return (
         <>
