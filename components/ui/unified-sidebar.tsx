@@ -250,7 +250,7 @@ export function UnifiedSidebar({
             className="w-10 h-10 bg-white rounded-xl flex items-center justify-center cursor-pointer hover:scale-110 transition-transform duration-500 overflow-hidden shadow-xl"
             onClick={() => router.push('/home-feed')}
           >
-            <img src="/mailient-logo.png" alt="Mailient" className="w-full h-full object-cover invert" />
+            <img src="/mailient-logo-v3.png" alt="Mailient" className="w-full h-full object-cover" />
           </div>
         </div>
         <div className="flex flex-col items-center gap-6 w-full">
@@ -397,7 +397,7 @@ export function UnifiedSidebar({
           <div className={styles.header}>
             <div className="flex items-center gap-3 mb-6">
               <div className="w-8 h-8 bg-black rounded-lg border border-white/10 flex items-center justify-center overflow-hidden">
-                <img src="/mailient-logo.png" alt="Mailient" className="w-full h-full object-cover scale-110" />
+                <img src="/mailient-logo-v3.png" alt="Mailient" className="w-full h-full object-cover scale-110" />
               </div>
               <h1 className={styles.title}>
                 MAILIENT

@@ -44,7 +44,7 @@ export const MailientSidebar: React.FC<MailientSidebarProps> = ({
             className="w-12 h-12 bg-black rounded-2xl border border-white/10 flex items-center justify-center cursor-pointer hover:scale-110 transition-transform duration-500 overflow-hidden shadow-2xl"
             onClick={() => router.push('/home-feed')}
           >
-            <img src="/mailient-logo.png" alt="Mailient" className="w-full h-full object-cover scale-110" />
+            <img src="/mailient-logo-v3.png" alt="Mailient" className="w-full h-full object-cover scale-110" />
           </div>
         </div>
 

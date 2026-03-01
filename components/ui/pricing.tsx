@@ -1,6 +1,7 @@
 'use client';
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
+import { LiquidButton, MetalButton } from '@/components/ui/liquid-glass-button';
 import {
 	Tooltip,
 	TooltipContent,
@@ -181,39 +182,62 @@ export function PricingCard({
 
 			<div className="mb-12">
 				{props.onPlanSelect ? (
-					<Button
-						className={cn(
-							'w-full h-14 rounded-2xl text-lg font-bold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]',
-							isHighlighted
-								? 'bg-black text-white hover:bg-zinc-900 border-none shadow-2xl'
-								: plan.price.monthly === 0
-									? 'bg-white/5 text-white hover:bg-white/10 border border-white/10 backdrop-blur-sm'
-									: 'bg-white text-black hover:bg-zinc-100'
-						)}
-						onClick={props.onPlanSelect}
-					>
-						<div className="flex items-center justify-center gap-2">
-							{plan.btn.text}
-							<ArrowRight className="w-5 h-5" />
-						</div>
-					</Button>
+					plan.name === 'Elite' ? (
+						<MetalButton
+							variant="gold"
+							className="w-full text-lg font-bold"
+							onClick={props.onPlanSelect}
+						>
+							<div className="flex items-center justify-center gap-2">
+								{plan.btn.text}
+								<ArrowRight className="w-5 h-5" />
+							</div>
+						</MetalButton>
+					) : (
+						<LiquidButton
+							className={cn(
+								'w-full h-14 rounded-2xl text-lg font-bold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]',
+								isHighlighted
+									? 'bg-black text-white hover:bg-zinc-900 border-none'
+									: 'text-white'
+							)}
+							onClick={props.onPlanSelect}
+						>
+							<div className="flex items-center justify-center gap-2">
+								{plan.btn.text}
+								<ArrowRight className="w-5 h-5" />
+							</div>
+						</LiquidButton>
+					)
 				) : (
-					<Button
-						className={cn(
-							'w-full h-14 rounded-2xl text-lg font-bold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]',
-							isHighlighted
-								? 'bg-black text-white hover:bg-zinc-900 border-none shadow-2xl'
-								: plan.price.monthly === 0
-									? 'bg-white/5 text-white hover:bg-white/10 border border-white/10 backdrop-blur-sm'
-									: 'bg-white text-black hover:bg-zinc-100'
-						)}
-						asChild
-					>
-						<Link href={plan.btn.href} className="flex items-center justify-center gap-2">
-							{plan.btn.text}
-							<ArrowRight className="w-5 h-5" />
+					plan.name === 'Elite' ? (
+						<Link href={plan.btn.href} className="w-full">
+							<MetalButton
+								variant="gold"
+								className="w-full text-lg font-bold"
+							>
+								<div className="flex items-center justify-center gap-2">
+									{plan.btn.text}
+									<ArrowRight className="w-5 h-5" />
+								</div>
+							</MetalButton>
 						</Link>
-					</Button>
+					) : (
+						<LiquidButton
+							className={cn(
+								'w-full h-14 rounded-2xl text-lg font-bold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]',
+								isHighlighted
+									? 'bg-black text-white hover:bg-zinc-900 border-none'
+									: 'text-white'
+							)}
+							asChild
+						>
+							<Link href={plan.btn.href} className="flex items-center justify-center gap-2">
+								{plan.btn.text}
+								<ArrowRight className="w-5 h-5" />
+							</Link>
+						</LiquidButton>
+					)
 				)}
 			</div>
 

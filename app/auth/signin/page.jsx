@@ -5,6 +5,7 @@ import { signIn, getSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, ArrowRight, AlertCircle, Copy, ArrowLeft, Shield, ExternalLink, Building2, UserCog, CheckCircle2 } from 'lucide-react';
+import { LiquidButton } from '@/components/ui/liquid-glass-button';
 
 const PERSONAL_DOMAINS = [
   'gmail.com', 'googlemail.com', 'yahoo.com', 'yahoo.co.in',
@@ -191,23 +192,12 @@ function SignInContent() {
   );
 
   const PremiumGoogleButton = () => (
-    <button
+    <LiquidButton
       onClick={handleGoogleSignIn}
       disabled={isLoading}
-      className="group relative w-full h-[56px] rounded-full p-[1.5px] transition-all duration-500 active:scale-[0.985] group/btn shadow-[0_20px_40px_-15px_rgba(255,255,255,0.15)] hover:shadow-[0_25px_50px_-12px_rgba(255,255,255,0.25)]"
+      className="w-full h-[56px] scale-100 active:scale-[0.985]"
     >
-      {/* Refractive outer-rim lighting */}
-      <div className="absolute inset-0 bg-gradient-to-b from-white/60 via-white/10 to-white/30 rounded-full" />
-
-      {/* High-gloss button body (White Liquid Glass) */}
-      <div className="relative w-full h-full bg-white/95 backdrop-blur-2xl rounded-full flex items-center justify-center gap-3 border border-white/20 shadow-[inset_0_1.5px_2px_rgba(255,255,255,0.9),inset_0_-1px_1px_rgba(0,0,0,0.05)] overflow-hidden">
-
-        {/* The Animated "Liquid" Reflection Streak */}
-        <div className="absolute top-0 -left-[100%] w-[300%] h-full bg-[linear-gradient(115deg,transparent_10%,rgba(255,255,255,0.9)_20%,rgba(255,255,255,0.3)_25%,transparent_40%)] group-hover/btn:left-full transition-all duration-1000 ease-in-out pointer-events-none blur-[1px]" />
-
-        {/* Soft atmospheric gradient layer */}
-        <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-white/5 pointer-events-none opacity-0 group-hover/btn:opacity-100 transition-opacity duration-700" />
-
+      <div className="flex items-center justify-center gap-3">
         {isLoading ? (
           <div className="w-5 h-5 border-2 border-zinc-900/20 border-t-zinc-900 animate-spin rounded-full" />
         ) : (
@@ -224,7 +214,7 @@ function SignInContent() {
           </>
         )}
       </div>
-    </button>
+    </LiquidButton>
   );
 
   // Step indicator

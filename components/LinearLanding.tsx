@@ -38,7 +38,7 @@ import { PricingSection } from "@/components/ui/pricing"
 import { useRouter } from "next/navigation"
 import { signIn, useSession } from "next-auth/react"
 import { HeroGeometric } from "@/components/ui/shape-landing-hero"
-import { GlassButton } from "@/components/ui/glass-button"
+import { LiquidButton } from "@/components/ui/liquid-glass-button"
 import { CTASection } from "@/components/ui/hero-dithering-card"
 import { useSmoothScroll } from "@/hooks/use-smooth-scroll"
 
@@ -188,7 +188,7 @@ export function LinearLanding() {
                         <div className="flex items-center gap-2 group cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
                             <div className="w-7 h-7 md:w-8 md:h-8 rounded flex items-center justify-center group-hover:rotate-6 transition-transform overflow-hidden relative">
                                 <img
-                                    src="/logo-new.png"
+                                    src="/mailient-logo-v3.png"
                                     alt="Mailient Logo"
                                     className="w-full h-full object-cover"
                                 />
@@ -215,9 +215,9 @@ export function LinearLanding() {
                         ) : (
                             <>
                                 <button onClick={() => signIn('google')} className="hidden sm:block text-sm font-medium text-zinc-500 hover:text-white transition-colors">Log in</button>
-                                <Button onClick={() => router.push('/auth/signin')} className="bg-white text-black hover:bg-zinc-200 rounded-full px-4 md:px-6 text-sm md:text-base">
+                                <LiquidButton onClick={() => router.push('/auth/signin')} size="default" className="text-white">
                                     Unlock My Inbox
-                                </Button>
+                                </LiquidButton>
                             </>
                         )}
                     </div>
@@ -502,13 +502,14 @@ export function LinearLanding() {
                                         <h3 className="text-2xl font-bold text-white mb-2">Ready to save 10+ hours/week?</h3>
                                         <p className="text-zinc-400">Join founders who transformed their inbox.</p>
                                     </div>
-                                    <Button
+                                    <LiquidButton
                                         onClick={() => signIn('google')}
-                                        className="bg-white text-black hover:bg-zinc-200 rounded-full px-8 py-4 text-lg font-bold"
+                                        size="lg"
+                                        className="text-white"
                                     >
                                         Unlock My Inbox
                                         <ArrowRight className="w-5 h-5 ml-2" />
-                                    </Button>
+                                    </LiquidButton>
                                 </div>
                                 <p className="text-[10px] sm:text-xs text-white/20 italic max-w-md">
                                     All email sending actions require you to draft and approve each message — Mailient does not send emails automatically without your approval.
@@ -890,13 +891,14 @@ export function LinearLanding() {
                     </div>
 
                     <div className="flex flex-col sm:flex-row justify-center gap-4 mt-20">
-                        <Button
+                        <LiquidButton
                             onClick={() => signIn('google')}
-                            className="bg-white text-black hover:bg-zinc-200 rounded-full px-12 py-7 text-lg font-bold shadow-2xl group"
+                            size="lg"
+                            className="text-white"
                         >
                             Unlock My Inbox
                             <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-                        </Button>
+                        </LiquidButton>
                         <Button
                             variant="outline"
                             className="border-white/10 bg-white/5 text-white hover:bg-white/10 rounded-full px-12 py-7 text-lg font-bold backdrop-blur-sm"
@@ -1081,13 +1083,13 @@ export function LinearLanding() {
                             </p>
 
                             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10">
-                                <GlassButton
+                                <LiquidButton
                                     onClick={() => router.push('/auth/signin')}
                                     size="lg"
                                 >
                                     Unlock My Inbox
                                     <ArrowRight className="w-5 h-5 ml-2 inline-block" />
-                                </GlassButton>
+                                </LiquidButton>
                                 <Button
                                     variant="outline"
                                     onClick={() => window.open('https://x.com/Maulik_055', '_blank')}
