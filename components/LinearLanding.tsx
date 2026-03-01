@@ -228,21 +228,6 @@ export function LinearLanding() {
 
             <div className="relative z-10 pb-20">
                 <div className="text-center px-4">
-                    {/* Trust Signals */}
-                    <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-center gap-3 sm:gap-x-6 md:gap-x-8 gap-y-3 mb-10 md:mb-16 text-xs sm:text-sm text-zinc-400 px-2 mt-4">
-                        <div className="flex items-center gap-1.5 sm:gap-2 justify-center">
-                            <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-400 flex-shrink-0" />
-                            <span className="whitespace-nowrap">Google Workspace Auth</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 sm:gap-2 justify-center">
-                            <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-400 flex-shrink-0" />
-                            <span className="whitespace-nowrap">Encrypted</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 sm:gap-2 justify-center">
-                            <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-400 flex-shrink-0" />
-                            <span className="whitespace-nowrap">2 Min Setup</span>
-                        </div>
-                    </div>
 
                     {/* Hero Video */}
                     <div className="relative w-full max-w-5xl mx-auto aspect-video rounded-2xl border border-white/10 bg-zinc-900/50 backdrop-blur-sm overflow-hidden group shadow-[0_0_50px_-12px_rgba(255,255,255,0.1)] mb-12">
