@@ -48,7 +48,14 @@ export default function GetStarted() {
   const handleEmailSubmit = (e) => {
     e.preventDefault();
     const trimmed = email.trim().toLowerCase();
-    if (!trimmed || !trimmed.includes('@')) return;
+
+    // Robust email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmed)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
     const domain = trimmed.split('@')[1];
     setEmailDomain(domain);
 
@@ -59,29 +66,65 @@ export default function GetStarted() {
       return;
     }
 
+    const isPersonal = PERSONAL_DOMAINS.includes(domain);
     setIsGmail(false);
-    setIsWorkspace(!PERSONAL_DOMAINS.includes(domain));
-    setStep(2);
+    setIsWorkspace(!isPersonal);
+
+    if (!isPersonal) {
+      // Workspace user - redirect to setup page as per requirement
+      router.push(`/workspace-setup?email=${encodeURIComponent(trimmed)}`);
+    } else {
+      setStep(2);
+    }
   };
+
+  const [error, setError] = useState(null);
 
   const handleGoogleSignUp = async () => {
     setIsLoading(true);
+    setError(null);
     try {
-      await signIn('google', { logout: true, callbackUrl: '/onboarding', login_hint: email.trim().toLowerCase() });
+      const result = await signIn('google', {
+        callbackUrl: '/onboarding',
+        login_hint: email.trim().toLowerCase()
+      });
+
+      if (result?.error) {
+        handleAuthError(result.error);
+        setIsLoading(false);
+      }
     } catch (error) {
-      console.error('Sign up error:', error);
+      setError("A connection error occurred. Please try again.");
       setIsLoading(false);
     }
   };
 
+  const handleAuthError = (errorType) => {
+    switch (errorType) {
+      case 'OAuthAccountNotLinked':
+        setError("This email is already associated with an account.");
+        break;
+      case 'AccessDenied':
+        setError("Access denied. Please grant permissions to continue.");
+        break;
+      default:
+        setError("An authentication error occurred.");
+    }
+  };
+
   const copyToClipboard = (text, field) => {
-    navigator.clipboard.writeText(text);
-    setCopiedField(field);
-    setTimeout(() => setCopiedField(null), 2500);
+    try {
+      navigator.clipboard.writeText(text);
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 2500);
+    } catch (err) {
+      setError("Failed to copy to clipboard.");
+    }
   };
 
   const backToStep1 = () => {
     setStep(1);
+    setError(null);
     setIsWorkspace(null);
     setIsGmail(false);
     setEmailDomain('');
@@ -94,6 +137,50 @@ export default function GetStarted() {
     "No credit card required",
     "Enterprise-level automation"
   ];
+
+  // Components for Step 2
+  const GmailWarning = () => (
+    <div className="p-4 bg-orange-500/5 border border-orange-500/20 rounded-2xl mb-6">
+      <div className="flex gap-3">
+        <Shield className="w-4 h-4 text-orange-400 shrink-0 mt-0.5" strokeWidth={2} />
+        <div className="space-y-1">
+          <h4 className="text-[10px] font-bold text-orange-400 uppercase tracking-widest">Unverified Application</h4>
+          <p className="text-[11px] text-orange-200/50 block leading-relaxed font-light">
+            Google has not yet verified this application for personal accounts. Accessing Mailient with a <span className="text-orange-300 font-medium">@gmail.com</span> address may trigger security warnings. By continuing, you acknowledge you understand the potential privacy implications as outlined in our security documentation.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
+  const PremiumGoogleButton = () => (
+    <button
+      onClick={handleGoogleSignUp}
+      disabled={isLoading}
+      className="group relative w-full h-[52px] bg-white/[0.05] hover:bg-white/[0.08] border border-white/[0.1] rounded-[18px] transition-all duration-500 flex items-center justify-center p-[2px] overflow-hidden active:scale-[0.982]"
+    >
+      <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.05] via-transparent to-white/[0.02] pointer-events-none" />
+      <div className="absolute -inset-[100%] bg-gradient-to-r from-transparent via-white/[0.15] to-transparent skew-x-[25deg] -translate-x-full group-hover:translate-x-full transition-all duration-[1200ms] ease-out pointer-events-none" />
+
+      <div className="relative w-full h-full bg-[#111111]/40 backdrop-blur-3xl rounded-[16px] flex items-center justify-center gap-3 border border-white/[0.05]">
+        {isLoading ? (
+          <div className="w-4 h-4 border-2 border-white/20 border-t-white animate-spin rounded-full" />
+        ) : (
+          <>
+            <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center shadow-[0_2px_10px_rgba(255,255,255,0.1)] group-hover:scale-110 transition-transform duration-500">
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+              </svg>
+            </div>
+            <span className="text-[13px] text-white font-semibold tracking-tight">Sign in with Google</span>
+          </>
+        )}
+      </div>
+    </button>
+  );
 
   const StepIndicator = ({ currentStep }) => (
     <div className="flex items-center gap-2 mb-10">
@@ -122,10 +209,10 @@ export default function GetStarted() {
       <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-repeat mix-blend-overlay" />
 
       <motion.div
-        initial={{ opacity: 0, scale: 0.98 }}
+        initial={{ opacity: 0, scale: 0.985 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-        className="relative z-10 w-full max-w-[920px] bg-white/[0.01] backdrop-blur-[40px] border border-white/[0.06] border-t-white/[0.08] rounded-[24px] shadow-[0_50px_100px_rgba(0,0,0,0.9),inset_0_1px_1px_rgba(255,255,255,0.03)] overflow-hidden"
+        className="relative z-10 w-full max-w-[940px] bg-white/[0.015] backdrop-blur-[60px] border border-white/[0.08] border-t-white/[0.12] rounded-[32px] shadow-[0_50px_120px_-20px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.05)] overflow-hidden"
       >
         <div className="flex flex-col md:flex-row min-h-[540px]">
 
@@ -148,7 +235,7 @@ export default function GetStarted() {
                 Join the <br /> Waitlist
               </h1>
 
-              <p className="text-white/40 text-sm font-light tracking-tight max-w-[280px] leading-relaxed mb-12">
+              <p className="text-white/40 text-sm font-medium tracking-tight max-w-[280px] leading-relaxed mb-12">
                 Mailient is currently in early access. Secure your spot to redefine your inbox.
               </p>
 
@@ -158,7 +245,7 @@ export default function GetStarted() {
                     <div className="w-5 h-5 rounded-full border border-white/5 flex items-center justify-center shrink-0">
                       <Check className="w-3 h-3 text-white" strokeWidth={2} />
                     </div>
-                    <span className="font-light tracking-tight">{benefit}</span>
+                    <span className="font-medium tracking-tight">{benefit}</span>
                   </div>
                 ))}
               </div>
@@ -182,9 +269,16 @@ export default function GetStarted() {
                   <StepIndicator currentStep={1} />
 
                   <div className="mb-10">
-                    <h2 className="text-white text-lg font-light tracking-tight mb-2">Create account</h2>
-                    <p className="text-white/30 text-xs font-light">Join the community of founders using AI to master their communication.</p>
+                    <h2 className="text-white text-lg font-medium tracking-tight mb-2">Create account</h2>
+                    <p className="text-white/30 text-xs font-medium">Join the community of founders using AI to master their communication.</p>
                   </div>
+
+                  {error && (
+                    <div className="mb-6 p-3 bg-red-500/5 border border-red-500/20 rounded-lg flex gap-3 items-center">
+                      <AlertCircle className="w-4 h-4 text-red-400 shrink-0" strokeWidth={1.5} />
+                      <p className="text-[11px] text-red-200/60 font-medium">{error}</p>
+                    </div>
+                  )}
 
                   <form onSubmit={handleEmailSubmit} className="space-y-6">
                     <div className="relative group">
@@ -194,7 +288,7 @@ export default function GetStarted() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="Work email address"
-                        className="w-full h-11 px-0 bg-transparent border-b border-white/10 text-white placeholder:text-white/20 focus:outline-none focus:border-white transition-all text-sm font-light pb-2 rounded-none"
+                        className="w-full h-11 px-0 bg-transparent border-b border-white/10 text-white placeholder:text-white/20 focus:outline-none focus:border-white transition-all text-sm font-medium pb-2 rounded-none"
                         autoFocus
                         required
                       />
@@ -213,7 +307,7 @@ export default function GetStarted() {
                   <div className="mt-12 text-center md:text-left">
                     <button
                       onClick={() => router.push('/auth/signin')}
-                      className="text-white/20 hover:text-white text-xs font-light tracking-tight transition-colors"
+                      className="text-white/20 hover:text-white text-xs font-medium tracking-tight transition-colors"
                     >
                       already registered? <span className="text-white/40 border-b border-white/10 ml-1">sign in</span>
                     </button>
@@ -221,7 +315,7 @@ export default function GetStarted() {
                 </motion.div>
               )}
 
-              {/* ──────────── STEP 2: Install for Workspace / Gmail Notice ──────────── */}
+              {/* ──────────── STEP 2: Identity Handling ──────────── */}
               {step === 2 && (
                 <motion.div
                   key="step2"
@@ -244,8 +338,8 @@ export default function GetStarted() {
                   <div className="p-5 bg-white/[0.02] border border-white/[0.05] rounded-2xl mb-8">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-[10px] font-medium uppercase tracking-widest text-white/20">Identity</span>
-                      <span className={`text-[10px] font-medium uppercase tracking-widest ${isWorkspace ? 'text-white/50' : isGmail ? 'text-white/25' : 'text-white/20'}`}>
-                        {isWorkspace ? 'Workspace' : isGmail ? 'Personal Gmail' : 'Personal'}
+                      <span className={`text-[10px] font-medium uppercase tracking-widest ${isGmail ? 'text-white/40' : 'text-white/20'}`}>
+                        {isGmail ? 'Personal Gmail' : 'Personal'}
                       </span>
                     </div>
                     <div className="text-white font-medium truncate text-sm tracking-tight">
@@ -253,7 +347,24 @@ export default function GetStarted() {
                     </div>
                   </div>
 
+                  {error && (
+                    <div className="mb-6 p-3 bg-red-500/5 border border-red-500/20 rounded-lg flex gap-3 items-center">
+                      <AlertCircle className="w-4 h-4 text-red-400 shrink-0" strokeWidth={1.5} />
+                      <p className="text-[11px] text-red-200/60 font-medium">{error}</p>
+                    </div>
+                  )}
+
                   {isGmail ? (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5, delay: 0.1 }}
+                      className="space-y-4"
+                    >
+                      <GmailWarning />
+                      <PremiumGoogleButton />
+                    </motion.div>
+                  ) : (
                     <motion.div
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -265,72 +376,18 @@ export default function GetStarted() {
                             <Building2 className="w-5 h-5 text-white/40" strokeWidth={1.5} />
                           </div>
                           <div>
-                            <h3 className="text-white text-sm font-medium tracking-tight mb-2">Google Workspace Required</h3>
+                            <h3 className="text-white text-sm font-medium tracking-tight mb-2">Workspace Required</h3>
                             <p className="text-white/35 text-xs leading-relaxed font-light">
-                              Mailient currently supports <span className="text-white/60">Google Workspace</span> accounts only.
-                              Personal Gmail accounts (<span className="text-white/50 font-mono text-[11px]">@gmail.com</span>) are not supported at this time.
+                              Mailient is optimized for <span className="text-white/60">Google Workspace</span>.
+                              Personal accounts may experience limited functionality or security warnings.
                             </p>
                           </div>
                         </div>
 
                         <div className="border-t border-white/[0.06] pt-5 space-y-3">
-                          <p className="text-[11px] text-white/25 font-light leading-relaxed">
-                            If you have a Google Workspace account through your organization, please use that email address instead.
-                          </p>
-                          <button
-                            onClick={backToStep1}
-                            className="w-full h-10 bg-white/[0.06] hover:bg-white/[0.1] text-white/70 rounded-xl text-xs font-medium transition-all flex items-center justify-center gap-2"
-                          >
-                            <ArrowLeft className="w-3 h-3" />
-                            Use a different email
-                          </button>
+                          <PremiumGoogleButton />
                         </div>
                       </div>
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.5, delay: 0.1 }}
-                      className="space-y-4"
-                    >
-                      <button
-                        onClick={handleGoogleSignUp}
-                        disabled={isLoading}
-                        className="w-full h-12 bg-white text-black rounded-[14px] font-semibold text-sm hover:bg-[#F5F5F5] hover:-translate-y-0.5 transition-all flex items-center justify-center gap-3 shadow-lg disabled:opacity-50 active:scale-[0.98]"
-                      >
-                        {isLoading ? (
-                          <div className="w-4 h-4 border-2 border-black/20 border-t-black animate-spin rounded-full" />
-                        ) : (
-                          <>
-                            <svg className="w-4 h-4" viewBox="0 0 24 24">
-                              <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                              <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                              <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                              <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-                            </svg>
-                            Install for Workspace
-                          </>
-                        )}
-                      </button>
-
-                      {!isWorkspace && (
-                        <div className="p-4 bg-white/[0.01] border border-white/[0.05] rounded-xl flex gap-3">
-                          <AlertCircle className="w-4 h-4 text-white/20 shrink-0 mt-0.5" strokeWidth={1.5} />
-                          <p className="text-[11px] text-white/30 leading-relaxed font-light">
-                            Personal accounts require manual confirmation on the Google consent screen. Click &apos;Advanced&apos; if prompted.
-                          </p>
-                        </div>
-                      )}
-
-                      {isWorkspace && (
-                        <button
-                          onClick={() => setShowAdminModal(true)}
-                          className="w-full text-center text-[10px] font-medium text-white/20 hover:text-white/50 transition-colors py-2 uppercase tracking-[0.2em]"
-                        >
-                          need admin approval?
-                        </button>
-                      )}
                     </motion.div>
                   )}
                 </motion.div>
@@ -529,7 +586,7 @@ export default function GetStarted() {
                         <div className="w-5 h-5 rounded-full bg-white/[0.06] flex items-center justify-center shrink-0">
                           <span className="text-[10px] font-semibold text-white/50">{i + 1}</span>
                         </div>
-                        <p className="text-[11px] text-white/40 font-light leading-relaxed">{stepText}</p>
+                        <p className="text-[11px] text-white/40 font-medium leading-relaxed">{stepText}</p>
                       </div>
                     ))}
                   </div>

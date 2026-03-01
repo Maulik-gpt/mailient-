@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mailient Email Previews</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #050505;
+      color: #e5e5e5;
+      padding: 40px 20px;
+    }
+    /* Tab nav */
+    .tab-nav {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 40px;
+    }
+    .tab-btn {
+      padding: 10px 24px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.05);
+      color: rgba(255,255,255,0.5);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: 'Inter', sans-serif;
+    }
+    .tab-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .tab-btn.active { background: rgba(99,102,241,0.25); color: #a78bfa; border-color: rgba(99,102,241,0.4); }
+    .tab-btn.pro.active { background: rgba(245,158,11,0.2); color: #fbbf24; border-color: rgba(245,158,11,0.35); }
+    /* Email panels */
+    .email-panel { display: none; }
+    .email-panel.active { display: block; }
+    /* Subject label */
+    .subject-bar {
+      max-width: 620px;
+      margin: 0 auto 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .subject-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.3);
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .subject-text {
+      font-size: 13px;
+      color: rgba(255,255,255,0.7);
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 6px 14px;
+      flex: 1;
+    }
+    /* Email wrapper */
+    .email-outer {
+      background: #0a0a0a;
+      padding: 40px 16px;
+      border-radius: 16px;
+      max-width: 680px;
+      margin: 0 auto;
+    }
+    .email-logo {
+      text-align: center;
+      padding-bottom: 32px;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: #fff;
+    }
+    .email-card {
+      background: #111111;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      overflow: hidden;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .email-footer {
+      text-align: center;
+      padding-top: 32px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.25);
+      line-height: 1.7;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .email-footer a { color: rgba(255,255,255,0.35); text-decoration: none; }
+    /* Gradient bars */
+    .bar-free  { height: 4px; background: linear-gradient(90deg,#6366f1,#a855f7,#ec4899); }
+    .bar-starter { height: 4px; background: linear-gradient(90deg,#6366f1,#a855f7); }
+    .bar-pro   { height: 4px; background: linear-gradient(90deg,#f59e0b,#f97316,#ec4899); }
+    /* Body padding */
+    .body-pad { padding: 40px 40px 36px; }
+    .sig-pad  { padding: 0 40px 40px; }
+    /* Typography */
+    h1 { font-size: 28px; font-weight: 700; color: #fff; letter-spacing: -0.5px; margin-bottom: 8px; }
+    h1.lg { font-size: 30px; }
+    p.sub { font-size: 15px; color: rgba(255,255,255,0.55); line-height: 1.7; margin-bottom: 32px; }
+    p.sub2 { font-size: 15px; color: rgba(255,255,255,0.5); line-height: 1.7; }
+    /* Feature box */
+    .feature-box {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 24px;
+      margin-bottom: 28px;
+    }
+    .feature-label {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .feature-label.indigo { color: #6366f1; }
+    .feature-label.amber { color: #f59e0b; }
+    .feature-row {
+      display: flex;
+      align-items: center;
+      padding: 7px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .feature-row:last-child { border-bottom: none; }
+    .feature-icon { font-size: 16px; width: 28px; flex-shrink: 0; }
+    .feature-name { font-size: 14px; color: rgba(255,255,255,0.75); flex: 1; padding: 0 8px; }
+    .feature-limit { font-size: 13px; font-weight: 500; }
+    .feature-limit.purple { color: #a78bfa; }
+    .feature-limit.amber  { color: #fbbf24; }
+    .feature-limit.dim    { color: rgba(255,255,255,0.35); }
+    /* Upgrade box */
+    .upgrade-box {
+      background: linear-gradient(135deg,rgba(99,102,241,0.15),rgba(168,85,247,0.08));
+      border: 1px solid rgba(99,102,241,0.25);
+      border-radius: 14px;
+      padding: 24px;
+      margin-bottom: 28px;
+    }
+    .upgrade-label { font-size: 14px; font-weight: 600; color: #a78bfa; margin-bottom: 8px; }
+    .upgrade-text  { font-size: 14px; color: rgba(255,255,255,0.55); line-height: 1.7; margin-bottom: 20px; }
+    /* Thank you box — starter */
+    .thanks-box {
+      border: 1px solid rgba(99,102,241,0.25);
+      background: rgba(99,102,241,0.05);
+      border-radius: 14px;
+      padding: 24px;
+      margin-bottom: 28px;
+    }
+    /* Thank you box — pro */
+    .thanks-box.pro {
+      border-color: rgba(245,158,11,0.2);
+      background: rgba(245,158,11,0.04);
+    }
+    .thanks-title { font-size: 15px; font-weight: 600; color: #fff; margin-bottom: 8px; }
+    .thanks-text  { font-size: 14px; color: rgba(255,255,255,0.5); line-height: 1.7; margin-bottom: 16px; }
+    .btn-row { display: flex; gap: 12px; flex-wrap: wrap; }
+    .btn-ghost {
+      display: inline-block;
+      padding: 10px 20px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #e5e5e5;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: 8px;
+      text-decoration: none;
+    }
+    /* CTA buttons */
+    .cta-indigo {
+      display: block;
+      text-align: center;
+      padding: 14px;
+      background: linear-gradient(135deg,#6366f1,#a855f7);
+      color: #fff;
+      font-weight: 600;
+      font-size: 15px;
+      border-radius: 12px;
+      text-decoration: none;
+      letter-spacing: 0.2px;
+    }
+    .cta-amber {
+      display: block;
+      text-align: center;
+      padding: 14px;
+      background: linear-gradient(135deg,#f59e0b,#f97316);
+      color: #fff;
+      font-weight: 600;
+      font-size: 15px;
+      border-radius: 12px;
+      text-decoration: none;
+      letter-spacing: 0.2px;
+    }
+    .cta-small {
+      display: inline-block;
+      padding: 12px 28px;
+      background: linear-gradient(135deg,#6366f1,#a855f7);
+      color: #fff;
+      font-weight: 600;
+      font-size: 14px;
+      border-radius: 10px;
+      text-decoration: none;
+    }
+    /* Personal note */
+    .personal-note { font-size: 14px; color: rgba(255,255,255,0.45); line-height: 1.7; }
+    .personal-note a { color: #a78bfa; text-decoration: none; }
+    /* Hero section */
+    .hero { text-align: center; margin-bottom: 36px; }
+    .hero-emoji { font-size: 48px; margin-bottom: 16px; }
+    /* Badge */
+    .pro-badge {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .pro-badge span {
+      display: inline-block;
+      padding: 8px 24px;
+      background: linear-gradient(135deg,rgba(245,158,11,0.2),rgba(236,72,153,0.15));
+      border: 1px solid rgba(245,158,11,0.3);
+      border-radius: 40px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #fbbf24;
+      letter-spacing: 0.5px;
+    }
+    /* Sig */
+    .sig-line { border-top: 1px solid rgba(255,255,255,0.06); padding-top: 24px; }
+    .sig-line p { font-size: 14px; color: rgba(255,255,255,0.4); line-height: 1.8; }
+    .sig-line strong { color: rgba(255,255,255,0.7); }
+  </style>
+</head>
+<body>
+
+<!-- TAB NAV -->
+<div class="tab-nav">
+  <button class="tab-btn active" onclick="showTab('free', this)">🆓 Free Plan</button>
+  <button class="tab-btn" onclick="showTab('starter', this)">⚡ Starter Plan</button>
+  <button class="tab-btn pro" onclick="showTab('pro', this)">🏆 Pro Plan</button>
+</div>
+
+<!-- ══════════════════ FREE EMAIL ══════════════════ -->
+<div id="tab-free" class="email-panel active">
+  <div class="subject-bar">
+    <span class="subject-label">Subject</span>
+    <span class="subject-text">✦ Welcome to Mailient — Your Free Plan is Ready</span>
+  </div>
+  <div class="email-outer">
+    <div class="email-logo">✦ Mailient</div>
+    <div class="email-card">
+      <div class="bar-free"></div>
+      <div class="body-pad">
+        <h1>Welcome to Mailient, Alex! 🎉</h1>
+        <p class="sub">
+          You're now on the <strong style="color:#e5e5e5;">Free plan</strong> — a great starting point to experience
+          the power of AI-driven email intelligence.
+        </p>
+
+        <div class="feature-box">
+          <p class="feature-label indigo">Your Free Plan Includes</p>
+          <div class="feature-row"><span class="feature-icon" style="color:#6366f1;font-size:12px;">✦</span><span class="feature-name">Sift AI</span><span class="feature-limit dim">1 analysis / day</span></div>
+          <div class="feature-row"><span class="feature-icon" style="color:#6366f1;font-size:12px;">✦</span><span class="feature-name">Arcus AI</span><span class="feature-limit dim">5 queries / day</span></div>
+          <div class="feature-row"><span class="feature-icon" style="color:#6366f1;font-size:12px;">✦</span><span class="feature-name">Email Summaries</span><span class="feature-limit dim">3 / day</span></div>
+          <div class="feature-row"><span class="feature-icon" style="color:#6366f1;font-size:12px;">✦</span><span class="feature-name">Draft Replies</span><span class="feature-limit dim">1 / day</span></div>
+          <div class="feature-row"><span class="feature-icon" style="color:#6366f1;font-size:12px;">✦</span><span class="feature-name">AI Notes</span><span class="feature-limit dim">2 / month</span></div>
+        </div>
+
+        <div class="upgrade-box">
+          <p class="upgrade-label">🚀 Unlock the Full Potential</p>
+          <p class="upgrade-text">
+            Upgrade to <strong style="color:#e5e5e5;">Starter ($7.99/mo)</strong> and get 10× more AI power —
+            more Sift AI, more Arcus queries, more summaries, and priority features.
+          </p>
+          <a href="#" class="cta-small">Upgrade to Starter →</a>
+        </div>
+
+        <p class="personal-note">
+          Have questions or ideas? Reply to this email or reach me directly at
+          <a href="#">mailient.xyz@gmail.com</a> —
+          I read every message. You can also find me on
+          <a href="#">X (Twitter)</a>.
+        </p>
+      </div>
+      <div class="sig-pad">
+        <div class="sig-line">
+          <p>With ✦,<br/><strong>Maulik</strong> — Founder, Mailient</p>
+        </div>
+      </div>
+    </div>
+    <div class="email-footer">
+      Mailient — AI-powered email intelligence<br/>
+      <a href="#">mailient.xyz</a> &nbsp;·&nbsp;
+      <a href="#">@Maulik_055</a> &nbsp;·&nbsp;
+      <a href="#">mailient.xyz@gmail.com</a>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ STARTER EMAIL ══════════════════ -->
+<div id="tab-starter" class="email-panel">
+  <div class="subject-bar">
+    <span class="subject-label">Subject</span>
+    <span class="subject-text">🎊 Welcome to Mailient Starter — You're In!</span>
+  </div>
+  <div class="email-outer">
+    <div class="email-logo">✦ Mailient</div>
+    <div class="email-card">
+      <div class="bar-starter"></div>
+      <div class="body-pad">
+        <div class="hero">
+          <div class="hero-emoji">🎊</div>
+          <h1 class="lg">You're on Starter, Alex!</h1>
+          <p class="sub2">Welcome to the smarter side of email. Your Starter plan is now <strong style="color:#a78bfa;">active</strong>.</p>
+        </div>
+
+        <div class="feature-box">
+          <p class="feature-label indigo">What's Unlocked</p>
+          <div class="feature-row"><span class="feature-icon">⚡</span><span class="feature-name">Sift AI</span><span class="feature-limit purple">10 analyses / day</span></div>
+          <div class="feature-row"><span class="feature-icon">🤖</span><span class="feature-name">Arcus AI</span><span class="feature-limit purple">20 queries / day</span></div>
+          <div class="feature-row"><span class="feature-icon">📝</span><span class="feature-name">Email Summaries</span><span class="feature-limit purple">30 / day</span></div>
+          <div class="feature-row"><span class="feature-icon">✍️</span><span class="feature-name">Draft Replies</span><span class="feature-limit purple">10 / day</span></div>
+          <div class="feature-row"><span class="feature-icon">📌</span><span class="feature-name">AI Notes</span><span class="feature-limit purple">50 / month</span></div>
+          <div class="feature-row"><span class="feature-icon">📅</span><span class="feature-name">Schedule Calls</span><span class="feature-limit purple">30 / month</span></div>
+        </div>
+
+        <div class="thanks-box">
+          <p class="thanks-title">Thank you for choosing Mailient ✦</p>
+          <p class="thanks-text">
+            Your support means everything — it's what keeps us building. If you have any feedback, ideas,
+            or run into anything, please share it. I personally read every message.
+          </p>
+          <div class="btn-row">
+            <a href="#" class="btn-ghost">📧 Send Feedback</a>
+            <a href="#" class="btn-ghost">𝕏 Find Me on X</a>
+          </div>
+        </div>
+
+        <a href="#" class="cta-indigo">Open Mailient Dashboard →</a>
+      </div>
+      <div class="sig-pad">
+        <div class="sig-line">
+          <p>With ✦,<br/><strong>Maulik</strong> — Founder, Mailient</p>
+        </div>
+      </div>
+    </div>
+    <div class="email-footer">
+      Mailient — AI-powered email intelligence<br/>
+      <a href="#">mailient.xyz</a> &nbsp;·&nbsp;
+      <a href="#">@Maulik_055</a> &nbsp;·&nbsp;
+      <a href="#">mailient.xyz@gmail.com</a>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ PRO EMAIL ══════════════════ -->
+<div id="tab-pro" class="email-panel">
+  <div class="subject-bar">
+    <span class="subject-label">Subject</span>
+    <span class="subject-text">🏆 Welcome to Mailient Pro — Unlimited Everything</span>
+  </div>
+  <div class="email-outer">
+    <div class="email-logo">✦ Mailient</div>
+    <div class="email-card">
+      <div class="bar-pro"></div>
+      <div class="body-pad">
+        <div class="hero">
+          <div class="hero-emoji">🏆</div>
+          <h1 class="lg">Welcome to Pro, Alex!</h1>
+          <p class="sub2">You're now on Mailient <strong style="color:#fbbf24;">Pro</strong> — the most powerful plan we offer. Everything is unlimited. Go build something amazing.</p>
+        </div>
+
+        <div class="pro-badge">
+          <span>✦ UNLIMITED ACCESS — ALL FEATURES</span>
+        </div>
+
+        <div class="feature-box">
+          <p class="feature-label amber">Everything Unlocked</p>
+          <div class="feature-row"><span class="feature-icon">⚡</span><span class="feature-name">Sift AI</span><span class="feature-limit amber">Unlimited</span></div>
+          <div class="feature-row"><span class="feature-icon">🤖</span><span class="feature-name">Arcus AI</span><span class="feature-limit amber">Unlimited</span></div>
+          <div class="feature-row"><span class="feature-icon">📝</span><span class="feature-name">Email Summaries</span><span class="feature-limit amber">Unlimited</span></div>
+          <div class="feature-row"><span class="feature-icon">✍️</span><span class="feature-name">Draft Replies</span><span class="feature-limit amber">Unlimited</span></div>
+          <div class="feature-row"><span class="feature-icon">📌</span><span class="feature-name">AI Notes</span><span class="feature-limit amber">Unlimited</span></div>
+          <div class="feature-row"><span class="feature-icon">📅</span><span class="feature-name">Schedule Calls</span><span class="feature-limit amber">Unlimited</span></div>
+          <div class="feature-row"><span class="feature-icon">🌐</span><span class="feature-name">AI Outreach Engine</span><span class="feature-limit amber">Full access</span></div>
+          <div class="feature-row"><span class="feature-icon">🎙️</span><span class="feature-name">Voice Cloning</span><span class="feature-limit amber">Full access</span></div>
+        </div>
+
+        <div class="thanks-box pro">
+          <p class="thanks-title">Thank you for choosing Pro ✦</p>
+          <p class="thanks-text">
+            You're among our most valued users. Your trust and investment in Mailient Pro genuinely drives
+            us to keep pushing the boundaries of what's possible with AI email intelligence.
+            Any feedback, ideas, or requests — I'd love to hear them.
+          </p>
+          <div class="btn-row">
+            <a href="#" class="btn-ghost">📧 mailient.xyz@gmail.com</a>
+            <a href="#" class="btn-ghost">𝕏 @Maulik_055</a>
+          </div>
+        </div>
+
+        <a href="#" class="cta-amber">Open Mailient Dashboard →</a>
+      </div>
+      <div class="sig-pad">
+        <div class="sig-line">
+          <p>With ✦,<br/><strong>Maulik</strong> — Founder, Mailient</p>
+        </div>
+      </div>
+    </div>
+    <div class="email-footer">
+      Mailient — AI-powered email intelligence<br/>
+      <a href="#">mailient.xyz</a> &nbsp;·&nbsp;
+      <a href="#">@Maulik_055</a> &nbsp;·&nbsp;
+      <a href="#">mailient.xyz@gmail.com</a>
+    </div>
+  </div>
+</div>
+
+<script>
+  function showTab(name, btn) {
+    document.querySelectorAll('.email-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    btn.classList.add('active');
+  }
+</script>
+</body>
+</html>

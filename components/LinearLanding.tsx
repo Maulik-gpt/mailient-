@@ -40,7 +40,7 @@ import { signIn, useSession } from "next-auth/react"
 import { HeroGeometric } from "@/components/ui/shape-landing-hero"
 import { GlassButton } from "@/components/ui/glass-button"
 import { useSmoothScroll } from "@/hooks/use-smooth-scroll"
-import { SalesAgentWidget } from "@/components/SalesAgentWidget"
+
 
 const features = [
     {
@@ -1377,8 +1377,7 @@ export function LinearLanding() {
                 </div>
             </footer>
 
-            {/* ElevenLabs Sales Agent - Floating Voice Widget */}
-            <SalesAgentWidget />
+
         </div>
     )
 }
