@@ -45,32 +45,27 @@ export function CTASection() {
                     AI-Powered Email for Founders
                 </div>
 
-                {/* Headline - Larger and more dramatic without card constraint */}
-                <h1 className="text-6xl md:text-8xl lg:text-9xl font-medium tracking-tighter text-white mb-10 leading-[0.95] max-w-5xl">
+                {/* Headline */}
+                <h2 className="font-serif text-5xl md:text-7xl lg:text-8xl font-medium tracking-tight text-white mb-8 leading-[1.05] max-w-4xl">
                     Email That Thinks <br />
-                    <span className="text-white/40">Like You Do.</span>
-                </h1>
+                    <span className="text-white/80">Like You Do.</span>
+                </h2>
 
                 {/* Description */}
-                <p className="text-zinc-400 text-lg md:text-2xl max-w-3xl mb-14 leading-relaxed font-light">
+                <p className="text-zinc-400 text-lg md:text-xl max-w-2xl mb-12 leading-relaxed">
                     Stop triaging. Mailient identifies revenue opportunities, surfaces urgent threads, and drafts replies in your voice—automatically.
                 </p>
 
                 {/* Button */}
                 <button
                     onClick={() => status === "authenticated" ? router.push('/home-feed?welcome=true') : signIn('google')}
-                    className="group relative inline-flex h-16 items-center justify-center gap-4 overflow-hidden rounded-full bg-white px-12 text-lg font-semibold text-black transition-all duration-500 hover:scale-105 active:scale-95 shadow-[0_0_40px_rgba(255,255,255,0.2)] hover:shadow-[0_0_60px_rgba(255,255,255,0.4)]"
+                    className="group relative inline-flex h-14 items-center justify-center gap-3 overflow-hidden rounded-full bg-white px-12 text-base font-medium text-black transition-all duration-300 hover:scale-105 active:scale-95"
                 >
                     <span className="relative z-10">
                         {status === "authenticated" ? "Go to Dashboard" : "Unlock My Inbox"}
                     </span>
-                    <ArrowRight className="h-6 w-6 relative z-10 transition-transform duration-500 group-hover:translate-x-1" />
+                    <ArrowRight className="h-5 w-5 relative z-10 transition-transform duration-300 group-hover:translate-x-1" />
                 </button>
-
-                {/* Trust Text */}
-                <p className="mt-8 text-[10px] text-zinc-600 uppercase tracking-widest font-bold">
-                    Join 2,800+ founders automating their growth
-                </p>
             </div>
         </section>
     )

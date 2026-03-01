@@ -226,6 +226,62 @@ export function LinearLanding() {
 
             <CTASection />
 
+            <div className="relative z-10 pb-20">
+                <div className="text-center px-4">
+                    {/* Trust Signals */}
+                    <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-center gap-3 sm:gap-x-6 md:gap-x-8 gap-y-3 mb-10 md:mb-16 text-xs sm:text-sm text-zinc-400 px-2 mt-4">
+                        <div className="flex items-center gap-1.5 sm:gap-2 justify-center">
+                            <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-400 flex-shrink-0" />
+                            <span className="whitespace-nowrap">Google OAuth</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 sm:gap-2 justify-center">
+                            <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-400 flex-shrink-0" />
+                            <span className="whitespace-nowrap">Encrypted</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 sm:gap-2 justify-center">
+                            <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-400 flex-shrink-0" />
+                            <span className="whitespace-nowrap">2 Min Setup</span>
+                        </div>
+                    </div>
+
+                    {/* Product Hunt Featured Badge */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: 0.2, duration: 1 }}
+                        className="flex justify-center mb-16"
+                    >
+                        <a
+                            href="https://www.producthunt.com/products/mailient?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-mailient"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            <img
+                                src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1059008&theme=light&t=1768213643164"
+                                alt="Mailient - Stop managing emails, Start automating them. | Product Hunt"
+                                width="250"
+                                height="54"
+                                className="h-12 md:h-14 w-auto opacity-80 hover:opacity-100 transition-opacity"
+                            />
+                        </a>
+                    </motion.div>
+
+                    {/* Hero Video */}
+                    <div className="relative w-full max-w-5xl mx-auto aspect-video rounded-2xl border border-white/10 bg-zinc-900/50 backdrop-blur-sm overflow-hidden group shadow-[0_0_50px_-12px_rgba(255,255,255,0.1)] mb-12">
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none z-10" />
+                        <iframe
+                            src="https://cap.so/embed/rpter2vmzaz3vyk?autoplay=1&muted=1&controls=1&loop=1&playsinline=1"
+                            title="Mailient Product Demo"
+                            className="absolute inset-0 w-full h-full"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            allowFullScreen
+                            loading="eager"
+                        />
+                    </div>
+                </div>
+            </div>
+
             {/* Pain Section - The Consequences */}
             <section className="py-20 md:py-32 px-6 z-10 relative overflow-hidden bg-black">
                 <div className="max-w-7xl mx-auto">
