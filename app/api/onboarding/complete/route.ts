@@ -16,12 +16,11 @@ export async function POST(request: Request) {
     const body = await request.json();
     const {
       username,
-      emailUsage,
-      emailsPerDay,
-      writingStyle,
       plan,
       role,
+      personality,
       goals,
+      customInstruction
     } = body;
 
     if (!username || username.length === 0) {
@@ -59,12 +58,11 @@ export async function POST(request: Request) {
 
     // Store onboarding preferences in preferences JSONB field
     const preferences: any = {
-      email_usage: emailUsage || null,
-      emails_per_day: emailsPerDay || null,
-      writing_style: writingStyle || null,
       plan: plan || null,
       role: role || null,
       goals: goals || null,
+      personality: personality || null,
+      custom_instruction: customInstruction || null,
     };
 
     console.log(`📋 Completing onboarding for ${userId}`);

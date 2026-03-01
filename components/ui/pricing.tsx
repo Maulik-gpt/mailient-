@@ -116,9 +116,7 @@ export function PricingCard({
 				'relative flex w-full flex-col rounded-[2.5rem] border p-8 md:p-12 transition-all duration-500',
 				isHighlighted
 					? 'bg-white border-white shadow-[0_0_80px_-15px_rgba(255,255,255,0.1)]'
-					: plan.price.monthly === 0
-						? 'bg-gradient-to-b from-zinc-900/50 to-black border-white/5 shadow-inner'
-						: 'bg-black border-white/10',
+					: 'apple-glass-liquid-dark border-white/5',
 				className,
 			)}
 			{...props}
