@@ -68,18 +68,18 @@ export function CTASection() {
                 </button>
 
                 {/* Trust Signals */}
-                <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-center gap-3 sm:gap-x-6 md:gap-x-8 gap-y-3 text-xs sm:text-sm text-zinc-400 mt-12 bg-black/20 backdrop-blur-sm py-3 px-6 rounded-3xl border border-white/5">
-                    <div className="flex items-center gap-2 justify-center">
-                        <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400 flex-shrink-0" />
-                        <span className="whitespace-nowrap uppercase tracking-widest font-bold text-[10px]">Google Workspace Auth</span>
+                <div className="flex flex-wrap items-center justify-center gap-3 mt-10">
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-white/5 backdrop-blur-md shadow-[0_0_20px_rgba(255,255,255,0.05)]">
+                        <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                        <span className="whitespace-nowrap uppercase tracking-widest font-black text-[10px] text-white">Google Workspace Auth</span>
                     </div>
-                    <div className="flex items-center gap-2 justify-center border-l border-white/10 pl-4 md:pl-8 ml-0 md:ml-0">
-                        <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-400 flex-shrink-0" />
-                        <span className="whitespace-nowrap uppercase tracking-widest font-bold text-[10px]">Encrypted</span>
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-white/5 backdrop-blur-md shadow-[0_0_20px_rgba(255,255,255,0.05)]">
+                        <Lock className="w-4 h-4 text-blue-400" />
+                        <span className="whitespace-nowrap uppercase tracking-widest font-black text-[10px] text-white">Encrypted</span>
                     </div>
-                    <div className="flex items-center gap-2 justify-center border-l border-white/10 pl-4 md:pl-8 ml-0 md:ml-0">
-                        <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400 flex-shrink-0" />
-                        <span className="whitespace-nowrap uppercase tracking-widest font-bold text-[10px]">2 Min Setup</span>
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-white/5 backdrop-blur-md shadow-[0_0_20px_rgba(255,255,255,0.05)]">
+                        <Zap className="w-4 h-4 text-amber-400" />
+                        <span className="whitespace-nowrap uppercase tracking-widest font-black text-[10px] text-white">2 Min Setup</span>
                     </div>
                 </div>
             </div>

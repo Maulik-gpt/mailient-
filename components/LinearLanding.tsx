@@ -511,9 +511,25 @@ export function LinearLanding() {
                                         <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                     </LiquidButton>
                                 </div>
-                                <p className="text-[10px] sm:text-xs text-white/20 italic max-w-md">
-                                    All email sending actions require you to draft and approve each message — Mailient does not send emails automatically without your approval.
-                                </p>
+                                <div className="flex flex-col items-center gap-6 mt-4">
+                                    <div className="flex flex-wrap items-center justify-center gap-3">
+                                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 backdrop-blur-md shadow-[0_0_20px_rgba(255,255,255,0.05)]">
+                                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                                            <span className="whitespace-nowrap uppercase tracking-widest font-black text-[9px] text-white">Google Workspace Auth</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 backdrop-blur-md shadow-[0_0_20px_rgba(255,255,255,0.05)]">
+                                            <Lock className="w-3.5 h-3.5 text-blue-400" />
+                                            <span className="whitespace-nowrap uppercase tracking-widest font-black text-[9px] text-white">Encrypted</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 backdrop-blur-md shadow-[0_0_20px_rgba(255,255,255,0.05)]">
+                                            <Zap className="w-3.5 h-3.5 text-amber-400" />
+                                            <span className="whitespace-nowrap uppercase tracking-widest font-black text-[9px] text-white">2 Min Setup</span>
+                                        </div>
+                                    </div>
+                                    <p className="text-[10px] sm:text-xs text-white/20 italic max-w-md">
+                                        All email sending actions require you to draft and approve each message — Mailient does not send emails automatically without your approval.
+                                    </p>
+                                </div>
                             </div>
                         </motion.div>
                     </div>
