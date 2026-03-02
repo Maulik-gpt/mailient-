@@ -195,10 +195,11 @@ export function PricingCard({
 						</MetalButton>
 					) : (
 						<LiquidButton
+							variant={isHighlighted ? "light" : "default"}
 							className={cn(
 								'w-full h-14 rounded-2xl text-lg font-bold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]',
 								isHighlighted
-									? 'bg-black text-white hover:bg-zinc-900 border-none'
+									? 'border-none'
 									: 'text-white'
 							)}
 							onClick={props.onPlanSelect}
@@ -225,10 +226,11 @@ export function PricingCard({
 					) : (
 						<Link href={plan.btn.href} className="w-full">
 							<LiquidButton
+								variant={isHighlighted ? "light" : "default"}
 								className={cn(
 									'w-full h-14 rounded-2xl text-lg font-bold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]',
 									isHighlighted
-										? 'bg-black text-white hover:bg-zinc-900 border-none'
+										? 'border-none'
 										: 'text-white'
 								)}
 							>
