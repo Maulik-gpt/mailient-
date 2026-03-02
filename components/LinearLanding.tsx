@@ -504,11 +504,11 @@ export function LinearLanding() {
                                     </div>
                                     <LiquidButton
                                         onClick={() => signIn('google')}
-                                        size="lg"
+                                        size="xxl"
                                         className="text-white"
                                     >
                                         Unlock My Inbox
-                                        <ArrowRight className="w-5 h-5 ml-2" />
+                                        <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                     </LiquidButton>
                                 </div>
                                 <p className="text-[10px] sm:text-xs text-white/20 italic max-w-md">
@@ -893,11 +893,11 @@ export function LinearLanding() {
                     <div className="flex flex-col sm:flex-row justify-center gap-4 mt-20">
                         <LiquidButton
                             onClick={() => signIn('google')}
-                            size="lg"
+                            size="xxl"
                             className="text-white"
                         >
                             Unlock My Inbox
-                            <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                         </LiquidButton>
                         <Button
                             variant="outline"
@@ -1085,10 +1085,10 @@ export function LinearLanding() {
                             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10">
                                 <LiquidButton
                                     onClick={() => router.push('/auth/signin')}
-                                    size="lg"
+                                    size="xxl"
                                 >
                                     Unlock My Inbox
-                                    <ArrowRight className="w-5 h-5 ml-2 inline-block" />
+                                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                 </LiquidButton>
                                 <Button
                                     variant="outline"
