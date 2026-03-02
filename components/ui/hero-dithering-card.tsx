@@ -1,7 +1,7 @@
 import { ArrowRight, ShieldCheck, Lock, Zap, ArrowUpRight } from "lucide-react"
 import { useState, Suspense, lazy } from "react"
 import { useRouter } from "next/navigation"
-import { signIn, useSession } from "next-auth/react"
+import { useSession } from "next-auth/react"
 import { Announcement, AnnouncementTag, AnnouncementTitle } from "@/components/ui/announcement"
 
 const Dithering = lazy(() =>
@@ -59,7 +59,7 @@ export function CTASection() {
 
                 {/* Button */}
                 <button
-                    onClick={() => status === "authenticated" ? router.push('/home-feed?welcome=true') : signIn('google')}
+                    onClick={() => status === "authenticated" ? router.push('/home-feed?welcome=true') : router.push('/auth/signin')}
                     className="group relative inline-flex h-14 items-center justify-center gap-3 overflow-hidden rounded-full bg-white px-12 text-base font-medium text-black transition-all duration-300 hover:scale-105 active:scale-95"
                 >
                     <span className="relative z-10">

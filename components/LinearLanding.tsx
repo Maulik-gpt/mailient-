@@ -36,7 +36,7 @@ import { Badge } from "@/components/ui/badge"
 import { BackgroundShaders } from "@/components/ui/background-paper-shaders"
 import { PricingSection } from "@/components/ui/pricing"
 import { useRouter } from "next/navigation"
-import { signIn, useSession } from "next-auth/react"
+import { useSession } from "next-auth/react"
 import { HeroGeometric } from "@/components/ui/shape-landing-hero"
 import { LiquidButton } from "@/components/ui/liquid-glass-button"
 import { CTASection } from "@/components/ui/hero-dithering-card"
@@ -214,7 +214,7 @@ export function LinearLanding() {
                             </Button>
                         ) : (
                             <>
-                                <button onClick={() => signIn('google')} className="hidden sm:block text-sm font-medium text-zinc-500 hover:text-white transition-colors">Log in</button>
+                                <button onClick={() => router.push('/auth/signin')} className="hidden sm:block text-sm font-medium text-zinc-500 hover:text-white transition-colors">Log in</button>
                                 <LiquidButton onClick={() => router.push('/auth/signin')} size="default" className="text-white">
                                     Unlock My Inbox
                                 </LiquidButton>
@@ -503,7 +503,7 @@ export function LinearLanding() {
                                         <p className="text-zinc-400">Join founders who transformed their inbox.</p>
                                     </div>
                                     <LiquidButton
-                                        onClick={() => signIn('google')}
+                                        onClick={() => router.push('/auth/signin')}
                                         size="xxl"
                                         className="text-white"
                                     >
@@ -908,7 +908,7 @@ export function LinearLanding() {
 
                     <div className="flex flex-col sm:flex-row justify-center gap-4 mt-20">
                         <LiquidButton
-                            onClick={() => signIn('google')}
+                            onClick={() => router.push('/auth/signin')}
                             size="xxl"
                             className="text-white"
                         >
