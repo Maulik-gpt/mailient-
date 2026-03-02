@@ -1,7 +1,8 @@
-import { ArrowRight, ShieldCheck, Lock, Zap } from "lucide-react"
+import { ArrowRight, ShieldCheck, Lock, Zap, ArrowUpRight } from "lucide-react"
 import { useState, Suspense, lazy } from "react"
 import { useRouter } from "next/navigation"
 import { signIn, useSession } from "next-auth/react"
+import { Announcement, AnnouncementTag, AnnouncementTitle } from "@/components/ui/announcement"
 
 const Dithering = lazy(() =>
     import("@paper-design/shaders-react").then((mod) => ({ default: mod.Dithering }))
@@ -37,13 +38,13 @@ export function CTASection() {
 
             {/* Content Layer */}
             <div className="relative z-10 w-full max-w-6xl mx-auto text-center flex flex-col items-center">
-                <div className="mb-10 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 backdrop-blur-md px-4 py-1.5 text-sm font-medium text-white/80">
-                    <span className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white/50 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
-                    </span>
-                    AI-Powered Email for Founders
-                </div>
+                <Announcement className="mb-10 cursor-pointer" onClick={() => router.push('/home-feed')}>
+                    <AnnouncementTag>Update</AnnouncementTag>
+                    <AnnouncementTitle>
+                        Introducing v1.2
+                        <ArrowUpRight size={14} className="ml-1 opacity-60" />
+                    </AnnouncementTitle>
+                </Announcement>
 
                 {/* Headline */}
                 <h2 className="font-serif text-5xl md:text-7xl lg:text-8xl font-medium tracking-tight text-white mb-8 leading-[1.05] max-w-4xl">
@@ -66,6 +67,7 @@ export function CTASection() {
                     </span>
                     <ArrowRight className="h-5 w-5 relative z-10 transition-transform duration-300 group-hover:translate-x-1" />
                 </button>
+
 
                 {/* Trust Signals */}
                 <div className="flex flex-wrap items-center justify-center gap-3 mt-10">

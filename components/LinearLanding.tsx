@@ -200,7 +200,7 @@ export function LinearLanding() {
                             <a href="#benefits" onClick={(e) => handleClick(e, 'benefits')} className="hover:text-white transition-colors">Benefits</a>
                             <a href="#features" onClick={(e) => handleClick(e, 'features')} className="hover:text-white transition-colors">Features</a>
                             <a href="#integration" onClick={(e) => handleClick(e, 'integration')} className="hover:text-white transition-colors">Security</a>
-                            <a href="/founders-guide" className="text-[#D97757] hover:text-[#D97757]/80 transition-colors font-bold">Founder Hub</a>
+
                             <a href="/workspace-setup" className="hover:text-white transition-colors">Setup</a>
                             <a href="#pricing" onClick={(e) => handleClick(e, 'pricing')} className="hover:text-white transition-colors">Pricing</a>
                             <a href="#faq" onClick={(e) => handleClick(e, 'faq')} className="hover:text-white transition-colors">FAQ</a>
@@ -1229,7 +1229,7 @@ export function LinearLanding() {
                     </div>
                     <div className="flex gap-8 text-sm font-bold text-zinc-500 uppercase tracking-widest">
                         <a href="https://x.com/Maulik_055" target="_blank" className="hover:text-white transition-colors">Twitter</a>
-                        <a href="/founders-guide" className="hover:text-[#D97757] transition-colors">Founders Guide</a>
+
                         <a href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</a>
                         <a href="/terms-of-service" className="hover:text-white transition-colors">Terms of Service</a>
                     </div>
