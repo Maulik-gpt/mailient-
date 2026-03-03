@@ -46,6 +46,7 @@ const STEPS = [
   "Snapshot",
   "Win",
   "Trust",
+  "Profile",
   "Pricing",
   "Ready"
 ];
@@ -145,6 +146,49 @@ export default function SiftOnboardingPage() {
   const [primaryGoal, setPrimaryGoal] = useState<string | null>(null);
   const [customInstruction, setCustomInstruction] = useState("");
   const [identityStep, setIdentityStep] = useState(0);
+
+  // Profile state
+  const [profileName, setProfileName] = useState("");
+  const [username, setUsername] = useState("");
+  const [bio, setBio] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [bannerUrl, setBannerUrl] = useState("");
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const [checkingUsername, setCheckingUsername] = useState(false);
+
+  // Init profile from session
+  useEffect(() => {
+    if (session?.user) {
+      if (session.user.name && !profileName) setProfileName(session.user.name);
+      if (session.user.image && !avatarUrl) setAvatarUrl(session.user.image);
+    }
+  }, [session, profileName, avatarUrl]);
+
+  // Username check
+  useEffect(() => {
+    if (!username || username.trim().length < 3) {
+      setUsernameAvailable(null);
+      return;
+    }
+    const check = async () => {
+      setCheckingUsername(true);
+      try {
+        const res = await fetch("/api/onboarding/check-username", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: username.trim() })
+        });
+        const data = await res.json();
+        setUsernameAvailable(data.available);
+      } catch {
+        setUsernameAvailable(null);
+      } finally {
+        setCheckingUsername(false);
+      }
+    };
+    const timer = setTimeout(check, 500);
+    return () => clearTimeout(timer);
+  }, [username]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [scannedEmails, setScannedEmails] = useState<any[]>([]);
@@ -329,12 +373,16 @@ export default function SiftOnboardingPage() {
     setSelectedPlan(plan);
     setIsSubmitting(true);
     try {
-      const username = session?.user?.name?.toLowerCase().replace(/\s/g, '_') || session?.user?.email?.split('@')[0] || 'user';
+      const finalUsername = username.trim() || session?.user?.name?.toLowerCase().replace(/\s/g, '_') || session?.user?.email?.split('@')[0] || 'user';
       const response = await fetch("/api/onboarding/complete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          username,
+          username: finalUsername,
+          profileName,
+          bio,
+          avatarUrl,
+          bannerUrl,
           plan,
           role,
           personality: PERSONALITY_LABELS[personalityIdx],
@@ -645,9 +693,113 @@ export default function SiftOnboardingPage() {
           </motion.div>
         );
 
-      case 6: // PRICING
+      case 6: // PROFILE SETUP
         return (
-          <motion.div key="step-6" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="w-full max-w-6xl mx-auto px-4 pb-20">
+          <motion.div key="step-6" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="max-w-2xl mx-auto px-6 w-full space-y-8 pb-20">
+            <div className="text-center space-y-4">
+              <h2 className="text-5xl font-medium text-white">Your Identity</h2>
+              <p className="text-zinc-500 text-lg">Set up how you appear to others.</p>
+            </div>
+
+            <div className="space-y-8 bg-zinc-950/40 border border-white/5 p-8 sm:p-10 rounded-[2.5rem] shadow-2xl">
+              <div className="space-y-3">
+                <label className="text-xs uppercase tracking-widest text-zinc-500 font-bold block">Banner URL <span className="text-zinc-700">(Optional)</span></label>
+                <input
+                  type="text"
+                  value={bannerUrl}
+                  onChange={(e) => setBannerUrl(e.target.value)}
+                  placeholder="Paste an image URL..."
+                  className="w-full bg-zinc-900/50 border border-white/5 rounded-2xl px-5 py-4 text-white placeholder:text-zinc-600 focus:outline-none focus:border-white/20 transition-all text-sm"
+                />
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-8 items-start">
+                <div className="space-y-4 flex-shrink-0 w-full sm:w-auto flex flex-col items-center">
+                  <div className="w-28 h-28 rounded-full border border-white/10 overflow-hidden bg-zinc-900 flex items-center justify-center relative group shadow-xl">
+                    {avatarUrl ? (
+                      <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      <User className="w-10 h-10 text-zinc-600" />
+                    )}
+                  </div>
+                  <input
+                    type="text"
+                    value={avatarUrl}
+                    onChange={(e) => setAvatarUrl(e.target.value)}
+                    placeholder="Avatar URL"
+                    className="w-full max-w-[150px] text-xs bg-transparent border-b border-white/10 text-center text-zinc-400 focus:outline-none focus:border-white focus:text-white pb-2"
+                  />
+                </div>
+
+                <div className="space-y-6 flex-1 w-full">
+                  <div className="space-y-3">
+                    <label className="text-xs uppercase tracking-widest text-zinc-500 font-bold block">Display Name</label>
+                    <input
+                      type="text"
+                      value={profileName}
+                      onChange={(e) => setProfileName(e.target.value)}
+                      placeholder="e.g. Jane Doe"
+                      className="w-full bg-zinc-900/50 border border-white/5 rounded-2xl px-5 py-4 text-white placeholder:text-zinc-600 focus:outline-none focus:border-white/20 transition-all text-sm"
+                    />
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <label className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Custom Handle</label>
+                      {username && username.length >= 3 && (
+                        <span className={cn(
+                          "text-xs font-bold uppercase tracking-wider",
+                          checkingUsername ? "text-zinc-500" :
+                            usernameAvailable ? "text-emerald-400" : "text-red-400"
+                        )}>
+                          {checkingUsername ? "Checking..." : usernameAvailable ? "Available" : "Taken"}
+                        </span>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <span className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-500 font-medium">@</span>
+                      <input
+                        type="text"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                        placeholder="username"
+                        className={cn(
+                          "w-full bg-zinc-900/50 border rounded-2xl pl-10 pr-5 py-4 text-white placeholder:text-zinc-600 focus:outline-none transition-all text-sm",
+                          !checkingUsername && usernameAvailable === false ? "border-red-500/50 focus:border-red-500" : "border-white/5 focus:border-white/20"
+                        )}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-xs uppercase tracking-widest text-zinc-500 font-bold block">Bio <span className="text-zinc-700">(Optional)</span></label>
+                <textarea
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  placeholder="Tell the world what you're building..."
+                  rows={3}
+                  className="w-full bg-zinc-900/50 border border-white/5 rounded-2xl px-5 py-4 text-white placeholder:text-zinc-600 focus:outline-none focus:border-white/20 transition-all resize-none text-sm leading-relaxed"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-center pt-6">
+              <LiquidButton
+                onClick={handleNext}
+                disabled={!username || usernameAvailable === false || checkingUsername || !profileName}
+                className="w-full sm:w-auto min-w-[240px] h-14 text-white font-bold disabled:opacity-30 disabled:pointer-events-none"
+              >
+                Continue to Plans
+              </LiquidButton>
+            </div>
+          </motion.div>
+        );
+
+      case 7: // PRICING
+        return (
+          <motion.div key="step-7" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="w-full max-w-6xl mx-auto px-4 pb-20">
             <div className="text-center mb-16 space-y-4">
               <h2 className="text-5xl font-medium text-white tracking-tight leading-tight">
                 Choose your path
@@ -667,9 +819,9 @@ export default function SiftOnboardingPage() {
           </motion.div>
         );
 
-      case 7: // READY
+      case 8: // READY
         return (
-          <motion.div key="step-7" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="max-w-xl mx-auto text-center space-y-12 py-20">
+          <motion.div key="step-8" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="max-w-xl mx-auto text-center space-y-12 py-20">
             <motion.div
               initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -699,7 +851,7 @@ export default function SiftOnboardingPage() {
   return (
     <div className="min-h-screen bg-black bg-grain text-white selection:bg-white selection:text-black font-sans flex flex-col items-center justify-center py-10">
       {/* HUD Progress */}
-      {currentStep < 7 && (
+      {currentStep < 8 && (
         <div className="fixed top-12 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-3">
           {STEPS.map((s, i) => (
             <div

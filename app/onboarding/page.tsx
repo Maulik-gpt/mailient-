@@ -37,6 +37,15 @@ export default function OnboardingPage() {
 
       const checkOnboardingStatus = async () => {
         try {
+          const urlParams = new URLSearchParams(window.location.search);
+          const forceRedo = urlParams.get('force') === 'true';
+
+          if (forceRedo) {
+            console.log('🚀 [Onboarding] Force re-do detected. Skipping status checks.');
+            localStorage.removeItem('onboarding_completed');
+            return;
+          }
+
           // Check local storage first for instant redirection
           const localDone = localStorage.getItem('onboarding_completed') === 'true';
           console.log(`📋 [Onboarding] Local status: ${localDone}`);

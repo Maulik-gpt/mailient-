@@ -16,6 +16,10 @@ export async function POST(request: Request) {
     const body = await request.json();
     const {
       username,
+      profileName,
+      bio,
+      avatarUrl,
+      bannerUrl,
       plan,
       role,
       personality,
@@ -52,12 +56,16 @@ export async function POST(request: Request) {
     // Update user profile with onboarding data
     const updateData: any = {
       username: finalUsername,
+      name: profileName || null,
+      bio: bio || null,
+      avatar_url: avatarUrl || null,
       onboarding_completed: true,
       updated_at: new Date().toISOString(),
     };
 
     // Store onboarding preferences in preferences JSONB field
     const preferences: any = {
+      banner_url: bannerUrl || null,
       plan: plan || null,
       role: role || null,
       goals: goals || null,
