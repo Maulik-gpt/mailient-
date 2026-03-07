@@ -187,7 +187,8 @@ export default function ChatInterface({
   const [activeMission, setActiveMission] = useState<any>(null);
   const [pendingReplyProposal, setPendingReplyProposal] = useState<any>(null);
 
-
+  // Live thinking state (AI-generated, shown during loading)
+  const [liveThinkingSteps, setLiveThinkingSteps] = useState<{ id: string; label: string; status: 'active' | 'completed'; type: string }[]>([]);
 
   // Canvas Panel state
   const [isCanvasOpen, setIsCanvasOpen] = useState(false);
@@ -363,6 +364,7 @@ export default function ChatInterface({
   const processAIMessage = async (messageText: string, conversationIdToUse: string, isNew: boolean) => {
     try {
       setIsLoading(true);
+      setLiveThinkingSteps([]);
 
       // Detect query types
       const notesQuery = isNotesRelatedQuery(messageText);
@@ -373,7 +375,6 @@ export default function ChatInterface({
         setNotesSearchQuery(extractedQuery);
       }
 
-      // Make the API call — no fake animated steps
       const requestBody = {
         message: messageText,
         conversationId: conversationIdToUse,
@@ -384,11 +385,41 @@ export default function ChatInterface({
         activeMission
       };
 
-      const response = await fetch('/api/agent-talk/chat-arcus', {
+      // --- PARALLEL REQUESTS: Fast intent + Full chat ---
+      // 1) Fire fast intent analysis (returns AI-generated thinking steps quickly)
+      const intentPromise = fetch('/api/agent-talk/chat-arcus/intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: messageText }),
+      }).then(r => r.json()).catch(() => null);
+
+      // 2) Fire main chat request (takes longer - does search, canvas, response)
+      const chatPromise = fetch('/api/agent-talk/chat-arcus', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),
       });
+
+      // 3) Intent usually returns first — show live thinking steps
+      const intentData = await intentPromise;
+      if (intentData?.plan && intentData.plan.length > 0) {
+        // Animate steps one-by-one with delays
+        const steps = intentData.plan;
+        for (let i = 0; i < steps.length; i++) {
+          const step = steps[i];
+          setLiveThinkingSteps(prev => [
+            ...prev.map(s => ({ ...s, status: 'completed' as const })),
+            { id: `live-${step.step || i}`, label: step.description || step.action || '', status: 'active' as const, type: step.type || 'think' }
+          ]);
+          // Brief delay between steps for animation
+          if (i < steps.length - 1) {
+            await new Promise(r => setTimeout(r, 400));
+          }
+        }
+      }
+
+      // 4) Wait for main chat response
+      const response = await chatPromise;
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -408,6 +439,10 @@ export default function ChatInterface({
 
       const data = await response.json();
 
+      // Mark all live steps as completed
+      setLiveThinkingSteps(prev => prev.map(s => ({ ...s, status: 'completed' as const })));
+      await new Promise(r => setTimeout(r, 250));
+
       // Canvas data handling
       const hasCanvas = data.canvasData && data.canvasData.content;
       if (hasCanvas) {
@@ -426,19 +461,24 @@ export default function ChatInterface({
         setIntegrations(data.integrations);
       }
 
-      // Use AI-generated thinking steps — no hardcoded labels
+      // Use AI-generated thinking steps from the MAIN response (most accurate)
       const aiThinkingProcess = (data.thinkingSteps && data.thinkingSteps.length > 0)
         ? data.thinkingSteps.map((s: any, i: number) => ({
           id: `step-${s.step || i}`,
           label: s.description || s.action || '',
         }))
-        : undefined;
+        : (intentData?.plan && intentData.plan.length > 0)
+          ? intentData.plan.map((s: any, i: number) => ({
+            id: `step-${s.step || i}`,
+            label: s.description || s.action || '',
+          }))
+          : undefined;
 
-      // Use AI-generated artifact title — no hardcoded labels
+      // Use AI-generated artifact title
       const aiArtifact = hasCanvas
         ? {
           type: data.canvasData.type,
-          title: data.canvasData.title || data.canvasData.content?.title || data.canvasData.content?.subject || data.intentAnalysis?.canvasType || 'Result',
+          title: data.canvasData.title || data.canvasData.content?.title || data.canvasData.content?.subject || intentData?.canvasType || 'Result',
           canvasData: data.canvasData,
         }
         : undefined;
@@ -582,6 +622,7 @@ export default function ChatInterface({
       setMessages(prev => [...prev, errorAgentMessage]);
     } finally {
       setIsLoading(false);
+      setLiveThinkingSteps([]);
       setShowNotesFetching(false);
       setTimeout(() => scrollToBottom(true), 100);
     }
@@ -1537,7 +1578,7 @@ export default function ChatInterface({
                       </div>
                     ))}
 
-                    {/* Loading indicator */}
+                    {/* Loading indicator with live AI-generated thinking */}
                     {isLoading && (
                       <div className="flex items-start gap-4 mt-4 animate-fade-in">
                         <div className="flex-shrink-0 mt-1">
@@ -1545,12 +1586,25 @@ export default function ChatInterface({
                             <img src="/arcus-ai-icon.jpg" alt="Arcus AI" className="w-full h-full object-cover opacity-80" />
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 pt-2.5">
-                          <MorphingSquare
-                            className="w-4 h-4 bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)]"
-                            message="Arcus is working..."
-                            messagePlacement="right"
-                          />
+                        <div className="flex-1 pt-1">
+                          {liveThinkingSteps.length > 0 ? (
+                            <ThinkingLayer
+                              steps={liveThinkingSteps.map(s => ({
+                                ...s,
+                                status: s.status as 'active' | 'completed' | 'pending' | 'error',
+                                type: (s.type || 'think') as 'think' | 'search' | 'read' | 'analyze' | 'draft' | 'execute',
+                              }))}
+                              isVisible={true}
+                            />
+                          ) : (
+                            <div className="flex items-center gap-2 pt-1.5">
+                              <MorphingSquare
+                                className="w-4 h-4 bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)]"
+                                message="Arcus is working..."
+                                messagePlacement="right"
+                              />
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
