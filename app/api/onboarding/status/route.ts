@@ -24,22 +24,7 @@ export async function GET() {
       return NextResponse.json({ completed: true, source: 'profile_flag' });
     }
 
-    // 2. Check if they have already set a username (means they reached at least step 8/9)
-    if (profile?.username) {
-      console.log(`✅ Status: Completed (username found: ${profile.username})`);
-      // Auto-fix: mark as completed if they have a username
-      await db.supabase.from('user_profiles').update({ onboarding_completed: true }).eq('id', profile.id);
-      return NextResponse.json({ completed: true, note: 'username_found' });
-    }
-
-    // 3. Check for specific onboarding preferences (plan selection)
-    if (profile?.preferences?.plan) {
-      console.log(`✅ Status: Completed (plan found in preferences: ${profile.preferences.plan})`);
-      await db.supabase.from('user_profiles').update({ onboarding_completed: true }).eq('id', profile.id);
-      return NextResponse.json({ completed: true, note: 'plan_pref_found' });
-    }
-
-    // 4. FALLBACK: Also check if user has an active subscription
+    // 2. Check if they have an active paid subscription (the only reliable auto-complete)
     try {
       console.log(`💳 Checking subscriptions for: ${userEmail}`);
       const { data: subscription } = await db.supabase
@@ -50,38 +35,20 @@ export async function GET() {
 
       if (subscription) {
         console.log(`💳 Subscription found: status=${subscription.status}, plan=${subscription.plan_type}`);
-        // If they have any valid subscription status or plan, they are done
-        if (subscription.status === 'active' || (subscription.plan_type && subscription.plan_type !== 'none')) {
-          console.log(`✅ Status: Completed (active subscription found)`);
+        // If they have any valid subscription status AND it's not 'none', they are done
+        const now = new Date();
+        const endDate = subscription.subscription_ends_at ? new Date(subscription.subscription_ends_at) : null;
+        const isNotExpired = !endDate || endDate > now;
 
-          // Only update if not already completed to avoid race conditions
+        if ((subscription.status === 'active' || subscription.status === 'trialing') &&
+          subscription.plan_type && subscription.plan_type !== 'none' && isNotExpired) {
+          console.log(`✅ Status: Completed (active paid subscription found)`);
+
           if (!profile?.onboarding_completed) {
-            if (profile?.id) {
-              await db.supabase
-                .from('user_profiles')
-                .update({ onboarding_completed: true })
-                .eq('id', profile.id);
-            } else {
-              // If no profile yet, we can try to upsert it or just let it be
-              // Completing via user_id (email) is safer if profile.id is missing
-              await db.supabase
-                .from('user_profiles')
-                .upsert({
-                  user_id: userEmail,
-                  email: userEmail,
-                  onboarding_completed: true,
-                  updated_at: new Date().toISOString()
-                }, { onConflict: 'user_id' });
-            }
+            await db.supabase.from('user_profiles').update({ onboarding_completed: true }).eq('user_id', userEmail);
           }
-
-          return NextResponse.json({
-            completed: true,
-            note: 'Auto-completed from subscription'
-          });
+          return NextResponse.json({ completed: true, note: 'active_subscription' });
         }
-      } else {
-        console.log(`💳 No subscription record found.`);
       }
     } catch (subError) {
       console.log('⚠️ Subscription check skipped:', subError);

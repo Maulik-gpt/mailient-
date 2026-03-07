@@ -7,6 +7,9 @@ import { signOut } from 'next-auth/react';
 import { ChatHistoryModal } from './components/ChatHistoryModal';
 import { ChatInput } from './components/ChatInput';
 import { DraftReplyBox } from './components/DraftReplyBox';
+import { ThinkingLayer, ArtifactCard } from './components/ThinkingLayer';
+import { CanvasPanel, type CanvasData } from './components/CanvasPanel';
+
 import { IntegrationsModal } from '@/components/ui/integrations-modal';
 import { EmailSelectionModal } from '@/components/ui/email-selection-modal';
 import { PersonalitySettingsModal } from '@/components/ui/personality-settings-modal';
@@ -111,6 +114,17 @@ interface AgentMessage {
     planCard?: any;
     agentProcess?: any;
     completedSteps?: string[];
+    // Arcus V2: Muse-style inline thinking + artifacts
+    thinkingProcess?: {
+      id: string;
+      label: string;
+      expandedContent?: string;
+    }[];
+    artifact?: {
+      type: string;
+      title: string;
+      canvasData: any;
+    };
   };
 }
 
@@ -169,9 +183,18 @@ export default function ChatInterface({
   const [showNotesFetching, setShowNotesFetching] = useState<boolean>(false);
   const [notesResults, setNotesResults] = useState<any[]>([]);
 
-  // Arcus State (simplified — no mission UI)
+  // Arcus V2 State
   const [activeMission, setActiveMission] = useState<any>(null);
   const [pendingReplyProposal, setPendingReplyProposal] = useState<any>(null);
+
+
+
+  // Canvas Panel state
+  const [isCanvasOpen, setIsCanvasOpen] = useState(false);
+  const [canvasData, setCanvasData] = useState<CanvasData | null>(null);
+  const [isCanvasExecuting, setIsCanvasExecuting] = useState(false);
+
+
 
   // Subscription state - to hide upgrade button for Pro users
   const [currentPlan, setCurrentPlan] = useState<'free' | 'starter' | 'pro' | 'none' | null>(null);
@@ -341,15 +364,16 @@ export default function ChatInterface({
     try {
       setIsLoading(true);
 
+      // Detect query types
       const notesQuery = isNotesRelatedQuery(messageText);
       setIsNotesQuery(notesQuery);
-
       let extractedQuery = '';
       if (notesQuery) {
         extractedQuery = extractSearchTerm(messageText);
         setNotesSearchQuery(extractedQuery);
       }
 
+      // Make the API call — no fake animated steps
       const requestBody = {
         message: messageText,
         conversationId: conversationIdToUse,
@@ -362,9 +386,7 @@ export default function ChatInterface({
 
       const response = await fetch('/api/agent-talk/chat-arcus', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),
       });
 
@@ -386,9 +408,10 @@ export default function ChatInterface({
 
       const data = await response.json();
 
-      // Update Mission State
-      if (data.activeMission) {
-        setActiveMission(data.activeMission);
+      // Canvas data handling
+      const hasCanvas = data.canvasData && data.canvasData.content;
+      if (hasCanvas) {
+        setCanvasData(data.canvasData);
       }
 
       await refreshArcusCredits(true);
@@ -403,6 +426,23 @@ export default function ChatInterface({
         setIntegrations(data.integrations);
       }
 
+      // Use AI-generated thinking steps — no hardcoded labels
+      const aiThinkingProcess = (data.thinkingSteps && data.thinkingSteps.length > 0)
+        ? data.thinkingSteps.map((s: any, i: number) => ({
+          id: `step-${s.step || i}`,
+          label: s.description || s.action || '',
+        }))
+        : undefined;
+
+      // Use AI-generated artifact title — no hardcoded labels
+      const aiArtifact = hasCanvas
+        ? {
+          type: data.canvasData.type,
+          title: data.canvasData.title || data.canvasData.content?.title || data.canvasData.content?.subject || data.intentAnalysis?.canvasType || 'Result',
+          canvasData: data.canvasData,
+        }
+        : undefined;
+
       const agentMessage: AgentMessage = {
         id: Date.now() + 1,
         type: 'agent',
@@ -415,7 +455,9 @@ export default function ChatInterface({
         meta: {
           actionType: data.actionType,
           notesResult: data.notesResult,
-          emailResult: data.emailResult
+          emailResult: data.emailResult,
+          thinkingProcess: aiThinkingProcess,
+          artifact: aiArtifact,
         }
       };
 
@@ -542,6 +584,51 @@ export default function ChatInterface({
       setIsLoading(false);
       setShowNotesFetching(false);
       setTimeout(() => scrollToBottom(true), 100);
+    }
+  };
+
+  // Canvas execution handler
+  const handleCanvasExecute = async (action: string, data: any) => {
+    setIsCanvasExecuting(true);
+    try {
+      const response = await fetch('/api/agent-talk/chat-arcus', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: `Execute: ${action}`,
+          conversationId: currentConversationId,
+          isNewConversation: false,
+          executeCanvasAction: action,
+          canvasActionData: data
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.executionResult?.success) {
+        toast.success(result.message || 'Action completed');
+        setIsCanvasOpen(false);
+
+        // Add confirmation message
+        const confirmMessage: AgentMessage = {
+          id: Date.now() + 1,
+          type: 'agent',
+          content: {
+            text: result.message || 'Done! The action was completed successfully.',
+            list: [],
+            footer: ''
+          },
+          time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+        };
+        setMessages(prev => [...prev, confirmMessage]);
+      } else {
+        toast.error(result.message || 'Action failed');
+      }
+    } catch (error) {
+      toast.error('Failed to execute action');
+      console.error('Canvas execution error:', error);
+    } finally {
+      setIsCanvasExecuting(false);
     }
   };
 
@@ -1337,6 +1424,35 @@ export default function ChatInterface({
                         <div className={`flex-1 ${msg.type === 'user' ? 'flex justify-end' : ''}`}>
                           {msg.type === 'agent' ? (
                             <div className="space-y-1 pt-1">
+                              {/* Muse-style inline thinking process (persistent in message) */}
+                              {(msg as AgentMessage).meta?.thinkingProcess && (msg as AgentMessage).meta!.thinkingProcess!.length > 0 && (
+                                <div className="mb-3">
+                                  <ThinkingLayer
+                                    steps={(msg as AgentMessage).meta!.thinkingProcess!.map(tp => ({
+                                      id: tp.id,
+                                      label: tp.label,
+                                      status: 'completed' as const,
+                                      type: 'think' as const,
+                                      expandedContent: tp.expandedContent,
+                                    }))}
+                                    isVisible={true}
+                                  />
+                                </div>
+                              )}
+
+                              {/* Artifact card — inline clickable card to open canvas */}
+                              {(msg as AgentMessage).meta?.artifact && (
+                                <ArtifactCard
+                                  type={(msg as AgentMessage).meta!.artifact!.type}
+                                  title={(msg as AgentMessage).meta!.artifact!.title}
+                                  onView={() => {
+                                    setCanvasData((msg as AgentMessage).meta!.artifact!.canvasData);
+                                    setIsCanvasOpen(true);
+                                  }}
+                                />
+                              )}
+
+                              {/* Response text */}
                               {typeof msg.content === 'string' ? (
                                 <div
                                   className="text-white/90 text-base leading-[1.9] font-sans prose prose-invert max-w-none"
@@ -1421,18 +1537,18 @@ export default function ChatInterface({
                       </div>
                     ))}
 
-                    {/* Modern morphing square loading indicator while waiting for response */}
+                    {/* Loading indicator */}
                     {isLoading && (
-                      <div className="flex items-start gap-3 mt-4 animate-fade-in">
-                        <div className="flex-shrink-0">
-                          <div className="bg-neutral-800 rounded-full w-10 h-10 flex items-center justify-center backdrop-blur-sm border border-white/10 shadow-lg overflow-hidden">
+                      <div className="flex items-start gap-4 mt-4 animate-fade-in">
+                        <div className="flex-shrink-0 mt-1">
+                          <div className="bg-neutral-800 rounded-full w-11 h-11 flex items-center justify-center backdrop-blur-sm border border-white/10 shadow-lg overflow-hidden">
                             <img src="/arcus-ai-icon.jpg" alt="Arcus AI" className="w-full h-full object-cover opacity-80" />
                           </div>
                         </div>
-                        <div className="flex flex-col items-start gap-2 pt-1">
+                        <div className="flex items-center gap-2 pt-2.5">
                           <MorphingSquare
                             className="w-4 h-4 bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)]"
-                            message="Arcus is thinking..."
+                            message="Arcus is working..."
                             messagePlacement="right"
                           />
                         </div>
@@ -1508,6 +1624,15 @@ export default function ChatInterface({
         onClose={() => setIsPersonalityModalOpen(false)}
         onSave={handleSavePersonality}
         initialPersonality={savedPersonality}
+      />
+
+      {/* Canvas Panel */}
+      <CanvasPanel
+        isOpen={isCanvasOpen}
+        onClose={() => setIsCanvasOpen(false)}
+        canvasData={canvasData}
+        onExecute={handleCanvasExecute}
+        isExecuting={isCanvasExecuting}
       />
 
       <style jsx global>{`

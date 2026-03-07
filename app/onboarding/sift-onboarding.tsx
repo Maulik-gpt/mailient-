@@ -42,6 +42,7 @@ import { LiquidButton } from "@/components/ui/liquid-glass-button";
 const STEPS = [
   "Positioning",
   "Identity",
+  "Strategy",
   "Scanning",
   "Snapshot",
   "Win",
@@ -146,6 +147,8 @@ export default function SiftOnboardingPage() {
   const [primaryGoal, setPrimaryGoal] = useState<string | null>(null);
   const [customInstruction, setCustomInstruction] = useState("");
   const [identityStep, setIdentityStep] = useState(0);
+  const [strategyMode, setStrategyMode] = useState<string | null>(null);
+  const [focusArea, setFocusArea] = useState<string | null>(null);
 
   // Profile state
   const [profileName, setProfileName] = useState("");
@@ -259,7 +262,7 @@ export default function SiftOnboardingPage() {
 
   // Step 2 Logic: Advances through sub-steps
   const handleIdentityNext = () => {
-    if (identityStep < 4) {
+    if (identityStep < 6) {
       setIdentityStep(prev => prev + 1);
     } else {
       handleNext();
@@ -278,8 +281,8 @@ export default function SiftOnboardingPage() {
     setScanError(null);
     setScanNeedsReauth(false);
     try {
-      // Fake delay for perceived value
-      const delayPromise = new Promise(resolve => setTimeout(resolve, 4000));
+      // Perceived value: increased scanning time to make it feel more "thorough"
+      const delayPromise = new Promise(resolve => setTimeout(resolve, 8000));
       const fetchPromise = fetch("/api/onboarding/emails").then(async (res) => {
         let data: any = {};
         try { data = await res.json(); } catch { data = {}; }
@@ -450,7 +453,7 @@ export default function SiftOnboardingPage() {
               {identityStep === 0 && (
                 <motion.div key="q1" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-10">
                   <div className="space-y-2">
-                    <span className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Question 1 of 5</span>
+                    <span className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Question 1 of 7</span>
                     <h2 className="text-4xl font-medium text-white">What are you?</h2>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -475,7 +478,7 @@ export default function SiftOnboardingPage() {
               {identityStep === 1 && (
                 <motion.div key="q2" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-10">
                   <div className="space-y-2">
-                    <span className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Question 2 of 5</span>
+                    <span className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Question 2 of 7</span>
                     <h2 className="text-4xl font-medium text-white">What kind of emails drain you?</h2>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -512,7 +515,7 @@ export default function SiftOnboardingPage() {
               {identityStep === 2 && (
                 <motion.div key="q3" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-12">
                   <div className="space-y-2">
-                    <span className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Question 3 of 5</span>
+                    <span className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Question 3 of 7</span>
                     <h2 className="text-4xl font-medium text-white">How should Mailient sound?</h2>
                   </div>
                   <div className="space-y-12 py-10">
@@ -544,7 +547,7 @@ export default function SiftOnboardingPage() {
               {identityStep === 3 && (
                 <motion.div key="q4" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-10">
                   <div className="space-y-2">
-                    <span className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Question 4 of 5</span>
+                    <span className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Question 4 of 7</span>
                     <h2 className="text-4xl font-medium text-white">What matters most?</h2>
                   </div>
                   <div className="grid grid-cols-1 gap-4">
@@ -569,7 +572,65 @@ export default function SiftOnboardingPage() {
               {identityStep === 4 && (
                 <motion.div key="q5" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-10">
                   <div className="space-y-2">
-                    <span className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Question 5 of 5</span>
+                    <span className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Question 5 of 7</span>
+                    <h2 className="text-4xl font-medium text-white">Select your strategy</h2>
+                    <p className="text-zinc-500">How aggressive should Mailient be with follow-ups?</p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {[
+                      { id: 'shark', title: 'Shark', desc: 'Highly proactive & persistent' },
+                      { id: 'owl', title: 'Owl', desc: 'Strategic & observational' },
+                      { id: 'eagle', title: 'Eagle', desc: 'Precise & high-level only' },
+                      { id: 'dolphin', title: 'Dolphin', desc: 'Collaborative & friendly' },
+                    ].map((s) => (
+                      <button
+                        key={s.id}
+                        onClick={() => { setStrategyMode(s.id); setTimeout(handleIdentityNext, 400); }}
+                        className={cn(
+                          "group p-6 rounded-3xl border text-left transition-all duration-300",
+                          strategyMode === s.id
+                            ? "bg-white border-white text-black shadow-[0_0_30px_rgba(255,255,255,0.1)]"
+                            : "bg-zinc-950/20 border-white/5 text-zinc-400 hover:border-white/20 hover:bg-zinc-900/50"
+                        )}
+                      >
+                        <div className="text-xl font-medium">{s.title}</div>
+                        <div className="text-sm opacity-60 mt-1">{s.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+
+              {identityStep === 5 && (
+                <motion.div key="q6" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-10">
+                  <div className="space-y-2">
+                    <span className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Question 6 of 7</span>
+                    <h2 className="text-4xl font-medium text-white">Focus Workflow</h2>
+                    <p className="text-zinc-500">Pick an area for AI deeper optimization.</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    {['Network Growth', 'Operational Efficiency', 'Deal Closing', 'Project Sync'].map((area) => (
+                      <button
+                        key={area}
+                        onClick={() => { setFocusArea(area); setTimeout(handleIdentityNext, 400); }}
+                        className={cn(
+                          "group p-6 rounded-3xl border text-center transition-all duration-300",
+                          focusArea === area
+                            ? "bg-white border-white text-black shadow-[0_0_30px_rgba(255,255,255,0.1)]"
+                            : "bg-zinc-950/20 border-white/5 text-zinc-400 hover:border-white/20 hover:bg-zinc-900/50"
+                        )}
+                      >
+                        <span className="text-lg font-medium">{area}</span>
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+
+              {identityStep === 6 && (
+                <motion.div key="q7" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-10">
+                  <div className="space-y-2">
+                    <span className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Question 7 of 7</span>
                     <h2 className="text-4xl font-medium text-white">One custom instruction:</h2>
                     <p className="text-zinc-500">How should Mailient think before replying?</p>
                   </div>
@@ -604,11 +665,13 @@ export default function SiftOnboardingPage() {
               </div>
             </div>
             <div className="space-y-4">
-              <h2 className="text-3xl font-medium text-white italic">Performing Live Intelligence Scan</h2>
+              <h2 className="text-3xl font-medium text-white italic">Performing Deep Intelligence Scan</h2>
               <div className="flex flex-col gap-2 max-w-xs mx-auto">
-                <ScanningLabel label="Analyzing your inbox patterns..." delay={0} />
-                <ScanningLabel label="Identifying priority senders..." delay={1.5} />
-                <ScanningLabel label="Learning your communication style..." delay={3} />
+                <ScanningLabel label="Analyzing your inbox architecture..." delay={0} />
+                <ScanningLabel label="Identifying high-value stakeholders..." delay={1.5} />
+                <ScanningLabel label="Parsing communication semantic intent..." delay={3} />
+                <ScanningLabel label="Mapping relationship velocity..." delay={4.5} />
+                <ScanningLabel label="Synthesizing neural reply patterns..." delay={6} />
               </div>
             </div>
           </motion.div>
@@ -851,7 +914,7 @@ export default function SiftOnboardingPage() {
   return (
     <div className="min-h-screen bg-black bg-grain text-white selection:bg-white selection:text-black font-sans flex flex-col items-center justify-center py-10">
       {/* HUD Progress */}
-      {currentStep < 8 && (
+      {currentStep < 9 && (
         <div className="fixed top-12 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-3">
           {STEPS.map((s, i) => (
             <div

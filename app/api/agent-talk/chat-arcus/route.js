@@ -23,7 +23,9 @@ export async function POST(request) {
       selectedEmailId,
       draftReplyRequest,
       activeMission,
-      approvalPayload
+      approvalPayload,
+      executeCanvasAction,
+      canvasActionData
     } = await request.json();
 
     console.log('🚀 Arcus Chat request received:', message?.substring?.(0, 80));
@@ -142,30 +144,80 @@ export async function POST(request) {
     const arcusAI = new ArcusAIService();
     const missionService = userEmail ? new ArcusMissionService(userEmail) : null;
 
-    // --- MISSION ENGINE DISABLED (direct chat mode) ---
-    // Mission detection and execution are bypassed for a fast, direct AI response.
-    // The mission infrastructure remains available for future re-enablement.
-    let mission = null;
-    let missionResult = null;
-    let missionProcess = null;
+    // --- HANDLE CANVAS EXECUTION ACTIONS ---
+    if (executeCanvasAction && canvasActionData) {
+      console.log('🎯 Canvas action requested:', executeCanvasAction);
+      let executionResult = { success: false, message: '' };
 
-    // --- CONTEXT SEARCH (For general chat or fallback) ---
+      if (executeCanvasAction === 'send_email' && canvasActionData.to && canvasActionData.body) {
+        try {
+          const db2 = new DatabaseService();
+          const userTokens = await db2.getUserTokens(userEmail);
+          if (userTokens?.encrypted_access_token) {
+            const accessToken = decrypt(userTokens.encrypted_access_token);
+            const refreshToken = userTokens.encrypted_refresh_token ? decrypt(userTokens.encrypted_refresh_token) : '';
+            const { GmailService } = await import('@/lib/gmail');
+            const gmailService = new GmailService(accessToken, refreshToken);
+            const result = await gmailService.sendEmail({
+              to: canvasActionData.to,
+              subject: canvasActionData.subject || '',
+              body: canvasActionData.body,
+              isHtml: false
+            });
+            executionResult = { success: true, message: `Email sent to ${canvasActionData.to}`, result };
+          }
+        } catch (err) {
+          executionResult = { success: false, message: `Failed to send: ${err.message}` };
+        }
+      } else if (executeCanvasAction === 'save_draft' && canvasActionData.body) {
+        try {
+          const db2 = new DatabaseService();
+          const userTokens = await db2.getUserTokens(userEmail);
+          if (userTokens?.encrypted_access_token) {
+            const accessToken = decrypt(userTokens.encrypted_access_token);
+            const refreshToken = userTokens.encrypted_refresh_token ? decrypt(userTokens.encrypted_refresh_token) : '';
+            const { GmailService } = await import('@/lib/gmail');
+            const gmailService = new GmailService(accessToken, refreshToken);
+            const result = await gmailService.createDraft({
+              to: canvasActionData.to || '',
+              subject: canvasActionData.subject || '',
+              body: canvasActionData.body,
+              isHtml: false
+            });
+            executionResult = { success: true, message: 'Draft saved to your Gmail Drafts folder', result };
+          }
+        } catch (err) {
+          executionResult = { success: false, message: `Failed to save draft: ${err.message}` };
+        }
+      } else {
+        executionResult = { success: true, message: 'Action completed' };
+      }
 
-    // Detect if this is an email or notes query to fetch relevant context
+      return NextResponse.json({
+        message: executionResult.message,
+        executionResult,
+        conversationId: currentConversationId,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // --- INTENT ANALYSIS: Understand what the user wants ---
+    let intentAnalysis = null;
+    try {
+      intentAnalysis = await arcusAI.analyzeIntentAndPlan(message, { userEmail, userName });
+      console.log('🧠 Intent analysis:', intentAnalysis?.intent, '| Canvas:', intentAnalysis?.needsCanvas);
+    } catch (err) {
+      console.warn('Intent analysis failed, proceeding with direct chat:', err.message);
+    }
+
+    // --- CONTEXT SEARCH ---
     const detectedIsNotesQuery = isNotesQuery !== undefined ? isNotesQuery : isNotesRelatedQuery(message);
-    const detectedIsEmailQuery = isEmailRelatedQuery(message);
+    const detectedIsEmailQuery = isEmailRelatedQuery(message) || (intentAnalysis?.gmailActions?.length > 0);
 
     let emailContext = null;
     let emailResult = null;
     let notesResult = null;
     let actionType = 'general';
-
-    // If mission result had searching results, use those as context
-    if (missionResult?.result?.threads) {
-      emailResult = missionResult.result;
-      emailContext = formatEmailActionResult(emailResult);
-      actionType = 'email';
-    }
 
     // Handle notes context
     if (detectedIsNotesQuery && userEmail && !emailContext) {
@@ -178,7 +230,7 @@ export async function POST(request) {
       }
     }
 
-    // IF a specific email is selected (from the Traditional View "Ask AI" button)
+    // IF a specific email is selected
     if (selectedEmailId && userEmail && !emailContext) {
       try {
         console.log('📧 Arcus: Fetching specific email context for:', selectedEmailId);
@@ -211,67 +263,24 @@ Body: ${emailData.body || emailData.snippet}
       }
     }
 
-    // Generate AI response with full context
-    let aiPrompt = message;
-    if (mission) {
-      // Build concrete action history from audit trail
-      const lastActions = mission.auditTrail?.slice(-5).map(a => {
-        const stepResult = a.result;
-        let summary = a.actionType;
-        if (a.actionType === 'search_email' && stepResult?.count !== undefined) {
-          summary = `search_email: Found ${stepResult.count} threads (query: "${stepResult.query}")`;
-        } else if (a.actionType === 'read_thread' && stepResult?.messages) {
-          summary = `read_thread: Read ${stepResult.messages.length} messages`;
-        } else if (a.actionType === 'draft_reply' && stepResult?.type) {
-          summary = `draft_reply: ${stepResult.type}`;
-        } else if (stepResult) {
-          summary = `${a.actionType}: ${JSON.stringify(stepResult).substring(0, 200)}`;
-        }
-        return `- ${summary}`;
-      }).join('\n') || 'none';
-
-      const lastResult = missionResult?.result;
-      const lastError = missionResult?.error;
-
-      // Build step summary with concrete labels
-      const stepSummary = mission.steps.map(s =>
-        `[${s.status}] ${s.label}${s.result?.count !== undefined ? ` (${s.result.count} results)` : ''}${s.error ? ` ERROR: ${s.error}` : ''}`
-      ).join('\n');
-
-      // Build error context if any step failed
-      let errorContext = '';
-      if (lastError) {
-        errorContext = `\nERROR DURING EXECUTION: ${lastError.message || lastError}
-What succeeded so far is shown in STEPS COMPLETED. Tell the user honestly what went wrong and ask how to proceed.`;
+    // --- CANVAS GENERATION (for complex tasks) ---
+    let canvasData = null;
+    if (intentAnalysis?.needsCanvas && intentAnalysis?.canvasType !== 'none') {
+      try {
+        canvasData = await arcusAI.generateCanvasContent(
+          message,
+          intentAnalysis.canvasType,
+          emailContext || '',
+          { userName, userEmail, privacyMode }
+        );
+        console.log('📋 Canvas generated:', intentAnalysis.canvasType);
+      } catch (err) {
+        console.error('Canvas generation failed:', err.message);
       }
-
-      aiPrompt = `USER GOAL: "${mission.goal}"
-CURRENT MISSION STATUS: ${mission.status}
-Current Date: ${new Date().toISOString().split('T')[0]}
-Today: ${new Date().toLocaleDateString('en-US', { weekday: 'long' })}
-
-STEPS COMPLETED:
-${stepSummary}
-
-LAST ACTIONS:
-${lastActions}
-
-EXECUTION RESULT: ${JSON.stringify(lastResult || {})}
-${errorContext}
-
-YOUR TASK:
-1. Provide a clean, human confirmation of the above outcome.
-2. If searching, show the results briefly and ask for the next step.
-3. If executed (sent/booked), provide the facts (Recipients, Time, Link) ONLY from the EXECUTION RESULT data above.
-4. If waiting for clarification or risk-flagged, ask the user naturally in chat.
-5. If a step failed, explain what failed and why. Never pretend it succeeded.
-6. NEVER say "I sent" or "I scheduled" unless the EXECUTION RESULT contains a real message_id or event_id.
-7. Keep it under 120 words. No AI fluff. No em dashes.
-
-Original message: "${message}"`;
     }
 
-    const response = await arcusAI.generateResponse(aiPrompt, {
+    // --- GENERATE AI RESPONSE ---
+    const response = await arcusAI.generateResponse(message, {
       conversationHistory,
       emailContext,
       integrations: {
@@ -311,8 +320,9 @@ Original message: "${message}"`;
       emailResult,
       notesResult,
       integrations,
-      activeMission: mission,
-      missionProcess: missionProcess
+      intentAnalysis,
+      canvasData,
+      thinkingSteps: intentAnalysis?.plan || []
     });
 
   } catch (error) {
