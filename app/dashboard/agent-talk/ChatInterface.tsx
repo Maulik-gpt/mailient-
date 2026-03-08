@@ -507,6 +507,7 @@ export default function ChatInterface({
       const hasCanvas = data.canvasData && data.canvasData.content;
       if (hasCanvas) {
         setCanvasData(data.canvasData);
+        setIsCanvasOpen(true);
       }
 
       await refreshArcusCredits(true);
@@ -1462,8 +1463,8 @@ export default function ChatInterface({
                           onClick={() => handleSend("Help me schedule a meeting.")}
                         >
                           <div className="flex items-center gap-3 mb-2">
-                            <div className="bg-green-500/20 rounded-lg p-2">
-                              <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div className="bg-white/10 rounded-lg p-2">
+                              <svg className="w-5 h-5 text-white/75" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                               </svg>
                             </div>
@@ -1689,7 +1690,7 @@ export default function ChatInterface({
 
                     {/* Loading indicator with live AI-generated thinking */}
                     {isLoading && (
-                      <div className="flex items-start gap-4 mt-4 animate-fade-in rounded-2xl border border-white/[0.08] bg-gradient-to-b from-white/[0.04] to-white/[0.01] px-4 py-3 shadow-[0_14px_40px_rgba(0,0,0,0.35)]">
+                      <div className="flex items-start gap-4 mt-4 animate-fade-in">
                         <div className="flex-shrink-0 mt-1">
                           <div className="bg-neutral-800 rounded-full w-11 h-11 flex items-center justify-center backdrop-blur-sm border border-white/10 shadow-lg overflow-hidden">
                             <img src="/arcus-ai-icon.jpg" alt="Arcus AI" className="w-full h-full object-cover opacity-80" />
@@ -1914,3 +1915,4 @@ function extractSearchTerm(message: string): string {
   // If no pattern matches, return the entire message as search term
   return message.trim();
 }
+

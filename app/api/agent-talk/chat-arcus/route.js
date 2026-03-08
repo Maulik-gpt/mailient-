@@ -422,18 +422,36 @@ Body: ${emailData.body || emailData.snippet}
     // --- CANVAS GENERATION (for complex tasks) ---
     let canvasData = null;
     let executionPolicy = null;
-    if (intentAnalysis?.needsCanvas && intentAnalysis?.canvasType !== 'none') {
+    const messageLower = (message || '').toLowerCase();
+    const forceCanvasByMessage =
+      messageLower.includes('canvas') ||
+      (messageLower.includes('draft') && (messageLower.includes('reply') || messageLower.includes('email')));
+
+    const effectiveCanvasType =
+      intentAnalysis?.canvasType && intentAnalysis.canvasType !== 'none'
+        ? intentAnalysis.canvasType
+        : messageLower.includes('summary')
+          ? 'summary'
+          : messageLower.includes('research')
+            ? 'research'
+            : messageLower.includes('plan')
+              ? 'action_plan'
+              : 'email_draft';
+
+    const shouldGenerateCanvas = Boolean(intentAnalysis?.needsCanvas || forceCanvasByMessage);
+
+    if (shouldGenerateCanvas) {
       try {
         canvasData = await arcusAI.generateCanvasContent(
           message,
-          intentAnalysis.canvasType,
+          effectiveCanvasType,
           emailContext || '',
           { userName, userEmail, privacyMode }
         );
-        console.log('Canvas generated:', intentAnalysis.canvasType);
+        console.log('Canvas generated:', effectiveCanvasType);
         if (operatorRuntime && operatorRun) {
           executionPolicy = operatorRuntime.buildExecutionPolicy(
-            intentAnalysis.canvasType || 'none',
+            effectiveCanvasType,
             requiresApproval,
             operatorRun.runId
           );
@@ -1021,6 +1039,4 @@ async function saveConversation(userEmail, userMessage, aiResponse, conversation
     console.error('Error saving conversation:', error);
   }
 }
-
-
 

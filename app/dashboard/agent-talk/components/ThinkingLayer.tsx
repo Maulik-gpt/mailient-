@@ -27,7 +27,7 @@ export function ThinkingLayer({ steps, isVisible, currentThought, isGenerating, 
     if (!isVisible || steps.length === 0) return null;
 
     const toggleStep = (id: string) => {
-        setExpandedSteps(prev => {
+        setExpandedSteps((prev) => {
             const next = new Set(prev);
             if (next.has(id)) next.delete(id);
             else next.add(id);
@@ -36,51 +36,38 @@ export function ThinkingLayer({ steps, isVisible, currentThought, isGenerating, 
     };
 
     return (
-        <div className="space-y-0 rounded-2xl border border-white/[0.08] bg-gradient-to-b from-white/[0.04] to-white/[0.01] px-3 py-2 backdrop-blur-sm">
+        <div className="space-y-0">
             {steps.map((step) => {
                 const isActive = step.status === 'active';
                 const isCompleted = step.status === 'completed';
                 const isPending = step.status === 'pending';
                 const isError = step.status === 'error';
-                const canExpand = !!step.expandedContent && !isPending;
+                const canExpand = !!step.expandedContent;
 
                 return (
                     <div key={step.id} className="group relative">
-                        <div className="absolute left-[4px] top-8 bottom-0 w-px bg-gradient-to-b from-white/20 via-white/8 to-transparent pointer-events-none" />
+                        <div className="absolute left-[4px] top-8 bottom-0 w-px bg-gradient-to-b from-white/18 via-white/8 to-transparent pointer-events-none" />
                         <button
                             onClick={() => canExpand && toggleStep(step.id)}
-                            className="flex items-center gap-2 py-2 w-full text-left hover:bg-white/[0.03] rounded-xl transition-colors -mx-1 px-2 disabled:cursor-default"
+                            className="flex items-center gap-2 py-2 w-full text-left rounded-lg transition-colors -mx-1 px-2 disabled:cursor-default hover:bg-white/[0.02]"
                             disabled={!canExpand}
                         >
-                            {isActive ? (
-                                <span className="flex items-center gap-[2px] flex-shrink-0">
-                                    {[0, 1, 2, 3].map((i) => (
-                                        <span
-                                            key={i}
-                                            className="inline-block w-[3px] h-[3px] rounded-full bg-white/50"
-                                            style={{
-                                                animation: `arcusDotPulse 1.4s ease-in-out ${i * 0.15}s infinite`,
-                                            }}
-                                        />
-                                    ))}
-                                </span>
-                            ) : (
-                                <span
-                                    className={[
-                                        'w-1.5 h-1.5 rounded-full flex-shrink-0 transition-colors',
-                                        isCompleted ? 'bg-emerald-200/70' : '',
-                                        isPending ? 'bg-white/25' : '',
-                                        isError ? 'bg-red-400/70' : '',
-                                    ].join(' ')}
-                                />
-                            )}
+                            <span
+                                className={[
+                                    'w-1.5 h-1.5 rounded-full flex-shrink-0 transition-colors',
+                                    isCompleted ? 'bg-white/60' : '',
+                                    isPending ? 'bg-white/25' : '',
+                                    isActive ? 'bg-white/85' : '',
+                                    isError ? 'bg-red-400/70' : '',
+                                ].join(' ')}
+                            />
 
                             <span
                                 className={[
                                     'text-sm flex-1 transition-colors',
-                                    isActive ? 'text-white/90' : '',
-                                    isCompleted ? 'text-emerald-100/85' : '',
-                                    isPending ? 'text-white/38' : '',
+                                    isActive ? 'text-white arcus-shine-text' : '',
+                                    isCompleted ? 'text-white/78' : '',
+                                    isPending ? 'text-white/42' : '',
                                     isError ? 'text-red-200/80' : '',
                                 ].join(' ')}
                             >
@@ -92,7 +79,7 @@ export function ThinkingLayer({ steps, isVisible, currentThought, isGenerating, 
                                     {expandedSteps.has(step.id) ? (
                                         <ChevronDown className="w-3.5 h-3.5" />
                                     ) : (
-                                        <ChevronRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        <ChevronRight className="w-3.5 h-3.5 transition-opacity" />
                                     )}
                                 </span>
                             )}
@@ -112,25 +99,14 @@ export function ThinkingLayer({ steps, isVisible, currentThought, isGenerating, 
             )}
 
             {isGenerating && generatingLabel && (
-                <div className="flex items-center justify-between bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 mt-3 shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
+                <div className="flex items-center justify-between px-2 py-2 mt-2">
                     <div className="flex items-center gap-2.5">
-                        <span className="flex items-center gap-[2px]">
-                            {[0, 1, 2, 3].map((i) => (
-                                <span
-                                    key={i}
-                                    className="inline-block w-[3px] h-[3px] rounded-full bg-white/50"
-                                    style={{
-                                        animation: `arcusDotPulse 1.2s ease-in-out ${i * 0.12}s infinite`,
-                                    }}
-                                />
-                            ))}
-                        </span>
-                        <span className="text-white/75 text-sm">{generatingLabel}</span>
+                        <span className="text-white/72 text-sm arcus-shine-text">{generatingLabel}</span>
                     </div>
                     {onStop && (
                         <button
                             onClick={onStop}
-                            className="text-white/40 hover:text-white/70 text-xs font-medium px-3 py-1 hover:bg-white/5 rounded-lg transition-all"
+                            className="text-white/40 hover:text-white/70 text-xs font-medium px-3 py-1 rounded-lg transition-all"
                         >
                             Stop
                         </button>
@@ -139,9 +115,23 @@ export function ThinkingLayer({ steps, isVisible, currentThought, isGenerating, 
             )}
 
             <style jsx>{`
-                @keyframes arcusDotPulse {
-                    0%, 100% { opacity: 0.2; transform: scale(0.8); }
-                    50% { opacity: 1; transform: scale(1.3); }
+                .arcus-shine-text {
+                    background: linear-gradient(
+                        90deg,
+                        rgba(255,255,255,0.45) 0%,
+                        rgba(255,255,255,0.95) 50%,
+                        rgba(255,255,255,0.45) 100%
+                    );
+                    background-size: 220% 100%;
+                    -webkit-background-clip: text;
+                    background-clip: text;
+                    color: transparent;
+                    animation: arcusShine 1.8s linear infinite;
+                }
+
+                @keyframes arcusShine {
+                    0% { background-position: 120% 0; }
+                    100% { background-position: -120% 0; }
                 }
             `}</style>
         </div>
@@ -156,12 +146,12 @@ interface ArtifactCardProps {
 }
 
 const artifactIcons: Record<string, string> = {
-    email_draft: '✉️',
-    summary: '📄',
-    research: '🔬',
-    action_plan: '📋',
-    reply: '↩️',
-    notes: '📝',
+    email_draft: 'Mail',
+    summary: 'Summary',
+    research: 'Research',
+    action_plan: 'Plan',
+    reply: 'Reply',
+    notes: 'Notes',
 };
 
 const artifactLabels: Record<string, string> = {
@@ -179,10 +169,10 @@ export function ArtifactCard({ type, title, version = 'v1', onView }: ArtifactCa
             onClick={onView}
             className="group flex items-center gap-3 bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.08] hover:border-white/[0.14] rounded-xl px-4 py-3 mt-3 mb-1 w-full max-w-sm transition-all duration-200"
         >
-            <span className="text-base flex-shrink-0">{artifactIcons[type] || '✨'}</span>
+            <span className="text-[11px] uppercase tracking-[0.16em] text-white/45 flex-shrink-0">{artifactIcons[type] || 'Canvas'}</span>
             <div className="flex items-center gap-2 flex-1 min-w-0">
                 <span className="text-white/80 text-sm font-medium truncate">{title || artifactLabels[type]}</span>
-                <span className="text-white/20 text-xs">·</span>
+                <span className="text-white/20 text-xs">.</span>
                 <span className="text-white/30 text-xs">{version}</span>
             </div>
             <div className="flex items-center gap-1 text-white/30 group-hover:text-white/60 transition-colors">

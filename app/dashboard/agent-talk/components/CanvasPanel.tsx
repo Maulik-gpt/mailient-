@@ -280,7 +280,7 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                                     onClick={handleCopy}
                                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white/50 hover:text-white/80 hover:bg-white/10 transition-all"
                                 >
-                                    {copied ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
+                                    {copied ? <Check className="w-3 h-3 text-white/80" /> : <Copy className="w-3 h-3" />}
                                     {copied ? 'Copied' : 'Copy'}
                                 </button>
                             </div>
@@ -335,3 +335,4 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
         </>
     );
 }
+
