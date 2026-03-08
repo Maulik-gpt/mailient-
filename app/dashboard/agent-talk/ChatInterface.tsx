@@ -152,6 +152,13 @@ export default function ChatInterface({
   onNewChat,
   onConversationDelete
 }: ChatInterfaceProps) {
+  type LiveThinkingStep = {
+    id: string;
+    label: string;
+    status: 'pending' | 'active' | 'completed' | 'error';
+    type: 'think' | 'search' | 'read' | 'analyze' | 'draft' | 'execute';
+  };
+
   const router = useRouter();
   const [message, setMessage] = useState<string>('');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -190,12 +197,13 @@ export default function ChatInterface({
   const [pendingReplyProposal, setPendingReplyProposal] = useState<any>(null);
 
   // Live thinking state (AI-generated, shown during loading)
-  const [liveThinkingSteps, setLiveThinkingSteps] = useState<{ id: string; label: string; status: 'active' | 'completed'; type: string }[]>([]);
+  const [liveThinkingSteps, setLiveThinkingSteps] = useState<LiveThinkingStep[]>([]);
 
   // Canvas Panel state
   const [isCanvasOpen, setIsCanvasOpen] = useState(false);
   const [canvasData, setCanvasData] = useState<CanvasData | null>(null);
   const [isCanvasExecuting, setIsCanvasExecuting] = useState(false);
+  const [activeRun, setActiveRun] = useState<{ runId: string; status?: string; phase?: string } | null>(null);
 
 
 
@@ -363,10 +371,50 @@ export default function ChatInterface({
     return fallbackTitle.length > 40 ? fallbackTitle.substring(0, 40) + '...' : fallbackTitle;
   };
 
+  const buildFallbackThinkingSteps = (messageText: string): LiveThinkingStep[] => {
+    const emailRelated = isEmailRelatedQuery(messageText);
+    const notesRelated = isNotesRelatedQuery(messageText);
+
+    return [
+      {
+        id: 'fallback-analyze',
+        label: 'Understanding your request',
+        status: 'active',
+        type: 'analyze'
+      },
+      {
+        id: 'fallback-context',
+        label: notesRelated
+          ? 'Reviewing relevant notes and saved context'
+          : emailRelated
+            ? 'Searching relevant Gmail threads and context'
+            : 'Gathering the context needed to complete this task',
+        status: 'pending',
+        type: emailRelated ? 'search' : 'read'
+      },
+      {
+        id: 'fallback-output',
+        label: emailRelated
+          ? 'Preparing a draft, summary, or next action for review'
+          : 'Preparing the best output for review',
+        status: 'pending',
+        type: 'draft'
+      }
+    ];
+  };
+
+  const normalizeIntentPlanSteps = (plan: any[]): LiveThinkingStep[] =>
+    plan.map((step: any, index: number) => ({
+      id: `live-${step.step || index}`,
+      label: step.description || step.action || `Working on step ${index + 1}`,
+      status: index === 0 ? 'active' : 'pending',
+      type: (step.type || 'think') as LiveThinkingStep['type']
+    }));
+
   const processAIMessage = async (messageText: string, conversationIdToUse: string, isNew: boolean) => {
     try {
       setIsLoading(true);
-      setLiveThinkingSteps([]);
+      setLiveThinkingSteps(buildFallbackThinkingSteps(messageText));
 
       // Detect query types
       const notesQuery = isNotesRelatedQuery(messageText);
@@ -392,7 +440,7 @@ export default function ChatInterface({
       const intentPromise = fetch('/api/agent-talk/chat-arcus/intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: messageText }),
+        body: JSON.stringify({ message: messageText, conversationId: conversationIdToUse }),
       }).then(r => r.json()).catch(() => null);
 
       // 2) Fire main chat request (takes longer - does search, canvas, response)
@@ -405,15 +453,17 @@ export default function ChatInterface({
       // 3) Intent usually returns first — show live thinking steps
       const intentData = await intentPromise;
       if (intentData?.plan && intentData.plan.length > 0) {
-        // Animate steps one-by-one with delays
-        const steps = intentData.plan;
+        const steps = normalizeIntentPlanSteps(intentData.plan);
+        setLiveThinkingSteps(steps);
+
         for (let i = 0; i < steps.length; i++) {
-          const step = steps[i];
-          setLiveThinkingSteps(prev => [
-            ...prev.map(s => ({ ...s, status: 'completed' as const })),
-            { id: `live-${step.step || i}`, label: step.description || step.action || '', status: 'active' as const, type: step.type || 'think' }
-          ]);
-          // Brief delay between steps for animation
+          setLiveThinkingSteps(prev =>
+            prev.map((step, index) => ({
+              ...step,
+              status: index < i ? 'completed' : index === i ? 'active' : 'pending'
+            }))
+          );
+
           if (i < steps.length - 1) {
             await new Promise(r => setTimeout(r, 400));
           }
@@ -440,6 +490,14 @@ export default function ChatInterface({
       }
 
       const data = await response.json();
+
+      if (data?.run?.runId) {
+        setActiveRun({
+          runId: data.run.runId,
+          status: data.run.status,
+          phase: data.run.phase
+        });
+      }
 
       // Mark all live steps as completed
       setLiveThinkingSteps(prev => prev.map(s => ({ ...s, status: 'completed' as const })));
@@ -468,6 +526,7 @@ export default function ChatInterface({
         ? data.thinkingSteps.map((s: any, i: number) => ({
           id: `step-${s.step || i}`,
           label: s.description || s.action || '',
+          expandedContent: s.detail || '',
         }))
         : (intentData?.plan && intentData.plan.length > 0)
           ? intentData.plan.map((s: any, i: number) => ({
@@ -634,13 +693,21 @@ export default function ChatInterface({
   const handleCanvasExecute = async (action: string, data: any) => {
     setIsCanvasExecuting(true);
     try {
+      const requestId = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const approvalToken = canvasData?.approvalTokens?.[action];
+
       const response = await fetch('/api/agent-talk/chat-arcus', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: `Execute: ${action}`,
+          runId: activeRun?.runId || null,
           conversationId: currentConversationId,
           isNewConversation: false,
+          actionType: action,
+          actionPayload: data,
+          approvalToken,
+          actionRequestId: requestId,
           executeCanvasAction: action,
           canvasActionData: data
         })
@@ -1151,6 +1218,48 @@ export default function ChatInterface({
     };
   }, []);
 
+  // Poll operator run state for long-running or queued workflows
+  useEffect(() => {
+    if (!activeRun?.runId) return;
+    if (!isLoading && !isCanvasExecuting && activeRun.status === 'completed') return;
+
+    let cancelled = false;
+    const pollRun = async () => {
+      try {
+        const res = await fetch(`/api/agent-talk/chat-arcus/run/${activeRun.runId}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled) return;
+
+        if (Array.isArray(data.steps) && data.steps.length > 0) {
+          setLiveThinkingSteps(data.steps.map((s: any) => ({
+            id: s.id || `step-${s.order}`,
+            label: s.label || `Step ${s.order}`,
+            status: (s.status || 'pending') as 'pending' | 'active' | 'completed' | 'error',
+            type: (s.kind || 'think') as LiveThinkingStep['type'],
+          })));
+        }
+
+        if (data.run?.runId) {
+          setActiveRun({
+            runId: data.run.runId,
+            status: data.run.status,
+            phase: data.run.phase
+          });
+        }
+      } catch (error) {
+        console.error('Run polling failed:', error);
+      }
+    };
+
+    pollRun();
+    const interval = setInterval(pollRun, 2200);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [activeRun?.runId, activeRun?.status, isLoading, isCanvasExecuting]);
+
   return (
     <TooltipProvider>
       <UsageLimitModal
@@ -1580,7 +1689,7 @@ export default function ChatInterface({
 
                     {/* Loading indicator with live AI-generated thinking */}
                     {isLoading && (
-                      <div className="flex items-start gap-4 mt-4 animate-fade-in">
+                      <div className="flex items-start gap-4 mt-4 animate-fade-in rounded-2xl border border-white/[0.08] bg-gradient-to-b from-white/[0.04] to-white/[0.01] px-4 py-3 shadow-[0_14px_40px_rgba(0,0,0,0.35)]">
                         <div className="flex-shrink-0 mt-1">
                           <div className="bg-neutral-800 rounded-full w-11 h-11 flex items-center justify-center backdrop-blur-sm border border-white/10 shadow-lg overflow-hidden">
                             <img src="/arcus-ai-icon.jpg" alt="Arcus AI" className="w-full h-full object-cover opacity-80" />
@@ -1595,6 +1704,8 @@ export default function ChatInterface({
                                 type: (s.type || 'think') as 'think' | 'search' | 'read' | 'analyze' | 'draft' | 'execute',
                               }))}
                               isVisible={true}
+                              isGenerating={true}
+                              generatingLabel="Arcus is preparing the workflow"
                             />
                           ) : (
                             <div className="flex items-center gap-2 pt-1.5">

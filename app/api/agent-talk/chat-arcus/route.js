@@ -7,6 +7,9 @@ import { CalendarService } from '@/lib/calendar.js';
 import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service.js';
 import { addDays, setHours, setMinutes, startOfDay, format, parse, isWeekend, nextMonday } from 'date-fns';
 import { ArcusMissionService } from '@/lib/arcus-mission.js';
+import { ArcusOperatorRuntime } from '@/lib/arcus-operator-runtime.js';
+import { isFeatureEnabled } from '@/lib/feature-flags.js';
+import crypto from 'crypto';
 
 /**
  * Main chat handler with Arcus AI + Gmail context + Memory + Integration awareness
@@ -16,6 +19,7 @@ export async function POST(request) {
     const {
       message,
       conversationId,
+      runId,
       isNewConversation,
       gmailAccessToken,
       isNotesQuery,
@@ -25,7 +29,11 @@ export async function POST(request) {
       activeMission,
       approvalPayload,
       executeCanvasAction,
-      canvasActionData
+      canvasActionData,
+      actionType: executionActionType,
+      actionPayload,
+      approvalToken,
+      actionRequestId
     } = await request.json();
 
     console.log('🚀 Arcus Chat request received:', message?.substring?.(0, 80));
@@ -143,13 +151,67 @@ export async function POST(request) {
     // Initialize Arcus AI and Mission Service
     const arcusAI = new ArcusAIService();
     const missionService = userEmail ? new ArcusMissionService(userEmail) : null;
+    const operatorRuntimeEnabled = isFeatureEnabled('arcusOperatorRuntimeV2');
+    const canvasActionsV2Enabled = isFeatureEnabled('arcusCanvasActionsV2');
+    const operatorRuntime = operatorRuntimeEnabled ? new ArcusOperatorRuntime({
+      db,
+      arcusAI,
+      userEmail,
+      userName,
+      conversationId: currentConversationId
+    }) : null;
+
+    // Operator Runtime V2: unified canvas execution contract with approval + idempotency
+    const requestedAction = executeCanvasAction || executionActionType;
+    const requestedPayload = canvasActionData || actionPayload;
+    if (requestedAction && requestedPayload && canvasActionsV2Enabled) {
+      const criticalAction = requestedAction === 'send_email' || requestedAction === 'execute_plan';
+      const effectiveRunId = runId || null;
+      const effectiveActionRequestId = actionRequestId || crypto
+        .createHash('sha256')
+        .update(`${effectiveRunId || 'na'}:${requestedAction}:${JSON.stringify(requestedPayload)}`)
+        .digest('hex')
+        .slice(0, 32);
+
+      if (operatorRuntime && criticalAction && effectiveRunId) {
+        const idempotent = await operatorRuntime.getIdempotentResult(effectiveRunId, effectiveActionRequestId);
+        if (idempotent) {
+          return NextResponse.json({
+            message: idempotent.message || 'Action already completed',
+            resultStatus: 'completed',
+            executionResult: idempotent,
+            externalRefs: idempotent.externalRefs || {},
+            nextRecommendedActions: idempotent.nextRecommendedActions || [],
+            conversationId: currentConversationId,
+            run: { runId: effectiveRunId, status: 'completed', phase: 'post_execution' },
+            timestamp: new Date().toISOString()
+          });
+        }
+
+        const approvalValidation = await operatorRuntime.validateApprovalToken(
+          effectiveRunId,
+          requestedAction,
+          approvalToken
+        );
+        if (!approvalValidation.ok) {
+          return NextResponse.json({
+            error: 'approval_required',
+            message: `Approval token invalid: ${approvalValidation.reason}`,
+            resultStatus: 'blocked_approval',
+            conversationId: currentConversationId,
+            run: { runId: effectiveRunId, status: 'blocked_approval', phase: 'approval' },
+            timestamp: new Date().toISOString()
+          }, { status: 403 });
+        }
+      }
+    }
 
     // --- HANDLE CANVAS EXECUTION ACTIONS ---
-    if (executeCanvasAction && canvasActionData) {
-      console.log('🎯 Canvas action requested:', executeCanvasAction);
+    if (requestedAction && requestedPayload) {
+      console.log('🎯 Canvas action requested:', requestedAction);
       let executionResult = { success: false, message: '' };
 
-      if (executeCanvasAction === 'send_email' && canvasActionData.to && canvasActionData.body) {
+      if (requestedAction === 'send_email' && requestedPayload.to && requestedPayload.body) {
         try {
           const db2 = new DatabaseService();
           const userTokens = await db2.getUserTokens(userEmail);
@@ -159,17 +221,28 @@ export async function POST(request) {
             const { GmailService } = await import('@/lib/gmail');
             const gmailService = new GmailService(accessToken, refreshToken);
             const result = await gmailService.sendEmail({
-              to: canvasActionData.to,
-              subject: canvasActionData.subject || '',
-              body: canvasActionData.body,
+              to: requestedPayload.to,
+              subject: requestedPayload.subject || '',
+              body: requestedPayload.body,
               isHtml: false
             });
-            executionResult = { success: true, message: `Email sent to ${canvasActionData.to}`, result };
+            executionResult = {
+              success: true,
+              message: `Email sent to ${requestedPayload.to}`,
+              result,
+              externalRefs: {
+                gmailMessageId: result?.id || result?.messageId || null,
+                threadId: result?.threadId || requestedPayload.threadId || null
+              },
+              nextRecommendedActions: ['track_response', 'prepare_follow_up']
+            };
+          } else {
+            executionResult = { success: false, message: 'Gmail is not connected for this account' };
           }
         } catch (err) {
           executionResult = { success: false, message: `Failed to send: ${err.message}` };
         }
-      } else if (executeCanvasAction === 'save_draft' && canvasActionData.body) {
+      } else if (requestedAction === 'save_draft' && requestedPayload.body) {
         try {
           const db2 = new DatabaseService();
           const userTokens = await db2.getUserTokens(userEmail);
@@ -179,26 +252,64 @@ export async function POST(request) {
             const { GmailService } = await import('@/lib/gmail');
             const gmailService = new GmailService(accessToken, refreshToken);
             const result = await gmailService.createDraft({
-              to: canvasActionData.to || '',
-              subject: canvasActionData.subject || '',
-              body: canvasActionData.body,
+              to: requestedPayload.to || '',
+              subject: requestedPayload.subject || '',
+              body: requestedPayload.body,
               isHtml: false
             });
-            executionResult = { success: true, message: 'Draft saved to your Gmail Drafts folder', result };
+            executionResult = {
+              success: true,
+              message: 'Draft saved to your Gmail Drafts folder',
+              result,
+              externalRefs: {
+                gmailDraftId: result?.id || result?.draftId || null,
+                threadId: result?.threadId || requestedPayload.threadId || null
+              },
+              nextRecommendedActions: ['send_email', 'refine_draft']
+            };
+          } else {
+            executionResult = { success: false, message: 'Gmail is not connected for this account' };
           }
         } catch (err) {
           executionResult = { success: false, message: `Failed to save draft: ${err.message}` };
+        }
+      } else if (requestedAction === 'execute_plan') {
+        executionResult = {
+          success: true,
+          message: 'Workflow execution started',
+          externalRefs: {},
+          nextRecommendedActions: ['review_results']
+        };
+        if (operatorRuntime && runId) {
+          await operatorRuntime.enqueueJob(runId, 'execute_plan', {
+            action: requestedAction,
+            payload: requestedPayload
+          });
         }
       } else {
         executionResult = { success: true, message: 'Action completed' };
       }
 
+      if (operatorRuntime && (requestedAction === 'send_email' || requestedAction === 'execute_plan') && runId && executionResult.success) {
+        await operatorRuntime.consumeApprovalToken(runId, requestedAction, approvalToken);
+        const effectiveActionRequestId = actionRequestId || crypto
+          .createHash('sha256')
+          .update(`${runId}:${requestedAction}:${JSON.stringify(requestedPayload)}`)
+          .digest('hex')
+          .slice(0, 32);
+        await operatorRuntime.checkAndStoreIdempotentResult(runId, effectiveActionRequestId, executionResult);
+      }
+
       return NextResponse.json({
         message: executionResult.message,
+        resultStatus: executionResult.success ? 'completed' : 'error',
         executionResult,
+        externalRefs: executionResult.externalRefs || {},
+        nextRecommendedActions: executionResult.nextRecommendedActions || [],
         conversationId: currentConversationId,
+        run: runId ? { runId, status: executionResult.success ? 'completed' : 'error', phase: 'post_execution' } : null,
         timestamp: new Date().toISOString()
-      });
+      }, { status: executionResult.success ? 200 : 500 });
     }
 
     // --- INTENT ANALYSIS: Understand what the user wants ---
@@ -208,6 +319,20 @@ export async function POST(request) {
       console.log('🧠 Intent analysis:', intentAnalysis?.intent, '| Canvas:', intentAnalysis?.needsCanvas);
     } catch (err) {
       console.warn('Intent analysis failed, proceeding with direct chat:', err.message);
+    }
+
+    let operatorRun = null;
+    let normalizedPlan = [];
+    let requiresApproval = false;
+    if (operatorRuntimeEnabled && operatorRuntime) {
+      const runInit = await operatorRuntime.initializeRun({
+        message,
+        intentAnalysis,
+        canvasType: intentAnalysis?.canvasType || 'none'
+      });
+      operatorRun = runInit?.run || null;
+      normalizedPlan = runInit?.plan || [];
+      requiresApproval = !!runInit?.requiresApproval;
     }
 
     // --- CONTEXT SEARCH ---
@@ -263,8 +388,40 @@ Body: ${emailData.body || emailData.snippet}
       }
     }
 
+    // --- STEP STATE TRANSITIONS ---
+    if (operatorRuntime && operatorRun && normalizedPlan.length > 0) {
+      const step0 = normalizedPlan[0];
+      if (step0) {
+        await operatorRuntime.transitionStep({
+          runId: operatorRun.runId,
+          stepId: step0.id,
+          status: 'completed',
+          phase: 'thinking',
+          detail: 'Intent and plan established'
+        });
+      }
+      const step1 = normalizedPlan[1];
+      if (step1) {
+        await operatorRuntime.transitionStep({
+          runId: operatorRun.runId,
+          stepId: step1.id,
+          status: 'active',
+          phase: 'searching',
+          evidence: emailResult || notesResult || null
+        });
+        await operatorRuntime.transitionStep({
+          runId: operatorRun.runId,
+          stepId: step1.id,
+          status: 'completed',
+          phase: 'searching',
+          evidence: emailResult || notesResult || null
+        });
+      }
+    }
+
     // --- CANVAS GENERATION (for complex tasks) ---
     let canvasData = null;
+    let executionPolicy = null;
     if (intentAnalysis?.needsCanvas && intentAnalysis?.canvasType !== 'none') {
       try {
         canvasData = await arcusAI.generateCanvasContent(
@@ -273,7 +430,19 @@ Body: ${emailData.body || emailData.snippet}
           emailContext || '',
           { userName, userEmail, privacyMode }
         );
-        console.log('📋 Canvas generated:', intentAnalysis.canvasType);
+        console.log('Canvas generated:', intentAnalysis.canvasType);
+        if (operatorRuntime && operatorRun) {
+          executionPolicy = operatorRuntime.buildExecutionPolicy(
+            intentAnalysis.canvasType || 'none',
+            requiresApproval,
+            operatorRun.runId
+          );
+          await operatorRuntime.saveExecutionPolicy(operatorRun.runId, executionPolicy);
+          if (canvasData && executionPolicy?.actions) {
+            canvasData.actions = executionPolicy.actions;
+            canvasData.approvalTokens = executionPolicy.approvalTokens;
+          }
+        }
       } catch (err) {
         console.error('Canvas generation failed:', err.message);
       }
@@ -299,6 +468,38 @@ Body: ${emailData.body || emailData.snippet}
       ? response
       : generateFallbackResponse(message, integrations);
 
+    if (operatorRuntime && operatorRun && normalizedPlan.length > 0) {
+      const step2 = normalizedPlan[2];
+      if (step2) {
+        await operatorRuntime.transitionStep({
+          runId: operatorRun.runId,
+          stepId: step2.id,
+          status: 'active',
+          phase: 'executing',
+          detail: 'Preparing final output'
+        });
+        await operatorRuntime.transitionStep({
+          runId: operatorRun.runId,
+          stepId: step2.id,
+          status: 'completed',
+          phase: 'executing'
+        });
+      }
+
+      await operatorRuntime.updateRunState(operatorRun.runId, {
+        status: 'completed',
+        phase: 'post_execution',
+        memory: {
+          ...(operatorRun.memory || {}),
+          lastExecution: {
+            actionType,
+            at: new Date().toISOString()
+          },
+          suggestions: ['track_response', 'prepare_follow_up']
+        }
+      });
+    }
+
     // Save conversation
     if (userEmail) {
       try {
@@ -313,6 +514,7 @@ Body: ${emailData.body || emailData.snippet}
 
     return NextResponse.json({
       message: finalResponse,
+      assistantMessage: finalResponse,
       timestamp: new Date().toISOString(),
       conversationId: currentConversationId,
       aiGenerated: true,
@@ -322,7 +524,36 @@ Body: ${emailData.body || emailData.snippet}
       integrations,
       intentAnalysis,
       canvasData,
-      thinkingSteps: intentAnalysis?.plan || []
+      thinkingSteps: normalizedPlan.length > 0
+        ? normalizedPlan.map((s, i) => ({
+          step: i + 1,
+          id: s.id,
+          kind: s.kind,
+          status: s.status,
+          description: s.label,
+          action: s.label,
+          type: s.kind,
+          detail: s.detail || ''
+        }))
+        : intentAnalysis?.plan || [],
+      run: operatorRun ? {
+        runId: operatorRun.runId,
+        status: 'completed',
+        phase: 'post_execution',
+        intent: operatorRun.intent,
+        complexity: operatorRun.complexity
+      } : null,
+      evidence: {
+        context: actionType,
+        emailResult: emailResult || null,
+        notesResult: notesResult || null
+      },
+      execution: executionPolicy || {
+        actions: [],
+        requiresApproval: false,
+        approvalTokens: {}
+      },
+      postExecutionSuggestion: "Your task is complete. Want me to track replies or prepare a follow-up draft?"
     });
 
   } catch (error) {
@@ -790,3 +1021,6 @@ async function saveConversation(userEmail, userMessage, aiResponse, conversation
     console.error('Error saving conversation:', error);
   }
 }
+
+
+
