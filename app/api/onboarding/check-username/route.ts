@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     }
 
     // Check if username is already taken
-    const db = new DatabaseService();
+    const db = new DatabaseService(true);
     const existingProfile = await db.supabase
       .from("user_profiles")
       .select("username")

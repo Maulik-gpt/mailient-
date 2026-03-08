@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
-import { auth } from '../../../../lib/auth';
-import { OpenRouterAIService } from '../../../../lib/openrouter-ai';
+import { auth } from '@/lib/auth';
+import { OpenRouterAIService } from '@/lib/openrouter-ai';
+import { DatabaseService } from '@/lib/supabase';
+import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service';
 
 export async function POST(request) {
     try {
@@ -9,49 +11,62 @@ export async function POST(request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { emailId, subject, snippet } = await request.json();
-        
+        const userId = session.user.email;
+
+        const { emailId, subject, snippet, category } = await request.json();
+
+        // Fetch user profile for privacy check
+        const db = new DatabaseService();
+        let privacyMode = false;
+        try {
+            const profile = await db.getUserProfile(session.user.email);
+            if (profile?.preferences?.ai_privacy_mode === 'enabled') {
+                privacyMode = true;
+                console.log('🛡️ Note Generation: AI Privacy Mode enabled.');
+            }
+        } catch (e) {
+            console.warn('Privacy check error:', e);
+        }
+
         // Generate AI note content
         const aiService = new OpenRouterAIService();
-        
+
         // For note generation, use OPENROUTER_API_KEY2 and bytedance-seed/seed-1.6-flash model
         aiService.apiKey = (process.env.OPENROUTER_API_KEY2 || '').trim();
         aiService.model = 'bytedance-seed/seed-1.6-flash';
-        
-        if (!aiService.apiKey) {
+
+        const isAIConfigured = !!aiService.apiKey;
+        if (!isAIConfigured) {
             console.warn('⚠️ OPENROUTER_API_KEY2 not configured for note generation, using fallback');
         }
 
-        const prompt = `Analyze this email and create a concise, insightful note. Focus on key points, action items, and important details. Write as if you are the AI assistant writing personal notes about this email.
- 
-Email Subject: ${subject}
-Email Snippet: ${snippet}
-
-Format your note as:
-- **Summary**: 1-2 sentence summary (use **bold** for headings)
-- **Key Points**: Bullet points of important information
-- **Action Items**: Any tasks or follow-ups needed
-- **Context**: Relevant background or connections
-
-Be professional, insightful, and concise. Keep the note under 200 words total. Use markdown formatting for bold text (**bold**) and bullet points (-).`;
-
-        const messages = [
-            {
-                role: 'system',
-                content: 'You are an AI assistant creating professional email notes. Be concise, insightful, and focus on actionable information.'
-            },
-            { role: 'user', content: prompt }
-        ];
+        if (isAIConfigured) {
+            const canUse = await subscriptionService.canUseFeature(userId, FEATURE_TYPES.AI_NOTES);
+            if (!canUse) {
+                const usage = await subscriptionService.getFeatureUsage(userId, FEATURE_TYPES.AI_NOTES);
+                return NextResponse.json({
+                    error: 'limit_reached',
+                    message: `Sorry, but you've exhausted all the credits of ${usage.period === 'daily' ? 'the day' : 'the month'}.`,
+                    usage: usage.usage,
+                    limit: usage.limit,
+                    period: usage.period,
+                    planType: usage.planType,
+                    upgradeUrl: '/pricing'
+                }, { status: 403 });
+            }
+        }
 
         try {
-            const response = await aiService.callOpenRouter(messages, { maxTokens: 300, temperature: 0.3 });
-            const noteContent = aiService.extractResponse(response);
+            const noteContent = await aiService.generateNote(snippet, category, privacyMode);
 
-            if (noteContent && noteContent.trim().length > 10) {
+            if (noteContent) {
+                if (isAIConfigured) {
+                    await subscriptionService.incrementFeatureUsage(userId, FEATURE_TYPES.AI_NOTES);
+                }
                 return NextResponse.json({ noteContent });
             }
         } catch (aiError) {
-            console.warn('⚠️ AI service error, using fallback:', aiError.message);
+            console.warn('⚠️ AI service error:', aiError.message);
         }
 
         // Fallback if AI response is too short

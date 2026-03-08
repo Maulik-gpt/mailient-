@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Allow: /privacy-policy
+Allow: /terms-of-service
+
+Sitemap: https://mailient.xyz/sitemap.xml

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Home, Users, User, Mail, LogOut, Settings, Search, Plus, Bookmark, MessageCircle, Bell, History, DoorOpen, Info, MoreHorizontal } from 'lucide-react';
+import { Home, Users, User, Mail, LogOut, Settings, Search, Plus, Bookmark, MessageCircle, History, DoorOpen, Info, MoreHorizontal } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from './tooltip';
 import { Button } from './button';
 import { useRouter } from 'next/navigation';
@@ -26,10 +26,7 @@ export const MailientSidebar: React.FC<MailientSidebarProps> = ({
   // Navigation items matching Mailient's existing sidebar
   const navItems = [
     { id: 'home', icon: <Mail className="w-6 h-6" />, label: 'Feed', tooltip: 'Home Feed', route: '/home-feed' },
-    { id: 'aether', icon: <Users className="w-6 h-6" />, label: 'Aether', tooltip: 'Founder Network', route: '/aether' },
-    { id: 'notifications', icon: <Bell className="w-6 h-6" />, label: 'Notifications', tooltip: 'Notifications', route: '/notifications' },
-    { id: 'arcus', icon: <span className="oleo-script-regular text-2xl">A</span>, label: 'Arcus', tooltip: 'AI Assistant', route: '/dashboard/agent-talk' },
-    { id: 'profile', icon: <User className="w-6 h-6" />, label: 'Profile', tooltip: 'Your Profile', route: '/dashboard/profile-bubble' }
+    { id: 'arcus', icon: <span className="oleo-script-regular text-2xl">A</span>, label: 'Arcus', tooltip: 'AI Assistant', route: '/dashboard/agent-talk' }
   ];
 
   const handleLogout = async () => {
@@ -41,8 +38,18 @@ export const MailientSidebar: React.FC<MailientSidebarProps> = ({
   return (
     <TooltipProvider>
       <div className="fixed left-0 top-0 h-screen w-20 bg-black border-r border-[#363636] flex flex-col z-30">
+        {/* Sidebar Logo */}
+        <div className="flex flex-col items-center py-8">
+          <div
+            className="w-12 h-12 bg-black rounded-2xl border border-white/10 flex items-center justify-center cursor-pointer hover:scale-110 transition-transform duration-500 overflow-hidden shadow-2xl"
+            onClick={() => router.push('/home-feed')}
+          >
+            <img src="/mailient-logo-v3.png" alt="Mailient" className="w-full h-full object-cover scale-110" />
+          </div>
+        </div>
+
         {/* Sidebar Icons */}
-        <div className="flex flex-col items-end py-24 gap-6 pr-4">
+        <div className="flex flex-col items-end py-12 gap-6 pr-4">
           {/* Email Icon - Home Feed */}
           <Tooltip delayDuration={100}>
             <TooltipTrigger asChild>
@@ -51,9 +58,8 @@ export const MailientSidebar: React.FC<MailientSidebarProps> = ({
                   window.location.href = '/home-feed';
                   document.title = 'Home / Mailient';
                 }}
-                className={`p-2 hover:bg-[#1a1a1a] rounded-full transition-all duration-300 hover:scale-105 ${
-                  activeSection === 'home' ? 'bg-[#1a1a1a]' : ''
-                }`}
+                className={`p-2 hover:bg-[#1a1a1a] rounded-full transition-all duration-300 hover:scale-105 ${activeSection === 'home' ? 'bg-[#1a1a1a]' : ''
+                  }`}
                 aria-label="Feed"
               >
                 <Mail className="w-6 h-6 text-[#fafafa]" />
@@ -64,47 +70,9 @@ export const MailientSidebar: React.FC<MailientSidebarProps> = ({
             </TooltipContent>
           </Tooltip>
 
-          {/* Aether Icon - Founder Network */}
-          <Tooltip delayDuration={100}>
-            <TooltipTrigger asChild>
-              <button
-                onClick={() => {
-                  window.location.href = '/aether';
-                  document.title = 'Aether / Mailient';
-                }}
-                className={`p-2 hover:bg-[#1a1a1a] rounded-full transition-all duration-300 hover:scale-105 ${
-                  activeSection === 'aether' ? 'bg-[#1a1a1a]' : ''
-                }`}
-                aria-label="Aether"
-              >
-                <Users className="w-6 h-6 text-[#fafafa]" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="right" className="bg-[#363636] border-[#363636]">
-              <p className="text-white text-sm">Aether</p>
-            </TooltipContent>
-          </Tooltip>
 
-          {/* Notifications Icon */}
-          <Tooltip delayDuration={100}>
-            <TooltipTrigger asChild>
-              <button
-                onClick={() => {
-                  window.location.href = '/notifications';
-                  document.title = 'Notifications / Mailient';
-                }}
-                className={`p-2 hover:bg-[#1a1a1a] rounded-full transition-all duration-300 hover:scale-105 ${
-                  activeSection === 'notifications' ? 'bg-[#1a1a1a]' : ''
-                }`}
-                aria-label="Notifications"
-              >
-                <Bell className="w-6 h-6 text-[#fafafa]" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="right" className="bg-[#363636] border-[#363636]">
-              <p className="text-white text-sm">Notifications</p>
-            </TooltipContent>
-          </Tooltip>
+
+
 
           {/* Arcus Symbol - AI Assistant */}
           <Tooltip delayDuration={100}>
@@ -114,9 +82,8 @@ export const MailientSidebar: React.FC<MailientSidebarProps> = ({
                   window.location.href = '/dashboard/agent-talk';
                   document.title = 'Arcus / Mailient';
                 }}
-                className={`p-2 hover:bg-[#1a1a1a] rounded-full transition-all duration-300 hover:scale-105 ${
-                  activeSection === 'arcus' ? 'bg-[#1a1a1a]' : ''
-                }`}
+                className={`p-2 hover:bg-[#1a1a1a] rounded-full transition-all duration-300 hover:scale-105 ${activeSection === 'arcus' ? 'bg-[#1a1a1a]' : ''
+                  }`}
                 aria-label="Arcus AI Assistant"
               >
                 <span className="text-[#fafafa] oleo-script-regular text-2xl">A</span>
@@ -127,26 +94,7 @@ export const MailientSidebar: React.FC<MailientSidebarProps> = ({
             </TooltipContent>
           </Tooltip>
 
-          {/* Profile Icon */}
-          <Tooltip delayDuration={100}>
-            <TooltipTrigger asChild>
-              <button
-                onClick={() => {
-                  window.location.href = '/dashboard/profile-bubble';
-                  document.title = 'Profile / Mailient';
-                }}
-                className={`p-2 hover:bg-[#1a1a1a] rounded-full transition-all duration-300 hover:scale-105 ${
-                  activeSection === 'profile' ? 'bg-[#1a1a1a]' : ''
-                }`}
-                aria-label="Profile"
-              >
-                <User className="w-6 h-6 text-[#fafafa]" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="right" className="bg-[#363636] border-[#363636]">
-              <p className="text-white text-sm">Profile</p>
-            </TooltipContent>
-          </Tooltip>
+
 
           {/* More Options Icon */}
           <div className="relative">
@@ -202,6 +150,6 @@ export const MailientSidebar: React.FC<MailientSidebarProps> = ({
           </div>
         </div>
       </div>
-    </TooltipProvider>
+    </TooltipProvider >
   );
 };

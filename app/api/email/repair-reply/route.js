@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
-import { auth } from '../../../../lib/auth';
-import { GmailService } from '../../../../lib/gmail';
-import { OpenRouterAIService } from '../../../../lib/openrouter-ai';
-import { decrypt } from '../../../../lib/crypto';
-import { DatabaseService } from '../../../../lib/supabase';
+import { auth } from '@/lib/auth';
+import { GmailService } from '@/lib/gmail';
+import { OpenRouterAIService } from '@/lib/openrouter-ai';
+import { decrypt } from '@/lib/crypto';
+import { DatabaseService } from '@/lib/supabase';
+import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service';
+import { voiceProfileService } from '@/lib/voice-profile-service';
 
 export async function POST(request) {
     try {
@@ -11,6 +13,8 @@ export async function POST(request) {
         if (!session?.user?.email) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
+
+        const userId = session.user.email;
 
         const { emailId, category } = await request.json();
         if (!emailId) {
@@ -21,12 +25,29 @@ export async function POST(request) {
         let accessToken = session?.accessToken;
         let refreshToken = session?.refreshToken;
 
-        if (!accessToken) {
-            const db = new DatabaseService();
-            const userTokens = await db.getUserTokens(session.user.email);
-            if (userTokens?.encrypted_access_token) {
-                accessToken = decrypt(userTokens.encrypted_access_token);
-                refreshToken = userTokens.encrypted_refresh_token ? decrypt(userTokens.encrypted_refresh_token) : '';
+        const db = new DatabaseService();
+        let privacyMode = false;
+        try {
+            const profile = await db.getUserProfile(session.user.email);
+            if (profile?.preferences?.ai_privacy_mode === 'enabled') {
+                privacyMode = true;
+            }
+        } catch (e) {
+            console.warn('Privacy check error:', e);
+        }
+
+        // CRITICAL: Fetch tokens from database if EITHER accessToken OR refreshToken is missing
+        if (!accessToken || !refreshToken) {
+            try {
+                console.log('🔑 Fetching tokens from database for:', session.user.email);
+                const userTokens = await db.getUserTokens(session.user.email);
+                if (userTokens?.encrypted_access_token) {
+                    accessToken = accessToken || decrypt(userTokens.encrypted_access_token);
+                    refreshToken = refreshToken || (userTokens.encrypted_refresh_token ? decrypt(userTokens.encrypted_refresh_token) : '');
+                    console.log('✅ Tokens retrieved from database');
+                }
+            } catch (e) {
+                console.error('Failed to fetch tokens from database:', e);
             }
         }
 
@@ -35,6 +56,7 @@ export async function POST(request) {
         }
 
         const gmailService = new GmailService(accessToken, refreshToken);
+        gmailService.setUserEmail(session.user.email); // Enable token refresh persistence
 
         // Fetch email content
         const emailDetails = await gmailService.getEmailDetails(emailId);
@@ -63,14 +85,49 @@ export async function POST(request) {
             return NextResponse.json({ error: 'AI service not configured' }, { status: 500 });
         }
 
+        const canUse = await subscriptionService.canUseFeature(userId, FEATURE_TYPES.DRAFT_REPLY);
+        if (!canUse) {
+            const usage = await subscriptionService.getFeatureUsage(userId, FEATURE_TYPES.DRAFT_REPLY);
+            return NextResponse.json({
+                error: 'limit_reached',
+                message: `Sorry, but you've exhausted all the credits of ${usage.period === 'daily' ? 'the day' : 'the month'}.`,
+                usage: usage.usage,
+                limit: usage.limit,
+                period: usage.period,
+                planType: usage.planType,
+                upgradeUrl: '/pricing'
+            }, { status: 403 });
+        }
+
+        // Fetch user's voice profile for voice cloning (if available)
+        let voiceProfile = null;
+        try {
+            voiceProfile = await voiceProfileService.getVoiceProfile(userId);
+            if (voiceProfile) {
+                console.log('🎭 Voice profile found - enabling voice cloning for repair reply');
+            } else {
+                console.log('📝 No voice profile - using standard repair reply generation');
+            }
+        } catch (e) {
+            console.warn('Voice profile fetch failed:', e.message);
+        }
+
         const userContext = {
             name: session.user.name || session.user.email.split('@')[0],
-            email: session.user.email
+            email: session.user.email,
+            voiceProfile: voiceProfile // Include voice profile for AI voice cloning
         };
 
-        const repairReply = await aiService.generateRepairReply(emailContent, userContext);
+        const repairReply = await aiService.generateRepairReply(emailContent, userContext, privacyMode);
 
-        return NextResponse.json({ repairReply });
+        if (typeof repairReply === 'string' && repairReply.trim().length > 0) {
+            await subscriptionService.incrementFeatureUsage(userId, FEATURE_TYPES.DRAFT_REPLY);
+        }
+
+        return NextResponse.json({
+            repairReply,
+            voiceCloned: !!voiceProfile && voiceProfile.status !== 'default'
+        });
 
     } catch (error) {
         console.error('Error generating repair reply:', error);

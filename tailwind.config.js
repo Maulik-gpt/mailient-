@@ -9,7 +9,7 @@ export default {
     './components/**/*.{ts,tsx}',
     './app/**/*.{ts,tsx}',
     './src/**/*.{ts,tsx}',
-	],
+  ],
   prefix: "",
   theme: {
     container: {
@@ -115,6 +115,7 @@ export default {
         "shine": "shine 3s ease-in-out infinite",
         rainbow: "rainbow var(--speed, 2s) infinite linear",
         float: "float 6s ease-in-out infinite",
+        "fade-spin": "fade-spin 1.2s linear infinite",
       },
       utilities: {
         '.scrollbar-hide': {

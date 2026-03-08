@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { GmailService } from '../../../../lib/gmail.js';
+import { GmailService } from '@/lib/gmail.ts';
+import { subscriptionService } from '@/lib/subscription-service.js';
 
 function getAccessTokenFromHeaders(request) {
   const bearer = request.headers.get('authorization');
@@ -16,6 +17,24 @@ export async function POST(request) {
     const accessToken = getAccessTokenFromHeaders(request);
     const refreshToken = request.headers.get('x-gmail-refresh-token') || '';
     const userEmail = request.headers.get('x-user-email') || undefined;
+
+    if (!userEmail) {
+      return NextResponse.json(
+        { error: { code: 'missing_user', message: 'x-user-email header is required' } },
+        { status: 401 }
+      );
+    }
+
+    // 🔒 SECURITY: Check access status
+    const hasAccess = await subscriptionService.checkAccess(userEmail);
+    if (!hasAccess) {
+      return NextResponse.json({
+        error: {
+          message: 'Access required.',
+          code: 'subscription_required'
+        }
+      }, { status: 403 });
+    }
 
     if (!accessToken) {
       return NextResponse.json(

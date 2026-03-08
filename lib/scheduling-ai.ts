@@ -9,19 +9,23 @@ export class SchedulingAIService {
 
     constructor() {
         // Use the secondary key if provided, fallback to primary if not (safety first)
-        this.apiKey = (process.env.OPENROUTER_API_KEY2 || process.env.OPENROUTER_API_KEY || '').trim();
+        // Use all available keys for robustness
+        this.apiKey = (process.env.OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY2 || process.env.OPENROUTER_API_KEY3 || '').trim();
         // Fallback chain of free/cheap models to handle rate limits
         this.models = [
-            'google/gemini-2.0-flash-exp:free',
-            'google/gemini-exp-1206:free',
-            'google/gemini-1.5-flash-8b',
-            'meta-llama/llama-3.3-70b-instruct:free',
-            'qwen/qwen-2.5-72b-instruct:free'
+            'arcee-ai/trinity-large-preview:free',
+            'qwen/qwen3-coder:free',
+            'nvidia/nemotron-nano-9b-v2:free',
+            'openai/gpt-oss-20b:free',
+            'z-ai/glm-4.5-air:free'
         ];
         this.baseURL = 'https://openrouter.ai/api/v1';
     }
 
-    async callOpenRouter(messages: any[], options: any = {}) {
+    async callOpenRouter(
+        messages: Array<{ role: string; content: string }>,
+        options: { temperature?: number; maxTokens?: number } = {}
+    ) {
         let lastError: Error | null = null;
 
         for (const model of this.models) {
@@ -32,7 +36,7 @@ export class SchedulingAIService {
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${this.apiKey}`,
-                        'HTTP-Referer': process.env.HOST || 'http://localhost:3000',
+                        'HTTP-Referer': process.env.HOST || 'https://mailient.xyz',
                         'X-Title': 'Mailient Scheduling'
                     },
                     body: JSON.stringify({
@@ -58,9 +62,10 @@ export class SchedulingAIService {
                 const data = await response.json();
                 console.log(`✅ Scheduling AI: Success with ${model}`);
                 return data?.choices?.[0]?.message?.content || '';
-            } catch (error: any) {
-                console.warn(`⚠️ Model ${model} threw exception:`, error.message);
-                lastError = error;
+            } catch (error: unknown) {
+                const msg = error instanceof Error ? error.message : String(error);
+                console.warn(`⚠️ Model ${model} threw exception:`, msg);
+                lastError = error instanceof Error ? error : new Error(msg);
             }
         }
 
@@ -90,7 +95,7 @@ export class SchedulingAIService {
             const response = await this.callOpenRouter([{ role: 'user', content: prompt }]);
             const cleanJson = response.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
             return JSON.parse(cleanJson);
-        } catch (e) {
+        } catch {
             console.warn('⚠️ AI recommendation failed, using defaults');
             return {
                 suggested_title: 'Follow-up Call',
@@ -141,7 +146,7 @@ export class SchedulingAIService {
         try {
             const response = await this.callOpenRouter([{ role: 'user', content: prompt }]);
             return response.trim();
-        } catch (e) {
+        } catch {
             // Fallback to a basic template if AI fails
             return `Hi there,
 

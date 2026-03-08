@@ -1,16 +1,21 @@
 // app/api/profile/sync/route.js
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { decrypt, encrypt } from "../../../lib/crypto.js";
-import { auth } from "../../../lib/auth.js";
+import { getSupabaseAdmin } from "@/lib/supabase.js";
+import { decrypt, encrypt } from "@/lib/crypto.js";
+// import { auth } from "@/lib/auth.js"; // Removed top-level import to prevent build-time evaluation
 
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+// CRITICAL: Force dynamic rendering to prevent build-time evaluation
+export const dynamic = 'force-dynamic';
+
+const supabase = new Proxy({}, {
+  get: (target, prop) => getSupabaseAdmin()[prop]
+});
 
 // Ensure database tables exist
 async function ensureDatabaseTables() {
   try {
     console.log("Checking if user_profiles table exists in sync...");
-    
+
     // Test if user_profiles table exists by doing a simple query
     const { data, error } = await supabase
       .from("user_profiles")
@@ -21,7 +26,7 @@ async function ensureDatabaseTables() {
       console.log("user_profiles table doesn't exist in sync endpoint");
       throw new Error("Database table 'user_profiles' does not exist. Please run database setup.");
     }
-    
+
     console.log("Database tables check completed in sync");
   } catch (error) {
     console.error("Error checking database tables in sync:", error);
@@ -185,9 +190,9 @@ async function syncProfileFromGoogle(userEmail) {
 export async function GET(req) {
   try {
     // Use the same authentication method as the profile API
-    const { auth } = await import("../../../lib/auth.js");
+    const { auth } = await import("@/lib/auth.js");
     const session = await auth();
-    
+
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
@@ -215,9 +220,9 @@ export async function GET(req) {
 export async function POST(req) {
   try {
     // Use the same authentication method as the profile API
-    const { auth } = await import("../../../lib/auth.js");
+    const { auth } = await import("@/lib/auth.js");
     const session = await auth();
-    
+
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }

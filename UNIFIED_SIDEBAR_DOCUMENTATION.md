@@ -65,7 +65,7 @@ The unified sidebar system provides consistent navigation and branding across al
 ```typescript
 <UnifiedSidebar 
   variant="settings"
-  activeItem="notifications"
+  activeItem="general"
   showUniversalNav={true}
 />
 ```

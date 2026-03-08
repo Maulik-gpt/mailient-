@@ -22,7 +22,6 @@ export const SiftSidebar: React.FC<SiftSidebarProps> = ({
   const navItems = [
     { id: 'home', icon: <Home className="w-5 h-5" />, label: 'Home', tooltip: 'Signal Feed' },
     { id: 'opportunities', icon: <TrendingUp className="w-5 h-5" />, label: 'Opportunities', tooltip: 'Detected Opportunities' },
-    { id: 'people', icon: <Users className="w-5 h-5" />, label: 'People', tooltip: 'Founder Network' },
     { id: 'progress', icon: <BarChart className="w-5 h-5" />, label: 'My Progress', tooltip: 'Your Execution' },
     { id: 'intelligence', icon: <Lightbulb className="w-5 h-5" />, label: 'Weekly Intelligence', tooltip: 'AI Insights' },
     { id: 'arcus', icon: <Mail className="w-5 h-5" />, label: 'Arcus', tooltip: 'AI Assistant' },
@@ -33,9 +32,9 @@ export const SiftSidebar: React.FC<SiftSidebarProps> = ({
     <TooltipProvider>
       <div className="fixed left-0 top-0 h-screen w-16 bg-black border-r border-gray-800 flex flex-col items-center py-6 z-30">
         {/* Logo/Brand */}
-        <div className="mb-8">
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">S</span>
+        <div className="mb-8 group cursor-pointer" onClick={() => (window.location.href = '/home-feed')}>
+          <div className="w-8 h-8 bg-black border border-white/10 rounded-lg flex items-center justify-center overflow-hidden transition-all duration-300 group-hover:scale-110 shadow-lg">
+            <img src="/mailient-logo.png" alt="Mailient" className="w-full h-full object-cover scale-110" />
           </div>
         </div>
 
@@ -46,17 +45,15 @@ export const SiftSidebar: React.FC<SiftSidebarProps> = ({
               <TooltipTrigger asChild>
                 <button
                   onClick={() => onNavigate(item.id)}
-                  className={`p-3 rounded-lg transition-all duration-200 ${
-                    activeSection === item.id
-                      ? 'bg-gray-800 text-white border border-gray-600'
-                      : 'text-gray-400 hover:text-white hover:bg-gray-800'
-                  }`}
+                  className={`p-3 rounded-lg transition-all duration-200 ${activeSection === item.id
+                    ? 'bg-gray-800 text-white border border-gray-600'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                    }`}
                   aria-label={item.tooltip}
                 >
                   {React.cloneElement(item.icon, {
-                    className: `w-5 h-5 ${
-                      activeSection === item.id ? 'text-white' : 'text-gray-400 group-hover:text-white'
-                    }`
+                    className: `w-5 h-5 ${activeSection === item.id ? 'text-white' : 'text-gray-400 group-hover:text-white'
+                      }`
                   })}
                 </button>
               </TooltipTrigger>
@@ -67,33 +64,7 @@ export const SiftSidebar: React.FC<SiftSidebarProps> = ({
           ))}
         </nav>
 
-        {/* User Profile */}
-        <div className="mb-6">
-          <Tooltip delayDuration={100}>
-            <TooltipTrigger asChild>
-              <button
-                onClick={() => onNavigate('profile')}
-                className="p-2 rounded-full transition-all duration-200 text-gray-400 hover:text-white hover:bg-gray-800"
-                aria-label="Your Profile"
-              >
-                {userAvatar ? (
-                  <div className="w-8 h-8 rounded-full overflow-hidden border border-gray-600">
-                    <img
-                      src={userAvatar}
-                      alt={userName || 'Your profile'}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ) : (
-                  <User className="w-6 h-6" />
-                )}
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="right" className="bg-gray-900 border-gray-700">
-              <p className="text-white text-sm">{userName || 'Your Profile'}</p>
-            </TooltipContent>
-          </Tooltip>
-        </div>
+
 
         {/* Search/Discovery Trigger */}
         <div className="mb-4">

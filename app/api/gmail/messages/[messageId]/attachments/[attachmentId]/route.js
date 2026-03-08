@@ -1,7 +1,7 @@
-import { GmailService } from '../../../../../../../lib/gmail.ts';
-import { DatabaseService } from '../../../../../../../lib/supabase.js';
-import { auth } from '../../../../../../../lib/auth.js';
-import { decrypt } from '../../../../../../../lib/crypto.js';
+import { GmailService } from '@/lib/gmail.ts';
+import { DatabaseService } from '@/lib/supabase.js';
+import { auth } from '@/lib/auth.js';
+import { decrypt } from '@/lib/crypto.js';
 
 export async function GET(request, { params }) {
   try {

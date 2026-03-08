@@ -18,7 +18,7 @@ export class GmailService {
   // Circuit breaker thresholds
   private readonly MAX_CONSECUTIVE_ERRORS: number = 3;
   private readonly CIRCUIT_BREAKER_TIMEOUT: number = 30000; // 30 seconds
-  private readonly MIN_REQUEST_INTERVAL: number = 1000; // Minimum 1 second between requests
+  private readonly MIN_REQUEST_INTERVAL: number = 100; // Minimum 100ms between requests for better performance
 
   constructor(accessToken: string, refreshToken?: string) {
     this.accessToken = accessToken;
@@ -144,7 +144,7 @@ export class GmailService {
         this.circuitBreakerOpen = false;
         this.circuitBreakerUntil = null;
         this.consecutiveErrors = 0;
-        console.log('🔄 Circuit breaker auto-recovered');
+        console.log('Circuit breaker auto-recovered');
       } else {
         throw new Error(`Circuit breaker is open for ${Math.ceil(timeLeft / 1000)} more seconds`);
       }
@@ -201,16 +201,16 @@ export class GmailService {
 
       // Handle token expiration
       if (response.status === 401) {
-        console.log('DEBUG: Received 401 Unauthorized - Access token expired');
-        console.log('DEBUG: Refresh token available:', !!this.refreshToken);
-        console.log('DEBUG: Current access token length:', this.accessToken?.length || 0);
+        console.log('Received 401 Unauthorized - Access token expired');
+        console.log('Refresh token available:', !!this.refreshToken);
+        console.log('Current access token length:', this.accessToken?.length || 0);
 
         // Try to refresh the token automatically
         if (this.refreshToken) {
           try {
-            console.log('DEBUG: Attempting automatic token refresh...');
+            console.log('Attempting automatic token refresh...');
             const newAccessToken = await this.refreshAccessToken();
-            console.log('DEBUG: Token refresh successful, retrying request...');
+            console.log('Token refresh successful, retrying request...');
 
             // Retry the request with the new token
             const retryResponse = await fetch(url, {
@@ -224,18 +224,20 @@ export class GmailService {
 
             // If retry succeeds, return the response
             if (retryResponse.ok) {
-              console.log('DEBUG: Retry request successful');
+              console.log('Retry request successful');
               return retryResponse.json();
             } else {
-              console.log('DEBUG: Retry request failed with status:', retryResponse.status);
+              console.log('Retry request failed with status:', retryResponse.status);
               throw new Error(`Token refresh succeeded but retry failed: ${retryResponse.status} ${retryResponse.statusText}`);
             }
           } catch (refreshError) {
-            console.error('DEBUG: Token refresh failed:', refreshError);
+            console.error('Token refresh failed:', refreshError);
             throw new Error(`Access token expired and refresh failed: ${refreshError instanceof Error ? refreshError.message : String(refreshError)}`);
           }
         } else {
-          throw new Error('Access token expired and no refresh token available');
+          console.error('Gmail authentication failed: Access token expired and no refresh token available');
+          console.info('User needs to re-authenticate with Google to restore functionality');
+          throw new Error('Google authentication required: Your session has expired. Please sign out and sign back in with Google to restore full functionality.');
         }
       }
 
@@ -249,7 +251,24 @@ export class GmailService {
             throw new Error(`Circuit breaker opened due to ${this.consecutiveErrors} consecutive errors`);
           }
         }
-        throw new Error(`Gmail API error: ${response.status} ${response.statusText}`);
+        let errorBody = '';
+        try {
+          errorBody = await response.text();
+        } catch {
+          errorBody = '';
+        }
+
+        if (
+          response.status === 403 &&
+          /insufficient\s*permissions|insufficient\s*authentication\s*scopes|access\s*not\s*configured/i.test(errorBody)
+        ) {
+          throw new Error(
+            'Google permissions missing for Gmail read access. Please sign out and sign back in to grant Gmail permissions.'
+          );
+        }
+
+        const details = errorBody ? ` - ${errorBody.substring(0, 300)}` : '';
+        throw new Error(`Gmail API error: ${response.status} ${response.statusText}${details}`);
       }
 
       // Reset error count on success
@@ -261,15 +280,23 @@ export class GmailService {
       // If it's a network error, don't count it as a consecutive error
       if (error instanceof Error && (error.message.includes('fetch') || error.message.includes('network'))) {
         console.log('Network error, not counting as consecutive error');
-      } else {
-        throw error;
       }
+      throw error;
     }
   }
 
   /**
-   * Enhanced refresh access token with comprehensive error handling
+   * Enhanced refresh access token with comprehensive error handling and database persistence
    */
+  private userEmail: string = '';
+
+  /**
+   * Set user email for token persistence
+   */
+  public setUserEmail(email: string): void {
+    this.userEmail = email;
+  }
+
   public async refreshAccessToken(): Promise<string> {
     if (!this.refreshToken) {
       throw new Error('No refresh token available - user may need to re-authenticate');
@@ -284,7 +311,8 @@ export class GmailService {
     console.log('📋 Environment check:', {
       hasClientId: !!process.env.GOOGLE_CLIENT_ID,
       hasClientSecret: !!process.env.GOOGLE_CLIENT_SECRET,
-      refreshTokenLength: this.refreshToken.length
+      refreshTokenLength: this.refreshToken.length,
+      userEmail: this.userEmail ? 'set' : 'not set'
     });
 
     try {
@@ -339,6 +367,33 @@ export class GmailService {
 
       this.accessToken = data.access_token;
       console.log('✅ Access token refreshed successfully');
+
+      // **CRITICAL: Persist the new token to the database**
+      if (this.userEmail) {
+        try {
+          console.log('💾 Persisting refreshed token to database for:', this.userEmail);
+
+          // Dynamic import to avoid circular dependency
+          const { DatabaseService } = await import('./supabase.js');
+          const { encrypt } = await import('./crypto.js');
+
+          const db = new DatabaseService();
+          await db.storeUserTokens(this.userEmail, {
+            access_token: encrypt(data.access_token),
+            refresh_token: encrypt(this.refreshToken), // Keep the same refresh token
+            expires_in: data.expires_in || 3600, // Default 1 hour
+            token_type: data.token_type || 'Bearer',
+            scopes: data.scope || ''
+          });
+
+          console.log('✅ Refreshed token persisted to database');
+        } catch (dbError) {
+          console.warn('⚠️ Failed to persist refreshed token to database:', dbError);
+          // Don't throw - token refresh was successful, DB persistence is optional
+        }
+      } else {
+        console.warn('⚠️ User email not set - cannot persist refreshed token to database');
+      }
 
       // Reset error counts on successful refresh
       this.consecutiveErrors = 0;

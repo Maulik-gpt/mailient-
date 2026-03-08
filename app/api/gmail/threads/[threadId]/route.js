@@ -1,7 +1,8 @@
-import { GmailService } from '@/lib/gmail.ts';
+import { GmailService } from '@/lib/gmail';
 import { DatabaseService } from '@/lib/supabase.js';
 import { auth } from '@/lib/auth.js';
 import { decrypt } from '@/lib/crypto.js';
+import { subscriptionService } from '@/lib/subscription-service.js';
 
 export async function GET(request, { params }) {
   try {
@@ -10,6 +11,16 @@ export async function GET(request, { params }) {
 
     if (!session?.user?.email) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // 🔒 SECURITY: Check access before allowing email access
+    const hasAccess = await subscriptionService.checkAccess(session.user.email);
+    if (!hasAccess) {
+      return Response.json({
+        error: 'subscription_required',
+        message: 'Access required.',
+        upgradeUrl: '/pricing'
+      }, { status: 403 });
     }
 
     const db = new DatabaseService();

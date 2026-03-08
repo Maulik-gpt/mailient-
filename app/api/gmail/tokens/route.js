@@ -1,6 +1,6 @@
-import { DatabaseService } from '../../../../lib/supabase.js';
-import { auth } from '../../../../lib/auth.js';
-import { encrypt } from '../../../../lib/crypto.js';
+import { DatabaseService } from '@/lib/supabase.js';
+import { auth } from '@/lib/auth.js';
+import { encrypt } from '@/lib/crypto.js';
 
 export async function POST(request) {
   try {

@@ -1,5 +1,5 @@
-import { GmailService } from '../../../../lib/gmail.ts';
-import { auth } from '../../../../lib/auth.js';
+import { GmailService } from '@/lib/gmail';
+import { auth } from '@/lib/auth.js';
 
 export async function POST(request) {
   try {
@@ -26,6 +26,9 @@ export async function POST(request) {
     }
 
     const gmailService = new GmailService(accessToken, refreshToken);
+    if (session?.user?.email) {
+      gmailService.setUserEmail(session.user.email); // Enable token refresh persistence
+    }
     const result = await gmailService.sendEmail({ to, subject, body, isHtml });
 
     return Response.json(result);

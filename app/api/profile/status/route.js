@@ -1,8 +1,13 @@
 // app/api/profile/status/route.js
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { getSupabaseAdmin } from "@/lib/supabase.js";
 
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+// CRITICAL: Force dynamic rendering to prevent build-time evaluation
+export const dynamic = 'force-dynamic';
+
+const supabase = new Proxy({}, {
+  get: (target, prop) => getSupabaseAdmin()[prop]
+});
 
 // Helper function to get authenticated user
 async function getAuthenticatedUser(request) {

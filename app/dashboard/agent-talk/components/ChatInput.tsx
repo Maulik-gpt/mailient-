@@ -5,7 +5,7 @@ import { ChatInputProps, Email } from '../types/chat';
 import { IntegrationsModal } from '@/components/ui/integrations-modal';
 import { EmailSelectionModal } from '@/components/ui/email-selection-modal';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
-import { Mic } from 'lucide-react';
+import { Mic, Mail, Plus, Send, Mail as EmailIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type RecordingState = 'idle' | 'recording' | 'paused';
@@ -884,97 +884,39 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
 
 
   return (
-    <div className="p-4 bg-[#1a1a1a] rounded-[2rem] min-h-[100px] relative">
-      {/* Recording indicator */}
-      {recordingState === 'recording' && (
-        <div className="absolute top-2 left-4 flex items-center gap-2 text-red-400 text-sm">
-          <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
-        </div>
-      )}
-      {recordingState === 'paused' && (
-        <div className="absolute top-2 left-4 flex items-center gap-2 text-yellow-400 text-sm">
-          <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
-        </div>
-      )}
+    <div className="max-w-4xl mx-auto w-full">
+      <div className="relative group transition-all duration-500">
+        {/* Glow effect on hover */}
+        <div className="absolute -inset-0.5 bg-gradient-to-r from-neutral-800 to-neutral-700 rounded-[2.5rem] blur opacity-10 group-hover:opacity-30 transition duration-1000"></div>
 
-      <div className="flex items-center gap-4 max-w-4xl mx-auto h-full">
-        {/* Left side icons */}
-        <div className="flex items-center gap-3 flex-shrink-0 self-center">
-          <TooltipProvider>
-            <Tooltip delayDuration={100}>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={() => {
-                    console.log('Integrations button clicked');
-                    onModalStateChange?.(true);
-                  }}
-                  className="w-9 h-9 flex items-center justify-center text-white/70 hover:text-white hover:bg-[#2a2a2a] rounded-xl transition-all duration-200 hover:scale-105"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                <p>Integrations</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          <TooltipProvider>
-            <Tooltip delayDuration={100}>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={() => {
-                    console.log('Email attach button clicked');
-                    console.log('Email attach button: calling onEmailModalStateChange');
-                    console.log('onEmailModalStateChange function exists:', !!onEmailModalStateChange);
-                    if (onEmailModalStateChange) {
-                      onEmailModalStateChange(true);
-                      console.log('Email attach button: onEmailModalStateChange called with true');
-                    } else {
-                      console.error('Email attach button: onEmailModalStateChange is undefined!');
-                    }
-                  }}
-                  className="w-9 h-9 flex items-center justify-center text-white/70 hover:text-white hover:bg-[#2a2a2a] rounded-xl transition-all duration-200 hover:scale-105 relative"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                  <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center font-bold">
-                    +
-                  </div>
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                <p>Attach email</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
+        <div className="relative flex flex-col bg-[#0f0f0f] border border-neutral-800/40 rounded-[2.5rem] shadow-2xl backdrop-blur-sm px-7 py-4 focus-within:border-neutral-800/40 focus-within:ring-0 focus-within:outline-none">
+          {/* Recording indicator */}
+          {(recordingState === 'recording' || recordingState === 'paused') && (
+            <div className="absolute -top-3 left-10 px-3 py-1 bg-neutral-900 border border-neutral-800 rounded-full flex items-center gap-2 z-10">
+              <div className={`w-2 h-2 rounded-full ${recordingState === 'recording' ? 'bg-red-500 animate-pulse' : 'bg-yellow-500'}`}></div>
+              <span className="text-[10px] uppercase tracking-widest text-neutral-400 font-medium">
+                {recordingState === 'recording' ? 'Recording' : 'Paused'}
+              </span>
+            </div>
+          )}
 
-        {/* Input area */}
-        <div className="flex-1 relative min-w-0 self-center">
           {/* Selected Emails Display */}
           {selectedEmails.length > 0 && (
-            <div className="mb-3 flex flex-wrap gap-2">
+            <div className="mb-2 flex flex-wrap gap-2 pt-1 font-sans">
               {selectedEmails.map((email) => (
                 <div
                   key={email.id}
-                  className="flex items-center bg-[#2a2a2a] rounded-full px-3 py-2 text-sm border border-white/10"
+                  className="flex items-center bg-neutral-900/80 rounded-full px-3 py-1.5 text-[11px] border border-neutral-800 hover:border-neutral-700 transition-colors group/item"
                 >
-                  <svg className="w-4 h-4 mr-2 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                  <span className="text-white truncate max-w-[200px]" title={email.subject}>
+                  <Mail className="w-3 h-3 mr-2 text-neutral-500" />
+                  <span className="text-neutral-300 truncate max-w-[150px]" title={email.subject}>
                     {email.subject}
                   </span>
-                  <span className="text-white/60 ml-2 mr-2">Email</span>
                   <button
                     onClick={() => removeSelectedEmail(email.id)}
-                    className="text-white/70 hover:text-white transition-colors"
-                    title="Remove email"
+                    className="ml-2 p-0.5 hover:bg-neutral-800 rounded-full text-neutral-600 hover:text-red-400 transition-all"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
@@ -982,115 +924,136 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
               ))}
             </div>
           )}
-          <textarea
-            ref={textareaRef}
-            value={message}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
-            placeholder={placeholderText}
-            disabled={disabled}
-            className={`w-full resize-none bg-transparent text-white placeholder:text-white/60 px-4 py-3 pr-24 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed max-h-32 text-sm leading-relaxed overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent ${recordingState === 'recording' ? 'recording-placeholder' : ''}`}
-            rows={1}
-          />
-        </div>
 
-        {/* Right side icons */}
-        <div className="flex items-center gap-3 flex-shrink-0 self-center">
-           {recordingState !== 'idle' ? (
-             <div className="flex items-center gap-2">
-               <button
-                 onClick={cancelRecording}
-                 className="w-9 h-9 flex items-center justify-center text-white hover:text-white hover:bg-[#2a2a2a] rounded-xl transition-all duration-200 bg-[#dc3545]"
-                 title="Cancel recording (×)"
-               >
-                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                   {/* X icon (×) */}
-                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                 </svg>
-               </button>
-               <button
-                 onClick={() => { setIsTranscribing(true); confirmRecording(); }}
-                 className="w-9 h-9 flex items-center justify-center text-white hover:text-white hover:bg-[#2a2a2a] rounded-xl transition-all duration-200 bg-[#28a745]"
-                 title="Confirm recording (✓)"
-                 disabled={isTranscribing}
-               >
-                 {isTranscribing ? (
-                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                 ) : (
-                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                     {/* Check mark icon (✓) */}
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                   </svg>
-                 )}
-               </button>
-             </div>
-           ) : (
-            <TooltipProvider>
-              <Tooltip delayDuration={100}>
-                <TooltipTrigger asChild>
+          <div className="flex items-end gap-3 min-h-[56px]">
+            {/* Left side icons */}
+            <div className="flex items-center gap-2 mb-1.5 flex-shrink-0">
+              <TooltipProvider>
+                <Tooltip delayDuration={100}>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => onModalStateChange?.(true)}
+                      className="w-10 h-10 flex items-center justify-center text-neutral-500 hover:text-white hover:bg-neutral-800 rounded-full transition-all duration-200 outline-none border-none focus:ring-0 focus:outline-none"
+                    >
+                      <Plus className="w-6 h-6" strokeWidth={1.5} />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <p>Integrations</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <TooltipProvider>
+                <Tooltip delayDuration={100}>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => onEmailModalStateChange?.(true)}
+                      className="w-10 h-10 flex items-center justify-center text-neutral-500 hover:text-white hover:bg-neutral-800 rounded-full transition-all duration-200 relative outline-none border-none focus:ring-0 focus:outline-none"
+                    >
+                      <EmailIcon className="w-5 h-5" strokeWidth={1.5} />
+                      <div className="absolute top-2 right-2 w-2 h-2 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.6)]"></div>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <p>Attach email</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+
+            <div className="flex-1 relative min-w-0 py-3">
+              <textarea
+                ref={textareaRef}
+                value={message}
+                onChange={handleInputChange}
+                onKeyDown={handleKeyDown}
+                placeholder={placeholderText}
+                disabled={disabled}
+                className="w-full resize-none bg-transparent text-white placeholder:text-neutral-600 focus:outline-none focus:ring-0 focus:ring-offset-0 ring-0 focus-visible:ring-0 focus-visible:outline-none border-none p-0 min-h-[28px] max-h-32 text-[16px] leading-relaxed overflow-y-auto scrollbar-none selection:bg-neutral-800 font-sans"
+                rows={1}
+                style={{ outline: 'none', boxShadow: 'none' }}
+              />
+            </div>
+
+            {/* Right side icons */}
+            <div className="flex items-center gap-2 mb-1.5 flex-shrink-0">
+              {recordingState !== 'idle' ? (
+                <div className="flex items-center gap-1">
                   <button
-                    onClick={startRecording}
-                    disabled={disabled}
-                    className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-200 ${
-                      isListening
-                        ? 'text-red-400 hover:text-red-300 bg-[#333333] animate-pulse'
-                        : 'text-white/70 hover:text-white hover:bg-[#2a2a2a] hover:scale-105'
-                    }`}
+                    onClick={cancelRecording}
+                    className="w-8 h-8 flex items-center justify-center text-red-500 hover:bg-red-500/10 rounded-full transition-all outline-none focus:ring-0"
+                    title="Cancel"
                   >
-                      {isListening ? (
-                        <div className="w-4 h-4 rounded-sm animate-spin bg-red-400" style={{ animationDuration: "2s" }} />
-                      ) : (
-                        <Mic className="w-4 h-4" />
-                      )}
-                      
-                      {/* AI Voice Input Visualizer */}
-                      {isListening && (recordingState as RecordingState) === 'recording' && (
-                        <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 h-2 w-16 flex items-center justify-center gap-0.5">
-                          {[...Array(24)].map((_, i) => (
-                            <div
-                              key={i}
-                              className={cn(
-                                "w-0.5 rounded-full transition-all duration-300",
-                                isListening
-                                  ? "bg-red-400/60 animate-pulse"
-                                  : "bg-white/20 h-1"
-                              )}
-                              style={
-                                isListening && typeof window !== 'undefined'
-                                  ? {
-                                      height: `${30 + Math.random() * 70}%`,
-                                      animationDelay: `${i * 0.1}s`,
-                                    }
-                                  : undefined
-                              }
-                            />
-                          ))}
-                        </div>
-                      )}
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                   </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  <p>Dictate</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-          <button
-            onClick={handleSubmit}
-            disabled={!message.trim() || disabled}
-            className={`w-9 h-9 flex items-center justify-center transition-all duration-200 rounded-xl shadow-sm ${
-              message.trim()
-                ? 'bg-white hover:bg-gray-100 text-black'
-                : 'bg-[#22c55e] hover:bg-[#16a34a] text-white'
-            } disabled:bg-[#374151] disabled:cursor-not-allowed`}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-            </svg>
-          </button>
+                  <button
+                    onClick={() => { setIsTranscribing(true); confirmRecording(); }}
+                    className="w-8 h-8 flex items-center justify-center text-green-500 hover:bg-green-500/10 rounded-full transition-all outline-none focus:ring-0"
+                    disabled={isTranscribing}
+                  >
+                    {isTranscribing ? (
+                      <div className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              ) : (
+                <TooltipProvider>
+                  <Tooltip delayDuration={100}>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={startRecording}
+                        disabled={disabled}
+                        className={`w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300 outline-none border-none focus:ring-0 focus:outline-none ${isListening ? 'text-red-500 bg-red-500/10 animate-pulse' : 'text-neutral-500 hover:text-white hover:bg-neutral-800'}`}
+                      >
+                        {isListening ? (
+                          <div className="w-4 h-4 rounded-full bg-red-500" />
+                        ) : (
+                          <Mic className="w-5 h-5" strokeWidth={1.5} />
+                        )}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      <p>Voice Input</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+
+              <button
+                onClick={handleSubmit}
+                disabled={!message.trim() || disabled}
+                className={`w-10 h-10 flex items-center justify-center transition-all duration-300 rounded-full outline-none border-none focus:ring-0 focus:outline-none ${message.trim() ? 'bg-white text-black hover:scale-105 shadow-[0_0_15px_rgba(255,255,255,0.3)]' : 'bg-neutral-800 text-neutral-600 opacity-40'} disabled:cursor-not-allowed`}
+              >
+                <Send className="w-5 h-5" strokeWidth={2} />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
-
+      <style jsx>{`
+        textarea:focus, 
+        textarea:active, 
+        textarea:focus-visible {
+          outline: 1px solid #0f0f0f !important;
+          box-shadow: 0 0 0 1px #0f0f0f !important;
+          border: none !important;
+          background-color: transparent !important;
+          -webkit-appearance: none !important;
+        }
+        
+        textarea {
+          outline: none !important;
+          box-shadow: none !important;
+          border: none !important;
+        }
+      `}</style>
     </div>
   );
 }

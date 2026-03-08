@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
-import { auth } from '../../../../lib/auth';
-import { GmailService } from '../../../../lib/gmail';
-import { AIConfig } from '../../../../lib/ai-config';
-import { decrypt } from '../../../../lib/crypto';
-import { DatabaseService } from '../../../../lib/supabase';
+import { auth } from '@/lib/auth';
+import { GmailService } from '@/lib/gmail';
+import { AIConfig } from '@/lib/ai-config';
+import { decrypt } from '@/lib/crypto';
+import { DatabaseService } from '@/lib/supabase';
+import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service';
+import { AIPolicyCompliance } from '@/lib/ai-policy-compliance';
 
 export async function POST(request) {
     try {
@@ -12,7 +14,24 @@ export async function POST(request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { emailId } = await request.json();
+        const userId = session.user.email;
+
+        // Check subscription and feature usage for email summary (20/day for Starter)
+        const canUse = await subscriptionService.canUseFeature(userId, FEATURE_TYPES.EMAIL_SUMMARY);
+        if (!canUse) {
+            const usage = await subscriptionService.getFeatureUsage(userId, FEATURE_TYPES.EMAIL_SUMMARY);
+            return NextResponse.json({
+                error: 'limit_reached',
+                message: `Sorry, but you've exhausted all the credits of ${usage.period === 'daily' ? 'the day' : 'the month'}.`,
+                usage: usage.usage,
+                limit: usage.limit,
+                period: usage.period,
+                planType: usage.planType,
+                upgradeUrl: '/pricing'
+            }, { status: 403 });
+        }
+
+        const { emailId, context } = await request.json();
         if (!emailId) {
             return NextResponse.json({ error: 'Email ID required' }, { status: 400 });
         }
@@ -21,13 +40,29 @@ export async function POST(request) {
         let accessToken = session?.accessToken;
         let refreshToken = session?.refreshToken;
 
-        if (!accessToken) {
-            // Fallback to DB
-            const db = new DatabaseService();
-            const userTokens = await db.getUserTokens(session.user.email);
-            if (userTokens?.encrypted_access_token) {
-                accessToken = decrypt(userTokens.encrypted_access_token);
-                refreshToken = userTokens.encrypted_refresh_token ? decrypt(userTokens.encrypted_refresh_token) : '';
+        const db = new DatabaseService();
+        let privacyMode = false;
+        try {
+            const profile = await db.getUserProfile(session.user.email);
+            if (profile?.preferences?.ai_privacy_mode === 'enabled') {
+                privacyMode = true;
+            }
+        } catch (e) {
+            console.warn('Privacy check error:', e);
+        }
+
+        // CRITICAL: Fetch tokens from database if EITHER accessToken OR refreshToken is missing
+        if (!accessToken || !refreshToken) {
+            try {
+                console.log('🔑 Fetching tokens from database for:', session.user.email);
+                const userTokens = await db.getUserTokens(session.user.email);
+                if (userTokens?.encrypted_access_token) {
+                    accessToken = accessToken || decrypt(userTokens.encrypted_access_token);
+                    refreshToken = refreshToken || (userTokens.encrypted_refresh_token ? decrypt(userTokens.encrypted_refresh_token) : '');
+                    console.log('✅ Tokens retrieved from database');
+                }
+            } catch (e) {
+                console.error('Failed to fetch tokens from database:', e);
             }
         }
 
@@ -36,6 +71,7 @@ export async function POST(request) {
         }
 
         const gmailService = new GmailService(accessToken, refreshToken);
+        gmailService.setUserEmail(session.user.email); // Enable token refresh persistence
 
         // Fetch email content
         const emailDetails = await gmailService.getEmailDetails(emailId);
@@ -59,14 +95,25 @@ export async function POST(request) {
       Body: ${truncatedBody}
     `;
 
-        // Generate Summary
-        const aiConfig = new AIConfig();
+        // Check Google data policy compliance
+        const compliance = new AIPolicyCompliance();
+        const complianceConfig = compliance.getAIConfig();
+        
+        console.log(`🔒 Compliance mode: ${compliance.isComplianceMode ? 'ENABLED' : 'DISABLED'}`);
 
-        let summary = "";
-        if (aiConfig.hasAIConfigured()) {
-            summary = await aiConfig.generateEmailSummary(emailContent);
-        } else {
-            summary = "AI service not configured.";
+        // Generate Summary
+        const aiService = new AIConfig();
+
+        if (!aiService.hasAIConfigured()) {
+            console.error('❌ AI service not configured');
+            return NextResponse.json({ error: 'AI service not configured - Please check OPENROUTER_API_KEY' }, { status: 500 });
+        }
+
+        console.log('🤖 Generating email summary with AI...');
+        const summary = await aiService.generateEmailSummary(emailContent, complianceConfig.privacyMode, context);
+
+        if (typeof summary === 'string' && summary.trim().length > 0) {
+            await subscriptionService.incrementFeatureUsage(userId, FEATURE_TYPES.EMAIL_SUMMARY);
         }
 
         return NextResponse.json({ summary });

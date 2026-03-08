@@ -2,20 +2,18 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { 
-  ArrowLeft, 
-  Mail, 
-  Bell, 
-  User, 
-  MoreHorizontal, 
+import {
+  ArrowLeft,
+  Mail,
+  Bell,
+  User,
+  MoreHorizontal,
   Calendar,
   MapPin,
   Link as LinkIcon,
   Check
 } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
-import { NotificationIcon } from '@/components/ui/notification-icon';
-import { addNotification } from '@/lib/notifications';
 import { Feed } from '@/components/ui/feed';
 
 interface ProfileUser {
@@ -43,7 +41,7 @@ export default function AetherProfilePage() {
 
   useEffect(() => {
     document.title = `@${userId} / Mailient`;
-    
+
     // Load following state
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('mailient_following');
@@ -61,16 +59,16 @@ export default function AetherProfilePage() {
     // TODO: Replace with actual API call
     const mockProfile: ProfileUser = {
       id: userId,
-      name: userId === 'rrhoover' ? 'Ryan Hoover' : 
-            userId === 'imbktan' ? 'Jacky' :
-            userId === 'yongfook' ? 'Jon Yongfook' :
+      name: userId === 'rrhoover' ? 'Ryan Hoover' :
+        userId === 'imbktan' ? 'Jacky' :
+          userId === 'yongfook' ? 'Jon Yongfook' :
             userId === 'damengchen' ? 'Damon Chen' :
-            userId === 'dannypostmaa' ? 'Danny Postma' :
-            'User Name',
+              userId === 'dannypostmaa' ? 'Danny Postma' :
+                'User Name',
       username: userId,
       avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userId}`,
-      bio: userId === 'damengchen' ? 'Founder of Testimonial.to and PDF.ai' : 
-           'Building the future of email communication and relationship intelligence.',
+      bio: userId === 'damengchen' ? 'Founder of Testimonial.to and PDF.ai' :
+        'Building the future of email communication and relationship intelligence.',
       location: 'San Francisco, CA',
       website: 'https://example.com',
       isVerified: ['rrhoover', 'imbktan', 'yongfook', 'damengchen', 'dannypostmaa'].includes(userId),
@@ -127,30 +125,8 @@ export default function AetherProfilePage() {
 
       if (wasFollowing) {
         followingSet.delete(userId);
-        addNotification({
-          type: 'follow',
-          user: {
-            name: profile.name,
-            username: profile.username,
-            avatar: profile.avatar,
-            verified: profile.isVerified,
-          },
-          content: `You have unfollowed ${profile.name}`,
-          timestamp: 'just now',
-        });
       } else {
         followingSet.add(userId);
-        addNotification({
-          type: 'follow',
-          user: {
-            name: profile.name,
-            username: profile.username,
-            avatar: profile.avatar,
-            verified: profile.isVerified,
-          },
-          content: `You have successfully followed ${profile.name}`,
-          timestamp: 'just now',
-        });
       }
 
       localStorage.setItem('mailient_following', JSON.stringify(Array.from(followingSet)));
@@ -188,35 +164,7 @@ export default function AetherProfilePage() {
               </TooltipContent>
             </Tooltip>
 
-            <Tooltip delayDuration={100}>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={() => router.push('/notifications')}
-                  className="p-2 hover:bg-[#1a1a1a] rounded-full transition-all duration-300 hover:scale-105"
-                  aria-label="Notifications"
-                >
-                  <NotificationIcon iconClassName="w-6 h-6 text-[#fcfcfc]" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                <p>Notifications</p>
-              </TooltipContent>
-            </Tooltip>
 
-            <Tooltip delayDuration={100}>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={() => router.push('/dashboard/profile-bubble')}
-                  className="p-2 hover:bg-[#1a1a1a] rounded-full transition-all duration-300 hover:scale-105"
-                  aria-label="Profile"
-                >
-                  <User className="w-6 h-6 text-[#fcfcfc]" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                <p>Profile</p>
-              </TooltipContent>
-            </Tooltip>
           </div>
         </div>
 
@@ -254,28 +202,27 @@ export default function AetherProfilePage() {
                 </div>
                 <button
                   onClick={handleFollow}
-                  className={`px-6 py-2.5 rounded-full font-bold text-[15px] transition-all duration-200 relative overflow-hidden group mt-4 ${
-                    following
-                      ? ''
-                      : 'hover:bg-[#e6e6e6]'
-                  }`}
-                  style={following 
-                    ? { 
-                        backgroundColor: '#2b2b2b', 
-                        color: '#fafafa',
-                        border: '1px solid #474747'
-                      }
-                    : { 
-                        backgroundColor: '#fafafa', 
-                        color: '#000'
-                      }
+                  className={`px-6 py-2.5 rounded-full font-bold text-[15px] transition-all duration-200 relative overflow-hidden group mt-4 ${following
+                    ? ''
+                    : 'hover:bg-[#e6e6e6]'
+                    }`}
+                  style={following
+                    ? {
+                      backgroundColor: '#2b2b2b',
+                      color: '#fafafa',
+                      border: '1px solid #474747'
+                    }
+                    : {
+                      backgroundColor: '#fafafa',
+                      color: '#000'
+                    }
                   }
                 >
                   <span className={`transition-opacity duration-200 ${following ? 'group-hover:opacity-0' : ''}`}>
                     {following ? 'Following' : 'Follow'}
                   </span>
                   {following && (
-                    <span 
+                    <span
                       className="absolute inset-0 flex items-center justify-center transition-opacity duration-200 opacity-0 group-hover:opacity-100"
                       style={{ backgroundColor: '#fafafa', color: '#000' }}
                     >
@@ -314,9 +261,9 @@ export default function AetherProfilePage() {
                 {profile.website && (
                   <div className="flex items-center gap-1">
                     <LinkIcon className="w-4 h-4" />
-                    <a 
-                      href={profile.website} 
-                      target="_blank" 
+                    <a
+                      href={profile.website}
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="text-[#1d9bf0] hover:underline"
                     >

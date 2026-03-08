@@ -1,320 +1,397 @@
 "use client";
 
-import { useState } from "react";
-import { useCharacterLimit } from "@/components/hooks/use-character-limit";
-import { useImageUpload } from "@/components/hooks/use-image-upload";
-import { Button } from "@/components/ui/button";
+import * as React from "react";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Check, ImagePlus, X } from "lucide-react";
-import { useId } from "react";
+import { cn } from "@/lib/utils";
+import { Pencil, Camera, ArrowLeft, X, Linkedin, Instagram, Github, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
-interface EditProfileDialogProps {
-  trigger?: React.ReactNode;
-  user?: {
-    name?: string;
-    email?: string;
-  };
+const BIO_MAX = 120;
+const SOCIAL_PREFIXES: Record<string, string> = {
+  x: "x.com/",
+  linkedin: "linkedin.com/in/",
+  instagram: "instagram.com/",
+  github: "github.com/",
+};
+
+export type EditProfileFormData = {
+  name: string;
+  username: string;
+  bio: string;
+  location: string;
+  website: string;
+  avatar_url: string;
+  banner_url: string;
+  social_x: string;
+  social_linkedin: string;
+  social_instagram: string;
+  social_github: string;
+};
+
+type EditProfileDialogProps = {
+  trigger: React.ReactNode;
+  user?: { name?: string | null; email?: string | null };
   profile?: {
-    avatar_url?: string;
-    bio?: string;
-    location?: string;
-    website?: string;
+    name?: string | null;
+    avatar_url?: string | null;
+    banner_url?: string | null;
+    bio?: string | null;
+    location?: string | null;
+    website?: string | null;
+    username?: string | null;
+    preferences?: {
+      username?: string;
+      social_links?: { x?: string; linkedin?: string; instagram?: string; github?: string };
+    };
   };
-  onSave?: (data: {
-    name: string;
-    bio: string;
-    location: string;
-    website: string;
-    avatar_url?: string;
-    banner_url?: string;
-  }) => Promise<void>;
-}
+  onSave?: (data: EditProfileFormData) => void | Promise<void>;
+};
 
-function EditProfileDialog({
+export function EditProfileDialog({
   trigger,
   user,
   profile,
-  onSave
+  onSave,
 }: EditProfileDialogProps) {
-  const id = useId();
-  const maxLength = 180;
+  const [open, setOpen] = React.useState(false);
+  const [saving, setSaving] = React.useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = React.useState(false);
+  const [uploadingBanner, setUploadingBanner] = React.useState(false);
+  const avatarInputRef = React.useRef<HTMLInputElement>(null);
+  const bannerInputRef = React.useRef<HTMLInputElement>(null);
 
-  const {
-    value: bioValue,
-    characterCount,
-    handleChange: handleBioChange,
-    maxLength: limit,
-  } = useCharacterLimit({
-    maxLength,
-    initialValue: profile?.bio || "",
+  const [form, setForm] = React.useState<EditProfileFormData>({
+    name: profile?.name || user?.name || "",
+    username: profile?.preferences?.username ?? profile?.username ?? (user?.email?.split("@")[0] ?? ""),
+    bio: profile?.bio ?? "",
+    location: profile?.location ?? "",
+    website: profile?.website ?? "",
+    avatar_url: profile?.avatar_url ?? "",
+    banner_url: profile?.banner_url ?? "",
+    social_x: profile?.preferences?.social_links?.x ?? "",
+    social_linkedin: profile?.preferences?.social_links?.linkedin ?? "",
+    social_instagram: profile?.preferences?.social_links?.instagram ?? "",
+    social_github: profile?.preferences?.social_links?.github ?? "",
   });
 
-  // Image upload hooks
-  const avatarUpload = useImageUpload();
-  const bannerUpload = useImageUpload();
+  React.useEffect(() => {
+    if (open) {
+      setForm({
+        name: profile?.name || user?.name || "",
+        username: profile?.preferences?.username ?? profile?.username ?? (user?.email?.split("@")[0] ?? ""),
+        bio: profile?.bio ?? "",
+        location: profile?.location ?? "",
+        website: profile?.website ?? "",
+        avatar_url: profile?.avatar_url ?? "",
+        banner_url: profile?.banner_url ?? "",
+        social_x: profile?.preferences?.social_links?.x ?? "",
+        social_linkedin: profile?.preferences?.social_links?.linkedin ?? "",
+        social_instagram: profile?.preferences?.social_links?.instagram ?? "",
+        social_github: profile?.preferences?.social_links?.github ?? "",
+      });
+    }
+  }, [open, user?.name, user?.email, profile]);
 
-  const [formData, setFormData] = useState({
-    firstName: user?.name?.split(' ')[0] || '',
-    lastName: user?.name?.split(' ').slice(1).join(' ') || '',
-    username: '',
-    website: profile?.website || '',
-    bio: bioValue,
-    location: profile?.location || ''
-  });
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'banner') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Set loading state
+    if (type === 'avatar') {
+      setUploadingAvatar(true);
+    } else {
+      setUploadingBanner(true);
+    }
+
+    try {
+      const formData = new FormData();
+      // Append file with the correct key name that the API expects
+      formData.append(type, file);
+
+      const res = await fetch('/api/profile/avatar', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Upload failed');
+      }
+
+      // Update form state with the returned URL
+      if (type === 'avatar') {
+        setForm(prev => ({ ...prev, avatar_url: data.url }));
+      } else {
+        setForm(prev => ({ ...prev, banner_url: data.url }));
+      }
+      toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} uploaded successfully`);
+    } catch (err: any) {
+      console.error('Upload error:', err);
+      toast.error(err.message || `Failed to upload ${type}`);
+    } finally {
+      // Reset loading state
+      if (type === 'avatar') {
+        setUploadingAvatar(false);
+      } else {
+        setUploadingBanner(false);
+      }
+      // Reset the input so the same file can be selected again
+      e.target.value = '';
+    }
+  };
+
+  const currentAvatarUrl = form.avatar_url || (user as { image?: string })?.image;
 
   const handleSave = async () => {
-    if (onSave) {
-      // Prepare image URLs
-      const avatarUrl = avatarUpload.previewUrl || profile?.avatar_url;
-      const bannerUrl = bannerUpload.previewUrl; // Banner is optional, only save if uploaded
-
-      const saveData: any = {
-        name: `${formData.firstName} ${formData.lastName}`.trim(),
-        bio: bioValue,
-        location: formData.location,
-        website: formData.website
-      };
-
-      if (avatarUrl) saveData.avatar_url = avatarUrl;
-      if (bannerUrl) saveData.banner_url = bannerUrl;
-
-      await onSave(saveData);
+    if (!onSave) return;
+    setSaving(true);
+    try {
+      await onSave(form);
+      setOpen(false);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save changes");
+    } finally {
+      setSaving(false);
     }
   };
 
   return (
-    <Dialog>
-      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent className="flex flex-col gap-0 overflow-y-visible p-0 sm:max-w-lg [&>button:last-child]:top-3.5 bg-black/95 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/50">
-        <DialogHeader className="contents space-y-0 text-left">
-          <DialogTitle className="border-b border-white/10 px-6 py-4 text-base text-white bg-black/95">
-            Edit profile
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      <DialogContent
+        className={cn(
+          "max-w-2xl w-full p-0 gap-0 overflow-hidden border-none bg-black text-neutral-200",
+          "shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)]",
+          "flex flex-col max-h-[90vh]"
+        )}
+      >
+        <DialogHeader className="flex flex-row items-center gap-4 px-6 py-4 border-b border-white/10 shrink-0">
+          <button
+            onClick={() => setOpen(false)}
+            className="w-10 h-10 rounded-full flex items-center justify-center border border-white/10 hover:bg-white/5 transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5 text-neutral-400" />
+          </button>
+          <DialogTitle className="text-xl font-bold text-neutral-100">
+            Edit Profile
           </DialogTitle>
         </DialogHeader>
-        <DialogDescription className="sr-only">
-          Make changes to your profile here. You can change your photo and set a username.
-        </DialogDescription>
-        <div className="overflow-y-auto">
-          <ProfileBg defaultImage="https://originui.com/profile-bg.jpg" />
-          <Avatar defaultImage={profile?.avatar_url || "https://originui.com/avatar-72-01.jpg"} />
-          <div className="px-6 pb-6 pt-4">
-            <form className="space-y-4">
-              <div className="flex flex-col gap-4 sm:flex-row">
-                <div className="flex-1 space-y-2">
-                  <Label htmlFor={`${id}-first-name`}>First name</Label>
-                  <Input
-                    id={`${id}-first-name`}
-                    placeholder="Enter your first name"
-                    value={formData.firstName}
-                    onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
-                    type="text"
-                    required
+
+        <div className="px-6 py-6 space-y-8 flex-1 overflow-y-auto custom-scrollbar">
+          {/* Photos section */}
+          <div className="space-y-6">
+            <div className="flex flex-col gap-4">
+              <Label className="text-neutral-400 text-sm font-medium">Profile & Banner</Label>
+              <div className="flex items-start gap-8">
+                {/* Profile Photo */}
+                <div className="relative group">
+                  <div className="w-24 h-24 squircle bg-neutral-900 border-2 border-white/10 relative">
+                    {uploadingAvatar ? (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                        <Loader2 className="w-6 h-6 animate-spin text-white" />
+                      </div>
+                    ) : currentAvatarUrl ? (
+                      <img
+                        src={currentAvatarUrl}
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-neutral-600 text-3xl font-medium">
+                        {(user?.name ?? "U").slice(0, 1).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => avatarInputRef.current?.click()}
+                    className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-black border border-white/20 flex items-center justify-center hover:bg-neutral-900 transition-colors shadow-lg"
+                    aria-label="Change avatar"
+                  >
+                    <Camera className="w-4 h-4 text-neutral-300" />
+                  </button>
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={(e) => handleFileUpload(e, 'avatar')}
                   />
+                  <div className="mt-2 text-center">
+                    <p className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold">Photo</p>
+                  </div>
                 </div>
-                <div className="flex-1 space-y-2">
-                  <Label htmlFor={`${id}-last-name`}>Last name</Label>
-                  <Input
-                    id={`${id}-last-name`}
-                    placeholder="Enter your last name"
-                    value={formData.lastName}
-                    onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
-                    type="text"
-                    required
+
+                {/* Banner Photo */}
+                <div className="flex-1">
+                  <div
+                    className="relative h-24 rounded-2xl bg-neutral-900 border-2 border-white/10 overflow-hidden cursor-pointer hover:border-white/20 transition-all"
+                    onClick={() => bannerInputRef.current?.click()}
+                  >
+                    {uploadingBanner ? (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                        <Loader2 className="w-6 h-6 animate-spin text-white" />
+                      </div>
+                    ) : form.banner_url ? (
+                      <img
+                        src={form.banner_url}
+                        alt="Banner"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center gap-2 text-neutral-500 group">
+                        <Camera className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                        <span className="text-sm font-medium">Add Banner</span>
+                      </div>
+                    )}
+                  </div>
+                  <input
+                    ref={bannerInputRef}
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={(e) => handleFileUpload(e, 'banner')}
                   />
+                  <p className="mt-2 text-xs text-neutral-500">
+                    Recommended size: 1500x500px. JPG, PNG or WebP.
+                  </p>
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor={`${id}-username`}>Username</Label>
-                <div className="relative">
-                  <Input
-                    id={`${id}-username`}
-                    className="peer pe-9"
-                    placeholder="Choose a username"
-                    value={formData.username}
-                    onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
-                    type="text"
-                    required
-                  />
-                  <div className="pointer-events-none absolute inset-y-0 end-0 flex items-center justify-center pe-3 text-muted-foreground/80 peer-disabled:opacity-50">
-                    <Check
-                      size={16}
-                      strokeWidth={2}
-                      className="text-emerald-500"
-                      aria-hidden="true"
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label className="text-neutral-400 text-sm">Full name <span className="text-red-500">*</span></Label>
+              <Input
+                value={form.name}
+                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                className="bg-neutral-950 border-white/10 h-12 rounded-2xl focus:border-white/20 focus:ring-0 text-neutral-100 placeholder:text-neutral-700"
+                placeholder="Your full name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-neutral-400 text-sm">Username <span className="text-red-500">*</span></Label>
+              <Input
+                value={form.username}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, username: e.target.value.replace(/^@/, "") }))
+                }
+                className="bg-neutral-950 border-white/10 h-12 rounded-2xl focus:border-white/20 focus:ring-0 text-neutral-100 placeholder:text-neutral-700"
+                placeholder="@username"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <Label className="text-neutral-400 text-sm">Brief bio</Label>
+              <span className="text-[10px] font-mono text-neutral-600">
+                {form.bio.length}/{BIO_MAX}
+              </span>
+            </div>
+            <textarea
+              value={form.bio}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, bio: e.target.value.slice(0, BIO_MAX) }))
+              }
+              maxLength={BIO_MAX}
+              rows={3}
+              className="w-full rounded-2xl bg-neutral-950 border border-white/10 p-4 text-sm resize-none focus:outline-none focus:border-white/20 text-neutral-200 placeholder:text-neutral-700"
+              placeholder="Tell us about yourself..."
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label className="text-neutral-400 text-sm">Location</Label>
+              <Input
+                value={form.location}
+                onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
+                className="bg-neutral-950 border-white/10 h-12 rounded-2xl focus:border-white/20 focus:ring-0 text-neutral-100 placeholder:text-neutral-700"
+                placeholder="City, Country"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-neutral-400 text-sm">Website</Label>
+              <Input
+                value={form.website}
+                onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))}
+                className="bg-neutral-950 border-white/10 h-12 rounded-2xl focus:border-white/20 focus:ring-0 text-neutral-100 placeholder:text-neutral-700"
+                placeholder="https://yourwebsite.com"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-4 pt-4 border-t border-white/5">
+            <p className="text-xs text-neutral-500 font-medium tracking-tight">
+              Social Links <span className="text-neutral-600">(enter usernames only)</span>
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { key: "social_x", label: "X (Twitter)", prefix: "x.com/", icon: <X className="w-4 h-4" /> },
+                { key: "social_linkedin", label: "LinkedIn", prefix: "linkedin.com/in/", icon: <Linkedin className="w-4 h-4" /> },
+                { key: "social_instagram", label: "Instagram", prefix: "instagram.com/", icon: <Instagram className="w-4 h-4" /> },
+                { key: "social_github", label: "GitHub", prefix: "github.com/", icon: <Github className="w-4 h-4" /> },
+              ].map(({ key, label, prefix, icon }) => (
+                <div key={key} className="space-y-2">
+                  <Label className="text-neutral-400 text-xs flex items-center gap-2">
+                    <span className="text-neutral-500">{icon}</span>
+                    {label}
+                  </Label>
+                  <div className="flex items-center gap-0 rounded-xl overflow-hidden border border-white/10 bg-neutral-950 focus-within:border-white/20">
+                    <span className="text-[11px] font-mono text-neutral-600 bg-neutral-900 px-3 py-3 border-r border-white/10 whitespace-nowrap">
+                      {prefix}
+                    </span>
+                    <Input
+                      value={form[key as keyof EditProfileFormData] as string}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, [key]: e.target.value }))
+                      }
+                      className="bg-transparent border-0 h-10 focus:ring-0 text-neutral-200 text-sm flex-1 min-w-0"
+                      placeholder="username"
                     />
                   </div>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor={`${id}-website`}>Website</Label>
-                <div className="flex rounded-lg shadow-sm shadow-black/5">
-                  <span className="-z-10 inline-flex items-center rounded-s-lg border border-white/20 bg-black/50 px-3 text-sm text-white">
-                    https://
-                  </span>
-                  <Input
-                    id={`${id}-website`}
-                    className="-ms-px rounded-s-none shadow-none"
-                    placeholder="yourwebsite.com"
-                    value={formData.website}
-                    onChange={(e) => setFormData(prev => ({ ...prev, website: e.target.value }))}
-                    type="text"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor={`${id}-location`}>Location</Label>
-                <Input
-                  id={`${id}-location`}
-                  placeholder="e.g., San Francisco, CA"
-                  value={formData.location}
-                  onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                  type="text"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor={`${id}-bio`}>Biography</Label>
-                <Textarea
-                  id={`${id}-bio`}
-                  placeholder="Tell us about yourself, your interests, and what makes you unique..."
-                  value={bioValue}
-                  maxLength={maxLength}
-                  onChange={handleBioChange}
-                  aria-describedby={`${id}-description`}
-                />
-                <p
-                  id={`${id}-description`}
-                  className="mt-2 text-right text-xs text-white/70"
-                  role="status"
-                  aria-live="polite"
-                >
-                  <span className="tabular-nums">{limit - characterCount}</span> characters left
-                </p>
-              </div>
-            </form>
+              ))}
+            </div>
           </div>
         </div>
-        <DialogFooter className="border-t border-white/10 px-6 py-4">
-          <DialogClose asChild>
-            <Button type="button" variant="outline" className="border-white/20 text-white hover:bg-white/10">
-              Cancel
-            </Button>
-          </DialogClose>
-          <DialogClose asChild>
-            <Button type="button" onClick={handleSave} className="bg-white text-black hover:bg-white/90">
-              Save changes
-            </Button>
-          </DialogClose>
-        </DialogFooter>
+
+        <div className="flex justify-end gap-3 px-6 py-5 border-t border-white/10 bg-neutral-950/50 shrink-0">
+          <Button
+            type="button"
+            variant="outline"
+            className="rounded-full px-8 h-12 border-white/10 hover:bg-white/5 text-neutral-300"
+            onClick={() => setOpen(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            disabled={saving || !form.name.trim() || !form.username.trim()}
+            className="rounded-full px-8 h-12 bg-white text-black hover:bg-neutral-200 transition-all font-bold"
+            onClick={handleSave}
+          >
+            {saving ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Saving...
+              </>
+            ) : "Save Changes"}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
 }
-
-function ProfileBg({ defaultImage }: { defaultImage?: string }) {
-  const [hideDefault, setHideDefault] = useState(false);
-  const { previewUrl, fileInputRef, handleThumbnailClick, handleFileChange, handleRemove } =
-    useImageUpload();
-
-  const currentImage = previewUrl || (!hideDefault ? defaultImage : null);
-
-  const handleImageRemove = () => {
-    handleRemove();
-    setHideDefault(true);
-  };
-
-  return (
-    <div className="h-32">
-      <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-muted">
-        {currentImage && (
-          <img
-            className="h-full w-full object-cover"
-            src={currentImage}
-            alt={previewUrl ? "Preview of uploaded image" : "Default profile background"}
-            width={512}
-            height={96}
-          />
-        )}
-        <div className="absolute inset-0 flex items-center justify-center gap-2">
-          <button
-            type="button"
-            className="z-50 flex size-10 cursor-pointer items-center justify-center rounded-full bg-black/60 text-white outline-offset-2 transition-colors hover:bg-black/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring/70"
-            onClick={handleThumbnailClick}
-            aria-label={currentImage ? "Change image" : "Upload image"}
-          >
-            <ImagePlus size={16} strokeWidth={2} aria-hidden="true" />
-          </button>
-          {currentImage && (
-            <button
-              type="button"
-              className="z-50 flex size-10 cursor-pointer items-center justify-center rounded-full bg-black/60 text-white outline-offset-2 transition-colors hover:bg-black/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring/70"
-              onClick={handleImageRemove}
-              aria-label="Remove image"
-            >
-              <X size={16} strokeWidth={2} aria-hidden="true" />
-            </button>
-          )}
-        </div>
-      </div>
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleFileChange}
-        className="hidden"
-        accept="image/*"
-        aria-label="Upload banner image"
-      />
-    </div>
-  );
-}
-
-function Avatar({ defaultImage }: { defaultImage?: string }) {
-  const { previewUrl, fileInputRef, handleThumbnailClick, handleFileChange } = useImageUpload();
-
-  const currentImage = previewUrl || defaultImage;
-
-  return (
-    <div className="-mt-10 px-6">
-      <div className="relative flex size-20 items-center justify-center overflow-hidden rounded-full border-4 border-background bg-muted shadow-sm shadow-black/10">
-        {currentImage && (
-          <img
-            src={currentImage}
-            className="h-full w-full object-cover"
-            width={80}
-            height={80}
-            alt="Profile image"
-          />
-        )}
-        <button
-          type="button"
-          className="absolute flex size-8 cursor-pointer items-center justify-center rounded-full bg-black/60 text-white outline-offset-2 transition-colors hover:bg-black/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring/70"
-          onClick={handleThumbnailClick}
-          aria-label="Change profile picture"
-        >
-          <ImagePlus size={16} strokeWidth={2} aria-hidden="true" />
-        </button>
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileChange}
-          className="hidden"
-          accept="image/*"
-          aria-label="Upload profile picture"
-        />
-      </div>
-    </div>
-  );
-}
-
-export { EditProfileDialog };

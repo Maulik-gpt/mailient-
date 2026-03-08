@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
-import { auth } from '../../../../lib/auth.js';
-import { DatabaseService } from '../../../../lib/supabase.js';
-import { decrypt } from '../../../../lib/crypto.js';
-import { GmailService } from '../../../../lib/gmail.js';
-import { AIConfig } from '../../../../lib/ai-config.js';
+
+// CRITICAL: Force dynamic rendering to prevent build-time evaluation
+export const dynamic = 'force-dynamic';
+import { auth } from '@/lib/auth.js';
+import { DatabaseService } from '@/lib/supabase.js';
+import { decrypt } from '@/lib/crypto.js';
+import { GmailService } from '@/lib/gmail.js';
+import { AIConfig } from '@/lib/ai-config.js';
+import { subscriptionService } from '@/lib/subscription-service.js';
 
 /**
  * Bulk Email Processing API - Process exactly 50 emails at once
@@ -21,6 +25,28 @@ export async function POST(request) {
     }
 
     const userEmail = session.user.email;
+
+    // 🔒 SECURITY: Check access status
+    const hasAccess = await subscriptionService.checkAccess(userEmail);
+    if (!hasAccess) {
+      return Response.json({
+        error: 'subscription_required',
+        message: 'Access required.',
+        upgradeUrl: '/pricing'
+      }, { status: 403 });
+    }
+
+    const planType = await subscriptionService.getUserPlanType(userEmail);
+    if (planType !== 'pro') {
+      return NextResponse.json({
+        success: false,
+        error: 'pro_required',
+        message: 'This feature is available on the Pro plan.',
+        planType,
+        upgradeUrl: '/pricing'
+      }, { status: 403 });
+    }
+
     console.log(`🚀 BULK EMAIL PROCESS: Starting bulk processing for: ${userEmail}`);
 
     // Get Gmail access token
@@ -53,7 +79,7 @@ export async function POST(request) {
     const gmailService = new GmailService(accessToken, refreshToken || '');
 
     // Start bulk processing of exactly 50 emails
-    const bulkResults = await processBulkEmails(gmailService, userEmail);
+    const bulkResults = await processBulkEmails(gmailService, userEmail, privacyMode);
 
     // Transform results into home-feed format
     const homeFeedResults = transformBulkResultsToHomeFeed(bulkResults);
@@ -86,12 +112,12 @@ export async function POST(request) {
 /**
  * Process exactly 50 emails with AI analysis
  */
-async function processBulkEmails(gmailService, userEmail) {
+async function processBulkEmails(gmailService, userEmail, privacyMode = false) {
   const startTime = Date.now();
-  
+
   try {
     console.log('📧 BULK PROCESS: Fetching 50 emails for analysis...');
-    
+
     // Fetch exactly 50 emails with diverse criteria
     const [recentEmails, unreadEmails, importantEmails, allRecent] = await Promise.all([
       gmailService.getEmails(15, 'newer_than:7d'),
@@ -107,7 +133,7 @@ async function processBulkEmails(gmailService, userEmail) {
       ...(importantEmails.messages || []),
       ...(allRecent.messages || [])
     ];
-    
+
     const uniqueMessages = [...new Set(allMessages.map(m => m.id))]
       .map(id => allMessages.find(m => m.id === id))
       .slice(0, 50); // Ensure exactly 50 emails
@@ -117,7 +143,7 @@ async function processBulkEmails(gmailService, userEmail) {
     // Get detailed email content for all emails
     const emailDetails = [];
     const batchSize = 10; // Process 10 emails at a time
-    
+
     for (let i = 0; i < uniqueMessages.length; i += batchSize) {
       const batch = uniqueMessages.slice(i, i + batchSize);
       console.log(`📧 BULK PROCESS: Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(uniqueMessages.length / batchSize)}`);
@@ -144,10 +170,10 @@ async function processBulkEmails(gmailService, userEmail) {
     console.log(`📧 BULK PROCESS: Successfully processed ${emailDetails.length} emails`);
 
     // Use AI to analyze all emails and categorize them
-    const categorizedResults = await analyzeEmailsWithAI(emailDetails, userEmail);
+    const categorizedResults = await analyzeEmailsWithAI(emailDetails, userEmail, privacyMode);
 
     const processingTime = Date.now() - startTime;
-    
+
     return {
       totalProcessed: emailDetails.length,
       categories: categorizedResults,
@@ -164,10 +190,10 @@ async function processBulkEmails(gmailService, userEmail) {
 /**
  * Analyze emails with AI and categorize into 6 categories
  */
-async function analyzeEmailsWithAI(emailDetails, userEmail) {
+async function analyzeEmailsWithAI(emailDetails, userEmail, privacyMode = false) {
   try {
     console.log('🤖 BULK PROCESS: Starting AI analysis...');
-    
+
     // Initialize AI service
     const aiConfig = new AIConfig();
     if (!aiConfig.hasAIConfigured()) {
@@ -175,7 +201,7 @@ async function analyzeEmailsWithAI(emailDetails, userEmail) {
     }
 
     const aiService = aiConfig.getService();
-    
+
     // Prepare data for AI analysis
     const emailsForAI = emailDetails.map(email => ({
       id: email.id,
@@ -221,7 +247,7 @@ async function analyzeEmailsWithAI(emailDetails, userEmail) {
           }
         };
 
-        const aiIntelligence = await aiService.generateInboxIntelligence(batchData);
+        const aiIntelligence = await aiService.generateInboxIntelligence(batchData, privacyMode);
         const batchCategories = transformAIIntelligenceToCategories(aiIntelligence, emailDetails);
 
         // Merge batch results
@@ -233,7 +259,7 @@ async function analyzeEmailsWithAI(emailDetails, userEmail) {
 
       } catch (batchError) {
         console.log(`⚠️ BULK PROCESS: AI batch ${batchIndex + 1} failed, using fallback:`, batchError.message);
-        
+
         // Use fallback analysis for this batch
         const fallbackCategories = generateFallbackAnalysis(batch, emailDetails);
         Object.keys(allCategories).forEach(category => {
@@ -310,7 +336,7 @@ function transformAIIntelligenceToCategories(aiIntelligence, emailDetails) {
             subject: email.subject,
             riskLevel: intelligence.priority === 'urgent' ? 'high' : 'medium',
             riskFactors: intelligence.action_recommendations || ['Conversation risk detected'],
-            recommendedAction: intelligence.action_recommendations?.[0] || 'Immediate outreach needed',
+            recommendedAction: intelligence.action_recommendations?.[0] || 'Immediate response needed',
             emailId: email.id
           });
           break;
@@ -332,7 +358,7 @@ function transformAIIntelligenceToCategories(aiIntelligence, emailDetails) {
         default:
           // Default categorization based on content analysis
           const content = `${email.subject} ${email.snippet} ${email.body}`.toLowerCase();
-          
+
           if (content.includes('follow') || content.includes('schedule') || content.includes('send')) {
             categories.missed_follow_ups.push({
               id: email.id,
@@ -364,7 +390,7 @@ function transformAIIntelligenceToCategories(aiIntelligence, emailDetails) {
  */
 function generateFallbackAnalysis(emails, emailDetails) {
   console.log('BULK PROCESS: Generating fallback analysis');
-  
+
   const fallbackCategories = {
     opportunities_detected: [],
     urgent_action_required: [],
@@ -377,7 +403,7 @@ function generateFallbackAnalysis(emails, emailDetails) {
   emails.forEach(email => {
     const content = `${email.subject} ${email.snippet}`.toLowerCase();
     const senderName = email.from || 'Unknown';
-    
+
     // Basic pattern matching for categorization
     if (content.includes('investment') || content.includes('partnership') || content.includes('opportunity')) {
       fallbackCategories.opportunities_detected.push({
@@ -466,7 +492,7 @@ function transformBulkResultsToHomeFeed(bulkResults) {
       type: 'opportunity',
       title: `${categories.opportunities_detected.length} Opportunities Detected`,
       subtitle: 'Buying signals, partnerships, investments',
-      content: categories.opportunities_detected.map(opp => 
+      content: categories.opportunities_detected.map(opp =>
         `${opp.sender}: ${opp.description}`
       ).join(' • '),
       timestamp,
@@ -474,7 +500,7 @@ function transformBulkResultsToHomeFeed(bulkResults) {
         opportunityCount: categories.opportunities_detected.length,
         opportunityDetails: categories.opportunities_detected,
         avgScore: Math.round(
-          categories.opportunities_detected.reduce((sum, opp) => sum + (opp.score || 0), 0) / 
+          categories.opportunities_detected.reduce((sum, opp) => sum + (opp.score || 0), 0) /
           categories.opportunities_detected.length
         ),
         processedFromTotal: `${categories.opportunities_detected.length} of ${totalProcessed} emails`
@@ -489,7 +515,7 @@ function transformBulkResultsToHomeFeed(bulkResults) {
       type: 'inbox-intelligence',
       title: `${categories.urgent_action_required.length} Items Need Urgent Action`,
       subtitle: 'Deadlines, waiting responses, critical issues',
-      content: categories.urgent_action_required.map(item => 
+      content: categories.urgent_action_required.map(item =>
         `${item.subject} - ${item.recommendedAction}`
       ).join(' • '),
       timestamp,
@@ -509,7 +535,7 @@ function transformBulkResultsToHomeFeed(bulkResults) {
       type: 'inbox-intelligence',
       title: `${categories.hot_leads_heating_up.length} Hot Leads Heating Up`,
       subtitle: 'High engagement, multiple opens, renewed interest',
-      content: categories.hot_leads_heating_up.map(lead => 
+      content: categories.hot_leads_heating_up.map(lead =>
         `${lead.name} (${lead.engagementScore}% engagement)`
       ).join(' • '),
       timestamp,
@@ -517,7 +543,7 @@ function transformBulkResultsToHomeFeed(bulkResults) {
         hotLeadsCount: categories.hot_leads_heating_up.length,
         hotLeads: categories.hot_leads_heating_up,
         avgEngagementScore: Math.round(
-          categories.hot_leads_heating_up.reduce((sum, lead) => sum + (lead.engagementScore || 0), 0) / 
+          categories.hot_leads_heating_up.reduce((sum, lead) => sum + (lead.engagementScore || 0), 0) /
           categories.hot_leads_heating_up.length
         ),
         processedFromTotal: `${categories.hot_leads_heating_up.length} of ${totalProcessed} emails`
@@ -532,7 +558,7 @@ function transformBulkResultsToHomeFeed(bulkResults) {
       type: 'inbox-intelligence',
       title: `${categories.conversations_at_risk.length} Conversations At Risk`,
       subtitle: 'No response, negative tone, stalled momentum',
-      content: categories.conversations_at_risk.map(risk => 
+      content: categories.conversations_at_risk.map(risk =>
         `${risk.subject} (${risk.riskLevel} risk)`
       ).join(' • '),
       timestamp,
@@ -552,7 +578,7 @@ function transformBulkResultsToHomeFeed(bulkResults) {
       type: 'inbox-intelligence',
       title: `${categories.missed_follow_ups.length} Missed Follow-Ups`,
       subtitle: 'Promised actions, overdue responses',
-      content: categories.missed_follow_ups.map(missed => 
+      content: categories.missed_follow_ups.map(missed =>
         `${missed.subject} (${missed.daysOverdue} days overdue)`
       ).join(' • '),
       timestamp,
@@ -560,7 +586,7 @@ function transformBulkResultsToHomeFeed(bulkResults) {
         missedCount: categories.missed_follow_ups.length,
         missedFollowUps: categories.missed_follow_ups,
         avgDaysOverdue: Math.round(
-          categories.missed_follow_ups.reduce((sum, missed) => sum + (missed.daysOverdue || 0), 0) / 
+          categories.missed_follow_ups.reduce((sum, missed) => sum + (missed.daysOverdue || 0), 0) /
           categories.missed_follow_ups.length
         ),
         processedFromTotal: `${categories.missed_follow_ups.length} of ${totalProcessed} emails`
@@ -575,7 +601,7 @@ function transformBulkResultsToHomeFeed(bulkResults) {
       type: 'inbox-intelligence',
       title: `${categories.unread_but_important.length} Unread But Important`,
       subtitle: 'Revenue impact, strategic value, deadlines',
-      content: categories.unread_but_important.map(important => 
+      content: categories.unread_but_important.map(important =>
         `${important.subject} (${important.importance} priority)`
       ).join(' • '),
       timestamp,

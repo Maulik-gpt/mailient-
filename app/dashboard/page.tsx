@@ -1,10 +1,12 @@
-import { auth } from '../../lib/auth.js';
+// @ts-ignore
+import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
-import { DatabaseService } from '../../lib/supabase.js';
+import { DatabaseService } from '@/lib/supabase';
 
 // Server-side component that handles authentication
 export default async function DashboardPage() {
   // Server-side authentication check
+  // @ts-ignore
   const session = await auth();
 
   // If no session exists, redirect to home page
@@ -13,57 +15,82 @@ export default async function DashboardPage() {
   }
 
   // Check onboarding status
-  if (session.user?.email) {
+  let profile = null;
+  const userEmail = session.user?.email?.toLowerCase();
+
+  if (userEmail) {
     try {
       const db = new DatabaseService();
-      const profile = await db.getUserProfile(session.user.email);
-      
-      // If onboarding is not completed, redirect to onboarding
-      if (!profile || !profile.onboarding_completed) {
-        redirect('/onboarding');
-      }
+      profile = await db.getUserProfile(userEmail);
     } catch (error) {
       console.error('Error checking onboarding status:', error);
-      // On error, redirect to onboarding to be safe
-      redirect('/onboarding');
+      // Fallback to null profile
     }
   }
 
-  // If authenticated, render the dashboard content
-  return (
-    <div className="min-h-screen bg-black text-white flex" style={{ fontFamily: 'Satoshi, sans-serif' }}>
-      <div className="flex-1 flex flex-col items-center justify-center">
-        <h1 className="text-4xl font-bold mb-4">Dashboard</h1>
-        <p className="text-gray-400 mb-8">Welcome to your Mailient dashboard!</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl">
-          <div className="bg-[#1a1a1a] rounded-lg p-6 border border-[#2a2a2a] hover:border-[#525252] transition-colors">
-            <h3 className="text-lg font-semibold mb-2">Email Management</h3>
-            <p className="text-gray-400 mb-4">Manage your emails with AI-powered insights</p>
-            <a href="/dashboard/agent-talk" className="inline-flex items-center px-4 py-2 bg-[#2a2a2a] text-white rounded-md hover:bg-[#525252] transition-colors">
-              Go to Agent Talk
-            </a>
-          </div>
-          <div className="bg-[#1a1a1a] rounded-lg p-6 border border-[#2a2a2a] hover:border-[#525252] transition-colors">
-            <h3 className="text-lg font-semibold mb-2">Profile</h3>
-            <p className="text-gray-400 mb-4">Manage your profile and settings</p>
-            <a href="/dashboard/profile-bubble" className="inline-flex items-center px-4 py-2 bg-[#2a2a2a] text-white rounded-md hover:bg-[#525252] transition-colors">
-              Go to Profile
-            </a>
-          </div>
-          <div className="bg-[#1a1a1a] rounded-lg p-6 border border-[#2a2a2a] hover:border-[#525252] transition-colors">
-            <h3 className="text-lg font-semibold mb-2">Settings</h3>
-            <p className="text-gray-400 mb-4">Configure your preferences</p>
-            <a href="/dashboard/profile-settings" className="inline-flex items-center px-4 py-2 bg-[#2a2a2a] text-white rounded-md hover:bg-[#525252] transition-colors">
-              Go to Settings
-            </a>
-          </div>
-        </div>
-        <div className="mt-8">
-          <a href="/api/auth/signout" className="inline-flex items-center px-4 py-2 border border-[#2a2a2a] text-gray-400 rounded-md hover:border-[#525252] hover:text-gray-300 transition-colors">
-            Sign Out
-          </a>
-        </div>
-      </div>
-    </div>
-  );
+  // If onboarding is not completed explicitly, check fallbacks
+  if (!profile || !profile.onboarding_completed) {
+    // Check if they have a plan selected or an active subscription
+    const db = new DatabaseService();
+
+    // 1. Check preferences for plan selection
+    if (profile?.preferences?.plan) {
+      console.log('✅ Auto-completing onboarding for user with selected plan');
+      await db.supabase.from('user_profiles').update({ onboarding_completed: true }).eq('user_id', userEmail);
+    } else {
+      // 2. Check for active subscription
+      try {
+        const { data: subscription } = await db.supabase
+          .from('user_subscriptions')
+          .select('status, plan_type, subscription_ends_at')
+          .ilike('user_id', userEmail)
+          .order('updated_at', { ascending: false })
+          .limit(1);
+
+        const latestSubscription = Array.isArray(subscription) && subscription.length > 0 ? subscription[0] : null;
+
+        if (latestSubscription) {
+          console.log(`💳 Subscription found: status=${latestSubscription.status}, plan=${latestSubscription.plan_type}`);
+          // If they have any valid subscription status or plan, they are done
+          if (latestSubscription.status === 'active' || (latestSubscription.plan_type && latestSubscription.plan_type !== 'none')) {
+            console.log('✅ Auto-completing onboarding for user with active subscription');
+            await db.supabase.from('user_profiles').update({ onboarding_completed: true }).eq('user_id', userEmail);
+          } else {
+            // No valid onboarding or subscription found, redirect
+            console.log('🚫 User not onboarded, redirecting to /onboarding');
+            redirect('/onboarding');
+          }
+        } else {
+          // 3. FINAL FALLBACK: Check if user has been recently created (within last hour)
+          // This handles the case where database replication might cause delays
+          if (profile?.created_at) {
+            const createdAt = new Date(profile.created_at);
+            const oneHourAgo = new Date(Date.now() - (60 * 60 * 1000));
+
+            if (createdAt > oneHourAgo) {
+              console.log(`🕒 Profile recently created (${createdAt}), assuming onboarding completion`);
+              // Auto-complete onboarding for recent profiles
+              await db.supabase.from('user_profiles').update({ onboarding_completed: true }).eq('user_id', userEmail);
+            } else {
+              // Old profile without subscription, redirect to onboarding
+              console.log('🚫 User not onboarded, redirecting to /onboarding');
+              redirect('/onboarding');
+            }
+          } else {
+            // No profile creation date, redirect to onboarding
+            console.log('🚫 User not onboarded, redirecting to /onboarding');
+            redirect('/onboarding');
+          }
+        }
+      } catch (e) {
+        console.error('Subscription check failed in dashboard:', e);
+        redirect('/onboarding');
+      }
+    }
+  }
+
+  // If authenticated and onboarded, redirect to the main home feed
+  // which is the unified interface for the application
+  redirect('/home-feed');
 }
+

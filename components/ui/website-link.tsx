@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { ExternalLink, Globe } from 'lucide-react';
-import { isValidUrlStrict, getDomainFromUrl } from '../../lib/url-utils';
+import { isValidUrlStrict, getDomainFromUrl } from '@/lib/url-utils';
 
 interface WebsiteLinkProps {
   url: string | null | undefined;

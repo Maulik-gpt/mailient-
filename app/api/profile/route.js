@@ -1,59 +1,201 @@
 // app/api/profile/route.js
 import { NextResponse } from "next/server";
-import { auth } from "../../../lib/auth.js";
-import { createClient } from "@supabase/supabase-js";
-import { decrypt, encrypt } from "../../../lib/crypto.js";
-import { isValidUrlStrict } from "../../../lib/url-utils.js";
+import { auth } from "@/lib/auth.js";
+import { getSupabaseAdmin } from "@/lib/supabase.js";
+import { decrypt, encrypt } from "@/lib/crypto.js";
+import { isValidUrlStrict } from "@/lib/url-utils.js";
 
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+// CRITICAL: Force dynamic rendering to prevent build-time evaluation
+export const dynamic = 'force-dynamic';
+
+const supabase = new Proxy({}, {
+  get: (target, prop) => getSupabaseAdmin()[prop]
+});
 
 // Ensure database tables exist
 async function ensureDatabaseTables() {
   try {
-    console.log("Checking if user_profiles table exists...");
-    
-    // Test if user_profiles table exists by doing a simple query
-    const { data, error } = await supabase
+    // 1. Check if user_profiles exists
+    const { error: profileCheckError } = await supabase
       .from("user_profiles")
       .select("id")
       .limit(1);
 
-    if (error && error.message.includes('does not exist')) {
-      console.log("user_profiles table doesn't exist, triggering database setup...");
-      
+    if (profileCheckError && profileCheckError.message.includes('does not exist')) {
+      console.log("user_profiles table missing, running total setup...");
+      const setupResponse = await fetch(`${process.env.NEXTAUTH_URL || 'https://mailient.xyz'}/api/database/setup`, {
+        method: 'POST'
+      });
+      if (!setupResponse.ok) throw new Error("Setup failed");
+    }
+
+    // 2. Check for streak columns and user_activity table
+    const { error: streakError } = await supabase
+      .from("user_profiles")
+      .select("streak_count")
+      .limit(1);
+
+    const { error: activityError } = await supabase
+      .from("user_activity")
+      .select("id")
+      .limit(1);
+
+    if (streakError || activityError) {
+      console.log("Streak columns or user_activity table missing, migrating...");
+      const migrationSQL = `
+        ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS streak_count INTEGER DEFAULT 0;
+        ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS last_activity_at TIMESTAMP WITH TIME ZONE;
+        CREATE TABLE IF NOT EXISTS user_activity (
+          id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          activity_date DATE NOT NULL,
+          count INTEGER DEFAULT 1,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          UNIQUE(user_id, activity_date)
+        );
+        CREATE INDEX IF NOT EXISTS idx_user_activity_user_id ON user_activity(user_id);
+        CREATE INDEX IF NOT EXISTS idx_user_activity_date ON user_activity(activity_date);
+      `;
       try {
-        // Call database setup endpoint
-        const setupResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/database/setup`, {
-          method: 'POST'
-        });
-        
-        if (setupResponse.ok) {
-          const setupResult = await setupResponse.json();
-          console.log("Database setup completed:", setupResult);
-          
-          // Re-test table existence
-          const { error: retestError } = await supabase
-            .from("user_profiles")
-            .select("id")
-            .limit(1);
-            
-          if (retestError && retestError.message.includes('does not exist')) {
-            throw new Error("Database table 'user_profiles' still does not exist after setup. Please manually run the SQL schema.");
-          }
-        } else {
-          const setupError = await setupResponse.json();
-          throw new Error(`Database setup failed: ${setupError.error || 'Unknown error'}`);
-        }
-      } catch (setupError) {
-        console.error("Database setup failed:", setupError);
-        throw new Error("Database table 'user_profiles' does not exist. Please run the database setup script at /api/database/setup");
+        await supabase.rpc('exec_sql', { sql: migrationSQL });
+      } catch (e) {
+        console.error("Migration SQL failed:", e);
       }
     }
-    
+
     console.log("Database tables check completed");
   } catch (error) {
     console.error("Error checking database tables:", error);
-    throw error;
+  }
+}
+
+/**
+ * Update user streak and activity log
+ */
+async function updateStreak(userId) {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+
+    // 1. Backfill activity if few records exist (ensure history is populated)
+    const { count: activityCount } = await supabase
+      .from("user_activity")
+      .select("id", { count: 'exact', head: true })
+      .eq("user_id", userId);
+
+    if (activityCount === null || activityCount < 5) {
+      console.log(`[Streak] Search for historical activity for ${userId}...`);
+
+      // Get activity from emails
+      const { data: emails } = await supabase
+        .from("user_emails")
+        .select("date")
+        .eq("user_id", userId)
+        .limit(2000);
+
+      // Get activity from chats
+      const { data: chats } = await supabase
+        .from("agent_chat_history")
+        .select("created_at")
+        .eq("user_id", userId)
+        .limit(1000);
+
+      const combinedDates = [
+        ...(emails || []).map(e => new Date(e.date).toISOString().split('T')[0]),
+        ...(chats || []).map(c => new Date(c.created_at).toISOString().split('T')[0])
+      ];
+
+      if (combinedDates.length > 0) {
+        const dateCounts = combinedDates.reduce((acc, date) => {
+          acc[date] = (acc[date] || 0) + 1;
+          return acc;
+        }, {});
+
+        const backfillData = Object.entries(dateCounts).map(([date, count]) => ({
+          user_id: userId,
+          activity_date: date,
+          count: count
+        }));
+
+        // Use UPSERT for backfill to handle overlap
+        for (let i = 0; i < backfillData.length; i += 100) {
+          const chunk = backfillData.slice(i, i + 100);
+          await supabase.from("user_activity").upsert(chunk, { onConflict: 'user_id,activity_date' });
+        }
+        console.log(`[Streak] Backfilled ${combinedDates.length} points for ${userId}`);
+      }
+    }
+
+    // 2. Log activity for today (incrementing count)
+    const { data: existingToday } = await supabase
+      .from("user_activity")
+      .select("count")
+      .eq("user_id", userId)
+      .eq("activity_date", today)
+      .maybeSingle();
+
+    if (existingToday) {
+      await supabase.from("user_activity")
+        .update({ count: (existingToday.count || 0) + 1 })
+        .eq("user_id", userId)
+        .eq("activity_date", today);
+    } else {
+      await supabase.from("user_activity").insert({
+        user_id: userId,
+        activity_date: today,
+        count: 1
+      });
+    }
+
+    // 3. Update Profile Streak
+    const { data: profile } = await supabase
+      .from("user_profiles")
+      .select("streak_count, last_activity_at")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (!profile) {
+      // Create skeleton profile so streak exists
+      await supabase.from("user_profiles").upsert({
+        user_id: userId,
+        email: userId,
+        streak_count: 1,
+        last_activity_at: now.toISOString(),
+        updated_at: now.toISOString()
+      }, { onConflict: 'user_id' });
+      return 1;
+    }
+
+    const lastActivity = profile.last_activity_at ? new Date(profile.last_activity_at) : null;
+    let newStreak = profile.streak_count || 0;
+
+    if (!lastActivity) {
+      newStreak = 1;
+    } else {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
+      const lastActivityStr = lastActivity.toISOString().split('T')[0];
+
+      if (lastActivityStr === today) {
+        if (newStreak === 0) newStreak = 1;
+      } else if (lastActivityStr === yesterdayStr) {
+        newStreak += 1;
+      } else {
+        newStreak = 1;
+      }
+    }
+
+    await supabase.from("user_profiles").update({
+      streak_count: newStreak,
+      last_activity_at: now.toISOString(),
+      updated_at: now.toISOString()
+    }).eq("user_id", userId);
+
+    return newStreak;
+  } catch (error) {
+    console.error("Error in updateStreak:", error);
+    return 0;
   }
 }
 
@@ -87,14 +229,16 @@ export async function GET(req) {
   try {
     // Check for legacy Gmail profile fetch
     let email = null;
+    let forceRefresh = false;
     try {
       const url = new URL(req.url);
       email = url.searchParams.get("email");
+      forceRefresh = url.searchParams.get("force_refresh") === "true";
     } catch (urlError) {
       console.error("Error parsing URL:", urlError);
       // Continue without email param
     }
-    
+
     if (email) {
       return await getGmailProfile(email);
     }
@@ -109,16 +253,25 @@ export async function GET(req) {
     if (!session?.user) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
-    
+
     if (!session.user.email) {
       console.error("Session user missing email:", session.user);
       return NextResponse.json({ error: "Invalid session: missing email" }, { status: 401 });
     }
-    
+
     const user = { email: session.user.email };
+
+    // If force_refresh, clear existing activity to force full rebackfill
+    if (forceRefresh) {
+      console.log(`[Profile] Force refresh requested for ${user.email}`);
+      await supabase.from("user_activity").delete().eq("user_id", user.email);
+    }
 
     // Ensure database tables exist
     await ensureDatabaseTables();
+
+    // Update streak for the authenticated user
+    await updateStreak(user.email);
 
     // Fetch profile from database using email as user_id
     const { data: profile, error } = await supabase
@@ -127,6 +280,21 @@ export async function GET(req) {
       .eq("user_id", user.email)
       .maybeSingle();
 
+    // Fetch activity log for the streak card (last 6 months)
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+    const { data: activityData } = await supabase
+      .from("user_activity")
+      .select("activity_date, count")
+      .eq("user_id", user.email)
+      .gte("activity_date", sixMonthsAgo.toISOString().split('T')[0])
+      .order("activity_date", { ascending: true });
+
+    if (profile) {
+      profile.activity_history = activityData || [];
+    }
+
     if (error && error.code !== 'PGRST116') {
       console.error("Supabase query error:", error);
       throw error;
@@ -134,7 +302,7 @@ export async function GET(req) {
 
     if (!profile) {
       console.log("No existing profile found, attempting Gmail sync...");
-      
+
       // Try to sync from Gmail first before creating fallback
       try {
         const syncResponse = await fetch(`${req.nextUrl.origin}/api/profile/sync`, {
@@ -210,7 +378,7 @@ export async function GET(req) {
         // Enhanced data for Mailient
         email_accounts_connected: tokens.length || 0,
         emails_processed: emailCount || 0,
-        plan: 'Free Plan',
+        plan: profile?.preferences?.plan || 'Free Plan',
         storage_used: `${Math.round(emailCount * 0.1)} MB`,
         last_email_activity: null
       });
@@ -267,24 +435,24 @@ export async function GET(req) {
     }
 
     const enhancedProfile = {
-        ...profile,
-        email_accounts_connected: tokens.length || 0,
-        emails_processed: 99, // Show 99+ for demo purposes
-        plan: 'Free Plan', // This could come from a subscription table
-        storage_used: `${Math.round(emailCount * 0.1)} MB`, // Rough estimate
-        last_email_activity: lastEmail?.date || null,
-        // Ensure defaults for new fields - always set them
-        bio: profile.bio || null,
-        location: profile.location || null, // Will be empty until user sets it
-        website: profile.website || 'https://example.com',
-        status: profile.status || 'online',
-        banner_url: profile.banner_url || null,
-        preferences: profile.preferences || { theme: 'dark', language: 'en', notifications: true, email_frequency: 'daily', timezone: 'UTC' },
-        birthdate: profile.birthdate || '1999-01-01', // Default for demo
-        gender: profile.gender || 'Not specified', // Default for demo
-        work_status: profile.work_status || 'Professional',
-        interests: profile.interests || ['Technology', 'Productivity', 'AI']
-      };
+      ...profile,
+      email_accounts_connected: tokens.length || 0,
+      emails_processed: 99, // Show 99+ for demo purposes
+      plan: profile?.preferences?.plan || 'Free Plan',
+      storage_used: `${Math.round(emailCount * 0.1)} MB`, // Rough estimate
+      last_email_activity: lastEmail?.date || null,
+      // Ensure defaults for new fields - always set them
+      bio: profile.bio || null,
+      location: profile.location || null, // Will be empty until user sets it
+      website: profile.website || 'https://example.com',
+      status: profile.status || 'online',
+      banner_url: profile.banner_url || null,
+      preferences: profile.preferences || { theme: 'dark', language: 'en', notifications: true, email_frequency: 'daily', timezone: 'UTC' },
+      birthdate: profile.birthdate || '1999-01-01', // Default for demo
+      gender: profile.gender || 'Not specified', // Default for demo
+      work_status: profile.work_status || 'Professional',
+      interests: profile.interests || ['Technology', 'Productivity', 'AI']
+    };
 
     return NextResponse.json(enhancedProfile);
   } catch (err) {
@@ -295,12 +463,12 @@ export async function GET(req) {
       code: err.code,
       details: err.details
     });
-    
+
     // Handle authentication errors
     if (err.message === "Authentication required" || err.message?.includes("Authentication")) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
-    
+
     // Try to get session for fallback profile
     try {
       const session = await auth();
@@ -328,7 +496,7 @@ export async function GET(req) {
           updated_at: new Date().toISOString(),
           email_accounts_connected: 0,
           emails_processed: 0,
-          plan: 'Free Plan',
+          plan: profile?.preferences?.plan || 'Free Plan',
           storage_used: '0 MB',
           last_email_activity: null
         });
@@ -336,9 +504,9 @@ export async function GET(req) {
     } catch (fallbackError) {
       console.error("Error creating fallback profile:", fallbackError);
     }
-    
+
     // If we can't create a fallback, return error
-    return NextResponse.json({ 
+    return NextResponse.json({
       error: err.message || "Internal server error",
       details: process.env.NODE_ENV === 'development' ? String(err) : undefined
     }, { status: 500 });
@@ -371,12 +539,33 @@ export async function PUT(req) {
       return NextResponse.json({ error: "Invalid website URL format" }, { status: 400 });
     }
 
+    // URL validation for banner_url (optional) - allow empty strings, null, or valid URLs
+    const bannerUrlValue = banner_url !== undefined && banner_url !== null ? String(banner_url).trim() : '';
+    if (bannerUrlValue && bannerUrlValue.length > 0) {
+      // Check if it's a valid URL (either starts with https:// or is a Supabase storage URL)
+      const isValidBanner = bannerUrlValue.startsWith('https://') || bannerUrlValue.startsWith('http://');
+      if (!isValidBanner) {
+        console.log("Invalid banner URL format:", bannerUrlValue);
+        return NextResponse.json({ error: "Invalid banner image URL format" }, { status: 400 });
+      }
+    }
+
+    // URL validation for avatar_url (optional) - allow empty strings, null, or valid URLs
+    const avatarUrlValue = avatar_url !== undefined && avatar_url !== null ? String(avatar_url).trim() : '';
+    if (avatarUrlValue && avatarUrlValue.length > 0) {
+      const isValidAvatar = avatarUrlValue.startsWith('https://') || avatarUrlValue.startsWith('http://');
+      if (!isValidAvatar) {
+        console.log("Invalid avatar URL format:", avatarUrlValue);
+        return NextResponse.json({ error: "Invalid avatar image URL format" }, { status: 400 });
+      }
+    }
+
     // Build profile data, only including defined values
     const profileData = {
-        user_id: user.email, // Use email as user_id for consistency with tokens
-         email: user.email,
-         updated_at: new Date().toISOString()
-       };
+      user_id: user.email, // Use email as user_id for consistency with tokens
+      email: user.email,
+      updated_at: new Date().toISOString()
+    };
 
     // Only include fields that are provided (not undefined)
     if (name !== undefined) profileData.name = name;
@@ -400,7 +589,7 @@ export async function PUT(req) {
     if (gender !== undefined) profileData.gender = gender;
     if (work_status !== undefined) profileData.work_status = work_status;
     if (interests !== undefined) profileData.interests = interests;
-    
+
     // Only set last_synced_at if we're doing a full update
     profileData.last_synced_at = new Date().toISOString();
 
@@ -463,7 +652,7 @@ export async function PUT(req) {
         interests: profileData.interests || ['Technology', 'Productivity', 'AI'],
         created_at: new Date().toISOString()
       };
-      
+
       const { data, error } = await supabase
         .from("user_profiles")
         .insert(createData)
@@ -495,11 +684,11 @@ export async function PUT(req) {
       details: err.details,
       hint: err.hint
     });
-    
+
     if (err.message === "Authentication required" || err.message?.includes("Authentication")) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
-    
+
     // Provide more specific error messages
     let errorMessage = "Failed to update profile";
     if (err.code === '23505') {
@@ -511,8 +700,8 @@ export async function PUT(req) {
     } else if (err.message) {
       errorMessage = err.message;
     }
-    
-    return NextResponse.json({ 
+
+    return NextResponse.json({
       error: errorMessage,
       details: process.env.NODE_ENV === 'development' ? {
         code: err.code,
@@ -530,17 +719,17 @@ export async function PATCH(req) {
     if (!session?.user) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
-    
+
     if (!session.user.email) {
       console.error("Session user missing email:", session.user);
       return NextResponse.json({ error: "Invalid session: missing email" }, { status: 401 });
     }
-    
+
     const user = { email: session.user.email };
 
     // Ensure database tables exist
     await ensureDatabaseTables();
-    
+
     const body = await req.json();
 
     console.log("PATCH request body:", body);
@@ -630,7 +819,7 @@ export async function PATCH(req) {
           details: error.details,
           hint: error.hint
         });
-        
+
         let errorMessage = "Failed to create profile";
         if (error.code === '23505') {
           errorMessage = "Profile already exists with this information";
@@ -641,8 +830,8 @@ export async function PATCH(req) {
         } else if (error.message) {
           errorMessage = error.message;
         }
-        
-        return NextResponse.json({ 
+
+        return NextResponse.json({
           error: errorMessage,
           details: process.env.NODE_ENV === 'development' ? {
             code: error.code,
@@ -672,7 +861,7 @@ export async function PATCH(req) {
         details: error.details,
         hint: error.hint
       });
-      
+
       let errorMessage = "Failed to update profile";
       if (error.code === '23505') {
         errorMessage = "Profile already exists with this information";
@@ -683,8 +872,8 @@ export async function PATCH(req) {
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
-      return NextResponse.json({ 
+
+      return NextResponse.json({
         error: errorMessage,
         details: process.env.NODE_ENV === 'development' ? {
           code: error.code,
@@ -705,13 +894,13 @@ export async function PATCH(req) {
       details: err.details,
       hint: err.hint
     });
-    
+
     if (err.message === "Authentication required" || err.message?.includes("Authentication")) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
-    
+
     let errorMessage = err.message || "Failed to update profile";
-    return NextResponse.json({ 
+    return NextResponse.json({
       error: errorMessage,
       details: process.env.NODE_ENV === 'development' ? String(err) : undefined
     }, { status: 500 });
@@ -768,3 +957,56 @@ async function getGmailProfile(email) {
 }
 
 
+// DELETE - Permanently delete account and all data
+export async function DELETE(req) {
+  try {
+    const session = await auth();
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
+
+    const userId = session.user.email;
+    console.log(`🧨 DELETE ACCOUNT REQUEST: ${userId}`);
+
+    // All relevant tables to wipe
+    const tables = [
+      'agent_chat_history',
+      'search_history',
+      'saved_searches',
+      'unsubscribed_emails',
+      'search_index',
+      'search_performance',
+      'notes',
+      'user_emails',
+      'user_tokens',
+      'user_profiles'
+    ];
+
+    for (const table of tables) {
+      try {
+        const { error } = await supabase
+          .from(table)
+          .delete()
+          .eq('user_id', userId);
+
+        if (error) {
+          // Fallback for user_tokens which might use google_email
+          if (table === 'user_tokens') {
+            await supabase.from(table).delete().eq('google_email', userId);
+          } else {
+            console.warn(`⚠️ Warning: Deletion for ${table} failed or returned error:`, error.message);
+          }
+        }
+      } catch (err) {
+        console.warn(`⚠️ Warning: Exception deleting from ${table}:`, err.message);
+      }
+    }
+
+    console.log(`✅ ACCOUNT PERMANENTLY DELETED: ${userId}`);
+    return NextResponse.json({ success: true, message: "Account and all associated data have been permanently deleted." });
+
+  } catch (error) {
+    console.error("💥 ERROR DURING ACCOUNT DELETION:", error);
+    return NextResponse.json({ error: "Failed to permanently delete account data." }, { status: 500 });
+  }
+}

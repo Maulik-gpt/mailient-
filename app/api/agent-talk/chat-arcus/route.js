@@ -1,16 +1,34 @@
 import { NextResponse } from 'next/server';
-import { auth } from '../../../../lib/auth.js';
-import { DatabaseService } from '../../../../lib/supabase.js';
-import { decrypt } from '../../../../lib/crypto.js';
+import { auth } from '@/lib/auth.js';
+import { DatabaseService } from '@/lib/supabase.js';
+import { decrypt } from '@/lib/crypto.js';
+import { ArcusAIService } from '@/lib/arcus-ai.js';
+import { CalendarService } from '@/lib/calendar.js';
+import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service.js';
+import { addDays, setHours, setMinutes, startOfDay, format, parse, isWeekend, nextMonday } from 'date-fns';
+import { ArcusMissionService } from '@/lib/arcus-mission.js';
 
 /**
- * Main chat handler with AI + Gmail context
+ * Main chat handler with Arcus AI + Gmail context + Memory + Integration awareness
  */
 export async function POST(request) {
   try {
-    const { message, conversationId, isNewConversation, gmailAccessToken } = await request.json();
+    const {
+      message,
+      conversationId,
+      isNewConversation,
+      gmailAccessToken,
+      isNotesQuery,
+      notesSearchQuery,
+      selectedEmailId,
+      draftReplyRequest,
+      activeMission,
+      approvalPayload,
+      executeCanvasAction,
+      canvasActionData
+    } = await request.json();
 
-    console.log('🚀 Chat request received:', message?.substring?.(0, 80));
+    console.log('🚀 Arcus Chat request received:', message?.substring?.(0, 80));
 
     if (!message || typeof message !== 'string') {
       return NextResponse.json(
@@ -24,6 +42,7 @@ export async function POST(request) {
       currentConversationId = `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     }
 
+    // Get user session
     let session = null;
     try {
       session = await auth();
@@ -31,42 +50,265 @@ export async function POST(request) {
         hasSession: !!session,
         hasUser: !!session?.user,
         hasEmail: !!session?.user?.email,
-        hasAccessToken: !!session?.accessToken,
       });
     } catch (error) {
-      console.log('⚠️ Auth not available, continuing without user context:', error.message);
+      console.log('⚠️ Auth not available:', error.message);
     }
 
-    let emailActionResult = null;
-    if (session?.user?.email) {
+    const db = new DatabaseService();
+    const userEmail = session?.user?.email;
+    const userName = session?.user?.name || 'User';
+
+    // Fetch subscription info for Arcus context
+    let subscriptionInfo = null;
+    let userPlanType = 'free';
+
+    if (userEmail) {
       try {
-        emailActionResult = await executeEmailAction(message, session.user.email, session);
-      } catch (error) {
-        console.error('💥 Email action failed:', error);
-        emailActionResult = { 
-          error: `Email action failed: ${error.message}`,
-          action: 'email_action',
-          success: false,
-        };
+        const allUsage = await subscriptionService.getAllFeatureUsage(userEmail);
+        userPlanType = allUsage.planType || 'free';
+
+        if (allUsage.hasActiveSubscription) {
+          subscriptionInfo = {
+            planType: allUsage.planType,
+            planName: allUsage.planType === 'pro' ? 'Pro' : allUsage.planType === 'starter' ? 'Starter' : 'Free',
+            daysRemaining: allUsage.daysRemaining,
+            features: allUsage.features,
+            isUnlimited: allUsage.planType === 'pro'
+          };
+          console.log(`📋 User subscription: ${userPlanType} plan`);
+        }
+      } catch (err) {
+        console.warn('Error fetching subscription info:', err);
       }
     }
 
-    const response = await generateAIResponseWithFallbacks(
-      message,
-      session,
-      emailActionResult,
-      gmailAccessToken
-    );
+    // Check subscription and feature usage for Arcus AI
+    // Pro users have unlimited access, Starter users have 10/day limit
+    if (userEmail) {
+      const canUse = await subscriptionService.canUseFeature(userEmail, FEATURE_TYPES.ARCUS_AI);
+      if (!canUse) {
+        const usage = await subscriptionService.getFeatureUsage(userEmail, FEATURE_TYPES.ARCUS_AI);
+        const limitMessage = usage.reason === 'subscription_expired'
+          ? "Your subscription has expired. Please renew to continue using Arcus AI."
+          : usage.reason === 'no_subscription'
+            ? "You need an active subscription to use Arcus AI. Visit /pricing to subscribe."
+            : `Sorry, but you've exhausted all the credits of ${usage.period === 'daily' ? 'the day' : 'the month'}.`;
+
+        return NextResponse.json({
+          message: limitMessage,
+          error: 'limit_reached',
+          usage: usage.usage,
+          limit: usage.limit,
+          period: usage.period,
+          planType: usage.planType,
+          reason: usage.reason,
+          upgradeUrl: '/pricing',
+          timestamp: new Date().toISOString(),
+          conversationId: currentConversationId
+        }, { status: 403 });
+      }
+    }
+
+    // Get user's profile and privacy mode preference
+    let profile = null;
+    let privacyMode = false;
+    if (userEmail) {
+      try {
+        profile = await db.getUserProfile(userEmail);
+        if (profile?.preferences?.ai_privacy_mode === 'enabled') {
+          privacyMode = true;
+          console.log('🛡️ Arcus: AI Privacy Mode enabled');
+        }
+      } catch (err) {
+        console.warn('Error fetching profile:', err);
+      }
+    }
+
+    // Get integration status
+    const integrations = await getIntegrationStatus(userEmail, db);
+    console.log('🔗 Integration status:', integrations);
+
+    // Get conversation history for memory
+    let conversationHistory = [];
+    if (currentConversationId && userEmail) {
+      try {
+        conversationHistory = await getConversationHistory(userEmail, currentConversationId, db);
+        console.log('📝 Loaded conversation history:', conversationHistory.length, 'messages');
+      } catch (err) {
+        console.warn('Error loading conversation history:', err);
+      }
+    }
+
+    // Initialize Arcus AI and Mission Service
+    const arcusAI = new ArcusAIService();
+    const missionService = userEmail ? new ArcusMissionService(userEmail) : null;
+
+    // --- HANDLE CANVAS EXECUTION ACTIONS ---
+    if (executeCanvasAction && canvasActionData) {
+      console.log('🎯 Canvas action requested:', executeCanvasAction);
+      let executionResult = { success: false, message: '' };
+
+      if (executeCanvasAction === 'send_email' && canvasActionData.to && canvasActionData.body) {
+        try {
+          const db2 = new DatabaseService();
+          const userTokens = await db2.getUserTokens(userEmail);
+          if (userTokens?.encrypted_access_token) {
+            const accessToken = decrypt(userTokens.encrypted_access_token);
+            const refreshToken = userTokens.encrypted_refresh_token ? decrypt(userTokens.encrypted_refresh_token) : '';
+            const { GmailService } = await import('@/lib/gmail');
+            const gmailService = new GmailService(accessToken, refreshToken);
+            const result = await gmailService.sendEmail({
+              to: canvasActionData.to,
+              subject: canvasActionData.subject || '',
+              body: canvasActionData.body,
+              isHtml: false
+            });
+            executionResult = { success: true, message: `Email sent to ${canvasActionData.to}`, result };
+          }
+        } catch (err) {
+          executionResult = { success: false, message: `Failed to send: ${err.message}` };
+        }
+      } else if (executeCanvasAction === 'save_draft' && canvasActionData.body) {
+        try {
+          const db2 = new DatabaseService();
+          const userTokens = await db2.getUserTokens(userEmail);
+          if (userTokens?.encrypted_access_token) {
+            const accessToken = decrypt(userTokens.encrypted_access_token);
+            const refreshToken = userTokens.encrypted_refresh_token ? decrypt(userTokens.encrypted_refresh_token) : '';
+            const { GmailService } = await import('@/lib/gmail');
+            const gmailService = new GmailService(accessToken, refreshToken);
+            const result = await gmailService.createDraft({
+              to: canvasActionData.to || '',
+              subject: canvasActionData.subject || '',
+              body: canvasActionData.body,
+              isHtml: false
+            });
+            executionResult = { success: true, message: 'Draft saved to your Gmail Drafts folder', result };
+          }
+        } catch (err) {
+          executionResult = { success: false, message: `Failed to save draft: ${err.message}` };
+        }
+      } else {
+        executionResult = { success: true, message: 'Action completed' };
+      }
+
+      return NextResponse.json({
+        message: executionResult.message,
+        executionResult,
+        conversationId: currentConversationId,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // --- INTENT ANALYSIS: Understand what the user wants ---
+    let intentAnalysis = null;
+    try {
+      intentAnalysis = await arcusAI.analyzeIntentAndPlan(message, { userEmail, userName });
+      console.log('🧠 Intent analysis:', intentAnalysis?.intent, '| Canvas:', intentAnalysis?.needsCanvas);
+    } catch (err) {
+      console.warn('Intent analysis failed, proceeding with direct chat:', err.message);
+    }
+
+    // --- CONTEXT SEARCH ---
+    const detectedIsNotesQuery = isNotesQuery !== undefined ? isNotesQuery : isNotesRelatedQuery(message);
+    const detectedIsEmailQuery = isEmailRelatedQuery(message) || (intentAnalysis?.gmailActions?.length > 0);
+
+    let emailContext = null;
+    let emailResult = null;
+    let notesResult = null;
+    let actionType = 'general';
+
+    // Handle notes context
+    if (detectedIsNotesQuery && userEmail && !emailContext) {
+      try {
+        notesResult = await executeNotesAction(message, userEmail, notesSearchQuery);
+        emailContext = formatNotesActionResult(notesResult);
+        actionType = 'notes';
+      } catch (error) {
+        console.error('Notes action failed:', error);
+      }
+    }
+
+    // IF a specific email is selected
+    if (selectedEmailId && userEmail && !emailContext) {
+      try {
+        console.log('📧 Arcus: Fetching specific email context for:', selectedEmailId);
+        const emailData = await getEmailById(selectedEmailId, userEmail, session);
+        if (emailData) {
+          emailContext = `=== SELECTED EMAIL CONTEXT ===
+This is the specific email the user is currently looking at and asking about:
+From: ${emailData.from}
+Subject: ${emailData.subject}
+Date: ${emailData.date}
+Body: ${emailData.body || emailData.snippet}
+============================`;
+          actionType = 'email';
+        }
+      } catch (error) {
+        console.error('Error fetching selected email context:', error);
+      }
+    }
+    // Otherwise, handle general email queries by searching
+    else if (userEmail && detectedIsEmailQuery && !emailContext) {
+      try {
+        const emailActionResult = await executeEmailAction(message, userEmail, session);
+        emailResult = emailActionResult;
+        if (emailActionResult && emailActionResult.success) {
+          emailContext = formatEmailActionResult(emailActionResult);
+          actionType = 'email';
+        }
+      } catch (error) {
+        console.error('Email action failed:', error);
+      }
+    }
+
+    // --- CANVAS GENERATION (for complex tasks) ---
+    let canvasData = null;
+    if (intentAnalysis?.needsCanvas && intentAnalysis?.canvasType !== 'none') {
+      try {
+        canvasData = await arcusAI.generateCanvasContent(
+          message,
+          intentAnalysis.canvasType,
+          emailContext || '',
+          { userName, userEmail, privacyMode }
+        );
+        console.log('📋 Canvas generated:', intentAnalysis.canvasType);
+      } catch (err) {
+        console.error('Canvas generation failed:', err.message);
+      }
+    }
+
+    // --- GENERATE AI RESPONSE ---
+    const response = await arcusAI.generateResponse(message, {
+      conversationHistory,
+      emailContext,
+      integrations: {
+        gmail: !!gmailAccessToken,
+        calendar: !!gmailAccessToken,
+        'cal.com': !!profile?.integrations?.['cal.com'],
+        'cal.com_link': profile?.integrations?.['cal.com_link']
+      },
+      subscriptionInfo: subscriptionService.getPlanInfo(profile?.plan_type || 'none', profile?.subscription_end_date),
+      userEmail,
+      userName,
+      privacyMode
+    });
+
     const finalResponse = response && response.trim()
       ? response
-      : generateEmergencyFallback(message, emailActionResult);
+      : generateFallbackResponse(message, integrations);
 
-    if (session?.user?.email) {
+    // Save conversation
+    if (userEmail) {
       try {
-        await saveConversation(session.user.email, message, finalResponse, currentConversationId);
+        await saveConversation(userEmail, message, finalResponse, currentConversationId, db);
       } catch (error) {
         console.log('⚠️ Failed to save conversation:', error.message);
       }
+
+      // Increment usage after successful chat
+      await subscriptionService.incrementFeatureUsage(userEmail, FEATURE_TYPES.ARCUS_AI);
     }
 
     return NextResponse.json({
@@ -74,128 +316,454 @@ export async function POST(request) {
       timestamp: new Date().toISOString(),
       conversationId: currentConversationId,
       aiGenerated: true,
-      emailAction: emailActionResult,
+      actionType: actionType,
+      emailResult,
+      notesResult,
+      integrations,
+      intentAnalysis,
+      canvasData,
+      thinkingSteps: intentAnalysis?.plan || []
     });
+
   } catch (error) {
-    console.error('💥 Chat API error:', error);
+    console.error('💥 Arcus Chat API error:', error);
     return NextResponse.json({
-      message: generateEmergencyFallback('error', null),
+      message: `I ran into a temporary issue (${error.message}). Could you try that again? If the problem persists, it might be worth refreshing the page.`,
       timestamp: new Date().toISOString(),
-      error: 'Internal server error',
+      error: error.message,
     });
   }
 }
 
 /**
- * Generate AI response with ElevenLabs (or fallback) and Gmail personalization
+ * Get integration status for current user
  */
-async function generateAIResponseWithFallbacks(
-  userMessage,
-  session = null,
-  emailActionResult = null,
-  gmailAccessToken = null
-) {
-  console.log('🤖 AI Generation Started:', userMessage.substring(0, 80));
+async function getIntegrationStatus(userEmail, db) {
+  const defaultStatus = {
+    gmail: false
+  };
+
+  if (!userEmail) return defaultStatus;
 
   try {
-    let emailContext = '';
-    if (emailActionResult) {
-      emailContext = formatEmailActionResult(emailActionResult);
-      console.log('📧 Email action result formatted, context length:', emailContext.length);
-    }
-    
-    // Always try to get email context if user query is email-related
-    if (!emailContext && session?.user?.email && isEmailRelatedQuery(userMessage)) {
-      try {
-        emailContext = await getEmailContext(userMessage, session.user.email);
-        console.log('📧 Email context retrieved, length:', emailContext.length);
-      } catch (error) {
-        console.log('⚠️ Email context unavailable, proceeding without it:', error.message);
+    const tokens = await db.getUserTokens(userEmail);
+    const profile = await db.getUserProfile(userEmail);
+
+    const tokenScopes = tokens?.scopes || '';
+
+    return {
+      gmail: !!tokens
+    };
+  } catch (error) {
+    console.error('Error getting integration status:', error);
+    return defaultStatus;
+  }
+}
+
+/**
+ * Get conversation history for memory
+ */
+async function getConversationHistory(userEmail, conversationId, db) {
+  try {
+    const history = await db.getConversationThread(userEmail, conversationId);
+
+    if (!history || history.length === 0) return [];
+
+    // Convert to message format for AI context
+    const messages = [];
+    for (const entry of history) {
+      if (entry.user_message) {
+        messages.push({
+          role: 'user',
+          content: entry.user_message
+        });
+      }
+      if (entry.agent_response) {
+        messages.push({
+          role: 'assistant',
+          content: entry.agent_response
+        });
       }
     }
 
-    const systemPrompt = buildIntelligentSystemPrompt(emailContext, session?.user?.email);
-
-    const messages = [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userMessage },
-    ];
-
-    // Build dynamic variables for ElevenLabs tools
-    const dynamicVariables = {};
-    const derivedToken = gmailAccessToken || await getGmailAccessTokenFromSession(session);
-    if (derivedToken) {
-      dynamicVariables.gmail_access_token = derivedToken;
-    }
-    if (session?.user?.email) {
-      dynamicVariables.user_email = session.user.email;
-    }
-
-    const elevenLabsResponse = await callElevenLabsAgent(messages, dynamicVariables);
-    if (elevenLabsResponse && elevenLabsResponse.trim()) {
-      console.log('✅ ElevenLabs response received');
-      return elevenLabsResponse.trim();
-    }
-
-    console.warn('⚠️ ElevenLabs unavailable or empty response, using fallback');
-    return generateIntelligentFallback(userMessage, emailContext, emailActionResult);
+    return messages;
   } catch (error) {
-    console.error('💥 AI service error:', error.message, error.stack);
-    const shouldHideError = error.message.includes('timeout') || error.message.includes('Timeout');
-    return generateIntelligentFallback(userMessage, '', emailActionResult, shouldHideError ? '' : error.message);
+    console.error('Error fetching conversation history:', error);
+    return [];
   }
 }
 
-function generateEmergencyFallback(userMessage, emailActionResult) {
-  const lowerMessage = userMessage.toLowerCase();
-  
-  if (emailActionResult && emailActionResult.action === 'read_emails') {
-    if (emailActionResult.success && emailActionResult.count === 0) {
-      return '📭 Your inbox is looking pretty quiet right now! No emails matching what you were looking for.\n\nWant me to check something else? Maybe unread emails, or emails from a specific person?';
+/**
+ * Get email by ID
+ */
+async function getEmailById(emailId, userEmail, session) {
+  try {
+    const db = new DatabaseService();
+    const userTokens = await db.getUserTokens(userEmail);
+
+    if (!userTokens?.encrypted_access_token) return null;
+
+    const accessToken = decrypt(userTokens.encrypted_access_token);
+    const refreshToken = userTokens.encrypted_refresh_token ? decrypt(userTokens.encrypted_refresh_token) : '';
+
+    const { GmailService } = await import('@/lib/gmail');
+    const gmailService = new GmailService(accessToken, refreshToken);
+
+    const details = await gmailService.getEmailDetails(emailId);
+    return gmailService.parseEmailData(details);
+  } catch (error) {
+    console.error('Error getting email by ID:', error);
+    return null;
+  }
+}
+
+/**
+ * Search for email by sender name
+ */
+async function searchEmailBySender(senderName, userEmail, session) {
+  try {
+    const db = new DatabaseService();
+    const userTokens = await db.getUserTokens(userEmail);
+
+    if (!userTokens?.encrypted_access_token) return null;
+
+    const accessToken = decrypt(userTokens.encrypted_access_token);
+    const refreshToken = userTokens.encrypted_refresh_token ? decrypt(userTokens.encrypted_refresh_token) : '';
+
+    const { GmailService } = await import('@/lib/gmail');
+    const gmailService = new GmailService(accessToken, refreshToken);
+
+    // Search for emails from this sender
+    const query = `from:${senderName} newer_than:30d`;
+    const emailsResponse = await gmailService.getEmails(1, query, null, 'internalDate desc');
+    const messages = emailsResponse?.messages || [];
+
+    if (messages.length === 0) return null;
+
+    const details = await gmailService.getEmailDetails(messages[0].id);
+    return gmailService.parseEmailData(details);
+  } catch (error) {
+    console.error('Error searching email by sender:', error);
+    return null;
+  }
+}
+
+/**
+ * Format email for draft context
+ */
+function formatEmailForDraft(emailData) {
+  return `From: ${emailData.from || 'Unknown'}
+To: ${emailData.to || 'Unknown'}
+Subject: ${emailData.subject || '(No Subject)'}
+Date: ${emailData.date || 'Unknown'}
+
+${emailData.body || emailData.snippet || ''}`;
+}
+
+/**
+ * Generate fallback response
+ */
+function generateFallbackResponse(message, integrations) {
+  const lowerMessage = message.toLowerCase();
+
+  if (lowerMessage.includes('email') || lowerMessage.includes('inbox')) {
+    return `I'm connected to your Gmail and ready to help! I can:
+
+1. Show you your recent or unread emails
+2. Search for emails from specific people or about certain topics  
+3. Draft replies to any email
+4. Summarize what needs your attention
+
+What would you like to do first?`;
+  }
+
+  if (lowerMessage.includes('meeting') || lowerMessage.includes('schedule')) {
+    const calendarEnabled = integrations['google-calendar'];
+    if (!calendarEnabled) {
+      return `I can help with scheduling, but Google Calendar isn't enabled yet. Head to the Integrations settings (plug icon) to turn it on, then I can create meetings and manage your calendar for you.`;
     }
+    return `I can help you schedule a meeting! Just tell me:
+
+1. Who should attend
+2. What day and time works
+3. Whether you want to send invites
+
+For example: "Schedule a meeting with John tomorrow at 2pm and send him an invite"`;
   }
 
-  if (lowerMessage.includes('email') || lowerMessage.includes('inbox') || lowerMessage.includes('gmail')) {
-    return '🤖 I’m your email assistant.\n\n• "Show me my unread emails"\n• "What emails do I have from [person]?"\n• "Summarize what’s urgent right now"\n• "Draft an email to [recipient] about [topic]"\n\nWhat should we tackle first?';
-  }
+  return `Hello! I'm Arcus, your intelligent email assistant. I'm here to help you manage your inbox, draft replies, and stay on top of your communications.
 
-  return 'Hello! I’m here to help with your Gmail—search, summarize, or draft emails. What do you need?';
+What would you like help with today?`;
 }
 
+/**
+ * Execute email actions
+ */
+async function executeEmailAction(userMessage, userEmail, session) {
+  const lowerMessage = userMessage.toLowerCase();
+
+  try {
+    let accessToken = session?.accessToken;
+    let refreshToken = session?.refreshToken;
+
+    console.log('📧 executeEmailAction: Starting email fetch for:', userEmail?.substring(0, 20) + '...');
+    console.log('📧 Session accessToken available:', !!accessToken);
+
+    if (!accessToken) {
+      console.log('📧 No session token, trying database...');
+      try {
+        const db = new DatabaseService();
+        const userTokens = await db.getUserTokens(userEmail);
+        console.log('📧 Database tokens found:', !!userTokens?.encrypted_access_token);
+
+        if (userTokens?.encrypted_access_token) {
+          accessToken = decrypt(userTokens.encrypted_access_token);
+          refreshToken = userTokens.encrypted_refresh_token ? decrypt(userTokens.encrypted_refresh_token) : '';
+          console.log('📧 Decrypted token successfully');
+        }
+      } catch (dbError) {
+        console.error('📧 Database token fetch error:', dbError.message);
+      }
+    }
+
+    if (!accessToken) {
+      console.log('📧 No access token available - Gmail not connected');
+      return { error: 'Gmail not connected' };
+    }
+
+    const { GmailService } = await import('@/lib/gmail');
+    const gmailService = new GmailService(accessToken, refreshToken || '');
+
+    // Build query based on user message
+    let query = 'newer_than:7d';
+    let maxResults = 5;
+
+    if (lowerMessage.includes('unread')) {
+      query = 'is:unread newer_than:7d';
+    } else if (lowerMessage.includes('important') || lowerMessage.includes('urgent')) {
+      query = 'is:important newer_than:7d';
+    } else if (lowerMessage.includes('starred')) {
+      query = 'is:starred';
+    } else if (lowerMessage.includes('sent')) {
+      query = 'in:sent newer_than:7d';
+    } else if (lowerMessage.includes('today')) {
+      query = 'newer_than:1d';
+    } else if (lowerMessage.includes('analytics') || lowerMessage.includes('insights')) {
+      query = 'newer_than:30d';
+      maxResults = 20;
+    }
+
+    const fromMatch = userMessage.match(/from\s+([^\s,]+)/i);
+    if (fromMatch) {
+      query += ` from:${fromMatch[1]}`;
+    }
+
+    console.log('📧 Gmail query:', query);
+
+    try {
+      const emailsResponse = await gmailService.getEmails(maxResults, query, null, 'internalDate desc');
+      const messages = emailsResponse?.messages || [];
+
+      console.log('📧 Emails found:', messages.length);
+
+      if (messages.length === 0) {
+        return { action: 'read_emails', success: true, emails: [], query, count: 0 };
+      }
+
+      const emailDetails = [];
+      for (const message of messages.slice(0, 5)) {
+        try {
+          const details = await gmailService.getEmailDetails(message.id);
+          const parsed = gmailService.parseEmailData(details);
+
+          const fullBody = parsed.body || parsed.snippet || '';
+          const bodyContent = fullBody.length > 2000 ? fullBody.substring(0, 2000) + '...' : fullBody;
+
+          emailDetails.push({
+            id: message.id,
+            subject: parsed.subject || '(No Subject)',
+            from: parsed.from || 'Unknown Sender',
+            to: parsed.to || '',
+            date: parsed.date || 'Unknown Date',
+            snippet: parsed.snippet || '',
+            body: bodyContent,
+            labels: parsed.labels || [],
+            threadId: parsed.threadId || ''
+          });
+        } catch (error) {
+          console.log('Error processing email:', error.message);
+        }
+      }
+
+      return { action: 'read_emails', success: true, emails: emailDetails, query, count: emailDetails.length };
+    } catch (error) {
+      return { action: 'read_emails', success: false, error: error.message };
+    }
+  } catch (error) {
+    return { error: error.message };
+  }
+}
+
+/**
+ * Format email action result for AI context
+ */
 function formatEmailActionResult(result) {
   if (!result) return '';
   if (result.error) return `Email action issue: ${result.error}`;
 
+  // Handle Arcus Mission Results
+  if (result.type === 'reply_proposal') {
+    return `=== ARCUS REPLY PROPOSAL ===
+Recipient: ${result.recipientName} <${result.recipientEmail}>
+Subject: ${result.subject}
+Content: ${result.content}
+
+Action: I have successfully drafted the reply above. I am now showing it to the user for final approval before sending. If the user clicks 'Send' in the UI, I will execute the delivery.`;
+  }
+
+  if (result.type === 'clarification_required') {
+    return `=== ARCUS CLARIFICATION NEEDED ===
+I need the user to clarify the following before I can proceed:
+${(result.questions || []).map(q => `- ${q}`).join('\n')}
+
+Safety/Alert Flags:
+${(result.flags || []).map(f => `- ${f}`).join('\n')}
+
+Action: I am stopping execution to ask the user these specific questions.`;
+  }
+
   if (result.action === 'read_emails' && result.success) {
-    let context = `=== EMAIL ACTION RESULT ===\nYou successfully fetched ${result.count} emails for the user.\nQuery used: ${result.query || 'default'}\n\n`;
+    let context = `=== EMAIL CONTEXT (${result.count} emails) ===\n\n`;
+
     if (result.emails?.length) {
-      context += `=== DETAILED EMAIL ANALYSIS (${result.emails.length} emails) ===\n\n`;
       result.emails.forEach((email, index) => {
-        const fromMatch = email.from ? email.from.match(/^(.+?)\s*<(.+)>$/) : null;
-        const senderName = fromMatch ? fromMatch[1].trim() : (email.from ? email.from.split('<')[0].trim() : 'Unknown');
-        const senderEmail = fromMatch ? fromMatch[2] : (email.from ? email.from : '');
-        
         context += `Email ${index + 1}:\n`;
-        context += `  ID: ${email.id || 'N/A'}\n`;
-        context += `  From: ${senderName}${senderEmail ? ` <${senderEmail}>` : ''}\n`;
-        context += `  Subject: ${email.subject || '(No Subject)'}\n`;
-        context += `  Date: ${email.date || 'Unknown'}\n`;
-        if (email.labels && email.labels.length > 0) {
-          context += `  Labels: ${email.labels.join(', ')}\n`;
-          context += `  Status: ${email.labels.includes('UNREAD') ? 'UNREAD' : 'READ'}${email.labels.includes('IMPORTANT') ? ' | IMPORTANT' : ''}\n`;
-        }
-        context += `  Preview: ${email.snippet || 'N/A'}\n`;
-        if (email.body && email.body.trim()) {
-          // Include full body content for deep understanding (up to 1500 chars)
-          const bodyContent = email.body.length > 1500 ? email.body.substring(0, 1500) + '...' : email.body;
-          context += `  Full Content:\n${bodyContent}\n`;
+        context += `  From: ${email.from}\n`;
+        context += `  Subject: ${email.subject}\n`;
+        context += `  Date: ${email.date}\n`;
+        context += `  Preview: ${email.snippet}\n`;
+        if (email.body) {
+          context += `  Content: ${email.body}\n`;
         }
         context += '\n';
       });
-      context += `=== END EMAIL ANALYSIS ===\n\n`;
-      context += `INSTRUCTIONS: Analyze each email deeply. Understand the content, context, relationships, urgency indicators, and provide comprehensive insights. Consider the full email body content, not just snippets.`;
     } else {
       context += 'No emails found matching the query.';
+    }
+    return context;
+  }
+
+  if (result.messages) {
+    // Thread result
+    return `=== THREAD CONTENT ===\n${result.messages.map(m => `[${m.from}] (${m.date}): ${m.body}`).join('\n---\n')}`;
+  }
+
+  return JSON.stringify(result);
+}
+
+/**
+ * Check if query is email-related
+ */
+function isEmailRelatedQuery(message) {
+  const emailKeywords = [
+    'email', 'emails', 'inbox', 'gmail', 'message', 'messages',
+    'send', 'compose', 'reply', 'forward', 'unread', 'read',
+    'from', 'subject', 'attachment', 'urgent', 'important',
+    'today', 'yesterday', 'this week', 'recent', 'latest',
+    'received', 'sent', 'what did', 'show me', 'find',
+    'search', 'check', 'any new', 'pending', 'waiting'
+  ];
+  const lowerMessage = message.toLowerCase();
+  return emailKeywords.some(keyword => lowerMessage.includes(keyword));
+}
+
+/**
+ * Check if query is notes-related
+ */
+function isNotesRelatedQuery(message) {
+  const notesKeywords = [
+    'note', 'notes', 'my notes', 'find note', 'search note',
+    'remember', 'reminder', 'todo', 'task', 'ideas', 'memo'
+  ];
+  const lowerMessage = message.toLowerCase();
+  return notesKeywords.some(keyword => lowerMessage.includes(keyword));
+}
+
+/**
+ * Execute notes action
+ */
+async function executeNotesAction(userMessage, userEmail, providedSearchQuery = null) {
+  try {
+    const searchTerm = providedSearchQuery || extractSearchTerm(userMessage);
+
+    if (!searchTerm) {
+      return { action: 'notes_search', success: true, notes: [], query: '', count: 0 };
+    }
+
+    const response = await fetch('https://mailient.xyz/api/agent-talk/notes-search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: searchTerm, searchType: 'all' }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Notes search failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    return {
+      action: 'notes_search',
+      success: true,
+      notes: data.results || [],
+      query: data.query,
+      count: data.totalFound || 0
+    };
+  } catch (error) {
+    console.error('Error executing notes action:', error);
+    return { action: 'notes_search', success: false, error: error.message };
+  }
+}
+
+/**
+ * Extract search term from message
+ */
+function extractSearchTerm(message) {
+  const patterns = [
+    /find\s+(?:my\s+)?notes?\s+(?:about|on|regarding)?\s*(.+)/i,
+    /search\s+(?:for\s+)?notes?\s+(?:about|on|regarding)?\s*(.+)/i,
+    /notes\s+about\s+(.+)/i
+  ];
+
+  for (const pattern of patterns) {
+    const match = message.match(pattern);
+    if (match && match[1]) {
+      return match[1].trim();
+    }
+  }
+
+  return message.trim();
+}
+
+/**
+ * Format notes action result
+ */
+function formatNotesActionResult(result) {
+  if (!result) return '';
+  if (result.error) return `Notes issue: ${result.error}`;
+
+  if (result.action === 'notes_search' && result.success) {
+    let context = `=== NOTES CONTEXT (${result.count} notes) ===\n\n`;
+
+    if (result.notes?.length) {
+      result.notes.forEach((note, index) => {
+        context += `Note ${index + 1}:\n`;
+        context += `  Subject: ${note.subject || '(No Subject)'}\n`;
+        context += `  Content: ${note.content || '(No Content)'}\n`;
+        context += `  Created: ${note.created_at || 'Unknown'}\n\n`;
+      });
+    } else {
+      context += 'No notes found matching the query.';
     }
     return context;
   }
@@ -203,539 +771,22 @@ function formatEmailActionResult(result) {
   return JSON.stringify(result);
 }
 
-function extractAIResponse(output) {
-  if (!output) return '';
-  if (typeof output === 'string' && output.trim()) return output.trim();
-
-  if (output && typeof output === 'object') {
-    const fields = ['content', 'message', 'text', 'response', 'answer', 'output', 'result'];
-    for (const field of fields) {
-      if (output[field] && typeof output[field] === 'string' && output[field].trim()) {
-        return output[field].trim();
-      }
-    }
-  }
-  return '';
-}
-
-function generateIntelligentFallback(userMessage, emailContext, emailActionResult = null, systemNote = '') {
-  const lowerMessage = userMessage.toLowerCase();
-
-  if (emailActionResult?.action === 'read_emails' && emailActionResult.success) {
-    const emails = emailActionResult.emails || [];
-    if (!emails.length) {
-      return '📭 Clean inbox for that request. Want me to check unread, important, or a specific sender instead?';
-    }
-
-    const summary = emails
-      .slice(0, 5)
-      .map((email, index) => {
-        const senderName = email.from ? email.from.split('<')[0].trim() : 'Unknown';
-        return `${index + 1}. ${email.subject || '(No Subject)'} — from ${senderName}${email.snippet ? ` | ${email.snippet.substring(0, 80)}...` : ''}`;
-      })
-      .join('\n');
-
-    return `📬 Here is what I pulled:\n${summary}\n\nWant me to expand any, mark as read, or draft a reply?`;
-  }
-
-  if (lowerMessage.includes('email') || lowerMessage.includes('inbox') || lowerMessage.includes('gmail')) {
-    return 'I am synced for Gmail tasks.\n\n• Check unread or important mail\n• Search by sender/topic/date\n• Summarize what matters now\n• Draft or polish replies\n\nTell me what to focus on.';
-  }
-
-  // Never show timeout errors to users
-  const shouldShowError = systemNote && !systemNote.toLowerCase().includes('timeout');
-  const errorNote = shouldShowError ? `\n\n(Heads-up: ${systemNote})` : '';
-  return `I'm here to help manage your Gmail with smart, personalized actions.${errorNote}\nWhat should we handle right now?`;
-}
-
-function buildIntelligentSystemPrompt(emailContext = '', userEmail = null) {
-  let prompt = `System Role:
-You are ARCUS (Adaptive Response & Communication Understanding System) — the conversational intelligence of Mailient.
-You exist to understand, summarize, and reason about the user's Gmail inbox, providing contextually aware insights and natural dialogue based on the user's entire communication history.
-ARCUS is private, ethical, and adaptive. You never send or modify emails yourself — you only analyze, interpret, and communicate insights conversationally.
-
-Mission
-
-Your mission is to act as a trusted communication brain.
-You help the user see through their inbox — identifying priorities, surfacing urgency, and recalling past threads or commitments when relevant.
-You always maintain a calm, professional, and precise tone — as if you are the user's intelligent Chief of Staff for communication.
-
-Core Intelligence Directives
-
-Persistent Context Awareness:
-You have long-term, structured memory of the user's entire Gmail inbox.
-This includes:
-
-All emails (summarized + embedded).
-
-Thread metadata: sender, subject, time, urgency, labels, tone.
-
-Historical summaries and sentiment patterns per contact.
-
-Learned tone preferences and reply style.
-
-Any past discussions with the user about specific people, topics, or projects.
-
-Context Engineering Workflow:
-Before forming your reply, always follow this reasoning sequence:
-
-Step 1: Parse the user's query → detect intent (summary, urgency, reply suggestion, recall, etc.)
-Step 2: Search internal memory for all relevant emails, summaries, senders, and previous decisions.
-Step 3: Rank matches by recency, relevance, and urgency signals (keywords like "urgent," "asap," "immediately," "deadline," etc.)
-Step 4: Compress findings into a contextual summary (never raw dump unless requested).
-Step 5: Formulate a direct, natural, and actionable response that feels intelligent, concise, and confident.
-Step 6: If action is implied (e.g. "schedule," "reply"), generate a suggested plan but clearly state ARCUS cannot execute it yet.
-
-Each answer must appear as if you've deeply understood the entire email ecosystem.
-
-Positive Interpretation Rule:
-When asked a query like "Anything urgent?" — interpret it optimistically and contextually.
-Example behavior:
-
-If there are high-priority or unread threads → summarize them clearly.
-
-If nothing is pressing → reassure confidently, e.g.,
-
-"Everything looks stable — no urgent emails. John's last message was just a reminder for Monday's meeting."
-
-Always phrase replies in a human, conversational tone, never robotic or uncertain.
-
-Clarity over Volume:
-Deliver the essence, not the entire inbox.
-Users want actionable clarity — not email data dumps.
-Use phrases like:
-
-"Here's what matters most…"
-"Only one message stands out as urgent…"
-"All ongoing threads are under control."
-
-Privacy & Security:
-
-Never reveal private email content verbatim unless the user explicitly requests "show exact email."
-
-Never mention specific addresses or sensitive details unless necessary.
-
-Do not speculate or infer beyond the data available.
-
-Never expose any user email to external entities.
-
-Default to minimal disclosure and maximum utility.
-
-Self-Awareness & Ethical Behavior:
-ARCUS knows it is a conversational assistant, not an executor.
-Always state clearly when an action cannot be performed yet.
-Example:
-
-"I've drafted what I'd send to John, but since ARCUS can't send emails yet, here's the suggested text…"
-
-Interaction Principles
-
-Speak like a human strategist, not an assistant.
-
-Every reply should make the user feel clarity and control.
-
-If something is unclear, ask exactly one clarifying question — no assumptions.
-
-If a query can't be answered from context, respond gracefully:
-
-"I don't have that data in memory yet, but I can help summarize what's available."
-
-ARCUS Tone
-
-Confident. Intelligent. Minimalist.
-Every line should sound like a professional who's already done the thinking.
-No filler, no fluff — just pure contextual clarity.
-
-Remember:
-ARCUS is the conversation core of Mailient — it doesn't "do," it understands.
-Your excellence lies not in execution, but in awareness and reasoning.
-`;
-
-  if (userEmail) {
-    prompt += `\n\nUser: ${userEmail}`;
-  }
-
-  if (emailContext) {
-    prompt += `\n\n=== CRITICAL: EMAIL CONTEXT PROVIDED ===\n${emailContext}\n\n=== EMAIL ANALYSIS REQUIREMENTS ===\n
-When email context is provided, you MUST:
-1. Read and understand the FULL email content (not just snippets) - analyze the complete body text
-2. Identify key information: dates, deadlines, action items, requests, commitments
-3. Understand relationships: who is communicating, what threads exist, conversation flow
-4. Assess urgency: look for urgency indicators, deadlines, time-sensitive requests
-5. Extract sentiment and tone: professional, urgent, casual, formal, etc.
-6. Identify patterns: recurring topics, ongoing conversations, project references
-7. Provide deep insights: don't just summarize - analyze, interpret, and provide actionable intelligence
-8. Reference specific emails when relevant: "In the email from [sender] about [subject]..."
-9. Connect related emails: if multiple emails discuss the same topic, connect them
-10. Be specific: use actual content from emails, not generic statements
-
-The email context includes full email bodies (up to 2000 characters), so you have access to complete content. Use this to provide deep, intelligent analysis.
-
-CRITICAL: You have access to the user's Gmail. When email context is provided, analyze it deeply and provide comprehensive insights based on the actual email content.`;
-  } else {
-    prompt += '\n\nNo email context provided yet. If needed, suggest a focused Gmail check to ground your answer. When email context becomes available, analyze it deeply using the full email content.';
-  }
-
-  prompt += '\n\n=== TOOLING & SAFETY ===\n'
-  + 'If the user asks about email content or inbox state, you MUST call the `read_gmail` webhook before responding. '
-  + 'If the user asks to send or reply, you MUST call the `send_email` webhook and confirm recipients and subject. '
-  + 'If the user asks to schedule or move a meeting, you MUST call the `schedule_meeting` webhook and confirm time zone, start, end, and attendees. '
-  + 'Never hallucinate email content—always base answers on webhook JSON results.\n'
-  + 'If required inputs are missing, ask a single concise clarifying question.\n'
-  + 'Always keep responses brief and voice-friendly.';
-
-  prompt += '\n\n=== FINAL INSTRUCTIONS ===\nFollow these system instructions strictly in every reply. Always respond as Arcus. When you have email context, use it to provide deep, intelligent analysis based on the complete email content. Never make generic statements when you have specific email data available.';
-  return prompt;
-}
-
-async function getGmailAccessTokenFromSession(session) {
-  if (session?.accessToken) {
-    return session.accessToken;
-  }
-
-  if (!session?.user?.email) {
-    return null;
-  }
-
+async function saveConversation(userEmail, userMessage, aiResponse, conversationId, db) {
   try {
-    const db = new DatabaseService();
-    const userTokens = await db.getUserTokens(session.user.email);
-    if (userTokens?.encrypted_access_token) {
-      return decrypt(userTokens.encrypted_access_token);
-    }
+    // Get current message count for this conversation to determine order
+    const messageCount = await db.getConversationMessageCount(userEmail, conversationId);
+    const nextOrder = (messageCount || 0) + 1;
+    const isInitial = nextOrder === 1;
+
+    await db.storeAgentChatMessage(
+      userEmail,
+      userMessage,
+      aiResponse,
+      conversationId,
+      nextOrder,
+      isInitial
+    );
   } catch (error) {
-    console.log('⚠️ Unable to derive Gmail token from session/db:', error.message);
+    console.error('Error saving conversation:', error);
   }
-
-  return null;
-}
-
-async function callElevenLabsAgent(messages, dynamicVariables = {}) {
-  const apiKey =
-    process.env.ELEVENLABS_API_KEY ||
-    process.env.ELEVENLABS_API_KEY_SERVER ||
-    process.env.ELEVENLABS_XI_API_KEY;
-  const agentId =
-    process.env.ELEVENLABS_AGENT_ID ||
-    process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID;
-
-  if (!apiKey || !agentId) {
-    console.warn('⚠️ ElevenLabs configuration missing (api key or agent id)');
-    return null;
-  }
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 60000);
-
-  try {
-    const response = await fetch('https://api.elevenlabs.io/v1/convai/chat', {
-      method: 'POST',
-      signal: controller.signal,
-      headers: {
-        'Content-Type': 'application/json',
-        'xi-api-key': apiKey,
-      },
-      body: JSON.stringify({
-        agent_id: agentId,
-        messages,
-        dynamic_variables: dynamicVariables,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ ElevenLabs API error:', response.status, errorText);
-      return null;
-    }
-
-    const result = await response.json();
-    const candidate =
-      result?.output?.text ||
-      result?.output ||
-      result?.message ||
-      result?.response ||
-      '';
-
-    if (typeof candidate === 'string') {
-      return candidate;
-    }
-
-    return JSON.stringify(candidate);
-  } catch (error) {
-    if (error.name === 'AbortError') {
-      console.error('⏱️ ElevenLabs request timed out');
-    } else {
-      console.error('💥 ElevenLabs call failed:', error.message);
-    }
-    return null;
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
-function isEmailRelatedQuery(message) {
-  const emailKeywords = [
-    'email', 'emails', 'inbox', 'gmail', 'message', 'messages',
-    'send', 'compose', 'reply', 'forward', 'unread', 'read',
-    'from', 'subject', 'attachment', 'urgent', 'important',
-    'meeting', 'calendar', 'schedule', 'thread', 'conversation',
-  ];
-  const lowerMessage = message.toLowerCase();
-  return emailKeywords.some((keyword) => lowerMessage.includes(keyword));
-}
-
-async function getEmailContext(userMessage, userEmail) {
-  try {
-    const db = new DatabaseService();
-    const userTokens = await db.getUserTokens(userEmail);
-
-    if (!userTokens?.encrypted_access_token) {
-      return 'No Gmail access available. Please sign in to access your emails.';
-    }
-
-    const accessToken = decrypt(userTokens.encrypted_access_token);
-    const refreshToken = userTokens.encrypted_refresh_token ? decrypt(userTokens.encrypted_refresh_token) : '';
-
-    const { GmailService } = await import('../../../../lib/gmail.ts');
-    const gmailService = new GmailService(accessToken, refreshToken);
-
-    const query = buildGmailSearchQuery(userMessage);
-    // Fetch more emails for better context (increased from 5 to 10)
-    const emailsResponse = await gmailService.getEmails(10, query, null, 'internalDate desc');
-    const messages = emailsResponse.messages || [];
-
-    if (!messages.length) {
-      return 'No recent emails found matching the request.';
-    }
-
-    const emailDetails = [];
-    // Process up to 5 emails with full content for deep understanding
-    for (const message of messages.slice(0, 5)) {
-      try {
-        const details = await gmailService.getEmailDetails(message.id);
-        const parsed = gmailService.parseEmailData(details);
-        
-        // Get full email body (up to 2000 chars for deep understanding)
-        const fullBody = parsed.body || parsed.snippet || '';
-        const bodyPreview = fullBody.length > 2000 ? fullBody.substring(0, 2000) + '...' : fullBody;
-        
-        // Extract sender name and email separately
-        const fromMatch = parsed.from ? parsed.from.match(/^(.+?)\s*<(.+)>$/) : null;
-        const senderName = fromMatch ? fromMatch[1].trim() : (parsed.from ? parsed.from.split('<')[0].trim() : 'Unknown');
-        const senderEmail = fromMatch ? fromMatch[2] : (parsed.from ? parsed.from : '');
-        
-        emailDetails.push({
-          id: message.id,
-          subject: parsed.subject || '(No Subject)',
-          from: parsed.from || 'Unknown Sender',
-          senderName: senderName,
-          senderEmail: senderEmail,
-          to: parsed.to || '',
-          date: parsed.date || 'Unknown Date',
-          snippet: parsed.snippet || '',
-          body: bodyPreview,
-          labels: parsed.labels || [],
-          threadId: parsed.threadId || '',
-          isImportant: parsed.labels?.includes('IMPORTANT') || false,
-          isUnread: parsed.labels?.includes('UNREAD') || false,
-        });
-      } catch (error) {
-        console.log('Error fetching email details:', error.message);
-      }
-    }
-
-    // Format comprehensive email context for deep AI understanding
-    const contextLines = emailDetails.map((email, index) => {
-      let emailInfo = `Email ${index + 1}:\n`;
-      emailInfo += `  ID: ${email.id}\n`;
-      emailInfo += `  From: ${email.senderName}${email.senderEmail ? ` <${email.senderEmail}>` : ''}\n`;
-      emailInfo += `  To: ${email.to || 'N/A'}\n`;
-      emailInfo += `  Subject: ${email.subject}\n`;
-      emailInfo += `  Date: ${email.date}\n`;
-      emailInfo += `  Status: ${email.isUnread ? 'UNREAD' : 'READ'}${email.isImportant ? ' | IMPORTANT' : ''}\n`;
-      if (email.labels.length > 0) {
-        emailInfo += `  Labels: ${email.labels.join(', ')}\n`;
-      }
-      emailInfo += `  Preview: ${email.snippet}\n`;
-      emailInfo += `  Full Content:\n${email.body}\n`;
-      return emailInfo;
-    });
-
-    return `=== GMAIL CONTEXT (${emailDetails.length} emails) ===\n\n${contextLines.join('\n---\n\n')}\n\n=== END GMAIL CONTEXT ===\n\nAnalyze these emails deeply. Understand the content, context, relationships between emails, urgency, and provide intelligent insights based on the full email content.`;
-  } catch (error) {
-    console.log('Error fetching email context:', error.message);
-    return 'Unable to fetch email context right now.';
-  }
-}
-
-function buildGmailSearchQuery(userMessage) {
-  const lowerMessage = userMessage.toLowerCase();
-  let query = 'newer_than:30d';
-
-  if (lowerMessage.includes('unread')) {
-    query = 'is:unread newer_than:7d';
-  } else if (lowerMessage.includes('urgent') || lowerMessage.includes('important')) {
-    query = 'is:important newer_than:7d';
-  } else if (lowerMessage.includes('today') || lowerMessage.includes('recent') || lowerMessage.includes('yesterday')) {
-    query = 'newer_than:7d';
-  }
-
-  const fromMatch = userMessage.match(/from\s+([^\s,]+)/i);
-  if (fromMatch) {
-    query += ` from:${fromMatch[1]}`;
-  }
-
-  return query;
-}
-
-/**
- * Execute email actions based on user request
- */
-async function executeEmailAction(userMessage, userEmail, session) {
-  const lowerMessage = userMessage.toLowerCase();
-  
-  try {
-    // First try to get tokens from session (most reliable)
-    let accessToken = session?.accessToken;
-    let refreshToken = session?.refreshToken;
-    
-    // If not in session, try database as fallback
-    if (!accessToken) {
-      try {
-        const db = new DatabaseService();
-        const userTokens = await db.getUserTokens(userEmail);
-        
-        if (userTokens?.encrypted_access_token) {
-          accessToken = decrypt(userTokens.encrypted_access_token);
-          refreshToken = userTokens.encrypted_refresh_token ? decrypt(userTokens.encrypted_refresh_token) : '';
-        }
-      } catch (dbError) {
-        // Continue without tokens
-      }
-    }
-    
-    if (!accessToken) {
-      return { error: 'Gmail not connected. Please sign in with Google to access your emails.' };
-    }
-
-    const { GmailService } = await import('../../../../lib/gmail.ts');
-    const gmailService = new GmailService(accessToken, refreshToken || '');
-
-    // Detect and execute email actions
-    
-    // 1. READ EMAILS action
-    if (lowerMessage.includes('read') || lowerMessage.includes('show') || 
-        lowerMessage.includes('get') || lowerMessage.includes('fetch') ||
-        lowerMessage.includes('check') || lowerMessage.includes('what') ||
-        lowerMessage.includes('email') || lowerMessage.includes('inbox')) {
-      
-      let query = 'newer_than:7d';
-      let maxResults = 5;
-      
-      if (lowerMessage.includes('unread')) {
-        query = 'is:unread newer_than:7d';
-      } else if (lowerMessage.includes('important') || lowerMessage.includes('urgent')) {
-        query = 'is:important newer_than:7d';
-      } else if (lowerMessage.includes('starred')) {
-        query = 'is:starred';
-      } else if (lowerMessage.includes('sent')) {
-        query = 'in:sent newer_than:7d';
-      } else if (lowerMessage.includes('today')) {
-        query = 'newer_than:1d';
-      }
-
-      // Extract sender name if mentioned
-      const fromMatch = userMessage.match(/from\s+([^\s,]+)/i);
-      if (fromMatch) {
-        query += ` from:${fromMatch[1]}`;
-      }
-
-      try {
-        const emailsResponse = await gmailService.getEmails(maxResults, query, null, 'internalDate desc');
-        const messages = emailsResponse?.messages || [];
-        
-        if (messages.length === 0) {
-          return { 
-            action: 'read_emails', 
-            success: true, 
-            emails: [],
-            query: query,
-            count: 0
-          };
-        }
-        
-        const emailDetails = [];
-        for (const message of messages.slice(0, 5)) {
-          try {
-            const details = await gmailService.getEmailDetails(message.id);
-            const parsed = gmailService.parseEmailData(details);
-            
-            // Get full email body for deep understanding (up to 2000 chars)
-            const fullBody = parsed.body || parsed.snippet || '';
-            const bodyContent = fullBody.length > 2000 ? fullBody.substring(0, 2000) + '...' : fullBody;
-            
-            // Extract sender details
-            const fromMatch = parsed.from ? parsed.from.match(/^(.+?)\s*<(.+)>$/) : null;
-            const senderName = fromMatch ? fromMatch[1].trim() : (parsed.from ? parsed.from.split('<')[0].trim() : 'Unknown');
-            const senderEmail = fromMatch ? fromMatch[2] : (parsed.from ? parsed.from : '');
-            
-            emailDetails.push({
-              id: message.id,
-              subject: parsed.subject || '(No Subject)',
-              from: parsed.from || 'Unknown Sender',
-              senderName: senderName,
-              senderEmail: senderEmail,
-              to: parsed.to || '',
-              date: parsed.date || 'Unknown Date',
-              snippet: parsed.snippet || '',
-              body: bodyContent,
-              labels: parsed.labels || [],
-              threadId: parsed.threadId || '',
-              isImportant: parsed.labels?.includes('IMPORTANT') || false,
-              isUnread: parsed.labels?.includes('UNREAD') || false,
-            });
-          } catch (error) {
-            // Continue with other emails
-            console.log('Error processing email:', error.message);
-          }
-        }
-        
-        return { 
-          action: 'read_emails', 
-          success: true, 
-          emails: emailDetails,
-          query: query,
-          count: emailDetails.length
-        };
-      } catch (error) {
-        // Check if it's a token error
-        if (error.message.includes('401') || error.message.includes('token') || error.message.includes('expired')) {
-          return { action: 'read_emails', success: false, error: 'Your Gmail session has expired. Please sign out and sign in again to refresh your access.' };
-        }
-        
-        return { action: 'read_emails', success: false, error: error.message };
-      }
-    }
-
-    return null; // No email action detected
-    
-  } catch (error) {
-    return { error: error.message };
-  }
-}
-
-/**
- * Save conversation to database
- */
-async function saveConversation(userEmail, userMessage, aiResponse, conversationId) {
-  const db = new DatabaseService();
-  
-  await db.storeAgentChatMessage(
-    userEmail,
-    userMessage,
-    aiResponse,
-    conversationId,
-    1, // message order
-    true // is initial message
-  );
 }

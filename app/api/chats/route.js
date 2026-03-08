@@ -1,6 +1,6 @@
-import { DatabaseService } from '../../../lib/supabase.js';
-import { auth } from '../../../lib/auth.js';
-import { calculateContactStrength } from '../../../lib/utils';
+import { DatabaseService } from '@/lib/supabase.js';
+import { auth } from '@/lib/auth.js';
+import { calculateContactStrength } from '@/lib/utils';
 
 export async function GET(request) {
   try {

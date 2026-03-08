@@ -6,6 +6,12 @@ import Bytez from "bytez.js";
  */
 export async function GET() {
   try {
+    const adminSecret = (process.env.DEBUG_ADMIN_SECRET || '').trim();
+    return NextResponse.json({
+      success: false,
+      error: adminSecret ? 'Forbidden' : 'Forbidden'
+    }, { status: 403 });
+
     console.log('🧪 Testing bytez.js integration...');
     
     // Test basic bytez.js setup

@@ -1,5 +1,5 @@
-import { DatabaseService } from '../../../../lib/supabase.js';
-import { auth } from '../../../../lib/auth.js';
+import { DatabaseService } from '@/lib/supabase.js';
+import { auth } from '@/lib/auth.js';
 
 export async function POST(request) {
   try {
@@ -36,11 +36,11 @@ export async function GET(request) {
     const tokens = await db.getUserTokens(session.user.email);
     const profile = await db.getUserProfile(session.user.email);
 
-    const hasCalendarScope = tokens?.scopes?.includes('https://www.googleapis.com/auth/calendar');
+    const tokenScopes = tokens?.scopes || '';
     const integrations = {
       gmail: !!tokens,
-      'google-calendar': (profile?.integrations?.['google-calendar'] !== false) && !!tokens && hasCalendarScope, // Enabled if not disabled, has tokens, and has Calendar scope
-      'google-meet': (profile?.integrations?.['google-meet'] !== false) && !!tokens && hasCalendarScope, // Enabled if not disabled, has tokens, and has Calendar scope
+      'google-calendar': tokenScopes.includes('calendar'),
+      'google-meet': tokenScopes.includes('calendar')
     };
 
     return Response.json({ integrations });

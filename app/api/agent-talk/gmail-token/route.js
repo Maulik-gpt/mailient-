@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { auth } from '../../../../lib/auth.js';
-import { GmailTokenService } from '../../../../lib/gmail-token-service.ts';
+import { auth } from '@/lib/auth.js';
+import { GmailTokenService } from '@/lib/gmail-token-service.ts';
 
 // Return a fresh Gmail access token for the signed-in user so the frontend can pass it to ElevenLabs
 export async function GET() {

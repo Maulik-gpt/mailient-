@@ -21,10 +21,25 @@ CREATE TABLE IF NOT EXISTS user_profiles (
   gender TEXT,
   work_status TEXT,
   interests TEXT[],
+  streak_count INTEGER DEFAULT 0,
+  last_activity_at TIMESTAMP WITH TIME ZONE,
   last_synced_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Create user_activity table for the contribution graph
+CREATE TABLE IF NOT EXISTS user_activity (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  activity_date DATE NOT NULL,
+  count INTEGER DEFAULT 1,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(user_id, activity_date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_activity_user_id ON user_activity(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_activity_date ON user_activity(activity_date);
 
 -- Create user_tokens table
 CREATE TABLE IF NOT EXISTS user_tokens (
@@ -97,6 +112,23 @@ CREATE TABLE IF NOT EXISTS saved_searches (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Create unsubscribed_emails table
+CREATE TABLE IF NOT EXISTS unsubscribed_emails (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  email_id TEXT NOT NULL,
+  sender_email TEXT NOT NULL,
+  sender_name TEXT,
+  subject TEXT,
+  received_at TIMESTAMP WITH TIME ZONE,
+  snippet TEXT,
+  category TEXT,
+  user_email TEXT NOT NULL,
+  unsubscribed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(user_id, email_id)
+);
+
 -- Create search_index table for optimized full-text search
 CREATE TABLE IF NOT EXISTS search_index (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -134,6 +166,9 @@ CREATE INDEX IF NOT EXISTS idx_user_tokens_google_email ON user_tokens(google_em
 CREATE INDEX IF NOT EXISTS idx_user_emails_user_id ON user_emails(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_emails_date ON user_emails(user_id, date DESC);
 CREATE INDEX IF NOT EXISTS idx_user_emails_email_id ON user_emails(email_id);
+CREATE INDEX IF NOT EXISTS idx_unsubscribed_emails_user_id ON unsubscribed_emails(user_id);
+CREATE INDEX IF NOT EXISTS idx_unsubscribed_emails_email_id ON unsubscribed_emails(email_id);
+CREATE INDEX IF NOT EXISTS idx_unsubscribed_emails_sender ON unsubscribed_emails(sender_email);
 CREATE INDEX IF NOT EXISTS idx_agent_chat_history_user_id ON agent_chat_history(user_id);
 CREATE INDEX IF NOT EXISTS idx_agent_chat_history_conversation_id ON agent_chat_history(conversation_id);
 CREATE INDEX IF NOT EXISTS idx_agent_chat_history_user_conversation ON agent_chat_history(user_id, conversation_id);
@@ -195,6 +230,19 @@ CREATE POLICY "Users can insert own emails" ON user_emails
 
 DROP POLICY IF EXISTS "Users can delete own emails" ON user_emails;
 CREATE POLICY "Users can delete own emails" ON user_emails
+  FOR DELETE USING (user_id = auth.uid()::text);
+
+-- RLS policies for unsubscribed_emails table
+DROP POLICY IF EXISTS "Users can view own unsubscribed emails" ON unsubscribed_emails;
+CREATE POLICY "Users can view own unsubscribed emails" ON unsubscribed_emails
+  FOR SELECT USING (user_id = auth.uid()::text);
+
+DROP POLICY IF EXISTS "Users can insert own unsubscribed emails" ON unsubscribed_emails;
+CREATE POLICY "Users can insert own unsubscribed emails" ON unsubscribed_emails
+  FOR INSERT WITH CHECK (user_id = auth.uid()::text);
+
+DROP POLICY IF EXISTS "Users can delete own unsubscribed emails" ON unsubscribed_emails;
+CREATE POLICY "Users can delete own unsubscribed emails" ON unsubscribed_emails
   FOR DELETE USING (user_id = auth.uid()::text);
 
 -- RLS policies for agent_chat_history table
@@ -289,6 +337,11 @@ CREATE TRIGGER update_user_tokens_updated_at
 DROP TRIGGER IF EXISTS update_user_emails_updated_at ON user_emails;
 CREATE TRIGGER update_user_emails_updated_at
   BEFORE UPDATE ON user_emails
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_unsubscribed_emails_updated_at ON unsubscribed_emails;
+CREATE TRIGGER update_unsubscribed_emails_updated_at
+  BEFORE UPDATE ON unsubscribed_emails
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Function to update search vectors for full-text search

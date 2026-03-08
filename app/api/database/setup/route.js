@@ -1,34 +1,45 @@
 // app/api/database/setup/route.js
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { getSupabaseAdmin } from "@/lib/supabase.js";
 
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+// CRITICAL: Force dynamic rendering to prevent build-time evaluation
+export const dynamic = 'force-dynamic';
+
+const supabase = new Proxy({}, {
+  get: (target, prop) => getSupabaseAdmin()[prop]
+});
 
 export async function POST(req) {
   try {
+    const adminSecret = (process.env.DB_SETUP_ADMIN_SECRET || '').trim();
+    const provided = (req.headers.get('x-admin-secret') || '').trim();
+    if (!adminSecret || provided !== adminSecret) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     console.log("Setting up database tables...");
 
     const results = [];
-    
+
     // Test each table by attempting to insert and then delete a test record
     const tables = ['user_profiles', 'user_tokens', 'user_emails', 'agent_chat_history'];
-    
+
     for (const tableName of tables) {
       try {
         console.log(`Testing ${tableName} table...`);
-        
+
         // Try to insert a test record
         const testData = {
           user_id: `test_${Date.now()}`,
           email: 'test@example.com'
         };
-        
+
         const { data, error } = await supabase
           .from(tableName)
           .insert(testData)
           .select('id')
           .single();
-        
+
         if (error) {
           if (error.message.includes('does not exist')) {
             console.log(`${tableName} table does not exist`);
@@ -53,7 +64,7 @@ export async function POST(req) {
 
     // Return setup instructions
     const missingTables = results.filter(r => r.status === 'missing').map(r => r.table);
-    
+
     if (missingTables.length > 0) {
       return NextResponse.json({
         message: "Database setup required",
@@ -91,20 +102,26 @@ export async function POST(req) {
 // GET endpoint to check database status and auto-create missing tables
 export async function GET(req) {
   try {
+    const adminSecret = (process.env.DB_SETUP_ADMIN_SECRET || '').trim();
+    const provided = (req.headers.get('x-admin-secret') || '').trim();
+    if (!adminSecret || provided !== adminSecret) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     console.log("🔧 Checking database status and creating missing tables...");
-    
+
     const results = [];
-    
+
     // Test each table
     const tables = ['user_profiles', 'user_tokens', 'user_emails', 'agent_chat_history'];
-    
+
     for (const tableName of tables) {
       try {
         const { error } = await supabase
           .from(tableName)
           .select('id')
           .limit(1);
-        
+
         if (error && error.message.includes('does not exist')) {
           results.push({ table: tableName, status: 'missing' });
           // Try to create the table
@@ -140,9 +157,9 @@ export async function GET(req) {
 async function createTable(tableName) {
   try {
     console.log(`Creating ${tableName} table...`);
-    
+
     let createSQL = '';
-    
+
     switch (tableName) {
       case 'user_tokens':
         createSQL = `
@@ -162,7 +179,7 @@ async function createTable(tableName) {
           CREATE INDEX IF NOT EXISTS idx_user_tokens_google_email ON user_tokens(google_email);
         `;
         break;
-        
+
       case 'user_profiles':
         createSQL = `
           CREATE TABLE IF NOT EXISTS user_profiles (
@@ -189,7 +206,7 @@ async function createTable(tableName) {
           CREATE INDEX IF NOT EXISTS idx_user_profiles_user_id ON user_profiles(user_id);
         `;
         break;
-        
+
       case 'user_emails':
         createSQL = `
           CREATE TABLE IF NOT EXISTS user_emails (
@@ -212,7 +229,7 @@ async function createTable(tableName) {
           CREATE INDEX IF NOT EXISTS idx_user_emails_date ON user_emails(user_id, date DESC);
         `;
         break;
-        
+
       case 'agent_chat_history':
         createSQL = `
           CREATE TABLE IF NOT EXISTS agent_chat_history (
@@ -231,7 +248,7 @@ async function createTable(tableName) {
         `;
         break;
     }
-    
+
     if (createSQL) {
       const { error } = await supabase.rpc('exec_sql', { sql: createSQL });
       if (error) {
@@ -240,7 +257,7 @@ async function createTable(tableName) {
       }
       console.log(`✅ ${tableName} table created successfully`);
     }
-    
+
   } catch (error) {
     console.error(`Failed to create ${tableName} table:`, error);
     throw error;
@@ -253,7 +270,7 @@ async function createTable(tableName) {
 async function createEnhancedTables() {
   try {
     console.log("Creating enhanced tables...");
-    
+
     // Create contacts table for CRM functionality
     const contactsSQL = `
       CREATE TABLE IF NOT EXISTS contacts (
@@ -274,12 +291,12 @@ async function createEnhancedTables() {
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
         UNIQUE(user_id, email)
       );
-      
+       
       CREATE INDEX IF NOT EXISTS idx_contacts_user_id ON contacts(user_id);
       CREATE INDEX IF NOT EXISTS idx_contacts_email ON contacts(email);
       CREATE INDEX IF NOT EXISTS idx_contacts_status ON contacts(status);
     `;
-    
+
     // Create insights table for storing AI-generated insights
     const insightsSQL = `
       CREATE TABLE IF NOT EXISTS insights (
@@ -296,15 +313,37 @@ async function createEnhancedTables() {
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
         expires_at TIMESTAMP WITH TIME ZONE
       );
-      
+       
       CREATE INDEX IF NOT EXISTS idx_insights_user_id ON insights(user_id);
       CREATE INDEX IF NOT EXISTS idx_insights_type ON insights(insight_type);
       CREATE INDEX IF NOT EXISTS idx_insights_priority ON insights(priority);
       CREATE INDEX IF NOT EXISTS idx_insights_status ON insights(status);
     `;
-    
-    const statements = [contactsSQL, insightsSQL];
-    
+
+    // Create unsubscribed_emails table
+    const unsubscribedSQL = `
+      CREATE TABLE IF NOT EXISTS unsubscribed_emails (
+        id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        email_id TEXT NOT NULL,
+        sender_email TEXT NOT NULL,
+        sender_name TEXT,
+        subject TEXT,
+        received_at TIMESTAMP WITH TIME ZONE,
+        snippet TEXT,
+        category TEXT,
+        user_email TEXT NOT NULL,
+        unsubscribed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      );
+       
+      CREATE INDEX IF NOT EXISTS idx_unsubscribed_emails_user_id ON unsubscribed_emails(user_id);
+      CREATE INDEX IF NOT EXISTS idx_unsubscribed_emails_email_id ON unsubscribed_emails(email_id);
+      CREATE INDEX IF NOT EXISTS idx_unsubscribed_emails_sender ON unsubscribed_emails(sender_email);
+    `;
+
+    const statements = [contactsSQL, insightsSQL, unsubscribedSQL];
+
     for (const sql of statements) {
       try {
         const { error } = await supabase.rpc('exec_sql', { sql });
@@ -315,9 +354,9 @@ async function createEnhancedTables() {
         console.error('SQL execution error:', sqlError);
       }
     }
-    
+
     console.log('✅ Enhanced tables creation completed');
-    
+
   } catch (error) {
     console.error('Failed to create enhanced tables:', error);
   }

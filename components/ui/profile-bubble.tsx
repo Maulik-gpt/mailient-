@@ -30,7 +30,7 @@ import {
   MapPin
 } from "lucide-react";
 import { WebsiteLink } from "./website-link";
-import { EditProfileDialog } from "./edit-profile-dialog";
+import { EditProfileDialog, type EditProfileFormData } from "./edit-profile-dialog";
 
 type UserStatus = 'online' | 'away' | 'offline';
 
@@ -270,10 +270,10 @@ export default function ProfileBubble() {
 
   const initials = user.name
     ? user.name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
     : user.email?.[0]?.toUpperCase() || "U";
 
   const getStatusColor = (status: UserStatus) => {
@@ -351,6 +351,35 @@ export default function ProfileBubble() {
       } else {
         console.error('Failed to save profile');
       }
+    } catch (error) {
+      console.error('Error saving profile:', error);
+    }
+  };
+
+  const saveProfileFromDialog = async (data: EditProfileFormData) => {
+    try {
+      const response = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: data.name,
+          bio: data.bio,
+          location: data.location,
+          website: data.website || undefined,
+          banner_url: data.banner_url || undefined,
+          preferences: {
+            ...userProfile?.preferences,
+            username: data.username,
+            social_links: {
+              x: data.social_x || undefined,
+              linkedin: data.social_linkedin || undefined,
+              instagram: data.social_instagram || undefined,
+              github: data.social_github || undefined,
+            },
+          },
+        }),
+      });
+      if (response.ok) await fetchUserProfile();
     } catch (error) {
       console.error('Error saving profile:', error);
     }
@@ -480,13 +509,14 @@ export default function ProfileBubble() {
                           user={{ name: user.name || undefined, email: user.email || undefined }}
                           profile={userProfile ? {
                             avatar_url: userProfile.avatar_url || undefined,
+                            banner_url: (userProfile as { banner_url?: string })?.banner_url || undefined,
+                            username: (userProfile as { username?: string })?.username || undefined,
                             bio: userProfile.bio || undefined,
                             location: userProfile.location || undefined,
-                            website: userProfile.website || undefined
+                            website: userProfile.website || undefined,
+                            preferences: userProfile.preferences
                           } : undefined}
-                          onSave={async (data) => {
-                            await handleSaveProfile();
-                          }}
+                          onSave={saveProfileFromDialog}
                         />
                       </button>
                     </div>
@@ -522,11 +552,10 @@ export default function ProfileBubble() {
                 <div className="space-y-1">
                   <button
                     onClick={() => updateUserStatus('online')}
-                    className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${
-                      userStatus === 'online'
-                        ? 'bg-green-500/20 text-green-400'
-                        : 'text-white hover:bg-[#2A2A2A]'
-                    }`}
+                    className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${userStatus === 'online'
+                      ? 'bg-green-500/20 text-green-400'
+                      : 'text-white hover:bg-[#2A2A2A]'
+                      }`}
                     role="menuitem"
                   >
                     <div className="w-3 h-3 bg-green-500 rounded-full"></div>
@@ -534,11 +563,10 @@ export default function ProfileBubble() {
                   </button>
                   <button
                     onClick={() => updateUserStatus('away')}
-                    className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${
-                      userStatus === 'away'
-                        ? 'bg-yellow-500/20 text-yellow-400'
-                        : 'text-white hover:bg-[#2A2A2A]'
-                    }`}
+                    className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${userStatus === 'away'
+                      ? 'bg-yellow-500/20 text-yellow-400'
+                      : 'text-white hover:bg-[#2A2A2A]'
+                      }`}
                     role="menuitem"
                   >
                     <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
@@ -546,11 +574,10 @@ export default function ProfileBubble() {
                   </button>
                   <button
                     onClick={() => updateUserStatus('offline')}
-                    className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${
-                      userStatus === 'offline'
-                        ? 'bg-gray-500/20 text-gray-400'
-                        : 'text-white hover:bg-[#2A2A2A]'
-                    }`}
+                    className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${userStatus === 'offline'
+                      ? 'bg-gray-500/20 text-gray-400'
+                      : 'text-white hover:bg-[#2A2A2A]'
+                      }`}
                     role="menuitem"
                   >
                     <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
@@ -575,23 +602,30 @@ export default function ProfileBubble() {
                     <Camera className="w-4 h-4" />
                     Change Avatar
                   </button>
-                  <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
-                    <EditProfileDialog
-                      trigger={<Edit className="w-4 h-4" />}
-                      user={{ name: user.name || undefined, email: user.email || undefined }}
-                      profile={userProfile ? {
-                        avatar_url: userProfile.avatar_url || undefined,
-                        bio: userProfile.bio || undefined,
-                        location: userProfile.location || undefined,
-                        website: userProfile.website || undefined
-                      } : undefined}
-                      onSave={async (data) => {
-                        await handleSaveProfile();
-                      }}
-                    />
-                    Edit Profile
-                  </button>
-                  <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
+                  <EditProfileDialog
+                    trigger={
+                      <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
+                        <Edit className="w-4 h-4" />
+                        Edit Profile
+                      </button>
+                    }
+                    user={{ name: user.name || undefined, email: user.email || undefined }}
+                    profile={userProfile ? {
+                      avatar_url: userProfile.avatar_url || undefined,
+                      banner_url: (userProfile as { banner_url?: string })?.banner_url || undefined,
+                      username: (userProfile as { username?: string })?.username || undefined,
+                      bio: userProfile.bio || undefined,
+                      location: userProfile.location || undefined,
+                      website: userProfile.website || undefined,
+                      preferences: userProfile.preferences
+                    } : undefined}
+                    onSave={saveProfileFromDialog}
+                  />
+                  <button
+                    onClick={() => { router.push('/settings'); setIsDropdownOpen(false); }}
+                    className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors"
+                    role="menuitem"
+                  >
                     <Settings className="w-4 h-4" />
                     Settings
                   </button>
@@ -683,11 +717,10 @@ export default function ProfileBubble() {
                 <div className="space-y-1">
                   <button
                     onClick={() => handleThemeChange('dark')}
-                    className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${
-                      theme === 'dark'
-                        ? 'bg-[#2A2A2A] text-white'
-                        : 'text-white hover:bg-[#2A2A2A]'
-                    }`}
+                    className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${theme === 'dark'
+                      ? 'bg-[#2A2A2A] text-white'
+                      : 'text-white hover:bg-[#2A2A2A]'
+                      }`}
                     role="menuitem"
                   >
                     <Moon className="w-4 h-4" />
@@ -695,11 +728,10 @@ export default function ProfileBubble() {
                   </button>
                   <button
                     onClick={() => handleThemeChange('light')}
-                    className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${
-                      theme === 'light'
-                        ? 'bg-[#2A2A2A] text-white'
-                        : 'text-white hover:bg-[#2A2A2A]'
-                    }`}
+                    className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${theme === 'light'
+                      ? 'bg-[#2A2A2A] text-white'
+                      : 'text-white hover:bg-[#2A2A2A]'
+                      }`}
                     role="menuitem"
                   >
                     <Sun className="w-4 h-4" />
@@ -707,11 +739,10 @@ export default function ProfileBubble() {
                   </button>
                   <button
                     onClick={() => handleThemeChange('system')}
-                    className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${
-                      theme === 'system'
-                        ? 'bg-[#2A2A2A] text-white'
-                        : 'text-white hover:bg-[#2A2A2A]'
-                    }`}
+                    className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${theme === 'system'
+                      ? 'bg-[#2A2A2A] text-white'
+                      : 'text-white hover:bg-[#2A2A2A]'
+                      }`}
                     role="menuitem"
                   >
                     <Monitor className="w-4 h-4" />
@@ -825,13 +856,14 @@ export default function ProfileBubble() {
                             user={{ name: user.name || undefined, email: user.email || undefined }}
                             profile={userProfile ? {
                               avatar_url: userProfile.avatar_url || undefined,
+                              banner_url: (userProfile as { banner_url?: string })?.banner_url || undefined,
+                              username: (userProfile as { username?: string })?.username || undefined,
                               bio: userProfile.bio || undefined,
                               location: userProfile.location || undefined,
-                              website: userProfile.website || undefined
+                              website: userProfile.website || undefined,
+                              preferences: userProfile.preferences
                             } : undefined}
-                            onSave={async (data) => {
-                              await handleSaveProfile();
-                            }}
+                            onSave={saveProfileFromDialog}
                           />
                         </button>
                       </div>
@@ -867,11 +899,10 @@ export default function ProfileBubble() {
                   <div className="grid grid-cols-3 gap-2">
                     <button
                       onClick={() => updateUserStatus('online')}
-                      className={`flex flex-col items-center gap-2 p-3 rounded-md transition-colors ${
-                        userStatus === 'online'
-                          ? 'bg-green-500/20 text-green-400'
-                          : 'text-white hover:bg-[#2A2A2A]'
-                      }`}
+                      className={`flex flex-col items-center gap-2 p-3 rounded-md transition-colors ${userStatus === 'online'
+                        ? 'bg-green-500/20 text-green-400'
+                        : 'text-white hover:bg-[#2A2A2A]'
+                        }`}
                       role="menuitem"
                     >
                       <div className="w-3 h-3 bg-green-500 rounded-full"></div>
@@ -879,11 +910,10 @@ export default function ProfileBubble() {
                     </button>
                     <button
                       onClick={() => updateUserStatus('away')}
-                      className={`flex flex-col items-center gap-2 p-3 rounded-md transition-colors ${
-                        userStatus === 'away'
-                          ? 'bg-yellow-500/20 text-yellow-400'
-                          : 'text-white hover:bg-[#2A2A2A]'
-                      }`}
+                      className={`flex flex-col items-center gap-2 p-3 rounded-md transition-colors ${userStatus === 'away'
+                        ? 'bg-yellow-500/20 text-yellow-400'
+                        : 'text-white hover:bg-[#2A2A2A]'
+                        }`}
                       role="menuitem"
                     >
                       <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
@@ -891,11 +921,10 @@ export default function ProfileBubble() {
                     </button>
                     <button
                       onClick={() => updateUserStatus('offline')}
-                      className={`flex flex-col items-center gap-2 p-3 rounded-md transition-colors ${
-                        userStatus === 'offline'
-                          ? 'bg-gray-500/20 text-gray-400'
-                          : 'text-white hover:bg-[#2A2A2A]'
-                      }`}
+                      className={`flex flex-col items-center gap-2 p-3 rounded-md transition-colors ${userStatus === 'offline'
+                        ? 'bg-gray-500/20 text-gray-400'
+                        : 'text-white hover:bg-[#2A2A2A]'
+                        }`}
                       role="menuitem"
                     >
                       <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
@@ -903,7 +932,7 @@ export default function ProfileBubble() {
                     </button>
                   </div>
                 </div>
-  
+
                 {/* Quick Actions */}
                 <div>
                   <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Quick Actions</h3>
@@ -935,22 +964,25 @@ export default function ProfileBubble() {
                 <div>
                   <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Account & Security</h3>
                   <div className="space-y-1">
-                    <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
-                      <EditProfileDialog
-                        trigger={<Edit className="w-4 h-4" />}
-                        user={{ name: user.name || undefined, email: user.email || undefined }}
-                        profile={userProfile ? {
-                          avatar_url: userProfile.avatar_url || undefined,
-                          bio: userProfile.bio || undefined,
-                          location: userProfile.location || undefined,
-                          website: userProfile.website || undefined
-                        } : undefined}
-                        onSave={async (data) => {
-                          await handleSaveProfile();
-                        }}
-                      />
-                      Edit Profile
-                    </button>
+                    <EditProfileDialog
+                      trigger={
+                        <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
+                          <Edit className="w-4 h-4" />
+                          Edit Profile
+                        </button>
+                      }
+                      user={{ name: user.name || undefined, email: user.email || undefined }}
+                      profile={userProfile ? {
+                        avatar_url: userProfile.avatar_url || undefined,
+                        banner_url: (userProfile as { banner_url?: string })?.banner_url || undefined,
+                        username: (userProfile as { username?: string })?.username || undefined,
+                        bio: userProfile.bio || undefined,
+                        location: userProfile.location || undefined,
+                        website: userProfile.website || undefined,
+                        preferences: userProfile.preferences
+                      } : undefined}
+                      onSave={saveProfileFromDialog}
+                    />
                     <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
                       <Shield className="w-4 h-4" />
                       Two-Factor Auth
@@ -968,11 +1000,10 @@ export default function ProfileBubble() {
                   <div className="grid grid-cols-3 gap-2">
                     <button
                       onClick={() => handleThemeChange('dark')}
-                      className={`flex flex-col items-center gap-2 p-3 rounded-md transition-colors ${
-                        theme === 'dark'
-                          ? 'bg-[#2A2A2A] text-white'
-                          : 'text-white hover:bg-[#2A2A2A]'
-                      }`}
+                      className={`flex flex-col items-center gap-2 p-3 rounded-md transition-colors ${theme === 'dark'
+                        ? 'bg-[#2A2A2A] text-white'
+                        : 'text-white hover:bg-[#2A2A2A]'
+                        }`}
                       role="menuitem"
                     >
                       <Moon className="w-5 h-5" />
@@ -980,11 +1011,10 @@ export default function ProfileBubble() {
                     </button>
                     <button
                       onClick={() => handleThemeChange('light')}
-                      className={`flex flex-col items-center gap-2 p-3 rounded-md transition-colors ${
-                        theme === 'light'
-                          ? 'bg-[#2A2A2A] text-white'
-                          : 'text-white hover:bg-[#2A2A2A]'
-                      }`}
+                      className={`flex flex-col items-center gap-2 p-3 rounded-md transition-colors ${theme === 'light'
+                        ? 'bg-[#2A2A2A] text-white'
+                        : 'text-white hover:bg-[#2A2A2A]'
+                        }`}
                       role="menuitem"
                     >
                       <Sun className="w-5 h-5" />
@@ -992,11 +1022,10 @@ export default function ProfileBubble() {
                     </button>
                     <button
                       onClick={() => handleThemeChange('system')}
-                      className={`flex flex-col items-center gap-2 p-3 rounded-md transition-colors ${
-                        theme === 'system'
-                          ? 'bg-[#2A2A2A] text-white'
-                          : 'text-white hover:bg-[#2A2A2A]'
-                      }`}
+                      className={`flex flex-col items-center gap-2 p-3 rounded-md transition-colors ${theme === 'system'
+                        ? 'bg-[#2A2A2A] text-white'
+                        : 'text-white hover:bg-[#2A2A2A]'
+                        }`}
                       role="menuitem"
                     >
                       <Monitor className="w-5 h-5" />
@@ -1035,10 +1064,10 @@ export default function ProfileBubble() {
             </div>
           </div>
         </>
-       )}
+      )}
 
-       {/* Enhanced Edit Profile Modal - Replaced with new dialog component */}
+      {/* Enhanced Edit Profile Modal - Replaced with new dialog component */}
 
-     </div>
-   );
- }
+    </div>
+  );
+}

@@ -1,7 +1,8 @@
-import { GmailService } from '../../../../../lib/gmail.ts';
-import { DatabaseService } from '../../../../../lib/supabase.js';
-import { auth } from '../../../../../lib/auth.js';
-import { decrypt, encrypt } from '../../../../../lib/crypto.js';
+import { GmailService } from '@/lib/gmail.ts';
+import { DatabaseService } from '@/lib/supabase.js';
+import { auth } from '@/lib/auth.js';
+import { decrypt, encrypt } from '@/lib/crypto.js';
+import { subscriptionService } from '@/lib/subscription-service.js';
 
 export async function GET(request, { params }) {
   try {
@@ -19,6 +20,16 @@ export async function GET(request, { params }) {
       return Response.json({
         error: 'No valid session found. Please sign in again.'
       }, { status: 401 });
+    }
+
+    // 🔒 SECURITY: Check access before allowing email access
+    const hasAccess = await subscriptionService.checkAccess(session.user.email);
+    if (!hasAccess) {
+      return Response.json({
+        error: 'subscription_required',
+        message: 'Access required.',
+        upgradeUrl: '/pricing'
+      }, { status: 403 });
     }
 
     // Get tokens from database, fallback to session tokens
@@ -111,8 +122,11 @@ export async function GET(request, { params }) {
 
     console.log('Message fetched successfully');
 
+    // Parse data before returning
+    const parsedData = gmailService.parseEmailData(messageData);
+
     // Return successful response with cache headers
-    return new Response(JSON.stringify(messageData), {
+    return new Response(JSON.stringify(parsedData), {
       headers: {
         'Content-Type': 'application/json',
         'Cache-Control': 'public, max-age=300', // Cache for 5 minutes

@@ -1,9 +1,9 @@
-// app/api/sync/route.js
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { decrypt } from "../../../lib/crypto.js";
+import { DatabaseService } from "@/lib/supabase.js";
+import { decrypt, encrypt } from "@/lib/crypto.js";
 
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+const db = new DatabaseService();
+const supabase = db.supabase;
 
 async function getValidAccess(row) {
   // if expired or missing, try refresh (reuse profile's refresh logic if you want)
@@ -32,7 +32,7 @@ async function getValidAccess(row) {
   if (body.error) throw new Error(JSON.stringify(body));
   const enc = body.access_token; // we'll re-encrypt when saving
   // Save encrypted in DB using server key path
-  const { encrypt } = await import("../../../lib/crypto.js");
+  const { encrypt } = await import("@/lib/crypto.js");
   const encSaved = encrypt(enc);
   const expiry = body.expires_in ? new Date(Date.now() + body.expires_in * 1000).toISOString() : null;
   await supabase.from("user_tokens").update({ encrypted_access_token: encSaved, access_token_expires_at: expiry }).eq("google_email", row.google_email);
@@ -101,55 +101,41 @@ export async function GET(req) {
     const saved = [];
     // Process in batches to avoid timeouts
     const processBatch = async (batch) => {
-      const results = await Promise.all(batch.map(async (m) => {
+      const emailObjects = await Promise.all(batch.map(async (m) => {
         try {
           console.log(`Processing message ${m.id}...`);
           const msgRes = await fetch(`https://www.googleapis.com/gmail/v1/users/me/messages/${m.id}?format=full`, {
             headers: { Authorization: `Bearer ${accessToken}` },
           });
           if (!msgRes.ok) {
-            let errorText = await msgRes.text();
-            if (!errorText) errorText = 'No error details provided by API';
-            console.error(`Message fetch failed for ${m.id}: ${msgRes.status} ${errorText}`);
+            console.error(`Message fetch failed for ${m.id}`);
             return null;
           }
           const msgJson = await msgRes.json();
           // extract headers
           const headers = (msgJson.payload?.headers || []).reduce((acc, h) => { acc[h.name] = h.value; return acc; }, {});
-          const from = headers.From || null;
-          const to = headers.To ? headers.To.split(",").map(s => s.trim()) : [];
-          const subject = headers.Subject || "";
-          const snippet = msgJson.snippet || "";
-          console.log(`Attempting to upsert email ${msgJson.id} to database...`);
-          try {
-            const { error } = await supabase.from("user_emails").upsert({
-              user_id: row.google_email,
-              email_id: msgJson.id,
-              thread_id: msgJson.threadId,
-              subject,
-              from_email: from,
-              to_email: to.join(", "),
-              date: msgJson.internalDate ? new Date(Number(msgJson.internalDate)) : null,
-              snippet,
-              labels: JSON.stringify(msgJson.labelIds || [])
-            }, { onConflict: ["user_id", "email_id"] });
-            if (error) {
-              console.error(`Supabase upsert error for message ${msgJson.id}:`, error);
-              return null;
-            } else {
-              console.log(`Successfully upserted email ${msgJson.id}`);
-              return msgJson.id;
-            }
-          } catch (upsertError) {
-            console.error(`Exception during upsert for message ${msgJson.id}:`, upsertError);
-            return null;
-          }
+
+          return {
+            id: msgJson.id,
+            threadId: msgJson.threadId,
+            subject: headers.Subject || "",
+            from: headers.From || null,
+            to: headers.To || "",
+            date: msgJson.internalDate ? new Date(Number(msgJson.internalDate)).toISOString() : new Date().toISOString(),
+            snippet: msgJson.snippet || "",
+            labels: msgJson.labelIds || []
+          };
         } catch (error) {
           console.error(`Error processing message ${m.id}:`, error);
           return null;
         }
       }));
-      return results.filter(id => id !== null);
+
+      const validEmails = emailObjects.filter(e => e !== null);
+      if (validEmails.length > 0) {
+        await db.storeEmails(row.google_email, validEmails);
+      }
+      return validEmails.map(e => e.id);
     };
 
     // Process in smaller batches
@@ -158,7 +144,7 @@ export async function GET(req) {
       const batch = allMessages.slice(i, i + batchSize);
       const batchResults = await processBatch(batch);
       saved.push(...batchResults);
-      console.log(`Processed batch ${Math.floor(i/batchSize) + 1}, saved ${batchResults.length} emails`);
+      console.log(`Processed batch ${Math.floor(i / batchSize) + 1}, saved ${batchResults.length} emails`);
     }
 
     return NextResponse.json({

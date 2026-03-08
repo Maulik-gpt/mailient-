@@ -44,23 +44,23 @@ export default function DashboardClient() {
     return (
       <div className="fixed inset-0 bg-black flex items-center justify-center">
         <div className="text-white text-4xl font-bold flex overflow-hidden">
-          <span className="letter" style={{animationDelay: '0s'}}>M</span>
-          <span className="letter" style={{animationDelay: '0.1s'}}>a</span>
-          <span className="letter" style={{animationDelay: '0.2s'}}>i</span>
-          <span className="letter" style={{animationDelay: '0.3s'}}>l</span>
-          <span className="letter" style={{animationDelay: '0.4s'}}>i</span>
-          <span className="letter" style={{animationDelay: '0.5s'}}>e</span>
-          <span className="letter" style={{animationDelay: '0.6s'}}>n</span>
-          <span className="letter" style={{animationDelay: '0.7s'}}>t</span>
+          <span className="letter" style={{ animationDelay: '0s' }}>M</span>
+          <span className="letter" style={{ animationDelay: '0.1s' }}>a</span>
+          <span className="letter" style={{ animationDelay: '0.2s' }}>i</span>
+          <span className="letter" style={{ animationDelay: '0.3s' }}>l</span>
+          <span className="letter" style={{ animationDelay: '0.4s' }}>i</span>
+          <span className="letter" style={{ animationDelay: '0.5s' }}>e</span>
+          <span className="letter" style={{ animationDelay: '0.6s' }}>n</span>
+          <span className="letter" style={{ animationDelay: '0.7s' }}>t</span>
         </div>
-        <style dangerouslySetInnerHTML={{__html: style}} />
+        <style dangerouslySetInnerHTML={{ __html: style }} />
       </div>
     );
   }
 
   if (status === "unauthenticated") {
     // Redirect to home page if not authenticated
-    signIn('google');
+    signIn('google', { redirectTo: '/dashboard' });
     return null;
   }
 
@@ -84,16 +84,9 @@ export default function DashboardClient() {
             </Button>
           </div>
           <div className="bg-gray-800 rounded-lg p-6">
-            <h3 className="text-lg font-semibold mb-2">Profile</h3>
+            <h3 className="text-lg font-semibold mb-2">Account</h3>
             <p className="text-gray-400 mb-4">Manage your profile and settings</p>
-            <Button onClick={() => window.location.href = '/dashboard/profile-bubble'}>
-              Go to Profile
-            </Button>
-          </div>
-          <div className="bg-gray-800 rounded-lg p-6">
-            <h3 className="text-lg font-semibold mb-2">Settings</h3>
-            <p className="text-gray-400 mb-4">Configure your preferences</p>
-            <Button onClick={() => window.location.href = '/dashboard/profile-settings'}>
+            <Button onClick={() => window.location.href = '/settings'}>
               Go to Settings
             </Button>
           </div>

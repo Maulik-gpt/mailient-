@@ -1,7 +1,8 @@
-import { GmailService } from '../../../../lib/gmail.ts';
-import { DatabaseService } from '../../../../lib/supabase.js';
-import { auth } from '../../../../lib/auth.js';
-import { decrypt, encrypt } from '../../../../lib/crypto.js';
+import { GmailService } from '@/lib/gmail';
+import { DatabaseService } from '@/lib/supabase.js';
+import { auth } from '@/lib/auth.js';
+import { decrypt, encrypt } from '@/lib/crypto.js';
+import { subscriptionService } from '@/lib/subscription-service.js';
 
 // Global Gmail service instance for debugging
 let globalGmailService = null;
@@ -45,7 +46,10 @@ export async function GET(request) {
     console.log('=== EMAILS API START ===');
     const { searchParams } = new URL(request.url);
     const maxResults = parseInt(searchParams.get('maxResults')) || 500; // Increased default for processing more emails
-    const query = searchParams.get('query') || '';
+    const queryParam = searchParams.get('query') || '';
+    // Only fetch INBOX emails (exclude sent, drafts, spam, etc.)
+    // 'in:inbox' ensures we only show emails received by the user, not emails they sent
+    const query = queryParam ? `in:inbox ${queryParam}` : 'in:inbox';
     const fetchAll = searchParams.get('all') === 'true';
     const debugReset = searchParams.get('debugReset') === 'true';
     console.log('Request params:', { maxResults, query, fetchAll, debugReset });
@@ -61,6 +65,20 @@ export async function GET(request) {
         error: 'No valid session found. Please sign in again.'
       }, { status: 401 });
     }
+
+    // 🔒 SECURITY: Check access before allowing email access
+    console.log('🔒 Checking access status for:', session.user.email);
+    const hasAccess = await subscriptionService.checkAccess(session.user.email);
+    if (!hasAccess) {
+      console.log('❌ No active subscription, denying access');
+      return Response.json({
+        error: 'subscription_required',
+        message: 'An active subscription is required to access your emails. Please upgrade to continue.',
+        upgradeUrl: '/pricing',
+        timestamp: new Date().toISOString()
+      }, { status: 403 });
+    }
+    console.log('✅ Active subscription verified');
 
     // Get tokens from database, fallback to session tokens
     console.log('Getting tokens from database...');

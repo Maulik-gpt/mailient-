@@ -1,108 +1,67 @@
 import { NextResponse } from 'next/server';
-import { google } from 'googleapis';
+import { auth } from '@/lib/auth';
+import { SchedulingAIService } from '@/lib/scheduling-ai';
+import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service';
 
-function getAccessTokenFromHeaders(request) {
-  const bearer = request.headers.get('authorization');
-  if (bearer?.toLowerCase().startsWith('bearer ')) {
-    return bearer.slice(7).trim();
-  }
-  return request.headers.get('x-gmail-access-token') || null;
-}
-
-// Public webhook: schedule meetings for ElevenLabs tool calls
 export async function POST(request) {
   try {
-    const accessToken = getAccessTokenFromHeaders(request);
-    const refreshToken = request.headers.get('x-gmail-refresh-token') || '';
-    const userEmail = request.headers.get('x-user-email') || undefined;
-
-    if (!accessToken) {
-      return NextResponse.json(
-        { error: { code: 'missing_token', message: 'x-gmail-access-token header is required' } },
-        { status: 401 }
-      );
+    const session = await auth();
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json().catch(() => ({}));
-    const {
-      title,
-      summary,
-      description = '',
-      start,
-      end,
-      attendees = [],
-      location = '',
-      time_zone = 'UTC',
-      include_meet = false,
-    } = body || {};
+    const userId = session.user.email;
 
-    const eventTitle = summary || title;
-
-    if (!eventTitle || !start || !end) {
-      return NextResponse.json(
-        { error: { code: 'invalid_input', message: 'title/summary, start, and end are required' } },
-        { status: 400 }
-      );
+    // Check subscription and feature usage for schedule calls
+    const canUse = await subscriptionService.canUseFeature(userId, FEATURE_TYPES.SCHEDULE_CALL);
+    if (!canUse) {
+      const usage = await subscriptionService.getFeatureUsage(userId, FEATURE_TYPES.SCHEDULE_CALL);
+      return NextResponse.json({
+        error: 'limit_reached',
+        message: `Sorry, but you've exhausted all the credits of ${usage.period === 'daily' ? 'the day' : 'the month'}.`,
+        usage: usage.usage,
+        limit: usage.limit,
+        period: usage.period,
+        planType: usage.planType,
+        upgradeUrl: '/pricing'
+      }, { status: 403 });
     }
 
-    const oauth2Client = new google.auth.OAuth2();
-    oauth2Client.setCredentials({
-      access_token: accessToken,
-      refresh_token: refreshToken || undefined,
-    });
+    const { emailContent, meetingContext } = await request.json();
 
-    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
-    const event = {
-      summary: eventTitle,
-      description,
-      location,
-      start: { dateTime: start, timeZone: time_zone },
-      end: { dateTime: end, timeZone: time_zone },
-      attendees: Array.isArray(attendees)
-        ? attendees
-            .filter(Boolean)
-            .map((email) => (typeof email === 'string' ? { email } : email))
-        : [],
-      reminders: {
-        useDefault: false,
-        overrides: [
-          { method: 'email', minutes: 10 },
-          { method: 'popup', minutes: 0 },
-        ],
-      },
-    };
+    console.log('🤖 Meeting scheduling request received');
 
-    if (include_meet) {
-      event.conferenceData = {
-        createRequest: {
-          requestId: Math.random().toString(36).substring(7),
-          conferenceSolutionKey: { type: 'hangoutsMeet' },
-        },
-      };
-    }
+    const schedulingAI = new SchedulingAIService();
 
-    const response = await calendar.events.insert({
-      calendarId: 'primary',
-      resource: event,
-      conferenceDataVersion: include_meet ? 1 : 0,
-    });
+    // Generate meeting details using AI
+    const meetingDetails = await schedulingAI.recommendMeetingDetails(
+      emailContent || meetingContext || ''
+    );
+
+    console.log('✅ Generated meeting details:', meetingDetails);
+
+    // Increment usage after successful scheduling
+    await subscriptionService.incrementFeatureUsage(userId, FEATURE_TYPES.SCHEDULE_CALL);
 
     return NextResponse.json({
       success: true,
-      status: 'scheduled',
-      user_email: userEmail || null,
-      event_id: response.data.id,
-      html_link: response.data.htmlLink,
-      start,
-      end,
-      attendees: event.attendees,
+      meetingDetails,
+      timestamp: new Date().toISOString()
     });
+
   } catch (error) {
-    console.error('schedule_meeting webhook error:', error);
+    console.error('❌ Meeting scheduling error:', error);
     return NextResponse.json(
-      { error: { code: 'server_error', message: 'Failed to schedule meeting', detail: error.message } },
+      {
+        error: 'Failed to generate meeting details',
+        message: error.message,
+        fallback: {
+          suggested_title: 'Follow-up Call',
+          suggested_description: 'Discussing the recent email exchange.',
+          suggested_duration: 30
+        }
+      },
       { status: 500 }
     );
   }
 }
-

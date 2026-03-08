@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { auth } from '../../../../lib/auth.js';
-import { DatabaseService } from '../../../../lib/supabase.js';
-import { decrypt, encrypt } from '../../../../lib/crypto.js';
+import { auth } from '@/lib/auth.js';
+import { DatabaseService } from '@/lib/supabase.js';
+import { decrypt, encrypt } from '@/lib/crypto.js';
 import Bytez from "bytez.js";
 
 /**
@@ -416,7 +416,7 @@ async function getEmailContext(userMessage, userEmail) {
     const refreshToken = userTokens.encrypted_refresh_token ? decrypt(userTokens.encrypted_refresh_token) : '';
 
     // Use Gmail API to fetch relevant emails
-    const { GmailService } = await import('../../../../lib/gmail.ts');
+    const { GmailService } = await import('@/lib/gmail.ts');
     const gmailService = new GmailService(accessToken, refreshToken);
 
     // Build search query
@@ -513,7 +513,7 @@ async function executeEmailAction(userMessage, userEmail, session) {
     }
 
     console.log('🔗 Creating GmailService with token length:', accessToken.length);
-    const { GmailService } = await import('../../../../lib/gmail.ts');
+    const { GmailService } = await import('@/lib/gmail.ts');
     const gmailService = new GmailService(accessToken, refreshToken || '');
 
     // Detect and execute email actions
