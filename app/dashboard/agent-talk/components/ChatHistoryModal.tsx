@@ -433,88 +433,82 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
   const chatGroups = groupConversationsByDate(history);
 
   return (
-    <div className="h-full flex flex-col" onClick={(e) => e.stopPropagation()}>
+    <div className="h-full flex flex-col bg-transparent selection:bg-white selection:text-black" onClick={(e) => e.stopPropagation()}>
       {/* Selection Mode Header */}
       {isSelectionMode && (
-        <div className="flex items-center justify-between p-4 border-b border-gray-700/50 bg-[#0f0f0f]/80 backdrop-blur-sm">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between p-6 border-b border-white/[0.05] bg-white/[0.02] backdrop-blur-xl">
+          <div className="flex items-center gap-4">
             <button
               onClick={toggleSelectAll}
-              className="flex items-center gap-2 text-white hover:text-blue-400 transition-colors"
+              className="flex items-center gap-3 text-white/40 hover:text-white transition-all font-mono text-[10px] tracking-widest uppercase"
             >
-              {selectAll ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
-              <span className="text-sm font-medium">Select All</span>
+              {selectAll ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+              SELECT_ALL
             </button>
-            <span className="text-gray-400 text-sm">
-              {selectedItems.size} selected
+            <span className="text-white/20 font-mono text-[10px] tracking-widest">
+              {selectedItems.size}_INDEXED
             </span>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={handleDeleteSelected}
               disabled={selectedItems.size === 0}
-              className="flex items-center gap-2 px-3 py-1.5 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white text-sm rounded-lg transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-white text-black disabled:bg-white/10 disabled:text-white/20 text-[10px] font-mono font-bold tracking-widest uppercase rounded-xl transition-all"
             >
-              <Trash2 className="w-4 h-4" />
-              Delete Selected
+              <Trash2 className="w-3.5 h-3.5" />
+              PURGE
             </button>
             <button
               onClick={exitSelectionMode}
-              className="px-3 py-1.5 text-gray-300 hover:text-white hover:bg-gray-800 text-sm rounded-lg transition-colors"
+              className="px-4 py-2 text-white/40 hover:text-white hover:bg-white/5 text-[10px] font-mono tracking-widest uppercase rounded-xl transition-all"
             >
-              Cancel
+              CANCEL
             </button>
           </div>
         </div>
       )}
 
       {isLoading ? (
-        <div className="flex items-center justify-center h-32">
-          <div className="flex items-center gap-3 text-white/60">
-            <Loader2 className="w-5 h-5 animate-spin" />
-            <span className="text-sm">Loading conversations...</span>
-          </div>
+        <div className="flex flex-col items-center justify-center flex-1 gap-4 opacity-20">
+          <Loader2 className="w-5 h-5 animate-spin" strokeWidth={1.5} />
+          <span className="text-[10px] font-mono tracking-[0.2em] uppercase">Initializing_Logs...</span>
         </div>
       ) : error ? (
-        <div className="flex items-center justify-center h-32">
-          <div className="text-center">
-            <div className="text-red-400 text-sm mb-2">Error loading conversations</div>
-            <div className="text-white/60 text-sm">{error}</div>
-            <button
-              onClick={fetchHistory}
-              className="mt-3 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white text-sm transition-all duration-300"
-            >
-              Try Again
-            </button>
-          </div>
+        <div className="flex flex-col items-center justify-center flex-1 p-8 text-center gap-4">
+          <div className="text-white/20 text-[10px] font-mono tracking-widest uppercase mb-2">Sync_Failure_Detected</div>
+          <div className="text-white/40 text-xs italic opacity-60 max-w-xs mb-4">{error}</div>
+          <button
+            onClick={fetchHistory}
+            className="px-6 py-2.5 bg-white/5 border border-white/10 hover:bg-white/10 rounded-xl text-white/60 text-[10px] font-mono tracking-widest uppercase transition-all"
+          >
+            RETRY_SYNC
+          </button>
         </div>
       ) : history.length === 0 ? (
-        <div className="flex items-center justify-center h-32">
-          <div className="text-center text-white/60">
-            <Clock className="w-8 h-8 mx-auto mb-2 opacity-50" />
-            <div className="text-sm font-medium mb-1">No conversations yet</div>
-            <div className="text-xs">Start a conversation to see your history here</div>
-          </div>
+        <div className="flex flex-col items-center justify-center flex-1 p-8 text-center opacity-20 gap-4">
+          <Clock className="w-8 h-8 opacity-50" strokeWidth={1} />
+          <div className="text-[10px] font-mono tracking-[0.3em] uppercase">LOG_BUFFER_EMPTY</div>
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto">
-          <div className="p-4 space-y-6">
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
+          <div className="p-6 space-y-8">
             {Object.entries(chatGroups)
               .sort(([a], [b]) => {
-                // Sort by date: Today first, then day names
                 if (a === 'Today') return -1;
                 if (b === 'Today') return 1;
-
-                // For day names, sort by recency (Monday = most recent, Sunday = oldest)
                 const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
                 return dayOrder.indexOf(b) - dayOrder.indexOf(a);
               })
               .map(([dateGroup, chats]) => (
-                <div key={dateGroup}>
-                  <div className="text-white text-sm font-medium mb-3 px-2 font-sans">
-                    {dateGroup}
+                <div key={dateGroup} className="space-y-4">
+                  <div className="flex items-center gap-3 px-2">
+                    <div className="h-[1px] flex-1 bg-white/[0.05]" />
+                    <span className="text-white/20 font-mono text-[9px] font-bold tracking-[0.3em] uppercase">
+                      {dateGroup}
+                    </span>
+                    <div className="h-[1px] flex-1 bg-white/[0.05]" />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     {chats.map((item) => (
                       <div
                         key={item.id}
@@ -527,46 +521,44 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
                           e.stopPropagation();
                           handleItemClick(item);
                         }}
-                        className={`group rounded-lg p-3 border transition-all duration-300 cursor-pointer ${isSelectionMode
+                        className={`group rounded-2xl p-4 transition-all duration-500 cursor-pointer border ${isSelectionMode
                           ? selectedItems.has(item.id)
-                            ? 'bg-blue-600/20 border-blue-500/50 ring-1 ring-blue-500/30'
-                            : 'bg-[#0f0f0f] border-gray-700/50 hover:border-gray-600/50 hover:bg-[#1a1a1a]'
-                          : 'bg-[#0f0f0f] border-gray-700/50 hover:border-gray-600/50 hover:bg-[#1a1a1a]'
+                            ? 'bg-white/10 border-white/20 shadow-2xl'
+                            : 'bg-transparent border-transparent hover:bg-white/[0.03]'
+                          : 'bg-transparent border-transparent hover:bg-white/[0.05] hover:border-white/[0.08]'
                           }`}
                       >
-                        <div className="flex items-start gap-3">
+                        <div className="flex items-start gap-4">
                           {isSelectionMode ? (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 toggleItemSelection(item.id);
                               }}
-                              className="w-5 h-5 rounded border-2 border-gray-400 flex items-center justify-center flex-shrink-0 mt-1 hover:border-blue-400 transition-colors"
+                              className="w-5 h-5 rounded-lg border border-white/20 flex items-center justify-center flex-shrink-0 mt-0.5 hover:border-white transition-all duration-300"
                             >
-                              {selectedItems.has(item.id) && <Check className="w-3 h-3 text-blue-400" />}
+                              {selectedItems.has(item.id) && <Check className="w-3 h-3 text-white" />}
                             </button>
                           ) : (
-                            <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                            <div className="w-1.5 h-1.5 bg-white/20 rounded-full mt-2 flex-shrink-0 shadow-[0_0_8px_rgba(255,255,255,0.2)]"></div>
                           )}
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between mb-1">
-                              <h3 className="text-white text-sm font-medium truncate font-sans">
+                            <div className="flex items-center justify-between mb-1.5">
+                              <h3 className="text-white/90 text-[13px] font-medium truncate font-sans tracking-tight">
                                 {getChatTitle(item.user_message)}
                               </h3>
-                              <div className="flex items-center gap-2">
-                                {!isSelectionMode && (
-                                  <button
-                                    onClick={(e) => handleDeleteClick(e, item)}
-                                    className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 hover:bg-gray-800 rounded flex-shrink-0"
-                                    title="Delete conversation"
-                                  >
-                                    <Trash2 className="w-3 h-3 text-[#bab8b8] hover:text-red-400" />
-                                  </button>
-                                )}
-                              </div>
+                              {!isSelectionMode && (
+                                <button
+                                  onClick={(e) => handleDeleteClick(e, item)}
+                                  className="opacity-0 group-hover:opacity-100 transition-all duration-300 p-1 hover:bg-white/10 rounded-lg flex-shrink-0"
+                                  title="PURGE_RECORD"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5 text-white/30 hover:text-red-400" />
+                                </button>
+                              )}
                             </div>
-                            <p className="text-gray-400 text-xs truncate font-sans">
-                              {item.initialMessagePreview || item.user_message}
+                            <p className="text-white/30 text-[11px] truncate font-mono opacity-80">
+                              {item.initialMessagePreview || 'NO_PREVIEW_AVAILABLE'}
                             </p>
                           </div>
                         </div>
@@ -581,45 +573,41 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
 
       {/* Delete Confirmation Dialog */}
       {deleteConfirm.isOpen && (deleteConfirm.item || selectedItems.size > 0) && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={handleDeleteCancel}>
-          <div className="bg-[#1a1a1a] border border-gray-700 rounded-lg p-6 max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-white text-lg font-medium mb-4">
-              {deleteConfirm.item ? 'Delete Conversation' : 'Delete Selected Conversations'}
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] px-6" onClick={handleDeleteCancel}>
+          <div className="bg-black border border-white/10 rounded-[32px] p-10 max-w-md w-full shadow-2xl relative overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="absolute inset-0 pointer-events-none opacity-[0.03] z-[-1] bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
+            <h3 className="text-white text-lg font-bold font-mono tracking-[0.1em] uppercase mb-4">
+              {deleteConfirm.item ? 'PURGE_ENTRY' : 'PURGE_BATCH'}
             </h3>
-            <p className="text-gray-300 text-sm mb-2">
-              Are you sure you want to delete {deleteConfirm.item ? 'this conversation' : `${selectedItems.size} selected conversations`}?
-              This action cannot be undone.
+            <p className="text-white/40 text-sm font-sans leading-relaxed mb-8">
+              Are you certain you wish to terminate {deleteConfirm.item ? 'this synchronization record' : `the selected ${selectedItems.size} batch records`}?
+              This action results in permanent data dissociation.
             </p>
             {deleteConfirm.item && (
-              <div className="text-gray-400 text-xs mb-6 truncate">
+              <div className="px-5 py-3 bg-white/5 border border-white/10 rounded-2xl text-white/60 text-[11px] font-mono truncate mb-10">
                 &ldquo;{getChatTitle(deleteConfirm.item.user_message)}&rdquo;
               </div>
             )}
-            {!deleteConfirm.item && selectedItems.size > 0 && (
-              <div className="text-gray-400 text-xs mb-6">
-                {selectedItems.size} conversation{selectedItems.size !== 1 ? 's' : ''} selected
-              </div>
-            )}
-            <div className="flex gap-3 justify-end">
+            <div className="flex gap-4 justify-end">
               <button
                 onClick={handleDeleteCancel}
                 disabled={isDeleting}
-                className="px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50"
+                className="px-8 py-3 text-[11px] font-mono tracking-widest uppercase text-white/30 hover:text-white transition-all disabled:opacity-20"
               >
-                Cancel
+                ABORT
               </button>
               <button
                 onClick={deleteConfirm.item ? handleDeleteConfirm : handleBulkDeleteConfirm}
                 disabled={isDeleting}
-                className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+                className="px-8 py-3 bg-white text-black font-mono font-bold text-[11px] tracking-widest uppercase rounded-2xl transition-all disabled:opacity-20 flex items-center gap-3 shadow-2xl shadow-white/20"
               >
                 {isDeleting ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Deleting...
+                    PURGING...
                   </>
                 ) : (
-                  'Delete'
+                  'CONFIRM_PURGE'
                 )}
               </button>
             </div>

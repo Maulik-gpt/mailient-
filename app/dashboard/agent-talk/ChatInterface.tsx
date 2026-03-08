@@ -42,50 +42,55 @@ const linkify = (text: string): string => {
       lowerUrl.includes('password');
 
     if (isAction && url.length > 50) {
-      // Premium Action Button Layout
-      return `<div class="my-6 p-[2px] bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-3xl shadow-2xl overflow-hidden"><div class="bg-neutral-900 rounded-[1.4rem] p-6 flex flex-col items-center text-center"><div class="w-12 h-12 bg-blue-500/10 rounded-full flex items-center justify-center mb-4 border border-blue-500/20"><svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div><h4 class="text-white font-bold text-lg mb-2">Priority Action</h4><p class="text-neutral-400 text-xs mb-6 max-w-[250px]">Secure action link detected in conversation</p><a href="${url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-12 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl transition-all transform hover:scale-105 active:scale-95 shadow-[0_0_25px_rgba(37,99,235,0.4)] no-underline">Confirm & Proceed</a><div class="mt-4 text-[9px] text-neutral-600 font-mono break-all opacity-40 hover:opacity-100 transition-opacity select-all cursor-text py-2 px-4 bg-black/20 rounded-lg">${url}</div></div></div>`;
+      // Premium Monochrome Action Button Layout
+      return `<div class="my-8 p-[1px] bg-white/10 rounded-3xl shadow-2xl relative group overflow-hidden">
+        <div class="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+        <div class="bg-[#080808] rounded-[1.4rem] p-8 flex flex-col items-center text-center relative z-10">
+          <div class="w-14 h-14 bg-white/[0.03] rounded-2xl flex items-center justify-center mb-6 border border-white/10 shadow-2xl">
+            <svg class="w-6 h-6 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <h4 class="text-white font-mono font-bold text-xs tracking-[0.2em] uppercase mb-2">SECURE_ACTION_REQUIRED</h4>
+          <p class="text-white/30 text-[10px] font-mono tracking-widest mb-8 uppercase">Neural link validation mandatory</p>
+          <a href="${url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-14 py-3.5 bg-white hover:bg-neutral-200 text-black font-mono font-bold text-[10px] tracking-[0.2em] uppercase rounded-2xl transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)] no-underline">EXECUTE_HANDSHAKE</a>
+          <div class="mt-6 text-[9px] text-white/10 font-mono break-all opacity-40 hover:opacity-100 transition-opacity select-all cursor-text py-3 px-5 bg-white/[0.02] rounded-xl border border-white/[0.05]">${url}</div>
+        </div>
+      </div>`;
     }
 
     const displayUrl = url.length > 55 ? url.substring(0, 52) + '...' : url;
-    return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:text-blue-300 underline underline-offset-4 decoration-blue-500/30 transition-all font-medium break-all" title="${url}">${displayUrl}</a>`;
+    return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-white/60 hover:text-white underline underline-offset-4 decoration-white/20 hover:decoration-white/100 transition-all font-mono text-[13px] tracking-tight break-all" title="${url}">${displayUrl}</a>`;
   });
 };
 
-// Rich markdown renderer for AI messages
 const renderMarkdown = (text: string): string => {
   if (!text) return text;
 
-  // Handle paragraphs: Split by double newlines and wrap in <p>
   const paragraphs = text.split(/\n\n+/);
 
   const renderedParagraphs = paragraphs.map(para => {
-    // Handle bold: **text** -> <strong>text</strong>
-    let processedPara = para.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-white brightness-125">$1</strong>');
+    let processedPara = para.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-white tracking-tight">$1</strong>');
 
-    // Handle bullet points: Start with - or *
     if (processedPara.includes('\n- ') || processedPara.startsWith('- ') || processedPara.includes('\n* ') || processedPara.startsWith('* ')) {
       const lines = processedPara.split('\n');
       const listItems = lines.map(line => {
         const match = line.match(/^[\s]*[-*]\s*(.*)$/);
         if (match) {
-          return `<li class="ml-4">${match[1]}</li>`;
+          return `<li class="ml-4 py-1">${match[1]}</li>`;
         }
         return line;
       });
 
-      // Rejoin, wrapping groups of <li> in <ul>
       let joinedList = listItems.join('\n');
-      joinedList = joinedList.replace(/(<li[\s\S]*?<\/li>(?:\n<li[\s\S]*?<\/li>)*)/g, '<ul class="space-y-2 my-5 list-disc list-inside bg-white/5 p-4 rounded-xl border border-white/10">$1</ul>');
+      joinedList = joinedList.replace(/(<li[\s\S]*?<\/li>(?:\n<li[\s\S]*?<\/li>)*)/g, '<ul class="space-y-1 my-6 list-none bg-white/[0.02] p-6 rounded-2xl border border-white/[0.05] relative shadow-inner overflow-hidden"><div class="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none"></div>$1</ul>');
       return joinedList;
     }
 
-    // Linkify URLs
     processedPara = linkify(processedPara);
-
-    // Handle single newlines: Convert to <br/>
     processedPara = processedPara.replace(/\n/g, '<br/>');
 
-    return `<p class="mb-4 last:mb-0 leading-relaxed text-[#f0f0f0]">${processedPara}</p>`;
+    return `<p class="mb-5 last:mb-0 leading-[1.8] text-white/70 font-sans text-[15px]">${processedPara}</p>`;
   });
 
   return renderedParagraphs.join('');
@@ -411,7 +416,7 @@ export default function ChatInterface({
       type: (step.type || 'think') as LiveThinkingStep['type']
     }));
 
-  
+
   const formatStepEvidence = (evidence: any): string => {
     if (!evidence) return '';
     const items = Array.isArray(evidence) ? evidence : (Array.isArray(evidence.items) ? evidence.items : []);
@@ -420,11 +425,11 @@ export default function ChatInterface({
       const sender = item.sender || 'Unknown';
       const subject = item.subject || '';
       const thread = item.threadId ? ('Thread: ' + item.threadId) : '';
-                  return [sender, subject, thread].filter(Boolean).join(' | ');
+      return [sender, subject, thread].filter(Boolean).join(' | ');
     }).join('\\n');
   };
 
-const processAIMessage = async (messageText: string, conversationIdToUse: string, isNew: boolean) => {
+  const processAIMessage = async (messageText: string, conversationIdToUse: string, isNew: boolean) => {
     try {
       setIsLoading(true);
       setLiveThinkingSteps(buildFallbackThinkingSteps(messageText));
@@ -1154,7 +1159,7 @@ const processAIMessage = async (messageText: string, conversationIdToUse: string
           message: `APPROVED: Send this reply to ${draftData.recipientEmail}`, // This triggers the next step
           conversationId: currentConversationId,
           activeMission,
-        runId: activeRun?.runId || null,
+          runId: activeRun?.runId || null,
           approvalPayload: draftData // Pass the edited content back
         })
       });
@@ -1290,15 +1295,15 @@ const processAIMessage = async (messageText: string, conversationIdToUse: string
         period={usageLimitModalData?.period || 'daily'}
         currentPlan={usageLimitModalData?.currentPlan || 'starter'}
       />
-      <div className="flex h-screen w-full text-white overflow-hidden" style={{
-        background: '#000000'
-      }}>
+      <div className="flex h-screen w-full text-white bg-black selection:bg-white selection:text-black overflow-hidden relative">
+        {/* Technical noise overlay */}
+        <div className="absolute inset-0 pointer-events-none opacity-[0.03] z-[100] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] brightness-100 contrast-150" />
         {/* History Sidebar - Positioned to the right of Mailient sidebar (left: 64px = 16 * 4 for w-16 sidebar) */}
         {showHistory && (
-          <div className="fixed left-16 top-0 h-screen w-80 bg-[#0a0a0a] border-r border-[#1a1a1a] flex flex-col backdrop-blur-md z-40">
-            <div className="p-4 border-b border-[#2a2a2a]">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-lg font-semibold text-white font-sans">Chats</h2>
+          <div className="fixed left-16 top-0 h-screen w-80 bg-black/60 border-r border-white/[0.08] flex flex-col backdrop-blur-3xl z-40">
+            <div className="p-6 border-b border-white/[0.05]">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-[11px] font-mono tracking-[0.2em] text-white/30 uppercase">Local_History</h2>
                 <div className="flex items-center gap-2">
                   <Tooltip delayDuration={100}>
                     <TooltipTrigger asChild>
@@ -1354,34 +1359,29 @@ const processAIMessage = async (messageText: string, conversationIdToUse: string
 
         {/* Universal Sidebar - Fixed Position Full Height */}
         <HomeFeedSidebar className="z-30" />
-        {/* Main Content - Adjust margin when history sidebar is open (ml-16 for Mailient sidebar + 80 for history = 96) */}
-        <div className={`flex-1 flex flex-col relative font-sans ${showHistory ? 'ml-96' : 'ml-16'} transition-all duration-300`}>
-          {/* Background elements */}
-          <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute -top-40 -right-40 w-80 h-80 bg-gray-500/5 rounded-full blur-3xl animate-pulse"></div>
-            <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gray-500/4 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gray-500/3 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '4s' }}></div>
+        {/* Main Content */}
+        <div className={`flex-1 flex flex-col relative ${showHistory ? 'ml-96' : 'ml-16'} transition-all duration-500 ease-in-out`}>
+          {/* Subtle Ambient Glows */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/[0.02] rounded-full blur-[120px]" />
+            <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-white/[0.01] rounded-full blur-[100px]" />
           </div>
 
           {/* Header */}
-          <div className={`sticky top-0 z-30 border-b border-[#000000]/20 bg-[#000000]/70 backdrop-blur-2xl transition-all duration-300 ${(isIntegrationsModalOpen || isEmailSelectionModalOpen || isPersonalityModalOpen) ? 'blur-sm' : ''}`}>
-            <div className="relative px-6 py-2">
-              <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/80 via-black/50 to-transparent" />
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-b from-transparent via-black/35 to-black/60" />
+          <div className={`sticky top-0 z-30 border-b border-white/[0.05] bg-black/40 backdrop-blur-xl transition-all duration-300 ${(isIntegrationsModalOpen || isEmailSelectionModalOpen || isPersonalityModalOpen) ? 'blur-sm' : ''}`}>
+            <div className="relative px-8 py-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  {/* Placeholder for arrow space */}
-                  <div className="w-9 h-9"></div>
-                  <div className="flex items-center gap-3">
-                    <div className="bg-neutral-800 rounded-full w-10 h-10 flex items-center justify-center backdrop-blur-sm border border-white/10 shadow-lg overflow-hidden">
-                      <img src="/arcus-ai-icon.jpg" alt="Arcus AI" className="w-full h-full object-cover" />
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-4">
+                    <div className="bg-white/[0.03] rounded-2xl w-12 h-12 flex items-center justify-center border border-white/10 shadow-2xl overflow-hidden group hover:border-white/20 transition-all">
+                      <img src="/arcus-ai-icon.jpg" alt="Arcus AI" className="w-full h-full object-cover grayscale transition-all group-hover:grayscale-0" />
                     </div>
                     <div>
                       <div className="flex items-center gap-3">
-                        <h1 className="text-xl font-semibold text-white tracking-tight font-sans">Arcus</h1>
+                        <h1 className="text-lg font-bold text-white tracking-tight uppercase font-mono">ARCUS_STREAM</h1>
                         {arcusCredits && currentPlan !== 'pro' && arcusCredits.limit > 0 && !arcusCredits.isUnlimited && (
-                          <span className="text-[11px] px-2 py-1 rounded-full bg-white/5 border border-white/10 text-white/70">
-                            {arcusCredits.remaining} left
+                          <span className="text-[9px] font-mono tracking-widest px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-white/40">
+                            {arcusCredits.remaining}_CREDITS
                           </span>
                         )}
                         {(currentPlan === 'pro' || arcusCredits?.isUnlimited) && (
@@ -1396,20 +1396,18 @@ const processAIMessage = async (messageText: string, conversationIdToUse: string
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <Tooltip delayDuration={100}>
                     <TooltipTrigger asChild>
                       <button
                         onClick={startNewChat}
-                        className="p-2.5 hover:bg-[#2a2a2a] rounded-lg transition-all duration-300 hover:scale-105"
-                        aria-label="New chat"
-                        title="New chat"
+                        className="p-2.5 hover:bg-white/5 rounded-xl transition-all hover:scale-105 active:scale-95 group text-white/40 hover:text-white"
                       >
-                        <HugeiconsIcon icon={AddSquareIcon} size={20} strokeWidth={1.8} className="text-white/60 hover:text-white" />
+                        <Edit className="w-4.5 h-4.5" />
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom">
-                      <p>New Chat</p>
+                      <span className="text-[10px] font-mono">NEW_SESSION</span>
                     </TooltipContent>
                   </Tooltip>
                   <Tooltip delayDuration={100}>
@@ -1417,23 +1415,22 @@ const processAIMessage = async (messageText: string, conversationIdToUse: string
                       <button
                         onClick={() => {
                           if (!showHistory) {
-                            setHistoryRefreshKey(prev => prev + 1); // Force refresh when opening
+                            setHistoryRefreshKey(prev => prev + 1);
                           }
                           setShowHistory(!showHistory);
                         }}
-                        className="p-2.5 hover:bg-[#2a2a2a] rounded-lg transition-all duration-300 hover:scale-105"
-                        aria-label="Toggle chat history"
-                        title="History"
+                        className="p-2.5 hover:bg-white/5 rounded-xl transition-all hover:scale-105 active:scale-95 group text-white/40 hover:text-white"
                       >
-                        <HugeiconsIcon icon={WorkHistoryIcon} size={20} strokeWidth={1.8} className="text-white/60 hover:text-white" />
+                        <History className="w-4.5 h-4.5" />
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom">
-                      <p>History</p>
+                      <span className="text-[10px] font-mono">SESSION_LOGS</span>
                     </TooltipContent>
                   </Tooltip>
-                  <div className="p-2.5">
-                    <span className="text-white font-sans text-lg">『A』</span>
+                  <div className="h-6 w-[1px] bg-white/[0.08] mx-2" />
+                  <div className="px-3 py-1 bg-white/5 border border-white/10 rounded-lg">
+                    <span className="text-white/40 font-mono text-[11px] font-bold tracking-tighter uppercase">V2.4</span>
                   </div>
                 </div>
               </div>
@@ -1581,11 +1578,11 @@ const processAIMessage = async (messageText: string, conversationIdToUse: string
                   <div className="max-w-3xl mx-auto space-y-8">
                     {activeMission && <MissionStatusHeader mission={activeMission} />}
                     {messages.map((msg) => (
-                      <div key={msg.id} className={`flex items-start gap-4 ${newMessageIds.has(msg.id) ? 'animate-fade-in' : ''}`}>
+                      <div key={msg.id} className={`flex items-start gap-6 ${newMessageIds.has(msg.id) ? 'animate-fade-in' : ''}`}>
                         {msg.type === 'agent' && (
-                          <div className="flex-shrink-0 mt-1">
-                            <div className="bg-neutral-800 rounded-full w-11 h-11 flex items-center justify-center backdrop-blur-sm border border-white/10 shadow-lg overflow-hidden">
-                              <img src="/arcus-ai-icon.jpg" alt="Arcus AI" className="w-full h-full object-cover" />
+                          <div className="flex-shrink-0 mt-3">
+                            <div className="bg-white/[0.03] rounded-2xl w-10 h-10 flex items-center justify-center border border-white/[0.08] shadow-2xl overflow-hidden">
+                              <img src="/arcus-ai-icon.jpg" alt="Arcus AI" className="w-full h-full object-cover grayscale opacity-60" />
                             </div>
                           </div>
                         )}
@@ -1624,20 +1621,20 @@ const processAIMessage = async (messageText: string, conversationIdToUse: string
                               {/* Response text */}
                               {typeof msg.content === 'string' ? (
                                 <div
-                                  className="text-white/90 text-base leading-[1.9] font-sans prose prose-invert max-w-none"
+                                  className="text-white/[0.85] text-[15px] leading-[1.8] font-sans prose prose-invert max-w-none prose-p:mb-5 prose-strong:text-white prose-strong:font-bold prose-headings:text-white prose-headings:font-bold selection:bg-white selection:text-black"
                                   dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
                                 />
                               ) : (
                                 <>
                                   <div
-                                    className="text-white/90 text-base leading-[1.9] font-sans prose prose-invert max-w-none"
+                                    className="text-white/[0.85] text-[15px] leading-[1.8] font-sans prose prose-invert max-w-none selection:bg-white selection:text-black"
                                     dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content.text) }}
                                   />
                                   {msg.content.list && msg.content.list.length > 0 && (
-                                    <ul className="space-y-2.5 pl-2 mt-3">
+                                    <ul className="space-y-3 pl-1 mt-4">
                                       {msg.content.list.map((item: string, idx: number) => (
-                                        <li key={idx} className="text-white/90 text-base leading-[1.9] flex items-start gap-2">
-                                          <span className="text-white/40 mt-1 text-lg">•</span>
+                                        <li key={idx} className="text-white/[0.85] text-[15px] leading-[1.8] flex items-start gap-3">
+                                          <div className="w-1 h-1 rounded-full bg-white/20 mt-2.5 shrink-0" />
                                           <span dangerouslySetInnerHTML={{ __html: renderMarkdown(item) }} />
                                         </li>
                                       ))}
@@ -1645,13 +1642,13 @@ const processAIMessage = async (messageText: string, conversationIdToUse: string
                                   )}
                                   {msg.content.footer && (
                                     <div
-                                      className="text-white/90 text-base leading-[1.9] pt-3 font-sans"
+                                      className="text-white/[0.85] text-[15px] leading-[1.8] pt-5 font-sans italic opacity-60"
                                       dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content.footer) }}
                                     />
                                   )}
                                 </>
                               )}
-                              <p className="text-white/40 text-xs font-medium pt-3">{msg.time}</p>
+                              <p className="text-white/10 text-[10px] font-mono tracking-widest pt-4 uppercase">{msg.time}</p>
 
                               {(msg as AgentMessage).meta?.actionType === 'email' && (msg as AgentMessage).meta?.emailResult?.success && (
                                 <div className="mt-4 space-y-3">
@@ -1688,10 +1685,10 @@ const processAIMessage = async (messageText: string, conversationIdToUse: string
                             </div>
                           ) : (
                             <div className="max-w-2xl">
-                              <div className="bg-[#fafafa] text-black rounded-2xl px-4 py-3 shadow-[0_12px_30px_rgba(0,0,0,0.35)] border border-black/10">
-                                <p className="text-black text-base leading-relaxed font-sans">{msg.content}</p>
+                              <div className="bg-white text-black rounded-2xl px-5 py-4 shadow-2xl shadow-black/40">
+                                <p className="text-black text-[15px] font-medium leading-relaxed">{msg.content}</p>
                               </div>
-                              <p className="text-right text-white/40 text-xs font-medium pt-2">{msg.time}</p>
+                              <p className="text-right text-white/10 text-[10px] font-mono tracking-widest pt-3 uppercase">{msg.time}</p>
                             </div>
                           )}
                         </div>

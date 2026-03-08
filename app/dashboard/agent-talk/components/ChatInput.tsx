@@ -7,6 +7,7 @@ import { EmailSelectionModal } from '@/components/ui/email-selection-modal';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { Mic, Mail, Plus, Send, Mail as EmailIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
 
 type RecordingState = 'idle' | 'recording' | 'paused';
 
@@ -884,40 +885,48 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
 
 
   return (
-    <div className="max-w-4xl mx-auto w-full">
-      <div className="relative group transition-all duration-500">
-        {/* Glow effect on hover */}
-        <div className="absolute -inset-0.5 bg-gradient-to-r from-neutral-800 to-neutral-700 rounded-[2.5rem] blur opacity-10 group-hover:opacity-30 transition duration-1000"></div>
+    <div className="max-w-3xl mx-auto w-full">
+      <div className="relative group transition-all duration-700">
+        <div className="relative flex flex-col bg-[#050505]/40 border border-white/[0.06] hover:border-white/[0.12] rounded-[32px] shadow-2xl backdrop-blur-3xl px-6 py-4 transition-all duration-500 focus-within:bg-[#080808]/60 focus-within:border-white/[0.15]">
 
-        <div className="relative flex flex-col bg-[#0f0f0f] border border-neutral-800/40 rounded-[2.5rem] shadow-2xl backdrop-blur-sm px-7 py-4 focus-within:border-neutral-800/40 focus-within:ring-0 focus-within:outline-none">
-          {/* Recording indicator */}
-          {(recordingState === 'recording' || recordingState === 'paused') && (
-            <div className="absolute -top-3 left-10 px-3 py-1 bg-neutral-900 border border-neutral-800 rounded-full flex items-center gap-2 z-10">
-              <div className={`w-2 h-2 rounded-full ${recordingState === 'recording' ? 'bg-red-500 animate-pulse' : 'bg-yellow-500'}`}></div>
-              <span className="text-[10px] uppercase tracking-widest text-neutral-400 font-medium">
-                {recordingState === 'recording' ? 'Recording' : 'Paused'}
-              </span>
-            </div>
-          )}
+          {/* Recording Status Indicator */}
+          <AnimatePresence>
+            {(recordingState === 'recording' || recordingState === 'paused') && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="absolute -top-12 left-6 px-4 py-2 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-3 backdrop-blur-xl z-20"
+              >
+                <div className="relative flex items-center justify-center w-2 h-2">
+                  <div className={`absolute inset-0 rounded-full blur-[2px] ${recordingState === 'recording' ? 'bg-white/50 animate-pulse' : 'bg-white/20'}`} />
+                  <div className={`w-2 h-2 rounded-full ${recordingState === 'recording' ? 'bg-white animate-pulse' : 'bg-white/40'}`} />
+                </div>
+                <span className="text-[10px] uppercase font-mono tracking-[0.2em] text-white/60">
+                  {recordingState === 'recording' ? 'NEURAL_INPUT_ACTIVE' : 'NEURAL_INPUT_PAUSED'}
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          {/* Selected Emails Display */}
+          {/* Selected Emails Section */}
           {selectedEmails.length > 0 && (
-            <div className="mb-2 flex flex-wrap gap-2 pt-1 font-sans">
+            <div className="mb-3 flex flex-wrap gap-2 pt-1 font-sans">
               {selectedEmails.map((email) => (
                 <div
                   key={email.id}
-                  className="flex items-center bg-neutral-900/80 rounded-full px-3 py-1.5 text-[11px] border border-neutral-800 hover:border-neutral-700 transition-colors group/item"
+                  className="flex items-center bg-white/[0.03] rounded-xl px-3 py-2 text-[11px] border border-white/[0.08] hover:border-white/20 transition-all group/item"
                 >
-                  <Mail className="w-3 h-3 mr-2 text-neutral-500" />
-                  <span className="text-neutral-300 truncate max-w-[150px]" title={email.subject}>
+                  <Mail className="w-3.5 h-3.5 mr-2 text-white/30" />
+                  <span className="text-white/60 truncate max-w-[150px] font-medium" title={email.subject}>
                     {email.subject}
                   </span>
                   <button
                     onClick={() => removeSelectedEmail(email.id)}
-                    className="ml-2 p-0.5 hover:bg-neutral-800 rounded-full text-neutral-600 hover:text-red-400 transition-all"
+                    className="ml-2.5 p-1 hover:bg-white/5 rounded-lg text-white/20 hover:text-white transition-all"
                   >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
                 </div>
@@ -925,21 +934,21 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
             </div>
           )}
 
-          <div className="flex items-end gap-3 min-h-[56px]">
-            {/* Left side icons */}
-            <div className="flex items-center gap-2 mb-1.5 flex-shrink-0">
+          <div className="flex items-end gap-3 min-h-[48px]">
+            {/* Action Bar (Left) */}
+            <div className="flex items-center gap-1 mb-1.5 flex-shrink-0">
               <TooltipProvider>
                 <Tooltip delayDuration={100}>
                   <TooltipTrigger asChild>
                     <button
                       onClick={() => onModalStateChange?.(true)}
-                      className="w-10 h-10 flex items-center justify-center text-neutral-500 hover:text-white hover:bg-neutral-800 rounded-full transition-all duration-200 outline-none border-none focus:ring-0 focus:outline-none"
+                      className="w-10 h-10 flex items-center justify-center text-white/20 hover:text-white hover:bg-white/5 rounded-2xl transition-all outline-none border-none"
                     >
-                      <Plus className="w-6 h-6" strokeWidth={1.5} />
+                      <Plus className="w-5 h-5" />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="top">
-                    <p>Integrations</p>
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-white/40">Extend_Capabilities</span>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -949,19 +958,20 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
                   <TooltipTrigger asChild>
                     <button
                       onClick={() => onEmailModalStateChange?.(true)}
-                      className="w-10 h-10 flex items-center justify-center text-neutral-500 hover:text-white hover:bg-neutral-800 rounded-full transition-all duration-200 relative outline-none border-none focus:ring-0 focus:outline-none"
+                      className="w-10 h-10 flex items-center justify-center text-white/20 hover:text-white hover:bg-white/5 rounded-2xl transition-all relative outline-none border-none"
                     >
-                      <EmailIcon className="w-5 h-5" strokeWidth={1.5} />
-                      <div className="absolute top-2 right-2 w-2 h-2 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.6)]"></div>
+                      <EmailIcon className="w-4.5 h-4.5" />
+                      <div className="absolute top-2.5 right-2.5 w-1.5 h-1.5 bg-white/40 rounded-full blur-[1px]"></div>
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="top">
-                    <p>Attach email</p>
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-white/40">Attach_Data_Stream</span>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             </div>
 
+            {/* Input Surface */}
             <div className="flex-1 relative min-w-0 py-3">
               <textarea
                 ref={textareaRef}
@@ -970,35 +980,33 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
                 onKeyDown={handleKeyDown}
                 placeholder={placeholderText}
                 disabled={disabled}
-                className="w-full resize-none bg-transparent text-white placeholder:text-neutral-600 focus:outline-none focus:ring-0 focus:ring-offset-0 ring-0 focus-visible:ring-0 focus-visible:outline-none border-none p-0 min-h-[28px] max-h-32 text-[16px] leading-relaxed overflow-y-auto scrollbar-none selection:bg-neutral-800 font-sans"
+                className="w-full resize-none bg-transparent text-white placeholder:text-white/20 focus:outline-none border-none p-0 min-h-[24px] max-h-40 text-[15px] leading-relaxed selection:bg-white selection:text-black font-sans"
                 rows={1}
-                style={{ outline: 'none', boxShadow: 'none' }}
               />
             </div>
 
-            {/* Right side icons */}
-            <div className="flex items-center gap-2 mb-1.5 flex-shrink-0">
+            {/* Controls (Right) */}
+            <div className="flex items-center gap-1.5 mb-1.5 flex-shrink-0">
               {recordingState !== 'idle' ? (
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 bg-white/5 rounded-2xl p-1">
                   <button
                     onClick={cancelRecording}
-                    className="w-8 h-8 flex items-center justify-center text-red-500 hover:bg-red-500/10 rounded-full transition-all outline-none focus:ring-0"
-                    title="Cancel"
+                    className="w-8 h-8 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 rounded-xl transition-all"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
                   <button
                     onClick={() => { setIsTranscribing(true); confirmRecording(); }}
-                    className="w-8 h-8 flex items-center justify-center text-green-500 hover:bg-green-500/10 rounded-full transition-all outline-none focus:ring-0"
+                    className="w-8 h-8 flex items-center justify-center text-white/80 hover:bg-white/20 rounded-xl transition-all"
                     disabled={isTranscribing}
                   >
                     {isTranscribing ? (
-                      <div className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+                      <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                     ) : (
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                       </svg>
                     )}
                   </button>
@@ -1010,17 +1018,17 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
                       <button
                         onClick={startRecording}
                         disabled={disabled}
-                        className={`w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300 outline-none border-none focus:ring-0 focus:outline-none ${isListening ? 'text-red-500 bg-red-500/10 animate-pulse' : 'text-neutral-500 hover:text-white hover:bg-neutral-800'}`}
+                        className={`w-10 h-10 flex items-center justify-center rounded-2xl transition-all outline-none border-none ${isListening ? 'text-white bg-white/10' : 'text-white/20 hover:text-white hover:bg-white/5'}`}
                       >
                         {isListening ? (
-                          <div className="w-4 h-4 rounded-full bg-red-500" />
+                          <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
                         ) : (
-                          <Mic className="w-5 h-5" strokeWidth={1.5} />
+                          <Mic className="w-4.5 h-4.5" />
                         )}
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="top">
-                      <p>Voice Input</p>
+                      <span className="text-[10px] font-mono uppercase tracking-widest text-white/40">Neural_Decode</span>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -1029,26 +1037,16 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
               <button
                 onClick={handleSubmit}
                 disabled={!message.trim() || disabled}
-                className={`w-10 h-10 flex items-center justify-center transition-all duration-300 rounded-full outline-none border-none focus:ring-0 focus:outline-none ${message.trim() ? 'bg-white text-black hover:scale-105 shadow-[0_0_15px_rgba(255,255,255,0.3)]' : 'bg-neutral-800 text-neutral-600 opacity-40'} disabled:cursor-not-allowed`}
+                className={`w-10 h-10 flex items-center justify-center transition-all duration-500 rounded-2xl outline-none border-none ${message.trim() ? 'bg-white text-black hover:scale-105 shadow-2xl shadow-white/20' : 'bg-white/[0.03] text-white/20'}`}
               >
-                <Send className="w-5 h-5" strokeWidth={2} />
+                <Send className="w-4.5 h-4.5" />
               </button>
             </div>
           </div>
         </div>
       </div>
       <style jsx>{`
-        textarea:focus, 
-        textarea:active, 
-        textarea:focus-visible {
-          outline: 1px solid #0f0f0f !important;
-          box-shadow: 0 0 0 1px #0f0f0f !important;
-          border: none !important;
-          background-color: transparent !important;
-          -webkit-appearance: none !important;
-        }
-        
-        textarea {
+        textarea:focus, textarea:active, textarea:focus-visible {
           outline: none !important;
           box-shadow: none !important;
           border: none !important;
