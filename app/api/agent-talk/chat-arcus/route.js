@@ -135,7 +135,8 @@ export async function POST(request) {
 
     // Get integration status
     const integrations = await getIntegrationStatus(userEmail, db);
-    console.log('🔗 Integration status:', integrations);
+    const effectiveGmailConnected = Boolean(gmailAccessToken || integrations?.gmail);
+    console.log('Arcus Integration status:', integrations);
 
     // Get conversation history for memory
     let conversationHistory = [];
@@ -375,9 +376,9 @@ Body: ${emailData.body || emailData.snippet}
       }
     }
     // Otherwise, handle general email queries by searching
-    else if (userEmail && detectedIsEmailQuery && !emailContext) {
+    else if ((userEmail || gmailAccessToken) && detectedIsEmailQuery && !emailContext) {
       try {
-        const emailActionResult = await executeEmailAction(message, userEmail, session);
+        const emailActionResult = await executeEmailAction(message, userEmail, session, gmailAccessToken);
         emailResult = emailActionResult;
         if (emailActionResult && emailActionResult.success) {
           emailContext = formatEmailActionResult(emailActionResult);
@@ -471,8 +472,8 @@ Body: ${emailData.body || emailData.snippet}
       conversationHistory,
       emailContext,
       integrations: {
-        gmail: !!gmailAccessToken,
-        calendar: !!gmailAccessToken,
+        gmail: effectiveGmailConnected,
+        calendar: effectiveGmailConnected,
         'cal.com': !!profile?.integrations?.['cal.com'],
         'cal.com_link': profile?.integrations?.['cal.com_link']
       },
@@ -748,36 +749,37 @@ What would you like help with today?`;
 /**
  * Execute email actions
  */
-async function executeEmailAction(userMessage, userEmail, session) {
+async function executeEmailAction(userMessage, userEmail, session, providedAccessToken = null) {
   const lowerMessage = userMessage.toLowerCase();
 
   try {
-    let accessToken = session?.accessToken;
+    let accessToken = providedAccessToken || session?.accessToken;
     let refreshToken = session?.refreshToken;
 
-    console.log('📧 executeEmailAction: Starting email fetch for:', userEmail?.substring(0, 20) + '...');
-    console.log('📧 Session accessToken available:', !!accessToken);
+    console.log('Arcus executeEmailAction: Starting email fetch for:', (userEmail || 'token-user').substring(0, 20) + '...');
+    console.log('Arcus provided accessToken available:', !!providedAccessToken);
+    console.log('Arcus session accessToken available:', !!session?.accessToken);
 
-    if (!accessToken) {
-      console.log('📧 No session token, trying database...');
+    if (!accessToken && userEmail) {
+      console.log('Arcus no request/session token, trying database...');
       try {
         const db = new DatabaseService();
         const userTokens = await db.getUserTokens(userEmail);
-        console.log('📧 Database tokens found:', !!userTokens?.encrypted_access_token);
+        console.log('Arcus database tokens found:', !!userTokens?.encrypted_access_token);
 
         if (userTokens?.encrypted_access_token) {
           accessToken = decrypt(userTokens.encrypted_access_token);
           refreshToken = userTokens.encrypted_refresh_token ? decrypt(userTokens.encrypted_refresh_token) : '';
-          console.log('📧 Decrypted token successfully');
+          console.log('Arcus decrypted token successfully');
         }
       } catch (dbError) {
-        console.error('📧 Database token fetch error:', dbError.message);
+        console.error('Arcus database token fetch error:', dbError.message);
       }
     }
 
     if (!accessToken) {
-      console.log('📧 No access token available - Gmail not connected');
-      return { error: 'Gmail not connected' };
+      console.log('Arcus no access token available - Gmail not connected');
+      return { error: 'Gmail not connected', reconnectRequired: true, success: false };
     }
 
     const { GmailService } = await import('@/lib/gmail');
