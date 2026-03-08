@@ -117,7 +117,7 @@ export function ThinkingLayer({ steps, isVisible, currentThought, isGenerating, 
 
             {currentThought && (
                 <p className="text-white/45 text-xs font-mono tracking-tight pt-2 px-2 uppercase opacity-60">
-                    <span className="text-white/20 mr-2">&gt;</span>
+                    <span className="text-white/20 mr-2">{'>'}</span>
                     {currentThought}
                 </p>
             )}

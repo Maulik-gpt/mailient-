@@ -1,6 +1,6 @@
 "use client";
 
-import { Send, Mail, Upload, User, MessageCircle, DoorOpen, Bell, Mail as EmailIcon, MoreHorizontal, LogOut, Settings, ChevronRight, ChevronDown, CheckCircle2, Circle } from 'lucide-react';
+import { Send, Mail, Upload, User, MessageCircle, DoorOpen, Bell, Mail as EmailIcon, MoreHorizontal, LogOut, Settings, ChevronRight, ChevronDown, CheckCircle2, Circle, Edit, History } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
@@ -1403,7 +1403,7 @@ export default function ChatInterface({
                         onClick={startNewChat}
                         className="p-2.5 hover:bg-white/5 rounded-xl transition-all hover:scale-105 active:scale-95 group text-white/40 hover:text-white"
                       >
-                        <Edit className="w-4.5 h-4.5" />
+                        <Edit className="w-4 h-4" />
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom">
@@ -1421,7 +1421,7 @@ export default function ChatInterface({
                         }}
                         className="p-2.5 hover:bg-white/5 rounded-xl transition-all hover:scale-105 active:scale-95 group text-white/40 hover:text-white"
                       >
-                        <History className="w-4.5 h-4.5" />
+                        <History className="w-4 h-4" />
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom">

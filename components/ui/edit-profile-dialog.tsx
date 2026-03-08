@@ -51,6 +51,11 @@ type EditProfileDialogProps = {
     preferences?: {
       username?: string;
       social_links?: { x?: string; linkedin?: string; instagram?: string; github?: string };
+      theme?: string;
+      language?: string;
+      notifications?: boolean;
+      email_frequency?: string;
+      timezone?: string;
     };
   };
   onSave?: (data: EditProfileFormData) => void | Promise<void>;

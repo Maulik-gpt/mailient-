@@ -1,13 +1,18 @@
 import { NextResponse } from 'next/server';
-import { auth } from '../../../../lib/auth';
-import { CalendarService } from '../../../../lib/calendar';
-import { DatabaseService } from '../../../../lib/supabase';
-import { decrypt } from '../../../../lib/crypto';
-import { GmailService } from '../../../../lib/gmail';
+// @ts-ignore
+const { auth } = require('../../../../lib/auth');
+// @ts-ignore
+const { CalendarService } = require('../../../../lib/calendar');
+// @ts-ignore
+const { DatabaseService } = require('../../../../lib/supabase');
+// @ts-ignore
+const { decrypt } = require('../../../../lib/crypto');
+// @ts-ignore
+const { GmailService } = require('../../../../lib/gmail');
 
 export async function POST(request: Request) {
     try {
-        const session = await auth();
+        const session = await (auth as any)();
         if (!session?.user?.email) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }

@@ -27,7 +27,13 @@ type UserProfile = {
   website?: string | null;
   created_at?: string | null;
   preferences?: {
+    username?: string;
     social_links?: { x?: string; linkedin?: string; instagram?: string; github?: string };
+    theme?: string;
+    language?: string;
+    notifications?: boolean;
+    email_frequency?: string;
+    timezone?: string;
   };
 };
 
@@ -58,7 +64,7 @@ export default function ProfileBubblePage() {
     fetch("/api/profile")
       .then((r) => r.ok ? r.json() : null)
       .then((data) => data && setProfile(data))
-      .catch(() => {});
+      .catch(() => { });
   }, [session?.user?.email]);
 
   useEffect(() => {
@@ -191,11 +197,11 @@ export default function ProfileBubblePage() {
                 profile={{
                   avatar_url: profile?.avatar_url ?? undefined,
                   banner_url: profile?.banner_url ?? undefined,
-                  username: profile?.preferences?.username ?? profile?.username ?? undefined,
+                  username: profile?.preferences?.username ?? (profile as any)?.username ?? undefined,
                   bio: profile?.bio ?? undefined,
                   location: profile?.location ?? undefined,
                   website: profile?.website ?? undefined,
-                  preferences: profile?.preferences,
+                  preferences: profile?.preferences as any,
                 }}
                 onSave={handleSaveProfile}
               />

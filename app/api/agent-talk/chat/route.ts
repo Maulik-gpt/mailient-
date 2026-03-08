@@ -1,13 +1,18 @@
 import { NextResponse } from 'next/server';
+// @ts-ignore
 import { DatabaseService } from '@/lib/supabase.js';
+// @ts-ignore
 import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service.js';
 
 // Type for the auth function
 type AuthFunction = () => Promise<{ user?: { email?: string }, accessToken?: string, refreshToken?: string } | null>;
 
 // Explicitly type the auth variable
-const typedAuth: AuthFunction = require('@/lib/auth').auth;
+// @ts-ignore
+const typedAuth: AuthFunction = require('@/lib/auth.js').auth;
+// @ts-ignore
 import { decrypt } from '@/lib/crypto.js';
+// @ts-ignore
 import { AIConfig } from '@/lib/ai-config.js';
 
 /**
@@ -55,7 +60,7 @@ export async function POST(request: Request) {
     const userId = session.user.email;
     const canUse = await subscriptionService.canUseFeature(userId, FEATURE_TYPES.ARCUS_AI);
     if (!canUse) {
-      const usage = await subscriptionService.getFeatureUsage(userId, FEATURE_TYPES.ARCUS_AI);
+      const usage: any = await subscriptionService.getFeatureUsage(userId, FEATURE_TYPES.ARCUS_AI);
       return NextResponse.json({
         error: 'limit_reached',
         message: usage.reason === 'subscription_expired'

@@ -508,13 +508,13 @@ export default function ProfileBubble() {
                           trigger={<Edit className="w-4 h-4" />}
                           user={{ name: user.name || undefined, email: user.email || undefined }}
                           profile={userProfile ? {
-                            avatar_url: userProfile.avatar_url || undefined,
-                            banner_url: (userProfile as { banner_url?: string })?.banner_url || undefined,
-                            username: (userProfile as { username?: string })?.username || undefined,
-                            bio: userProfile.bio || undefined,
-                            location: userProfile.location || undefined,
-                            website: userProfile.website || undefined,
-                            preferences: userProfile.preferences
+                            avatar_url: (userProfile as any).avatar_url || undefined,
+                            banner_url: (userProfile as any).banner_url || undefined,
+                            username: (userProfile as any).username || undefined,
+                            bio: (userProfile as any).bio || undefined,
+                            location: (userProfile as any).location || undefined,
+                            website: (userProfile as any).website || undefined,
+                            preferences: (userProfile as any).preferences
                           } : undefined}
                           onSave={saveProfileFromDialog}
                         />
@@ -611,13 +611,13 @@ export default function ProfileBubble() {
                     }
                     user={{ name: user.name || undefined, email: user.email || undefined }}
                     profile={userProfile ? {
-                      avatar_url: userProfile.avatar_url || undefined,
-                      banner_url: (userProfile as { banner_url?: string })?.banner_url || undefined,
-                      username: (userProfile as { username?: string })?.username || undefined,
-                      bio: userProfile.bio || undefined,
-                      location: userProfile.location || undefined,
-                      website: userProfile.website || undefined,
-                      preferences: userProfile.preferences
+                      avatar_url: (userProfile as any).avatar_url || undefined,
+                      banner_url: (userProfile as any).banner_url || undefined,
+                      username: (userProfile as any).username || undefined,
+                      bio: (userProfile as any).bio || undefined,
+                      location: (userProfile as any).location || undefined,
+                      website: (userProfile as any).website || undefined,
+                      preferences: (userProfile as any).preferences
                     } : undefined}
                     onSave={saveProfileFromDialog}
                   />
@@ -855,13 +855,13 @@ export default function ProfileBubble() {
                             trigger={<Edit className="w-4 h-4" />}
                             user={{ name: user.name || undefined, email: user.email || undefined }}
                             profile={userProfile ? {
-                              avatar_url: userProfile.avatar_url || undefined,
-                              banner_url: (userProfile as { banner_url?: string })?.banner_url || undefined,
-                              username: (userProfile as { username?: string })?.username || undefined,
-                              bio: userProfile.bio || undefined,
-                              location: userProfile.location || undefined,
-                              website: userProfile.website || undefined,
-                              preferences: userProfile.preferences
+                              avatar_url: (userProfile as any).avatar_url || undefined,
+                              banner_url: (userProfile as any).banner_url || undefined,
+                              username: (userProfile as any).username || undefined,
+                              bio: (userProfile as any).bio || undefined,
+                              location: (userProfile as any).location || undefined,
+                              website: (userProfile as any).website || undefined,
+                              preferences: (userProfile as any).preferences
                             } : undefined}
                             onSave={saveProfileFromDialog}
                           />

@@ -40,6 +40,11 @@ export default async function DashboardPage() {
     } else {
       // 2. Check for active subscription
       try {
+        if (!userEmail) {
+          console.log('🚫 No user email, redirecting to /onboarding');
+          redirect('/onboarding');
+        }
+
         const { data: subscription } = await db.supabase
           .from('user_subscriptions')
           .select('status, plan_type, subscription_ends_at')
