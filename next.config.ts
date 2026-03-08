@@ -1,11 +1,26 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  experimental: {
-    serverComponentsExternalPackages: ['@supabase/supabase-js'],
-  },
+  serverExternalPackages: ['@supabase/supabase-js'],
   images: {
-    domains: ['localhost', 'mailient.xyz', 'avatars.githubusercontent.com', 'xubohuah.github.io'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'mailient.xyz',
+      },
+      {
+        protocol: 'https',
+        hostname: 'avatars.githubusercontent.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'xubohuah.github.io',
+      },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+      },
+    ],
   },
   typescript: {
     ignoreBuildErrors: true,

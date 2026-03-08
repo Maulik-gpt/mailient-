@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import ChatInterface from '../ChatInterface';
 
-export default function ConversationPage({ params }: { params: { id: string } }) {
+export default function ConversationPage() {
   const router = useRouter();
   const pathname = usePathname();
   const [conversationId, setConversationId] = useState<string | null>(null);
