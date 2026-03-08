@@ -20,7 +20,7 @@ export async function GET(request, { params }) {
     const events = await db.getOperatorRunEvents(session.user.email, runId, 200);
 
     return NextResponse.json({
-      run,
+      run: run ? {\n        runId: run.run_id || run.runId,\n        status: run.status,\n        phase: run.phase,\n        intent: run.intent,\n        complexity: run.complexity,\n        updatedAt: run.updated_at\n      } : null,
       steps: (steps || []).map((s) => ({
         id: s.step_id,
         order: s.step_order,
@@ -30,10 +30,19 @@ export async function GET(request, { params }) {
         detail: s.detail || '',
         evidence: s.evidence || null
       })),
-      events: events || []
+      events: (events || []).map((e) => ({
+        id: e.id,
+        type: e.event_type || 'run_event',
+        phase: e.phase || 'thinking',
+        payload: e.payload || {},
+        createdAt: e.created_at
+      }))
     });
   } catch (error) {
     console.error('Operator run fetch error:', error);
     return NextResponse.json({ error: error.message || 'Failed to fetch run' }, { status: 500 });
   }
 }
+
+
+

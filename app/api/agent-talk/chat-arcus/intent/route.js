@@ -6,8 +6,7 @@ import { ArcusOperatorRuntime } from '@/lib/arcus-operator-runtime.js';
 
 /**
  * Fast intent analysis endpoint
- * Returns AI-generated thinking steps quickly so the frontend
- * can show live thinking while the main chat processes.
+ * Returns typed operator steps so UI can render thinking immediately.
  */
 export async function POST(request) {
     try {
@@ -16,7 +15,7 @@ export async function POST(request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { message, conversationId = null } = await request.json();
+        const { message, conversationId = null, runId = null } = await request.json();
         if (!message) {
             return NextResponse.json({ error: 'Message required' }, { status: 400 });
         }
@@ -31,6 +30,9 @@ export async function POST(request) {
             conversationId
         });
 
+        const messageLower = String(message || '').toLowerCase();
+        const forceCanvas = messageLower.includes('canvas') || (messageLower.includes('draft') && (messageLower.includes('reply') || messageLower.includes('email')));
+
         const intentAnalysis = await arcusAI.analyzeIntentAndPlan(message, {
             userEmail: session.user.email,
             userName: session.user.name || 'User'
@@ -39,7 +41,8 @@ export async function POST(request) {
         const runInit = await runtime.initializeRun({
             message,
             intentAnalysis,
-            canvasType: intentAnalysis?.canvasType || 'none'
+            canvasType: intentAnalysis?.canvasType || 'none',
+            runId
         });
 
         const normalizedPlan = runInit?.plan || runtime.normalizePlan(intentAnalysis?.plan || [], message);
@@ -49,7 +52,7 @@ export async function POST(request) {
         );
 
         return NextResponse.json({
-            runId: runInit?.run?.runId || null,
+            runId: runInit?.run?.runId || runId || runtime.generateRunId(),
             intent: intentAnalysis?.intent || 'general_chat',
             complexity: intentAnalysis?.complexity || runtime.inferComplexity(message, intentAnalysis?.plan || []),
             plan: normalizedPlan.map((step, idx) => ({
@@ -63,21 +66,22 @@ export async function POST(request) {
                 description: step.label,
                 type: step.kind
             })),
-            needsCanvas: intentAnalysis?.needsCanvas || false,
-            canvasType: intentAnalysis?.canvasType || 'none',
+            needsCanvas: Boolean(intentAnalysis?.needsCanvas || forceCanvas),
+            canvasType: intentAnalysis?.canvasType || (forceCanvas ? 'email_draft' : 'none'),
             requiresApproval,
             reasoning: intentAnalysis?.reasoning || '',
         });
     } catch (error) {
         console.error('Intent analysis error:', error);
+        const fallbackRunId = `run_fallback_${Date.now()}`;
         return NextResponse.json({
-            runId: null,
+            runId: fallbackRunId,
             intent: 'general_chat',
             complexity: 'simple',
             plan: [
-                { step: 1, kind: 'analyze', status: 'active', label: 'Understanding your request', action: 'analyze', description: 'Understanding your request', type: 'analyze' },
-                { step: 2, kind: 'search', status: 'pending', label: 'Gathering relevant context', action: 'search', description: 'Gathering relevant context', type: 'search' },
-                { step: 3, kind: 'draft', status: 'pending', label: 'Preparing output for review', action: 'draft', description: 'Preparing output for review', type: 'draft' }
+                { step: 1, id: `${fallbackRunId}_1`, kind: 'analyze', status: 'active', label: 'Understanding your request', action: 'analyze', description: 'Understanding your request', type: 'analyze', detail: 'Intent detection and task classification' },
+                { step: 2, id: `${fallbackRunId}_2`, kind: 'search', status: 'pending', label: 'Gathering relevant context', action: 'search', description: 'Gathering relevant context', type: 'search', detail: 'Finding the most relevant threads and context' },
+                { step: 3, id: `${fallbackRunId}_3`, kind: 'draft', status: 'pending', label: 'Preparing output for review', action: 'draft', description: 'Preparing output for review', type: 'draft', detail: 'Building execution-ready canvas output' }
             ],
             needsCanvas: false,
             canvasType: 'none',

@@ -411,7 +411,20 @@ export default function ChatInterface({
       type: (step.type || 'think') as LiveThinkingStep['type']
     }));
 
-  const processAIMessage = async (messageText: string, conversationIdToUse: string, isNew: boolean) => {
+  
+  const formatStepEvidence = (evidence: any): string => {
+    if (!evidence) return '';
+    const items = Array.isArray(evidence) ? evidence : (Array.isArray(evidence.items) ? evidence.items : []);
+    if (!items.length) return '';
+    return items.slice(0, 4).map((item: any) => {
+      const sender = item.sender || 'Unknown';
+      const subject = item.subject || '';
+      const thread = item.threadId ? ('Thread: ' + item.threadId) : '';
+                  return [sender, subject, thread].filter(Boolean).join(' | ');
+    }).join('\\n');
+  };
+
+const processAIMessage = async (messageText: string, conversationIdToUse: string, isNew: boolean) => {
     try {
       setIsLoading(true);
       setLiveThinkingSteps(buildFallbackThinkingSteps(messageText));
@@ -425,6 +438,8 @@ export default function ChatInterface({
         setNotesSearchQuery(extractedQuery);
       }
 
+      const requestRunId = 'run_client_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+
       const requestBody = {
         message: messageText,
         conversationId: conversationIdToUse,
@@ -432,7 +447,8 @@ export default function ChatInterface({
         gmailAccessToken,
         isNotesQuery: notesQuery,
         notesSearchQuery: extractedQuery,
-        activeMission
+        activeMission,
+        runId: requestRunId
       };
 
       // --- PARALLEL REQUESTS: Fast intent + Full chat ---
@@ -440,7 +456,7 @@ export default function ChatInterface({
       const intentPromise = fetch('/api/agent-talk/chat-arcus/intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: messageText, conversationId: conversationIdToUse }),
+        body: JSON.stringify({ message: messageText, conversationId: conversationIdToUse, runId: requestRunId }),
       }).then(r => r.json()).catch(() => null);
 
       // 2) Fire main chat request (takes longer - does search, canvas, response)
@@ -504,7 +520,7 @@ export default function ChatInterface({
       await new Promise(r => setTimeout(r, 250));
 
       // Canvas data handling
-      const hasCanvas = data.canvasData && data.canvasData.content;
+      const hasCanvas = Boolean(data.canvasData && (data.canvasData.content || data.execution?.requiresApproval));
       if (hasCanvas) {
         setCanvasData(data.canvasData);
         setIsCanvasOpen(true);
@@ -1137,7 +1153,8 @@ export default function ChatInterface({
         body: JSON.stringify({
           message: `APPROVED: Send this reply to ${draftData.recipientEmail}`, // This triggers the next step
           conversationId: currentConversationId,
-          activeMission: activeMission,
+          activeMission,
+        runId: activeRun?.runId || null,
           approvalPayload: draftData // Pass the edited content back
         })
       });
@@ -1236,8 +1253,9 @@ export default function ChatInterface({
           setLiveThinkingSteps(data.steps.map((s: any) => ({
             id: s.id || `step-${s.order}`,
             label: s.label || `Step ${s.order}`,
-            status: (s.status || 'pending') as 'pending' | 'active' | 'completed' | 'error',
+            status: (s.status === 'blocked_approval' ? 'active' : (s.status || 'pending')) as 'pending' | 'active' | 'completed' | 'error',
             type: (s.kind || 'think') as LiveThinkingStep['type'],
+            expandedContent: [s.detail || '', formatStepEvidence(s.evidence)].filter(Boolean).join('\n\n')
           })));
         }
 
@@ -1915,4 +1933,12 @@ function extractSearchTerm(message: string): string {
   // If no pattern matches, return the entire message as search term
   return message.trim();
 }
+
+
+
+
+
+
+
+
 

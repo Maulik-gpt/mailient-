@@ -16,10 +16,23 @@ export interface CanvasSection {
 export interface CanvasData {
     type: CanvasType;
     title?: string;
-    content: unknown;
+    content: any;
     sections?: CanvasSection[];
     actions?: { actionType: string; requiresApproval?: boolean }[];
     approvalTokens?: Record<string, string>;
+    goal?: string;
+    decisionSummary?: string;
+    riskFlags?: string[];
+    sources?: { threadId?: string | null; messageId?: string | null; sender?: string; timestamp?: string | null; subject?: string }[];
+    recommendedAction?: string | null;
+    alternatives?: string[];
+    actionPayload?: unknown;
+    approval?: {
+        required: boolean;
+        token?: string | null;
+        expiresAt?: string | null;
+        reason?: string | null;
+    };
     raw?: string;
     error?: string;
 }
@@ -47,6 +60,24 @@ const typeLabels: Record<CanvasType, string> = {
     reply: 'Reply Draft',
     notes: 'Notes',
     none: 'Canvas',
+};
+
+const actionPriority: Record<string, number> = {
+    send_email: 1,
+    save_draft: 2,
+    execute_plan: 3,
+    apply_changes: 4,
+    revise: 5,
+    cancel: 6
+};
+
+const actionLabel: Record<string, string> = {
+    send_email: 'Send Email',
+    save_draft: 'Save Draft',
+    execute_plan: 'Execute Task',
+    apply_changes: 'Apply Changes',
+    revise: 'Revise',
+    cancel: 'Cancel'
 };
 
 export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecuting }: CanvasPanelProps) {
@@ -103,10 +134,21 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
             handleCopy();
             return;
         }
-        const data = canvasData?.type === 'email_draft'
-            ? { ...emailDraft, body: editMode ? editedBody : emailDraft.body || '' }
-            : canvasData?.content;
-        onExecute(action, data);
+        if (action === 'cancel') {
+            onClose();
+            return;
+        }
+        if (action === 'revise') {
+            setEditMode(true);
+            return;
+        }
+
+        const payload = canvasData?.actionPayload
+            || (canvasData?.type === 'email_draft'
+                ? { ...emailDraft, body: editMode ? editedBody : emailDraft.body || '' }
+                : canvasData?.content);
+
+        onExecute(action, payload);
     };
 
     if (!isOpen || !canvasData) return null;
@@ -126,35 +168,21 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
 
     if (sections.length === 0 && canvasData.content) {
         if (canvasData.type === 'summary') {
-            if (genericContent.keyPoints?.length) {
-                sections.push({ id: 'keypoints', title: 'Key Points', tag: 'Overview', content: genericContent.keyPoints.join('\n') });
-            }
-            if (genericContent.actionItems?.length) {
-                sections.push({ id: 'actions', title: 'Action Items', tag: 'To-do', content: genericContent.actionItems.join('\n') });
-            }
-            if (genericContent.urgency) {
-                sections.push({ id: 'urgency', title: 'Priority Level', tag: genericContent.urgency, content: `Urgency: ${genericContent.urgency}` });
-            }
+            if (genericContent.keyPoints?.length) sections.push({ id: 'keypoints', title: 'Key Points', tag: 'Overview', content: genericContent.keyPoints.join('\n') });
+            if (genericContent.actionItems?.length) sections.push({ id: 'actions', title: 'Action Items', tag: 'To-do', content: genericContent.actionItems.join('\n') });
+            if (genericContent.urgency) sections.push({ id: 'urgency', title: 'Priority Level', tag: genericContent.urgency, content: `Urgency: ${genericContent.urgency}` });
         } else if (canvasData.type === 'research') {
-            if (genericContent.findings?.length) {
-                genericContent.findings.forEach((f, i) => {
-                    sections.push({ id: `finding-${i}`, title: f.topic, tag: 'Finding', content: f.detail });
-                });
-            }
-            if (genericContent.recommendations?.length) {
-                sections.push({ id: 'recs', title: 'Recommendations', tag: 'Next steps', content: genericContent.recommendations.join('\n') });
-            }
+            if (genericContent.findings?.length) genericContent.findings.forEach((f, i) => sections.push({ id: `finding-${i}`, title: f.topic, tag: 'Finding', content: f.detail }));
+            if (genericContent.recommendations?.length) sections.push({ id: 'recs', title: 'Recommendations', tag: 'Next steps', content: genericContent.recommendations.join('\n') });
         } else if (canvasData.type === 'action_plan') {
-            if (genericContent.steps?.length) {
-                genericContent.steps.forEach((s, i) => {
-                    sections.push({ id: `step-${i}`, title: s.task, tag: `Step ${s.order || i + 1}`, content: '' });
-                });
-            }
-            if (genericContent.timeline) {
-                sections.push({ id: 'timeline', title: 'Timeline', tag: 'Schedule', content: genericContent.timeline });
-            }
+            if (genericContent.steps?.length) genericContent.steps.forEach((s, i) => sections.push({ id: `step-${i}`, title: s.task, tag: `Step ${s.order || i + 1}`, content: '' }));
+            if (genericContent.timeline) sections.push({ id: 'timeline', title: 'Timeline', tag: 'Schedule', content: genericContent.timeline });
         }
     }
+
+    const orderedActions = [...(canvasData.actions || [])].sort((a, b) => (actionPriority[a.actionType] || 99) - (actionPriority[b.actionType] || 99));
+    if (!orderedActions.find((a) => a.actionType === 'revise')) orderedActions.push({ actionType: 'revise', requiresApproval: false });
+    if (!orderedActions.find((a) => a.actionType === 'cancel')) orderedActions.push({ actionType: 'cancel', requiresApproval: false });
 
     return (
         <>
@@ -177,6 +205,25 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                 </div>
 
                 <div className="flex-1 overflow-y-auto">
+                    {!canvasData.error && (canvasData.goal || canvasData.decisionSummary || canvasData.approval?.required) && (
+                        <div className="px-6 py-4 border-b border-white/[0.06] bg-white/[0.01]">
+                            {canvasData.goal && <p className="text-white/65 text-xs leading-relaxed">Goal: {canvasData.goal}</p>}
+                            {canvasData.decisionSummary && <p className="text-white/80 text-sm mt-2 leading-relaxed">{canvasData.decisionSummary}</p>}
+                            {canvasData.approval?.required && (
+                                <div className="mt-3 text-[11px] text-white/72 bg-white/[0.06] border border-white/[0.12] rounded-lg px-3 py-2">
+                                    Approval required. {canvasData.approval?.reason || 'Review and confirm before execution.'}
+                                </div>
+                            )}
+                            {Array.isArray(canvasData.riskFlags) && canvasData.riskFlags.length > 0 && (
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                    {canvasData.riskFlags.slice(0, 3).map((flag, idx) => (
+                                        <span key={idx} className="text-[10px] px-2 py-1 rounded-md border border-white/[0.14] bg-white/[0.04] text-white/60">{flag}</span>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     {canvasData.error && (
                         <div className="px-6 py-6">
                             <div className="text-red-400/70 text-sm bg-red-500/5 border border-red-500/20 rounded-xl p-4">
@@ -189,77 +236,35 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                     {canvasData.type === 'email_draft' && !canvasData.error && (
                         <div className="px-6 py-5">
                             <div className="space-y-2 mb-5">
-                                <div className="flex items-center gap-3 text-sm">
-                                    <span className="text-white/35 w-16 text-xs uppercase tracking-wide font-medium">To</span>
-                                    <span className="text-white/75 text-sm">{emailDraft.to || 'Not specified'}</span>
-                                </div>
-                                <div className="flex items-center gap-3 text-sm">
-                                    <span className="text-white/35 w-16 text-xs uppercase tracking-wide font-medium">Subject</span>
-                                    <span className="text-white/95 text-sm font-medium">{emailDraft.subject || 'No subject'}</span>
-                                </div>
+                                <div className="flex items-center gap-3 text-sm"><span className="text-white/35 w-16 text-xs uppercase tracking-wide font-medium">To</span><span className="text-white/75 text-sm">{emailDraft.to || 'Not specified'}</span></div>
+                                <div className="flex items-center gap-3 text-sm"><span className="text-white/35 w-16 text-xs uppercase tracking-wide font-medium">Subject</span><span className="text-white/95 text-sm font-medium">{emailDraft.subject || 'No subject'}</span></div>
                             </div>
-
                             <div className="h-px bg-white/[0.06] mb-5" />
-
                             {editMode ? (
-                                <textarea
-                                    value={editedBody}
-                                    onChange={(e) => setEditedBody(e.target.value)}
-                                    className="w-full min-h-[300px] bg-black/20 border border-white/[0.12] rounded-xl p-4 text-white/90 text-sm leading-[1.8] resize-y focus:outline-none focus:border-white/25 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.02)] font-sans"
-                                    autoFocus
-                                />
+                                <textarea value={editedBody} onChange={(e) => setEditedBody(e.target.value)} className="w-full min-h-[300px] bg-black/20 border border-white/[0.12] rounded-xl p-4 text-white/90 text-sm leading-[1.8] resize-y focus:outline-none focus:border-white/25 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.02)] font-sans" autoFocus />
                             ) : (
-                                <div className="text-white/88 text-sm leading-[1.8] whitespace-pre-wrap font-sans">
-                                    {emailDraft.body || ''}
-                                </div>
-                            )}
-
-                            {emailDraft.tone && (
-                                <div className="flex items-center gap-2 mt-5 pt-4 border-t border-white/[0.06]">
-                                    <span className="text-[10px] uppercase tracking-wider text-white/30 font-medium">Tone</span>
-                                    <span className="text-xs px-2 py-0.5 rounded-md bg-white/[0.06] border border-white/[0.1] text-white/55">
-                                        {emailDraft.tone}
-                                    </span>
-                                </div>
+                                <div className="text-white/88 text-sm leading-[1.8] whitespace-pre-wrap font-sans">{emailDraft.body || ''}</div>
                             )}
                         </div>
                     )}
 
                     {canvasData.type !== 'email_draft' && sections.length > 0 && !canvasData.error && (
                         <div className="py-2">
-                            {canvasData.type === 'summary' && genericContent?.title && (
-                                <div className="px-6 py-4 text-white/58 text-sm leading-relaxed border-b border-white/[0.06]">
-                                    {genericContent.title}
-                                </div>
-                            )}
-
                             {sections.map((section) => (
                                 <div key={section.id} className="border-b border-white/[0.05] last:border-0">
-                                    <button
-                                        onClick={() => toggleSection(section.id)}
-                                        className="flex items-center w-full px-6 py-4 hover:bg-white/[0.03] transition-colors text-left gap-3"
-                                    >
-                                        <ChevronRight
-                                            className={`w-3.5 h-3.5 text-white/25 flex-shrink-0 transition-transform duration-200 ${expandedSections.has(section.id) ? 'rotate-90' : ''}`}
-                                        />
+                                    <button onClick={() => toggleSection(section.id)} className="flex items-center w-full px-6 py-4 hover:bg-white/[0.03] transition-colors text-left gap-3">
+                                        <ChevronRight className={`w-3.5 h-3.5 text-white/25 flex-shrink-0 transition-transform duration-200 ${expandedSections.has(section.id) ? 'rotate-90' : ''}`} />
                                         <span className="text-white/84 text-sm font-medium flex-1">{section.title}</span>
                                         {section.tag && <span className="text-white/33 text-xs font-medium">{section.tag}</span>}
                                     </button>
-
-                                    {expandedSections.has(section.id) && section.content && (
-                                        <div className="px-6 pb-4 pl-12">
-                                            <div className="text-white/60 text-sm leading-relaxed whitespace-pre-wrap">{section.content}</div>
-                                        </div>
-                                    )}
+                                    {expandedSections.has(section.id) && section.content && (<div className="px-6 pb-4 pl-12"><div className="text-white/60 text-sm leading-relaxed whitespace-pre-wrap">{section.content}</div></div>)}
                                 </div>
                             ))}
                         </div>
                     )}
 
                     {canvasData.type !== 'email_draft' && sections.length === 0 && canvasData.raw && !canvasData.error && (
-                        <div className="px-6 py-5">
-                            <div className="text-white/82 text-sm leading-[1.8] whitespace-pre-wrap font-sans">{canvasData.raw}</div>
-                        </div>
+                        <div className="px-6 py-5"><div className="text-white/82 text-sm leading-[1.8] whitespace-pre-wrap font-sans">{canvasData.raw}</div></div>
                     )}
                 </div>
 
@@ -268,58 +273,39 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 {canvasData.type === 'email_draft' && (
-                                    <button
-                                        onClick={() => setEditMode(!editMode)}
-                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${editMode ? 'bg-white/15 text-white' : 'text-white/50 hover:text-white/80 hover:bg-white/10'}`}
-                                    >
+                                    <button onClick={() => setEditMode(!editMode)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${editMode ? 'bg-white/15 text-white' : 'text-white/50 hover:text-white/80 hover:bg-white/10'}`}>
                                         <Edit3 className="w-3 h-3" />
                                         {editMode ? 'Editing' : 'Edit'}
                                     </button>
                                 )}
-                                <button
-                                    onClick={handleCopy}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white/50 hover:text-white/80 hover:bg-white/10 transition-all"
-                                >
-                                    {copied ? <Check className="w-3 h-3 text-white/80" /> : <Copy className="w-3 h-3" />}
-                                    {copied ? 'Copied' : 'Copy'}
+                                <button onClick={handleCopy} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white/50 hover:text-white/80 hover:bg-white/10 transition-all">
+                                    {copied ? <Check className="w-3 h-3 text-white/80" /> : <Copy className="w-3 h-3" />} {copied ? 'Copied' : 'Copy'}
                                 </button>
                             </div>
 
-                            <div className="flex items-center gap-2">
-                                {canvasData.type === 'email_draft' && (
-                                    <>
+                            <div className="flex items-center gap-2 flex-wrap justify-end">
+                                {orderedActions.map((action) => {
+                                    const isPrimary = action.actionType === 'send_email' || action.actionType === 'execute_plan';
+                                    const label = actionLabel[action.actionType] || action.actionType;
+                                    const isBusy = isExecuting && isPrimary;
+                                    return (
                                         <button
-                                            onClick={() => handleExecute('save_draft')}
-                                            disabled={isExecuting}
-                                            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium text-white/70 hover:text-white bg-white/10 hover:bg-white/15 border border-white/[0.1] transition-all disabled:opacity-40"
+                                            key={action.actionType}
+                                            onClick={() => handleExecute(action.actionType)}
+                                            disabled={isExecuting && action.actionType !== 'cancel' && action.actionType !== 'revise'}
+                                            className={isPrimary
+                                                ? 'flex items-center gap-1.5 px-5 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-white to-white/90 text-black hover:from-white hover:to-white transition-all shadow-[0_8px_24px_rgba(255,255,255,0.18)] disabled:opacity-40'
+                                                : 'flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium text-white/70 hover:text-white bg-white/10 hover:bg-white/15 border border-white/[0.1] transition-all disabled:opacity-40'}
                                         >
-                                            <FileText className="w-3 h-3" />
-                                            Save Draft
+                                            {isBusy ? <span className="w-3 h-3 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                                                : action.actionType === 'save_draft' ? <FileText className="w-3 h-3" />
+                                                    : action.actionType === 'execute_plan' ? <Sparkles className="w-3 h-3" />
+                                                        : action.actionType === 'send_email' ? <Send className="w-3 h-3" />
+                                                            : null}
+                                            {isBusy ? 'Executing...' : label}
                                         </button>
-                                        <button
-                                            onClick={() => handleExecute('send_email')}
-                                            disabled={isExecuting}
-                                            className="flex items-center gap-1.5 px-5 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-white to-white/90 text-black hover:from-white hover:to-white transition-all shadow-[0_8px_24px_rgba(255,255,255,0.18)] disabled:opacity-40"
-                                        >
-                                            {isExecuting ? (
-                                                <span className="w-3 h-3 border-2 border-black/20 border-t-black rounded-full animate-spin" />
-                                            ) : (
-                                                <Send className="w-3 h-3" />
-                                            )}
-                                            {isExecuting ? 'Sending...' : 'Send Email'}
-                                        </button>
-                                    </>
-                                )}
-                                {canvasData.type === 'action_plan' && (
-                                    <button
-                                        onClick={() => handleExecute('execute_plan')}
-                                        disabled={isExecuting}
-                                        className="flex items-center gap-1.5 px-5 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-white to-white/90 text-black hover:from-white hover:to-white transition-all shadow-[0_8px_24px_rgba(255,255,255,0.18)] disabled:opacity-40"
-                                    >
-                                        <Sparkles className="w-3 h-3" />
-                                        Execute Plan
-                                    </button>
-                                )}
+                                    );
+                                })}
                             </div>
                         </div>
                     </div>
@@ -335,4 +321,3 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
         </>
     );
 }
-

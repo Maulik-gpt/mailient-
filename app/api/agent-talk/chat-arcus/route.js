@@ -329,7 +329,8 @@ export async function POST(request) {
       const runInit = await operatorRuntime.initializeRun({
         message,
         intentAnalysis,
-        canvasType: intentAnalysis?.canvasType || 'none'
+        canvasType: intentAnalysis?.canvasType || 'none',
+        runId: runId || null
       });
       operatorRun = runInit?.run || null;
       normalizedPlan = runInit?.plan || [];
@@ -389,7 +390,7 @@ Body: ${emailData.body || emailData.snippet}
       }
     }
 
-    // --- STEP STATE TRANSITIONS ---
+        // --- STEP STATE TRANSITIONS ---
     if (operatorRuntime && operatorRun && normalizedPlan.length > 0) {
       const step0 = normalizedPlan[0];
       if (step0) {
@@ -398,9 +399,11 @@ Body: ${emailData.body || emailData.snippet}
           stepId: step0.id,
           status: 'completed',
           phase: 'thinking',
-          detail: 'Intent and plan established'
+          detail: 'Intent classified and operator plan generated'
         });
+        step0.status = 'completed';
       }
+
       const step1 = normalizedPlan[1];
       if (step1) {
         await operatorRuntime.transitionStep({
@@ -408,20 +411,29 @@ Body: ${emailData.body || emailData.snippet}
           stepId: step1.id,
           status: 'active',
           phase: 'searching',
+          detail: buildStepMicroEvent('searching', emailResult, notesResult),
           evidence: emailResult || notesResult || null
         });
+
         await operatorRuntime.transitionStep({
           runId: operatorRun.runId,
           stepId: step1.id,
           status: 'completed',
           phase: 'searching',
+          detail: buildStepMicroEvent('completed_search', emailResult, notesResult),
           evidence: emailResult || notesResult || null
         });
+        step1.status = 'completed';
+      }
+
+      const step2 = normalizedPlan[2];
+      if (step2 && !step2.detail) {
+        step2.detail = 'Drafting execution-ready output in canvas';
       }
     }
 
     // --- CANVAS GENERATION (for complex tasks) ---
-    let canvasData = null;
+        let canvasData = null;
     let executionPolicy = null;
     const messageLower = (message || '').toLowerCase();
     const forceCanvasByMessage =
@@ -449,7 +461,7 @@ Body: ${emailData.body || emailData.snippet}
           emailContext || '',
           { userName, userEmail, privacyMode }
         );
-        console.log('Canvas generated:', effectiveCanvasType);
+
         if (operatorRuntime && operatorRun) {
           executionPolicy = operatorRuntime.buildExecutionPolicy(
             effectiveCanvasType,
@@ -457,10 +469,32 @@ Body: ${emailData.body || emailData.snippet}
             operatorRun.runId
           );
           await operatorRuntime.saveExecutionPolicy(operatorRun.runId, executionPolicy);
-          if (canvasData && executionPolicy?.actions) {
-            canvasData.actions = executionPolicy.actions;
-            canvasData.approvalTokens = executionPolicy.approvalTokens;
-          }
+        }
+
+        canvasData = enrichCanvasData({
+          canvasData,
+          message,
+          canvasType: effectiveCanvasType,
+          requiresApproval,
+          runId: operatorRun?.runId || runId || null,
+          executionPolicy,
+          emailResult,
+          notesResult
+        });
+
+        const step2 = normalizedPlan[2];
+        if (operatorRuntime && operatorRun && step2) {
+          const approvalRequired = Boolean(canvasData?.approval?.required);
+          await operatorRuntime.transitionStep({
+            runId: operatorRun.runId,
+            stepId: step2.id,
+            status: approvalRequired ? 'blocked_approval' : 'completed',
+            phase: approvalRequired ? 'approval' : 'synthesizing',
+            detail: approvalRequired
+              ? 'Drafted output and waiting for your confirmation'
+              : 'Drafted output and prepared execution actions'
+          });
+          step2.status = approvalRequired ? 'blocked_approval' : 'completed';
         }
       } catch (err) {
         console.error('Canvas generation failed:', err.message);
@@ -487,34 +521,25 @@ Body: ${emailData.body || emailData.snippet}
       ? response
       : generateFallbackResponse(message, integrations);
 
+    let runStatus = 'completed';
+    let runPhase = 'post_execution';
     if (operatorRuntime && operatorRun && normalizedPlan.length > 0) {
-      const step2 = normalizedPlan[2];
-      if (step2) {
-        await operatorRuntime.transitionStep({
-          runId: operatorRun.runId,
-          stepId: step2.id,
-          status: 'active',
-          phase: 'executing',
-          detail: 'Preparing final output'
-        });
-        await operatorRuntime.transitionStep({
-          runId: operatorRun.runId,
-          stepId: step2.id,
-          status: 'completed',
-          phase: 'executing'
-        });
-      }
+      const approvalRequired = Boolean(canvasData?.approval?.required);
+      runStatus = approvalRequired ? 'blocked_approval' : 'completed';
+      runPhase = approvalRequired ? 'approval' : 'post_execution';
 
       await operatorRuntime.updateRunState(operatorRun.runId, {
-        status: 'completed',
-        phase: 'post_execution',
+        status: runStatus,
+        phase: runPhase,
         memory: {
           ...(operatorRun.memory || {}),
           lastExecution: {
             actionType,
             at: new Date().toISOString()
           },
-          suggestions: ['track_response', 'prepare_follow_up']
+          suggestions: approvalRequired
+            ? ['approve_or_revise', 'save_draft']
+            : ['track_response', 'prepare_follow_up']
         }
       });
     }
@@ -552,18 +577,25 @@ Body: ${emailData.body || emailData.snippet}
           description: s.label,
           action: s.label,
           type: s.kind,
-          detail: s.detail || ''
+          detail: s.detail || '',
+          evidence: buildEvidenceForStep(s, emailResult, notesResult)
         }))
         : intentAnalysis?.plan || [],
       run: operatorRun ? {
         runId: operatorRun.runId,
-        status: 'completed',
-        phase: 'post_execution',
+        status: runStatus,
+        phase: runPhase,
         intent: operatorRun.intent,
         complexity: operatorRun.complexity
       } : null,
       evidence: {
         context: actionType,
+        byStep: normalizedPlan.map((s) => ({
+          stepId: s.id,
+          kind: s.kind,
+          label: s.label,
+          items: buildEvidenceForStep(s, emailResult, notesResult)
+        })),
         emailResult: emailResult || null,
         notesResult: notesResult || null
       },
@@ -572,7 +604,9 @@ Body: ${emailData.body || emailData.snippet}
         requiresApproval: false,
         approvalTokens: {}
       },
-      postExecutionSuggestion: "Your task is complete. Want me to track replies or prepare a follow-up draft?"
+      postExecutionSuggestion: runPhase === 'approval'
+        ? 'Your draft is ready in canvas. Approve, revise, or save it as draft.'
+        : "Your task is complete. Want me to track replies or prepare a follow-up draft?"
     });
 
   } catch (error) {
@@ -588,6 +622,117 @@ Body: ${emailData.body || emailData.snippet}
 /**
  * Get integration status for current user
  */
+function buildStepMicroEvent(phase, emailResult, notesResult) {
+  if (emailResult?.success) {
+    const count = Array.isArray(emailResult.emails) ? emailResult.emails.length : (emailResult.count || 0);
+    if (phase === 'searching') return 'Searching Gmail context for high-priority threads';
+    return `Ranked ${count} relevant thread${count === 1 ? '' : 's'} from Gmail`;
+  }
+  if (notesResult?.success) {
+    const count = Array.isArray(notesResult.notes) ? notesResult.notes.length : 0;
+    return `Analyzed ${count} saved note${count === 1 ? '' : 's'} for context`;
+  }
+  return phase === 'searching'
+    ? 'Gathering relevant context for the workflow'
+    : 'Context prepared for output synthesis';
+}
+
+function buildEvidenceForStep(step, emailResult, notesResult) {
+  const kind = step?.kind || '';
+  const items = [];
+
+  if ((kind === 'search' || kind === 'read' || kind === 'analyze') && emailResult?.success) {
+    (emailResult.emails || []).slice(0, 5).forEach((email) => {
+      items.push({
+        threadId: email.threadId || null,
+        messageId: email.id || null,
+        sender: email.from || 'Unknown Sender',
+        timestamp: email.date || null,
+        subject: email.subject || '(No Subject)'
+      });
+    });
+  }
+
+  if ((kind === 'search' || kind === 'read' || kind === 'analyze') && notesResult?.success) {
+    (notesResult.notes || []).slice(0, 5).forEach((note) => {
+      items.push({
+        threadId: null,
+        messageId: note.id || null,
+        sender: 'Notes',
+        timestamp: note.created_at || null,
+        subject: note.subject || '(Untitled Note)'
+      });
+    });
+  }
+
+  return items;
+}
+
+function enrichCanvasData({ canvasData, message, canvasType, requiresApproval, runId, executionPolicy, emailResult, notesResult }) {
+  const fallbackContentByType = {
+    email_draft: {
+      subject: 'Draft reply ready',
+      to: '',
+      body: 'Arcus prepared a draft. Please review and approve before sending.',
+      tone: 'professional'
+    },
+    summary: {
+      title: 'Inbox Summary',
+      keyPoints: ['Summary prepared from available context'],
+      actionItems: ['Review in canvas and choose the next action'],
+      urgency: 'medium'
+    },
+    research: {
+      title: 'Inbox Research',
+      findings: [],
+      recommendations: ['Review findings and approve next action']
+    },
+    action_plan: {
+      title: 'Action Plan',
+      steps: [{ order: 1, task: 'Review and approve the workflow', status: 'pending' }],
+      timeline: 'Immediate'
+    }
+  };
+
+  const safeCanvas = {
+    ...(canvasData || {}),
+    type: canvasType,
+    content: canvasData?.content || fallbackContentByType[canvasType] || fallbackContentByType.summary,
+    raw: canvasData?.raw || ''
+  };
+
+  const actions = executionPolicy?.actions || [];
+  const approvalRequired = Boolean(requiresApproval || actions.some((a) => a.requiresApproval));
+  const primaryAction = actions.find((a) => a.actionType === 'send_email')
+    || actions.find((a) => a.actionType === 'execute_plan')
+    || actions[0]
+    || null;
+
+  const evidencePreview = buildEvidenceForStep({ kind: 'search' }, emailResult, notesResult).slice(0, 5);
+
+  return {
+    ...safeCanvas,
+    actions,
+    approvalTokens: executionPolicy?.approvalTokens || {},
+    goal: message,
+    decisionSummary: approvalRequired
+      ? 'Arcus prepared an execution-ready draft and is waiting for your explicit confirmation.'
+      : 'Arcus prepared an execution-ready result that can be applied now.',
+    riskFlags: approvalRequired
+      ? ['Critical action requires explicit approval before execution']
+      : ['No critical action pending approval'],
+    sources: evidencePreview,
+    recommendedAction: primaryAction?.actionType || null,
+    alternatives: actions.filter((a) => a.actionType !== primaryAction?.actionType).map((a) => a.actionType),
+    actionPayload: safeCanvas.content,
+    approval: {
+      required: approvalRequired,
+      token: primaryAction ? (executionPolicy?.approvalTokens?.[primaryAction.actionType] || null) : null,
+      expiresAt: new Date(Date.now() + (15 * 60 * 1000)).toISOString(),
+      reason: approvalRequired ? 'This action changes Gmail data and needs your confirmation.' : null
+    }
+  };
+}
 async function getIntegrationStatus(userEmail, db) {
   const defaultStatus = {
     gmail: false
@@ -1041,4 +1186,10 @@ async function saveConversation(userEmail, userMessage, aiResponse, conversation
     console.error('Error saving conversation:', error);
   }
 }
+
+
+
+
+
+
 
