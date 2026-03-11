@@ -440,7 +440,7 @@ export default function ChatInterface({
     }
   };
 
-const processAIMessage = async (messageText: string, conversationIdToUse: string, isNew: boolean) => {
+  const processAIMessage = async (messageText: string, conversationIdToUse: string, isNew: boolean) => {
     try {
       setIsLoading(true);
       setLiveThinkingSteps(buildFallbackThinkingSteps(messageText));
@@ -482,7 +482,7 @@ const processAIMessage = async (messageText: string, conversationIdToUse: string
         body: JSON.stringify(requestBody),
       });
 
-      // 3) Intent usually returns first — show live thinking steps
+      // 3) Intent usually returns first - show live thinking steps
       const intentData = await intentPromise;
       if (intentData?.plan && intentData.plan.length > 0) {
         const steps = normalizeIntentPlanSteps(intentData.plan);
@@ -1638,7 +1638,7 @@ const processAIMessage = async (messageText: string, conversationIdToUse: string
                                 </div>
                               )}
 
-                              {/* Artifact card — inline clickable card to open canvas */}
+                              {/* Artifact card - inline clickable card to open canvas */}
                               {(msg as AgentMessage).meta?.artifact && (
                                 <ArtifactCard
                                   type={(msg as AgentMessage).meta!.artifact!.type}

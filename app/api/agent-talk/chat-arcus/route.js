@@ -725,7 +725,7 @@ function enrichCanvasData({ canvasData, message, canvasType, taskType, requiresA
       signature: 'Best regards'
     },
     meeting_schedule: {
-      provider: 'google_meet',
+      provider: '',
       attendees: '',
       date: '',
       time: '',
@@ -1053,7 +1053,7 @@ async function executeScheduleMeetingAction({ requestedPayload, userEmail, sessi
       message: 'Meeting scheduled successfully via Google Meet.',
       result: event,
       externalRefs: {
-        provider: 'google_meet',
+        provider: '',
         eventId: event?.id || null,
         meetLink: event?.hangoutLink || event?.conferenceData?.entryPoints?.[0]?.uri || null
       },
