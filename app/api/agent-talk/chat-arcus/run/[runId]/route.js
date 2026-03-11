@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth.js';
 import { DatabaseService } from '@/lib/supabase.js';
 
@@ -20,7 +20,17 @@ export async function GET(request, { params }) {
     const events = await db.getOperatorRunEvents(session.user.email, runId, 200);
 
     return NextResponse.json({
-      run: run ? {\n        runId: run.run_id || run.runId,\n        status: run.status,\n        phase: run.phase,\n        intent: run.intent,\n        complexity: run.complexity,\n        updatedAt: run.updated_at\n      } : null,
+      run: run
+        ? {
+            runId: run.run_id || run.runId,
+            status: run.status,
+            phase: run.phase,
+            intent: run.intent,
+            complexity: run.complexity,
+            memory: run.memory || {},
+            updatedAt: run.updated_at
+          }
+        : null,
       steps: (steps || []).map((s) => ({
         id: s.step_id,
         order: s.step_order,
@@ -43,6 +53,3 @@ export async function GET(request, { params }) {
     return NextResponse.json({ error: error.message || 'Failed to fetch run' }, { status: 500 });
   }
 }
-
-
-

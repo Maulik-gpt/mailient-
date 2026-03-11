@@ -1,6 +1,6 @@
 "use client";
 
-import { Send, Mail, Upload, User, MessageCircle, DoorOpen, Bell, Mail as EmailIcon, MoreHorizontal, LogOut, Settings, ChevronRight, ChevronDown, CheckCircle2, Circle, Edit, History } from 'lucide-react';
+import { Send, Mail, Upload, User, MessageCircle, DoorOpen, Bell, Mail as EmailIcon, MoreHorizontal, LogOut, Settings, ChevronRight, ChevronDown, CheckCircle2, Circle } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
@@ -42,55 +42,50 @@ const linkify = (text: string): string => {
       lowerUrl.includes('password');
 
     if (isAction && url.length > 50) {
-      // Premium Monochrome Action Button Layout
-      return `<div class="my-8 p-[1px] bg-white/10 rounded-3xl shadow-2xl relative group overflow-hidden">
-        <div class="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-        <div class="bg-[#080808] rounded-[1.4rem] p-8 flex flex-col items-center text-center relative z-10">
-          <div class="w-14 h-14 bg-white/[0.03] rounded-2xl flex items-center justify-center mb-6 border border-white/10 shadow-2xl">
-            <svg class="w-6 h-6 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-          </div>
-          <h4 class="text-white font-mono font-bold text-xs tracking-[0.2em] uppercase mb-2">SECURE_ACTION_REQUIRED</h4>
-          <p class="text-white/30 text-[10px] font-mono tracking-widest mb-8 uppercase">Neural link validation mandatory</p>
-          <a href="${url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-14 py-3.5 bg-white hover:bg-neutral-200 text-black font-mono font-bold text-[10px] tracking-[0.2em] uppercase rounded-2xl transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)] no-underline">EXECUTE_HANDSHAKE</a>
-          <div class="mt-6 text-[9px] text-white/10 font-mono break-all opacity-40 hover:opacity-100 transition-opacity select-all cursor-text py-3 px-5 bg-white/[0.02] rounded-xl border border-white/[0.05]">${url}</div>
-        </div>
-      </div>`;
+      // Premium Action Button Layout
+      return `<div class="my-6 p-[2px] bg-gradient-to-r from-graphite-border via-graphite-surface-2 to-graphite-border-strong rounded-3xl shadow-2xl overflow-hidden"><div class="bg-graphite-surface rounded-[1.4rem] p-6 flex flex-col items-center text-center"><div class="w-12 h-12 bg-graphite-surface-2 rounded-full flex items-center justify-center mb-4 border border-graphite-border"><svg class="w-6 h-6 text-graphite-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div><h4 class="text-graphite-text font-bold text-lg mb-2">Priority Action</h4><p class="text-graphite-muted text-xs mb-6 max-w-[250px]">Secure action link detected in conversation</p><a href="${url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-12 py-3 bg-graphite-highlight hover:bg-graphite-accent text-graphite-text font-bold rounded-2xl transition-all transform hover:scale-105 active:scale-95 shadow-[0_0_25px_rgba(148,163,184,0.25)] no-underline">Confirm & Proceed</a><div class="mt-4 text-[9px] text-graphite-muted-2 font-mono break-all opacity-40 hover:opacity-100 transition-opacity select-all cursor-text py-2 px-4 bg-graphite-surface-2/70 rounded-lg">${url}</div></div></div>`;
     }
 
     const displayUrl = url.length > 55 ? url.substring(0, 52) + '...' : url;
-    return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-white/60 hover:text-white underline underline-offset-4 decoration-white/20 hover:decoration-white/100 transition-all font-mono text-[13px] tracking-tight break-all" title="${url}">${displayUrl}</a>`;
+    return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-graphite-muted hover:text-graphite-text underline underline-offset-4 decoration-graphite-border-strong transition-all font-medium break-all" title="${url}">${displayUrl}</a>`;
   });
 };
 
+// Rich markdown renderer for AI messages
 const renderMarkdown = (text: string): string => {
   if (!text) return text;
 
+  // Handle paragraphs: Split by double newlines and wrap in <p>
   const paragraphs = text.split(/\n\n+/);
 
   const renderedParagraphs = paragraphs.map(para => {
-    let processedPara = para.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-white tracking-tight">$1</strong>');
+    // Handle bold: **text** -> <strong>text</strong>
+    let processedPara = para.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-graphite-text brightness-125">$1</strong>');
 
+    // Handle bullet points: Start with - or *
     if (processedPara.includes('\n- ') || processedPara.startsWith('- ') || processedPara.includes('\n* ') || processedPara.startsWith('* ')) {
       const lines = processedPara.split('\n');
       const listItems = lines.map(line => {
         const match = line.match(/^[\s]*[-*]\s*(.*)$/);
         if (match) {
-          return `<li class="ml-4 py-1">${match[1]}</li>`;
+          return `<li class="ml-4">${match[1]}</li>`;
         }
         return line;
       });
 
+      // Rejoin, wrapping groups of <li> in <ul>
       let joinedList = listItems.join('\n');
-      joinedList = joinedList.replace(/(<li[\s\S]*?<\/li>(?:\n<li[\s\S]*?<\/li>)*)/g, '<ul class="space-y-1 my-6 list-none bg-white/[0.02] p-6 rounded-2xl border border-white/[0.05] relative shadow-inner overflow-hidden"><div class="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none"></div>$1</ul>');
+      joinedList = joinedList.replace(/(<li[\s\S]*?<\/li>(?:\n<li[\s\S]*?<\/li>)*)/g, '<ul class="space-y-2 my-5 list-disc list-inside bg-graphite-surface p-4 rounded-xl border border-graphite-border">$1</ul>');
       return joinedList;
     }
 
+    // Linkify URLs
     processedPara = linkify(processedPara);
+
+    // Handle single newlines: Convert to <br/>
     processedPara = processedPara.replace(/\n/g, '<br/>');
 
-    return `<p class="mb-5 last:mb-0 leading-[1.8] text-white/70 font-sans text-[15px]">${processedPara}</p>`;
+    return `<p class="mb-4 last:mb-0 leading-relaxed text-graphite-text">${processedPara}</p>`;
   });
 
   return renderedParagraphs.join('');
@@ -160,8 +155,9 @@ export default function ChatInterface({
   type LiveThinkingStep = {
     id: string;
     label: string;
-    status: 'pending' | 'active' | 'completed' | 'error';
+    status: 'pending' | 'active' | 'completed' | 'error' | 'blocked_approval';
     type: 'think' | 'search' | 'read' | 'analyze' | 'draft' | 'execute';
+    expandedContent?: string;
   };
 
   const router = useRouter();
@@ -413,10 +409,11 @@ export default function ChatInterface({
       id: `live-${step.step || index}`,
       label: step.description || step.action || `Working on step ${index + 1}`,
       status: index === 0 ? 'active' : 'pending',
-      type: (step.type || 'think') as LiveThinkingStep['type']
+      type: (step.type || 'think') as LiveThinkingStep['type'],
+      expandedContent: step.detail || step.description || step.action || ''
     }));
 
-
+  
   const formatStepEvidence = (evidence: any): string => {
     if (!evidence) return '';
     const items = Array.isArray(evidence) ? evidence : (Array.isArray(evidence.items) ? evidence.items : []);
@@ -429,7 +426,21 @@ export default function ChatInterface({
     }).join('\\n');
   };
 
-  const processAIMessage = async (messageText: string, conversationIdToUse: string, isNew: boolean) => {
+  const formatRunEvidence = (evidence: any): string => {
+    if (!evidence) return "";
+    if (typeof evidence === "string") return evidence;
+    if (Array.isArray(evidence) || Array.isArray(evidence?.items)) {
+      return formatStepEvidence(evidence);
+    }
+    if (evidence?.summary) return String(evidence.summary);
+    try {
+      return JSON.stringify(evidence, null, 2);
+    } catch (error) {
+      return "";
+    }
+  };
+
+const processAIMessage = async (messageText: string, conversationIdToUse: string, isNew: boolean) => {
     try {
       setIsLoading(true);
       setLiveThinkingSteps(buildFallbackThinkingSteps(messageText));
@@ -477,17 +488,12 @@ export default function ChatInterface({
         const steps = normalizeIntentPlanSteps(intentData.plan);
         setLiveThinkingSteps(steps);
 
-        for (let i = 0; i < steps.length; i++) {
-          setLiveThinkingSteps(prev =>
-            prev.map((step, index) => ({
-              ...step,
-              status: index < i ? 'completed' : index === i ? 'active' : 'pending'
-            }))
-          );
-
-          if (i < steps.length - 1) {
-            await new Promise(r => setTimeout(r, 400));
-          }
+        if (intentData?.runId) {
+          setActiveRun({
+            runId: intentData.runId,
+            status: 'running',
+            phase: 'thinking'
+          });
         }
       }
 
@@ -520,9 +526,6 @@ export default function ChatInterface({
         });
       }
 
-      // Mark all live steps as completed
-      setLiveThinkingSteps(prev => prev.map(s => ({ ...s, status: 'completed' as const })));
-      await new Promise(r => setTimeout(r, 250));
 
       // Canvas data handling
       const hasCanvas = Boolean(data.canvasData && (data.canvasData.content || data.execution?.requiresApproval));
@@ -705,7 +708,9 @@ export default function ChatInterface({
       setMessages(prev => [...prev, errorAgentMessage]);
     } finally {
       setIsLoading(false);
-      setLiveThinkingSteps([]);
+      if (!activeRun?.runId || activeRun.status === 'completed') {
+        setLiveThinkingSteps([]);
+      }
       setShowNotesFetching(false);
       setTimeout(() => scrollToBottom(true), 100);
     }
@@ -715,15 +720,31 @@ export default function ChatInterface({
   const handleCanvasExecute = async (action: string, data: any) => {
     setIsCanvasExecuting(true);
     try {
-      const requestId = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-      const approvalToken = canvasData?.approvalTokens?.[action];
+      const requestId = (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function')
+        ? globalThis.crypto.randomUUID()
+        : `action_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const approvalToken = canvasData?.execution?.approvalTokens?.[action] || canvasData?.approvalTokens?.[action];
+      const canvasRunId = canvasData?.runId || canvasData?.execution?.runId || activeRun?.runId || null;
+      const executionContext = canvasData?.execution || {
+        runId: canvasRunId,
+        taskType: canvasData?.taskType,
+        canvasType: canvasData?.type,
+        actions: canvasData?.execution?.actions || canvasData?.actions || []
+      };
+
+      if (canvasRunId) {
+        setActiveRun({ runId: canvasRunId, status: activeRun?.status, phase: activeRun?.phase });
+      }
 
       const response = await fetch('/api/agent-talk/chat-arcus', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: `Execute: ${action}`,
-          runId: activeRun?.runId || null,
+          runId: canvasRunId || activeRun?.runId || null,
+          canvasRunId,
+          executionContext,
+          taskType: canvasData?.taskType,
           conversationId: currentConversationId,
           isNewConversation: false,
           actionType: action,
@@ -976,7 +997,6 @@ export default function ChatInterface({
         scrollToBottom();
       }, 100);
 
-      return () => clearTimeout(timeoutId);
     }
   }, [messages]);
 
@@ -1159,7 +1179,7 @@ export default function ChatInterface({
           message: `APPROVED: Send this reply to ${draftData.recipientEmail}`, // This triggers the next step
           conversationId: currentConversationId,
           activeMission,
-          runId: activeRun?.runId || null,
+        runId: canvasRunId || activeRun?.runId || null,
           approvalPayload: draftData // Pass the edited content back
         })
       });
@@ -1228,7 +1248,6 @@ export default function ChatInterface({
   useEffect(() => {
     if (messages.length > 0) {
       const interval = setInterval(saveConversation, 30000); // Save every 30 seconds
-      return () => clearInterval(interval);
     }
   }, [messages]);
 
@@ -1258,9 +1277,9 @@ export default function ChatInterface({
           setLiveThinkingSteps(data.steps.map((s: any) => ({
             id: s.id || `step-${s.order}`,
             label: s.label || `Step ${s.order}`,
-            status: (s.status === 'blocked_approval' ? 'active' : (s.status || 'pending')) as 'pending' | 'active' | 'completed' | 'error',
+            status: (s.status || 'pending') as 'pending' | 'active' | 'completed' | 'error' | 'blocked_approval',
             type: (s.kind || 'think') as LiveThinkingStep['type'],
-            expandedContent: [s.detail || '', formatStepEvidence(s.evidence)].filter(Boolean).join('\n\n')
+            expandedContent: [s.detail || '', formatRunEvidence(s.evidence)].filter(Boolean).join('\n\n')
           })));
         }
 
@@ -1271,11 +1290,14 @@ export default function ChatInterface({
             phase: data.run.phase
           });
         }
+
+        if (data.run?.status === 'completed' && !isLoading && !isCanvasExecuting) {
+          setLiveThinkingSteps([]);
+        }
       } catch (error) {
         console.error('Run polling failed:', error);
       }
     };
-
     pollRun();
     const interval = setInterval(pollRun, 2200);
     return () => {
@@ -1283,6 +1305,8 @@ export default function ChatInterface({
       clearInterval(interval);
     };
   }, [activeRun?.runId, activeRun?.status, isLoading, isCanvasExecuting]);
+
+  const showRunProgress = liveThinkingSteps.length > 0 && (isLoading || (activeRun && activeRun.status && activeRun.status !== 'completed'));
 
   return (
     <TooltipProvider>
@@ -1295,15 +1319,15 @@ export default function ChatInterface({
         period={usageLimitModalData?.period || 'daily'}
         currentPlan={usageLimitModalData?.currentPlan || 'starter'}
       />
-      <div className="flex h-screen w-full text-white bg-black selection:bg-white selection:text-black overflow-hidden relative">
-        {/* Technical noise overlay */}
-        <div className="absolute inset-0 pointer-events-none opacity-[0.03] z-[100] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] brightness-100 contrast-150" />
+      <div className="flex h-screen w-full text-graphite-text overflow-hidden arcus-typography bg-graphite-bg" style={{
+        background: 'hsl(var(--graphite-bg))'
+      }}>
         {/* History Sidebar - Positioned to the right of Mailient sidebar (left: 64px = 16 * 4 for w-16 sidebar) */}
         {showHistory && (
-          <div className="fixed left-16 top-0 h-screen w-80 bg-black/60 border-r border-white/[0.08] flex flex-col backdrop-blur-3xl z-40">
-            <div className="p-6 border-b border-white/[0.05]">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-[11px] font-mono tracking-[0.2em] text-white/30 uppercase">Local_History</h2>
+          <div className="fixed left-16 top-0 h-screen w-80 bg-graphite-surface border-r border-graphite-border flex flex-col backdrop-blur-md z-40">
+            <div className="p-4 border-b border-graphite-border-strong">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-lg font-semibold text-graphite-text font-sans">Chats</h2>
                 <div className="flex items-center gap-2">
                   <Tooltip delayDuration={100}>
                     <TooltipTrigger asChild>
@@ -1312,7 +1336,7 @@ export default function ChatInterface({
                           e.stopPropagation();
                           startNewChat();
                         }}
-                        className="p-2 hover:bg-[#2a2a2a] rounded-lg transition-all duration-300 text-gray-400 hover:text-white hover:scale-105"
+                        className="p-2 hover:bg-graphite-surface-2 rounded-lg transition-all duration-300 text-graphite-muted hover:text-graphite-text hover:scale-105"
                         aria-label="New chat"
                         title="New chat"
                       >
@@ -1330,7 +1354,7 @@ export default function ChatInterface({
                           e.stopPropagation();
                           setShowHistory(false);
                         }}
-                        className="p-2 hover:bg-[#2a2a2a] rounded-lg transition-all duration-300 text-gray-400 hover:text-white hover:scale-105"
+                        className="p-2 hover:bg-graphite-surface-2 rounded-lg transition-all duration-300 text-graphite-muted hover:text-graphite-text hover:scale-105"
                         aria-label="Hide sidebar"
                         title="Close"
                       >
@@ -1359,55 +1383,62 @@ export default function ChatInterface({
 
         {/* Universal Sidebar - Fixed Position Full Height */}
         <HomeFeedSidebar className="z-30" />
-        {/* Main Content */}
-        <div className={`flex-1 flex flex-col relative ${showHistory ? 'ml-96' : 'ml-16'} transition-all duration-500 ease-in-out`}>
-          {/* Subtle Ambient Glows */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/[0.02] rounded-full blur-[120px]" />
-            <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-white/[0.01] rounded-full blur-[100px]" />
+        {/* Main Content - Adjust margin when history sidebar is open (ml-16 for Mailient sidebar + 80 for history = 96) */}
+        <div className={`flex-1 flex flex-col relative font-sans ${showHistory ? 'ml-96' : 'ml-16'} transition-all duration-300`}>
+          {/* Background elements */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute -top-40 -right-40 w-80 h-80 bg-graphite-border/30 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-graphite-border/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-graphite-border/15 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '4s' }}></div>
           </div>
 
           {/* Header */}
-          <div className={`sticky top-0 z-30 border-b border-white/[0.05] bg-black/40 backdrop-blur-xl transition-all duration-300 ${(isIntegrationsModalOpen || isEmailSelectionModalOpen || isPersonalityModalOpen) ? 'blur-sm' : ''}`}>
-            <div className="relative px-8 py-4">
+          <div className={`sticky top-0 z-30 border-b border-graphite-border/20 bg-graphite-bg/70 backdrop-blur-2xl transition-all duration-300 ${(isIntegrationsModalOpen || isEmailSelectionModalOpen || isPersonalityModalOpen) ? 'blur-sm' : ''}`}>
+            <div className="relative px-6 py-2">
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-graphite-bg/90 via-graphite-bg/60 to-transparent" />
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-b from-transparent via-graphite-bg/40 to-graphite-bg/70" />
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-6">
-                  <div className="flex items-center gap-4">
-                    <div className="bg-white/[0.03] rounded-2xl w-12 h-12 flex items-center justify-center border border-white/10 shadow-2xl overflow-hidden group hover:border-white/20 transition-all">
-                      <img src="/arcus-ai-icon.jpg" alt="Arcus AI" className="w-full h-full object-cover grayscale transition-all group-hover:grayscale-0" />
+                <div className="flex items-center gap-4">
+                  {/* Placeholder for arrow space */}
+                  <div className="w-9 h-9"></div>
+                  <div className="flex items-center gap-3">
+                    <div className="bg-graphite-surface-2 rounded-full w-10 h-10 flex items-center justify-center backdrop-blur-sm border border-graphite-border shadow-lg overflow-hidden">
+                      <img src="/arcus-ai-icon.jpg" alt="Arcus AI" className="w-full h-full object-cover" />
                     </div>
                     <div>
                       <div className="flex items-center gap-3">
-                        <h1 className="text-lg font-bold text-white tracking-tight uppercase font-mono">ARCUS_STREAM</h1>
+                        <h1 className="text-xl font-semibold text-graphite-text tracking-tight font-sans">Arcus</h1>
                         {arcusCredits && currentPlan !== 'pro' && arcusCredits.limit > 0 && !arcusCredits.isUnlimited && (
-                          <span className="text-[9px] font-mono tracking-widest px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-white/40">
-                            {arcusCredits.remaining}_CREDITS
+                          <span className="text-[11px] px-2 py-1 rounded-full bg-graphite-surface border border-graphite-border text-graphite-muted">
+                            {arcusCredits.remaining} left
                           </span>
                         )}
                         {(currentPlan === 'pro' || arcusCredits?.isUnlimited) && (
-                          <span className="text-[11px] px-2 py-1 rounded-full bg-white/5 border border-white/10 text-white/70">
+                          <span className="text-[11px] px-2 py-1 rounded-full bg-graphite-surface border border-graphite-border text-graphite-muted">
                             Unlimited
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-white/60 font-sans">
+                      <p className="text-sm text-graphite-muted font-sans">
                         Intelligent email analysis and agentic AI
                       </p>
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2">
                   <Tooltip delayDuration={100}>
                     <TooltipTrigger asChild>
                       <button
                         onClick={startNewChat}
-                        className="p-2.5 hover:bg-white/5 rounded-xl transition-all hover:scale-105 active:scale-95 group text-white/40 hover:text-white"
+                        className="p-2.5 hover:bg-graphite-surface-2 rounded-lg transition-all duration-300 hover:scale-105"
+                        aria-label="New chat"
+                        title="New chat"
                       >
-                        <Edit className="w-4 h-4" />
+                        <HugeiconsIcon icon={AddSquareIcon} size={20} strokeWidth={1.8} className="text-graphite-muted hover:text-graphite-text" />
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom">
-                      <span className="text-[10px] font-mono">NEW_SESSION</span>
+                      <p>New Chat</p>
                     </TooltipContent>
                   </Tooltip>
                   <Tooltip delayDuration={100}>
@@ -1415,22 +1446,23 @@ export default function ChatInterface({
                       <button
                         onClick={() => {
                           if (!showHistory) {
-                            setHistoryRefreshKey(prev => prev + 1);
+                            setHistoryRefreshKey(prev => prev + 1); // Force refresh when opening
                           }
                           setShowHistory(!showHistory);
                         }}
-                        className="p-2.5 hover:bg-white/5 rounded-xl transition-all hover:scale-105 active:scale-95 group text-white/40 hover:text-white"
+                        className="p-2.5 hover:bg-graphite-surface-2 rounded-lg transition-all duration-300 hover:scale-105"
+                        aria-label="Toggle chat history"
+                        title="History"
                       >
-                        <History className="w-4 h-4" />
+                        <HugeiconsIcon icon={WorkHistoryIcon} size={20} strokeWidth={1.8} className="text-graphite-muted hover:text-graphite-text" />
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom">
-                      <span className="text-[10px] font-mono">SESSION_LOGS</span>
+                      <p>History</p>
                     </TooltipContent>
                   </Tooltip>
-                  <div className="h-6 w-[1px] bg-white/[0.08] mx-2" />
-                  <div className="px-3 py-1 bg-white/5 border border-white/10 rounded-lg">
-                    <span className="text-white/40 font-mono text-[11px] font-bold tracking-tighter uppercase">V2.4</span>
+                  <div className="p-2.5">
+                    <span className="text-graphite-text font-sans text-lg">『A』</span>
                   </div>
                 </div>
               </div>
@@ -1451,7 +1483,7 @@ export default function ChatInterface({
                 <div className="h-full flex items-center justify-center px-6">
                   <div className="w-full max-w-3xl mx-auto">
                     <div className="text-center mb-8">
-                      <h1 className="text-4xl font-medium text-white mb-2 font-sans">
+                      <h1 className="text-4xl font-medium text-graphite-text mb-2 font-sans">
                         Ask about your emails
                       </h1>
                     </div>
@@ -1459,37 +1491,37 @@ export default function ChatInterface({
                     <div className="mb-8">
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                         <div
-                          className="group bg-[#0a0a0a] backdrop-blur-md border border-[#1a1a1a] rounded-xl p-4 shadow-lg hover:border-[#2a2a2a] hover:bg-[#151515] transition-all duration-300 cursor-pointer"
+                          className="group bg-graphite-surface backdrop-blur-md border border-graphite-border rounded-xl p-4 shadow-lg hover:border-graphite-border-strong hover:bg-graphite-surface-2 transition-all duration-300 cursor-pointer"
                           onClick={() => handleSend("Catch me up on my recent emails and highlight what I missed.")}
                         >
                           <div className="flex items-center gap-3 mb-3">
-                            <div className="bg-blue-500/20 rounded-lg p-2">
-                              <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div className="bg-graphite-surface-2 rounded-lg p-2">
+                              <svg className="w-6 h-6 text-graphite-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                               </svg>
                             </div>
-                            <h3 className="text-white font-medium font-sans text-sm">Catch up</h3>
+                            <h3 className="text-graphite-text font-medium font-sans text-sm">Catch up</h3>
                           </div>
-                          <p className="text-white/60 text-sm leading-relaxed font-sans">Summarize threads and highlight what you missed.</p>
+                          <p className="text-graphite-muted text-sm leading-relaxed font-sans">Summarize threads and highlight what you missed.</p>
                         </div>
 
                         <div
-                          className="group bg-[#0a0a0a] backdrop-blur-md border border-[#1a1a1a] rounded-xl p-4 shadow-lg hover:border-[#2a2a2a] hover:bg-[#151515] transition-all duration-300 cursor-pointer"
+                          className="group bg-graphite-surface backdrop-blur-md border border-graphite-border rounded-xl p-4 shadow-lg hover:border-graphite-border-strong hover:bg-graphite-surface-2 transition-all duration-300 cursor-pointer"
                           onClick={() => handleSend("Help me schedule a meeting.")}
                         >
                           <div className="flex items-center gap-3 mb-2">
-                            <div className="bg-white/10 rounded-lg p-2">
-                              <svg className="w-5 h-5 text-white/75" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div className="bg-graphite-surface-2 rounded-lg p-2">
+                              <svg className="w-5 h-5 text-graphite-text/75" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                               </svg>
                             </div>
-                            <h3 className="text-white font-medium font-sans text-sm">Smart Scheduling</h3>
+                            <h3 className="text-graphite-text font-medium font-sans text-sm">Smart Scheduling</h3>
                           </div>
-                          <p className="text-white/60 text-xs leading-relaxed font-sans">Automatically schedule meetings or email deliveries via Google Calendar and Meet.</p>
+                          <p className="text-graphite-muted text-xs leading-relaxed font-sans">Automatically schedule meetings or email deliveries via Google Calendar and Meet.</p>
                         </div>
 
                         <div
-                          className="group bg-[#0a0a0a] backdrop-blur-md border border-[#1a1a1a] rounded-xl p-4 shadow-lg hover:border-[#2a2a2a] hover:bg-[#151515] transition-all duration-300 cursor-pointer"
+                          className="group bg-graphite-surface backdrop-blur-md border border-graphite-border rounded-xl p-4 shadow-lg hover:border-graphite-border-strong hover:bg-graphite-surface-2 transition-all duration-300 cursor-pointer"
                           onClick={() => handleSend("Show me my email analytics and activity insights.")}
                         >
                           <div className="flex items-center gap-3 mb-2">
@@ -1498,24 +1530,24 @@ export default function ChatInterface({
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                               </svg>
                             </div>
-                            <h3 className="text-white font-medium font-sans text-sm">Analytics</h3>
+                            <h3 className="text-graphite-text font-medium font-sans text-sm">Analytics</h3>
                           </div>
-                          <p className="text-white/60 text-xs leading-relaxed font-sans">Track performance metrics and uncover insights from your email activity.</p>
+                          <p className="text-graphite-muted text-xs leading-relaxed font-sans">Track performance metrics and uncover insights from your email activity.</p>
                         </div>
 
                         <div
-                          className="group bg-[#0a0a0a] backdrop-blur-md border border-[#1a1a1a] rounded-xl p-4 shadow-lg hover:border-[#2a2a2a] hover:bg-[#151515] transition-all duration-300 cursor-pointer"
+                          className="group bg-graphite-surface backdrop-blur-md border border-graphite-border rounded-xl p-4 shadow-lg hover:border-graphite-border-strong hover:bg-graphite-surface-2 transition-all duration-300 cursor-pointer"
                           onClick={() => handleSend("Help me draft a reply to my latest thread.")}
                         >
                           <div className="flex items-center gap-3 mb-2">
-                            <div className="bg-purple-500/20 rounded-lg p-2">
-                              <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div className="bg-graphite-surface-2 rounded-lg p-2">
+                              <svg className="w-5 h-5 text-graphite-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
                               </svg>
                             </div>
-                            <h3 className="text-white font-medium font-sans text-sm">Draft reply</h3>
+                            <h3 className="text-graphite-text font-medium font-sans text-sm">Draft reply</h3>
                           </div>
-                          <p className="text-white/60 text-xs leading-relaxed font-sans">AI that crafts smart, context-aware replies to your emails.</p>
+                          <p className="text-graphite-muted text-xs leading-relaxed font-sans">AI that crafts smart, context-aware replies to your emails.</p>
                         </div>
                       </div>
                     </div>
@@ -1578,11 +1610,11 @@ export default function ChatInterface({
                   <div className="max-w-3xl mx-auto space-y-8">
                     {activeMission && <MissionStatusHeader mission={activeMission} />}
                     {messages.map((msg) => (
-                      <div key={msg.id} className={`flex items-start gap-6 ${newMessageIds.has(msg.id) ? 'animate-fade-in' : ''}`}>
+                      <div key={msg.id} className={`flex items-start gap-4 ${newMessageIds.has(msg.id) ? 'animate-fade-in' : ''}`}>
                         {msg.type === 'agent' && (
-                          <div className="flex-shrink-0 mt-3">
-                            <div className="bg-white/[0.03] rounded-2xl w-10 h-10 flex items-center justify-center border border-white/[0.08] shadow-2xl overflow-hidden">
-                              <img src="/arcus-ai-icon.jpg" alt="Arcus AI" className="w-full h-full object-cover grayscale opacity-60" />
+                          <div className="flex-shrink-0 mt-1">
+                            <div className="bg-graphite-surface-2 rounded-full w-11 h-11 flex items-center justify-center backdrop-blur-sm border border-graphite-border shadow-lg overflow-hidden">
+                              <img src="/arcus-ai-icon.jpg" alt="Arcus AI" className="w-full h-full object-cover" />
                             </div>
                           </div>
                         )}
@@ -1621,20 +1653,20 @@ export default function ChatInterface({
                               {/* Response text */}
                               {typeof msg.content === 'string' ? (
                                 <div
-                                  className="text-white/[0.85] text-[15px] leading-[1.8] font-sans prose prose-invert max-w-none prose-p:mb-5 prose-strong:text-white prose-strong:font-bold prose-headings:text-white prose-headings:font-bold selection:bg-white selection:text-black"
+                                  className="text-graphite-text text-base leading-[1.9] font-sans prose prose-invert max-w-none"
                                   dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
                                 />
                               ) : (
                                 <>
                                   <div
-                                    className="text-white/[0.85] text-[15px] leading-[1.8] font-sans prose prose-invert max-w-none selection:bg-white selection:text-black"
+                                    className="text-graphite-text text-base leading-[1.9] font-sans prose prose-invert max-w-none"
                                     dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content.text) }}
                                   />
                                   {msg.content.list && msg.content.list.length > 0 && (
-                                    <ul className="space-y-3 pl-1 mt-4">
+                                    <ul className="space-y-2.5 pl-2 mt-3">
                                       {msg.content.list.map((item: string, idx: number) => (
-                                        <li key={idx} className="text-white/[0.85] text-[15px] leading-[1.8] flex items-start gap-3">
-                                          <div className="w-1 h-1 rounded-full bg-white/20 mt-2.5 shrink-0" />
+                                        <li key={idx} className="text-graphite-text text-base leading-[1.9] flex items-start gap-2">
+                                          <span className="text-graphite-muted-2 mt-1 text-lg">•</span>
                                           <span dangerouslySetInnerHTML={{ __html: renderMarkdown(item) }} />
                                         </li>
                                       ))}
@@ -1642,27 +1674,27 @@ export default function ChatInterface({
                                   )}
                                   {msg.content.footer && (
                                     <div
-                                      className="text-white/[0.85] text-[15px] leading-[1.8] pt-5 font-sans italic opacity-60"
+                                      className="text-graphite-text text-base leading-[1.9] pt-3 font-sans"
                                       dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content.footer) }}
                                     />
                                   )}
                                 </>
                               )}
-                              <p className="text-white/10 text-[10px] font-mono tracking-widest pt-4 uppercase">{msg.time}</p>
+                              <p className="text-graphite-muted-2 text-xs font-medium pt-3">{msg.time}</p>
 
                               {(msg as AgentMessage).meta?.actionType === 'email' && (msg as AgentMessage).meta?.emailResult?.success && (
                                 <div className="mt-4 space-y-3">
                                   {Array.isArray((msg as AgentMessage).meta?.emailResult?.emails) && (msg as AgentMessage).meta?.emailResult?.emails?.length > 0 ? (
                                     (msg as AgentMessage).meta?.emailResult?.emails?.map((email: any) => (
-                                      <div key={email.id} className="bg-white/5 border border-white/10 rounded-xl p-4">
-                                        <div className="text-white font-medium leading-snug">{email.subject || '(No Subject)'}</div>
-                                        <div className="text-white/60 text-sm mt-1">{email.from || 'Unknown Sender'}</div>
-                                        {email.date && <div className="text-white/40 text-xs mt-1">{email.date}</div>}
-                                        {email.snippet && <div className="text-white/70 text-sm mt-3 leading-relaxed">{email.snippet}</div>}
+                                      <div key={email.id} className="bg-graphite-surface border border-graphite-border rounded-xl p-4">
+                                        <div className="text-graphite-text font-medium leading-snug">{email.subject || '(No Subject)'}</div>
+                                        <div className="text-graphite-muted text-sm mt-1">{email.from || 'Unknown Sender'}</div>
+                                        {email.date && <div className="text-graphite-muted-2 text-xs mt-1">{email.date}</div>}
+                                        {email.snippet && <div className="text-graphite-muted text-sm mt-3 leading-relaxed">{email.snippet}</div>}
                                       </div>
                                     ))
                                   ) : (
-                                    <div className="text-white/70 text-sm">No results found.</div>
+                                    <div className="text-graphite-muted text-sm">No results found.</div>
                                   )}
                                 </div>
                               )}
@@ -1671,32 +1703,32 @@ export default function ChatInterface({
                                 <div className="mt-4 space-y-3">
                                   {Array.isArray((msg as AgentMessage).meta?.notesResult?.notes) && (msg as AgentMessage).meta?.notesResult?.notes?.length > 0 ? (
                                     (msg as AgentMessage).meta?.notesResult?.notes?.slice(0, 10).map((note: any, idx: number) => (
-                                      <div key={note.id || idx} className="bg-white/5 border border-white/10 rounded-xl p-4">
-                                        <div className="text-white font-medium leading-snug">{note.subject || '(No Subject)'}</div>
-                                        {note.created_at && <div className="text-white/40 text-xs mt-1">{note.created_at}</div>}
-                                        {note.content && <div className="text-white/70 text-sm mt-3 leading-relaxed">{note.content}</div>}
+                                      <div key={note.id || idx} className="bg-graphite-surface border border-graphite-border rounded-xl p-4">
+                                        <div className="text-graphite-text font-medium leading-snug">{note.subject || '(No Subject)'}</div>
+                                        {note.created_at && <div className="text-graphite-muted-2 text-xs mt-1">{note.created_at}</div>}
+                                        {note.content && <div className="text-graphite-muted text-sm mt-3 leading-relaxed">{note.content}</div>}
                                       </div>
                                     ))
                                   ) : (
-                                    <div className="text-white/70 text-sm">No results found.</div>
+                                    <div className="text-graphite-muted text-sm">No results found.</div>
                                   )}
                                 </div>
                               )}
                             </div>
                           ) : (
                             <div className="max-w-2xl">
-                              <div className="bg-white text-black rounded-2xl px-5 py-4 shadow-2xl shadow-black/40">
-                                <p className="text-black text-[15px] font-medium leading-relaxed">{msg.content}</p>
+                              <div className="bg-graphite-highlight text-graphite-bg rounded-2xl px-4 py-3 shadow-[0_12px_30px_rgba(0,0,0,0.35)] border border-graphite-border/30">
+                                <p className="text-graphite-bg text-base leading-relaxed font-sans">{msg.content}</p>
                               </div>
-                              <p className="text-right text-white/10 text-[10px] font-mono tracking-widest pt-3 uppercase">{msg.time}</p>
+                              <p className="text-right text-graphite-muted-2 text-xs font-medium pt-2">{msg.time}</p>
                             </div>
                           )}
                         </div>
 
                         {msg.type === 'user' && (
                           <div className="flex-shrink-0 mt-1">
-                            <div className="bg-[#2a2a2a] rounded-full p-2.5 w-11 h-11 flex items-center justify-center backdrop-blur-sm border border-[#3a3a3a] shadow-lg">
-                              <User className="w-5 h-5 text-white" />
+                            <div className="bg-graphite-surface-2 rounded-full p-2.5 w-11 h-11 flex items-center justify-center backdrop-blur-sm border border-graphite-border shadow-lg">
+                              <User className="w-5 h-5 text-graphite-text" />
                             </div>
                           </div>
                         )}
@@ -1704,10 +1736,10 @@ export default function ChatInterface({
                     ))}
 
                     {/* Loading indicator with live AI-generated thinking */}
-                    {isLoading && (
+                    {showRunProgress && (
                       <div className="flex items-start gap-4 mt-4 animate-fade-in">
                         <div className="flex-shrink-0 mt-1">
-                          <div className="bg-neutral-800 rounded-full w-11 h-11 flex items-center justify-center backdrop-blur-sm border border-white/10 shadow-lg overflow-hidden">
+                          <div className="bg-graphite-surface-2 rounded-full w-11 h-11 flex items-center justify-center backdrop-blur-sm border border-graphite-border shadow-lg overflow-hidden">
                             <img src="/arcus-ai-icon.jpg" alt="Arcus AI" className="w-full h-full object-cover opacity-80" />
                           </div>
                         </div>
@@ -1716,17 +1748,18 @@ export default function ChatInterface({
                             <ThinkingLayer
                               steps={liveThinkingSteps.map(s => ({
                                 ...s,
-                                status: s.status as 'active' | 'completed' | 'pending' | 'error',
+                                status: s.status as 'active' | 'completed' | 'pending' | 'error' | 'blocked_approval',
                                 type: (s.type || 'think') as 'think' | 'search' | 'read' | 'analyze' | 'draft' | 'execute',
                               }))}
                               isVisible={true}
                               isGenerating={true}
+                              progressiveReveal={true}
                               generatingLabel="Arcus is preparing the workflow"
                             />
                           ) : (
                             <div className="flex items-center gap-2 pt-1.5">
                               <MorphingSquare
-                                className="w-4 h-4 bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)]"
+                                className="w-4 h-4 bg-graphite-highlight shadow-[0_0_10px_rgba(200,210,220,0.35)]"
                                 message="Arcus is working..."
                                 messagePlacement="right"
                               />
@@ -1743,7 +1776,7 @@ export default function ChatInterface({
                 {/* Floating Input Area with Progressive Blur */}
                 <div className="sticky bottom-0 z-20 w-full px-6 pb-12 mt-auto pointer-events-none">
                   {/* Progressive blur overlay */}
-                  <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none" />
+                  <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-graphite-bg via-graphite-bg/80 to-transparent pointer-events-none" />
                   <div className="max-w-3xl mx-auto relative z-10 pointer-events-auto">
                     {currentPlan !== null && currentPlan !== 'pro' && (
                       <div className="mb-3">
@@ -1845,11 +1878,11 @@ const MissionStatusHeader = ({ mission }: { mission: any }) => {
   if (!mission) return null;
 
   const statusColors: any = {
-    draft: 'bg-white text-black',
-    waiting_on_user: 'bg-white text-black',
-    waiting_on_other: 'bg-neutral-700 text-white',
-    done: 'bg-neutral-800 text-white/60',
-    archived: 'bg-transparent border border-white/10 text-white/30'
+    draft: 'bg-graphite-highlight text-graphite-bg',
+    waiting_on_user: 'bg-graphite-accent text-graphite-bg',
+    waiting_on_other: 'bg-graphite-surface-2 text-graphite-text',
+    done: 'bg-graphite-surface-2 text-graphite-muted',
+    archived: 'bg-transparent border border-graphite-border text-graphite-muted-2'
   };
 
   const statusLabels: any = {
@@ -1860,15 +1893,14 @@ const MissionStatusHeader = ({ mission }: { mission: any }) => {
     archived: 'Archived'
   };
 
-  return (
-    <div className="flex items-center gap-3 px-4 py-2.5 bg-neutral-900/40 border border-white/5 rounded-xl w-fit mx-auto mb-10 backdrop-blur-md animate-fade-in">
+    <div className="flex items-center gap-3 px-4 py-2.5 bg-graphite-surface/70 border border-graphite-border rounded-xl w-fit mx-auto mb-10 backdrop-blur-md animate-fade-in">
       <div className="flex items-center gap-2">
-        <span className="text-white/40 text-[10px] font-bold uppercase tracking-[0.2em]">In progress</span>
-        <span className="text-white/20">/</span>
-        <span className="text-white text-sm font-medium">{mission.goal}</span>
+        <span className="text-graphite-muted-2 text-[10px] font-bold uppercase tracking-[0.2em]">In progress</span>
+        <span className="text-graphite-muted-2">/</span>
+        <span className="text-graphite-text text-sm font-medium">{mission.goal}</span>
       </div>
-      <div className="h-3 w-[1px] bg-white/10 mx-1" />
-      <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-tight ${statusColors[mission.status] || 'bg-white text-black'}`}>
+      <div className="h-3 w-[1px] bg-graphite-surface-2 mx-1" />
+      <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-tight ${statusColors[mission.status] || 'bg-graphite-highlight text-graphite-bg'}`}>
         {statusLabels[mission.status] || mission.status}
       </span>
     </div>
@@ -1930,6 +1962,44 @@ function extractSearchTerm(message: string): string {
   // If no pattern matches, return the entire message as search term
   return message.trim();
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -8,6 +8,7 @@ import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service.j
 import { addDays, setHours, setMinutes, startOfDay, format, parse, isWeekend, nextMonday } from 'date-fns';
 import { ArcusMissionService } from '@/lib/arcus-mission.js';
 import { ArcusOperatorRuntime } from '@/lib/arcus-operator-runtime.js';
+import { inferTaskType, mapCanvasTypeToTaskType, getTaskDefinition, isCriticalAction, requiresApprovalForAction as requiresApprovalForActionFromPolicy } from '@/lib/arcus-task-registry.js';
 import { isFeatureEnabled } from '@/lib/feature-flags.js';
 import crypto from 'crypto';
 
@@ -32,6 +33,10 @@ export async function POST(request) {
       canvasActionData,
       actionType: executionActionType,
       actionPayload,
+      taskType: requestedTaskType,
+      canvasRunId,
+      executionContext,
+      execution,
       approvalToken,
       actionRequestId
     } = await request.json();
@@ -162,20 +167,33 @@ export async function POST(request) {
       conversationId: currentConversationId
     }) : null;
 
-    // Operator Runtime V2: unified canvas execution contract with approval + idempotency
+        // Operator Runtime V2: unified canvas execution contract with approval + idempotency
     const requestedAction = executeCanvasAction || executionActionType;
     const requestedPayload = canvasActionData || actionPayload;
-    if (requestedAction && requestedPayload && canvasActionsV2Enabled) {
-      const criticalAction = requestedAction === 'send_email' || requestedAction === 'execute_plan';
-      const effectiveRunId = runId || null;
-      const effectiveActionRequestId = actionRequestId || crypto
-        .createHash('sha256')
-        .update(`${effectiveRunId || 'na'}:${requestedAction}:${JSON.stringify(requestedPayload)}`)
-        .digest('hex')
-        .slice(0, 32);
+    const resolvedTaskType = inferTaskType({
+      taskType: requestedTaskType || execution?.taskType || executionContext?.taskType || null,
+      canvasType: execution?.canvasType || executionContext?.canvasType || 'none',
+      intent: '',
+      message
+    });
+    const requestedRunId = canvasRunId || executionContext?.runId || execution?.runId || runId || null;
 
-      if (operatorRuntime && criticalAction && effectiveRunId) {
-        const idempotent = await operatorRuntime.getIdempotentResult(effectiveRunId, effectiveActionRequestId);
+    let executionPolicyForAction = execution || executionContext || null;
+    if (!executionPolicyForAction && operatorRuntime && requestedRunId) {
+      executionPolicyForAction = await operatorRuntime.getRunExecutionPolicy(requestedRunId);
+    }
+
+    if (requestedAction && requestedPayload && canvasActionsV2Enabled) {
+      const idempotencyKey = actionRequestId
+        ? `${requestedRunId || 'na'}:${requestedAction}:${actionRequestId}`
+        : crypto
+          .createHash('sha256')
+          .update(`${requestedRunId || 'na'}:${requestedAction}:${JSON.stringify(requestedPayload)}`)
+          .digest('hex')
+          .slice(0, 32);
+
+      if (operatorRuntime && requestedRunId) {
+        const idempotent = await operatorRuntime.getIdempotentResult(requestedRunId, idempotencyKey);
         if (idempotent) {
           return NextResponse.json({
             message: idempotent.message || 'Action already completed',
@@ -184,121 +202,104 @@ export async function POST(request) {
             externalRefs: idempotent.externalRefs || {},
             nextRecommendedActions: idempotent.nextRecommendedActions || [],
             conversationId: currentConversationId,
-            run: { runId: effectiveRunId, status: 'completed', phase: 'post_execution' },
+            run: { runId: requestedRunId, status: 'completed', phase: 'post_execution' },
             timestamp: new Date().toISOString()
           });
         }
+      }
 
+      const actionNeedsApproval = operatorRuntime
+        ? operatorRuntime.requiresApprovalForAction(requestedAction, executionPolicyForAction)
+        : requiresApprovalForActionFromPolicy(requestedAction, executionPolicyForAction);
+
+      if (actionNeedsApproval && !requestedRunId) {
+        return NextResponse.json({
+          error: 'approval_required',
+          message: 'Execution context expired. Please refresh the canvas and retry.',
+          resultStatus: 'blocked_approval',
+          recovery: {
+            code: 'missing_run_context',
+            actionType: requestedAction,
+            canRefresh: true,
+            shouldRefetchRun: false,
+            refreshEndpoint: null,
+            hint: 'Open the latest canvas artifact and retry this action.'
+          },
+          conversationId: currentConversationId,
+          run: null,
+          timestamp: new Date().toISOString()
+        }, { status: 409 });
+      }
+
+      if (actionNeedsApproval && operatorRuntime && requestedRunId) {
         const approvalValidation = await operatorRuntime.validateApprovalToken(
-          effectiveRunId,
+          requestedRunId,
           requestedAction,
           approvalToken
         );
         if (!approvalValidation.ok) {
+          const approvalReason = approvalValidation.reason || 'approval_token_invalid';
+          const recoveryCode = approvalReason === 'approval_not_required_or_missing'
+            ? 'approval_token_missing'
+            : approvalReason === 'approval_token_already_used'
+              ? 'approval_token_consumed'
+              : 'approval_token_mismatch';
+
           return NextResponse.json({
             error: 'approval_required',
-            message: `Approval token invalid: ${approvalValidation.reason}`,
+            message: `Approval token invalid: ${approvalReason}`,
             resultStatus: 'blocked_approval',
+            recovery: {
+              code: recoveryCode,
+              reason: approvalReason,
+              actionType: requestedAction,
+              canRefresh: true,
+              shouldRefetchRun: true,
+              refreshEndpoint: `/api/agent-talk/chat-arcus/run/${requestedRunId}`,
+              hint: 'Refresh this canvas artifact and retry approval.'
+            },
             conversationId: currentConversationId,
-            run: { runId: effectiveRunId, status: 'blocked_approval', phase: 'approval' },
+            run: { runId: requestedRunId, status: 'blocked_approval', phase: 'approval' },
             timestamp: new Date().toISOString()
-          }, { status: 403 });
+          }, { status: 409 });
         }
       }
     }
 
     // --- HANDLE CANVAS EXECUTION ACTIONS ---
     if (requestedAction && requestedPayload) {
-      console.log('🎯 Canvas action requested:', requestedAction);
-      let executionResult = { success: false, message: '' };
+      console.log('Canvas action requested:', requestedAction);
 
-      if (requestedAction === 'send_email' && requestedPayload.to && requestedPayload.body) {
-        try {
-          const db2 = new DatabaseService();
-          const userTokens = await db2.getUserTokens(userEmail);
-          if (userTokens?.encrypted_access_token) {
-            const accessToken = decrypt(userTokens.encrypted_access_token);
-            const refreshToken = userTokens.encrypted_refresh_token ? decrypt(userTokens.encrypted_refresh_token) : '';
-            const { GmailService } = await import('@/lib/gmail');
-            const gmailService = new GmailService(accessToken, refreshToken);
-            const result = await gmailService.sendEmail({
-              to: requestedPayload.to,
-              subject: requestedPayload.subject || '',
-              body: requestedPayload.body,
-              isHtml: false
-            });
-            executionResult = {
-              success: true,
-              message: `Email sent to ${requestedPayload.to}`,
-              result,
-              externalRefs: {
-                gmailMessageId: result?.id || result?.messageId || null,
-                threadId: result?.threadId || requestedPayload.threadId || null
-              },
-              nextRecommendedActions: ['track_response', 'prepare_follow_up']
-            };
-          } else {
-            executionResult = { success: false, message: 'Gmail is not connected for this account' };
-          }
-        } catch (err) {
-          executionResult = { success: false, message: `Failed to send: ${err.message}` };
-        }
-      } else if (requestedAction === 'save_draft' && requestedPayload.body) {
-        try {
-          const db2 = new DatabaseService();
-          const userTokens = await db2.getUserTokens(userEmail);
-          if (userTokens?.encrypted_access_token) {
-            const accessToken = decrypt(userTokens.encrypted_access_token);
-            const refreshToken = userTokens.encrypted_refresh_token ? decrypt(userTokens.encrypted_refresh_token) : '';
-            const { GmailService } = await import('@/lib/gmail');
-            const gmailService = new GmailService(accessToken, refreshToken);
-            const result = await gmailService.createDraft({
-              to: requestedPayload.to || '',
-              subject: requestedPayload.subject || '',
-              body: requestedPayload.body,
-              isHtml: false
-            });
-            executionResult = {
-              success: true,
-              message: 'Draft saved to your Gmail Drafts folder',
-              result,
-              externalRefs: {
-                gmailDraftId: result?.id || result?.draftId || null,
-                threadId: result?.threadId || requestedPayload.threadId || null
-              },
-              nextRecommendedActions: ['send_email', 'refine_draft']
-            };
-          } else {
-            executionResult = { success: false, message: 'Gmail is not connected for this account' };
-          }
-        } catch (err) {
-          executionResult = { success: false, message: `Failed to save draft: ${err.message}` };
-        }
-      } else if (requestedAction === 'execute_plan') {
-        executionResult = {
-          success: true,
-          message: 'Workflow execution started',
-          externalRefs: {},
-          nextRecommendedActions: ['review_results']
-        };
-        if (operatorRuntime && runId) {
-          await operatorRuntime.enqueueJob(runId, 'execute_plan', {
-            action: requestedAction,
-            payload: requestedPayload
-          });
-        }
-      } else {
-        executionResult = { success: true, message: 'Action completed' };
-      }
+      const executionResult = await executeCanvasRequestedAction({
+        requestedAction,
+        requestedPayload,
+        userEmail,
+        session,
+        db,
+        profile,
+        taskType: resolvedTaskType,
+        runId: requestedRunId,
+        operatorRuntime
+      });
 
-      if (operatorRuntime && (requestedAction === 'send_email' || requestedAction === 'execute_plan') && runId && executionResult.success) {
-        await operatorRuntime.consumeApprovalToken(runId, requestedAction, approvalToken);
-        const effectiveActionRequestId = actionRequestId || crypto
-          .createHash('sha256')
-          .update(`${runId}:${requestedAction}:${JSON.stringify(requestedPayload)}`)
-          .digest('hex')
-          .slice(0, 32);
-        await operatorRuntime.checkAndStoreIdempotentResult(runId, effectiveActionRequestId, executionResult);
+      const actionNeedsApproval = operatorRuntime
+        ? operatorRuntime.requiresApprovalForAction(requestedAction, executionPolicyForAction)
+        : requiresApprovalForActionFromPolicy(requestedAction, executionPolicyForAction);
+
+      if (operatorRuntime && requestedRunId && executionResult.success) {
+        if (actionNeedsApproval) {
+          await operatorRuntime.consumeApprovalToken(requestedRunId, requestedAction, approvalToken);
+        }
+
+        const idempotencyKey = actionRequestId
+          ? `${requestedRunId}:${requestedAction}:${actionRequestId}`
+          : crypto
+            .createHash('sha256')
+            .update(`${requestedRunId}:${requestedAction}:${JSON.stringify(requestedPayload)}`)
+            .digest('hex')
+            .slice(0, 32);
+
+        await operatorRuntime.checkAndStoreIdempotentResult(requestedRunId, idempotencyKey, executionResult);
       }
 
       return NextResponse.json({
@@ -308,7 +309,10 @@ export async function POST(request) {
         externalRefs: executionResult.externalRefs || {},
         nextRecommendedActions: executionResult.nextRecommendedActions || [],
         conversationId: currentConversationId,
-        run: runId ? { runId, status: executionResult.success ? 'completed' : 'error', phase: 'post_execution' } : null,
+        taskType: resolvedTaskType,
+        run: requestedRunId
+          ? { runId: requestedRunId, status: executionResult.success ? 'completed' : 'error', phase: 'post_execution' }
+          : null,
         timestamp: new Date().toISOString()
       }, { status: executionResult.success ? 200 : 500 });
     }
@@ -325,16 +329,25 @@ export async function POST(request) {
     let operatorRun = null;
     let normalizedPlan = [];
     let requiresApproval = false;
+    let operatorTaskType = inferTaskType({
+      taskType: intentAnalysis?.taskType || null,
+      canvasType: intentAnalysis?.canvasType || 'none',
+      intent: intentAnalysis?.intent || '',
+      message
+    });
+
     if (operatorRuntimeEnabled && operatorRuntime) {
       const runInit = await operatorRuntime.initializeRun({
         message,
         intentAnalysis,
         canvasType: intentAnalysis?.canvasType || 'none',
+        taskType: operatorTaskType,
         runId: runId || null
       });
       operatorRun = runInit?.run || null;
       normalizedPlan = runInit?.plan || [];
       requiresApproval = !!runInit?.requiresApproval;
+      operatorTaskType = runInit?.taskType || operatorTaskType;
     }
 
     // --- CONTEXT SEARCH ---
@@ -432,24 +445,38 @@ Body: ${emailData.body || emailData.snippet}
       }
     }
 
-    // --- CANVAS GENERATION (for complex tasks) ---
-        let canvasData = null;
+        // --- CANVAS GENERATION (for complex tasks) ---
+    let canvasData = null;
     let executionPolicy = null;
     const messageLower = (message || '').toLowerCase();
     const forceCanvasByMessage =
       messageLower.includes('canvas') ||
+      messageLower.includes('schedule') ||
+      messageLower.includes('meeting') ||
+      messageLower.includes('analytics') ||
       (messageLower.includes('draft') && (messageLower.includes('reply') || messageLower.includes('email')));
 
     const effectiveCanvasType =
       intentAnalysis?.canvasType && intentAnalysis.canvasType !== 'none'
         ? intentAnalysis.canvasType
-        : messageLower.includes('summary')
-          ? 'summary'
-          : messageLower.includes('research')
-            ? 'research'
-            : messageLower.includes('plan')
-              ? 'action_plan'
-              : 'email_draft';
+        : messageLower.includes('meeting') || messageLower.includes('schedule')
+          ? 'meeting_schedule'
+          : messageLower.includes('analytics') || messageLower.includes('chart') || messageLower.includes('report')
+            ? 'analytics_report'
+            : messageLower.includes('summary')
+              ? 'summary'
+              : messageLower.includes('research')
+                ? 'research'
+                : messageLower.includes('plan')
+                  ? 'action_plan'
+                  : 'email_draft';
+
+    operatorTaskType = inferTaskType({
+      taskType: operatorTaskType,
+      canvasType: effectiveCanvasType,
+      intent: intentAnalysis?.intent || '',
+      message
+    });
 
     const shouldGenerateCanvas = Boolean(intentAnalysis?.needsCanvas || forceCanvasByMessage);
 
@@ -459,14 +486,15 @@ Body: ${emailData.body || emailData.snippet}
           message,
           effectiveCanvasType,
           emailContext || '',
-          { userName, userEmail, privacyMode }
+          { userName, userEmail, privacyMode, taskType: operatorTaskType }
         );
 
         if (operatorRuntime && operatorRun) {
           executionPolicy = operatorRuntime.buildExecutionPolicy(
             effectiveCanvasType,
             requiresApproval,
-            operatorRun.runId
+            operatorRun.runId,
+            operatorTaskType
           );
           await operatorRuntime.saveExecutionPolicy(operatorRun.runId, executionPolicy);
         }
@@ -475,11 +503,13 @@ Body: ${emailData.body || emailData.snippet}
           canvasData,
           message,
           canvasType: effectiveCanvasType,
+          taskType: operatorTaskType,
           requiresApproval,
           runId: operatorRun?.runId || runId || null,
           executionPolicy,
           emailResult,
-          notesResult
+          notesResult,
+          intentAnalysis
         });
 
         const step2 = normalizedPlan[2];
@@ -533,6 +563,15 @@ Body: ${emailData.body || emailData.snippet}
         phase: runPhase,
         memory: {
           ...(operatorRun.memory || {}),
+          taskType: operatorTaskType,
+          executionPolicy: {
+            ...(operatorRun.memory?.executionPolicy || {}),
+            ...(executionPolicy || {})
+          },
+          approvalTokens: {
+            ...(operatorRun.memory?.approvalTokens || {}),
+            ...(executionPolicy?.approvalTokens || {})
+          },
           lastExecution: {
             actionType,
             at: new Date().toISOString()
@@ -567,6 +606,7 @@ Body: ${emailData.body || emailData.snippet}
       notesResult,
       integrations,
       intentAnalysis,
+      taskType: operatorTaskType,
       canvasData,
       thinkingSteps: normalizedPlan.length > 0
         ? normalizedPlan.map((s, i) => ({
@@ -586,7 +626,8 @@ Body: ${emailData.body || emailData.snippet}
         status: runStatus,
         phase: runPhase,
         intent: operatorRun.intent,
-        complexity: operatorRun.complexity
+        complexity: operatorRun.complexity,
+        taskType: operatorTaskType
       } : null,
       evidence: {
         context: actionType,
@@ -600,8 +641,11 @@ Body: ${emailData.body || emailData.snippet}
         notesResult: notesResult || null
       },
       execution: executionPolicy || {
+        runId: operatorRun?.runId || runId || null,
+        taskType: operatorTaskType,
         actions: [],
         requiresApproval: false,
+        autoExecuteActions: [],
         approvalTokens: {}
       },
       postExecutionSuggestion: runPhase === 'approval'
@@ -668,13 +712,34 @@ function buildEvidenceForStep(step, emailResult, notesResult) {
   return items;
 }
 
-function enrichCanvasData({ canvasData, message, canvasType, requiresApproval, runId, executionPolicy, emailResult, notesResult }) {
+function enrichCanvasData({ canvasData, message, canvasType, taskType, requiresApproval, runId, executionPolicy, emailResult, notesResult, intentAnalysis }) {
   const fallbackContentByType = {
     email_draft: {
-      subject: 'Draft reply ready',
+      from: '',
       to: '',
+      cc: '',
+      bcc: '',
+      subject: 'Draft reply ready',
+      salutation: 'Hi,',
       body: 'Arcus prepared a draft. Please review and approve before sending.',
-      tone: 'professional'
+      signature: 'Best regards'
+    },
+    meeting_schedule: {
+      provider: 'google_meet',
+      attendees: '',
+      date: '',
+      time: '',
+      timezone: 'Asia/Calcutta',
+      duration: 30,
+      summary: 'Meeting',
+      agenda: '',
+      notes: ''
+    },
+    analytics_report: {
+      metrics: 'response_time, reply_rate, inbox_volume',
+      dateRange: 'last_30_days',
+      chartType: 'line',
+      insightGoal: 'Identify bottlenecks and priorities'
     },
     summary: {
       title: 'Inbox Summary',
@@ -691,29 +756,69 @@ function enrichCanvasData({ canvasData, message, canvasType, requiresApproval, r
       title: 'Action Plan',
       steps: [{ order: 1, task: 'Review and approve the workflow', status: 'pending' }],
       timeline: 'Immediate'
+    },
+    none: {
+      objective: message,
+      inputs: '',
+      steps: 'Review and execute'
     }
   };
 
+  const effectiveTaskType = taskType || mapCanvasTypeToTaskType(canvasType);
+  const taskDefinition = getTaskDefinition(effectiveTaskType);
+  const fallback = fallbackContentByType[canvasType] || fallbackContentByType.none;
+
+  const safeContent = canvasData?.content || fallback;
   const safeCanvas = {
     ...(canvasData || {}),
     type: canvasType,
-    content: canvasData?.content || fallbackContentByType[canvasType] || fallbackContentByType.summary,
+    taskType: effectiveTaskType,
+    runId: runId || null,
+    title: canvasData?.title || taskDefinition?.title || 'Canvas',
+    content: safeContent,
     raw: canvasData?.raw || ''
   };
 
-  const actions = executionPolicy?.actions || [];
+  const actions = executionPolicy?.actions?.length
+    ? executionPolicy.actions
+    : (taskDefinition?.actions || []).map((a) => ({
+      ...a,
+      requiresApproval: Boolean(a.requiresApproval || requiresApproval || isCriticalAction(a.actionType))
+    }));
+
+  const approvalTokens = executionPolicy?.approvalTokens || {};
   const approvalRequired = Boolean(requiresApproval || actions.some((a) => a.requiresApproval));
-  const primaryAction = actions.find((a) => a.actionType === 'send_email')
-    || actions.find((a) => a.actionType === 'execute_plan')
-    || actions[0]
-    || null;
+
+  const primaryAction =
+    actions.find((a) => a.actionType === (intentAnalysis?.recommendedAction || '')) ||
+    actions.find((a) => a.actionType === 'send_email') ||
+    actions.find((a) => a.actionType === 'schedule_meeting') ||
+    actions.find((a) => a.actionType === 'execute_plan') ||
+    actions[0] ||
+    null;
 
   const evidencePreview = buildEvidenceForStep({ kind: 'search' }, emailResult, notesResult).slice(0, 5);
+  const confidence = typeof intentAnalysis?.confidence === 'number' ? intentAnalysis.confidence : 0.75;
+  const missingInputs = Array.isArray(intentAnalysis?.missingInputs) ? intentAnalysis.missingInputs : [];
+  const requiredInputs = Array.isArray(intentAnalysis?.requiredInputs)
+    ? intentAnalysis.requiredInputs
+    : (taskDefinition?.schema?.fields || []).filter((field) => field.required).map((field) => field.id);
+  const riskLevel = intentAnalysis?.riskLevel || (approvalRequired ? 'high' : 'low');
 
   return {
     ...safeCanvas,
+    schema: taskDefinition?.schema || { fields: [] },
     actions,
-    approvalTokens: executionPolicy?.approvalTokens || {},
+    approvalTokens,
+    execution: {
+      runId: runId || null,
+      taskType: effectiveTaskType,
+      canvasType,
+      actions,
+      requiresApproval: approvalRequired,
+      autoExecuteActions: executionPolicy?.autoExecuteActions || [],
+      approvalTokens
+    },
     goal: message,
     decisionSummary: approvalRequired
       ? 'Arcus prepared an execution-ready draft and is waiting for your explicit confirmation.'
@@ -725,14 +830,243 @@ function enrichCanvasData({ canvasData, message, canvasType, requiresApproval, r
     recommendedAction: primaryAction?.actionType || null,
     alternatives: actions.filter((a) => a.actionType !== primaryAction?.actionType).map((a) => a.actionType),
     actionPayload: safeCanvas.content,
+    confidence,
+    riskLevel,
+    requiredInputs,
+    missingInputs,
     approval: {
       required: approvalRequired,
-      token: primaryAction ? (executionPolicy?.approvalTokens?.[primaryAction.actionType] || null) : null,
+      token: primaryAction ? (approvalTokens?.[primaryAction.actionType] || null) : null,
       expiresAt: new Date(Date.now() + (15 * 60 * 1000)).toISOString(),
-      reason: approvalRequired ? 'This action changes Gmail data and needs your confirmation.' : null
+      reason: approvalRequired ? 'This action changes user data and needs your confirmation.' : null
     }
   };
 }
+
+async function executeCanvasRequestedAction({ requestedAction, requestedPayload, userEmail, session, db, profile, taskType, runId, operatorRuntime }) {
+  let executionResult = { success: false, message: 'Action failed' };
+
+  if (requestedAction === 'send_email') {
+    const to = Array.isArray(requestedPayload?.to)
+      ? requestedPayload.to
+      : String(requestedPayload?.to || '').split(',').map((s) => s.trim()).filter(Boolean);
+
+    const missingInputs = [];
+    if (!to.length) missingInputs.push('to');
+    if (!requestedPayload?.subject) missingInputs.push('subject');
+    if (!requestedPayload?.body) missingInputs.push('body');
+    if (missingInputs.length > 0) {
+      return {
+        success: false,
+        message: 'Send email requires recipients, subject, and body content.',
+        missingInputs
+      };
+    }
+
+    try {
+      const userTokens = await db.getUserTokens(userEmail);
+      if (userTokens?.encrypted_access_token) {
+        const accessToken = decrypt(userTokens.encrypted_access_token);
+        const refreshToken = userTokens.encrypted_refresh_token ? decrypt(userTokens.encrypted_refresh_token) : '';
+        const { GmailService } = await import('@/lib/gmail');
+        const gmailService = new GmailService(accessToken, refreshToken);
+        const result = await gmailService.sendEmail({
+          to: to.join(', '),
+          subject: requestedPayload.subject || '',
+          body: requestedPayload.body,
+          isHtml: false
+        });
+
+        executionResult = {
+          success: true,
+          message: `Email sent to ${to.join(', ')}`,
+          result,
+          externalRefs: {
+            gmailMessageId: result?.id || result?.messageId || null,
+            threadId: result?.threadId || requestedPayload.threadId || null
+          },
+          nextRecommendedActions: ['track_response', 'prepare_follow_up']
+        };
+      } else {
+        executionResult = { success: false, message: 'Gmail is not connected for this account' };
+      }
+    } catch (err) {
+      executionResult = { success: false, message: `Failed to send: ${err.message}` };
+    }
+  } else if (requestedAction === 'save_draft') {
+    if (!requestedPayload?.body) {
+      return { success: false, message: 'Draft content is empty.' };
+    }
+
+    try {
+      const userTokens = await db.getUserTokens(userEmail);
+      if (userTokens?.encrypted_access_token) {
+        const accessToken = decrypt(userTokens.encrypted_access_token);
+        const refreshToken = userTokens.encrypted_refresh_token ? decrypt(userTokens.encrypted_refresh_token) : '';
+        const { GmailService } = await import('@/lib/gmail');
+        const gmailService = new GmailService(accessToken, refreshToken);
+        const result = await gmailService.createDraft({
+          to: requestedPayload.to || '',
+          subject: requestedPayload.subject || '',
+          body: requestedPayload.body,
+          isHtml: false
+        });
+
+        executionResult = {
+          success: true,
+          message: 'Draft saved to your Gmail Drafts folder',
+          result,
+          externalRefs: {
+            gmailDraftId: result?.id || result?.draftId || null,
+            threadId: result?.threadId || requestedPayload.threadId || null
+          },
+          nextRecommendedActions: ['send_email', 'refine_draft']
+        };
+      } else {
+        executionResult = { success: false, message: 'Gmail is not connected for this account' };
+      }
+    } catch (err) {
+      executionResult = { success: false, message: `Failed to save draft: ${err.message}` };
+    }
+  } else if (requestedAction === 'schedule_meeting') {
+    executionResult = await executeScheduleMeetingAction({
+      requestedPayload,
+      userEmail,
+      session,
+      db,
+      profile
+    });
+  } else if (requestedAction === 'execute_plan') {
+    executionResult = {
+      success: true,
+      message: 'Workflow execution started',
+      externalRefs: {},
+      nextRecommendedActions: ['review_results']
+    };
+
+    if (operatorRuntime && runId) {
+      await operatorRuntime.enqueueJob(runId, 'execute_plan', {
+        action: requestedAction,
+        payload: requestedPayload,
+        taskType
+      });
+    }
+  } else if (requestedAction === 'refresh_analytics' || requestedAction === 'export_analytics') {
+    executionResult = {
+      success: true,
+      message: requestedAction === 'refresh_analytics'
+        ? 'Analytics report refreshed with latest signals.'
+        : 'Analytics export prepared.',
+      externalRefs: {
+        exportFormat: requestedPayload?.format || 'json'
+      },
+      nextRecommendedActions: ['share_report', 'create_follow_up_plan']
+    };
+  } else {
+    executionResult = { success: true, message: 'Action completed' };
+  }
+
+  return executionResult;
+}
+
+async function executeScheduleMeetingAction({ requestedPayload, userEmail, session, db, profile }) {
+  const provider = requestedPayload?.provider || '';
+  const attendees = Array.isArray(requestedPayload?.attendees)
+    ? requestedPayload.attendees
+    : String(requestedPayload?.attendees || '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+  const date = requestedPayload?.date || '';
+  const time = requestedPayload?.time || '';
+  const timezone = requestedPayload?.timezone || '';
+  const durationMinutes = Number(requestedPayload?.duration || 30);
+
+  const missingInputs = [];
+  if (!provider) missingInputs.push('provider');
+  if (!attendees.length) missingInputs.push('attendees');
+  if (!date) missingInputs.push('date');
+  if (!time) missingInputs.push('time');
+  if (!timezone) missingInputs.push('timezone');
+
+  if (missingInputs.length > 0) {
+    return {
+      success: false,
+      message: 'Scheduling requires provider, attendees, date, time, and timezone.',
+      missingInputs
+    };
+  }
+
+  const startTime = new Date(`${date}T${time}:00`);
+  const endTime = new Date(startTime.getTime() + durationMinutes * 60 * 1000);
+
+  if (provider === 'cal.com') {
+    const calLink = profile?.integrations?.['cal.com_link'];
+    if (calLink) {
+      return {
+        success: true,
+        message: 'Cal.com scheduling link prepared. Share or open it to complete booking.',
+        externalRefs: {
+          provider: 'cal.com',
+          calLink,
+          requestedSlot: startTime.toISOString(),
+          timezone
+        },
+        nextRecommendedActions: ['share_cal_link', 'confirm_booking']
+      };
+    }
+
+    return {
+      success: false,
+      message: 'Cal.com is not configured for this account. Connect Cal.com first.'
+    };
+  }
+
+  try {
+    let accessToken = session?.accessToken;
+    let refreshToken = session?.refreshToken || '';
+
+    if (!accessToken) {
+      const userTokens = await db.getUserTokens(userEmail);
+      if (userTokens?.encrypted_access_token) {
+        accessToken = decrypt(userTokens.encrypted_access_token);
+        refreshToken = userTokens.encrypted_refresh_token ? decrypt(userTokens.encrypted_refresh_token) : '';
+      }
+    }
+
+    if (!accessToken) {
+      return { success: false, message: 'Google account not connected for scheduling.' };
+    }
+
+    const calendarService = new CalendarService(accessToken, refreshToken, 'google');
+    const event = await calendarService.createMeeting({
+      summary: requestedPayload?.summary || 'Scheduled Meeting',
+      description: requestedPayload?.agenda || requestedPayload?.notes || 'Scheduled via Arcus Canvas',
+      startTime: startTime.toISOString(),
+      endTime: endTime.toISOString(),
+      attendees
+    });
+
+    return {
+      success: true,
+      message: 'Meeting scheduled successfully via Google Meet.',
+      result: event,
+      externalRefs: {
+        provider: 'google_meet',
+        eventId: event?.id || null,
+        meetLink: event?.hangoutLink || event?.conferenceData?.entryPoints?.[0]?.uri || null
+      },
+      nextRecommendedActions: ['send_invite_context', 'track_attendee_responses']
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: `Failed to schedule meeting: ${error.message}`
+    };
+  }
+}
+
 async function getIntegrationStatus(userEmail, db) {
   const defaultStatus = {
     gmail: false
@@ -1186,6 +1520,24 @@ async function saveConversation(userEmail, userMessage, aiResponse, conversation
     console.error('Error saving conversation:', error);
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

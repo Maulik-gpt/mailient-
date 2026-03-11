@@ -57,6 +57,20 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        graphite: {
+          bg: "hsl(var(--graphite-bg))",
+          surface: "hsl(var(--graphite-surface))",
+          "surface-2": "hsl(var(--graphite-surface-2))",
+          border: "hsl(var(--graphite-border))",
+          "border-strong": "hsl(var(--graphite-border-strong))",
+          text: "hsl(var(--graphite-text))",
+          muted: "hsl(var(--graphite-muted))",
+          "muted-2": "hsl(var(--graphite-muted-2))",
+          highlight: "hsl(var(--graphite-highlight))",
+          accent: "hsl(var(--graphite-accent))",
+          warning: "hsl(var(--graphite-warning))",
+          danger: "hsl(var(--graphite-danger))"
+        },
         "color-1": "hsl(var(--color-1))",
         "color-2": "hsl(var(--color-2))",
         "color-3": "hsl(var(--color-3))",
@@ -131,3 +145,5 @@ export default {
   },
   plugins: [tailwindcssAnimate, tailwindcssTypography],
 }
+
+

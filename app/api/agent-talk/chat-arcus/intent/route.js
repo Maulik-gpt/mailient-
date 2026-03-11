@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth.js';
 import { ArcusAIService } from '@/lib/arcus-ai.js';
 import { DatabaseService } from '@/lib/supabase.js';
 import { ArcusOperatorRuntime } from '@/lib/arcus-operator-runtime.js';
+import { inferTaskType, mapCanvasTypeToTaskType } from '@/lib/arcus-task-registry.js';
 
 /**
  * Fast intent analysis endpoint
@@ -31,31 +32,48 @@ export async function POST(request) {
         });
 
         const messageLower = String(message || '').toLowerCase();
-        const forceCanvas = messageLower.includes('canvas') || (messageLower.includes('draft') && (messageLower.includes('reply') || messageLower.includes('email')));
+        const forceCanvas =
+            messageLower.includes('canvas') ||
+            messageLower.includes('schedule') ||
+            messageLower.includes('meeting') ||
+            (messageLower.includes('draft') && (messageLower.includes('reply') || messageLower.includes('email')));
 
         const intentAnalysis = await arcusAI.analyzeIntentAndPlan(message, {
             userEmail: session.user.email,
             userName: session.user.name || 'User'
         });
 
+        const normalizedPlan = runtime.normalizePlan(intentAnalysis?.plan || [], message);
+        const effectiveCanvasType = intentAnalysis?.canvasType || (forceCanvas ? 'email_draft' : 'none');
+        const taskType = inferTaskType({
+            taskType: intentAnalysis?.taskType || null,
+            canvasType: effectiveCanvasType,
+            intent: intentAnalysis?.intent || '',
+            message
+        });
+
+        const requiresApproval = runtime.needsApproval(
+            intentAnalysis?.intent || 'general',
+            effectiveCanvasType,
+            taskType
+        );
+
         const runInit = await runtime.initializeRun({
             message,
             intentAnalysis,
-            canvasType: intentAnalysis?.canvasType || 'none',
-            runId
+            canvasType: effectiveCanvasType,
+            taskType,
+            runId: runId || null
         });
 
-        const normalizedPlan = runInit?.plan || runtime.normalizePlan(intentAnalysis?.plan || [], message);
-        const requiresApproval = runInit?.requiresApproval ?? runtime.needsApproval(
-            intentAnalysis?.intent || 'general',
-            intentAnalysis?.canvasType || 'none'
-        );
+        const planSource = runInit?.plan?.length ? runInit.plan : normalizedPlan;
+        const effectiveRunId = runInit?.run?.runId || runInit?.run?.run_id || runId || runtime.generateRunId();
 
         return NextResponse.json({
-            runId: runInit?.run?.runId || runId || runtime.generateRunId(),
+            runId: effectiveRunId,
             intent: intentAnalysis?.intent || 'general_chat',
             complexity: intentAnalysis?.complexity || runtime.inferComplexity(message, intentAnalysis?.plan || []),
-            plan: normalizedPlan.map((step, idx) => ({
+            plan: planSource.map((step, idx) => ({
                 step: idx + 1,
                 id: step.id,
                 kind: step.kind,
@@ -67,8 +85,14 @@ export async function POST(request) {
                 type: step.kind
             })),
             needsCanvas: Boolean(intentAnalysis?.needsCanvas || forceCanvas),
-            canvasType: intentAnalysis?.canvasType || (forceCanvas ? 'email_draft' : 'none'),
+            canvasType: effectiveCanvasType,
+            taskType: taskType || mapCanvasTypeToTaskType(effectiveCanvasType),
             requiresApproval,
+            confidence: intentAnalysis?.confidence ?? 0.5,
+            riskLevel: intentAnalysis?.riskLevel || 'medium',
+            requiredInputs: intentAnalysis?.requiredInputs || [],
+            missingInputs: intentAnalysis?.missingInputs || [],
+            recommendedAction: intentAnalysis?.recommendedAction || null,
             reasoning: intentAnalysis?.reasoning || '',
         });
     } catch (error) {
@@ -85,8 +109,16 @@ export async function POST(request) {
             ],
             needsCanvas: false,
             canvasType: 'none',
+            taskType: 'generic_workflow',
             requiresApproval: false,
+            confidence: 0.5,
+            riskLevel: 'medium',
+            requiredInputs: [],
+            missingInputs: [],
+            recommendedAction: null,
             reasoning: ''
         });
     }
 }
+
+
