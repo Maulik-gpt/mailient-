@@ -271,7 +271,7 @@ export default function ChatInterface({
           const oneHourAgo = Date.now() - (60 * 60 * 1000);
 
           if (timestamp > oneHourAgo) {
-            console.log('🔄 Found pending plan, activating:', pendingPlan);
+            console.log(' Found pending plan, activating:', pendingPlan);
 
             // Activate the subscription
             const activateResponse = await fetch('/api/subscription/status', {
@@ -281,7 +281,7 @@ export default function ChatInterface({
             });
 
             if (activateResponse.ok) {
-              console.log('✅ Subscription activated successfully!');
+              console.log(' Subscription activated successfully!');
               // Clear pending plan after successful activation
               localStorage.removeItem('pending_plan');
               localStorage.removeItem('pending_plan_timestamp');
@@ -359,7 +359,7 @@ export default function ChatInterface({
       if (response.ok) {
         const data = await response.json();
         if (data.title && data.title.length > 0) {
-          console.log('🏷️ AI-generated chat title:', data.title);
+          console.log(' AI-generated chat title:', data.title);
           return data.title;
         }
       }
@@ -631,7 +631,7 @@ export default function ChatInterface({
       // Generate AI title asynchronously (non-blocking) for new conversations
       if (shouldGenerateTitle && isNew) {
         generateChatTitle(messageText).then((aiTitle) => {
-          console.log('🏷️ Generated title for new conversation:', aiTitle);
+          console.log(' Generated title for new conversation:', aiTitle);
           // Update localStorage with AI-generated title
           const currentDataRaw = localStorage.getItem(`conversation_${conversationIdToUse}`);
           if (currentDataRaw) {
@@ -1387,13 +1387,15 @@ export default function ChatInterface({
         <div className={`flex-1 flex flex-col relative font-sans ${showHistory ? 'ml-96' : 'ml-16'} transition-all duration-300`}>
           {/* Background elements */}
           <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute -top-40 -right-40 w-80 h-80 bg-graphite-border/30 rounded-full blur-3xl animate-pulse"></div>
-            <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-graphite-border/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-graphite-border/15 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '4s' }}></div>
+            <div className="absolute inset-0 arcus-linear-grid opacity-40" />
+            <div className="absolute inset-0 arcus-noise opacity-20" />
+            <div className="absolute -top-40 -right-40 w-80 h-80 bg-graphite-border/30 rounded-full blur-3xl opacity-50"></div>
+            <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-graphite-border/20 rounded-full blur-3xl opacity-50" style={{ animationDelay: '2s' }}></div>
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-graphite-border/15 rounded-full blur-2xl opacity-40" style={{ animationDelay: '4s' }}></div>
           </div>
 
           {/* Header */}
-          <div className={`sticky top-0 z-30 border-b border-graphite-border/20 bg-graphite-bg/70 backdrop-blur-2xl transition-all duration-300 ${(isIntegrationsModalOpen || isEmailSelectionModalOpen || isPersonalityModalOpen) ? 'blur-sm' : ''}`}>
+          <div className={`sticky top-0 z-30 border-b border-graphite-border/40 bg-graphite-bg/80 backdrop-blur-[18px] transition-all duration-300 ${(isIntegrationsModalOpen || isEmailSelectionModalOpen || isPersonalityModalOpen) ? 'blur-sm' : ''}`}>
             <div className="relative px-6 py-2">
               <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-graphite-bg/90 via-graphite-bg/60 to-transparent" />
               <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-b from-transparent via-graphite-bg/40 to-graphite-bg/70" />
@@ -1462,7 +1464,7 @@ export default function ChatInterface({
                     </TooltipContent>
                   </Tooltip>
                   <div className="p-2.5">
-                    <span className="text-graphite-text font-sans text-lg">『A』</span>
+                    <span className="text-graphite-text font-sans text-lg">A</span>
                   </div>
                 </div>
               </div>
@@ -1666,7 +1668,7 @@ export default function ChatInterface({
                                     <ul className="space-y-2.5 pl-2 mt-3">
                                       {msg.content.list.map((item: string, idx: number) => (
                                         <li key={idx} className="text-graphite-text text-base leading-[1.9] flex items-start gap-2">
-                                          <span className="text-graphite-muted-2 mt-1 text-lg">•</span>
+                                          <span className="text-graphite-muted-2 mt-1 text-lg"></span>
                                           <span dangerouslySetInnerHTML={{ __html: renderMarkdown(item) }} />
                                         </li>
                                       ))}

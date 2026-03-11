@@ -253,17 +253,16 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
 
     return (
         <>
-            <div className="fixed inset-0 bg-graphite-bg/70 backdrop-blur-[3px] z-40" onClick={onClose} />
+            <div className="fixed inset-0 bg-graphite-bg/80 backdrop-blur-[6px] z-40" onClick={onClose} />
 
             <div
                 ref={panelRef}
-                className="fixed right-0 top-0 h-screen w-full sm:w-[min(100vw,780px)] bg-graphite-bg border-l border-graphite-border z-50 flex flex-col shadow-[-24px_0_60px_rgba(0,0,0,0.5)] arcus-canvas-panel"
-                style={{ animation: 'canvasSlideIn 0.36s cubic-bezier(0.22, 1, 0.36, 1)' }}
+                className="fixed right-0 top-0 h-screen w-full sm:w-[min(100vw,780px)] bg-graphite-bg border-l border-graphite-border z-50 flex flex-col shadow-[-24px_0_60px_rgba(0,0,0,0.45)] arcus-canvas-panel"
             >
-                <div className="flex items-center justify-between px-5 py-4 border-b border-graphite-border bg-graphite-surface">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-graphite-border bg-gradient-to-b from-graphite-surface to-graphite-bg">
                     <div className="min-w-0">
                         <h2 className="text-graphite-text font-semibold text-[15px] tracking-tight truncate">{title}</h2>
-                        <p className="text-graphite-muted-2 text-[11px]">{canvasData.taskType || canvasData.execution?.taskType || 'workflow'} {canvasData.runId || canvasData.execution?.runId ? `� ${canvasData.runId || canvasData.execution?.runId}` : ''}</p>
+                        <p className="text-graphite-muted-2 text-[11px]">{canvasData.taskType || canvasData.execution?.taskType || 'workflow'} {canvasData.runId || canvasData.execution?.runId ? `- ${canvasData.runId || canvasData.execution?.runId}` : ''}</p>
                     </div>
                     <button onClick={onClose} className="p-1.5 hover:bg-graphite-surface-2 rounded-lg transition-colors text-graphite-muted hover:text-graphite-text">
                         <X className="w-4 h-4" />
