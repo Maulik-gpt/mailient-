@@ -1360,7 +1360,7 @@ export default function ChatInterface({
         {/* Universal Sidebar - Fixed Position Full Height */}
         <HomeFeedSidebar className="z-30" />
         {/* Main Content */}
-        <div className={`flex-1 flex flex-col relative ${showHistory ? 'ml-96' : 'ml-16'} transition-all duration-500 ease-in-out`}>
+        <div className={`flex-1 flex flex-col relative ml-64 transition-all duration-500 ease-in-out`}>
           {/* Subtle Ambient Glows */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
             <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/[0.02] rounded-full blur-[120px]" />

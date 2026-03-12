@@ -5,18 +5,12 @@ import { useSession, signOut } from 'next-auth/react';
 import { useRouter, usePathname } from 'next/navigation';
 import { 
     LayoutGrid, 
-    BookOpen, 
-    Code2, 
-    Palette, 
+    Bookmark,
     FileText, 
-    Users2, 
-    Gift, 
     Settings2, 
-    HelpCircle,
     ChevronRight,
     Sparkles,
     LogOut,
-    User,
     CreditCard
 } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
@@ -55,17 +49,14 @@ export function HomeFeedSidebar({ className = '', onPeopleClick, activeView = 'h
 
     const mainNavItems = [
         { id: 'home', icon: LayoutGrid, label: 'Home', route: '/home-feed' },
-        { id: 'dictionary', icon: BookOpen, label: 'Dictionary', route: '/dictionary' },
-        { id: 'snippets', icon: Code2, label: 'Snippets', route: '/snippets' },
-        { id: 'style', icon: Palette, label: 'Style', route: '/style' },
-        { id: 'scratchpad', icon: FileText, label: 'Scratchpad', route: '/scratchpad' },
+        { id: 'notes', icon: FileText, label: 'Notes', route: '/i/notes' },
+        { id: 'bookmarks', icon: Bookmark, label: 'Bookmarks', route: '/i/bookmarks' },
+        { id: 'arcus', icon: Sparkles, label: 'Arcus AI', route: '/dashboard/agent-talk' },
     ];
 
     const bottomNavItems = [
-        { id: 'invite', icon: Users2, label: 'Invite your team', route: '/invite' },
-        { id: 'gift', icon: Gift, label: 'Get a free month', route: '/referral' },
         { id: 'settings', icon: Settings2, label: 'Settings', route: '/settings' },
-        { id: 'help', icon: HelpCircle, label: 'Help', route: '/help' },
+        { id: 'pricing', icon: CreditCard, label: 'Plans & Billing', route: '/pricing' },
     ];
 
     return (
@@ -116,38 +107,12 @@ export function HomeFeedSidebar({ className = '', onPeopleClick, activeView = 'h
                         })}
                     </div>
 
-                    {/* Workspace Section */}
-                    <div className="space-y-1">
-                        <h3 className="px-3 mb-2 text-[10px] font-bold tracking-[0.2em] text-neutral-400 dark:text-neutral-600 uppercase">
-                            Workspace
-                        </h3>
-                        {bottomNavItems.slice(0, 2).map((item) => {
-                            const Icon = item.icon;
-                            const isActive = pathname === item.route;
-
-                            return (
-                                <button
-                                    key={item.id}
-                                    onClick={() => router.push(item.route)}
-                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-300 group ${
-                                        isActive 
-                                        ? 'bg-white dark:bg-white/[0.05] text-[#1A1A1A] dark:text-white font-semibold shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] border border-[#EBE9E2] dark:border-white/10' 
-                                        : 'text-[#666666] dark:text-neutral-500 hover:text-[#1A1A1A] dark:hover:text-neutral-300'
-                                    }`}
-                                >
-                                    <Icon className={`w-4 h-4 transition-colors duration-300 ${isActive ? 'text-[#1A1A1A] dark:text-white' : 'text-[#666666] dark:text-neutral-500 group-hover:text-[#1A1A1A] dark:group-hover:text-neutral-300'}`} strokeWidth={1.5} />
-                                    <span className="text-[13px] tracking-tight">{item.label}</span>
-                                </button>
-                            );
-                        })}
-                    </div>
-
                     {/* Support Section */}
                     <div className="space-y-1">
                         <h3 className="px-3 mb-2 text-[10px] font-bold tracking-[0.2em] text-neutral-400 dark:text-neutral-600 uppercase">
                             Support
                         </h3>
-                        {bottomNavItems.slice(2).map((item) => {
+                        {bottomNavItems.map((item) => {
                             const Icon = item.icon;
                             const isActive = pathname === item.route;
 

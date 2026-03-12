@@ -758,9 +758,9 @@ export default function EnhancedProfilePage() {
         {/* Universal Sidebar - Fixed Position Full Height */}
         <HomeFeedSidebar />
         {/* Main Content with left margin for sidebar */}
-        <div className="ml-16">
+        <div className="ml-64">
           {/* Header */}
-          <div className="fixed top-0 left-16 right-0 z-50 border-b border-[#333333] bg-black/80 backdrop-blur-sm flex-shrink-0">
+          <div className="fixed top-0 left-64 right-0 z-50 border-b border-[#333333] bg-black/80 backdrop-blur-sm flex-shrink-0">
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex items-center justify-between h-14">
                 <div className="flex items-center gap-4">

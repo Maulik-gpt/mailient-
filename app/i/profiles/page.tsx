@@ -252,7 +252,7 @@ export default function ProfilesPage() {
 
             <HomeFeedSidebar />
 
-            <div className="ml-16 min-h-screen flex relative z-10">
+            <div className="ml-64 min-h-screen flex relative z-10">
                 {/* Left Column: Contact List */}
                 <div className={`transition-all duration-500 ease-in-out border-r border-white/5 ${selectedContact ? 'w-[400px]' : 'w-full'}`}>
                     <div className="p-8">

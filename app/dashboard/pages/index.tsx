@@ -278,7 +278,7 @@ const Index = () => {
     <div className="min-h-screen bg-slate-950 text-white flex">
       <HomeFeedSidebar />
       {/* Sidebar */}
-      <div className="w-80 flex-shrink-0 ml-16">
+      <div className="w-80 flex-shrink-0 ml-64">
         <GmailSidebar
           currentLabel={currentLabel}
           onLabelChange={handleLabelChange}

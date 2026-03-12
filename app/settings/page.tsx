@@ -864,7 +864,7 @@ export default function SettingsPage() {
     <div className="settings-page min-h-screen flex bg-black">
       <HomeFeedSidebar />
 
-      <main className="flex-1 overflow-y-auto ml-16">
+      <main className="flex-1 overflow-y-auto ml-64">
         <div className="max-w-5xl mx-auto px-6 py-12">
           <header className="mb-10">
             <h1 className="text-3xl font-medium tracking-tight text-neutral-200">

@@ -31,6 +31,9 @@ interface BookmarkedPost {
   bookmarkedAt?: string;
 }
 
+import { HomeFeedSidebar } from '@/components/ui/home-feed-sidebar';
+import { cn } from '@/lib/utils';
+
 export default function BookmarksPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
@@ -103,78 +106,74 @@ export default function BookmarksPage() {
 
   if (status === "loading" || isLoading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white text-xl">Loading...</div>
+      <div className="min-h-screen bg-[#F9F8F6] dark:bg-[#0c0c0c] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-amber-500"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      {/* Header - X/Twitter Style */}
-      <div className="sticky top-0 z-50 bg-black/80 backdrop-blur-xl border-b border-gray-800/50">
-        <div className="max-w-2xl mx-auto px-4">
-          <div className="flex items-center h-14 gap-4">
-            <button
-              onClick={() => router.back()}
-              className="p-2 hover:bg-gray-900 rounded-full transition-colors duration-200"
-              aria-label="Go back"
-            >
-              <ArrowLeft className="w-5 h-5 text-white" />
-            </button>
-            <div className="flex items-center gap-2">
-              <Bookmark className="w-5 h-5 text-white" />
-              <h1 className="text-xl font-bold text-white">Bookmarks</h1>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Username Section */}
-      {username && (
-        <div className="max-w-2xl mx-auto px-4 py-3 border-b border-gray-800/50">
-          <p className="text-sm text-gray-500">@{username}</p>
-        </div>
-      )}
-
-      {/* Content - X/Twitter Style Feed */}
-      <div className="max-w-2xl mx-auto">
-        {bookmarkedPosts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 px-4 text-center">
-            <div className="w-24 h-24 rounded-full bg-gray-900 flex items-center justify-center mb-6 border border-gray-800">
-              <Bookmark className="w-12 h-12 text-gray-600" />
-            </div>
-            <h2 className="text-3xl font-bold mb-3 text-white">Save posts for later</h2>
-            <p className="text-gray-500 mb-8 max-w-sm text-base leading-relaxed">
-              Bookmark posts to easily find them again in the future.
-            </p>
-            <Button
-              onClick={() => router.push('/home-feed')}
-              className="bg-white text-black hover:bg-gray-100 font-semibold px-6 py-3 rounded-full transition-all duration-200 hover:scale-105"
-            >
-              Explore Feed
-            </Button>
-          </div>
-        ) : (
-          <div className="divide-y divide-gray-800/50 border-x border-gray-800/30 min-h-screen">
-            {bookmarkedPosts.map((post) => (
-              <div 
-                key={post.id} 
-                className="hover:bg-gray-900/30 transition-colors duration-150 border-b border-gray-800/30"
-              >
-                <Post
-                  {...post}
-                  isBookmarked={true}
-                  onBookmark={() => handleUnbookmark(post.id)}
-                  onLike={() => console.log('Like post:', post.id)}
-                  onComment={() => console.log('Comment on post:', post.id)}
-                  onShare={() => console.log('Share post:', post.id)}
-                  onMore={() => console.log('More options for post:', post.id)}
-                />
+    <div className="flex bg-[#F9F8F6] dark:bg-[#0c0c0c] min-h-screen">
+      <HomeFeedSidebar />
+      
+      <div className="flex-1 ml-64 min-h-screen relative overflow-hidden">
+        <div className="mt-2.5 mr-2.5 mb-2.5 bg-white dark:bg-[#111111] rounded-[2.5rem] min-h-[calc(100vh-20px)] border border-[#EBE9E2] dark:border-white/[0.05] shadow-[0_20px_50px_rgba(0,0,0,0.06)] dark:shadow-none overflow-y-auto custom-scrollbar">
+          <div className="max-w-5xl mx-auto px-10 py-12">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between mb-12">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20">
+                  <Bookmark className="w-6 h-6 text-amber-500" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold tracking-tight text-[#1A1A1A] dark:text-white">Bookmarks</h1>
+                  <p className="text-sm text-[#666666] dark:text-neutral-500">Saved items and references</p>
+                </div>
               </div>
-            ))}
+            </div>
+
+            {/* Content Container */}
+            <div className="space-y-6">
+              {bookmarkedPosts.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                  <div className="w-20 h-20 rounded-[2rem] bg-[#F9F8F6] dark:bg-white/5 flex items-center justify-center mb-6 border border-[#EBE9E2] dark:border-white/10">
+                    <Bookmark className="w-8 h-8 text-[#666666] dark:text-neutral-500" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-[#1A1A1A] dark:text-white mb-2">No bookmarks yet</h2>
+                  <p className="text-[#666666] dark:text-neutral-500 max-w-sm mb-8">
+                    Save important posts and AI insights to find them here later.
+                  </p>
+                  <Button
+                    onClick={() => router.push('/home-feed')}
+                    className="bg-[#1A1A1A] dark:bg-white text-white dark:text-black hover:opacity-90 px-8 py-6 rounded-2xl transition-all"
+                  >
+                    Go to Feed
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-6">
+                  {bookmarkedPosts.map((post) => (
+                    <div 
+                      key={post.id} 
+                      className="bg-[#F9F8F6]/30 dark:bg-white/[0.02] border border-[#EBE9E2] dark:border-white/5 rounded-3xl p-1 overflow-hidden"
+                    >
+                      <Post
+                        {...post}
+                        isBookmarked={true}
+                        onBookmark={() => handleUnbookmark(post.id)}
+                        onLike={() => console.log('Like post:', post.id)}
+                        onComment={() => console.log('Comment on post:', post.id)}
+                        onShare={() => console.log('Share post:', post.id)}
+                        onMore={() => console.log('More options for post:', post.id)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

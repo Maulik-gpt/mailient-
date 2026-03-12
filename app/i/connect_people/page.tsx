@@ -81,7 +81,7 @@ export default function ConnectPeoplePage() {
       <HomeFeedSidebar />
 
       {/* Main Content */}
-      <div className="flex-1 ml-16">
+      <div className="flex-1 ml-64">
         {/* Header Bar */}
         <div className="w-full bg-[#0a0a0a] py-4 px-8 border-b border-neutral-800/50 sticky top-0 z-10">
           <div className="flex items-center justify-between">

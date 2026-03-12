@@ -385,7 +385,7 @@ export default function NoteDetailPage() {
                 <HomeFeedSidebar />
 
                 {/* Main Content Area - Full Width */}
-                <div className="flex-1 flex flex-col ml-16">
+                <div className="flex-1 flex flex-col ml-64">
                     <div className="border-b border-neutral-800 px-6 py-3 flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <button
