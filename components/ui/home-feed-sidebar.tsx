@@ -65,9 +65,9 @@ export function HomeFeedSidebar({ className = '', onPeopleClick, activeView = 'h
                 
                 {/* Logo & Plan Header */}
                 <div className="px-6 py-8 flex items-center justify-between">
-                    <div className="flex items-center gap-2 cursor-pointer group" onClick={() => router.push('/home-feed')}>
-                        <div className="w-8 h-8 relative flex items-center justify-center">
-                            <img src="/mailient-logo.png" alt="Mailient" className="w-full h-full object-contain dark:invert" />
+                    <div className="flex items-center gap-2.5 cursor-pointer group" onClick={() => router.push('/home-feed')}>
+                        <div className="w-9 h-9 relative flex items-center justify-center rounded-[10px] overflow-hidden bg-black dark:bg-white shadow-sm border border-[#EBE9E2] dark:border-white/10">
+                            <img src="/mailient-logo-new.png" alt="Mailient" className="w-full h-full object-cover dark:invert" />
                         </div>
                         <span className="text-xl font-bold tracking-tight text-[#1A1A1A] dark:text-white">Mailient</span>
                     </div>
