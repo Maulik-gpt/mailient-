@@ -2,7 +2,7 @@
 
 /* Email content wrapper with premium design */
 .email-content-wrapper {
-  font-family: 'Inter', 'SF Pro Display', 'Segoe UI', 'Roboto', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif !important;
+  font-family: 'Satoshi', sans-serif !important;
   color: #f8fafc !important;
   line-height: 1.65 !important;
   font-size: 15px !important;
@@ -286,7 +286,7 @@
   left: 1.2em !important;
   font-size: 5em !important;
   color: rgba(139, 92, 246, 0.4) !important;
-  font-family: 'Georgia', 'Times New Roman', serif !important;
+  font-family: 'Satoshi', sans-serif !important;
   line-height: 1 !important;
   font-weight: bold !important;
   text-shadow: 0 4px 8px rgba(139, 92, 246, 0.2) !important;
@@ -299,7 +299,7 @@
   right: 1.2em !important;
   font-size: 5em !important;
   color: rgba(236, 72, 153, 0.4) !important;
-  font-family: 'Georgia', 'Times New Roman', serif !important;
+  font-family: 'Satoshi', sans-serif !important;
   line-height: 1 !important;
   font-weight: bold !important;
   text-shadow: 0 4px 8px rgba(236, 72, 153, 0.2) !important;
@@ -345,7 +345,7 @@
 
 /* Premium Code Blocks - Developer Experience */
 .email-content-wrapper pre, .email-content-wrapper code {
-  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Source Code Pro', monospace !important;
+  font-family: 'Satoshi', sans-serif !important;
   font-size: 14px !important;
   font-feature-settings: 'liga' 1, 'calt' 1, 'zero' 1 !important;
   font-variant-ligatures: contextual !important;
@@ -817,7 +817,7 @@
 
 /* Professional Text Mode Styling for Clean Email Display */
 .email-content-container .email-content {
-  font-family: 'Inter', 'Segoe UI', 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-family: 'Satoshi', sans-serif !important;
   line-height: 1.8 !important;
   font-size: 15px !important;
   color: #e5e7eb !important;
@@ -898,7 +898,7 @@
   left: 0.6em !important;
   font-size: 4em !important;
   color: rgba(96, 165, 250, 0.2) !important;
-  font-family: serif !important;
+  font-family: 'Satoshi', sans-serif !important;
   line-height: 1 !important;
 }
 
@@ -1015,7 +1015,7 @@
   color: #f3f4f6 !important;
   padding: 0.2em 0.5em !important;
   border-radius: 6px !important;
-  font-family: 'JetBrains Mono', 'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
+  font-family: 'Satoshi', sans-serif !important;
   font-size: 14px !important;
   border: 1px solid #404040 !important;
   font-weight: 500 !important;

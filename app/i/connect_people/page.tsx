@@ -76,7 +76,7 @@ export default function ConnectPeoplePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex" style={{ fontFamily: "'Satoshi', -apple-system, BlinkMacSystemFont, sans-serif" }}>
+    <div className="min-h-screen bg-[#0a0a0a] flex">
       {/* Sidebar */}
       <HomeFeedSidebar />
 

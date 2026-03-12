@@ -380,7 +380,7 @@ export default function NoteDetailPage() {
                 period={usageLimitModalData?.period || 'monthly'}
                 currentPlan={usageLimitModalData?.currentPlan || 'starter'}
             />
-            <div className={cn("min-h-screen bg-[#000000] text-white transition-all duration-500", (isDeleteDialogOpen || isShareDialogOpen || isShareOptionsOpen || isImageShareOpen) && "pause-animations")} style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'San Francisco', 'Satoshi', sans-serif" }}>
+            <div className={cn("min-h-screen bg-[#000000] text-white transition-all duration-500", (isDeleteDialogOpen || isShareDialogOpen || isShareOptionsOpen || isImageShareOpen) && "pause-animations")}>
                 {/* Mailient Sidebar */}
                 <HomeFeedSidebar />
 

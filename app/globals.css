@@ -1,83 +1,16 @@
-/* Import Oleo Script font from Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Oleo+Script:wght@400;700&display=swap');
-
-/* External Satoshi font declarations from Fontshare CDN */
 @import url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900,300,100&display=swap');
+@import "tailwindcss";
+@import "tw-animate-css";
 
 html {
   scroll-behavior: smooth;
   overscroll-behavior: none;
 }
 
-body {
-  font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
-}
-
-/* Universal Satoshi override — ensures every element inherits Satoshi
-   even when components set font-family via inline styles or classes */
-*, *::before, *::after {
-  font-family: inherit;
-}
-
-@font-face {
-  font-family: 'Satoshi';
-  src: url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900,300,100&display=swap') format('woff2'),
-    url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900,300,100&display=swap') format('woff');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Satoshi';
-  src: url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900,300,100&display=swap') format('woff2'),
-    url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900,300,100&display=swap') format('woff');
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Satoshi';
-  src: url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900,300,100&display=swap') format('woff2'),
-    url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900,300,100&display=swap') format('woff');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Satoshi';
-  src: url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900,300,100&display=swap') format('woff2'),
-    url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900,300,100&display=swap') format('woff');
-  font-weight: 900;
-  font-style: normal;
-  font-display: swap;
-}
-
-/* Additional Satoshi font weights for better typography */
-@font-face {
-  font-family: 'Satoshi';
-  src: url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900,300,100&display=swap') format('woff2'),
-    url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900,300,100&display=swap') format('woff');
-  font-weight: 300;
-  font-style: normal;
-  font-display: swap;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Satoshi';
-  src: url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900,300,100&display=swap') format('woff2'),
-    url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900,300,100&display=swap') format('woff');
-  font-weight: 100;
-  font-style: normal;
-  font-display: swap;
-}
+/* NOTE: Satoshi is loaded via @import url('...fontshare...') at the top.
+   That import contains the REAL @font-face declarations with proper .woff2 URLs.
+   DO NOT add manual @font-face blocks pointing to the CSS URL — they will silently fail. */
 
 /* Oleo Script font declarations */
 .oleo-script-regular {
@@ -92,12 +25,37 @@ body {
   font-style: normal;
 }
 
-@import "tailwindcss";
-@import "tw-animate-css";
+/* GLOBAL ABSOLUTE FONT OVERRIDE - FORCES SATOSHI ON EVERY SINGLE ELEMENT */
+html, body, #__next, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td,
+article, aside, canvas, details, embed, 
+figure, figcaption, footer, header, hgroup, 
+menu, nav, output, ruby, section, summary,
+time, mark, audio, video, button, input, textarea, select,
+[class*="font-"], [class*="text-"] {
+  font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+/* Ensure inherit works for pseudo-elements */
+*, *::before, *::after {
+  font-family: inherit !important;
+}
+
+.satoshi-app {
+  font-family: 'Satoshi', sans-serif !important;
+}
 
 @theme inline {
   --font-sans: "Satoshi", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-mono: var(--font-geist-mono);
+  --font-serif: "Satoshi", serif;
+  --font-mono: "Satoshi", monospace;
   --color-destructive-foreground: var(--destructive-foreground);
 
   /* Note / Button-1 design system color tokens */

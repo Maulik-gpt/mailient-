@@ -446,7 +446,7 @@ export default function NotesPage() {
                 period={usageLimitModalData?.period || 'monthly'}
                 currentPlan={usageLimitModalData?.currentPlan || 'starter'}
             />
-            <div className={cn("min-h-screen bg-[#F9F8F6] dark:bg-[#0c0c0c] transition-all duration-500", (isDeleteDialogOpen || isShareDialogOpen || isShareOptionsOpen || isImageShareOpen) && "pause-animations")} style={{ fontFamily: "Inter, -apple-system, BlinkMacSystemFont, sans-serif" }}>
+            <div className={cn("min-h-screen bg-[#F9F8F6] dark:bg-[#0c0c0c] transition-all duration-500", (isDeleteDialogOpen || isShareDialogOpen || isShareOptionsOpen || isImageShareOpen) && "pause-animations")}>
                 <div className="flex">
                     {/* Mailient Sidebar */}
                     <HomeFeedSidebar />

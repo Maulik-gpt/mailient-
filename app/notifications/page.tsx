@@ -16,7 +16,7 @@ export default function NotificationsPage() {
     ];
 
     return (
-        <div className="min-h-screen bg-[#0a0a0a] flex" style={{ fontFamily: "'Satoshi', sans-serif" }}>
+        <div className="min-h-screen bg-[#0a0a0a] flex">
             <HomeFeedSidebar />
             <div className="flex-1 ml-64">
                 <div className="max-w-4xl mx-auto px-8 py-10">

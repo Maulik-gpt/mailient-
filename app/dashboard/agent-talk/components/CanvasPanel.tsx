@@ -302,7 +302,7 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                                                     autoFocus
                                                 />
                                             ) : (
-                                                <div className="text-white/90 text-lg leading-[1.7] whitespace-pre-wrap font-serif tracking-tight selection:bg-white/20">
+                                                <div className="text-white/90 text-lg leading-[1.7] whitespace-pre-wrap font-sans tracking-tight selection:bg-white/20">
                                                     {canvasData.content.body}
                                                 </div>
                                             )}
@@ -323,7 +323,7 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                                 {canvasData.type !== 'email_draft' && sections.length > 0 && !canvasData.error && (
                                     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
                                         {canvasData.content?.title && (
-                                            <div className="text-white/40 text-sm italic font-serif mb-8 border-l-2 border-white/10 pl-6 py-2">
+                                            <div className="text-white/40 text-sm italic font-sans mb-8 border-l-2 border-white/10 pl-6 py-2">
                                                 {canvasData.content.title}
                                             </div>
                                         )}

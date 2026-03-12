@@ -424,7 +424,7 @@ export default function SiftOnboardingPage() {
         return (
           <motion.div key="step-0" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-12 text-center max-w-3xl mx-auto px-6">
             <div className="space-y-6">
-              <h1 className="text-5xl md:text-7xl font-medium tracking-tight text-white leading-[1.1] font-serif">
+              <h1 className="text-5xl md:text-7xl font-medium tracking-tight text-white leading-[1.1] font-sans">
                 Your inbox is not your job.<br />
                 <span className="text-zinc-500 italic">It’s your leverage.</span>
               </h1>
@@ -948,7 +948,7 @@ function StatCard({ label, value, icon: Icon, color }: any) {
         <Icon className="w-6 h-6" />
       </div>
       <div>
-        <div className="text-4xl font-serif font-medium">{value}</div>
+        <div className="text-4xl font-sans font-medium">{value}</div>
         <div className="text-xs uppercase tracking-widest text-zinc-600 mt-1">{label}</div>
       </div>
     </div>

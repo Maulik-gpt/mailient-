@@ -688,7 +688,7 @@ export default function EnhancedProfilePage() {
   // Show loading state while authenticating or loading profile
   if (status === "loading" || (loading && !profile)) {
     return (
-      <div className="min-h-screen bg-[#000] flex items-center justify-center" style={{ fontFamily: "'Stack Sans Notch', ui-sans-serif, system-ui, sans-serif" }}>
+      <div className="min-h-screen bg-[#000] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white mx-auto"></div>
           <p className="text-white/60 mt-4">
@@ -754,7 +754,7 @@ export default function EnhancedProfilePage() {
 
   return (
     <TooltipProvider>
-      <div className="min-h-screen bg-black text-white" style={{ fontFamily: "'Stack Sans Notch', ui-sans-serif, system-ui, sans-serif" }}>
+      <div className="min-h-screen bg-black text-white">
         {/* Universal Sidebar - Fixed Position Full Height */}
         <HomeFeedSidebar />
         {/* Main Content with left margin for sidebar */}
