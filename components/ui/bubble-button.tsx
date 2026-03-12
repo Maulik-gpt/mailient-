@@ -8,46 +8,6 @@ import {
 } from "@/components/ui/tooltip";
 
 // A new component to create the bubble effect
-const Bubbles = () => {
-  // Keyframes for the bubble animation are defined here for self-containment
-  const keyframes = `
-    @keyframes rise {
-      0% {
-        transform: translateY(0) scale(1);
-        opacity: 0.4;
-      }
-      100% {
-        transform: translateY(-100px) scale(0);
-        opacity: 0;
-      }
-    }
-  `;
-
-  return (
-    <>
-      <style>{keyframes}</style>
-      <div className="absolute inset-0 z-5 overflow-hidden rounded-full">
-        {/* Generate multiple spans to act as bubbles */}
-        {Array.from({ length: 15 }).map((_, i) => (
-          <span
-            key={i}
-            // The animation is paused by default and only runs on group-hover
-            className="absolute bottom-[-10px] block rounded-full bg-foreground/20 [animation-play-state:paused] group-hover:[animation-play-state:running]"
-            style={{
-              width: `${Math.random() * 12 + 4}px`, // Random size
-              height: `${Math.random() * 12 + 4}px`, // Random size
-              left: `${Math.random() * 95}%`, // Random horizontal position
-              animation: `rise ${2 + Math.random() * 3}s ${ // Random duration
-                Math.random() * 4
-                }s linear infinite`, // Random delay
-            }}
-          />
-        ))}
-      </div>
-    </>
-  );
-};
-
 export interface UsageBadgeProps {
   /** The icon to display next to the plan name. */
   icon: React.ReactNode;
@@ -67,6 +27,7 @@ const UsageBadge = React.forwardRef<HTMLDivElement, UsageBadgeProps>(
   ({ icon, planName, usage, limit, tooltipContent, className }, ref) => {
     // Calculate the percentage of usage for the progress bar
     const usagePercentage = limit > 0 ? (usage / limit) * 100 : 0;
+    const isLowCredits = limit - usage <= (limit * 0.2);
 
     return (
       <TooltipProvider delayDuration={100}>
@@ -75,37 +36,46 @@ const UsageBadge = React.forwardRef<HTMLDivElement, UsageBadgeProps>(
             <div
               ref={ref}
               className={cn(
-                // Added "group" to enable group-hover states for child elements
-                // Increased padding (px-4 py-2) and text size (text-base)
-                "group relative inline-flex cursor-default items-center gap-3 overflow-hidden rounded-full border bg-secondary px-4 py-2 text-base font-medium text-secondary-foreground shadow-sm transition-all hover:shadow-md",
+                "group relative inline-flex cursor-pointer items-center gap-2.5 overflow-hidden rounded-full border border-black/[0.08] dark:border-white/[0.08] bg-white/70 dark:bg-white/[0.03] px-3.5 py-1.5 text-[13px] font-medium text-neutral-800 dark:text-neutral-200 backdrop-blur-md transition-all hover:bg-white/90 dark:hover:bg-white/[0.08] hover:border-black/[0.12] dark:hover:border-white/20 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_20px_-6px_rgba(0,0,0,0.1)]",
                 className
               )}
             >
-              {/* Add the bubble animation component */}
-              <Bubbles />
-
-              {/* Icon */}
-              <div className="z-10">{icon}</div>
+              {/* Subtle background glow for AI */}
+              <div className="absolute inset-0 bg-gradient-to-r from-amber-500/0 via-amber-500/[0.05] to-amber-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              
+              {/* Icon with subtle pulse if low credits */}
+              <div className={cn(
+                "relative z-10 transition-transform duration-300 group-hover:scale-110",
+                isLowCredits && "text-amber-500"
+              )}>
+                {icon}
+              </div>
 
               {/* Text Content */}
-              <div className="z-10">
-                <span>{planName}</span>
-                <span className="ml-2 opacity-70">
-                  {limit - usage}/{limit} left
+              <div className="relative z-10 flex items-center gap-1.5">
+                <span className="tracking-tight">{planName}</span>
+                <div className="h-3 w-[1px] bg-black/10 dark:bg-white/10 mx-0.5" />
+                <span className={cn(
+                  "opacity-60 font-medium tabular-nums",
+                  isLowCredits && "text-amber-600 dark:text-amber-400 opacity-100"
+                )}>
+                  {limit - usage}/{limit}
                 </span>
               </div>
 
-              {/* Progress Bar Background */}
-              <div className="absolute inset-0 z-0 h-full w-full bg-secondary" />
-
-              {/* Progress Bar Fill */}
-              <div
-                className="absolute inset-y-0 left-0 z-0 h-full bg-foreground/10 transition-all duration-300"
-                style={{ width: `${usagePercentage}%` }}
-              />
+              {/* Ultra-thin progress line at the very bottom */}
+              <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-black/[0.03] dark:bg-white/[0.03]">
+                <div
+                  className={cn(
+                    "h-full transition-all duration-1000 ease-out",
+                    isLowCredits ? "bg-amber-500" : "bg-neutral-400 dark:bg-neutral-500"
+                  )}
+                  style={{ width: `${usagePercentage}%` }}
+                />
+              </div>
             </div>
           </TooltipTrigger>
-          <TooltipContent className="max-w-xs text-center">
+          <TooltipContent className="bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xl border-black/10 dark:border-white/10 text-neutral-800 dark:text-neutral-200 shadow-2xl px-3 py-2 rounded-xl text-xs font-medium">
             {tooltipContent}
           </TooltipContent>
         </Tooltip>

@@ -81,9 +81,10 @@ Added detailed logging of OAuth account data received.
 
 The OAuth configuration now requests these scopes:
 - `openid email profile` - Basic user info
-- `https://www.googleapis.com/auth/gmail.modify` - Full Gmail access
-- `https://www.googleapis.com/auth/gmail.readonly` - Gmail read access
 - `https://www.googleapis.com/auth/gmail.send` - Send emails
+- `https://www.googleapis.com/auth/gmail.readonly` - Gmail read access
+- `https://www.googleapis.com/auth/gmail.compose` - Manage drafts and send emails
+- `https://www.googleapis.com/auth/gmail.modify` - Full Gmail access (all except permanent deletion)
 - `https://www.googleapis.com/auth/calendar` - Calendar access
 - `https://www.googleapis.com/auth/calendar.events` - Calendar events
 

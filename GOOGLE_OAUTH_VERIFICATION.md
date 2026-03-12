@@ -39,7 +39,7 @@ Your Google OAuth app is showing a security warning because it hasn't been verif
    - May take 2-4 weeks for review
 
 ## Current Configuration
-- **Scopes**: `openid email profile https://www.googleapis.com/auth/gmail.modify`
+- **Scopes**: `openid email profile https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.compose https://www.googleapis.com/auth/gmail.modify`
 - **App Email**: millionairemaulik@gmail.com
 - **Status**: Unverified (shows security warning)
 

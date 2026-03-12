@@ -1265,7 +1265,7 @@ export function GmailInterfaceFixed() {
     const totalItems = summary ? Object.values(summary as Record<string, number>).reduce((a: number, b: number) => a + b, 0) : 0;
 
     return (
-        <div className="min-h-screen bg-[#0a0a0a] dark:bg-[#0a0a0a] flex" style={{ fontFamily: "'Satoshi', -apple-system, BlinkMacSystemFont, sans-serif" }}>
+        <div className="min-h-screen bg-[#F9F8F6] dark:bg-[#0c0c0c] flex overflow-hidden" style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif" }}>
             <UsageLimitModal
                 isOpen={isUsageLimitModalOpen}
                 onClose={() => setIsUsageLimitModalOpen(false)}
@@ -1299,9 +1299,32 @@ export function GmailInterfaceFixed() {
                 activeView={viewMode}
             />
 
-            {/* Main Content */}
-            <div className="flex-1 ml-16">
-                <div className={`${viewMode === 'people' ? 'max-w-[1600px]' : 'max-w-5xl'} mx-auto px-8 py-10 transition-all duration-500`}>
+            {/* Main Content Wrapper */}
+            <div className="flex-1 ml-64 min-h-screen relative overflow-hidden bg-[#F9F8F6] dark:bg-[#0c0c0c]">
+                {/* Credits Badge - Now more subtle and professional */}
+                {usageData && usageData.planType !== 'pro' && (
+                    <div className="absolute top-6 right-10 z-50">
+                        <UsageBadge
+                            icon={<Sparkles className="h-3.5 w-3.5 text-amber-500" />}
+                            planName={(usageData.planType as string) === 'starter' ? 'Starter' : (usageData.planType as string) === 'pro' ? 'Pro' : 'Free'}
+                            usage={usageData.features?.arcus_ai?.usage || 0}
+                            limit={usageData.features?.arcus_ai?.limit || 5}
+                            tooltipContent={
+                                <p className="text-[10px] font-medium uppercase tracking-wider">
+                                    {(usageData.planType as string) === 'starter' ? 'Starter' : (usageData.planType as string) === 'pro' ? 'Pro' : 'Free'} Plan
+                                    <br />
+                                    <span className="text-white/40 font-light lowercase">
+                                        {usageData.features?.arcus_ai?.remaining ?? 5} credits left
+                                    </span>
+                                </p>
+                            }
+                        />
+                    </div>
+                )}
+
+                {/* The Curvy Content Area */}
+                <div className="mt-2.5 mr-2.5 mb-2.5 bg-white dark:bg-[#111111] rounded-[2.5rem] min-h-[calc(100vh-20px)] border border-[#EBE9E2] dark:border-white/[0.05] shadow-[0_20px_50px_rgba(0,0,0,0.06)] dark:shadow-none overflow-y-auto custom-scrollbar">
+                    <div className={`${viewMode === 'people' ? 'max-w-[1600px]' : 'max-w-5xl'} mx-auto px-10 py-12 transition-all duration-500`}>
 
                     {/* Header */}
                     <div className="flex items-center justify-between mb-16">
@@ -1309,9 +1332,9 @@ export function GmailInterfaceFixed() {
                             {viewMode === 'people' ? (
                                 <Users className="w-6 h-6 text-[#fafafa]" strokeWidth={1.5} />
                             ) : (
-                                <Home className="w-6 h-6 text-[#fafafa]" strokeWidth={1.5} />
+                                <Home className="w-5 h-5 text-[#666666] dark:text-neutral-400" strokeWidth={1.5} />
                             )}
-                            <h1 className="text-2xl font-medium text-[#fafafa] tracking-tight">
+                            <h1 className="text-2xl font-semibold text-[#1A1A1A] dark:text-white tracking-tight">
                                 {viewMode === 'people' ? 'People' : 'Home'}
                             </h1>
                         </div>
@@ -1864,6 +1887,7 @@ export function GmailInterfaceFixed() {
                     )}
                 </div>
             </div>
+        </div>
 
             {/* Details Modal */}
             <div
