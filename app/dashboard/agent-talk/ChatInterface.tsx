@@ -304,6 +304,20 @@ export default function ChatInterface({
   const [selectedEmails, setSelectedEmails] = useState<Email[]>([]);
   const [chatTitle, setChatTitle] = useState<string>('');
   const [suggestionInput, setSuggestionInput] = useState<{ text: string; id: number } | undefined>(undefined);
+  const [isTitleMenuOpen, setIsTitleMenuOpen] = useState(false);
+  const [isStarred, setIsStarred] = useState(false);
+  const titleMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close title menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (titleMenuRef.current && !titleMenuRef.current.contains(event.target as Node)) {
+        setIsTitleMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
   const [isIntegrationsModalOpen, setIsIntegrationsModalOpen] = useState<boolean>(false);
   const [isEmailSelectionModalOpen, setIsEmailSelectionModalOpen] = useState<boolean>(false);
   const [isMoreOptionsOpen, setIsMoreOptionsOpen] = useState<boolean>(false);
@@ -498,6 +512,7 @@ export default function ChatInterface({
         const data = await response.json();
         if (data.title && data.title.length > 0) {
           console.log('🏷️ AI-generated chat title:', data.title);
+          setChatTitle(data.title);
           return data.title;
         }
       }
@@ -1471,7 +1486,7 @@ export default function ChatInterface({
           </div>
 
           {showHistory && (
-            <div className="fixed left-16 top-0 h-screen w-80 bg-black/60 border-r border-white/[0.08] flex flex-col backdrop-blur-3xl z-40">
+            <div className="fixed right-0 top-0 h-screen w-80 bg-black/60 border-l border-white/[0.08] flex flex-col backdrop-blur-3xl z-40">
               <div className="p-6 border-b border-white/[0.05]">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-[11px] tracking-widest text-white/30 uppercase">History</h2>
@@ -1531,61 +1546,123 @@ export default function ChatInterface({
             <div className={`sticky top-0 z-40 transition-all duration-300 ${(isIntegrationsModalOpen || isEmailSelectionModalOpen || isPersonalityModalOpen) ? 'blur-sm' : ''}`}>
               <div className="relative px-8 py-3">
                 <div className="flex items-center justify-between">
-                  {/* Left Side: Just a subtle action to start new */}
-                  <div className="flex items-center">
+                  <div className="flex items-center gap-2">
+                    {/* Leftmost: Title and Dropdown */}
+                    {!isInitialMode && (
+                      <div className="relative" ref={titleMenuRef}>
+                        <div className="flex items-center bg-[#111111] border border-white/[0.06] rounded-lg overflow-hidden shadow-2xl transition-all hover:border-white/10 group">
+                          <button 
+                            onClick={() => setIsTitleMenuOpen(!isTitleMenuOpen)}
+                            className="pl-4 pr-3 py-1.5 hover:bg-white/[0.02] transition-colors flex items-center gap-2 max-w-[240px]"
+                          >
+                            <span className="text-sm font-medium text-white/80 truncate tracking-tight">
+                              {chatTitle || 'New Chat'}
+                            </span>
+                          </button>
+                          <div className="w-[1px] h-3.5 bg-white/[0.08]" />
+                          <button 
+                            onClick={() => setIsTitleMenuOpen(!isTitleMenuOpen)}
+                            className="px-2.5 py-1.5 hover:bg-white/[0.02] transition-colors"
+                          >
+                            <ChevronDown className={`w-3.5 h-3.5 text-white/30 group-hover:text-white/60 transition-transform duration-200 ${isTitleMenuOpen ? 'rotate-180' : ''}`} />
+                          </button>
+                        </div>
+
+                        {/* Dropdown Menu */}
+                        {isTitleMenuOpen && (
+                          <div className="absolute top-full left-0 mt-2 w-48 bg-[#1a1a1a] border border-white/[0.08] rounded-xl shadow-2xl py-1.5 z-[100] animate-in fade-in zoom-in-95 duration-200">
+                            <button 
+                              onClick={() => {
+                                setIsStarred(!isStarred);
+                                setIsTitleMenuOpen(false);
+                                toast.success(isStarred ? 'Removed from favorites' : 'Added to favorites');
+                              }}
+                              className="w-full px-3 py-2 text-left text-sm text-white/70 hover:text-white hover:bg-white/[0.05] transition-colors flex items-center gap-2.5"
+                            >
+                              <Sparkles className={`w-4 h-4 ${isStarred ? 'text-yellow-400 fill-yellow-400' : ''}`} />
+                              <span>{isStarred ? 'Unstar' : 'Star'}</span>
+                            </button>
+                            <button 
+                              onClick={() => {
+                                const newTitle = prompt('Rename conversation:', chatTitle);
+                                if (newTitle && newTitle !== chatTitle) {
+                                  setChatTitle(newTitle);
+                                  if (currentConversationId) {
+                                    localStorage.setItem(`conv_${currentConversationId}_title`, newTitle);
+                                    const raw = localStorage.getItem(`conversation_${currentConversationId}`);
+                                    if (raw) {
+                                      const data = JSON.parse(raw);
+                                      data.title = newTitle;
+                                      localStorage.setItem(`conversation_${currentConversationId}`, JSON.stringify(data));
+                                    }
+                                  }
+                                }
+                                setIsTitleMenuOpen(false);
+                              }}
+                              className="w-full px-3 py-2 text-left text-sm text-white/70 hover:text-white hover:bg-white/[0.05] transition-colors flex items-center gap-2.5"
+                            >
+                              <PenTool className="w-4 h-4" />
+                              <span>Rename</span>
+                            </button>
+                            <button 
+                              onClick={() => {
+                                setIsTitleMenuOpen(false);
+                                toast.info('Projects integration coming soon');
+                              }}
+                              className="w-full px-3 py-2 text-left text-sm text-white/70 hover:text-white hover:bg-white/[0.05] transition-colors flex items-center gap-2.5"
+                            >
+                              <LayoutGrid className="w-4 h-4" />
+                              <span>Add to project</span>
+                            </button>
+                            <div className="h-[1px] bg-white/[0.05] my-1" />
+                            <button 
+                              onClick={() => {
+                                if (currentConversationId && confirm('Delete this conversation?')) {
+                                  handleConversationDelete(currentConversationId);
+                                }
+                                setIsTitleMenuOpen(false);
+                              }}
+                              className="w-full px-3 py-2 text-left text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors flex items-center gap-2.5"
+                            >
+                              <HugeiconsIcon icon={Cancel01Icon} size={16} />
+                              <span>Delete</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Settings Icon (replaced New Chat/Edit) */}
                     <Tooltip delayDuration={100}>
                       <TooltipTrigger asChild>
                         <button
-                          onClick={startNewChat}
-                          className="p-2 hover:bg-white/5 rounded-lg transition-all text-white/20 hover:text-white/60 group focus:outline-none"
+                          onClick={() => setIsPersonalityModalOpen(true)}
+                          className="p-2 hover:bg-white/5 rounded-lg transition-all text-white/20 hover:text-white/60 focus:outline-none"
                         >
-                          <Edit className="w-4 h-4" />
+                          <Settings className="w-4 h-4" />
                         </button>
                       </TooltipTrigger>
                       <TooltipContent side="bottom">
-                        <span className="text-[10px]">New conversation</span>
+                        <span className="text-[10px]">Settings</span>
                       </TooltipContent>
                     </Tooltip>
                   </div>
 
-                  {/* Center: The Generated Topic Pill (from mock) */}
-                  <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2">
-                    {!isInitialMode && (
-                      <div className="flex items-center bg-[#111111] border border-white/[0.06] rounded-lg overflow-hidden shadow-2xl transition-all hover:border-white/10 group">
-                        <button 
+                  {/* Right Side: Just History */}
+                  <div className="flex items-center">
+                    <Tooltip delayDuration={100}>
+                      <TooltipTrigger asChild>
+                        <button
                           onClick={() => setShowHistory(!showHistory)}
-                          className="pl-4 pr-3 py-1.5 hover:bg-white/[0.02] transition-colors"
+                          className={`p-2 rounded-lg transition-all hover:bg-white/5 ${showHistory ? 'text-white bg-white/10' : 'text-white/20 hover:text-white/60'}`}
                         >
-                          <span className="text-sm font-medium text-white/80 whitespace-nowrap overflow-hidden text-ellipsis max-w-[300px] tracking-tight">
-                            {chatTitle}
-                          </span>
+                          <History className="w-4 h-4" />
                         </button>
-                        <div className="w-[1px] h-3.5 bg-white/[0.08]" />
-                        <button 
-                          onClick={() => setShowHistory(!showHistory)}
-                          className="px-2.5 py-1.5 hover:bg-white/[0.02] transition-colors"
-                        >
-                          <ChevronDown className="w-3.5 h-3.5 text-white/30 group-hover:text-white/60 transition-colors" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Right Side: Hidden contextual icons */}
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => setShowHistory(!showHistory)}
-                      className={`p-2 rounded-lg transition-all hover:bg-white/5 ${showHistory ? 'text-white bg-white/10' : 'text-white/20 hover:text-white/60'}`}
-                    >
-                      <History className="w-4 h-4" />
-                    </button>
-                    
-                    <button
-                      onClick={() => setIsPersonalityModalOpen(true)}
-                      className="p-2 rounded-lg transition-all hover:bg-white/5 text-white/20 hover:text-white/60"
-                    >
-                      <Settings className="w-4 h-4" />
-                    </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        <span className="text-[10px]">History</span>
+                      </TooltipContent>
+                    </Tooltip>
                   </div>
                 </div>
               </div>
