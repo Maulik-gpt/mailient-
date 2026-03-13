@@ -46,101 +46,94 @@ export function ThinkingLayer({ steps, isVisible, currentThought, isGenerating, 
     const blockedStep = steps.find(s => s.status === 'blocked_approval');
 
     return (
-        <div className="space-y-1 my-2">
-            {/* Completed steps */}
-            {completedSteps.map((step, idx) => (
-                <motion.div 
-                    key={step.id} 
-                    initial={{ opacity: 0, x: -10 }} 
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.4, delay: idx * 0.1 }}
-                    className="group"
-                >
-                    <button
-                        onClick={() => step.expandedContent && toggleStep(step.id)}
-                        className="flex items-center gap-2 py-1.5 w-full text-left col-span-full hover:bg-graphite-surface-2/40 rounded-xl transition-all -mx-2 px-2 group"
+        <div className="relative pl-1 py-1">
+            {/* Vertical Guide Line */}
+            <div className="absolute left-1.5 top-3 bottom-0 w-[1px] bg-white/[0.05] z-0" />
+
+            <div className="space-y-1 relative z-10">
+                {/* Completed steps */}
+                {completedSteps.map((step, idx) => (
+                    <motion.div 
+                        key={step.id} 
+                        initial={{ opacity: 0, x: -10 }} 
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.4, delay: idx * 0.05 }}
+                        className="group"
                     >
-                        <div className="w-1 h-1 rounded-full bg-graphite-muted-2 flex-shrink-0 group-hover:bg-graphite-muted transition-colors" />
-                        <span className="text-graphite-muted text-[13px] tracking-tight flex-1 font-medium group-hover:text-graphite-text transition-colors">{step.label}</span>
-                        {step.expandedContent && (
-                            <div className="flex items-center gap-2 text-graphite-muted-2 group-hover:text-graphite-muted transition-colors bg-white/[0.04] px-2 py-1 rounded-lg">
-                                <span className="text-[10px] tracking-tight uppercase">Detail</span>
-                                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${expandedSteps.has(step.id) ? 'rotate-180' : ''}`} />
-                            </div>
-                        )}
-                    </button>
-
-                    {/* Expanded detail content */}
-                    <AnimatePresence>
-                        {step.expandedContent && expandedSteps.has(step.id) && (
-                            <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: 'auto', opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                className="overflow-hidden"
-                            >
-                                <div className="ml-0.5 pl-4 border-l border-graphite-border py-2 my-1">
-                                    <div className="bg-graphite-surface/50 border border-graphite-border rounded-xl p-4 shadow-inner">
-                                        <p className="text-graphite-muted text-[13px] leading-relaxed whitespace-pre-wrap selection:bg-white/10">
-                                            {step.expandedContent}
-                                        </p>
-                                    </div>
+                        <button
+                            onClick={() => step.expandedContent && toggleStep(step.id)}
+                            className="flex items-center gap-3 py-1.5 w-full text-left col-span-full hover:bg-white/[0.02] rounded-lg transition-all -mx-1 px-1 group"
+                        >
+                            <div className="w-1.5 h-1.5 rounded-full bg-white/20 border border-white/10 flex-shrink-0 group-hover:bg-white/40 transition-colors z-10" />
+                            <span className="text-white/40 text-[12px] tracking-tight flex-1 font-medium group-hover:text-white/70 transition-colors font-mono">{step.label}</span>
+                            
+                            {step.expandedContent && (
+                                <div className="flex items-center gap-2 text-white/20 group-hover:text-white/40 transition-colors bg-white/[0.03] px-1.5 py-0.5 rounded-md">
+                                    <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${expandedSteps.has(step.id) ? 'rotate-180' : ''}`} />
                                 </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                </motion.div>
-            ))}
+                            )}
+                        </button>
 
-            {/* Active step */}
-            {activeStep && (
-                <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex items-center gap-3 py-2 -mx-2 px-2 relative bg-graphite-surface border border-graphite-border rounded-xl"
-                >
-                    <div className="relative flex items-center justify-center w-2 h-2 shrink-0">
-                        <div className="absolute inset-x-[-4px] inset-y-[-4px] bg-white/10 rounded-full blur-[2px] animate-pulse" />
-                        <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                    </div>
-                    <div className="flex-1 flex flex-col">
-                        <div className="flex items-center justify-between">
-                            <TextShimmer className="text-graphite-text text-[13px] font-bold tracking-tight" duration={1.2}>
-                                {activeStep.label}
-                            </TextShimmer>
-                        </div>
-                        <div className="flex items-center gap-1.5 mt-1 opacity-60">
-                            <Sparkles className="w-3 h-3 text-graphite-muted-2" />
-                            <span className="text-[9px] text-graphite-muted-2 tracking-wide">Working on task</span>
-                        </div>
-                    </div>
-                </motion.div>
-            )}
+                        {/* Expanded detail content */}
+                        <AnimatePresence>
+                            {step.expandedContent && expandedSteps.has(step.id) && (
+                                <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: 'auto', opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    className="overflow-hidden"
+                                >
+                                    <div className="ml-0.5 pl-4 border-l border-white/10 py-2 my-1">
+                                        <div className="bg-white/[0.02] border border-white/[0.05] rounded-xl p-3 shadow-inner">
+                                            <p className="text-white/50 text-[12px] leading-relaxed whitespace-pre-wrap selection:bg-white/10 italic">
+                                                {step.expandedContent}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </motion.div>
+                ))}
 
-            {/* Blocked for Approval step */}
-            {blockedStep && (
-                <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex items-center gap-3 py-2.5 -mx-2 px-2 relative bg-amber-500/5 border border-amber-500/10 rounded-xl"
-                >
-                    <div className="relative flex items-center justify-center w-2.5 h-2.5 shrink-0">
-                        <div className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.6)]" />
-                    </div>
-                    <div className="flex-1 flex flex-col">
-                        <div className="flex items-center justify-between">
-                            <span className="text-amber-200/80 text-[13px] font-bold tracking-tight">{blockedStep.label}</span>
-                            <div className="px-1.5 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20">
-                                <span className="text-[8px] text-amber-500 font-bold tracking-tightcaps">PAUSED</span>
+                {/* Active step */}
+                {activeStep && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex items-center gap-3 py-2 -mx-1 px-1 relative"
+                    >
+                        <div className="relative flex items-center justify-center w-1.5 h-1.5 shrink-0 z-10">
+                            <div className="absolute inset-x-[-4px] inset-y-[-4px] bg-white/20 rounded-full blur-[2px] animate-pulse" />
+                            <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                        </div>
+                        <div className="flex-1 flex flex-col">
+                            <div className="flex items-center justify-between">
+                                <TextShimmer className="text-white/90 text-[12px] font-bold tracking-tight font-mono" duration={1.2}>
+                                    {activeStep.label}
+                                </TextShimmer>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2 mt-1.5 opacity-60">
-                            <AlertCircle className="w-3 h-3 text-amber-500/60" />
-                            <span className="text-[10px] text-amber-500/60 tracking-wide">Waiting for your approval</span>
+                    </motion.div>
+                )}
+
+                {/* Blocked step */}
+                {blockedStep && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex items-center gap-3 py-2 -mx-1 px-1 relative bg-amber-500/5 border border-amber-500/10 rounded-lg"
+                    >
+                        <div className="w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)] z-10" />
+                        <div className="flex-1 flex flex-col">
+                            <div className="flex items-center justify-between">
+                                <span className="text-amber-200/80 text-[12px] font-bold tracking-tight font-mono">{blockedStep.label}</span>
+                                <span className="text-[8px] text-amber-500 font-bold tracking-widest uppercase">WAITING</span>
+                            </div>
                         </div>
-                    </div>
-                </motion.div>
-            )}
+                    </motion.div>
+                )}
+            </div>
 
             {/* Note: Pending steps are intentionally omitted to provide a "step-by-step" discovery experience */}
 

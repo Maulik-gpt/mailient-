@@ -7,7 +7,7 @@ import { signOut } from 'next-auth/react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { AddSquareIcon, Cancel01Icon, WorkHistoryIcon } from '@hugeicons/core-free-icons';
 import { ChatHistoryModal } from './components/ChatHistoryModal';
-import { ThinkingLayer, ArtifactCard } from './components/ThinkingLayer';
+import { ThinkingLayer, ArtifactCard, type ThinkingStep } from './components/ThinkingLayer';
 import { CanvasPanel, type CanvasData } from './components/CanvasPanel';
 
 import { PromptInputBox } from '@/components/ui/ai-prompt-box';
@@ -233,11 +233,7 @@ interface AgentMessage {
     planCard?: any;
     agentProcess?: any;
     completedSteps?: string[];
-    thinkingProcess?: {
-      id: string;
-      label: string;
-      expandedContent?: string;
-    }[];
+    thinkingProcess?: ThinkingStep[];
     artifact?: {
       type: string;
       title: string;
@@ -271,33 +267,51 @@ function RollingThinkingStatus({ onToggle, isOpen }: { onToggle: () => void, isO
   useEffect(() => {
     const timer = setTimeout(() => {
       setIndex((prev) => (prev + 1) % THINKING_MESSAGES.length);
-    }, index === 0 ? 5000 : 2000);
+    }, index === 0 ? 5000 : 2500);
     return () => clearTimeout(timer);
   }, [index]);
 
   return (
-    <div className="flex items-center gap-2.5">
-      <div className="h-[18px] overflow-hidden flex items-center min-w-[80px]">
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div
-            key={THINKING_MESSAGES[index]}
-            initial={{ y: -15, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 15, opacity: 0 }}
-            transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
-          >
-            <TextShimmer className="text-xs font-medium tracking-tight" duration={1.2}>
-              {THINKING_MESSAGES[index]}
-            </TextShimmer>
-          </motion.div>
-        </AnimatePresence>
+    <div className="flex items-center justify-between w-full group/status cursor-pointer select-none" onClick={onToggle}>
+      <div className="flex items-center gap-2.5">
+        <div className="relative flex items-center justify-center w-4 h-4 overflow-hidden shrink-0">
+          <AnimatePresence mode="popLayout" initial={false}>
+            <motion.div
+              key={THINKING_MESSAGES[index]}
+              initial={{ y: -18, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 18, opacity: 0 }}
+              transition={{ 
+                duration: 0.5, 
+                ease: [0.16, 1, 0.3, 1]
+              }}
+              className="absolute inset-0 flex items-center justify-center"
+            >
+              <BrainCircuit className="w-3.5 h-3.5 text-white/40" />
+            </motion.div>
+          </AnimatePresence>
+        </div>
+        
+        <div className="h-[20px] overflow-hidden flex items-center min-w-[90px]">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={THINKING_MESSAGES[index]}
+              initial={{ y: -20, opacity: 0, filter: 'blur(4px)' }}
+              animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
+              exit={{ y: 20, opacity: 0, filter: 'blur(4px)' }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <TextShimmer className="text-[13px] font-bold tracking-tight text-white/90" duration={1.5}>
+                {THINKING_MESSAGES[index]}
+              </TextShimmer>
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
-      <button 
-        onClick={onToggle}
-        className="p-1 hover:bg-white/5 rounded-md transition-colors text-white/30 hover:text-white group"
-      >
-        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
-      </button>
+
+      <div className={`p-1 rounded-md transition-all duration-300 ${isOpen ? 'bg-white/10 text-white' : 'text-white/20 group-hover/status:text-white/50'}`}>
+        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-500 cubic-bezier(0.4, 0, 0.2, 1) ${isOpen ? 'rotate-180' : ''}`} />
+      </div>
     </div>
   );
 }
@@ -742,11 +756,15 @@ export default function ChatInterface({
           id: `step-${s.step || i}`,
           label: s.description || s.action || '',
           expandedContent: s.detail || '',
+          status: 'completed' as const,
+          type: (s.type || 'think') as any
         }))
         : (intentData?.plan && intentData.plan.length > 0)
           ? intentData.plan.map((s: any, i: number) => ({
             id: `step-${s.step || i}`,
             label: s.description || s.action || '',
+            status: 'completed' as const,
+            type: (s.type || 'think') as any
           }))
           : undefined;
 
@@ -1882,8 +1900,10 @@ export default function ChatInterface({
                                     type={msg.meta.artifact.type}
                                     title={msg.meta.artifact.title}
                                     onView={() => {
-                                      setCanvasData(msg.meta.artifact.canvasData);
-                                      setIsCanvasOpen(true);
+                                      if (msg.meta?.artifact) {
+                                        setCanvasData(msg.meta.artifact.canvasData);
+                                        setIsCanvasOpen(true);
+                                      }
                                     }}
                                   />
                                 )}
@@ -1896,26 +1916,52 @@ export default function ChatInterface({
                         </div>
                       ))}
                       {isLoading && (
-                        <div className="flex items-start gap-2.5 animate-fade-in group pb-20">
-                          <div className="w-7 h-7 rounded-lg bg-graphite-surface border border-graphite-border flex items-center justify-center overflow-hidden shrink-0">
-                            <img src="/arcus-ai-icon.jpg" className="w-full h-full object-cover grayscale animate-pulse opacity-40" />
+                        <div className="flex items-start gap-2.5 animate-fade-in group pb-24">
+                          <div className="w-7 h-7 rounded-lg bg-graphite-surface border border-graphite-border flex items-center justify-center overflow-hidden shrink-0 relative shadow-2xl">
+                            <motion.img 
+                              src="/arcus-ai-icon.jpg" 
+                              className="w-full h-full object-cover grayscale opacity-40" 
+                              animate={{ 
+                                rotate: [0, 90, 180, 270, 360],
+                                scale: [1, 1.05, 1]
+                              }}
+                              transition={{ 
+                                rotate: { duration: 8, repeat: Infinity, ease: "linear" },
+                                scale: { duration: 3, repeat: Infinity, ease: "easeInOut" }
+                              }}
+                            />
+                            <div className="absolute inset-0 bg-white/5 animate-pulse" />
                           </div>
-                          <div className="flex flex-col gap-2">
-                            <div className="bg-graphite-surface/40 border border-graphite-border py-2 px-3.5 rounded-xl inline-flex items-center min-w-[140px]">
-                              <RollingThinkingStatus 
-                                onToggle={() => setIsThinkingStepsOpen(!isThinkingStepsOpen)} 
-                                isOpen={isThinkingStepsOpen} 
-                              />
-                            </div>
+                          
+                          <div className="flex flex-col gap-2.5 max-w-full">
+                            <motion.div 
+                              layout
+                              className="bg-[#1A1A1A] border border-white/5 px-4 py-2.5 rounded-2xl inline-flex items-center min-w-[170px] shadow-[0_8px_32px_rgba(0,0,0,0.4)] relative overflow-hidden group/bubble"
+                            >
+                               <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
+                               <RollingThinkingStatus 
+                                 onToggle={() => setIsThinkingStepsOpen(!isThinkingStepsOpen)} 
+                                 isOpen={isThinkingStepsOpen} 
+                               />
+                            </motion.div>
                             
-                            <AnimatePresence>
+                            <AnimatePresence mode="wait">
                               {isThinkingStepsOpen && liveThinkingSteps.length > 0 && (
                                 <motion.div 
-                                  initial={{ height: 0, opacity: 0 }}
-                                  animate={{ height: 'auto', opacity: 1 }}
-                                  exit={{ height: 0, opacity: 0 }}
-                                  className="overflow-hidden bg-[#161616]/40 border border-white/5 rounded-2xl px-4 py-2 ml-1"
+                                  layout
+                                  initial={{ height: 0, opacity: 0, scale: 0.98 }}
+                                  animate={{ height: 'auto', opacity: 1, scale: 1 }}
+                                  exit={{ height: 0, opacity: 0, scale: 0.98 }}
+                                  transition={{ 
+                                    height: { duration: 0.5, ease: [0.16, 1, 0.3, 1] },
+                                    opacity: { duration: 0.3 }
+                                  }}
+                                  className="overflow-hidden bg-[#161616]/60 backdrop-blur-md border border-white/[0.03] rounded-2xl px-5 py-3 ml-1 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]"
                                 >
+                                  <div className="mb-2 flex items-center gap-2 opacity-30 select-none">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                                    <span className="text-[10px] font-bold tracking-widest uppercase">Live Activity</span>
+                                  </div>
                                   <ThinkingLayer steps={liveThinkingSteps} isVisible={true} />
                                 </motion.div>
                               )}
