@@ -79,7 +79,7 @@ html, body, #__next, *, ::before, ::after,
   --animate-fade-spin: fade-spin 1.2s linear infinite;
 
   /* Graphite Visual System */
-  --color-graphite-bg: #000000;
+  --color-graphite-bg: #121212;
   --color-graphite-surface: #323232;
   --color-graphite-surface-2: #3a3a3a;
   --color-graphite-border: rgba(255, 255, 255, 0.06);

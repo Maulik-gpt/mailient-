@@ -1,7 +1,7 @@
 import React from "react";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { ArrowUp, Paperclip, Square, X, StopCircle, Mic, BrainCog, FolderCode, FileText, Film, Music, Globe } from "lucide-react";
+import { ArrowUp, Paperclip, Square, X, StopCircle, Mic, BrainCog, FolderCode, FileText, Film, Music, Globe, Settings } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 // Utility function for className merging
@@ -43,7 +43,7 @@ interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(({ className, ...props }, ref) => (
   <textarea
     className={cn(
-      "flex w-full rounded-md border-none bg-transparent px-3 py-2.5 text-base text-gray-100 placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50 min-h-[44px] resize-none scrollbar-thin scrollbar-thumb-[#444444] scrollbar-track-transparent hover:scrollbar-thumb-[#555555]",
+      "flex w-full rounded-md border-none bg-transparent px-3 py-2.5 text-base text-white placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50 min-h-[44px] resize-none scrollbar-thin scrollbar-thumb-[#444444] scrollbar-track-transparent hover:scrollbar-thumb-[#555555]",
       className
     )}
     ref={ref}
@@ -65,7 +65,7 @@ const TooltipContent = React.forwardRef<
     ref={ref}
     sideOffset={sideOffset}
     className={cn(
-      "z-50 overflow-hidden rounded-md border border-[#333333] bg-[#1F2023] px-3 py-1.5 text-sm text-white shadow-md animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+      "z-50 overflow-hidden rounded-md border border-[#333333] bg-black px-3 py-1.5 text-sm text-white shadow-md animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
       className
     )}
     {...props}
@@ -100,7 +100,7 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-[90vw] md:max-w-[800px] translate-x-[-50%] translate-y-[-50%] gap-4 border border-[#333333] bg-[#1F2023] p-0 shadow-xl duration-300 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 rounded-2xl",
+        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-[90vw] md:max-w-[800px] translate-x-[-50%] translate-y-[-50%] gap-4 border border-[#333333] bg-black p-0 shadow-xl duration-300 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 rounded-2xl",
         className
       )}
       {...props}
@@ -244,7 +244,7 @@ const ImageViewDialog: React.FC<ImageViewDialogProps> = ({ imageUrl, onClose }) 
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
           transition={{ duration: 0.2, ease: "easeOut" }}
-          className="relative bg-[#1F2023] rounded-2xl overflow-hidden shadow-2xl"
+          className="relative bg-black rounded-2xl overflow-hidden shadow-2xl"
         >
           <img
             src={imageUrl}
@@ -292,6 +292,8 @@ interface PromptInputProps {
   onDragOver?: (e: React.DragEvent) => void;
   onDragLeave?: (e: React.DragEvent) => void;
   onDrop?: (e: React.DragEvent) => void;
+  onFocus?: () => void;
+  onBlur?: () => void;
 }
 const PromptInput = React.forwardRef<HTMLDivElement, PromptInputProps>(
   (
@@ -307,6 +309,8 @@ const PromptInput = React.forwardRef<HTMLDivElement, PromptInputProps>(
       onDragOver,
       onDragLeave,
       onDrop,
+      onFocus,
+      onBlur,
     },
     ref
   ) => {
@@ -329,8 +333,10 @@ const PromptInput = React.forwardRef<HTMLDivElement, PromptInputProps>(
         >
           <div
             ref={ref}
+            onFocus={onFocus}
+            onBlur={onBlur}
             className={cn(
-              "rounded-3xl border border-[#444444] bg-[#1F2023] p-2 shadow-[0_8px_30px_rgba(0,0,0,0.24)] transition-all duration-300",
+              "rounded-3xl border border-white/10 bg-black p-2 shadow-[0_8px_30px_rgba(0,0,0,0.4)] transition-all duration-300",
               isLoading && "border-red-500/70",
               className
             )}
@@ -457,6 +463,7 @@ interface PromptInputBoxProps {
   className?: string;
   onIntegrationsClick?: () => void;
   onAttachEmailClick?: () => void;
+  onPersonalityClick?: () => void;
   selectedEmailsCount?: number;
 }
 export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref: React.Ref<HTMLDivElement>) => {
@@ -467,6 +474,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
     className,
     onIntegrationsClick,
     onAttachEmailClick,
+    onPersonalityClick,
     selectedEmailsCount = 0
   } = props;
   const [input, setInput] = React.useState("");
@@ -476,6 +484,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
   const [isRecording, setIsRecording] = React.useState(false);
   const [showThink, setShowThink] = React.useState(false);
   const [showCanvas, setShowCanvas] = React.useState(false);
+  const [isFocused, setIsFocused] = React.useState(false);
   const uploadInputRef = React.useRef<HTMLInputElement>(null);
   const promptBoxRef = React.useRef<HTMLDivElement>(null);
 
@@ -592,16 +601,19 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
         onValueChange={setInput}
         isLoading={isLoading}
         onSubmit={handleSubmit}
-        className={cn(
-          "w-full bg-[#1F2023] border-[#444444] shadow-[0_8px_30px_rgba(0,0,0,0.24)] transition-all duration-300 ease-in-out",
-          isRecording && "border-red-500/70",
-          className
-        )}
         disabled={isLoading || isRecording}
         ref={ref || promptBoxRef}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
+        className={cn(
+          "w-full bg-black border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.4)] transition-all duration-300 ease-in-out",
+          isFocused && "ring-1 ring-blue-500/50 border-blue-500/50",
+          isRecording && "border-red-500/70",
+          className
+        )}
       >
         <AnimatePresence>
           {files.length > 0 && !isRecording && (
@@ -683,20 +695,20 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
           />
         )}
 
-        <PromptInputActions className="flex items-center justify-between gap-2 p-0 pt-2 border-t border-[#444444]/30 mt-1">
+        <PromptInputActions className="flex items-center justify-between gap-2 p-0 pt-2 border-t border-white/[0.05] mt-1 relative z-10">
           <div
             className={cn(
-              "flex items-center gap-1 transition-opacity duration-300",
+              "flex items-center gap-1.5 transition-opacity duration-300",
               isRecording ? "opacity-0 invisible h-0" : "opacity-100 visible"
             )}
           >
             <PromptInputAction tooltip="Upload files">
               <button
                 onClick={() => uploadInputRef.current?.click()}
-                className="flex h-8 w-8 text-[#9CA3AF] cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-gray-600/30 hover:text-[#D1D5DB]"
+                className="flex h-8 w-8 text-[#9CA3AF] cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-white/5 hover:text-[#D1D5DB]"
                 disabled={isRecording}
               >
-                <Paperclip className="h-5 w-5 transition-colors" />
+                <Paperclip className="h-[18px] w-[18px] transition-colors" />
                 <input
                   ref={uploadInputRef}
                   type="file"
@@ -712,16 +724,15 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
               </button>
             </PromptInputAction>
 
-            <div className="flex items-center">
-              {/* Note: Integrations & Attach Email buttons added for Mailient integration */}
+            <div className="flex items-center gap-1.5">
               {onIntegrationsClick && (
                 <PromptInputAction tooltip="Integrations">
                   <button
                     onClick={onIntegrationsClick}
-                    className="flex h-8 px-2 text-[#9CA3AF] items-center justify-center rounded-full hover:bg-gray-600/30 hover:text-[#D1D5DB] transition-all"
+                    className="flex h-8 px-2.5 text-[#9CA3AF] items-center justify-center rounded-lg hover:bg-white/5 hover:text-[#D1D5DB] transition-all border border-transparent hover:border-white/5"
                   >
                     <Globe className="h-4 w-4 mr-1.5" />
-                    <span className="text-xs">Integrations</span>
+                    <span className="text-[11px] font-medium tracking-tight">Integrations</span>
                   </button>
                 </PromptInputAction>
               )}
@@ -731,21 +742,41 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
                   <button
                     onClick={onAttachEmailClick}
                     className={cn(
-                      "flex h-8 px-2 items-center justify-center rounded-full transition-all ml-1",
+                      "flex h-8 px-2.5 items-center justify-center rounded-lg transition-all border",
                       selectedEmailsCount > 0 
-                        ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
-                        : "text-[#9CA3AF] hover:bg-gray-600/30 hover:text-[#D1D5DB]"
+                        ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                        : "text-[#9CA3AF] hover:bg-white/5 hover:text-[#D1D5DB] border-transparent hover:border-white/5"
                     )}
                   >
                     <FolderCode className="h-4 w-4 mr-1.5" />
-                    <span className="text-xs">
+                    <span className="text-[11px] font-medium tracking-tight">
                       {selectedEmailsCount > 0 ? `${selectedEmailsCount} Emails` : 'Attach Email'}
                     </span>
                   </button>
                 </PromptInputAction>
               )}
 
-              {(onIntegrationsClick || onAttachEmailClick) && <CustomDivider />}
+              <PromptInputAction tooltip="Settings">
+                <button
+                  onClick={onPersonalityClick}
+                  className="flex h-8 w-8 text-[#9CA3AF] items-center justify-center rounded-full hover:bg-white/5 hover:text-[#D1D5DB] transition-all"
+                >
+                  <Settings className="h-[18px] w-[18px]" />
+                </button>
+              </PromptInputAction>
+
+              <CustomDivider />
+
+              <PromptInputAction tooltip="Files">
+                <button
+                  onClick={() => {}} // Another file icon from mock
+                  className="flex h-8 w-8 text-[#9CA3AF] items-center justify-center rounded-full hover:bg-white/5 hover:text-[#D1D5DB] transition-all"
+                >
+                  <FolderCode className="h-[18px] w-[18px]" />
+                </button>
+              </PromptInputAction>
+            </div>
+          </div>
 
               <button
                 type="button"
@@ -816,8 +847,6 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
                   )}
                 </AnimatePresence>
               </button>
-            </div>
-          </div>
 
           <PromptInputAction
             tooltip={

@@ -62,6 +62,11 @@ export default {
         "color-3": "hsl(var(--color-3))",
         "color-4": "hsl(var(--color-4))",
         "color-5": "hsl(var(--color-5))",
+        "graphite-bg": "var(--color-graphite-bg)",
+        "graphite-surface": "var(--color-graphite-surface)",
+        "graphite-border": "var(--color-graphite-border)",
+        "graphite-text": "var(--color-graphite-text)",
+        "graphite-muted": "var(--color-graphite-muted)",
       },
       borderRadius: {
         lg: "var(--radius)",

@@ -296,7 +296,7 @@ export default function ChatInterface({
   const [conversations, setConversations] = useState<{ [key: string]: Message[] }>({});
   const [isNewConversation, setIsNewConversation] = useState<boolean>(!initialConversationId);
   const [selectedEmails, setSelectedEmails] = useState<Email[]>([]);
-  const [chatTitle, setChatTitle] = useState<string>('Arcus AI');
+  const [chatTitle, setChatTitle] = useState<string>('');
   const [isIntegrationsModalOpen, setIsIntegrationsModalOpen] = useState<boolean>(false);
   const [isEmailSelectionModalOpen, setIsEmailSelectionModalOpen] = useState<boolean>(false);
   const [isMoreOptionsOpen, setIsMoreOptionsOpen] = useState<boolean>(false);
@@ -916,7 +916,7 @@ export default function ChatInterface({
         setIsNewConversation(false);
         setShowHistory(false);
         setSelectedConversationId(conversationId);
-        setChatTitle(conversationData.title || 'Arcus AI');
+        setChatTitle(conversationData.title || '');
 
         console.log('DEBUG: Loaded', loadedMessages.length, 'messages for conversation:', conversationId);
 
@@ -961,7 +961,7 @@ export default function ChatInterface({
             setIsNewConversation(false);
             setShowHistory(false);
             setSelectedConversationId(conversationId);
-            setChatTitle(data.title || 'Arcus AI');
+            setChatTitle(data.title || '');
 
             // Navigate to the conversation URL
             if (onConversationSelect) {
@@ -1261,7 +1261,7 @@ export default function ChatInterface({
     setIsNewConversation(true);
     setSelectedConversationId(null);
     setCurrentConversationId(null);
-    setChatTitle('Arcus AI');
+    setChatTitle('');
     setConversations({});
     setShowHistory(false);
 
@@ -1543,23 +1543,25 @@ export default function ChatInterface({
 
                   {/* Center: The Generated Topic Pill (from mock) */}
                   <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2">
-                    <div className="flex items-center bg-[#111111] border border-white/[0.06] rounded-lg overflow-hidden shadow-2xl transition-all hover:border-white/10 group">
-                      <button 
-                        onClick={() => setShowHistory(!showHistory)}
-                        className="pl-4 pr-3 py-1.5 hover:bg-white/[0.02] transition-colors"
-                      >
-                        <span className="text-sm font-medium text-white/80 whitespace-nowrap overflow-hidden text-ellipsis max-w-[300px] tracking-tight">
-                          {isInitialMode ? "New Thread" : chatTitle}
-                        </span>
-                      </button>
-                      <div className="w-[1px] h-3.5 bg-white/[0.08]" />
-                      <button 
-                        onClick={() => setShowHistory(!showHistory)}
-                        className="px-2.5 py-1.5 hover:bg-white/[0.02] transition-colors"
-                      >
-                        <ChevronDown className="w-3.5 h-3.5 text-white/30 group-hover:text-white/60 transition-colors" />
-                      </button>
-                    </div>
+                    {!isInitialMode && (
+                      <div className="flex items-center bg-[#111111] border border-white/[0.06] rounded-lg overflow-hidden shadow-2xl transition-all hover:border-white/10 group">
+                        <button 
+                          onClick={() => setShowHistory(!showHistory)}
+                          className="pl-4 pr-3 py-1.5 hover:bg-white/[0.02] transition-colors"
+                        >
+                          <span className="text-sm font-medium text-white/80 whitespace-nowrap overflow-hidden text-ellipsis max-w-[300px] tracking-tight">
+                            {chatTitle}
+                          </span>
+                        </button>
+                        <div className="w-[1px] h-3.5 bg-white/[0.08]" />
+                        <button 
+                          onClick={() => setShowHistory(!showHistory)}
+                          className="px-2.5 py-1.5 hover:bg-white/[0.02] transition-colors"
+                        >
+                          <ChevronDown className="w-3.5 h-3.5 text-white/30 group-hover:text-white/60 transition-colors" />
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* Right Side: Hidden contextual icons */}
@@ -1593,21 +1595,21 @@ export default function ChatInterface({
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                         {/* Prompt Cards */}
-                        <div onClick={() => handleSend("Catch me up on my recent emails")} className="group bg-white/5 border border-white/10 rounded-xl p-4 hover:border-white/20 cursor-pointer transition-all">
-                          <h3 className="text-white font-medium text-sm mb-1">Catch up</h3>
-                          <p className="text-white/40 text-xs">Summarize threads and highlight what you missed.</p>
+                        <div onClick={() => handleSend("Catch me up on my recent emails")} className="group bg-[#161616] border border-white/[0.05] rounded-[18px] p-5 hover:border-white/10 cursor-pointer transition-all shadow-xl">
+                          <h3 className="text-white font-semibold text-[15px] mb-2 tracking-tight">Catch up</h3>
+                          <p className="text-white/40 text-[13px] leading-snug">Summarize threads and highlight what you missed.</p>
                         </div>
-                        <div onClick={() => handleSend("Help me schedule a meeting")} className="group bg-white/5 border border-white/10 rounded-xl p-4 hover:border-white/20 cursor-pointer transition-all">
-                          <h3 className="text-white font-medium text-sm mb-1">Schedule</h3>
-                          <p className="text-white/40 text-xs">Automatically schedule meetings via Google Calendar.</p>
+                        <div onClick={() => handleSend("Help me schedule a meeting")} className="group bg-[#161616] border border-white/[0.05] rounded-[18px] p-5 hover:border-white/10 cursor-pointer transition-all shadow-xl">
+                          <h3 className="text-white font-semibold text-[15px] mb-2 tracking-tight">Schedule</h3>
+                          <p className="text-white/40 text-[13px] leading-snug">Automatically schedule meetings via Google Calendar.</p>
                         </div>
-                        <div onClick={() => handleSend("Show me my email analytics")} className="group bg-white/5 border border-white/10 rounded-xl p-4 hover:border-white/20 cursor-pointer transition-all">
-                          <h3 className="text-white font-medium text-sm mb-1">Analytics</h3>
-                          <p className="text-white/40 text-xs">Track performance metrics from your activity.</p>
+                        <div onClick={() => handleSend("Show me my email analytics")} className="group bg-[#161616] border border-white/[0.05] rounded-[18px] p-5 hover:border-white/10 cursor-pointer transition-all shadow-xl">
+                          <h3 className="text-white font-semibold text-[15px] mb-2 tracking-tight">Analytics</h3>
+                          <p className="text-white/40 text-[13px] leading-snug">Track performance metrics from your activity.</p>
                         </div>
-                        <div onClick={() => handleSend("Help me draft a reply")} className="group bg-white/5 border border-white/10 rounded-xl p-4 hover:border-white/20 cursor-pointer transition-all">
-                          <h3 className="text-white font-medium text-sm mb-1">Draft reply</h3>
-                          <p className="text-white/40 text-xs">Craft smart, context-aware replies to your emails.</p>
+                        <div onClick={() => handleSend("Help me draft a reply")} className="group bg-[#161616] border border-white/[0.05] rounded-[18px] p-5 hover:border-white/10 cursor-pointer transition-all shadow-xl">
+                          <h3 className="text-white font-semibold text-[15px] mb-2 tracking-tight">Draft reply</h3>
+                          <p className="text-white/40 text-[13px] leading-snug">Craft smart, context-aware replies to your emails.</p>
                         </div>
                       </div>
                       <div className="relative">
@@ -1617,6 +1619,7 @@ export default function ChatInterface({
                           placeholder="Ask anything about your emails"
                           onIntegrationsClick={() => setIsIntegrationsModalOpen(true)}
                           onAttachEmailClick={() => setIsEmailSelectionModalOpen(true)}
+                          onPersonalityClick={() => setIsPersonalityModalOpen(true)}
                           selectedEmailsCount={selectedEmails.length}
                         />
                       </div>
@@ -1624,7 +1627,7 @@ export default function ChatInterface({
                   </div>
                 </div>
               ) : (
-                <div className="flex-1 flex flex-col relative overflow-hidden bg-black">
+                <div className="flex-1 flex flex-col relative overflow-hidden bg-graphite-bg">
                   <div className="flex-1 overflow-y-auto px-6 py-4 scroll-smooth">
                     <div className="max-w-3xl mx-auto space-y-4">
                       {activeMission && <MissionStatusHeader mission={activeMission} />}
@@ -1705,6 +1708,7 @@ export default function ChatInterface({
                         placeholder="Ask follow-up..."
                         onIntegrationsClick={() => setIsIntegrationsModalOpen(true)}
                         onAttachEmailClick={() => setIsEmailSelectionModalOpen(true)}
+                        onPersonalityClick={() => setIsPersonalityModalOpen(true)}
                         selectedEmailsCount={selectedEmails.length}
                       />
                     </div>
