@@ -28,6 +28,7 @@ import { TextShimmer } from '@/components/ui/text-shimmer';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { cn } from "@/lib/utils";
+import { GradientWave } from "@/components/ui/gradient-wave";
 
 // Detect and wrap URLs in plain text with premium styling for actions
 const linkify = (text: string, isUser: boolean = false): string => {
@@ -1589,6 +1590,11 @@ export default function ChatInterface({
           
           {/* Subtle Ambient Glows for Depth */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+            <GradientWave 
+              colors={["#000000", "#1a1a1b", "#000000", "#1a1a1b"]} 
+              className="opacity-40"
+              deform={{ incline: 0.3, noiseAmp: 150, noiseFlow: 2 }}
+            />
             <div className="absolute -top-[10%] -right-[10%] w-[60%] h-[60%] bg-graphite-surface-2/40 rounded-full blur-[140px]" />
             <div className="absolute -bottom-[10%] -left-[10%] w-[50%] h-[50%] bg-graphite-surface/30 rounded-full blur-[120px]" />
           </div>

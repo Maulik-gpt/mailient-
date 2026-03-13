@@ -577,7 +577,7 @@ void main() {
   float noise = snoise(vec3(
     noiseCoord.x * u_vertDeform.noiseFreq.x + time * u_vertDeform.noiseFlow,
     noiseCoord.y * u_vertDeform.noiseFreq.y,
-    time * u_vertDeform.noiseSpeed + u_vertDeform.noiseSpeed + u_vertDeform.noiseSeed
+    time * u_vertDeform.noiseSpeed + u_vertDeform.noiseSeed
   )) * u_vertDeform.noiseAmp;
   
   noise *= 1.0 - pow(abs(uvNorm.y), 2.0);
