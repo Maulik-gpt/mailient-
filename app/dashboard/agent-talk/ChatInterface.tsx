@@ -25,6 +25,7 @@ import { Note } from '@/components/ui/note';
 import { Button as Button1 } from '@/components/ui/button-1';
 import { MorphingSquare } from '@/components/ui/morphing-square';
 import { TextShimmer } from '@/components/ui/text-shimmer';
+import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 
 // Detect and wrap URLs in plain text with premium styling for actions
@@ -261,6 +262,37 @@ interface UserMessage {
 }
 
 type Message = AgentMessage | UserMessage;
+
+const THINKING_MESSAGES = ["Thinking", "Processing", "Analyzing", "Chilling", "Synthesizing", "Organizing", "Reviewing", "Refining", "Checking", "Polishing"];
+
+function RollingThinkingStatus() {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIndex((prev) => (prev + 1) % THINKING_MESSAGES.length);
+    }, index === 0 ? 5000 : 2000);
+    return () => clearTimeout(timer);
+  }, [index]);
+
+  return (
+    <div className="h-[18px] overflow-hidden flex items-center">
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div
+          key={THINKING_MESSAGES[index]}
+          initial={{ y: -15, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 15, opacity: 0 }}
+          transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+        >
+          <TextShimmer className="text-xs font-medium tracking-tight" duration={1.2}>
+            {THINKING_MESSAGES[index]}
+          </TextShimmer>
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  );
+}
 
 interface ChatInterfaceProps {
   initialConversationId?: string | null;
@@ -1848,9 +1880,7 @@ export default function ChatInterface({
                             <img src="/arcus-ai-icon.jpg" className="w-full h-full object-cover grayscale animate-pulse opacity-40" />
                           </div>
                           <div className="bg-graphite-surface/40 border border-graphite-border py-2 px-3.5 rounded-xl inline-flex items-center gap-2.5">
-                            <TextShimmer className="text-xs font-medium tracking-tight" duration={1.5}>
-                              Arcus is thinking...
-                            </TextShimmer>
+                            <RollingThinkingStatus />
                           </div>
                         </div>
                       )}
