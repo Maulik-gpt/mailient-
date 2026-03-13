@@ -1,6 +1,6 @@
 "use client";
 
-import { Send, Mail, Upload, User, User2, MessageCircle, DoorOpen, Bell, Mail as EmailIcon, MoreHorizontal, LogOut, Settings, ChevronRight, ChevronDown, CheckCircle2, Circle, Edit, History, LayoutGrid, Zap, Volume2, Sparkles, FileText, Calendar, BarChart3, PenTool, BrainCircuit } from 'lucide-react';
+import { Send, Mail, Upload, User, User2, MessageCircle, DoorOpen, Bell, Mail as EmailIcon, MoreHorizontal, LogOut, Settings, ChevronRight, ChevronDown, CheckCircle2, Circle, Edit, History, LayoutGrid, Zap, Volume2, Sparkles, FileText, Calendar, BarChart3, PenTool, BrainCircuit, Search } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
@@ -404,6 +404,7 @@ export default function ChatInterface({
   const [isCanvasExecuting, setIsCanvasExecuting] = useState(false);
   const [activeRun, setActiveRun] = useState<{ runId: string; status?: string; phase?: string } | null>(null);
   const [isDeepThinkingState, setIsDeepThinkingState] = useState<boolean>(false);
+  const [isSearchingState, setIsSearchingState] = useState<boolean>(false);
 
 
 
@@ -640,19 +641,28 @@ export default function ChatInterface({
     }).join('\\n');
   };
 
-  const processAIMessage = async (messageText: string, conversationIdToUse: string, isNew: boolean, attachments?: any[], options?: { isDeepThinking?: boolean; isCanvas?: boolean }) => {
+  const processAIMessage = async (messageText: string, conversationIdToUse: string, isNew: boolean, attachments?: any[], options?: { isDeepThinking?: boolean; isCanvas?: boolean; isSearch?: boolean }) => {
     try {
       setIsLoading(true);
       
       const isDeepThinking = options?.isDeepThinking || false;
       const isCanvas = options?.isCanvas || false;
+      const isSearch = options?.isSearch || false;
+      
       setIsDeepThinkingState(isDeepThinking);
+      setIsSearchingState(isSearch);
 
       if (isDeepThinking) {
         setLiveThinkingSteps([
           { id: 'deep-analyze', label: 'Deeply analyzing your request...', status: 'active', type: 'think' },
           { id: 'deep-context', label: 'Processing broad context and deep retrieval...', status: 'pending', type: 'search' },
           { id: 'deep-synthesis', label: 'Synthesizing comprehensive response...', status: 'pending', type: 'analyze' }
+        ]);
+      } else if (isSearch) {
+        setLiveThinkingSteps([
+          { id: 'search-intent', label: 'Identifying search parameters...', status: 'active', type: 'analyze' },
+          { id: 'search-exec', label: 'Executing deep email search...', status: 'pending', type: 'search' },
+          { id: 'search-process', label: 'Processing search results...', status: 'pending', type: 'analyze' }
         ]);
       } else {
         setLiveThinkingSteps(buildFallbackThinkingSteps(messageText));
@@ -680,7 +690,8 @@ export default function ChatInterface({
         runId: requestRunId,
         attachments: attachments || [],
         isDeepThinking,
-        isCanvas
+        isCanvas,
+        isSearch
       };
 
       // --- PARALLEL REQUESTS: Fast intent + Full chat ---
@@ -820,6 +831,8 @@ export default function ChatInterface({
 
       // First stop loading to show the message
       setIsLoading(false);
+      setIsSearchingState(false);
+      setIsDeepThinkingState(false);
 
       // Add agent message to state
       setMessages(prev => [...prev, agentMessage]);
@@ -1267,12 +1280,13 @@ export default function ChatInterface({
     return conversations;
   };
 
-  const handleSend = async (forcedMessage?: string, files?: File[], options?: { isDeepThinking?: boolean; isCanvas?: boolean }) => {
+  const handleSend = async (forcedMessage?: string, files?: File[], options?: { isDeepThinking?: boolean; isCanvas?: boolean; isSearch?: boolean }) => {
     const messageText = (forcedMessage || message).trim();
     if (!messageText && (!files || files.length === 0)) return;
 
     const isDeepThinking = options?.isDeepThinking || false;
     const isCanvas = options?.isCanvas || false;
+    const isSearch = options?.isSearch || false;
 
     // Determine if this is a new conversation or continuation
     const shouldCreateNewConversation = !currentConversationId;
@@ -1371,7 +1385,7 @@ export default function ChatInterface({
     }
 
     // Process the AI message directly - don't rely on navigation/loadConversation
-    processAIMessage(messageText, conversationIdToUse as string, shouldCreateNewConversation, attachments, { isDeepThinking, isCanvas });
+    processAIMessage(messageText, conversationIdToUse as string, shouldCreateNewConversation, attachments, { isDeepThinking, isCanvas, isSearch });
   };
 
 
@@ -1762,8 +1776,25 @@ export default function ChatInterface({
                     </Tooltip>
                   </div>
 
-                  {/* Right Side: Just History */}
-                  <div className="flex items-center">
+                  {/* Right Side: New Chat and History */}
+                  <div className="flex items-center gap-1">
+                    <Tooltip delayDuration={100}>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            startNewChat();
+                          }}
+                          className="p-2 hover:bg-white/5 rounded-lg transition-all text-white/20 hover:text-white/60 focus:outline-none"
+                        >
+                          <HugeiconsIcon icon={AddSquareIcon} size={16} strokeWidth={1.8} />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        <span className="text-[10px]">New Chat</span>
+                      </TooltipContent>
+                    </Tooltip>
+
                     <Tooltip delayDuration={100}>
                       <TooltipTrigger asChild>
                         <button
@@ -1813,7 +1844,7 @@ export default function ChatInterface({
                           onSend={(msg, files, opts) => handleSend(msg, files, opts)}
                           isLoading={isLoading}
                           placeholder="What would you like to know?"
-                          onIntegrationsClick={() => setIsIntegrationsModalOpen(true)}
+                          onSearchClick={() => {}}
                           onAttachEmailClick={() => setIsEmailSelectionModalOpen(true)}
                           onPersonalityClick={() => setIsPersonalityModalOpen(true)}
                           selectedEmailsCount={selectedEmails.length}
@@ -1991,11 +2022,24 @@ export default function ChatInterface({
                               layout
                               className="inline-flex items-center min-w-[170px] relative group/bubble"
                             >
+                             <div className="flex flex-col gap-2">
                                <RollingThinkingStatus 
                                  onToggle={() => setIsThinkingStepsOpen(!isThinkingStepsOpen)} 
                                  isOpen={isThinkingStepsOpen} 
                                  isDeepThinking={isDeepThinkingState}
                                />
+                               
+                               {isSearchingState && (
+                                 <motion.div 
+                                   initial={{ opacity: 0, x: -10 }}
+                                   animate={{ opacity: 1, x: 0 }}
+                                   className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full w-fit"
+                                 >
+                                   <Search className="w-3.5 h-3.5 text-blue-400 animate-pulse" />
+                                   <TextShimmer className="text-[11px] text-blue-400 font-medium">Searching...</TextShimmer>
+                                 </motion.div>
+                               )}
+                             </div>
                             </motion.div>
                             
                             <AnimatePresence mode="wait">
@@ -2031,7 +2075,7 @@ export default function ChatInterface({
                         onSend={(msg, files, opts) => handleSend(msg, files, opts)}
                         isLoading={isLoading}
                         placeholder="Ask follow-up..."
-                        onIntegrationsClick={() => setIsIntegrationsModalOpen(true)}
+                        onSearchClick={() => {}}
                         onAttachEmailClick={() => setIsEmailSelectionModalOpen(true)}
                         onPersonalityClick={() => setIsPersonalityModalOpen(true)}
                         selectedEmailsCount={selectedEmails.length}

@@ -1,7 +1,7 @@
 import React from "react";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { ArrowUp, Paperclip, Square, X, StopCircle, Mic, BrainCog, FolderCode, FileText, Film, Music, Globe, Mail } from "lucide-react";
+import { ArrowUp, Paperclip, Square, X, StopCircle, Mic, BrainCog, FolderCode, FileText, Film, Music, Globe, Mail, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 // Utility function for className merging
@@ -452,11 +452,11 @@ const formatFileSize = (bytes: number) => {
 
 // Main PromptInputBox Component
 interface PromptInputBoxProps {
-  onSend?: (message: string, files?: File[], options?: { isDeepThinking?: boolean; isCanvas?: boolean }) => void;
+  onSend?: (message: string, files?: File[], options?: { isDeepThinking?: boolean; isCanvas?: boolean; isSearch?: boolean }) => void;
   isLoading?: boolean;
   placeholder?: string;
   className?: string;
-  onIntegrationsClick?: () => void;
+  onSearchClick?: () => void;
   onAttachEmailClick?: () => void;
   onPersonalityClick?: () => void;
   selectedEmailsCount?: number;
@@ -469,7 +469,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
     isLoading = false, 
     placeholder = "Type your message here...", 
     className,
-    onIntegrationsClick,
+    onSearchClick,
     onAttachEmailClick,
     onPersonalityClick,
     selectedEmailsCount = 0
@@ -482,6 +482,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
   const [isRecording, setIsRecording] = React.useState(false);
   const [showThink, setShowThink] = React.useState(false);
   const [showCanvas, setShowCanvas] = React.useState(false);
+  const [showSearch, setShowSearch] = React.useState(false);
   const [isFocused, setIsFocused] = React.useState(false);
   const recognitionRef = React.useRef<any>(null);
   const uploadInputRef = React.useRef<HTMLInputElement>(null);
@@ -493,13 +494,27 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
     }
   }, [props.suggestionInput]);
 
-  const handleToggleChange = (value: string) => {
-    if (value === "think") {
-      setShowThink((prev) => !prev);
+  const handleToggleChange = (type: "think" | "canvas" | "search") => {
+    if (type === "think") {
+      setShowThink(!showThink);
+      if (!showThink) {
+        setShowCanvas(false);
+        setShowSearch(false);
+      }
+    } else if (type === "canvas") {
+      setShowCanvas(!showCanvas);
+      if (!showCanvas) {
+        setShowThink(false);
+        setShowSearch(false);
+      }
+    } else if (type === "search") {
+      setShowSearch(!showSearch);
+      if (!showSearch) {
+        setShowThink(false);
+        setShowCanvas(false);
+      }
     }
   };
-
-  const handleCanvasToggle = () => setShowCanvas((prev) => !prev);
 
   const isImageFile = (file: File) => file.type.startsWith("image/");
 
@@ -577,12 +592,17 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
 
   const handleSubmit = () => {
     if (input.trim() || files.length > 0) {
-      onSend(input, files, { isDeepThinking: showThink, isCanvas: showCanvas });
+      onSend(input, files, { 
+        isDeepThinking: showThink, 
+        isCanvas: showCanvas,
+        isSearch: showSearch
+      });
       setInput("");
       setFiles([]);
       setFilePreviews({});
       setShowThink(false);
       setShowCanvas(false);
+      setShowSearch(false);
     }
   };
 
@@ -723,6 +743,8 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                 ? "Think deeply..."
                 : showCanvas
                 ? "Create on canvas..."
+                : showSearch
+                ? "Search my emails..."
                 : placeholder
             }
             className="text-base"
@@ -767,18 +789,21 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
               </button>
             </PromptInputAction>
 
-            {onIntegrationsClick && (
-              <PromptInputAction tooltip="Integrations">
-                <button
-                  type="button"
-                  onClick={onIntegrationsClick}
-                  className="flex h-8 px-2 text-[#9CA3AF] items-center justify-center rounded-lg hover:bg-white/5 hover:text-[#D1D5DB] transition-all border border-transparent hover:border-white/5 outline-none focus:ring-0"
-                >
-                  <Globe className="h-4 w-4 mr-1" />
-                  <span className="text-[11px] font-medium tracking-tight">Integrations</span>
-                </button>
-              </PromptInputAction>
-            )}
+            <PromptInputAction tooltip="Search">
+              <button
+                type="button"
+                onClick={() => handleToggleChange("search")}
+                className={cn(
+                  "flex h-8 px-2 items-center justify-center rounded-lg transition-all border outline-none focus:ring-0",
+                  showSearch
+                    ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                    : "text-[#9CA3AF] hover:bg-white/5 hover:text-[#D1D5DB] border-transparent hover:border-white/5"
+                )}
+              >
+                <Search className="h-4 w-4 mr-1" />
+                <span className="text-[11px] font-medium tracking-tight">Search</span>
+              </button>
+            </PromptInputAction>
 
             {onAttachEmailClick && (
               <PromptInputAction tooltip="Attach Email">
@@ -800,7 +825,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
               </PromptInputAction>
             )}
 
-            {(onIntegrationsClick || onAttachEmailClick) && <CustomDivider />}
+            {(onSearchClick || onAttachEmailClick) && <CustomDivider />}
 
             <button
               type="button"
@@ -840,7 +865,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
 
             <button
               type="button"
-              onClick={handleCanvasToggle}
+              onClick={() => handleToggleChange("canvas")}
               className={cn(
                 "rounded-full transition-all flex items-center gap-1 px-2 py-1 border h-8",
                 showCanvas
