@@ -83,12 +83,10 @@ export function ThinkingLayer({ steps, isVisible, currentThought, isGenerating, 
                                     exit={{ height: 0, opacity: 0 }}
                                     className="overflow-hidden"
                                 >
-                                    <div className="ml-0.5 pl-4 border-l border-white/10 py-2 my-1">
-                                        <div className="bg-white/[0.02] border border-white/[0.05] rounded-xl p-3 shadow-inner">
-                                            <p className="text-white/50 text-[12px] leading-relaxed whitespace-pre-wrap selection:bg-white/10 italic">
-                                                {step.expandedContent}
-                                            </p>
-                                        </div>
+                                    <div className="ml-0.5 pl-4 border-l border-white/10 py-1 my-1">
+                                        <p className="text-white/50 text-[12px] leading-relaxed whitespace-pre-wrap selection:bg-white/10 italic">
+                                            {step.expandedContent}
+                                        </p>
                                     </div>
                                 </motion.div>
                             )}
@@ -122,7 +120,7 @@ export function ThinkingLayer({ steps, isVisible, currentThought, isGenerating, 
                     <motion.div 
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="flex items-center gap-3 py-2 -mx-1 px-1 relative bg-amber-500/5 border border-amber-500/10 rounded-lg"
+                        className="flex items-center gap-3 py-2 -mx-1 px-1 relative"
                     >
                         <div className="w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)] z-10" />
                         <div className="flex-1 flex flex-col">
@@ -151,7 +149,7 @@ export function ThinkingLayer({ steps, isVisible, currentThought, isGenerating, 
                 <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex items-center justify-between bg-[#080808]/40 border border-white/[0.05] rounded-xl px-4 py-3 mt-4"
+                    className="flex items-center justify-between py-3 mt-4"
                 >
                     <div className="flex items-center gap-3.5">
                         <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center relative overflow-hidden">
@@ -216,12 +214,9 @@ export function ArtifactCard({ type, title, version = 'v2.4', onView }: Artifact
     return (
         <button
             onClick={onView}
-            className="group relative flex items-center gap-4 bg-[#141416]/50 hover:bg-[#1A1A1E]/80 border border-white/[0.06] rounded-xl px-4 py-3 mt-3 mb-2 w-full max-w-[340px] transition-all duration-300 overflow-hidden"
+            className="group relative flex items-center gap-4 py-3 mt-3 mb-2 w-full max-w-[340px] transition-all duration-300"
         >
-            <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-            
-            {/* Animated border reveal */}
-            <div className="absolute inset-0 border border-white/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 blur-[0.5px]" />
+            <div className="absolute inset-x-0 bottom-0 h-[1px] bg-white/[0.05] group-hover:bg-white/10 transition-colors" />
 
             <div className="w-10 h-10 rounded-xl bg-[#0A0A0B] border border-white/[0.05] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-500">
                 <div className="text-white/30 group-hover:text-white/90 transition-all duration-500">

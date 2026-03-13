@@ -1836,7 +1836,7 @@ export default function ChatInterface({
                               {msg.role === 'user' ? <User2 className="w-3.5 h-3.5 text-black" /> : <img src="/arcus-ai-icon.jpg" className="w-full h-full object-cover grayscale" />}
                             </div>
                              <div className="flex flex-col max-w-[85%] group/msg">
-                               <div className={`px-4 py-2.5 rounded-xl transition-all relative ${msg.role === 'user' ? 'bg-white text-black' : 'bg-graphite-surface border border-graphite-border text-graphite-text group-hover/msg:border-white/20'}`}>
+                               <div className={`transition-all relative ${msg.role === 'user' ? 'px-4 py-2.5 rounded-xl bg-white text-black shadow-sm' : 'text-graphite-text px-0 py-1'}`}>
                                  <MessageContent content={msg.content} isUser={msg.role === 'user'} />
                                  
                                  {msg.role === 'assistant' && (
@@ -1936,9 +1936,8 @@ export default function ChatInterface({
                           <div className="flex flex-col gap-2.5 max-w-full">
                             <motion.div 
                               layout
-                              className="bg-[#1A1A1A] border border-white/5 px-4 py-2.5 rounded-2xl inline-flex items-center min-w-[170px] shadow-[0_8px_32px_rgba(0,0,0,0.4)] relative overflow-hidden group/bubble"
+                              className="inline-flex items-center min-w-[170px] relative group/bubble"
                             >
-                               <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
                                <RollingThinkingStatus 
                                  onToggle={() => setIsThinkingStepsOpen(!isThinkingStepsOpen)} 
                                  isOpen={isThinkingStepsOpen} 
@@ -1956,7 +1955,7 @@ export default function ChatInterface({
                                     height: { duration: 0.5, ease: [0.16, 1, 0.3, 1] },
                                     opacity: { duration: 0.3 }
                                   }}
-                                  className="overflow-hidden bg-[#161616]/60 backdrop-blur-md border border-white/[0.03] rounded-2xl px-5 py-3 ml-1 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]"
+                                  className="overflow-hidden px-1 ml-1"
                                 >
                                   <div className="mb-2 flex items-center gap-2 opacity-30 select-none">
                                     <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
