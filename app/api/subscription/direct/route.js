@@ -39,24 +39,28 @@ export async function GET(request) {
         let daysRemaining = 0;
 
         if (subscription) {
-            const endDate = new Date(subscription.subscription_ends_at);
-            const isExpired = endDate <= now;
-            daysRemaining = Math.max(0, Math.ceil((endDate - now) / (1000 * 60 * 60 * 24)));
+            const hasEndDate = !!subscription.subscription_ends_at;
+            const endDate = hasEndDate ? new Date(subscription.subscription_ends_at) : new Date('2099-12-31');
+            const isExpired = hasEndDate && endDate <= now;
+            daysRemaining = hasEndDate ? Math.max(0, Math.ceil((endDate - now) / (1000 * 60 * 60 * 24))) : 999;
 
             isActive = (subscription.status === 'active' || subscription.status === 'cancelled') && !isExpired;
-            planType = subscription.plan_type || 'free';
+            planType = subscription.plan_type || 'none';
 
             // Direct plan name mapping
             if (isActive && planType) {
                 const normalizedPlanType = planType.toString().trim().toLowerCase();
-                if (normalizedPlanType === 'pro' || normalizedPlanType === 'professional') {
+                if (normalizedPlanType === 'pro' || normalizedPlanType === 'professional' || normalizedPlanType.includes('pro')) {
                     planName = 'Pro';
-                } else if (normalizedPlanType === 'starter' || normalizedPlanType === 'basic') {
+                    planType = 'pro';
+                } else if (normalizedPlanType === 'starter' || normalizedPlanType === 'basic' || normalizedPlanType.includes('starter') || normalizedPlanType.includes('basic')) {
                     planName = 'Starter';
-                } else if (normalizedPlanType === 'free') {
+                    planType = 'starter';
+                } else if (normalizedPlanType === 'free' || normalizedPlanType === 'none') {
                     planName = 'Free';
+                    planType = 'free';
                 } else {
-                    planName = `${normalizedPlanType} Plan`;
+                    planName = `${normalizedPlanType.charAt(0).toUpperCase() + normalizedPlanType.slice(1)}`;
                 }
             } else if (!isActive) {
                 planType = 'free';
