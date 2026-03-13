@@ -88,10 +88,10 @@ export function DraftReplyBox({
                         <Mail className="w-5 h-5 text-white/40" />
                     </div>
                     <div>
-                        <h3 className="text-white font-bold text-sm tracking-widest uppercase font-mono mb-1.5">DRAFT_PAYLOAD</h3>
+                        <h3 className="text-white font-bold text-sm tracking-tight uppercase mb-1.5">Email draft</h3>
                         <div className="flex flex-col gap-1">
-                            <div className="flex items-center gap-2.5 text-[10px] font-mono tracking-widest">
-                                <span className="text-white/20 uppercase">Target:</span>
+                            <div className="flex items-center gap-2.5 text-[10px] tracking-widest">
+                                <span className="text-white/20 uppercase">To:</span>
                                 <span className="text-white/60">{draftData.recipientName}</span>
                                 {draftData.recipientEmail && (
                                     <span className="text-white/20 truncate">[{draftData.recipientEmail}]</span>
@@ -104,14 +104,14 @@ export function DraftReplyBox({
                     <button
                         onClick={() => setIsEditing(!isEditing)}
                         className={`p-2.5 rounded-xl transition-all duration-300 ${isEditing ? 'bg-white text-black' : 'hover:bg-white/5 text-white/30 hover:text-white'}`}
-                        title={isEditing ? 'COMMIT_CHANGES' : 'EDIT_STREAM'}
+                        title={isEditing ? 'Save changes' : 'Edit message'}
                     >
                         <Edit2 className="w-4 h-4" />
                     </button>
                     <button
                         onClick={onDismiss}
                         className="p-2.5 hover:bg-white/5 rounded-xl transition-all duration-300 text-white/30 hover:text-white"
-                        title="TERMINATE"
+                        title="Cancel"
                     >
                         <X className="w-4 h-4" />
                     </button>
@@ -120,8 +120,8 @@ export function DraftReplyBox({
 
             {/* Protocol Metadata (Subject) */}
             <div className="px-8 py-4 bg-white/[0.01] border-b border-white/[0.03] flex items-center gap-4">
-                <span className="text-[10px] font-mono font-bold text-white/20 uppercase tracking-[0.2em] shrink-0">Subject_Stream</span>
-                <span className="text-xs text-white/50 font-mono truncate">{draftData.subject}</span>
+                <span className="text-[10px] font-bold text-white/20 uppercase tracking-tight shrink-0">Subject</span>
+                <span className="text-xs text-white/50 truncate">{draftData.subject}</span>
             </div>
 
             {/* Neural Buffer Area (Content) */}
@@ -144,18 +144,18 @@ export function DraftReplyBox({
             <div className="px-8 py-5 bg-white/[0.02] border-t border-white/[0.05] flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     {sendError ? (
-                        <div className="flex items-center gap-2 text-red-500 text-[10px] font-mono tracking-widest bg-red-500/5 px-4 py-2 rounded-xl border border-red-500/10 uppercase">
+                        <div className="flex items-center gap-2 text-red-500 text-[10px] tracking-widest bg-red-500/5 px-4 py-2 rounded-xl border border-red-500/10 uppercase">
                             <X className="w-3 h-3" />
                             {sendError}
                         </div>
                     ) : sendSuccess ? (
-                        <div className="flex items-center gap-2 text-white text-[10px] font-mono tracking-widest bg-white/5 px-4 py-2 rounded-xl border border-white/10 uppercase">
+                        <div className="flex items-center gap-2 text-white text-[10px] tracking-widest bg-white/5 px-4 py-2 rounded-xl border border-white/10 uppercase">
                             <Check className="w-3 h-3" />
-                            Stream_Delivered
+                            Sent successfully
                         </div>
                     ) : (
-                        <span className="text-white/10 text-[9px] font-mono tracking-[0.2em] uppercase">
-                            READY_FOR_TRANSMISSION
+                        <span className="text-white/10 text-[9px] tracking-tight uppercase">
+                            Review and send
                         </span>
                     )}
                 </div>
@@ -163,7 +163,7 @@ export function DraftReplyBox({
                 <button
                     onClick={handleSend}
                     disabled={isSending || sendSuccess || !draftData.recipientEmail}
-                    className={`group relative flex items-center gap-3 px-10 py-3 rounded-xl font-bold text-[11px] font-mono tracking-widest uppercase transition-all duration-500 transform active:scale-95 ${isSending || sendSuccess
+                    className={`group relative flex items-center gap-3 px-10 py-3 rounded-xl font-bold text-[11px] tracking-widest uppercase transition-all duration-500 transform active:scale-95 ${isSending || sendSuccess
                         ? 'bg-white/5 text-white/20 cursor-not-allowed border border-white/5'
                         : 'bg-white text-black hover:scale-[1.02] shadow-[0_0_30px_rgba(255,255,255,0.15)]'
                         }`}
@@ -171,7 +171,7 @@ export function DraftReplyBox({
                     {isSending ? (
                         <>
                             <div className="w-3.5 h-3.5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
-                            SENDING...
+                            Sending...
                         </>
                     ) : sendSuccess ? (
                         <>
@@ -181,7 +181,7 @@ export function DraftReplyBox({
                     ) : (
                         <>
                             <Send className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
-                            DISPATCH
+                            Send now
                         </>
                     )}
                 </button>

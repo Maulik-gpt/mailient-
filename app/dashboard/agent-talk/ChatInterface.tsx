@@ -1,6 +1,6 @@
 "use client";
 
-import { Send, Mail, Upload, User, MessageCircle, DoorOpen, Bell, Mail as EmailIcon, MoreHorizontal, LogOut, Settings, ChevronRight, ChevronDown, CheckCircle2, Circle, Edit, History } from 'lucide-react';
+import { Send, Mail, Upload, User, User2, MessageCircle, DoorOpen, Bell, Mail as EmailIcon, MoreHorizontal, LogOut, Settings, ChevronRight, ChevronDown, CheckCircle2, Circle, Edit, History, LayoutGrid, Zap } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
@@ -51,16 +51,16 @@ const linkify = (text: string): string => {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
           </div>
-          <h4 class="text-white font-mono font-bold text-xs tracking-[0.2em] uppercase mb-2">SECURE_ACTION_REQUIRED</h4>
-          <p class="text-white/30 text-[10px] font-mono tracking-widest mb-8 uppercase">Neural link validation mandatory</p>
-          <a href="${url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-14 py-3.5 bg-white hover:bg-neutral-200 text-black font-mono font-bold text-[10px] tracking-[0.2em] uppercase rounded-2xl transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)] no-underline">EXECUTE_HANDSHAKE</a>
-          <div class="mt-6 text-[9px] text-white/10 font-mono break-all opacity-40 hover:opacity-100 transition-opacity select-all cursor-text py-3 px-5 bg-white/[0.02] rounded-xl border border-white/[0.05]">${url}</div>
+          <h4 class="text-white font-bold text-xs tracking-tight uppercase mb-2">Security confirmation</h4>
+          <p class="text-white/30 text-[10px] tracking-widest mb-8 uppercase">Action required to proceed</p>
+          <a href="${url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-14 py-3.5 bg-white hover:bg-neutral-200 text-black font-bold text-[10px] tracking-[0.2em] uppercase rounded-2xl transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)] no-underline">Verify and Continue</a>
+          <div class="mt-6 text-[9px] text-white/10 break-all opacity-40 hover:opacity-100 transition-opacity select-all cursor-text py-3 px-5 bg-white/[0.02] rounded-xl border border-white/[0.05]">${url}</div>
         </div>
       </div>`;
     }
 
     const displayUrl = url.length > 55 ? url.substring(0, 52) + '...' : url;
-    return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-white/60 hover:text-white underline underline-offset-4 decoration-white/20 hover:decoration-white/100 transition-all font-mono text-[13px] tracking-tight break-all" title="${url}">${displayUrl}</a>`;
+    return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-white/60 hover:text-white underline underline-offset-4 decoration-white/20 hover:decoration-white/100 transition-all text-[13px] tracking-tight break-all" title="${url}">${displayUrl}</a>`;
   });
 };
 
@@ -90,11 +90,113 @@ const renderMarkdown = (text: string): string => {
     processedPara = linkify(processedPara);
     processedPara = processedPara.replace(/\n/g, '<br/>');
 
-    return `<p class="mb-5 last:mb-0 leading-[1.8] text-white/70 font-sans text-[15px]">${processedPara}</p>`;
+    return `<p class="mb-5 last:mb-0 leading-[1.8] text-white/70 text-[15px]">${processedPara}</p>`;
   });
 
   return renderedParagraphs.join('');
 };
+
+const MessageContent = ({ content }: { content: any }) => {
+  if (typeof content === 'string') {
+    return <div dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }} />;
+  }
+  return (
+    <div className="space-y-4">
+      <div dangerouslySetInnerHTML={{ __html: renderMarkdown(content.text) }} />
+      {content.list && content.list.length > 0 && (
+        <ul className="space-y-2 mt-2">
+          {content.list.map((item: string, i: number) => (
+            <li key={i} className="flex gap-2 items-start">
+              <div className="w-1 h-1 rounded-full bg-current mt-2 opacity-50" />
+              <div dangerouslySetInnerHTML={{ __html: renderMarkdown(item) }} />
+            </li>
+          ))}
+        </ul>
+      )}
+      {content.footer && (
+        <div className="mt-4 italic opacity-60 text-sm" dangerouslySetInnerHTML={{ __html: renderMarkdown(content.footer) }} />
+      )}
+    </div>
+  );
+};
+
+const MissionStatusHeader = ({ mission }: { mission: any }) => {
+  if (!mission) return null;
+
+  const statusColors: any = {
+    draft: 'bg-white text-black',
+    waiting_on_user: 'bg-white text-black',
+    waiting_on_other: 'bg-neutral-700 text-white',
+    done: 'bg-neutral-800 text-white/60',
+    archived: 'bg-transparent border border-white/10 text-white/30'
+  };
+
+  const statusLabels: any = {
+    draft: 'Draft reply',
+    waiting_on_user: 'Waiting on you',
+    waiting_on_other: 'Waiting on them',
+    done: 'Done',
+    archived: 'Archived'
+  };
+
+  return (
+    <div className="flex items-center gap-3 px-4 py-2.5 bg-neutral-900/40 border border-white/5 rounded-xl w-fit mx-auto mb-10 backdrop-blur-md animate-fade-in">
+      <div className="flex items-center gap-2">
+        <span className="text-white/40 text-[10px] font-bold uppercase tracking-tight">Active session</span>
+        <span className="text-white/20">/</span>
+        <span className="text-white text-sm font-medium">{mission.goal}</span>
+      </div>
+      <div className="h-3 w-[1px] bg-white/10 mx-1" />
+      <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-tight ${statusColors[mission.status] || 'bg-white text-black'}`}>
+        {statusLabels[mission.status] || mission.status}
+      </span>
+    </div>
+  );
+};
+
+function isNotesRelatedQuery(message: string): boolean {
+  const notesKeywords = [
+    'note', 'notes', 'my notes', 'find note', 'search note', 'look for note',
+    'remember', 'reminder', 'todo', 'task', 'list', 'ideas', 'thoughts',
+    'journal', 'diary', 'memo', 'record', 'write down', 'saved note',
+    'created note', 'made note', 'stored note', 'keep note'
+  ];
+  const lowerMessage = message.toLowerCase();
+  return notesKeywords.some((keyword) => lowerMessage.includes(keyword));
+}
+
+function isEmailRelatedQuery(message: string): boolean {
+  const emailKeywords = [
+    'email', 'emails', 'inbox', 'gmail', 'message', 'messages',
+    'unread', 'read', 'urgent', 'important', 'starred',
+    'today', 'yesterday', 'this week', 'recent', 'latest',
+    'from', 'subject', 'attachment', 'search', 'find', 'check'
+  ];
+  const lowerMessage = message.toLowerCase();
+  return emailKeywords.some((keyword) => lowerMessage.includes(keyword));
+}
+
+function extractSearchTerm(message: string): string {
+  const lowerMessage = message.toLowerCase();
+  const patterns = [
+    /find\s+(?:my\s+)?notes?(?:\s+|\s*about|\s*on|\s*regarding)\s+(.+)/i,
+    /search\s+(?:for\s+)?notes?(?:\s+|\s*about|\s*on|\s*regarding)\s+(.+)/i,
+    /look\s+for\s+(?:my\s+)?notes?(?:\s+|\s*about|\s*on|\s*regarding)\s+(.+)/i,
+    /show\s+me\s+(?:my\s+)?notes?(?:\s+|\s*about|\s*on|\s*regarding)\s+(.+)/i,
+    /what\s+notes?(?:\s+do\s+i\s+have)?(?:\s*about|\s*on|\s*regarding)\s+(.+)/i,
+    /remember\s+(?:anything\s+about\s+)?(.+)/i,
+    /my\s+notes\s+on\s+(.+)/i,
+    /notes\s+about\s+(.+)/i
+  ];
+
+  for (const pattern of patterns) {
+    const match = message.match(pattern);
+    if (match && match[1]) {
+      return match[1].trim();
+    }
+  }
+  return message.trim();
+}
 
 interface Email {
   id: string;
@@ -107,6 +209,8 @@ interface Email {
 interface AgentMessage {
   id: number;
   type: 'agent';
+  role: 'assistant';
+  notes?: any[];
   content: {
     text: string;
     list: string[];
@@ -121,7 +225,6 @@ interface AgentMessage {
     planCard?: any;
     agentProcess?: any;
     completedSteps?: string[];
-    // Arcus V2: Muse-style inline thinking + artifacts
     thinkingProcess?: {
       id: string;
       label: string;
@@ -138,6 +241,8 @@ interface AgentMessage {
 interface UserMessage {
   id: number;
   type: 'user';
+  role: 'user';
+  notes?: any[];
   content: string;
   time: string;
 }
@@ -569,6 +674,8 @@ export default function ChatInterface({
       const agentMessage: AgentMessage = {
         id: Date.now() + 1,
         type: 'agent',
+        role: 'assistant',
+        notes: data.notesResult?.notes || [],
         content: {
           text: data.message,
           list: [],
@@ -653,8 +760,10 @@ export default function ChatInterface({
 
       // Build the updated messages list
       const userMessage: UserMessage = {
-        id: Date.now() - 1,
+        id: Date.now(),
         type: 'user',
+        role: 'user',
+        notes: [],
         content: messageText,
         time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
       };
@@ -695,6 +804,8 @@ export default function ChatInterface({
       const errorAgentMessage: AgentMessage = {
         id: Date.now() + 1,
         type: 'agent',
+        role: 'assistant',
+        notes: [],
         content: {
           text: error instanceof Error ? error.message : "I encountered an issue. Let me try that again or let me know if you need help with something else!",
           list: [],
@@ -745,6 +856,8 @@ export default function ChatInterface({
         const confirmMessage: AgentMessage = {
           id: Date.now() + 1,
           type: 'agent',
+          role: 'assistant',
+          notes: [],
           content: {
             text: result.message || 'Done! The action was completed successfully.',
             list: [],
@@ -1049,6 +1162,8 @@ export default function ChatInterface({
     const newMessage: UserMessage = {
       id: Date.now(),
       type: 'user',
+      role: 'user',
+      notes: [],
       content: messageText,
       time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true })
     };
@@ -1177,6 +1292,8 @@ export default function ChatInterface({
       const agentMessage: AgentMessage = {
         id: Date.now() + 1,
         type: 'agent',
+        role: 'assistant',
+        notes: [],
         content: data.message,
         time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
         meta: {
@@ -1286,282 +1403,248 @@ export default function ChatInterface({
 
   return (
     <TooltipProvider>
-      <UsageLimitModal
-        isOpen={isUsageLimitModalOpen}
-        onClose={() => setIsUsageLimitModalOpen(false)}
-        featureName={usageLimitModalData?.featureName || 'Ask AI'}
-        currentUsage={usageLimitModalData?.currentUsage || 0}
-        limit={usageLimitModalData?.limit || 0}
-        period={usageLimitModalData?.period || 'daily'}
-        currentPlan={usageLimitModalData?.currentPlan || 'starter'}
-      />
-      <div className="flex h-screen w-full text-white bg-black selection:bg-white selection:text-black overflow-hidden relative">
-        {/* Technical noise overlay */}
-        <div className="absolute inset-0 pointer-events-none opacity-[0.03] z-[100] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] brightness-100 contrast-150" />
-        {/* History Sidebar - Positioned to the right of Mailient sidebar (left: 64px = 16 * 4 for w-16 sidebar) */}
-        {showHistory && (
-          <div className="fixed left-16 top-0 h-screen w-80 bg-black/60 border-r border-white/[0.08] flex flex-col backdrop-blur-3xl z-40">
-            <div className="p-6 border-b border-white/[0.05]">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-[11px] font-mono tracking-[0.2em] text-white/30 uppercase">Local_History</h2>
-                <div className="flex items-center gap-2">
-                  <Tooltip delayDuration={100}>
-                    <TooltipTrigger asChild>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          startNewChat();
-                        }}
-                        className="p-2 hover:bg-[#2a2a2a] rounded-lg transition-all duration-300 text-gray-400 hover:text-white hover:scale-105"
-                        aria-label="New chat"
-                        title="New chat"
-                      >
-                        <HugeiconsIcon icon={AddSquareIcon} size={18} strokeWidth={1.8} />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">
-                      <p>New Chat</p>
-                    </TooltipContent>
-                  </Tooltip>
-                  <Tooltip delayDuration={100}>
-                    <TooltipTrigger asChild>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowHistory(false);
-                        }}
-                        className="p-2 hover:bg-[#2a2a2a] rounded-lg transition-all duration-300 text-gray-400 hover:text-white hover:scale-105"
-                        aria-label="Hide sidebar"
-                        title="Close"
-                      >
-                        <HugeiconsIcon icon={Cancel01Icon} size={18} strokeWidth={1.8} />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">
-                      <p>Close</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto">
-              <ChatHistoryModal
-                key={`history-${historyRefreshKey}`}
-                isOpen={showHistory}
-                onClose={() => setShowHistory(false)}
-                onConversationSelect={loadConversation}
-                onConversationDelete={handleConversationDelete}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Universal Sidebar - Fixed Position Full Height */}
-        <HomeFeedSidebar className="z-30" />
-        {/* Main Content */}
-        <div className={`flex-1 flex flex-col relative ml-64 transition-all duration-500 ease-in-out`}>
-          {/* Subtle Ambient Glows */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/[0.02] rounded-full blur-[120px]" />
-            <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-white/[0.01] rounded-full blur-[100px]" />
+      <>
+        <UsageLimitModal
+          isOpen={isUsageLimitModalOpen}
+          onClose={() => setIsUsageLimitModalOpen(false)}
+          featureName={usageLimitModalData?.featureName || 'Ask AI'}
+          currentUsage={usageLimitModalData?.currentUsage || 0}
+          limit={usageLimitModalData?.limit || 0}
+          period={usageLimitModalData?.period || 'daily'}
+          currentPlan={usageLimitModalData?.currentPlan || 'starter'}
+        />
+        
+        <div className="flex h-screen w-full text-graphite-text bg-graphite-bg selection:bg-white selection:text-black overflow-hidden relative tracking-tight">
+          {/* Apple-style Premium Grain Overlay */}
+          <div className="absolute inset-0 pointer-events-none opacity-[0.03] z-[100] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] brightness-100 contrast-150" />
+          
+          {/* Subtle Ambient Glows for Depth */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+            <div className="absolute -top-[10%] -right-[10%] w-[60%] h-[60%] bg-graphite-surface-2/40 rounded-full blur-[140px]" />
+            <div className="absolute -bottom-[10%] -left-[10%] w-[50%] h-[50%] bg-graphite-surface/30 rounded-full blur-[120px]" />
           </div>
 
-          {/* Header */}
-          <div className={`sticky top-0 z-30 border-b border-white/[0.05] bg-black/40 backdrop-blur-xl transition-all duration-300 ${(isIntegrationsModalOpen || isEmailSelectionModalOpen || isPersonalityModalOpen) ? 'blur-sm' : ''}`}>
-            <div className="relative px-8 py-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-6">
-                  <div className="flex items-center gap-4">
-                    <div className="bg-white/[0.03] rounded-2xl w-12 h-12 flex items-center justify-center border border-white/10 shadow-2xl overflow-hidden group hover:border-white/20 transition-all">
-                      <img src="/arcus-ai-icon.jpg" alt="Arcus AI" className="w-full h-full object-cover grayscale transition-all group-hover:grayscale-0" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-3">
-                        <h1 className="text-lg font-bold text-white tracking-tight uppercase font-mono">ARCUS_STREAM</h1>
-                        {arcusCredits && currentPlan !== 'pro' && arcusCredits.limit > 0 && !arcusCredits.isUnlimited && (
-                          <span className="text-[9px] font-mono tracking-widest px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-white/40">
-                            {arcusCredits.remaining}_CREDITS
-                          </span>
-                        )}
-                        {(currentPlan === 'pro' || arcusCredits?.isUnlimited) && (
-                          <span className="text-[11px] px-2 py-1 rounded-full bg-white/5 border border-white/10 text-white/70">
-                            Unlimited
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-white/60 font-sans">
-                        Intelligent email analysis and agentic AI
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Tooltip delayDuration={100}>
-                    <TooltipTrigger asChild>
-                      <button
-                        onClick={startNewChat}
-                        className="p-2.5 hover:bg-white/5 rounded-xl transition-all hover:scale-105 active:scale-95 group text-white/40 hover:text-white"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">
-                      <span className="text-[10px] font-mono">NEW_SESSION</span>
-                    </TooltipContent>
-                  </Tooltip>
-                  <Tooltip delayDuration={100}>
-                    <TooltipTrigger asChild>
-                      <button
-                        onClick={() => {
-                          if (!showHistory) {
-                            setHistoryRefreshKey(prev => prev + 1);
-                          }
-                          setShowHistory(!showHistory);
-                        }}
-                        className="p-2.5 hover:bg-white/5 rounded-xl transition-all hover:scale-105 active:scale-95 group text-white/40 hover:text-white"
-                      >
-                        <History className="w-4 h-4" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">
-                      <span className="text-[10px] font-mono">SESSION_LOGS</span>
-                    </TooltipContent>
-                  </Tooltip>
-                  <div className="h-6 w-[1px] bg-white/[0.08] mx-2" />
-                  <div className="px-3 py-1 bg-white/5 border border-white/10 rounded-lg">
-                    <span className="text-white/40 font-mono text-[11px] font-bold tracking-tighter uppercase">V2.4</span>
+          {showHistory && (
+            <div className="fixed left-16 top-0 h-screen w-80 bg-black/60 border-r border-white/[0.08] flex flex-col backdrop-blur-3xl z-40">
+              <div className="p-6 border-b border-white/[0.05]">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-[11px] tracking-widest text-white/30 uppercase">History</h2>
+                  <div className="flex items-center gap-2">
+                    <Tooltip delayDuration={100}>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            startNewChat();
+                          }}
+                          className="p-2 hover:bg-[#2a2a2a] rounded-lg transition-all duration-300 text-gray-400 hover:text-white hover:scale-105"
+                        >
+                          <HugeiconsIcon icon={AddSquareIcon} size={18} strokeWidth={1.8} />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        <p>New Chat</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip delayDuration={100}>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowHistory(false);
+                          }}
+                          className="p-2 hover:bg-[#2a2a2a] rounded-lg transition-all duration-300 text-gray-400 hover:text-white hover:scale-105"
+                        >
+                          <HugeiconsIcon icon={Cancel01Icon} size={18} strokeWidth={1.8} />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        <p>Close</p>
+                      </TooltipContent>
+                    </Tooltip>
                   </div>
                 </div>
               </div>
-              <div className="flex justify-center -mt-8">
-                {currentPlan !== 'pro' && (
-                  <RainbowButton onClick={() => window.location.href = '/pricing'}>Get Unlimited Access</RainbowButton>
-                )}
+
+              <div className="flex-1 overflow-y-auto">
+                <ChatHistoryModal
+                  key={`history-${historyRefreshKey}`}
+                  isOpen={showHistory}
+                  onClose={() => setShowHistory(false)}
+                  onConversationSelect={loadConversation}
+                  onConversationDelete={handleConversationDelete}
+                />
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Chat Content */}
-          <div className="flex-1 flex flex-col relative z-10 min-h-0">
+          <HomeFeedSidebar className="z-30" />
 
-            {isInitialMode ? (
-              /* Initial Interface */
-              <div className="flex-1 overflow-y-auto transition-all duration-300">
-                <div className="h-full flex items-center justify-center px-6">
-                  <div className="w-full max-w-3xl mx-auto">
-                    <div className="text-center mb-8">
-                      <h1 className="text-4xl font-medium text-white mb-2 font-sans">
-                        Ask about your emails
-                      </h1>
-                    </div>
-
-                    <div className="mb-8">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                        <div
-                          className="group bg-[#0a0a0a] backdrop-blur-md border border-[#1a1a1a] rounded-xl p-4 shadow-lg hover:border-[#2a2a2a] hover:bg-[#151515] transition-all duration-300 cursor-pointer"
-                          onClick={() => handleSend("Catch me up on my recent emails and highlight what I missed.")}
-                        >
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className="bg-blue-500/20 rounded-lg p-2">
-                              <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                              </svg>
+          <div className="flex-1 flex flex-col relative ml-64 transition-all duration-500 ease-in-out">
+            {/* Header */}
+            <div className={`sticky top-0 z-30 border-b border-graphite-border bg-graphite-bg/40 backdrop-blur-xl transition-all duration-300 ${(isIntegrationsModalOpen || isEmailSelectionModalOpen || isPersonalityModalOpen) ? 'blur-sm' : ''}`}>
+              <div className="relative px-8 py-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-5">
+                      <div className="bg-graphite-surface rounded-[22px] w-14 h-14 flex items-center justify-center border border-graphite-border shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden group hover:border-graphite-border-strong transition-all duration-500">
+                        <img src="/arcus-ai-icon.jpg" alt="Arcus AI" className="w-full h-full object-cover grayscale transition-all duration-700 group-hover:grayscale-0 group-hover:scale-110" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-3 mb-0.5">
+                          <h1 className="text-xl font-bold text-white tracking-tight uppercase">Arcus AI</h1>
+                          {arcusCredits && currentPlan !== 'pro' && arcusCredits.limit > 0 && !arcusCredits.isUnlimited && (
+                            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.06]">
+                              <div className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
+                              <span className="text-[10px] uppercase tracking-widest text-white/40">Integrations</span>
                             </div>
-                            <h3 className="text-white font-medium font-sans text-sm">Catch up</h3>
-                          </div>
-                          <p className="text-white/60 text-sm leading-relaxed font-sans">Summarize threads and highlight what you missed.</p>
+                          )}
                         </div>
-
-                        <div
-                          className="group bg-[#0a0a0a] backdrop-blur-md border border-[#1a1a1a] rounded-xl p-4 shadow-lg hover:border-[#2a2a2a] hover:bg-[#151515] transition-all duration-300 cursor-pointer"
-                          onClick={() => handleSend("Help me schedule a meeting.")}
-                        >
-                          <div className="flex items-center gap-3 mb-2">
-                            <div className="bg-white/10 rounded-lg p-2">
-                              <svg className="w-5 h-5 text-white/75" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                            </div>
-                            <h3 className="text-white font-medium font-sans text-sm">Smart Scheduling</h3>
-                          </div>
-                          <p className="text-white/60 text-xs leading-relaxed font-sans">Automatically schedule meetings or email deliveries via Google Calendar and Meet.</p>
-                        </div>
-
-                        <div
-                          className="group bg-[#0a0a0a] backdrop-blur-md border border-[#1a1a1a] rounded-xl p-4 shadow-lg hover:border-[#2a2a2a] hover:bg-[#151515] transition-all duration-300 cursor-pointer"
-                          onClick={() => handleSend("Show me my email analytics and activity insights.")}
-                        >
-                          <div className="flex items-center gap-3 mb-2">
-                            <div className="bg-orange-500/20 rounded-lg p-2">
-                              <svg className="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                              </svg>
-                            </div>
-                            <h3 className="text-white font-medium font-sans text-sm">Analytics</h3>
-                          </div>
-                          <p className="text-white/60 text-xs leading-relaxed font-sans">Track performance metrics and uncover insights from your email activity.</p>
-                        </div>
-
-                        <div
-                          className="group bg-[#0a0a0a] backdrop-blur-md border border-[#1a1a1a] rounded-xl p-4 shadow-lg hover:border-[#2a2a2a] hover:bg-[#151515] transition-all duration-300 cursor-pointer"
-                          onClick={() => handleSend("Help me draft a reply to my latest thread.")}
-                        >
-                          <div className="flex items-center gap-3 mb-2">
-                            <div className="bg-purple-500/20 rounded-lg p-2">
-                              <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                              </svg>
-                            </div>
-                            <h3 className="text-white font-medium font-sans text-sm">Draft reply</h3>
-                          </div>
-                          <p className="text-white/60 text-xs leading-relaxed font-sans">AI that crafts smart, context-aware replies to your emails.</p>
-                        </div>
+                        <p className="text-xs text-white/40 font-medium tracking-wide">
+                          Smart Intelligence Layer
+                        </p>
                       </div>
                     </div>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Tooltip delayDuration={100}>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={startNewChat}
+                          className="p-2.5 hover:bg-white/5 rounded-xl transition-all hover:scale-105 active:scale-95 group text-white/40 hover:text-white"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        <span className="text-[10px]">New chat</span>
+                      </TooltipContent>
+                    </Tooltip>
+                    <button
+                      onClick={() => {
+                        if (!showHistory) {
+                          setHistoryRefreshKey(prev => prev + 1);
+                        }
+                        setShowHistory(!showHistory);
+                      }}
+                      className="p-2.5 hover:bg-white/5 rounded-xl transition-all hover:scale-105 active:scale-95 group text-white/40 hover:text-white"
+                    >
+                      <History className="w-4 h-4" />
+                    </button>
+                    <div className="h-6 w-[1px] bg-white/[0.08] mx-2" />
+                    <div className="px-3 py-1 bg-white/5 border border-white/10 rounded-lg">
+                      <span className="text-white/40 text-[11px] font-bold tracking-tighter uppercase">v2.4</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex justify-center -mt-8">
+                  {currentPlan !== 'pro' && (
+                    <RainbowButton onClick={() => window.location.href = '/pricing'}>Get Unlimited Access</RainbowButton>
+                  )}
+                </div>
+              </div>
+            </div>
 
-                    <div className="relative">
-                      {pendingReplyProposal && (
-                        <div className="mb-4">
-                          <DraftReplyBox
-                            isVisible={!!pendingReplyProposal}
-                            draftData={{
-                              content: pendingReplyProposal.content,
-                              recipientName: pendingReplyProposal.recipientName,
-                              recipientEmail: pendingReplyProposal.recipientEmail,
-                              senderName: 'Me',
-                              subject: pendingReplyProposal.subject,
-                              threadId: pendingReplyProposal.threadId
-                            }}
-                            onSendReply={handleSendReply}
-                            onDismiss={() => setPendingReplyProposal(null)}
-                          />
+            {/* Chat Content */}
+            <div className="flex-1 flex flex-col relative z-10 min-h-0">
+              {isInitialMode ? (
+                <div className="flex-1 overflow-y-auto transition-all duration-300">
+                  <div className="h-full flex items-center justify-center px-6">
+                    <div className="w-full max-w-3xl mx-auto">
+                      <div className="text-center mb-8">
+                        <h1 className="text-4xl font-medium text-white mb-2">Ask about your emails</h1>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                        {/* Prompt Cards */}
+                        <div onClick={() => handleSend("Catch me up on my recent emails")} className="group bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl p-4 hover:border-[#2a2a2a] cursor-pointer transition-all">
+                          <h3 className="text-white font-medium text-sm mb-1">Catch up</h3>
+                          <p className="text-white/40 text-xs">Summarize threads and highlight what you missed.</p>
+                        </div>
+                        <div onClick={() => handleSend("Help me schedule a meeting")} className="group bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl p-4 hover:border-[#2a2a2a] cursor-pointer transition-all">
+                          <h3 className="text-white font-medium text-sm mb-1">Schedule</h3>
+                          <p className="text-white/40 text-xs">Automatically schedule meetings via Google Calendar.</p>
+                        </div>
+                        <div onClick={() => handleSend("Show me my email analytics")} className="group bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl p-4 hover:border-[#2a2a2a] cursor-pointer transition-all">
+                          <h3 className="text-white font-medium text-sm mb-1">Analytics</h3>
+                          <p className="text-white/40 text-xs">Track performance metrics from your activity.</p>
+                        </div>
+                        <div onClick={() => handleSend("Help me draft a reply")} className="group bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl p-4 hover:border-[#2a2a2a] cursor-pointer transition-all">
+                          <h3 className="text-white font-medium text-sm mb-1">Draft reply</h3>
+                          <p className="text-white/40 text-xs">Craft smart, context-aware replies to your emails.</p>
+                        </div>
+                      </div>
+                      <div className="relative">
+                        <ChatInput
+                          onSendMessage={handleSend}
+                          disabled={isLoading}
+                          placeholder="Ask anything about your emails"
+                          onModalStateChange={setIsIntegrationsModalOpen}
+                          onEmailModalStateChange={setIsEmailSelectionModalOpen}
+                          selectedEmails={selectedEmails}
+                          onEmailSelect={setSelectedEmails}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex-1 flex flex-col relative overflow-hidden bg-graphite-bg">
+                  <div className={`transition-all duration-500 overflow-hidden ${liveThinkingSteps.length > 0 ? 'h-auto opacity-100 border-b border-graphite-border pb-10 pt-6' : 'h-0 opacity-0'}`}>
+                    <div className="max-w-4xl mx-auto px-10">
+                      <ThinkingLayer steps={liveThinkingSteps} isVisible={true} />
+                    </div>
+                  </div>
+                  <div className="flex-1 overflow-y-auto px-6 py-12 scroll-smooth">
+                    <div className="max-w-3xl mx-auto space-y-12">
+                      {activeMission && <MissionStatusHeader mission={activeMission} />}
+                      {messages.map((msg) => (
+                        <div key={msg.id} className={`flex flex-col animate-fade-in ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                          <div className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'} max-w-full items-start`}>
+                            <div className={`w-10 h-10 rounded-2xl flex-shrink-0 flex items-center justify-center border ${msg.role === 'user' ? 'bg-white border-white' : 'bg-graphite-surface border-graphite-border'}`}>
+                              {msg.role === 'user' ? <User2 className="w-5 h-5 text-black" /> : <img src="/arcus-ai-icon.jpg" className="w-full h-full object-cover grayscale" />}
+                            </div>
+                            <div className="flex flex-col max-w-[85%]">
+                              <div className={`px-7 py-5 rounded-[32px] ${msg.role === 'user' ? 'bg-white text-black' : 'bg-graphite-surface border border-graphite-border text-graphite-text'}`}>
+                                <MessageContent content={msg.content} />
+                                {msg.role === 'assistant' && msg.notes && msg.notes.length > 0 && (
+                                  <div className="mt-6 space-y-4 pt-6 border-t border-graphite-border/50">
+                                    <div className="grid grid-cols-1 gap-3">
+                                      {msg.notes.map((note: any, idx: number) => (
+                                        <div key={note.id || idx} className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-5">
+                                          <div className="text-graphite-text font-medium leading-snug mb-1">{note.subject || '(No Subject)'}</div>
+                                          {note.content && <div className="text-graphite-muted text-sm line-clamp-2">{note.content}</div>}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                              <div className={`mt-2 px-1 text-[10px] tracking-tight text-graphite-muted-2 opacity-60 ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
+                                {msg.time}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      {isLoading && (
+                        <div className="flex items-start gap-4 animate-fade-in group pb-20">
+                          <div className="w-10 h-10 rounded-2xl bg-graphite-surface border border-graphite-border flex items-center justify-center overflow-hidden">
+                            <img src="/arcus-ai-icon.jpg" className="w-full h-full object-cover grayscale animate-pulse opacity-40" />
+                          </div>
+                          <div className="bg-graphite-surface/40 border border-graphite-border py-4 px-6 rounded-[32px] inline-flex items-center gap-3">
+                            <MorphingSquare className="w-4 h-4 bg-graphite-muted" message="Thinking..." messagePlacement="right" />
+                          </div>
                         </div>
                       )}
-                      {currentPlan !== null && currentPlan !== 'pro' && (
-                        <div className="mb-3">
-                          <Note
-                            type="secondary"
-                            size="small"
-                            action={
-                              <Button1
-                                size="small"
-                                onClick={() => window.location.href = '/pricing'}
-                              >
-                                Upgrade
-                              </Button1>
-                            }
-                          >
-                            You&apos;re on the free plan. Upgrade for unlimited Arcus AI access.
-                          </Note>
-                        </div>
-                      )}
+                      <div ref={messagesEndRef} className="h-20" />
+                    </div>
+                  </div>
+                  <div className="sticky bottom-0 z-20 w-full px-6 pb-12 mt-auto">
+                    <div className="max-w-3xl mx-auto">
                       <ChatInput
-                        onSendMessage={(msg) => {
-                          handleSend(msg);
-                        }}
+                        onSendMessage={handleSend}
                         disabled={isLoading}
-                        placeholder="Ask anything about your emails"
+                        placeholder="Ask follow-up..."
                         onModalStateChange={setIsIntegrationsModalOpen}
                         onEmailModalStateChange={setIsEmailSelectionModalOpen}
                         selectedEmails={selectedEmails}
@@ -1570,366 +1653,26 @@ export default function ChatInterface({
                     </div>
                   </div>
                 </div>
-              </div>
-            ) : (
-              /* Conversation Interface */
-              <>
-                <div className="flex-1 overflow-y-auto px-6 py-8 min-h-0 transition-all duration-300">
-                  <div className="max-w-3xl mx-auto space-y-8">
-                    {activeMission && <MissionStatusHeader mission={activeMission} />}
-                    {messages.map((msg) => (
-                      <div key={msg.id} className={`flex items-start gap-6 ${newMessageIds.has(msg.id) ? 'animate-fade-in' : ''}`}>
-                        {msg.type === 'agent' && (
-                          <div className="flex-shrink-0 mt-3">
-                            <div className="bg-white/[0.03] rounded-2xl w-10 h-10 flex items-center justify-center border border-white/[0.08] shadow-2xl overflow-hidden">
-                              <img src="/arcus-ai-icon.jpg" alt="Arcus AI" className="w-full h-full object-cover grayscale opacity-60" />
-                            </div>
-                          </div>
-                        )}
-
-                        <div className={`flex-1 ${msg.type === 'user' ? 'flex justify-end' : ''}`}>
-                          {msg.type === 'agent' ? (
-                            <div className="space-y-1 pt-1">
-                              {/* Muse-style inline thinking process (persistent in message) */}
-                              {(msg as AgentMessage).meta?.thinkingProcess && (msg as AgentMessage).meta!.thinkingProcess!.length > 0 && (
-                                <div className="mb-3">
-                                  <ThinkingLayer
-                                    steps={(msg as AgentMessage).meta!.thinkingProcess!.map(tp => ({
-                                      id: tp.id,
-                                      label: tp.label,
-                                      status: 'completed' as const,
-                                      type: 'think' as const,
-                                      expandedContent: tp.expandedContent,
-                                    }))}
-                                    isVisible={true}
-                                  />
-                                </div>
-                              )}
-
-                              {/* Artifact card — inline clickable card to open canvas */}
-                              {(msg as AgentMessage).meta?.artifact && (
-                                <ArtifactCard
-                                  type={(msg as AgentMessage).meta!.artifact!.type}
-                                  title={(msg as AgentMessage).meta!.artifact!.title}
-                                  onView={() => {
-                                    setCanvasData((msg as AgentMessage).meta!.artifact!.canvasData);
-                                    setIsCanvasOpen(true);
-                                  }}
-                                />
-                              )}
-
-                              {/* Response text */}
-                              {typeof msg.content === 'string' ? (
-                                <div
-                                  className="text-white/[0.85] text-[15px] leading-[1.8] font-sans prose prose-invert max-w-none prose-p:mb-5 prose-strong:text-white prose-strong:font-bold prose-headings:text-white prose-headings:font-bold selection:bg-white selection:text-black"
-                                  dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
-                                />
-                              ) : (
-                                <>
-                                  <div
-                                    className="text-white/[0.85] text-[15px] leading-[1.8] font-sans prose prose-invert max-w-none selection:bg-white selection:text-black"
-                                    dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content.text) }}
-                                  />
-                                  {msg.content.list && msg.content.list.length > 0 && (
-                                    <ul className="space-y-3 pl-1 mt-4">
-                                      {msg.content.list.map((item: string, idx: number) => (
-                                        <li key={idx} className="text-white/[0.85] text-[15px] leading-[1.8] flex items-start gap-3">
-                                          <div className="w-1 h-1 rounded-full bg-white/20 mt-2.5 shrink-0" />
-                                          <span dangerouslySetInnerHTML={{ __html: renderMarkdown(item) }} />
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  )}
-                                  {msg.content.footer && (
-                                    <div
-                                      className="text-white/[0.85] text-[15px] leading-[1.8] pt-5 font-sans italic opacity-60"
-                                      dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content.footer) }}
-                                    />
-                                  )}
-                                </>
-                              )}
-                              <p className="text-white/10 text-[10px] font-mono tracking-widest pt-4 uppercase">{msg.time}</p>
-
-                              {(msg as AgentMessage).meta?.actionType === 'email' && (msg as AgentMessage).meta?.emailResult?.success && (
-                                <div className="mt-4 space-y-3">
-                                  {Array.isArray((msg as AgentMessage).meta?.emailResult?.emails) && (msg as AgentMessage).meta?.emailResult?.emails?.length > 0 ? (
-                                    (msg as AgentMessage).meta?.emailResult?.emails?.map((email: any) => (
-                                      <div key={email.id} className="bg-white/5 border border-white/10 rounded-xl p-4">
-                                        <div className="text-white font-medium leading-snug">{email.subject || '(No Subject)'}</div>
-                                        <div className="text-white/60 text-sm mt-1">{email.from || 'Unknown Sender'}</div>
-                                        {email.date && <div className="text-white/40 text-xs mt-1">{email.date}</div>}
-                                        {email.snippet && <div className="text-white/70 text-sm mt-3 leading-relaxed">{email.snippet}</div>}
-                                      </div>
-                                    ))
-                                  ) : (
-                                    <div className="text-white/70 text-sm">No results found.</div>
-                                  )}
-                                </div>
-                              )}
-
-                              {(msg as AgentMessage).meta?.actionType === 'notes' && (msg as AgentMessage).meta?.notesResult?.success && (
-                                <div className="mt-4 space-y-3">
-                                  {Array.isArray((msg as AgentMessage).meta?.notesResult?.notes) && (msg as AgentMessage).meta?.notesResult?.notes?.length > 0 ? (
-                                    (msg as AgentMessage).meta?.notesResult?.notes?.slice(0, 10).map((note: any, idx: number) => (
-                                      <div key={note.id || idx} className="bg-white/5 border border-white/10 rounded-xl p-4">
-                                        <div className="text-white font-medium leading-snug">{note.subject || '(No Subject)'}</div>
-                                        {note.created_at && <div className="text-white/40 text-xs mt-1">{note.created_at}</div>}
-                                        {note.content && <div className="text-white/70 text-sm mt-3 leading-relaxed">{note.content}</div>}
-                                      </div>
-                                    ))
-                                  ) : (
-                                    <div className="text-white/70 text-sm">No results found.</div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            <div className="max-w-2xl">
-                              <div className="bg-white text-black rounded-2xl px-5 py-4 shadow-2xl shadow-black/40">
-                                <p className="text-black text-[15px] font-medium leading-relaxed">{msg.content}</p>
-                              </div>
-                              <p className="text-right text-white/10 text-[10px] font-mono tracking-widest pt-3 uppercase">{msg.time}</p>
-                            </div>
-                          )}
-                        </div>
-
-                        {msg.type === 'user' && (
-                          <div className="flex-shrink-0 mt-1">
-                            <div className="bg-[#2a2a2a] rounded-full p-2.5 w-11 h-11 flex items-center justify-center backdrop-blur-sm border border-[#3a3a3a] shadow-lg">
-                              <User className="w-5 h-5 text-white" />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-
-                    {/* Loading indicator with live AI-generated thinking */}
-                    {isLoading && (
-                      <div className="flex items-start gap-4 mt-4 animate-fade-in">
-                        <div className="flex-shrink-0 mt-1">
-                          <div className="bg-neutral-800 rounded-full w-11 h-11 flex items-center justify-center backdrop-blur-sm border border-white/10 shadow-lg overflow-hidden">
-                            <img src="/arcus-ai-icon.jpg" alt="Arcus AI" className="w-full h-full object-cover opacity-80" />
-                          </div>
-                        </div>
-                        <div className="flex-1 pt-1">
-                          {liveThinkingSteps.length > 0 ? (
-                            <ThinkingLayer
-                              steps={liveThinkingSteps.map(s => ({
-                                ...s,
-                                status: s.status as 'active' | 'completed' | 'pending' | 'error',
-                                type: (s.type || 'think') as 'think' | 'search' | 'read' | 'analyze' | 'draft' | 'execute',
-                              }))}
-                              isVisible={true}
-                              isGenerating={true}
-                              generatingLabel="Arcus is preparing the workflow"
-                            />
-                          ) : (
-                            <div className="flex items-center gap-2 pt-1.5">
-                              <MorphingSquare
-                                className="w-4 h-4 bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)]"
-                                message="Arcus is working..."
-                                messagePlacement="right"
-                              />
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    <div ref={messagesEndRef} />
-                  </div>
-                </div>
-
-                {/* Floating Input Area with Progressive Blur */}
-                <div className="sticky bottom-0 z-20 w-full px-6 pb-12 mt-auto pointer-events-none">
-                  {/* Progressive blur overlay */}
-                  <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none" />
-                  <div className="max-w-3xl mx-auto relative z-10 pointer-events-auto">
-                    {currentPlan !== null && currentPlan !== 'pro' && (
-                      <div className="mb-3">
-                        <Note
-                          type="secondary"
-                          size="small"
-                          action={
-                            <Button1
-                              size="small"
-                              onClick={() => window.location.href = '/pricing'}
-                            >
-                              Upgrade
-                            </Button1>
-                          }
-                        >
-                          You&apos;re on the free plan. Upgrade for unlimited Arcus AI access.
-                        </Note>
-                      </div>
-                    )}
-                    <ChatInput
-                      onSendMessage={(msg) => {
-                        handleSend(msg);
-                      }}
-                      disabled={isLoading}
-                      placeholder="Ask follow-up..."
-                      onModalStateChange={setIsIntegrationsModalOpen}
-                      onEmailModalStateChange={setIsEmailSelectionModalOpen}
-                      selectedEmails={selectedEmails}
-                      onEmailSelect={setSelectedEmails}
-                    />
-                  </div>
-                </div>
-              </>
-            )}
+              )}
+            </div>
           </div>
         </div>
 
-      </div>
-
-      {/* Integrations Modal */}
-      <IntegrationsModal
-        isOpen={isIntegrationsModalOpen}
-        onClose={() => setIsIntegrationsModalOpen(false)}
-      />
-
-      {/* Email Selection Modal */}
-      <EmailSelectionModal
-        isOpen={isEmailSelectionModalOpen}
-        onClose={() => setIsEmailSelectionModalOpen(false)}
-        onSelectEmails={(emails: Email[]) => {
-          setSelectedEmails(prev => [...prev, ...emails]);
-          setIsEmailSelectionModalOpen(false);
-        }}
-      />
-
-      {/* Personality Settings Modal */}
-      <PersonalitySettingsModal
-        isOpen={isPersonalityModalOpen}
-        onClose={() => setIsPersonalityModalOpen(false)}
-        onSave={handleSavePersonality}
-        initialPersonality={savedPersonality}
-      />
-
-      {/* Canvas Panel */}
-      <CanvasPanel
-        isOpen={isCanvasOpen}
-        onClose={() => setIsCanvasOpen(false)}
-        canvasData={canvasData}
-        onExecute={handleCanvasExecute}
-        isExecuting={isCanvasExecuting}
-      />
-
-      <style jsx global>{`
-        @keyframes dot-pulse {
-          0% { transform: scale(0.6); opacity: 0.4; }
-          50% { transform: scale(1.1); opacity: 1; }
-          100% { transform: scale(0.6); opacity: 0.4; }
-        }
-        .animate-dot-pulse {
-          animation: dot-pulse 1.2s infinite ease-in-out;
-        }
-
-        @keyframes fade-in {
-          from { opacity: 0; transform: translateY(4px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in {
-          animation: fade-in 0.3s ease-out forwards;
-        }
-      `}</style>
+        <IntegrationsModal isOpen={isIntegrationsModalOpen} onClose={() => setIsIntegrationsModalOpen(false)} />
+        <EmailSelectionModal 
+          isOpen={isEmailSelectionModalOpen} 
+          onClose={() => setIsEmailSelectionModalOpen(false)} 
+          onSelectEmails={(emails: Email[]) => {
+            setSelectedEmails(prev => [...prev, ...emails]);
+            setIsEmailSelectionModalOpen(false);
+          }} 
+        />
+        <PersonalitySettingsModal isOpen={isPersonalityModalOpen} onClose={() => setIsPersonalityModalOpen(false)} onSave={handleSavePersonality} initialPersonality={savedPersonality} />
+        <CanvasPanel isOpen={isCanvasOpen} onClose={() => setIsCanvasOpen(false)} canvasData={canvasData} onExecute={handleCanvasExecute} isExecuting={isCanvasExecuting} />
+      </>
     </TooltipProvider>
   );
 };
-
-/**
- * Mission Status Header Component
- */
-const MissionStatusHeader = ({ mission }: { mission: any }) => {
-  if (!mission) return null;
-
-  const statusColors: any = {
-    draft: 'bg-white text-black',
-    waiting_on_user: 'bg-white text-black',
-    waiting_on_other: 'bg-neutral-700 text-white',
-    done: 'bg-neutral-800 text-white/60',
-    archived: 'bg-transparent border border-white/10 text-white/30'
-  };
-
-  const statusLabels: any = {
-    draft: 'Draft reply',
-    waiting_on_user: 'Waiting on you',
-    waiting_on_other: 'Waiting on them',
-    done: 'Done',
-    archived: 'Archived'
-  };
-
-  return (
-    <div className="flex items-center gap-3 px-4 py-2.5 bg-neutral-900/40 border border-white/5 rounded-xl w-fit mx-auto mb-10 backdrop-blur-md animate-fade-in">
-      <div className="flex items-center gap-2">
-        <span className="text-white/40 text-[10px] font-bold uppercase tracking-[0.2em]">In progress</span>
-        <span className="text-white/20">/</span>
-        <span className="text-white text-sm font-medium">{mission.goal}</span>
-      </div>
-      <div className="h-3 w-[1px] bg-white/10 mx-1" />
-      <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-tight ${statusColors[mission.status] || 'bg-white text-black'}`}>
-        {statusLabels[mission.status] || mission.status}
-      </span>
-    </div>
-  );
-};
-
-
-
-
-
-
-/**
-* Helper functions for notes detection and search
-*/
-function isNotesRelatedQuery(message: string): boolean {
-  const notesKeywords = [
-    'note', 'notes', 'my notes', 'find note', 'search note', 'look for note',
-    'remember', 'reminder', 'todo', 'task', 'list', 'ideas', 'thoughts',
-    'journal', 'diary', 'memo', 'record', 'write down', 'saved note',
-    'created note', 'made note', 'stored note', 'keep note'
-  ];
-  const lowerMessage = message.toLowerCase();
-  return notesKeywords.some((keyword) => lowerMessage.includes(keyword));
-}
-
-function isEmailRelatedQuery(message: string): boolean {
-  const emailKeywords = [
-    'email', 'emails', 'inbox', 'gmail', 'message', 'messages',
-    'unread', 'read', 'urgent', 'important', 'starred',
-    'today', 'yesterday', 'this week', 'recent', 'latest',
-    'from', 'subject', 'attachment', 'search', 'find', 'check'
-  ];
-  const lowerMessage = message.toLowerCase();
-  return emailKeywords.some((keyword) => lowerMessage.includes(keyword));
-}
-
-function extractSearchTerm(message: string): string {
-  const lowerMessage = message.toLowerCase();
-
-  // Patterns to extract search terms
-  const patterns = [
-    /find\s+(?:my\s+)?notes?(?:\s+|\s*about|\s*on|\s*regarding)\s+(.+)/i,
-    /search\s+(?:for\s+)?notes?(?:\s+|\s*about|\s*on|\s*regarding)\s+(.+)/i,
-    /look\s+for\s+(?:my\s+)?notes?(?:\s+|\s*about|\s*on|\s*regarding)\s+(.+)/i,
-    /show\s+me\s+(?:my\s+)?notes?(?:\s+|\s*about|\s*on|\s*regarding)\s+(.+)/i,
-    /what\s+notes?(?:\s+do\s+i\s+have)?(?:\s*about|\s*on|\s*regarding)\s+(.+)/i,
-    /remember\s+(?:anything\s+about\s+)?(.+)/i,
-    /my\s+notes\s+on\s+(.+)/i,
-    /notes\s+about\s+(.+)/i
-  ];
-
-  for (const pattern of patterns) {
-    const match = message.match(pattern);
-    if (match && match[1]) {
-      return match[1].trim();
-    }
-  }
-
-  // If no pattern matches, return the entire message as search term
-  return message.trim();
-}
 
 
 

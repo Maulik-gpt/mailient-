@@ -102,6 +102,19 @@ time, mark, audio, video, button, input, textarea, select,
   --shadow-focus-ring: var(--ds-focus-ring);
   --shadow-border-small: var(--ds-shadow-border-small);
   --animate-fade-spin: fade-spin 1.2s linear infinite;
+
+  /* Graphite Visual System */
+  --color-graphite-bg: #0A0A0B;
+  --color-graphite-surface: #141416;
+  --color-graphite-surface-2: #1C1C1E;
+  --color-graphite-border: rgba(255, 255, 255, 0.06);
+  --color-graphite-border-strong: rgba(255, 255, 255, 0.12);
+  --color-graphite-text: #FFFFFF;
+  --color-graphite-muted: rgba(255, 255, 255, 0.6);
+  --color-graphite-muted-2: rgba(255, 255, 255, 0.4);
+  
+  /* Arcus Typography */
+  --letter-spacing-arcus: -0.02em;
 }
 
 :root {
@@ -272,18 +285,24 @@ time, mark, audio, video, button, input, textarea, select,
   animation: text-fade-in 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-@keyframes text-fade-in {
+@keyframes canvasSlideIn {
   from {
-    opacity: 0;
-    transform: translateY(10px);
-    filter: blur(4px);
+    transform: translateX(100%);
+    opacity: 0.5;
   }
-
   to {
+    transform: translateX(0);
     opacity: 1;
-    transform: translateY(0);
-    filter: blur(0);
   }
+}
+
+.animate-canvas-slide-in {
+  animation: canvasSlideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.arcus-typography {
+  letter-spacing: -0.02em;
+  font-family: var(--font-satoshi);
 }
 
 .satoshi-app {

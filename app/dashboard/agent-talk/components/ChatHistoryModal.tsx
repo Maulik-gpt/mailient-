@@ -440,29 +440,29 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
           <div className="flex items-center gap-4">
             <button
               onClick={toggleSelectAll}
-              className="flex items-center gap-3 text-white/40 hover:text-white transition-all font-mono text-[10px] tracking-widest uppercase"
+              className="flex items-center gap-3 text-white/40 hover:text-white transition-all text-[10px] tracking-widest uppercase"
             >
               {selectAll ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
-              SELECT_ALL
+              Select all
             </button>
-            <span className="text-white/20 font-mono text-[10px] tracking-widest">
-              {selectedItems.size}_INDEXED
+            <span className="text-white/20 text-[10px] tracking-widest uppercase">
+              {selectedItems.size} selected
             </span>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={handleDeleteSelected}
               disabled={selectedItems.size === 0}
-              className="flex items-center gap-2 px-4 py-2 bg-white text-black disabled:bg-white/10 disabled:text-white/20 text-[10px] font-mono font-bold tracking-widest uppercase rounded-xl transition-all"
+              className="flex items-center gap-2 px-4 py-2 bg-white text-black disabled:bg-white/10 disabled:text-white/20 text-[10px] font-bold tracking-widest uppercase rounded-xl transition-all"
             >
               <Trash2 className="w-3.5 h-3.5" />
-              PURGE
+              Delete
             </button>
             <button
               onClick={exitSelectionMode}
-              className="px-4 py-2 text-white/40 hover:text-white hover:bg-white/5 text-[10px] font-mono tracking-widest uppercase rounded-xl transition-all"
+              className="px-4 py-2 text-white/40 hover:text-white hover:bg-white/5 text-[10px] tracking-widest uppercase rounded-xl transition-all"
             >
-              CANCEL
+              Cancel
             </button>
           </div>
         </div>
@@ -471,23 +471,23 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
       {isLoading ? (
         <div className="flex flex-col items-center justify-center flex-1 gap-4 opacity-20">
           <Loader2 className="w-5 h-5 animate-spin" strokeWidth={1.5} />
-          <span className="text-[10px] font-mono tracking-[0.2em] uppercase">Initializing_Logs...</span>
+          <span className="text-[10px] tracking-widest uppercase">Loading history...</span>
         </div>
       ) : error ? (
         <div className="flex flex-col items-center justify-center flex-1 p-8 text-center gap-4">
-          <div className="text-white/20 text-[10px] font-mono tracking-widest uppercase mb-2">Sync_Failure_Detected</div>
+          <div className="text-white/20 text-[10px] tracking-widest uppercase mb-2">Sync failed</div>
           <div className="text-white/40 text-xs italic opacity-60 max-w-xs mb-4">{error}</div>
           <button
             onClick={fetchHistory}
-            className="px-6 py-2.5 bg-white/5 border border-white/10 hover:bg-white/10 rounded-xl text-white/60 text-[10px] font-mono tracking-widest uppercase transition-all"
+            className="px-6 py-2.5 bg-white/5 border border-white/10 hover:bg-white/10 rounded-xl text-white/60 text-[10px] tracking-widest uppercase transition-all"
           >
-            RETRY_SYNC
+            Retry sync
           </button>
         </div>
       ) : history.length === 0 ? (
         <div className="flex flex-col items-center justify-center flex-1 p-8 text-center opacity-20 gap-4">
           <Clock className="w-8 h-8 opacity-50" strokeWidth={1} />
-          <div className="text-[10px] font-mono tracking-[0.3em] uppercase">LOG_BUFFER_EMPTY</div>
+          <div className="text-[10px] tracking-widest uppercase">No history found</div>
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto custom-scrollbar">
@@ -503,7 +503,7 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
                 <div key={dateGroup} className="space-y-4">
                   <div className="flex items-center gap-3 px-2">
                     <div className="h-[1px] flex-1 bg-white/[0.05]" />
-                    <span className="text-white/20 font-mono text-[9px] font-bold tracking-[0.3em] uppercase">
+                    <span className="text-white/20 text-[9px] font-bold tracking-widest uppercase">
                       {dateGroup}
                     </span>
                     <div className="h-[1px] flex-1 bg-white/[0.05]" />
@@ -551,14 +551,14 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
                                 <button
                                   onClick={(e) => handleDeleteClick(e, item)}
                                   className="opacity-0 group-hover:opacity-100 transition-all duration-300 p-1 hover:bg-white/10 rounded-lg flex-shrink-0"
-                                  title="PURGE_RECORD"
+                                  title="Delete chat"
                                 >
                                   <Trash2 className="w-3.5 h-3.5 text-white/30 hover:text-red-400" />
                                 </button>
                               )}
                             </div>
-                            <p className="text-white/30 text-[11px] truncate font-mono opacity-80">
-                              {item.initialMessagePreview || 'NO_PREVIEW_AVAILABLE'}
+                            <p className="text-white/30 text-[11px] truncate opacity-80">
+                              {item.initialMessagePreview || 'No preview available'}
                             </p>
                           </div>
                         </div>
@@ -576,15 +576,15 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] px-6" onClick={handleDeleteCancel}>
           <div className="bg-black border border-white/10 rounded-[32px] p-10 max-w-md w-full shadow-2xl relative overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div className="absolute inset-0 pointer-events-none opacity-[0.03] z-[-1] bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
-            <h3 className="text-white text-lg font-bold font-mono tracking-[0.1em] uppercase mb-4">
-              {deleteConfirm.item ? 'PURGE_ENTRY' : 'PURGE_BATCH'}
+            <h3 className="text-white text-lg font-bold tracking-tight uppercase mb-4">
+              {deleteConfirm.item ? 'Delete chat' : 'Delete multiple'}
             </h3>
             <p className="text-white/40 text-sm font-sans leading-relaxed mb-8">
-              Are you certain you wish to terminate {deleteConfirm.item ? 'this synchronization record' : `the selected ${selectedItems.size} batch records`}?
-              This action results in permanent data dissociation.
+              Are you sure you want to delete {deleteConfirm.item ? 'this chat' : `the ${selectedItems.size} selected chats`}?
+              This action cannot be undone.
             </p>
             {deleteConfirm.item && (
-              <div className="px-5 py-3 bg-white/5 border border-white/10 rounded-2xl text-white/60 text-[11px] font-mono truncate mb-10">
+              <div className="px-5 py-3 bg-white/5 border border-white/10 rounded-2xl text-white/60 text-[11px] truncate mb-10">
                 &ldquo;{getChatTitle(deleteConfirm.item.user_message)}&rdquo;
               </div>
             )}
@@ -592,22 +592,22 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
               <button
                 onClick={handleDeleteCancel}
                 disabled={isDeleting}
-                className="px-8 py-3 text-[11px] font-mono tracking-widest uppercase text-white/30 hover:text-white transition-all disabled:opacity-20"
+                className="px-8 py-3 text-[11px] tracking-widest uppercase text-white/30 hover:text-white transition-all disabled:opacity-20"
               >
-                ABORT
+                Cancel
               </button>
               <button
                 onClick={deleteConfirm.item ? handleDeleteConfirm : handleBulkDeleteConfirm}
                 disabled={isDeleting}
-                className="px-8 py-3 bg-white text-black font-mono font-bold text-[11px] tracking-widest uppercase rounded-2xl transition-all disabled:opacity-20 flex items-center gap-3 shadow-2xl shadow-white/20"
+                className="px-8 py-3 bg-white text-black font-bold text-[11px] tracking-widest uppercase rounded-2xl transition-all disabled:opacity-20 flex items-center gap-3 shadow-2xl shadow-white/20"
               >
                 {isDeleting ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    PURGING...
+                    Deleting...
                   </>
                 ) : (
-                  'CONFIRM_PURGE'
+                  'Confirm'
                 )}
               </button>
             </div>

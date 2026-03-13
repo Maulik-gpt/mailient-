@@ -61,7 +61,7 @@ export function HomeFeedSidebar({ className = '', onPeopleClick, activeView = 'h
 
     return (
         <TooltipProvider>
-            <div className={`fixed left-0 top-0 h-screen w-64 bg-[#F9F8F6] dark:bg-[#0c0c0c] border-r border-[#EBE9E2] dark:border-white/5 flex flex-col z-50 ${className}`} style={{ fontFamily: "'Inter', sans-serif" }}>
+            <div className={`fixed left-0 top-0 h-screen w-64 bg-[#F9F8F6] dark:bg-[#0c0c0c] border-r border-[#EBE9E2] dark:border-white/5 flex flex-col z-50 ${className}`}>
                 
                 {/* Logo & Plan Header */}
                 <div className="px-6 py-8 flex items-center justify-between">

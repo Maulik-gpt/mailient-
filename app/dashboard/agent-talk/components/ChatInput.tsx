@@ -902,8 +902,8 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
                   <div className={`absolute inset-0 rounded-full blur-[2px] ${recordingState === 'recording' ? 'bg-white/50 animate-pulse' : 'bg-white/20'}`} />
                   <div className={`w-2 h-2 rounded-full ${recordingState === 'recording' ? 'bg-white animate-pulse' : 'bg-white/40'}`} />
                 </div>
-                <span className="text-[10px] uppercase font-mono tracking-[0.2em] text-white/60">
-                  {recordingState === 'recording' ? 'NEURAL_INPUT_ACTIVE' : 'NEURAL_INPUT_PAUSED'}
+                <span className="text-[10px] uppercase tracking-widest text-white/60">
+                  {recordingState === 'recording' ? 'Voice active' : 'Voice paused'}
                 </span>
               </motion.div>
             )}
@@ -911,7 +911,7 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
 
           {/* Selected Emails Section */}
           {selectedEmails.length > 0 && (
-            <div className="mb-3 flex flex-wrap gap-2 pt-1 font-sans">
+            <div className="mb-3 flex flex-wrap gap-2 pt-1">
               {selectedEmails.map((email) => (
                 <div
                   key={email.id}
@@ -948,7 +948,7 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="top">
-                    <span className="text-[10px] font-mono uppercase tracking-widest text-white/40">Extend_Capabilities</span>
+                    <span className="text-[10px] uppercase tracking-widest text-white/40">Integrations</span>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -965,7 +965,7 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="top">
-                    <span className="text-[10px] font-mono uppercase tracking-widest text-white/40">Attach_Data_Stream</span>
+                    <span className="text-[10px] uppercase tracking-widest text-white/40">Attach email</span>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -980,7 +980,7 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
                 onKeyDown={handleKeyDown}
                 placeholder={placeholderText}
                 disabled={disabled}
-                className="w-full resize-none bg-transparent text-white placeholder:text-white/20 focus:outline-none border-none p-0 min-h-[24px] max-h-40 text-[15px] leading-relaxed selection:bg-white selection:text-black font-sans"
+                className="w-full resize-none bg-transparent text-white placeholder:text-white/20 focus:outline-none border-none p-0 min-h-[24px] max-h-40 text-[15px] leading-relaxed selection:bg-white selection:text-black"
                 rows={1}
               />
             </div>
@@ -1028,7 +1028,7 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="top">
-                      <span className="text-[10px] font-mono uppercase tracking-widest text-white/40">Neural_Decode</span>
+                      <span className="text-[10px] uppercase tracking-widest text-white/40">Voice input</span>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>

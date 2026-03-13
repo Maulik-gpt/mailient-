@@ -38,15 +38,15 @@ export function TaskPlan({ plan, isVisible, title }: TaskPlanProps) {
                         <Cpu className="w-3 h-3 text-white/30" />
                     </div>
                     <div className="flex flex-col">
-                        <span className="text-[9px] font-mono font-bold uppercase tracking-[0.2em] text-white/20 leading-tight">EXECUTION_PROTOCOL</span>
+                        <span className="text-[9px] font-bold uppercase tracking-tight text-white/20 leading-tight">Execution plan</span>
                         {title && <span className="text-white/60 text-[11px] font-medium tracking-tight truncate max-w-[200px]">{title}</span>}
                     </div>
                 </div>
 
                 <div className="flex flex-col items-end gap-1.5">
                     <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-mono text-white/20 tabular-nums tracking-tighter">
-                            {completedCount.toString().padStart(2, '0')}/{plan.length.toString().padStart(2, '0')}
+                        <span className="text-[10px] text-white/20 tabular-nums tracking-tighter">
+                            {completedCount}/{plan.length}
                         </span>
                         <div className="w-20 h-[2px] rounded-full bg-white/[0.03] overflow-hidden">
                             <motion.div
@@ -57,7 +57,7 @@ export function TaskPlan({ plan, isVisible, title }: TaskPlanProps) {
                             />
                         </div>
                     </div>
-                    <span className="text-[8px] font-mono text-white/10 tracking-widest uppercase">{progress}%_COMPLETE</span>
+                    <span className="text-[8px] text-white/10 tracking-widest uppercase">{progress}% complete</span>
                 </div>
             </div>
 
@@ -76,8 +76,8 @@ export function TaskPlan({ plan, isVisible, title }: TaskPlanProps) {
                                 }`}
                         >
                             {/* Technical Index */}
-                            <span className="text-[9px] font-mono text-white/10 mt-1 w-4 shrink-0">
-                                {String(step.step).padStart(2, '0')}
+                            <span className="text-[9px] text-white/10 mt-1 w-4 shrink-0">
+                                {step.step}
                             </span>
 
                             {/* Status Icon */}
@@ -114,8 +114,8 @@ export function TaskPlan({ plan, isVisible, title }: TaskPlanProps) {
                                     {step.description}
                                 </span>
                                 {step.status === 'active' && (
-                                    <span className="text-[9px] font-mono text-white/20 tracking-widest uppercase animate-pulse">
-                                        SYSTEM_PROCESSING...
+                                    <span className="text-[9px] text-white/20 tracking-wide animate-pulse">
+                                        Processing...
                                     </span>
                                 )}
                             </div>
@@ -128,7 +128,7 @@ export function TaskPlan({ plan, isVisible, title }: TaskPlanProps) {
             <div className="px-5 py-2.5 bg-white/[0.01] border-t border-white/[0.02] flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <Terminal className="w-3 h-3 text-white/10" />
-                    <span className="text-[8px] font-mono text-white/10 tracking-[0.3em] uppercase">LOG_STREAM_ACTIVE</span>
+                    <span className="text-[8px] text-white/10 tracking-wide uppercase">Active log</span>
                 </div>
                 <div className="flex gap-1">
                     {[0, 1, 2].map((i) => (
