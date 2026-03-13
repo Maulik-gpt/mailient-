@@ -1,19 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, 
   Settings, 
   Monitor, 
-  Hash, 
   User, 
   Users, 
   CreditCard, 
   Shield, 
-  Mic, 
-  Globe, 
-  Volume2, 
   RefreshCw,
   Power,
   ChevronRight,
@@ -27,7 +23,11 @@ import {
   Trash2,
   Lock,
   Cpu,
-  ShieldCheck
+  ShieldCheck,
+  Zap,
+  Bell,
+  Languages,
+  MousePointer2
 } from 'lucide-react';
 import { ToggleSwitch } from './toggle-switch';
 import { Button } from './button';
@@ -37,32 +37,61 @@ interface SettingsCardProps {
     onClose: () => void;
 }
 
-type SettingsSection = 'general' | 'system' | 'vibe-coding' | 'account' | 'team' | 'plans' | 'privacy';
+type SettingsSection = 'general' | 'system' | 'account' | 'team' | 'plans' | 'privacy';
 
 export function SettingsCard({ onClose }: SettingsCardProps) {
     const { data: session } = useSession();
     const [activeSection, setActiveSection] = useState<SettingsSection>('general');
-    const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
     
-    // Settings state
-    const [appSettings, setAppSettings] = useState({
-        launchAtLogin: true,
-        showFlowBar: false,
-        showAppInDock: true,
-        dictationSounds: true,
-        muteWhileDictating: false,
-        privacyMode: true,
-        contextAwareness: false,
-        aiProtectionMode: true,
-        aesProtection: true
+    // Persistent Settings State
+    const [settings, setSettings] = useState({
+        // General
+        aiTone: 'professional',
+        defaultLanguage: 'English',
+        smartGrouping: true,
+        
+        // System
+        notifications: true,
+        soundEffects: true,
+        compactMode: false,
+        theme: 'dark',
+        
+        // Privacy
+        aiProtection: true,
+        aesEncryption: true,
+        trainingData: false,
+        privacyMode: true
     });
+
+    // Load settings from localStorage on mount
+    useEffect(() => {
+        const savedSettings = localStorage.getItem('mailient_settings');
+        if (savedSettings) {
+            try {
+                setSettings(prev => ({ ...prev, ...JSON.parse(savedSettings) }));
+            } catch (e) {
+                console.error("Failed to load settings", e);
+            }
+        }
+    }, []);
+
+    // Save settings to localStorage whenever they change
+    const updateSetting = (key: keyof typeof settings, value: any) => {
+        const newSettings = { ...settings, [key]: value };
+        setSettings(newSettings);
+        localStorage.setItem('mailient_settings', JSON.stringify(newSettings));
+    };
+
+    const handleReset = () => {
+        localStorage.removeItem('mailient_settings');
+        window.location.reload();
+    };
 
     const [accountInfo, setAccountInfo] = useState({
         firstName: session?.user?.name?.split(' ')[0] || '',
         lastName: session?.user?.name?.split(' ').slice(1).join(' ') || '',
         email: session?.user?.email || '',
         username: session?.user?.name?.toLowerCase().replace(/\s/g, '_') || 'user',
-        website: 'mailient.xyz'
     });
 
     const MenuButton = ({ id, icon: Icon, label, category = false }: { id?: SettingsSection, icon?: any, label: string, category?: boolean }) => {
@@ -152,7 +181,6 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                         <MenuButton label="Settings" category />
                         <MenuButton id="general" icon={Settings2} label="General" />
                         <MenuButton id="system" icon={Monitor} label="System" />
-                        <MenuButton id="vibe-coding" icon={Hash} label="Vibe coding" />
                         
                         <div className="my-2 h-px bg-neutral-200 dark:bg-white/5" />
                         
@@ -165,7 +193,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
 
                     {/* Footer Info */}
                     <div className="px-4 py-4 flex items-center justify-between mt-auto">
-                        <span className="text-[11px] text-neutral-400 dark:text-neutral-600 font-medium">Flow v1.4.549</span>
+                        <span className="text-[11px] text-neutral-400 dark:text-neutral-600 font-medium">Mailient v1.0.1</span>
                         <div className="w-4 h-4 rounded-full bg-neutral-200 dark:bg-white/5 flex items-center justify-center">
                             <Cloud className="w-2.5 h-2.5 text-neutral-400 dark:text-neutral-600" />
                         </div>
@@ -206,28 +234,46 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                     <div className="bg-[#FAF9F6] dark:bg-white/[0.03] rounded-3xl p-8 border border-[#EBE9E2] dark:border-white/5 space-y-8">
                                         <div className="flex items-center justify-between group">
                                             <div className="space-y-1">
-                                                <h3 className="text-[15px] font-semibold text-[#1A1A1A] dark:text-white">Shortcuts</h3>
+                                                <div className="flex items-center gap-2">
+                                                    <Zap className="w-4 h-4 text-amber-500" />
+                                                    <h3 className="text-[15px] font-semibold text-[#1A1A1A] dark:text-white">Arcus AI Shortcut</h3>
+                                                </div>
                                                 <p className="text-sm text-neutral-400 dark:text-neutral-500">
-                                                    Hold <span className="text-[#1A1A1A] dark:text-white font-medium">Ctrl</span> + <span className="text-[#1A1A1A] dark:text-white font-medium">Win</span> and speak. <span className="text-neutral-400 dark:text-neutral-500 hover:text-black dark:hover:text-white cursor-pointer underline underline-offset-4">Learn more →</span>
+                                                    Default key: <kbd className="bg-white/10 px-1.5 py-0.5 rounded border border-white/10 text-white">Cmd + K</kbd> to summon Arcus anywhere.
                                                 </p>
                                             </div>
-                                            <Button variant="ghost" className="bg-[#EBE9E2] dark:bg-white/[0.06] hover:bg-[#DEDCD4] dark:hover:bg-white/[0.1] text-neutral-700 dark:text-neutral-200 px-6 h-10 rounded-xl text-sm font-medium">Change</Button>
+                                            <Button variant="ghost" className="bg-[#EBE9E2] dark:bg-white/[0.06] hover:bg-[#DEDCD4] dark:hover:bg-white/[0.1] text-neutral-700 dark:text-neutral-200 px-6 h-10 rounded-xl text-sm font-medium">Rebind</Button>
                                         </div>
                                         <div className="h-px bg-[#EBE9E2] dark:bg-white/5" />
                                         <div className="flex items-center justify-between group">
                                             <div className="space-y-1">
-                                                <h3 className="text-[15px] font-semibold text-[#1A1A1A] dark:text-white">Microphone</h3>
-                                                <p className="text-sm text-neutral-400 dark:text-neutral-500">Auto-detect (Array)</p>
+                                                <div className="flex items-center gap-2">
+                                                    <Keyboard className="w-4 h-4 text-blue-500" />
+                                                    <h3 className="text-[15px] font-semibold text-[#1A1A1A] dark:text-white">Default Draft Tone</h3>
+                                                </div>
+                                                <p className="text-sm text-neutral-400 dark:text-neutral-500">Current: <span className="text-white capitalize">{settings.aiTone}</span></p>
                                             </div>
-                                            <Button variant="ghost" className="bg-[#EBE9E2] dark:bg-white/[0.06] hover:bg-[#DEDCD4] dark:hover:bg-white/[0.1] text-neutral-700 dark:text-neutral-200 px-6 h-10 rounded-xl text-sm font-medium">Change</Button>
+                                            <select 
+                                                value={settings.aiTone}
+                                                onChange={(e) => updateSetting('aiTone', e.target.value)}
+                                                className="bg-[#EBE9E2] dark:bg-white/[0.06] text-neutral-700 dark:text-neutral-200 px-4 h-10 rounded-xl text-sm font-medium outline-none border-none cursor-pointer"
+                                            >
+                                                <option value="professional">Professional</option>
+                                                <option value="friendly">Friendly</option>
+                                                <option value="concise">Concise</option>
+                                                <option value="humorous">Humorous</option>
+                                            </select>
                                         </div>
                                         <div className="h-px bg-[#EBE9E2] dark:bg-white/5" />
-                                        <div className="flex items-center justify-between group">
+                                        <div className="flex items-center justify-between">
                                             <div className="space-y-1">
-                                                <h3 className="text-[15px] font-semibold text-[#1A1A1A] dark:text-white">Languages</h3>
-                                                <p className="text-sm text-neutral-400 dark:text-neutral-500">English</p>
+                                                <div className="flex items-center gap-2">
+                                                    <MousePointer2 className="w-4 h-4 text-emerald-500" />
+                                                    <h3 className="text-[15px] font-semibold text-[#1A1A1A] dark:text-white">Smart Thread Grouping</h3>
+                                                </div>
+                                                <p className="text-sm text-neutral-400 dark:text-neutral-500">Automatically group related emails using Sift AI.</p>
                                             </div>
-                                            <Button variant="ghost" className="bg-[#EBE9E2] dark:bg-white/[0.06] hover:bg-[#DEDCD4] dark:hover:bg-white/[0.1] text-neutral-700 dark:text-neutral-200 px-6 h-10 rounded-xl text-sm font-medium">Change</Button>
+                                            <ToggleSwitch checked={settings.smartGrouping} onChange={(v) => updateSetting('smartGrouping', v)} />
                                         </div>
                                     </div>
                                 </motion.div>
@@ -242,56 +288,52 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                     className="space-y-8"
                                 >
                                     <div className="space-y-4">
-                                        <h2 className="text-[13px] font-bold tracking-wider text-neutral-400 dark:text-neutral-500 uppercase px-1">App settings</h2>
+                                        <h2 className="text-[13px] font-bold tracking-wider text-neutral-400 dark:text-neutral-500 uppercase px-1">Display & Notifications</h2>
                                         <div className="bg-[#FAF9F6] dark:bg-white/[0.03] rounded-3xl p-8 border border-[#EBE9E2] dark:border-white/5 space-y-8">
                                             <div className="flex items-center justify-between">
-                                                <span className="text-[15px] font-medium text-[#1A1A1A] dark:text-white">Launch app at login</span>
-                                                <ToggleSwitch checked={appSettings.launchAtLogin} onChange={(v) => setAppSettings(p => ({...p, launchAtLogin: v}))} />
+                                                <div className="flex items-center gap-3">
+                                                    <Bell className="w-4 h-4 text-neutral-400" />
+                                                    <span className="text-[15px] font-medium text-[#1A1A1A] dark:text-white">Desktop Notifications</span>
+                                                </div>
+                                                <ToggleSwitch checked={settings.notifications} onChange={(v) => updateSetting('notifications', v)} />
                                             </div>
                                             <div className="h-px bg-[#EBE9E2] dark:bg-white/5" />
                                             <div className="flex items-center justify-between">
-                                                <span className="text-[15px] font-medium text-[#1A1A1A] dark:text-white">Show Arcus bar at all times</span>
-                                                <ToggleSwitch checked={appSettings.showFlowBar} onChange={(v) => setAppSettings(p => ({...p, showFlowBar: v}))} />
+                                                <div className="flex items-center gap-3">
+                                                    <Volume2 className="w-4 h-4 text-neutral-400" />
+                                                    <span className="text-[15px] font-medium text-[#1A1A1A] dark:text-white">Email Sound Effects</span>
+                                                </div>
+                                                <ToggleSwitch checked={settings.soundEffects} onChange={(v) => updateSetting('soundEffects', v)} />
                                             </div>
                                             <div className="h-px bg-[#EBE9E2] dark:bg-white/5" />
                                             <div className="flex items-center justify-between">
-                                                <span className="text-[15px] font-medium text-[#1A1A1A] dark:text-white">Show app in dock</span>
-                                                <ToggleSwitch checked={appSettings.showAppInDock} onChange={(v) => setAppSettings(p => ({...p, showAppInDock: v}))} />
+                                                <div className="flex items-center gap-3">
+                                                    <Monitor className="w-4 h-4 text-neutral-400" />
+                                                    <span className="text-[15px] font-medium text-[#1A1A1A] dark:text-white">Compact UI Mode</span>
+                                                </div>
+                                                <ToggleSwitch checked={settings.compactMode} onChange={(v) => updateSetting('compactMode', v)} />
                                             </div>
                                         </div>
                                     </div>
 
                                     <div className="space-y-4">
-                                        <h2 className="text-[13px] font-bold tracking-wider text-neutral-400 dark:text-neutral-500 uppercase px-1">Sound</h2>
-                                        <div className="bg-[#FAF9F6] dark:bg-white/[0.03] rounded-3xl p-8 border border-[#EBE9E2] dark:border-white/5 space-y-8">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-[15px] font-medium text-[#1A1A1A] dark:text-white">Dictation sound effects</span>
-                                                <ToggleSwitch checked={appSettings.dictationSounds} onChange={(v) => setAppSettings(p => ({...p, dictationSounds: v}))} />
-                                            </div>
-                                            <div className="h-px bg-[#EBE9E2] dark:bg-white/5" />
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-[15px] font-medium text-[#1A1A1A] dark:text-white">Mute music while dictating</span>
-                                                <ToggleSwitch checked={appSettings.muteWhileDictating} onChange={(v) => setAppSettings(p => ({...p, muteWhileDictating: v}))} />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-4">
-                                        <h2 className="text-[13px] font-bold tracking-wider text-neutral-400 dark:text-neutral-500 uppercase px-1">Extras</h2>
+                                        <h2 className="text-[13px] font-bold tracking-wider text-neutral-400 dark:text-neutral-500 uppercase px-1">App Maintenance</h2>
                                         <div className="bg-[#FAF9F6] dark:bg-white/[0.03] rounded-[24px] p-6 border border-[#EBE9E2] dark:border-white/5 flex items-center justify-center gap-4">
                                             <Button 
                                                 variant="outline" 
+                                                onClick={handleReset}
                                                 className="flex-1 bg-white dark:bg-white/5 border-[#EBE9E2] dark:border-white/10 hover:bg-neutral-50 dark:hover:bg-white/[0.08] text-[#1A1A1A] dark:text-white py-6 rounded-2xl flex items-center justify-center gap-2 group"
                                             >
-                                                <RefreshCw className="w-4 h-4 text-neutral-400 group-hover:text-black dark:group-hover:text-white transition-colors" />
-                                                <span>Reset app</span>
+                                                <RefreshCw className="w-4 h-4 text-neutral-400 group-hover:rotate-180 transition-all duration-500" />
+                                                <span>Reset Local Cache</span>
                                             </Button>
                                             <Button 
                                                 variant="outline" 
+                                                onClick={() => window.location.reload()}
                                                 className="flex-1 bg-white dark:bg-white/5 border-[#EBE9E2] dark:border-white/10 hover:bg-neutral-50 dark:hover:bg-white/[0.08] text-[#1A1A1A] dark:text-white py-6 rounded-2xl flex items-center justify-center gap-2 group"
                                             >
-                                                <Power className="w-4 h-4 text-neutral-400 group-hover:text-black dark:group-hover:text-white transition-colors" />
-                                                <span>Relaunch app</span>
+                                                <Power className="w-4 h-4 text-neutral-400 group-hover:text-red-400 transition-colors" />
+                                                <span>Relaunch App</span>
                                             </Button>
                                         </div>
                                     </div>
@@ -334,12 +376,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                             <div className="h-px bg-[#EBE9E2] dark:bg-white/5" />
                                             <div className="flex items-center justify-between">
                                                 <span className="text-[15px] font-medium text-neutral-500 dark:text-neutral-400">Username</span>
-                                                <span className="text-[15px] text-neutral-900 dark:text-neutral-300 font-medium">{accountInfo.username}</span>
-                                            </div>
-                                            <div className="h-px bg-[#EBE9E2] dark:bg-white/5" />
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-[15px] font-medium text-neutral-500 dark:text-neutral-400">Website</span>
-                                                <span className="text-[15px] text-neutral-900 dark:text-neutral-300 font-medium">{accountInfo.website}</span>
+                                                <span className="text-[15px] text-neutral-900 dark:text-neutral-300 font-medium">@{accountInfo.username}</span>
                                             </div>
                                             <div className="h-px bg-[#EBE9E2] dark:bg-white/5" />
                                             <div className="flex items-center justify-between">
@@ -400,13 +437,12 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                 "1 Sift Analysis per day",
                                                 "5 Arcus AI messages per day",
                                                 "3 Email Summaries per day",
-                                                "2 AI Notes per month",
                                                 "Secure Google OAuth"
                                             ]}
                                             buttonText="Start Free"
                                         />
                                         <PricingCard 
-                                            subtitle="For individual founders"
+                                            subtitle="For heavy users"
                                             title="Starter"
                                             price={7.99}
                                             highlighted={true}
@@ -415,21 +451,19 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                 "10 Sift Analyses per day",
                                                 "20 Arcus AI messages per day",
                                                 "30 Email Summaries per day",
-                                                "50 AI Notes per month",
                                                 "30 Scheduled Calls per month"
                                             ]}
                                             buttonText="Get Started"
                                         />
                                         <PricingCard 
-                                            subtitle="For power users & teams"
+                                            subtitle="Unlimited Power"
                                             title="Pro"
                                             price={29.99}
                                             features={[
                                                 "Everything in Starter",
                                                 "Unlimited AI Drafts",
                                                 "Unlimited Sift Analyses",
-                                                "Unlimited Arcus AI messages",
-                                                "Unlimited Email Summaries",
+                                                "Unlimited Arcus messages",
                                                 "Priority Support"
                                             ]}
                                             buttonText="Level up to Pro"
@@ -448,48 +482,48 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                     <div className="bg-[#FAF9F6] dark:bg-white/[0.03] rounded-[32px] p-8 border border-[#EBE9E2] dark:border-white/5 space-y-10">
                                         <div className="flex items-start justify-between">
                                             <div className="space-y-1 max-w-[480px]">
-                                                <h3 className="text-[17px] font-bold text-[#1A1A1A] dark:text-white">Privacy Mode</h3>
+                                                <h3 className="text-[17px] font-bold text-[#1A1A1A] dark:text-white">Enhanced Privacy Mode</h3>
                                                 <p className="text-sm text-neutral-400 dark:text-neutral-500 leading-relaxed">
-                                                    If enabled, none of your dictation data will be stored or used for model training by us or any third party (zero data retention).
+                                                    When active, Mailient does not store your conversation history on our cloud. Everything stays local to your browser.
                                                 </p>
                                             </div>
-                                            <ToggleSwitch checked={appSettings.privacyMode} onChange={(v) => setAppSettings(p => ({...p, privacyMode: v}))} />
+                                            <ToggleSwitch checked={settings.privacyMode} onChange={(v) => updateSetting('privacyMode', v)} />
                                         </div>
 
                                         <div className="h-px bg-[#EBE9E2] dark:bg-white/5" />
 
                                         <div className="flex items-start justify-between">
                                             <div className="space-y-1 max-w-[480px]">
-                                                <h3 className="text-[17px] font-bold text-[#1A1A1A] dark:text-white">Context awareness</h3>
+                                                <h3 className="text-[17px] font-bold text-[#1A1A1A] dark:text-white">AI Protection Guard</h3>
                                                 <p className="text-sm text-neutral-400 dark:text-neutral-500 leading-relaxed">
-                                                    Allow Flow to use limited, relevant text content from the app you're dictating in to spell names correctly and better understand you.
+                                                    Prevents prompt injection attacks and exfiltration attempts from your email data.
                                                 </p>
                                             </div>
-                                            <ToggleSwitch checked={appSettings.contextAwareness} onChange={(v) => setAppSettings(p => ({...p, contextAwareness: v}))} />
+                                            <ToggleSwitch checked={settings.aiProtection} onChange={(v) => updateSetting('aiProtection', v)} />
                                         </div>
 
                                         <div className="h-px bg-[#EBE9E2] dark:bg-white/5" />
 
                                         <div className="flex items-start justify-between">
                                             <div className="space-y-1 max-w-[480px]">
-                                                <h3 className="text-[17px] font-bold text-[#1A1A1A] dark:text-white">AI Protection Mode</h3>
+                                                <h3 className="text-[17px] font-bold text-[#1A1A1A] dark:text-white">Local AES-256 Storage</h3>
                                                 <p className="text-sm text-neutral-400 dark:text-neutral-500 leading-relaxed">
-                                                    Enables advanced heuristic checks to prevent prompt injection and unauthorized data exfiltration during AI processing.
+                                                    Encrypts all locally cached emails and drafts before saving them to IndexedDB.
                                                 </p>
                                             </div>
-                                            <ToggleSwitch checked={appSettings.aiProtectionMode} onChange={(v) => setAppSettings(p => ({...p, aiProtectionMode: v}))} />
+                                            <ToggleSwitch checked={settings.aesEncryption} onChange={(v) => updateSetting('aesEncryption', v)} />
                                         </div>
 
                                         <div className="h-px bg-[#EBE9E2] dark:bg-white/5" />
 
                                         <div className="flex items-start justify-between">
                                             <div className="space-y-1 max-w-[480px]">
-                                                <h3 className="text-[17px] font-bold text-[#1A1A1A] dark:text-white">AES-256 Encryption</h3>
+                                                <h3 className="text-[17px] font-bold text-[#1A1A1A] dark:text-white">Training Contribution</h3>
                                                 <p className="text-sm text-neutral-400 dark:text-neutral-500 leading-relaxed">
-                                                    Ensures all your local and synced data is encrypted with military-grade AES-256 standard before storage.
+                                                    Allow Mailient to use anonymized feedback to improve its email composition models.
                                                 </p>
                                             </div>
-                                            <ToggleSwitch checked={appSettings.aesProtection} onChange={(v) => setAppSettings(p => ({...p, aesProtection: v}))} />
+                                            <ToggleSwitch checked={settings.trainingData} onChange={(v) => updateSetting('trainingData', v)} />
                                         </div>
                                     </div>
 
@@ -499,34 +533,9 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                             <ShieldCheck className="w-8 h-8 text-emerald-500" />
                                         </div>
                                         <div className="text-center relative z-10">
-                                            <h4 className="text-white text-lg font-bold mb-1 tracking-tight">Enterprise Shield Active</h4>
-                                            <p className="text-neutral-500 text-sm max-w-[320px] mx-auto">Your identity and conversations are shielded by private encrypted tunnels.</p>
+                                            <h4 className="text-white text-lg font-bold mb-1 tracking-tight">Mailient Shield Active</h4>
+                                            <p className="text-neutral-500 text-sm max-w-[320px] mx-auto">Your identity and inbox are protected by state-of-the-art encryption.</p>
                                         </div>
-                                    </div>
-
-                                    <div className="flex items-center gap-4 px-4 py-2 opacity-30">
-                                        <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                                        <span className="text-[11px] text-neutral-400 font-bold tracking-[0.2em] uppercase">HIPAA COMPLIANCE INFRASTRUCTURE</span>
-                                    </div>
-                                </motion.div>
-                            )}
-
-                            {activeSection === 'vibe-coding' && (
-                                <motion.div
-                                    key="vibe-coding"
-                                    initial={{ opacity: 0, scale: 0.98 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    className="flex flex-col items-center justify-center py-20 bg-[#FAF9F6] dark:bg-white/[0.03] rounded-3xl border border-[#EBE9E2] dark:border-white/5"
-                                >
-                                    <div className="w-20 h-20 bg-black dark:bg-white rounded-[24px] flex items-center justify-center mb-6 shadow-2xl">
-                                        <Hash className="w-10 h-10 text-white dark:text-black" />
-                                    </div>
-                                    <h2 className="text-2xl font-serif text-[#1A1A1A] dark:text-white mb-2">Vibe Coding</h2>
-                                    <p className="text-neutral-400 dark:text-neutral-500 text-center max-w-[320px] mb-8 leading-relaxed">
-                                        Configure your coding atmosphere and Arcus AI personality.
-                                    </p>
-                                    <div className="flex gap-3">
-                                        <Button className="rounded-xl px-8 h-11 bg-black dark:bg-white text-white dark:text-black font-medium hover:opacity-90 transition-all">Enable Experimental</Button>
                                     </div>
                                 </motion.div>
                             )}
