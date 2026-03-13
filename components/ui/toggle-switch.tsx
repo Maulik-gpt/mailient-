@@ -23,8 +23,8 @@ export function ToggleSwitch({ checked, onChange, disabled = false, className = 
       className={`
         relative inline-flex h-6 w-10 items-center rounded-full transition-all duration-200 ease-in-out
         ${checked
-          ? 'bg-[#8a8888]'
-          : 'bg-gray-500'
+          ? 'bg-[#1A1A1A] dark:bg-white'
+          : 'bg-neutral-200 dark:bg-white/10'
         }
         ${disabled
           ? 'cursor-not-allowed opacity-50'
@@ -37,8 +37,8 @@ export function ToggleSwitch({ checked, onChange, disabled = false, className = 
         className={`
           inline-block h-5 w-5 transform rounded-full bg-white transition-all duration-200 ease-in-out
           ${checked
-            ? 'translate-x-4'
-            : 'translate-x-0.5'
+            ? 'translate-x-[18px] bg-white dark:bg-black'
+            : 'translate-x-[2px] bg-white'
           }
         `}
       />

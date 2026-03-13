@@ -622,7 +622,7 @@ export default function ProfileBubble() {
                     onSave={saveProfileFromDialog}
                   />
                   <button
-                    onClick={() => { router.push('/settings'); setIsDropdownOpen(false); }}
+                    onClick={() => { setIsDropdownOpen(false); }}
                     className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors"
                     role="menuitem"
                   >

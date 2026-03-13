@@ -86,8 +86,8 @@ export default function DashboardClient() {
           <div className="bg-gray-800 rounded-lg p-6">
             <h3 className="text-lg font-semibold mb-2">Account</h3>
             <p className="text-gray-400 mb-4">Manage your profile and settings</p>
-            <Button onClick={() => window.location.href = '/settings'}>
-              Go to Settings
+            <Button disabled className="opacity-50 cursor-not-allowed">
+              Available in Home Feed
             </Button>
           </div>
         </div>

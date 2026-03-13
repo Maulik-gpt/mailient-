@@ -5,6 +5,7 @@ import { AnimatePresence, motion, type PanInfo, useAnimation, useDragControls } 
 import { useSession } from 'next-auth/react';
 import { SiftCard } from './sift-card';
 import { Button } from './button';
+import { SettingsCard } from './settings-card';
 import { Badge } from './badge';
 import { HomeFeedSidebar } from './home-feed-sidebar';
 import { RefreshCw, AlertCircle, TrendingUp, Clock, Target, Zap, Mail, Home, X, User, Sparkles, ArrowLeft, LayoutList, Inbox, ExternalLink, Download, FilePlus, ChevronDown, ChevronRight, Plus, Users, Building, Phone, Loader2, MessageCircle, Send } from 'lucide-react';
@@ -244,6 +245,7 @@ export function GmailInterfaceFixed() {
     const [isArcusLoading, setIsArcusLoading] = useState(false);
     const [arcusConversationId, setArcusConversationId] = useState<string | null>(null);
     const [arcusPanelHeight, setArcusPanelHeight] = useState(800);
+    const [showSettings, setShowSettings] = useState(false);
 
     const arcusDragControls = useDragControls();
     const arcusPanelAnimControls = useAnimation();
@@ -1296,8 +1298,15 @@ export function GmailInterfaceFixed() {
             {/* Sidebar */}
             <HomeFeedSidebar
                 onPeopleClick={() => setViewMode(prev => prev === 'people' ? 'home' : 'people')}
+                onSettingsClick={() => setShowSettings(true)}
                 activeView={viewMode}
             />
+
+            <AnimatePresence>
+                {showSettings && (
+                    <SettingsCard onClose={() => setShowSettings(false)} />
+                )}
+            </AnimatePresence>
 
             {/* Main Content Wrapper */}
             <div className="flex-1 ml-64 min-h-screen relative overflow-hidden bg-[#F9F8F6] dark:bg-[#0c0c0c]">

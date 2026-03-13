@@ -19,10 +19,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface HomeFeedSidebarProps {
     className?: string;
     onPeopleClick?: () => void;
+    onSettingsClick?: () => void;
     activeView?: 'home' | 'people';
 }
 
-export function HomeFeedSidebar({ className = '', onPeopleClick, activeView = 'home' }: HomeFeedSidebarProps) {
+export function HomeFeedSidebar({ className = '', onPeopleClick, onSettingsClick, activeView = 'home' }: HomeFeedSidebarProps) {
     const { data: session } = useSession();
     const router = useRouter();
     const pathname = usePathname();
@@ -55,7 +56,7 @@ export function HomeFeedSidebar({ className = '', onPeopleClick, activeView = 'h
     ];
 
     const bottomNavItems = [
-        { id: 'settings', icon: Settings2, label: 'Settings', route: '/settings' },
+        { id: 'settings', icon: Settings2, label: 'Settings', route: '/settings', onClick: onSettingsClick },
         { id: 'pricing', icon: CreditCard, label: 'Plans & Billing', route: '/pricing' },
     ];
 
@@ -119,7 +120,13 @@ export function HomeFeedSidebar({ className = '', onPeopleClick, activeView = 'h
                             return (
                                 <button
                                     key={item.id}
-                                    onClick={() => router.push(item.route)}
+                                    onClick={() => {
+                                        if (item.onClick) {
+                                            item.onClick();
+                                        } else {
+                                            router.push(item.route);
+                                        }
+                                    }}
                                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-300 group ${
                                         isActive 
                                         ? 'bg-white dark:bg-white/[0.05] text-[#1A1A1A] dark:text-white font-semibold shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] border border-[#EBE9E2] dark:border-white/10' 
@@ -185,7 +192,11 @@ export function HomeFeedSidebar({ className = '', onPeopleClick, activeView = 'h
 
                                     <button
                                         onClick={() => {
-                                            router.push('/settings');
+                                            if (onSettingsClick) {
+                                                onSettingsClick();
+                                            } else {
+                                                router.push('/settings');
+                                            }
                                             setIsMoreOptionsOpen(false);
                                         }}
                                         className="w-full flex items-center gap-3 px-3 py-2 text-[#666666] dark:text-neutral-400 hover:text-[#1A1A1A] dark:hover:text-white hover:bg-[#EBE9E2]/50 dark:hover:bg-white/5 rounded-lg transition-all text-sm"
