@@ -265,7 +265,7 @@ type Message = AgentMessage | UserMessage;
 
 const THINKING_MESSAGES = ["Thinking", "Processing", "Analyzing", "Chilling", "Synthesizing", "Organizing", "Reviewing", "Refining", "Checking", "Polishing"];
 
-function RollingThinkingStatus() {
+function RollingThinkingStatus({ onToggle, isOpen }: { onToggle: () => void, isOpen: boolean }) {
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
@@ -276,20 +276,28 @@ function RollingThinkingStatus() {
   }, [index]);
 
   return (
-    <div className="h-[18px] overflow-hidden flex items-center">
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.div
-          key={THINKING_MESSAGES[index]}
-          initial={{ y: -15, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 15, opacity: 0 }}
-          transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
-        >
-          <TextShimmer className="text-xs font-medium tracking-tight" duration={1.2}>
-            {THINKING_MESSAGES[index]}
-          </TextShimmer>
-        </motion.div>
-      </AnimatePresence>
+    <div className="flex items-center gap-2.5">
+      <div className="h-[18px] overflow-hidden flex items-center min-w-[80px]">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={THINKING_MESSAGES[index]}
+            initial={{ y: -15, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 15, opacity: 0 }}
+            transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+          >
+            <TextShimmer className="text-xs font-medium tracking-tight" duration={1.2}>
+              {THINKING_MESSAGES[index]}
+            </TextShimmer>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+      <button 
+        onClick={onToggle}
+        className="p-1 hover:bg-white/5 rounded-md transition-colors text-white/30 hover:text-white group"
+      >
+        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
     </div>
   );
 }
@@ -369,6 +377,7 @@ export default function ChatInterface({
 
   // Live thinking state (AI-generated, shown during loading)
   const [liveThinkingSteps, setLiveThinkingSteps] = useState<LiveThinkingStep[]>([]);
+  const [isThinkingStepsOpen, setIsThinkingStepsOpen] = useState<boolean>(false);
 
   // Canvas Panel state
   const [isCanvasOpen, setIsCanvasOpen] = useState(false);
@@ -711,7 +720,8 @@ export default function ChatInterface({
       const hasCanvas = Boolean(data.canvasData && (data.canvasData.content || data.execution?.requiresApproval));
       if (hasCanvas) {
         setCanvasData(data.canvasData);
-        setIsCanvasOpen(true);
+        // Don't auto-open canvas until requested
+        setIsCanvasOpen(false);
       }
 
       await refreshArcusCredits(true);
@@ -1860,6 +1870,23 @@ export default function ChatInterface({
                                     </div>
                                   </div>
                                 )}
+
+                                {msg.role === 'assistant' && msg.meta?.thinkingProcess && (
+                                  <div className="mt-4 border-t border-white/5 pt-3">
+                                    <ThinkingLayer steps={msg.meta.thinkingProcess} isVisible={true} />
+                                  </div>
+                                )}
+
+                                {msg.role === 'assistant' && msg.meta?.artifact && (
+                                  <ArtifactCard 
+                                    type={msg.meta.artifact.type}
+                                    title={msg.meta.artifact.title}
+                                    onView={() => {
+                                      setCanvasData(msg.meta.artifact.canvasData);
+                                      setIsCanvasOpen(true);
+                                    }}
+                                  />
+                                )}
                               </div>
                               <div className={`mt-2 px-1 text-[10px] tracking-tight text-graphite-muted-2 opacity-60 ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
                                 {msg.time}
@@ -1868,19 +1895,31 @@ export default function ChatInterface({
                           </div>
                         </div>
                       ))}
-                      {liveThinkingSteps.length > 0 && (
-                        <div className="flex flex-col gap-1 ml-9.5 max-w-2xl">
-                          <ThinkingLayer steps={liveThinkingSteps} isVisible={true} />
-                        </div>
-                      )}
-
                       {isLoading && (
                         <div className="flex items-start gap-2.5 animate-fade-in group pb-20">
-                          <div className="w-7 h-7 rounded-lg bg-graphite-surface border border-graphite-border flex items-center justify-center overflow-hidden">
+                          <div className="w-7 h-7 rounded-lg bg-graphite-surface border border-graphite-border flex items-center justify-center overflow-hidden shrink-0">
                             <img src="/arcus-ai-icon.jpg" className="w-full h-full object-cover grayscale animate-pulse opacity-40" />
                           </div>
-                          <div className="bg-graphite-surface/40 border border-graphite-border py-2 px-3.5 rounded-xl inline-flex items-center gap-2.5">
-                            <RollingThinkingStatus />
+                          <div className="flex flex-col gap-2">
+                            <div className="bg-graphite-surface/40 border border-graphite-border py-2 px-3.5 rounded-xl inline-flex items-center min-w-[140px]">
+                              <RollingThinkingStatus 
+                                onToggle={() => setIsThinkingStepsOpen(!isThinkingStepsOpen)} 
+                                isOpen={isThinkingStepsOpen} 
+                              />
+                            </div>
+                            
+                            <AnimatePresence>
+                              {isThinkingStepsOpen && liveThinkingSteps.length > 0 && (
+                                <motion.div 
+                                  initial={{ height: 0, opacity: 0 }}
+                                  animate={{ height: 'auto', opacity: 1 }}
+                                  exit={{ height: 0, opacity: 0 }}
+                                  className="overflow-hidden bg-[#161616]/40 border border-white/5 rounded-2xl px-4 py-2 ml-1"
+                                >
+                                  <ThinkingLayer steps={liveThinkingSteps} isVisible={true} />
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
                           </div>
                         </div>
                       )}
