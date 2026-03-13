@@ -27,7 +27,7 @@ import { MorphingSquare } from '@/components/ui/morphing-square';
 import { toast } from 'sonner';
 
 // Detect and wrap URLs in plain text with premium styling for actions
-const linkify = (text: string): string => {
+const linkify = (text: string, isUser: boolean = false): string => {
   if (!text) return '';
   const urlRegex = /(https?:\/\/[^\s<]+[^.,;?!)\]\s<])/g;
 
@@ -60,17 +60,20 @@ const linkify = (text: string): string => {
     }
 
     const displayUrl = url.length > 55 ? url.substring(0, 52) + '...' : url;
-    return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-white/60 hover:text-white underline underline-offset-4 decoration-white/20 hover:decoration-white/100 transition-all text-[13px] tracking-tight break-all" title="${url}">${displayUrl}</a>`;
+    const linkColorClass = isUser ? "text-blue-600 hover:text-blue-800" : "text-white/60 hover:text-white";
+    const decorationClass = isUser ? "decoration-blue-200 hover:decoration-blue-600" : "decoration-white/20 hover:decoration-white/100";
+    
+    return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="${linkColorClass} underline underline-offset-4 ${decorationClass} transition-all text-[13px] tracking-tight break-all" title="${url}">${displayUrl}</a>`;
   });
 };
 
-const renderMarkdown = (text: string): string => {
+const renderMarkdown = (text: string, isUser: boolean = false): string => {
   if (!text) return text;
 
   const paragraphs = text.split(/\n\n+/);
 
   const renderedParagraphs = paragraphs.map(para => {
-    let processedPara = para.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-white tracking-tight">$1</strong>');
+    let processedPara = para.replace(/\*\*(.*?)\*\*/g, `<strong class="font-bold ${isUser ? 'text-black' : 'text-white'} tracking-tight">$1</strong>`);
 
     if (processedPara.includes('\n- ') || processedPara.startsWith('- ') || processedPara.includes('\n* ') || processedPara.startsWith('* ')) {
       const lines = processedPara.split('\n');
@@ -83,38 +86,41 @@ const renderMarkdown = (text: string): string => {
       });
 
       let joinedList = listItems.join('\n');
-      joinedList = joinedList.replace(/(<li[\s\S]*?<\/li>(?:\n<li[\s\S]*?<\/li>)*)/g, '<ul class="space-y-1 my-6 list-none bg-white/[0.02] p-6 rounded-2xl border border-white/[0.05] relative shadow-inner overflow-hidden"><div class="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none"></div>$1</ul>');
+      const listBg = isUser ? 'bg-black/[0.03]' : 'bg-white/[0.02]';
+      const listBorder = isUser ? 'border-black/[0.05]' : 'border-white/[0.05]';
+      joinedList = joinedList.replace(/(<li[\s\S]*?<\/li>(?:\n<li[\s\S]*?<\/li>)*)/g, `<ul class="space-y-1 my-6 list-none ${listBg} p-6 rounded-2xl border ${listBorder} relative shadow-inner overflow-hidden"><div class="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none"></div>$1</ul>`);
       return joinedList;
     }
 
-    processedPara = linkify(processedPara);
+    processedPara = linkify(processedPara, isUser);
     processedPara = processedPara.replace(/\n/g, '<br/>');
 
-    return `<p class="mb-3 last:mb-0 leading-relaxed text-white/70 text-[14px]">${processedPara}</p>`;
+    const textColorClass = isUser ? "text-black/80" : "text-white/70";
+    return `<p class="mb-3 last:mb-0 leading-relaxed ${textColorClass} text-[14px]">${processedPara}</p>`;
   });
 
   return renderedParagraphs.join('');
 };
 
-const MessageContent = ({ content }: { content: any }) => {
+const MessageContent = ({ content, isUser }: { content: any, isUser?: boolean }) => {
   if (typeof content === 'string') {
-    return <div dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }} />;
+    return <div dangerouslySetInnerHTML={{ __html: renderMarkdown(content, isUser) }} />;
   }
   return (
     <div className="space-y-4">
-      <div dangerouslySetInnerHTML={{ __html: renderMarkdown(content.text) }} />
+      <div dangerouslySetInnerHTML={{ __html: renderMarkdown(content.text, isUser) }} />
       {content.list && content.list.length > 0 && (
         <ul className="space-y-2 mt-2">
           {content.list.map((item: string, i: number) => (
             <li key={i} className="flex gap-2 items-start">
               <div className="w-1 h-1 rounded-full bg-current mt-2 opacity-50" />
-              <div dangerouslySetInnerHTML={{ __html: renderMarkdown(item) }} />
+              <div dangerouslySetInnerHTML={{ __html: renderMarkdown(item, isUser) }} />
             </li>
           ))}
         </ul>
       )}
       {content.footer && (
-        <div className="mt-4 italic opacity-60 text-sm" dangerouslySetInnerHTML={{ __html: renderMarkdown(content.footer) }} />
+        <div className="mt-4 italic opacity-60 text-sm" dangerouslySetInnerHTML={{ __html: renderMarkdown(content.footer, isUser) }} />
       )}
     </div>
   );
@@ -1693,7 +1699,7 @@ export default function ChatInterface({
                             </div>
                              <div className="flex flex-col max-w-[85%] group/msg">
                                <div className={`px-4 py-2.5 rounded-xl transition-all relative ${msg.role === 'user' ? 'bg-white text-black' : 'bg-graphite-surface border border-graphite-border text-graphite-text group-hover/msg:border-white/20'}`}>
-                                 <MessageContent content={msg.content} />
+                                 <MessageContent content={msg.content} isUser={msg.role === 'user'} />
                                  
                                  {msg.role === 'assistant' && (
                                    <button 
