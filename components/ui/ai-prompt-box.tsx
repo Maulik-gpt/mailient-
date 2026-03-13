@@ -452,7 +452,7 @@ const formatFileSize = (bytes: number) => {
 
 // Main PromptInputBox Component
 interface PromptInputBoxProps {
-  onSend?: (message: string, files?: File[]) => void;
+  onSend?: (message: string, files?: File[], options?: { isDeepThinking?: boolean; isCanvas?: boolean }) => void;
   isLoading?: boolean;
   placeholder?: string;
   className?: string;
@@ -462,7 +462,8 @@ interface PromptInputBoxProps {
   selectedEmailsCount?: number;
   suggestionInput?: { text: string; id: number };
 }
-export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref: React.Ref<HTMLDivElement>) => {
+
+export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxProps>((props, ref) => {
   const { 
     onSend = () => {}, 
     isLoading = false, 
@@ -473,6 +474,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
     onPersonalityClick,
     selectedEmailsCount = 0
   } = props;
+
   const [input, setInput] = React.useState("");
   const [files, setFiles] = React.useState<File[]>([]);
   const [filePreviews, setFilePreviews] = React.useState<{ [key: string]: string }>({});
@@ -511,7 +513,6 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
 
   const processFile = (file: File) => {
     if (file.size > 50 * 1024 * 1024) { // 50MB limit
-      console.log("File too large (max 50MB)");
       return;
     }
     
@@ -576,22 +577,19 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
 
   const handleSubmit = () => {
     if (input.trim() || files.length > 0) {
-      let messagePrefix = "";
-      if (showThink) messagePrefix = "[Think: ";
-      else if (showCanvas) messagePrefix = "[Canvas: ";
-      const formattedInput = messagePrefix ? `${messagePrefix}${input}]` : input;
-      onSend(formattedInput, files);
+      onSend(input, files, { isDeepThinking: showThink, isCanvas: showCanvas });
       setInput("");
       setFiles([]);
       setFilePreviews({});
+      setShowThink(false);
+      setShowCanvas(false);
     }
   };
 
   const handleStartRecording = () => {
-    console.log("Started recording");
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert("Speech Recognition is not supported in this browser. Please use Chrome or Safari.");
+      alert("Speech Recognition is not supported in this browser.");
       setIsRecording(false);
       return;
     }
@@ -627,7 +625,6 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
   };
 
   const handleStopRecording = (duration: number) => {
-    console.log(`Stopped recording after ${duration} seconds`);
     if (recognitionRef.current) {
       recognitionRef.current.stop();
     }
@@ -644,7 +641,11 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
         isLoading={isLoading}
         onSubmit={handleSubmit}
         disabled={isLoading || isRecording}
-        ref={ref || promptBoxRef}
+        ref={(node) => {
+          if (typeof ref === 'function') ref(node);
+          else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+          (promptBoxRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+        }}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
@@ -666,12 +667,12 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
             >
               {files.map((file, index) => (
                 <motion.div 
-                  key={`${file.name}-${index}`} 
-                  layout
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  className="relative group"
+                   key={`${file.name}-${index}`} 
+                   layout
+                   initial={{ opacity: 0, scale: 0.9 }}
+                   animate={{ opacity: 1, scale: 1 }}
+                   exit={{ opacity: 0, scale: 0.9 }}
+                   className="relative group"
                 >
                   <div className="bg-[#2E3033] border border-[#444444] rounded-xl overflow-hidden p-1 flex items-center gap-2 pr-3 min-w-[120px] max-w-[200px]">
                     {isImageFile(file) && filePreviews[file.name] ? (
@@ -745,6 +746,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
           >
             <PromptInputAction tooltip="Upload files">
               <button
+                type="button"
                 onClick={() => uploadInputRef.current?.click()}
                 className="flex h-8 w-8 text-[#9CA3AF] cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-white/5 hover:text-[#D1D5DB]"
                 disabled={isRecording}
@@ -768,6 +770,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
             {onIntegrationsClick && (
               <PromptInputAction tooltip="Integrations">
                 <button
+                  type="button"
                   onClick={onIntegrationsClick}
                   className="flex h-8 px-2 text-[#9CA3AF] items-center justify-center rounded-lg hover:bg-white/5 hover:text-[#D1D5DB] transition-all border border-transparent hover:border-white/5 outline-none focus:ring-0"
                 >
@@ -780,6 +783,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
             {onAttachEmailClick && (
               <PromptInputAction tooltip="Attach Email">
                 <button
+                  type="button"
                   onClick={onAttachEmailClick}
                   className={cn(
                     "flex h-8 px-2 items-center justify-center rounded-lg transition-all border outline-none focus:ring-0",
@@ -881,6 +885,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
             }
           >
             <button
+              type="button"
               className={cn(
                 "inline-flex items-center justify-center font-medium h-8 w-8 rounded-full transition-all duration-200 outline-none",
                 isRecording
@@ -914,4 +919,5 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
     </>
   );
 });
+
 PromptInputBox.displayName = "PromptInputBox";

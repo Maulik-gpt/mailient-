@@ -34,7 +34,9 @@ export async function POST(request) {
       actionPayload,
       approvalToken,
       actionRequestId,
-      attachments
+      attachments,
+      isDeepThinking,
+      isCanvas
     } = await request.json();
 
     console.log('🚀 Arcus Chat request received:', message?.substring?.(0, 80));
@@ -452,7 +454,7 @@ Body: ${emailData.body || emailData.snippet}
               ? 'action_plan'
               : 'email_draft';
 
-    const shouldGenerateCanvas = Boolean(intentAnalysis?.needsCanvas || forceCanvasByMessage);
+    const shouldGenerateCanvas = Boolean(isCanvas);
 
     if (shouldGenerateCanvas) {
       try {
@@ -460,7 +462,7 @@ Body: ${emailData.body || emailData.snippet}
           message,
           effectiveCanvasType,
           emailContext || '',
-          { userName, userEmail, privacyMode, attachments }
+          { userName, userEmail, privacyMode, attachments, isDeepThinking }
         );
 
         if (operatorRuntime && operatorRun) {
@@ -516,7 +518,8 @@ Body: ${emailData.body || emailData.snippet}
       userEmail,
       userName,
       privacyMode,
-      attachments
+      attachments,
+      isDeepThinking
     });
 
     const finalResponse = response && response.trim()

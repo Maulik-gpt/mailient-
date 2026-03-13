@@ -27,6 +27,7 @@ import { MorphingSquare } from '@/components/ui/morphing-square';
 import { TextShimmer } from '@/components/ui/text-shimmer';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { cn } from "@/lib/utils";
 
 // Detect and wrap URLs in plain text with premium styling for actions
 const linkify = (text: string, isUser: boolean = false): string => {
@@ -261,15 +262,18 @@ type Message = AgentMessage | UserMessage;
 
 const THINKING_MESSAGES = ["Thinking", "Processing", "Analyzing", "Chilling", "Synthesizing", "Organizing", "Reviewing", "Refining", "Checking", "Polishing"];
 
-function RollingThinkingStatus({ onToggle, isOpen }: { onToggle: () => void, isOpen: boolean }) {
+const DEEP_THINKING_MESSAGES = ["Thinking deep", "Reasoning", "Simulating outcomes", "Analyzing layers", "Synthesizing deep context", "Architecting solution", "Deeply processing", "Refining logic"];
+
+function RollingThinkingStatus({ onToggle, isOpen, isDeepThinking }: { onToggle: () => void, isOpen: boolean, isDeepThinking?: boolean }) {
   const [index, setIndex] = useState(0);
+  const messages = isDeepThinking ? DEEP_THINKING_MESSAGES : THINKING_MESSAGES;
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setIndex((prev) => (prev + 1) % THINKING_MESSAGES.length);
-    }, index === 0 ? 5000 : 2500);
+      setIndex((prev) => (prev + 1) % messages.length);
+    }, index === 0 ? (isDeepThinking ? 8000 : 5000) : (isDeepThinking ? 4000 : 2500));
     return () => clearTimeout(timer);
-  }, [index]);
+  }, [index, isDeepThinking, messages.length]);
 
   return (
     <div className="flex items-center justify-between w-full group/status cursor-pointer select-none" onClick={onToggle}>
@@ -277,7 +281,7 @@ function RollingThinkingStatus({ onToggle, isOpen }: { onToggle: () => void, isO
         <div className="relative flex items-center justify-center w-4 h-4 overflow-hidden shrink-0">
           <AnimatePresence mode="popLayout" initial={false}>
             <motion.div
-              key={THINKING_MESSAGES[index]}
+              key={messages[index]}
               initial={{ y: -18, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 18, opacity: 0 }}
@@ -287,22 +291,22 @@ function RollingThinkingStatus({ onToggle, isOpen }: { onToggle: () => void, isO
               }}
               className="absolute inset-0 flex items-center justify-center"
             >
-              <BrainCircuit className="w-3.5 h-3.5 text-white/40" />
+              <BrainCircuit className={cn("w-3.5 h-3.5", isDeepThinking ? "text-[#8B5CF6]" : "text-white/40")} />
             </motion.div>
           </AnimatePresence>
         </div>
         
-        <div className="h-[20px] overflow-hidden flex items-center min-w-[90px]">
+        <div className="h-[20px] overflow-hidden flex items-center min-w-[120px]">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
-              key={THINKING_MESSAGES[index]}
+              key={messages[index]}
               initial={{ y: -20, opacity: 0, filter: 'blur(4px)' }}
               animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
               exit={{ y: 20, opacity: 0, filter: 'blur(4px)' }}
               transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
             >
-              <TextShimmer className="text-[13px] font-bold tracking-tight text-white/90" duration={1.5}>
-                {THINKING_MESSAGES[index]}
+              <TextShimmer className={cn("text-[13px] font-bold tracking-tight", isDeepThinking ? "text-[#8B5CF6]" : "text-white/90")} duration={isDeepThinking ? 2.5 : 1.5}>
+                {messages[index]}
               </TextShimmer>
             </motion.div>
           </AnimatePresence>
@@ -398,6 +402,7 @@ export default function ChatInterface({
   const [canvasData, setCanvasData] = useState<CanvasData | null>(null);
   const [isCanvasExecuting, setIsCanvasExecuting] = useState(false);
   const [activeRun, setActiveRun] = useState<{ runId: string; status?: string; phase?: string } | null>(null);
+  const [isDeepThinkingState, setIsDeepThinkingState] = useState<boolean>(false);
 
 
 
@@ -634,10 +639,23 @@ export default function ChatInterface({
     }).join('\\n');
   };
 
-  const processAIMessage = async (messageText: string, conversationIdToUse: string, isNew: boolean, attachments?: any[]) => {
+  const processAIMessage = async (messageText: string, conversationIdToUse: string, isNew: boolean, attachments?: any[], options?: { isDeepThinking?: boolean; isCanvas?: boolean }) => {
     try {
       setIsLoading(true);
-      setLiveThinkingSteps(buildFallbackThinkingSteps(messageText));
+      
+      const isDeepThinking = options?.isDeepThinking || false;
+      const isCanvas = options?.isCanvas || false;
+      setIsDeepThinkingState(isDeepThinking);
+
+      if (isDeepThinking) {
+        setLiveThinkingSteps([
+          { id: 'deep-analyze', label: 'Deeply analyzing your request...', status: 'active', type: 'think' },
+          { id: 'deep-context', label: 'Processing broad context and deep retrieval...', status: 'pending', type: 'search' },
+          { id: 'deep-synthesis', label: 'Synthesizing comprehensive response...', status: 'pending', type: 'analyze' }
+        ]);
+      } else {
+        setLiveThinkingSteps(buildFallbackThinkingSteps(messageText));
+      }
 
       // Detect query types
       const notesQuery = isNotesRelatedQuery(messageText);
@@ -659,7 +677,9 @@ export default function ChatInterface({
         notesSearchQuery: extractedQuery,
         activeMission,
         runId: requestRunId,
-        attachments: attachments || []
+        attachments: attachments || [],
+        isDeepThinking,
+        isCanvas
       };
 
       // --- PARALLEL REQUESTS: Fast intent + Full chat ---
@@ -679,7 +699,7 @@ export default function ChatInterface({
 
       // 3) Intent usually returns first — show live thinking steps
       const intentData = await intentPromise;
-      if (intentData?.plan && intentData.plan.length > 0) {
+      if (intentData?.plan && intentData.plan.length > 0 && !isDeepThinking) {
         const steps = normalizeIntentPlanSteps(intentData.plan);
         setLiveThinkingSteps(steps);
 
@@ -923,6 +943,7 @@ export default function ChatInterface({
       setMessages(prev => [...prev, errorAgentMessage]);
     } finally {
       setIsLoading(false);
+      setIsDeepThinkingState(false);
       setLiveThinkingSteps([]);
       setShowNotesFetching(false);
       setTimeout(() => scrollToBottom(true), 100);
@@ -1015,11 +1036,21 @@ export default function ChatInterface({
         const pendingId = localStorage.getItem('pending_arcus_id');
         if (pendingId === conversationId) {
           const pendingMsg = localStorage.getItem('pending_arcus_message');
+          const pendingOptionsRaw = localStorage.getItem('pending_arcus_options');
+          
           localStorage.removeItem('pending_arcus_id');
           localStorage.removeItem('pending_arcus_message');
+          localStorage.removeItem('pending_arcus_options');
+
           if (pendingMsg) {
             console.log('Resuming pending AI call for new conversation:', conversationId);
-            processAIMessage(pendingMsg, conversationId, true);
+            let options = {};
+            try {
+              if (pendingOptionsRaw) options = JSON.parse(pendingOptionsRaw);
+            } catch (e) {
+              console.error('Error parsing pending options:', e);
+            }
+            processAIMessage(pendingMsg, conversationId, true, [], options);
           }
         }
       } catch (error) {
@@ -1235,9 +1266,12 @@ export default function ChatInterface({
     return conversations;
   };
 
-  const handleSend = async (forcedMessage?: string, files?: File[]) => {
+  const handleSend = async (forcedMessage?: string, files?: File[], options?: { isDeepThinking?: boolean; isCanvas?: boolean }) => {
     const messageText = (forcedMessage || message).trim();
     if (!messageText && (!files || files.length === 0)) return;
+
+    const isDeepThinking = options?.isDeepThinking || false;
+    const isCanvas = options?.isCanvas || false;
 
     // Determine if this is a new conversation or continuation
     const shouldCreateNewConversation = !currentConversationId;
@@ -1252,6 +1286,23 @@ export default function ChatInterface({
           base64: await fileToBase64(file)
         })))
       : [];
+
+    // Include selected emails as attachments
+    if (selectedEmails.length > 0) {
+      selectedEmails.forEach(email => {
+        const emailContent = `From: ${email.from}\nSubject: ${email.subject}\nDate: ${email.date}\n\nSnippet: ${email.snippet}`;
+        attachments.push({
+          name: `Attached Email: ${email.subject}`,
+          url: '', 
+          type: 'text/email',
+          size: emailContent.length,
+          base64: btoa(encodeURIComponent(emailContent).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode(parseInt(p1, 16)))),
+          isEmail: true
+        } as any);
+      });
+      // Clear selected emails after processing
+      setSelectedEmails([]);
+    }
 
     // Generate conversation ID if this is a new conversation
     let conversationIdToUse = currentConversationId;
@@ -1313,20 +1364,16 @@ export default function ChatInterface({
     if (shouldCreateNewConversation && onConversationSelect && conversationIdToUse) {
       localStorage.setItem('pending_arcus_id', conversationIdToUse);
       localStorage.setItem('pending_arcus_message', messageText);
+      localStorage.setItem('pending_arcus_options', JSON.stringify(options || {}));
       onConversationSelect(conversationIdToUse);
       return;
     }
 
     // Process the AI message directly - don't rely on navigation/loadConversation
-    processAIMessage(messageText, conversationIdToUse as string, shouldCreateNewConversation, attachments);
+    processAIMessage(messageText, conversationIdToUse as string, shouldCreateNewConversation, attachments, { isDeepThinking, isCanvas });
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
+
 
   const startNewChat = async () => {
     // Save current conversation before starting new one
@@ -1757,7 +1804,7 @@ export default function ChatInterface({
 
                       <div className="w-full relative group">
                         <PromptInputBox
-                          onSend={(msg, files) => handleSend(msg, files)}
+                          onSend={(msg, files, opts) => handleSend(msg, files, opts)}
                           isLoading={isLoading}
                           placeholder="What would you like to know?"
                           onIntegrationsClick={() => setIsIntegrationsModalOpen(true)}
@@ -1941,6 +1988,7 @@ export default function ChatInterface({
                                <RollingThinkingStatus 
                                  onToggle={() => setIsThinkingStepsOpen(!isThinkingStepsOpen)} 
                                  isOpen={isThinkingStepsOpen} 
+                                 isDeepThinking={isDeepThinkingState}
                                />
                             </motion.div>
                             
@@ -1974,7 +2022,7 @@ export default function ChatInterface({
                   <div className="sticky bottom-0 z-20 w-full px-6 pb-12 mt-auto">
                     <div className="max-w-3xl mx-auto">
                       <PromptInputBox
-                        onSend={(msg, files) => handleSend(msg, files)}
+                        onSend={(msg, files, opts) => handleSend(msg, files, opts)}
                         isLoading={isLoading}
                         placeholder="Ask follow-up..."
                         onIntegrationsClick={() => setIsIntegrationsModalOpen(true)}
