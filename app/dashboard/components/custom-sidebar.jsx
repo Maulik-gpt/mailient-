@@ -62,7 +62,7 @@ const CustomSidebar = ({ currentLabel, onLabelChange, labelCounts = {}, onCompos
           onClick={handleATalkClick}
           className="w-full flex items-center justify-center p-4 text-white hover:bg-gradient-to-r hover:from-blue-600 hover:to-purple-600 hover:text-white rounded-xl transition-all duration-300 transform hover:scale-105 group relative overflow-hidden"
           style={{
-            fontFamily: 'Orbitron, "Roboto Slab", "Arial Black", sans-serif',
+            fontFamily: "'Satoshi', sans-serif",
             fontWeight: '900',
             fontSize: '1.75rem',
             textShadow: '0 0 20px rgba(59, 130, 246, 0.8), 0 0 40px rgba(59, 130, 246, 0.4)',

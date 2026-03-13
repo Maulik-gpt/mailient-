@@ -1,5 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Oleo+Script:wght@400;700&display=swap');
-@import url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900,300,100&display=swap');
+@import url('https://api.fontshare.com/v2/css?f[]=satoshi@900,800,700,600,500,400,300,200,100&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -12,34 +11,10 @@ html {
    That import contains the REAL @font-face declarations with proper .woff2 URLs.
    DO NOT add manual @font-face blocks pointing to the CSS URL — they will silently fail. */
 
-/* Oleo Script font declarations */
-.oleo-script-regular {
-  font-family: "Oleo Script", system-ui;
-  font-weight: 400;
-  font-style: normal;
-}
 
-.oleo-script-bold {
-  font-family: "Oleo Script", system-ui;
-  font-weight: 700;
-  font-style: normal;
-}
-
-/* GLOBAL ABSOLUTE FONT OVERRIDE - FORCES SATOSHI ON EVERY SINGLE ELEMENT */
-html, body, #__next, div, span, applet, object, iframe,
-h1, h2, h3, h4, h5, h6, p, blockquote, pre,
-a, abbr, acronym, address, big, cite, code,
-del, dfn, em, img, ins, kbd, q, s, samp,
-small, strike, strong, sub, sup, tt, var,
-b, u, i, center,
-dl, dt, dd, ol, ul, li,
-fieldset, form, label, legend,
-table, caption, tbody, tfoot, thead, tr, th, td,
-article, aside, canvas, details, embed, 
-figure, figcaption, footer, header, hgroup, 
-menu, nav, output, ruby, section, summary,
-time, mark, audio, video, button, input, textarea, select,
-[class*="font-"], [class*="text-"] {
+html, body, #__next, *, ::before, ::after,
+[class*="font-"], [class*="text-"],
+.font-sans, .font-serif, .font-mono, .satoshi-app, .arcus-typography {
   font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
 }
 
@@ -151,8 +126,8 @@ time, mark, audio, video, button, input, textarea, select,
   --sidebar-accent-foreground: oklch(1 0 0);
   --sidebar-border: oklch(1 0 0 / 0.2);
   --sidebar-ring: oklch(1 0 0 / 0.3);
-  --font-geist-sans: "Geist Sans", sans-serif;
-  --font-geist-mono: "Geist Mono", monospace;
+  --font-geist-sans: "Satoshi", sans-serif;
+  --font-geist-mono: "Satoshi", sans-serif;
   --font-satoshi: "Satoshi", sans-serif;
 
   /* Rainbow button colors */

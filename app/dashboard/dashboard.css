@@ -1,6 +1,5 @@
-/* Ensure Satoshi font is used throughout the dashboard */
 * {
-  font-family: 'Satoshi', ui-sans-serif, system-ui, sans-serif;
+  font-family: 'Satoshi', ui-sans-serif, system-ui, sans-serif !important;
 }
 
 /* Custom scrollbar for dashboard */
