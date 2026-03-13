@@ -1,6 +1,6 @@
 "use client";
 
-import { Send, Mail, Upload, User, User2, MessageCircle, DoorOpen, Bell, Mail as EmailIcon, MoreHorizontal, LogOut, Settings, ChevronRight, ChevronDown, CheckCircle2, Circle, Edit, History, LayoutGrid, Zap } from 'lucide-react';
+import { Send, Mail, Upload, User, User2, MessageCircle, DoorOpen, Bell, Mail as EmailIcon, MoreHorizontal, LogOut, Settings, ChevronRight, ChevronDown, CheckCircle2, Circle, Edit, History, LayoutGrid, Zap, Volume2 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
@@ -1637,9 +1637,26 @@ export default function ChatInterface({
                             <div className={`w-7 h-7 rounded-lg flex-shrink-0 flex items-center justify-center border ${msg.role === 'user' ? 'bg-white border-white' : 'bg-graphite-surface border-graphite-border'}`}>
                               {msg.role === 'user' ? <User2 className="w-3.5 h-3.5 text-black" /> : <img src="/arcus-ai-icon.jpg" className="w-full h-full object-cover grayscale" />}
                             </div>
-                             <div className="flex flex-col max-w-[85%]">
-                               <div className={`px-4 py-2.5 rounded-xl ${msg.role === 'user' ? 'bg-white text-black' : 'bg-graphite-surface border border-graphite-border text-graphite-text'}`}>
+                             <div className="flex flex-col max-w-[85%] group/msg">
+                               <div className={`px-4 py-2.5 rounded-xl transition-all relative ${msg.role === 'user' ? 'bg-white text-black' : 'bg-graphite-surface border border-graphite-border text-graphite-text group-hover/msg:border-white/20'}`}>
                                  <MessageContent content={msg.content} />
+                                 
+                                 {msg.role === 'assistant' && (
+                                   <button 
+                                     onClick={() => {
+                                       const text = typeof msg.content === 'string' ? msg.content : msg.content.text;
+                                       if ('speechSynthesis' in window) {
+                                         window.speechSynthesis.cancel();
+                                         const utterance = new SpeechSynthesisUtterance(text);
+                                         window.speechSynthesis.speak(utterance);
+                                       }
+                                     }}
+                                     className="absolute -right-8 top-1 opacity-0 group-hover/msg:opacity-100 transition-opacity p-1.5 hover:bg-white/5 rounded-full text-white/40 hover:text-white"
+                                     title="Speak"
+                                   >
+                                     <Volume2 className="w-3.5 h-3.5" />
+                                   </button>
+                                 )}
                                  {msg.role === 'user' && (msg as UserMessage).attachments && (msg as UserMessage).attachments!.length > 0 && (
                                    <div className="mt-3 flex flex-wrap gap-2 pt-3 border-t border-black/10">
                                      {(msg as UserMessage).attachments!.map((file, idx) => (
