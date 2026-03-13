@@ -896,7 +896,7 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="absolute -top-12 left-6 px-4 py-2 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-3 backdrop-blur-xl z-20"
+                className="absolute -top-9 left-6 px-3 py-1.5 bg-[#0a0a0b]/80 border border-white/10 rounded-xl flex items-center gap-2.5 backdrop-blur-xl z-20"
               >
                 <div className="relative flex items-center justify-center w-2 h-2">
                   <div className={`absolute inset-0 rounded-full blur-[2px] ${recordingState === 'recording' ? 'bg-white/50 animate-pulse' : 'bg-white/20'}`} />
@@ -942,9 +942,9 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
                   <TooltipTrigger asChild>
                     <button
                       onClick={() => onModalStateChange?.(true)}
-                      className="w-10 h-10 flex items-center justify-center text-white/20 hover:text-white hover:bg-white/5 rounded-2xl transition-all outline-none border-none"
+                      className="w-9 h-9 flex items-center justify-center text-white/20 hover:text-white hover:bg-white/5 rounded-xl transition-all outline-none border-none"
                     >
-                      <Plus className="w-5 h-5" />
+                      <Plus className="w-4.5 h-4.5" />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="top">
@@ -958,10 +958,10 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
                   <TooltipTrigger asChild>
                     <button
                       onClick={() => onEmailModalStateChange?.(true)}
-                      className="w-10 h-10 flex items-center justify-center text-white/20 hover:text-white hover:bg-white/5 rounded-2xl transition-all relative outline-none border-none"
+                      className="w-9 h-9 flex items-center justify-center text-white/20 hover:text-white hover:bg-white/5 rounded-xl transition-all relative outline-none border-none"
                     >
-                      <EmailIcon className="w-4.5 h-4.5" />
-                      <div className="absolute top-2.5 right-2.5 w-1.5 h-1.5 bg-white/40 rounded-full blur-[1px]"></div>
+                      <EmailIcon className="w-4 h-4" />
+                      <div className="absolute top-2 right-2 w-1.5 h-1.5 bg-white/40 rounded-full blur-[1px]"></div>
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="top">
@@ -980,7 +980,7 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
                 onKeyDown={handleKeyDown}
                 placeholder={placeholderText}
                 disabled={disabled}
-                className="w-full resize-none bg-transparent text-white placeholder:text-white/20 focus:outline-none border-none p-0 min-h-[24px] max-h-40 text-[15px] leading-relaxed selection:bg-white selection:text-black"
+                className="w-full resize-none bg-transparent text-white placeholder:text-white/20 focus:outline-none border-none p-0 min-h-[24px] max-h-40 text-[14px] leading-relaxed selection:bg-white selection:text-black"
                 rows={1}
               />
             </div>
@@ -1018,12 +1018,12 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
                       <button
                         onClick={startRecording}
                         disabled={disabled}
-                        className={`w-10 h-10 flex items-center justify-center rounded-2xl transition-all outline-none border-none ${isListening ? 'text-white bg-white/10' : 'text-white/20 hover:text-white hover:bg-white/5'}`}
+                        className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all outline-none border-none ${isListening ? 'text-white bg-white/10' : 'text-white/20 hover:text-white hover:bg-white/5'}`}
                       >
                         {isListening ? (
-                          <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                          <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                         ) : (
-                          <Mic className="w-4.5 h-4.5" />
+                          <Mic className="w-4 h-4" />
                         )}
                       </button>
                     </TooltipTrigger>
@@ -1037,9 +1037,9 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
               <button
                 onClick={handleSubmit}
                 disabled={!message.trim() || disabled}
-                className={`w-10 h-10 flex items-center justify-center transition-all duration-500 rounded-2xl outline-none border-none ${message.trim() ? 'bg-white text-black hover:scale-105 shadow-2xl shadow-white/20' : 'bg-white/[0.03] text-white/20'}`}
+                className={`w-9 h-9 flex items-center justify-center transition-all duration-500 rounded-xl outline-none border-none ${message.trim() ? 'bg-white text-black hover:scale-105' : 'bg-white/[0.03] text-white/20'}`}
               >
-                <Send className="w-4.5 h-4.5" />
+                <Send className="w-4 h-4" />
               </button>
             </div>
           </div>

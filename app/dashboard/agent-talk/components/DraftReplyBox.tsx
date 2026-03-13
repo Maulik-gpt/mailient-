@@ -74,7 +74,7 @@ export function DraftReplyBox({
     };
 
     return (
-        <div className="bg-black/60 border border-white/[0.08] rounded-[24px] overflow-hidden shadow-2xl backdrop-blur-3xl animate-in fade-in slide-in-from-bottom-6 duration-700 max-w-2xl mx-auto my-8 relative">
+        <div className="bg-black/60 border border-white/[0.08] rounded-xl overflow-hidden backdrop-blur-3xl animate-in fade-in slide-in-from-bottom-6 duration-700 max-w-2xl mx-auto my-6 relative">
             {/* Technical noise overlay */}
             <div className="absolute inset-0 pointer-events-none opacity-[0.02] z-[-1] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] brightness-100 contrast-150" />
 
@@ -82,10 +82,10 @@ export function DraftReplyBox({
             <div className="absolute -top-24 -right-24 w-48 h-48 bg-white/[0.03] rounded-full blur-[60px] pointer-events-none" />
 
             {/* Header */}
-            <div className="flex items-center justify-between px-8 py-6 border-b border-white/[0.05] bg-white/[0.02]">
-                <div className="flex items-center gap-5">
-                    <div className="w-12 h-12 rounded-2xl bg-white/[0.03] flex items-center justify-center border border-white/10 shadow-2xl">
-                        <Mail className="w-5 h-5 text-white/40" />
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.05] bg-white/[0.02]">
+                <div className="flex items-center gap-4">
+                    <div className="w-9 h-9 rounded-xl bg-white/[0.03] flex items-center justify-center border border-white/10">
+                        <Mail className="w-4 h-4 text-white/40" />
                     </div>
                     <div>
                         <h3 className="text-white font-bold text-sm tracking-tight uppercase mb-1.5">Email draft</h3>
@@ -100,41 +100,41 @@ export function DraftReplyBox({
                         </div>
                     </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                     <button
                         onClick={() => setIsEditing(!isEditing)}
-                        className={`p-2.5 rounded-xl transition-all duration-300 ${isEditing ? 'bg-white text-black' : 'hover:bg-white/5 text-white/30 hover:text-white'}`}
+                        className={`p-2 rounded-lg transition-all duration-300 ${isEditing ? 'bg-white text-black' : 'hover:bg-white/5 text-white/30 hover:text-white'}`}
                         title={isEditing ? 'Save changes' : 'Edit message'}
                     >
-                        <Edit2 className="w-4 h-4" />
+                        <Edit2 className="w-3.5 h-3.5" />
                     </button>
                     <button
                         onClick={onDismiss}
-                        className="p-2.5 hover:bg-white/5 rounded-xl transition-all duration-300 text-white/30 hover:text-white"
+                        className="p-2 hover:bg-white/5 rounded-lg transition-all duration-300 text-white/30 hover:text-white"
                         title="Cancel"
                     >
-                        <X className="w-4 h-4" />
+                        <X className="w-3.5 h-3.5" />
                     </button>
                 </div>
             </div>
 
             {/* Protocol Metadata (Subject) */}
-            <div className="px-8 py-4 bg-white/[0.01] border-b border-white/[0.03] flex items-center gap-4">
-                <span className="text-[10px] font-bold text-white/20 uppercase tracking-tight shrink-0">Subject</span>
-                <span className="text-xs text-white/50 truncate">{draftData.subject}</span>
+            <div className="px-5 py-3 bg-white/[0.01] border-b border-white/[0.03] flex items-center gap-3">
+                <span className="text-[9px] font-bold text-white/20 uppercase tracking-tight shrink-0">Subject</span>
+                <span className="text-[11px] text-white/50 truncate">{draftData.subject}</span>
             </div>
 
             {/* Neural Buffer Area (Content) */}
-            <div className="p-8">
+            <div className="p-5">
                 {isEditing ? (
                     <textarea
                         value={editedContent}
                         onChange={(e) => setEditedContent(e.target.value)}
-                        className="w-full min-h-[200px] bg-white/[0.02] border border-white/[0.08] rounded-2xl p-6 text-white/80 text-[15px] resize-none focus:outline-none focus:border-white/20 transition-all duration-500 placeholder:text-white/10 leading-relaxed font-sans selection:bg-white selection:text-black"
-                        placeholder="Initialize message content..."
+                        className="w-full min-h-[160px] bg-white/[0.02] border border-white/[0.08] rounded-xl p-4 text-white/80 text-[14px] resize-none focus:outline-none transition-all duration-500 placeholder:text-white/10 leading-relaxed font-sans selection:bg-white selection:text-black"
+                        placeholder="Message content..."
                     />
                 ) : (
-                    <div className="min-h-[140px] text-white/70 text-[15px] whitespace-pre-wrap leading-[1.8] font-sans selection:bg-white selection:text-black">
+                    <div className="min-h-[100px] text-white/70 text-[14px] whitespace-pre-wrap leading-relaxed selection:bg-white selection:text-black">
                         {editedContent}
                     </div>
                 )}
@@ -163,9 +163,9 @@ export function DraftReplyBox({
                 <button
                     onClick={handleSend}
                     disabled={isSending || sendSuccess || !draftData.recipientEmail}
-                    className={`group relative flex items-center gap-3 px-10 py-3 rounded-xl font-bold text-[11px] tracking-widest uppercase transition-all duration-500 transform active:scale-95 ${isSending || sendSuccess
+                    className={`group relative flex items-center gap-2.5 px-6 py-2 rounded-lg font-bold text-[10px] tracking-widest uppercase transition-all duration-500 transform active:scale-95 ${isSending || sendSuccess
                         ? 'bg-white/5 text-white/20 cursor-not-allowed border border-white/5'
-                        : 'bg-white text-black hover:scale-[1.02] shadow-[0_0_30px_rgba(255,255,255,0.15)]'
+                        : 'bg-white text-black hover:bg-neutral-200'
                         }`}
                 >
                     {isSending ? (

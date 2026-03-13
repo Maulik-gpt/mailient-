@@ -42,20 +42,21 @@ const linkify = (text: string): string => {
       lowerUrl.includes('password');
 
     if (isAction && url.length > 50) {
-      // Premium Monochrome Action Button Layout
-      return `<div class="my-8 p-[1px] bg-white/10 rounded-3xl shadow-2xl relative group overflow-hidden">
-        <div class="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-        <div class="bg-[#080808] rounded-[1.4rem] p-8 flex flex-col items-center text-center relative z-10">
-          <div class="w-14 h-14 bg-white/[0.03] rounded-2xl flex items-center justify-center mb-6 border border-white/10 shadow-2xl">
-            <svg class="w-6 h-6 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      // Simplified Security Action
+      return `<div class="my-4 p-5 bg-white/[0.03] border border-white/10 rounded-2xl relative group overflow-hidden">
+        <div class="flex items-center gap-4">
+          <div class="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center border border-white/10">
+            <svg class="w-5 h-5 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
           </div>
-          <h4 class="text-white font-bold text-xs tracking-tight uppercase mb-2">Security confirmation</h4>
-          <p class="text-white/30 text-[10px] tracking-widest mb-8 uppercase">Action required to proceed</p>
-          <a href="${url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-14 py-3.5 bg-white hover:bg-neutral-200 text-black font-bold text-[10px] tracking-[0.2em] uppercase rounded-2xl transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)] no-underline">Verify and Continue</a>
-          <div class="mt-6 text-[9px] text-white/10 break-all opacity-40 hover:opacity-100 transition-opacity select-all cursor-text py-3 px-5 bg-white/[0.02] rounded-xl border border-white/[0.05]">${url}</div>
+          <div class="flex-1 text-left">
+            <h4 class="text-white font-bold text-[11px] tracking-tight uppercase">Security required</h4>
+            <p class="text-white/30 text-[9px] tracking-tight uppercase">Verify link to proceed</p>
+          </div>
+          <a href="${url}" target="_blank" rel="noopener noreferrer" class="px-5 py-2 bg-white hover:bg-neutral-200 text-black font-bold text-[10px] tracking-tight uppercase rounded-lg transition-all no-underline">Verify</a>
         </div>
+        <div class="mt-4 text-[9px] text-white/10 break-all opacity-40 select-all cursor-text py-2 px-3 bg-white/[0.02] rounded-lg border border-white/[0.05]">${url}</div>
       </div>`;
     }
 
@@ -90,7 +91,7 @@ const renderMarkdown = (text: string): string => {
     processedPara = linkify(processedPara);
     processedPara = processedPara.replace(/\n/g, '<br/>');
 
-    return `<p class="mb-5 last:mb-0 leading-[1.8] text-white/70 text-[15px]">${processedPara}</p>`;
+    return `<p class="mb-3 last:mb-0 leading-relaxed text-white/70 text-[14px]">${processedPara}</p>`;
   });
 
   return renderedParagraphs.join('');
@@ -140,14 +141,14 @@ const MissionStatusHeader = ({ mission }: { mission: any }) => {
   };
 
   return (
-    <div className="flex items-center gap-3 px-4 py-2.5 bg-neutral-900/40 border border-white/5 rounded-xl w-fit mx-auto mb-10 backdrop-blur-md animate-fade-in">
+    <div className="flex items-center gap-2.5 px-3 py-1.5 bg-neutral-900/60 border border-white/10 rounded-lg w-fit mb-6 transition-all">
       <div className="flex items-center gap-2">
-        <span className="text-white/40 text-[10px] font-bold uppercase tracking-tight">Active session</span>
+        <span className="text-white/40 text-[9px] font-bold uppercase tracking-tight">Active</span>
         <span className="text-white/20">/</span>
-        <span className="text-white text-sm font-medium">{mission.goal}</span>
+        <span className="text-white/80 text-[13px] font-medium tracking-tight">{mission.goal}</span>
       </div>
-      <div className="h-3 w-[1px] bg-white/10 mx-1" />
-      <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-tight ${statusColors[mission.status] || 'bg-white text-black'}`}>
+      <div className="h-3 w-[1px] bg-white/20 mx-1" />
+      <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-tight ${statusColors[mission.status] || 'bg-white text-black'}`}>
         {statusLabels[mission.status] || mission.status}
       </span>
     </div>
@@ -1589,28 +1590,23 @@ export default function ChatInterface({
                 </div>
               ) : (
                 <div className="flex-1 flex flex-col relative overflow-hidden bg-graphite-bg">
-                  <div className={`transition-all duration-500 overflow-hidden ${liveThinkingSteps.length > 0 ? 'h-auto opacity-100 border-b border-graphite-border pb-10 pt-6' : 'h-0 opacity-0'}`}>
-                    <div className="max-w-4xl mx-auto px-10">
-                      <ThinkingLayer steps={liveThinkingSteps} isVisible={true} />
-                    </div>
-                  </div>
-                  <div className="flex-1 overflow-y-auto px-6 py-12 scroll-smooth">
-                    <div className="max-w-3xl mx-auto space-y-12">
+                  <div className="flex-1 overflow-y-auto px-6 py-4 scroll-smooth">
+                    <div className="max-w-3xl mx-auto space-y-4">
                       {activeMission && <MissionStatusHeader mission={activeMission} />}
                       {messages.map((msg) => (
                         <div key={msg.id} className={`flex flex-col animate-fade-in ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                          <div className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'} max-w-full items-start`}>
-                            <div className={`w-10 h-10 rounded-2xl flex-shrink-0 flex items-center justify-center border ${msg.role === 'user' ? 'bg-white border-white' : 'bg-graphite-surface border-graphite-border'}`}>
-                              {msg.role === 'user' ? <User2 className="w-5 h-5 text-black" /> : <img src="/arcus-ai-icon.jpg" className="w-full h-full object-cover grayscale" />}
+                          <div className={`flex gap-2.5 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'} max-w-full items-start`}>
+                            <div className={`w-7 h-7 rounded-lg flex-shrink-0 flex items-center justify-center border ${msg.role === 'user' ? 'bg-white border-white' : 'bg-graphite-surface border-graphite-border'}`}>
+                              {msg.role === 'user' ? <User2 className="w-3.5 h-3.5 text-black" /> : <img src="/arcus-ai-icon.jpg" className="w-full h-full object-cover grayscale" />}
                             </div>
                             <div className="flex flex-col max-w-[85%]">
-                              <div className={`px-7 py-5 rounded-[32px] ${msg.role === 'user' ? 'bg-white text-black' : 'bg-graphite-surface border border-graphite-border text-graphite-text'}`}>
+                              <div className={`px-4 py-2.5 rounded-xl ${msg.role === 'user' ? 'bg-white text-black' : 'bg-graphite-surface border border-graphite-border text-graphite-text'}`}>
                                 <MessageContent content={msg.content} />
                                 {msg.role === 'assistant' && msg.notes && msg.notes.length > 0 && (
-                                  <div className="mt-6 space-y-4 pt-6 border-t border-graphite-border/50">
+                                  <div className="mt-4 space-y-3 pt-4 border-t border-graphite-border/50">
                                     <div className="grid grid-cols-1 gap-3">
                                       {msg.notes.map((note: any, idx: number) => (
-                                        <div key={note.id || idx} className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-5">
+                                        <div key={note.id || idx} className="bg-white/[0.04] border border-white/[0.08] rounded-xl p-4">
                                           <div className="text-graphite-text font-medium leading-snug mb-1">{note.subject || '(No Subject)'}</div>
                                           {note.content && <div className="text-graphite-muted text-sm line-clamp-2">{note.content}</div>}
                                         </div>
@@ -1626,13 +1622,19 @@ export default function ChatInterface({
                           </div>
                         </div>
                       ))}
+                      {liveThinkingSteps.length > 0 && (
+                        <div className="flex flex-col gap-1 ml-9.5 max-w-2xl">
+                          <ThinkingLayer steps={liveThinkingSteps} isVisible={true} />
+                        </div>
+                      )}
+
                       {isLoading && (
-                        <div className="flex items-start gap-4 animate-fade-in group pb-20">
-                          <div className="w-10 h-10 rounded-2xl bg-graphite-surface border border-graphite-border flex items-center justify-center overflow-hidden">
+                        <div className="flex items-start gap-2.5 animate-fade-in group pb-20">
+                          <div className="w-7 h-7 rounded-lg bg-graphite-surface border border-graphite-border flex items-center justify-center overflow-hidden">
                             <img src="/arcus-ai-icon.jpg" className="w-full h-full object-cover grayscale animate-pulse opacity-40" />
                           </div>
-                          <div className="bg-graphite-surface/40 border border-graphite-border py-4 px-6 rounded-[32px] inline-flex items-center gap-3">
-                            <MorphingSquare className="w-4 h-4 bg-graphite-muted" message="Thinking..." messagePlacement="right" />
+                          <div className="bg-graphite-surface/40 border border-graphite-border py-2 px-3.5 rounded-xl inline-flex items-center gap-2.5">
+                            <MorphingSquare className="w-3 h-3 bg-graphite-muted" message="Thinking..." messagePlacement="right" />
                           </div>
                         </div>
                       )}

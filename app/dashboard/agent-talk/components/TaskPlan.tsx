@@ -29,17 +29,17 @@ export function TaskPlan({ plan, isVisible, title }: TaskPlanProps) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.98, y: -10 }}
             transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
-            className="bg-[#0a0a0a]/40 blur-backdrop-md border border-white/[0.05] rounded-2xl overflow-hidden my-6 max-w-xl group shadow-2xl shadow-black/20"
+            className="bg-[#0a0a0a]/40 blur-backdrop-md border border-white/[0.05] rounded-xl overflow-hidden my-4 max-w-lg group"
         >
             {/* Header / Meta Info */}
-            <div className="flex items-center justify-between px-5 py-3.5 bg-white/[0.02] border-b border-white/[0.03]">
-                <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 rounded-lg bg-white/[0.03] border border-white/[0.06] flex items-center justify-center">
-                        <Cpu className="w-3 h-3 text-white/30" />
+            <div className="flex items-center justify-between px-4 py-2 bg-white/[0.02] border-b border-white/[0.03]">
+                <div className="flex items-center gap-2.5">
+                    <div className="w-5 h-5 rounded-lg bg-white/[0.03] border border-white/[0.06] flex items-center justify-center">
+                        <Cpu className="w-2.5 h-2.5 text-white/30" />
                     </div>
                     <div className="flex flex-col">
-                        <span className="text-[9px] font-bold uppercase tracking-tight text-white/20 leading-tight">Execution plan</span>
-                        {title && <span className="text-white/60 text-[11px] font-medium tracking-tight truncate max-w-[200px]">{title}</span>}
+                        <span className="text-[8.5px] font-bold uppercase tracking-tight text-white/20 leading-tight">Plan</span>
+                        {title && <span className="text-white/60 text-[10px] font-medium tracking-tight truncate max-w-[150px]">{title}</span>}
                     </div>
                 </div>
 
@@ -106,7 +106,7 @@ export function TaskPlan({ plan, isVisible, title }: TaskPlanProps) {
 
                             {/* Description */}
                             <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-                                <span className={`text-[13px] leading-snug tracking-tight font-medium transition-colors duration-500 ${step.status === 'completed' ? 'text-white/20 line-through decoration-white/10' :
+                                <span className={`text-[12px] leading-snug tracking-tight font-medium transition-colors duration-500 ${step.status === 'completed' ? 'text-white/20 line-through decoration-white/10' :
                                         step.status === 'active' ? 'text-white/90' :
                                             step.status === 'error' ? 'text-red-400/60' :
                                                 'text-white/30'
@@ -125,10 +125,10 @@ export function TaskPlan({ plan, isVisible, title }: TaskPlanProps) {
             </div>
 
             {/* Footer / Terminal Look */}
-            <div className="px-5 py-2.5 bg-white/[0.01] border-t border-white/[0.02] flex items-center justify-between">
+            <div className="px-4 py-1.5 bg-white/[0.01] border-t border-white/[0.02] flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <Terminal className="w-3 h-3 text-white/10" />
-                    <span className="text-[8px] text-white/10 tracking-wide uppercase">Active log</span>
+                    <Terminal className="w-2.5 h-2.5 text-white/10" />
+                    <span className="text-[8px] text-white/10 tracking-wide uppercase">Log</span>
                 </div>
                 <div className="flex gap-1">
                     {[0, 1, 2].map((i) => (
