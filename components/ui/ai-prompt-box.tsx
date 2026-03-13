@@ -460,6 +460,7 @@ interface PromptInputBoxProps {
   onAttachEmailClick?: () => void;
   onPersonalityClick?: () => void;
   selectedEmailsCount?: number;
+  suggestionInput?: { text: string; id: number };
 }
 export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref: React.Ref<HTMLDivElement>) => {
   const { 
@@ -483,6 +484,12 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
   const recognitionRef = React.useRef<any>(null);
   const uploadInputRef = React.useRef<HTMLInputElement>(null);
   const promptBoxRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (props.suggestionInput) {
+      setInput(props.suggestionInput.text);
+    }
+  }, [props.suggestionInput]);
 
   const handleToggleChange = (value: string) => {
     if (value === "think") {
