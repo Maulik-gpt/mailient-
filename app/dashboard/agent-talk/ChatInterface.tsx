@@ -1,6 +1,6 @@
 "use client";
 
-import { Send, Mail, Upload, User, User2, MessageCircle, DoorOpen, Bell, Mail as EmailIcon, MoreHorizontal, LogOut, Settings, ChevronRight, ChevronDown, CheckCircle2, Circle, Edit, History, LayoutGrid, Zap, Volume2 } from 'lucide-react';
+import { Send, Mail, Upload, User, User2, MessageCircle, DoorOpen, Bell, Mail as EmailIcon, MoreHorizontal, LogOut, Settings, ChevronRight, ChevronDown, CheckCircle2, Circle, Edit, History, LayoutGrid, Zap, Volume2, Sparkles, FileText, Calendar, BarChart3, PenTool } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
@@ -1587,32 +1587,29 @@ export default function ChatInterface({
             {/* Chat Content */}
             <div className="flex-1 flex flex-col relative z-10 min-h-0">
               {isInitialMode ? (
-                <div className="flex-1 overflow-y-auto transition-all duration-300">
-                  <div className="h-full flex items-center justify-center px-6">
-                    <div className="w-full max-w-3xl mx-auto">
-                      <div className="text-center mb-8">
-                        <h1 className="text-4xl font-medium text-white mb-2">Ask about your emails</h1>
+                <div className="flex-1 overflow-y-auto transition-all duration-300 relative">
+                  {/* Top Status Pill */}
+                  <div className="absolute top-8 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1 bg-[#161616] border border-white/5 rounded-full shadow-lg">
+                    <span className="text-[11px] text-white/50 font-medium">Free plan</span>
+                    <span className="text-[11px] text-white/20">•</span>
+                    <button className="text-[11px] text-white hover:text-white/80 transition-colors font-medium">Upgrade</button>
+                  </div>
+
+                  <div className="h-full flex flex-col items-center justify-center px-6">
+                    <div className="w-full max-w-2xl mx-auto flex flex-col items-center">
+                      <div className="text-center mb-10">
+                        <div className="flex justify-center mb-6">
+                          <div className="w-14 h-14 bg-gradient-to-br from-white/10 to-transparent rounded-[22px] flex items-center justify-center border border-white/10 shadow-2xl relative group overflow-hidden">
+                            <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <Zap className="w-7 h-7 text-white" />
+                          </div>
+                        </div>
+                        <h1 className="text-4xl md:text-5xl font-medium text-white tracking-tight mb-4" style={{ fontFamily: 'Satoshi, sans-serif' }}>
+                          Master your email flow
+                        </h1>
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                        {/* Prompt Cards */}
-                        <div onClick={() => handleSend("Catch me up on my recent emails")} className="group bg-[#161616] border border-white/[0.05] rounded-[18px] p-5 hover:border-white/10 cursor-pointer transition-all shadow-xl">
-                          <h3 className="text-white font-semibold text-[15px] mb-2 tracking-tight">Catch up</h3>
-                          <p className="text-white/40 text-[13px] leading-snug">Summarize threads and highlight what you missed.</p>
-                        </div>
-                        <div onClick={() => handleSend("Help me schedule a meeting")} className="group bg-[#161616] border border-white/[0.05] rounded-[18px] p-5 hover:border-white/10 cursor-pointer transition-all shadow-xl">
-                          <h3 className="text-white font-semibold text-[15px] mb-2 tracking-tight">Schedule</h3>
-                          <p className="text-white/40 text-[13px] leading-snug">Automatically schedule meetings via Google Calendar.</p>
-                        </div>
-                        <div onClick={() => handleSend("Show me my email analytics")} className="group bg-[#161616] border border-white/[0.05] rounded-[18px] p-5 hover:border-white/10 cursor-pointer transition-all shadow-xl">
-                          <h3 className="text-white font-semibold text-[15px] mb-2 tracking-tight">Analytics</h3>
-                          <p className="text-white/40 text-[13px] leading-snug">Track performance metrics from your activity.</p>
-                        </div>
-                        <div onClick={() => handleSend("Help me draft a reply")} className="group bg-[#161616] border border-white/[0.05] rounded-[18px] p-5 hover:border-white/10 cursor-pointer transition-all shadow-xl">
-                          <h3 className="text-white font-semibold text-[15px] mb-2 tracking-tight">Draft reply</h3>
-                          <p className="text-white/40 text-[13px] leading-snug">Craft smart, context-aware replies to your emails.</p>
-                        </div>
-                      </div>
-                      <div className="relative">
+
+                      <div className="w-full relative group">
                         <PromptInputBox
                           onSend={(msg, files) => handleSend(msg, files)}
                           isLoading={isLoading}
@@ -1622,6 +1619,45 @@ export default function ChatInterface({
                           onPersonalityClick={() => setIsPersonalityModalOpen(true)}
                           selectedEmailsCount={selectedEmails.length}
                         />
+                      </div>
+
+                      {/* Pill-style Action Buttons */}
+                      <div className="flex flex-wrap justify-center gap-2 mt-6">
+                        <button 
+                          onClick={() => handleSend("Catch me up on my recent emails")}
+                          className="flex items-center gap-2 px-3.5 py-1.5 bg-[#161616] border border-white/5 rounded-full text-white/60 hover:text-white hover:bg-white/5 hover:border-white/10 transition-all text-[13px] font-medium"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          Catch up
+                        </button>
+                        <button 
+                          onClick={() => handleSend("Summarize my most important unread emails")}
+                          className="flex items-center gap-2 px-3.5 py-1.5 bg-[#161616] border border-white/5 rounded-full text-white/60 hover:text-white hover:bg-white/5 hover:border-white/10 transition-all text-[13px] font-medium"
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                          Summarize
+                        </button>
+                        <button 
+                          onClick={() => handleSend("Help me draft a professional reply to the last email")}
+                          className="flex items-center gap-2 px-3.5 py-1.5 bg-[#161616] border border-white/5 rounded-full text-white/60 hover:text-white hover:bg-white/5 hover:border-white/10 transition-all text-[13px] font-medium"
+                        >
+                          <PenTool className="w-3.5 h-3.5" />
+                          Draft reply
+                        </button>
+                        <button 
+                          onClick={() => handleSend("Help me schedule a meeting for tomorrow")}
+                          className="flex items-center gap-2 px-3.5 py-1.5 bg-[#161616] border border-white/5 rounded-full text-white/60 hover:text-white hover:bg-white/5 hover:border-white/10 transition-all text-[13px] font-medium"
+                        >
+                          <Calendar className="w-3.5 h-3.5" />
+                          Schedule
+                        </button>
+                        <button 
+                          onClick={() => handleSend("Show my email activity analytics")}
+                          className="flex items-center gap-2 px-3.5 py-1.5 bg-[#161616] border border-white/5 rounded-full text-white/60 hover:text-white hover:bg-white/5 hover:border-white/10 transition-all text-[13px] font-medium"
+                        >
+                          <BarChart3 className="w-3.5 h-3.5" />
+                          Analytics
+                        </button>
                       </div>
                     </div>
                   </div>
