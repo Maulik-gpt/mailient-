@@ -98,27 +98,12 @@ export default function AgentTalkPage() {
 
     return (
         <div
-            className="satoshi-agent-talk agent-talk-container"
+            className="satoshi-agent-talk agent-talk-container bg-[#262626]"
             style={{
                 fontFamily: 'Satoshi, sans-serif',
-                background: 'white',
                 minHeight: '100vh'
             }}
         >
-            <style jsx>{`
-        .agent-talk-container {
-          animation: fadeToBlack 0.6s ease-in-out forwards;
-        }
-        
-        @keyframes fadeToBlack {
-          0% {
-            background: white;
-          }
-          100% {
-            background: linear-gradient(to bottom, #403e3e 0%, #000000 30%);
-          }
-        }
-      `}</style>
             <ChatInterface
                 initialConversationId={conversationId}
                 onConversationSelect={handleConversationSelect}

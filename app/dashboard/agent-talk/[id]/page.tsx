@@ -43,7 +43,7 @@ export default function ConversationPage() {
   };
 
   return (
-    <div className="satoshi-agent-talk" style={{ fontFamily: 'Satoshi, sans-serif' }}>
+    <div className="satoshi-agent-talk bg-[#262626] min-h-screen" style={{ fontFamily: 'Satoshi, sans-serif' }}>
       <ChatInterface
         initialConversationId={conversationId}
         onConversationSelect={handleConversationSelect}

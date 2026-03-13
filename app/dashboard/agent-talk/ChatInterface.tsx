@@ -7,11 +7,10 @@ import { signOut } from 'next-auth/react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { AddSquareIcon, Cancel01Icon, WorkHistoryIcon } from '@hugeicons/core-free-icons';
 import { ChatHistoryModal } from './components/ChatHistoryModal';
-import { ChatInput } from './components/ChatInput';
-import { DraftReplyBox } from './components/DraftReplyBox';
 import { ThinkingLayer, ArtifactCard } from './components/ThinkingLayer';
 import { CanvasPanel, type CanvasData } from './components/CanvasPanel';
 
+import { PromptInputBox } from '@/components/ui/ai-prompt-box';
 import { IntegrationsModal } from '@/components/ui/integrations-modal';
 import { EmailSelectionModal } from '@/components/ui/email-selection-modal';
 import { PersonalitySettingsModal } from '@/components/ui/personality-settings-modal';
@@ -246,6 +245,12 @@ interface UserMessage {
   notes?: any[];
   content: string;
   time: string;
+  attachments?: {
+    name: string;
+    url: string;
+    type: string;
+    size: number;
+  }[];
 }
 
 type Message = AgentMessage | UserMessage;
@@ -1127,12 +1132,20 @@ export default function ChatInterface({
     return conversations;
   };
 
-  const handleSend = async (forcedMessage?: string) => {
+  const handleSend = async (forcedMessage?: string, files?: File[]) => {
     const messageText = (forcedMessage || message).trim();
-    if (!messageText) return;
+    if (!messageText && (!files || files.length === 0)) return;
 
     // Determine if this is a new conversation or continuation
     const shouldCreateNewConversation = !currentConversationId;
+    
+    // Process files if any
+    const attachments = files?.map(file => ({
+      name: file.name,
+      url: URL.createObjectURL(file), // Local URL for preview
+      type: file.type,
+      size: file.size
+    }));
 
     // Generate conversation ID if this is a new conversation
     let conversationIdToUse = currentConversationId;
@@ -1142,7 +1155,7 @@ export default function ChatInterface({
       setIsNewConversation(true);
 
       // Save to localStorage for persistence IMMEDIATELY
-      localStorage.setItem(`conv_${conversationIdToUse}_title`, messageText);
+      localStorage.setItem(`conv_${conversationIdToUse}_title`, messageText || (attachments ? attachments[0].name : 'New Chat'));
       console.log('Generated new conversation ID:', conversationIdToUse);
 
       // Close sidebar if it was open during "New Chat" state
@@ -1166,6 +1179,7 @@ export default function ChatInterface({
       role: 'user',
       notes: [],
       content: messageText,
+      attachments,
       time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true })
     };
 
@@ -1557,32 +1571,31 @@ export default function ChatInterface({
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                         {/* Prompt Cards */}
-                        <div onClick={() => handleSend("Catch me up on my recent emails")} className="group bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl p-4 hover:border-[#2a2a2a] cursor-pointer transition-all">
+                        <div onClick={() => handleSend("Catch me up on my recent emails")} className="group bg-white/5 border border-white/10 rounded-xl p-4 hover:border-white/20 cursor-pointer transition-all">
                           <h3 className="text-white font-medium text-sm mb-1">Catch up</h3>
                           <p className="text-white/40 text-xs">Summarize threads and highlight what you missed.</p>
                         </div>
-                        <div onClick={() => handleSend("Help me schedule a meeting")} className="group bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl p-4 hover:border-[#2a2a2a] cursor-pointer transition-all">
+                        <div onClick={() => handleSend("Help me schedule a meeting")} className="group bg-white/5 border border-white/10 rounded-xl p-4 hover:border-white/20 cursor-pointer transition-all">
                           <h3 className="text-white font-medium text-sm mb-1">Schedule</h3>
                           <p className="text-white/40 text-xs">Automatically schedule meetings via Google Calendar.</p>
                         </div>
-                        <div onClick={() => handleSend("Show me my email analytics")} className="group bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl p-4 hover:border-[#2a2a2a] cursor-pointer transition-all">
+                        <div onClick={() => handleSend("Show me my email analytics")} className="group bg-white/5 border border-white/10 rounded-xl p-4 hover:border-white/20 cursor-pointer transition-all">
                           <h3 className="text-white font-medium text-sm mb-1">Analytics</h3>
                           <p className="text-white/40 text-xs">Track performance metrics from your activity.</p>
                         </div>
-                        <div onClick={() => handleSend("Help me draft a reply")} className="group bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl p-4 hover:border-[#2a2a2a] cursor-pointer transition-all">
+                        <div onClick={() => handleSend("Help me draft a reply")} className="group bg-white/5 border border-white/10 rounded-xl p-4 hover:border-white/20 cursor-pointer transition-all">
                           <h3 className="text-white font-medium text-sm mb-1">Draft reply</h3>
                           <p className="text-white/40 text-xs">Craft smart, context-aware replies to your emails.</p>
                         </div>
                       </div>
                       <div className="relative">
-                        <ChatInput
-                          onSendMessage={handleSend}
-                          disabled={isLoading}
+                        <PromptInputBox
+                          onSend={(msg, files) => handleSend(msg, files)}
+                          isLoading={isLoading}
                           placeholder="Ask anything about your emails"
-                          onModalStateChange={setIsIntegrationsModalOpen}
-                          onEmailModalStateChange={setIsEmailSelectionModalOpen}
-                          selectedEmails={selectedEmails}
-                          onEmailSelect={setSelectedEmails}
+                          onIntegrationsClick={() => setIsIntegrationsModalOpen(true)}
+                          onAttachEmailClick={() => setIsEmailSelectionModalOpen(true)}
+                          selectedEmailsCount={selectedEmails.length}
                         />
                       </div>
                     </div>
@@ -1599,10 +1612,31 @@ export default function ChatInterface({
                             <div className={`w-7 h-7 rounded-lg flex-shrink-0 flex items-center justify-center border ${msg.role === 'user' ? 'bg-white border-white' : 'bg-graphite-surface border-graphite-border'}`}>
                               {msg.role === 'user' ? <User2 className="w-3.5 h-3.5 text-black" /> : <img src="/arcus-ai-icon.jpg" className="w-full h-full object-cover grayscale" />}
                             </div>
-                            <div className="flex flex-col max-w-[85%]">
-                              <div className={`px-4 py-2.5 rounded-xl ${msg.role === 'user' ? 'bg-white text-black' : 'bg-graphite-surface border border-graphite-border text-graphite-text'}`}>
-                                <MessageContent content={msg.content} />
-                                {msg.role === 'assistant' && msg.notes && msg.notes.length > 0 && (
+                             <div className="flex flex-col max-w-[85%]">
+                               <div className={`px-4 py-2.5 rounded-xl ${msg.role === 'user' ? 'bg-white text-black' : 'bg-graphite-surface border border-graphite-border text-graphite-text'}`}>
+                                 <MessageContent content={msg.content} />
+                                 {msg.role === 'user' && (msg as UserMessage).attachments && (msg as UserMessage).attachments!.length > 0 && (
+                                   <div className="mt-3 flex flex-wrap gap-2 pt-3 border-t border-black/10">
+                                     {(msg as UserMessage).attachments!.map((file, idx) => (
+                                       <div key={idx} className="flex items-center gap-2 p-2 bg-black/5 rounded-lg border border-black/10 max-w-[200px]">
+                                         {file.type.startsWith('image/') ? (
+                                           <div className="w-8 h-8 rounded-md overflow-hidden flex-shrink-0">
+                                             <img src={file.url} alt={file.name} className="w-full h-full object-cover" />
+                                           </div>
+                                         ) : (
+                                           <div className="w-8 h-8 rounded-md bg-black/5 flex items-center justify-center flex-shrink-0">
+                                             <HugeiconsIcon icon={WorkHistoryIcon} size={16} className="text-black/40" />
+                                           </div>
+                                         )}
+                                         <div className="flex flex-col overflow-hidden">
+                                           <span className="text-[11px] font-medium truncate">{file.name}</span>
+                                           <span className="text-[9px] opacity-40">{(file.size / 1024).toFixed(0)} KB</span>
+                                         </div>
+                                       </div>
+                                     ))}
+                                   </div>
+                                 )}
+                                 {msg.role === 'assistant' && msg.notes && msg.notes.length > 0 && (
                                   <div className="mt-4 space-y-3 pt-4 border-t border-graphite-border/50">
                                     <div className="grid grid-cols-1 gap-3">
                                       {msg.notes.map((note: any, idx: number) => (
@@ -1643,14 +1677,13 @@ export default function ChatInterface({
                   </div>
                   <div className="sticky bottom-0 z-20 w-full px-6 pb-12 mt-auto">
                     <div className="max-w-3xl mx-auto">
-                      <ChatInput
-                        onSendMessage={handleSend}
-                        disabled={isLoading}
+                      <PromptInputBox
+                        onSend={(msg, files) => handleSend(msg, files)}
+                        isLoading={isLoading}
                         placeholder="Ask follow-up..."
-                        onModalStateChange={setIsIntegrationsModalOpen}
-                        onEmailModalStateChange={setIsEmailSelectionModalOpen}
-                        selectedEmails={selectedEmails}
-                        onEmailSelect={setSelectedEmails}
+                        onIntegrationsClick={() => setIsIntegrationsModalOpen(true)}
+                        onAttachEmailClick={() => setIsEmailSelectionModalOpen(true)}
+                        selectedEmailsCount={selectedEmails.length}
                       />
                     </div>
                   </div>

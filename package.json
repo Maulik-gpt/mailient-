@@ -39,7 +39,7 @@
     "dotenv": "^17.2.3",
     "elevenlabs": "^1.59.0",
     "embla-carousel-react": "^8.6.0",
-    "framer-motion": "^12.24.7",
+    "framer-motion": "^12.36.0",
     "googleapis": "^164.1.0",
     "he": "^1.2.0",
     "html-to-image": "^1.11.13",
