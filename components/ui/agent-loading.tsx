@@ -1,6 +1,7 @@
 "use client";
 
 import { HomeFeedSidebar } from "@/components/ui/home-feed-sidebar";
+import { TextShimmer } from "@/components/ui/text-shimmer";
 
 export function AgentLoading() {
     return (
@@ -17,9 +18,9 @@ export function AgentLoading() {
                     <div className="relative z-10 h-2 w-2 bg-neutral-400 rounded-full shadow-[0_0_15px_rgba(163,163,163,0.5)]" />
                 </div>
 
-                <p className="mt-12 text-sm font-light tracking-[0.2em] text-neutral-500 uppercase animate-pulse">
+                <TextShimmer className="mt-12 text-sm font-light tracking-[0.2em] uppercase" duration={2.5}>
                     Synchronizing Arcus
-                </p>
+                </TextShimmer>
 
                 <style jsx>{`
                     @keyframes ripple {

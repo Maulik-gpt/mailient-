@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronRight, Binary, Sparkles, BrainCircuit, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { TextShimmer } from '@/components/ui/text-shimmer';
 
 export type ThinkingStep = {
     id: string;
@@ -104,18 +105,9 @@ export function ThinkingLayer({ steps, isVisible, currentThought, isGenerating, 
                     </div>
                     <div className="flex-1 flex flex-col">
                         <div className="flex items-center justify-between">
-                            <span className="text-graphite-text text-[13px] font-bold tracking-tight">{activeStep.label}</span>
-                            <div className="flex gap-[5px]">
-                                {[0, 1, 2, 3].map((i) => (
-                                    <div
-                                        key={i}
-                                        className="w-[4px] h-[4px] rounded-full bg-white/80"
-                                        style={{
-                                            animation: `thinkingPulseCustom 0.8s ease-in-out ${i * 0.12}s infinite`,
-                                        }}
-                                    />
-                                ))}
-                            </div>
+                            <TextShimmer className="text-graphite-text text-[13px] font-bold tracking-tight" duration={1.2}>
+                                {activeStep.label}
+                            </TextShimmer>
                         </div>
                         <div className="flex items-center gap-1.5 mt-1 opacity-60">
                             <Sparkles className="w-3 h-3 text-graphite-muted-2" />

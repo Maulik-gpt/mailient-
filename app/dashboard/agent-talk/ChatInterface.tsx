@@ -24,6 +24,7 @@ import { ShiningText } from '@/components/ui/shining-text';
 import { Note } from '@/components/ui/note';
 import { Button as Button1 } from '@/components/ui/button-1';
 import { MorphingSquare } from '@/components/ui/morphing-square';
+import { TextShimmer } from '@/components/ui/text-shimmer';
 import { toast } from 'sonner';
 
 // Detect and wrap URLs in plain text with premium styling for actions
@@ -1847,7 +1848,9 @@ export default function ChatInterface({
                             <img src="/arcus-ai-icon.jpg" className="w-full h-full object-cover grayscale animate-pulse opacity-40" />
                           </div>
                           <div className="bg-graphite-surface/40 border border-graphite-border py-2 px-3.5 rounded-xl inline-flex items-center gap-2.5">
-                            <MorphingSquare className="w-3 h-3 bg-graphite-muted" message="Thinking..." messagePlacement="right" />
+                            <TextShimmer className="text-xs font-medium tracking-tight" duration={1.5}>
+                              Arcus is thinking...
+                            </TextShimmer>
                           </div>
                         </div>
                       )}
