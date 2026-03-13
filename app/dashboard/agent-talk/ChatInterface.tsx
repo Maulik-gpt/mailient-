@@ -1587,7 +1587,7 @@ export default function ChatInterface({
             {/* Chat Content */}
             <div className="flex-1 flex flex-col relative z-10 min-h-0">
               {isInitialMode ? (
-                <div className="flex-1 overflow-y-auto transition-all duration-300 relative">
+                <div className="flex-1 overflow-y-auto transition-all duration-300 relative bg-[#1a1a1a]">
                   {/* Top Status Pill */}
                   <div className="absolute top-8 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1 bg-[#161616] border border-white/5 rounded-full shadow-lg">
                     <span className="text-[11px] text-white/50 font-medium">Free plan</span>
@@ -1597,15 +1597,16 @@ export default function ChatInterface({
 
                   <div className="h-full flex flex-col items-center justify-center px-6">
                     <div className="w-full max-w-2xl mx-auto flex flex-col items-center">
-                      <div className="text-center mb-10">
+                      <div className="text-center mb-12">
                         <div className="flex justify-center mb-6">
-                          <div className="w-14 h-14 bg-gradient-to-br from-white/10 to-transparent rounded-[22px] flex items-center justify-center border border-white/10 shadow-2xl relative group overflow-hidden">
-                            <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <Zap className="w-7 h-7 text-white" />
-                          </div>
+                          <img 
+                            src="/arcus-ai-icon.jpg" 
+                            className="w-16 h-16 object-cover rounded-[20px] shadow-2xl grayscale brightness-110" 
+                            alt="Arcus AI" 
+                          />
                         </div>
-                        <h1 className="text-4xl md:text-5xl font-medium text-white tracking-tight mb-4" style={{ fontFamily: 'Satoshi, sans-serif' }}>
-                          Master your email flow
+                        <h1 className="text-4xl md:text-5xl font-medium text-white tracking-tight" style={{ fontFamily: 'Satoshi, sans-serif' }}>
+                          Ask anything about your emails
                         </h1>
                       </div>
 
@@ -1613,7 +1614,7 @@ export default function ChatInterface({
                         <PromptInputBox
                           onSend={(msg, files) => handleSend(msg, files)}
                           isLoading={isLoading}
-                          placeholder="Ask anything about your emails"
+                          placeholder="What would you like to know?"
                           onIntegrationsClick={() => setIsIntegrationsModalOpen(true)}
                           onAttachEmailClick={() => setIsEmailSelectionModalOpen(true)}
                           onPersonalityClick={() => setIsPersonalityModalOpen(true)}
@@ -1663,7 +1664,7 @@ export default function ChatInterface({
                   </div>
                 </div>
               ) : (
-                <div className="flex-1 flex flex-col relative overflow-hidden bg-graphite-bg">
+                 <div className="flex-1 flex flex-col relative overflow-hidden bg-[#1a1a1a]">
                   <div className="flex-1 overflow-y-auto px-6 py-4 scroll-smooth">
                     <div className="max-w-3xl mx-auto space-y-4">
                       {activeMission && <MissionStatusHeader mission={activeMission} />}
