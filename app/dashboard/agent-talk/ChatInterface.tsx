@@ -1591,8 +1591,8 @@ export default function ChatInterface({
           {/* Subtle Ambient Glows for Depth */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
             <GradientWave 
-              colors={["#000000", "#1a1a1b", "#000000", "#1a1a1b"]} 
-              className="opacity-40"
+              colors={["#000000", "#111111", "#080808", "#111111"]} 
+              className="opacity-100"
               deform={{ incline: 0.3, noiseAmp: 150, noiseFlow: 2 }}
             />
             <div className="absolute -top-[10%] -right-[10%] w-[60%] h-[60%] bg-graphite-surface-2/40 rounded-full blur-[140px]" />
@@ -1785,7 +1785,7 @@ export default function ChatInterface({
             {/* Chat Content */}
             <div className="flex-1 flex flex-col relative z-10 min-h-0">
               {isInitialMode ? (
-                <div className="flex-1 overflow-y-auto transition-all duration-300 relative bg-[#1a1a1a]">
+                <div className="flex-1 overflow-y-auto transition-all duration-300 relative bg-transparent">
                   {/* Top Status Pill */}
                   <div className="absolute top-8 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1 bg-[#161616] border border-white/5 rounded-full shadow-lg">
                     <span className="text-[11px] text-white/50 font-medium">Free plan</span>
@@ -1878,7 +1878,7 @@ export default function ChatInterface({
                   </div>
                 </div>
               ) : (
-                 <div className="flex-1 flex flex-col relative overflow-hidden bg-[#1a1a1a]">
+                 <div className="flex-1 flex flex-col relative overflow-hidden bg-transparent">
                   <div className="flex-1 overflow-y-auto px-6 py-4 scroll-smooth">
                     <div className="max-w-3xl mx-auto space-y-4">
                       {activeMission && <MissionStatusHeader mission={activeMission} />}
