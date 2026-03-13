@@ -15,7 +15,7 @@ export async function POST(request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { message, conversationId = null, runId = null } = await request.json();
+        const { message, conversationId = null, runId = null, attachments = [] } = await request.json();
         if (!message) {
             return NextResponse.json({ error: 'Message required' }, { status: 400 });
         }
@@ -35,7 +35,8 @@ export async function POST(request) {
 
         const intentAnalysis = await arcusAI.analyzeIntentAndPlan(message, {
             userEmail: session.user.email,
-            userName: session.user.name || 'User'
+            userName: session.user.name || 'User',
+            attachments
         });
 
         const runInit = await runtime.initializeRun({

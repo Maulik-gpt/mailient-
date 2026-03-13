@@ -98,7 +98,7 @@ export default function AgentTalkPage() {
 
     return (
         <div
-            className="satoshi-agent-talk agent-talk-container bg-[#262626]"
+            className="satoshi-agent-talk agent-talk-container bg-black"
             style={{
                 fontFamily: 'Satoshi, sans-serif',
                 minHeight: '100vh'

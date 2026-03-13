@@ -295,9 +295,10 @@ export default function ChatInterface({
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(initialConversationId || null);
   const [conversations, setConversations] = useState<{ [key: string]: Message[] }>({});
   const [isNewConversation, setIsNewConversation] = useState<boolean>(!initialConversationId);
+  const [selectedEmails, setSelectedEmails] = useState<Email[]>([]);
+  const [chatTitle, setChatTitle] = useState<string>('Arcus AI');
   const [isIntegrationsModalOpen, setIsIntegrationsModalOpen] = useState<boolean>(false);
   const [isEmailSelectionModalOpen, setIsEmailSelectionModalOpen] = useState<boolean>(false);
-  const [selectedEmails, setSelectedEmails] = useState<Email[]>([]);
   const [isMoreOptionsOpen, setIsMoreOptionsOpen] = useState<boolean>(false);
   const [isPersonalityModalOpen, setIsPersonalityModalOpen] = useState<boolean>(false);
   const [savedPersonality, setSavedPersonality] = useState<string>('');
@@ -448,6 +449,21 @@ export default function ChatInterface({
     const randomStr = Math.random().toString(36).substr(2, 9);
     return `conv_${timestamp}_${randomStr}`;
   };
+  
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const result = reader.result as string;
+        // Remove data:*/ *;base64, prefix for the raw base64 if needed, 
+        // but for OpenRouter it's usually better to keep the data URL or just the base64.
+        // Let's keep the full data URL for now.
+        resolve(result);
+      };
+      reader.onerror = error => reject(error);
+    });
+  };
 
   const saveConversationToStorage = (conversationId: string, messages: Message[], title: string) => {
     const accurateMessageCount = messages.length;
@@ -540,7 +556,7 @@ export default function ChatInterface({
     }).join('\\n');
   };
 
-  const processAIMessage = async (messageText: string, conversationIdToUse: string, isNew: boolean) => {
+  const processAIMessage = async (messageText: string, conversationIdToUse: string, isNew: boolean, attachments?: any[]) => {
     try {
       setIsLoading(true);
       setLiveThinkingSteps(buildFallbackThinkingSteps(messageText));
@@ -564,7 +580,8 @@ export default function ChatInterface({
         isNotesQuery: notesQuery,
         notesSearchQuery: extractedQuery,
         activeMission,
-        runId: requestRunId
+        runId: requestRunId,
+        attachments: attachments || []
       };
 
       // --- PARALLEL REQUESTS: Fast intent + Full chat ---
@@ -572,7 +589,7 @@ export default function ChatInterface({
       const intentPromise = fetch('/api/agent-talk/chat-arcus/intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: messageText, conversationId: conversationIdToUse, runId: requestRunId }),
+        body: JSON.stringify({ message: messageText, conversationId: conversationIdToUse, runId: requestRunId, attachments: attachments || [] }),
       }).then(r => r.json()).catch(() => null);
 
       // 2) Fire main chat request (takes longer - does search, canvas, response)
@@ -748,6 +765,7 @@ export default function ChatInterface({
             try {
               const currentData = JSON.parse(currentDataRaw);
               currentData.title = aiTitle;
+              setChatTitle(aiTitle);
               localStorage.setItem(`conversation_${conversationIdToUse}`, JSON.stringify(currentData));
               localStorage.setItem(`conv_${conversationIdToUse}_title`, aiTitle);
             } catch (e) {
@@ -898,6 +916,7 @@ export default function ChatInterface({
         setIsNewConversation(false);
         setShowHistory(false);
         setSelectedConversationId(conversationId);
+        setChatTitle(conversationData.title || 'Arcus AI');
 
         console.log('DEBUG: Loaded', loadedMessages.length, 'messages for conversation:', conversationId);
 
@@ -942,6 +961,7 @@ export default function ChatInterface({
             setIsNewConversation(false);
             setShowHistory(false);
             setSelectedConversationId(conversationId);
+            setChatTitle(data.title || 'Arcus AI');
 
             // Navigate to the conversation URL
             if (onConversationSelect) {
@@ -1140,12 +1160,15 @@ export default function ChatInterface({
     const shouldCreateNewConversation = !currentConversationId;
     
     // Process files if any
-    const attachments = files?.map(file => ({
-      name: file.name,
-      url: URL.createObjectURL(file), // Local URL for preview
-      type: file.type,
-      size: file.size
-    }));
+    const attachments = files && files.length > 0 
+      ? await Promise.all(files.map(async file => ({
+          name: file.name,
+          url: URL.createObjectURL(file), // Local URL for preview
+          type: file.type,
+          size: file.size,
+          base64: await fileToBase64(file)
+        })))
+      : [];
 
     // Generate conversation ID if this is a new conversation
     let conversationIdToUse = currentConversationId;
@@ -1212,7 +1235,7 @@ export default function ChatInterface({
     }
 
     // Process the AI message directly - don't rely on navigation/loadConversation
-    processAIMessage(messageText, conversationIdToUse as string, shouldCreateNewConversation);
+    processAIMessage(messageText, conversationIdToUse as string, shouldCreateNewConversation, attachments);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -1238,6 +1261,7 @@ export default function ChatInterface({
     setIsNewConversation(true);
     setSelectedConversationId(null);
     setCurrentConversationId(null);
+    setChatTitle('Arcus AI');
     setConversations({});
     setShowHistory(false);
 
@@ -1429,7 +1453,7 @@ export default function ChatInterface({
           currentPlan={usageLimitModalData?.currentPlan || 'starter'}
         />
         
-        <div className="flex h-screen w-full text-graphite-text bg-graphite-bg selection:bg-white selection:text-black overflow-hidden relative tracking-tight">
+        <div className="flex h-screen w-full text-graphite-text bg-black selection:bg-white selection:text-black overflow-hidden relative tracking-tight">
           {/* Apple-style Premium Grain Overlay */}
           <div className="absolute inset-0 pointer-events-none opacity-[0.03] z-[100] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] brightness-100 contrast-150" />
           
@@ -1497,65 +1521,63 @@ export default function ChatInterface({
 
           <div className="flex-1 flex flex-col relative ml-64 transition-all duration-500 ease-in-out">
             {/* Header */}
-            <div className={`sticky top-0 z-30 border-b border-graphite-border bg-graphite-bg/40 backdrop-blur-xl transition-all duration-300 ${(isIntegrationsModalOpen || isEmailSelectionModalOpen || isPersonalityModalOpen) ? 'blur-sm' : ''}`}>
-              <div className="relative px-8 py-4">
+            <div className={`sticky top-0 z-40 transition-all duration-300 ${(isIntegrationsModalOpen || isEmailSelectionModalOpen || isPersonalityModalOpen) ? 'blur-sm' : ''}`}>
+              <div className="relative px-8 py-3">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-6">
-                    <div className="flex items-center gap-5">
-                      <div className="bg-graphite-surface rounded-[22px] w-14 h-14 flex items-center justify-center border border-graphite-border shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden group hover:border-graphite-border-strong transition-all duration-500">
-                        <img src="/arcus-ai-icon.jpg" alt="Arcus AI" className="w-full h-full object-cover grayscale transition-all duration-700 group-hover:grayscale-0 group-hover:scale-110" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-3 mb-0.5">
-                          <h1 className="text-xl font-bold text-white tracking-tight uppercase">Arcus AI</h1>
-                          {arcusCredits && currentPlan !== 'pro' && arcusCredits.limit > 0 && !arcusCredits.isUnlimited && (
-                            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.06]">
-                              <div className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
-                              <span className="text-[10px] uppercase tracking-widest text-white/40">Integrations</span>
-                            </div>
-                          )}
-                        </div>
-                        <p className="text-xs text-white/40 font-medium tracking-wide">
-                          Smart Intelligence Layer
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5">
+                  {/* Left Side: Just a subtle action to start new */}
+                  <div className="flex items-center">
                     <Tooltip delayDuration={100}>
                       <TooltipTrigger asChild>
                         <button
                           onClick={startNewChat}
-                          className="p-2.5 hover:bg-white/5 rounded-xl transition-all hover:scale-105 active:scale-95 group text-white/40 hover:text-white"
+                          className="p-2 hover:bg-white/5 rounded-lg transition-all text-white/20 hover:text-white/60 group focus:outline-none"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
                       </TooltipTrigger>
                       <TooltipContent side="bottom">
-                        <span className="text-[10px]">New chat</span>
+                        <span className="text-[10px]">New conversation</span>
                       </TooltipContent>
                     </Tooltip>
+                  </div>
+
+                  {/* Center: The Generated Topic Pill (from mock) */}
+                  <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2">
+                    <div className="flex items-center bg-[#111111] border border-white/[0.06] rounded-lg overflow-hidden shadow-2xl transition-all hover:border-white/10 group">
+                      <button 
+                        onClick={() => setShowHistory(!showHistory)}
+                        className="pl-4 pr-3 py-1.5 hover:bg-white/[0.02] transition-colors"
+                      >
+                        <span className="text-sm font-medium text-white/80 whitespace-nowrap overflow-hidden text-ellipsis max-w-[300px] tracking-tight">
+                          {isInitialMode ? "New Thread" : chatTitle}
+                        </span>
+                      </button>
+                      <div className="w-[1px] h-3.5 bg-white/[0.08]" />
+                      <button 
+                        onClick={() => setShowHistory(!showHistory)}
+                        className="px-2.5 py-1.5 hover:bg-white/[0.02] transition-colors"
+                      >
+                        <ChevronDown className="w-3.5 h-3.5 text-white/30 group-hover:text-white/60 transition-colors" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Right Side: Hidden contextual icons */}
+                  <div className="flex items-center gap-1">
                     <button
-                      onClick={() => {
-                        if (!showHistory) {
-                          setHistoryRefreshKey(prev => prev + 1);
-                        }
-                        setShowHistory(!showHistory);
-                      }}
-                      className="p-2.5 hover:bg-white/5 rounded-xl transition-all hover:scale-105 active:scale-95 group text-white/40 hover:text-white"
+                      onClick={() => setShowHistory(!showHistory)}
+                      className={`p-2 rounded-lg transition-all hover:bg-white/5 ${showHistory ? 'text-white bg-white/10' : 'text-white/20 hover:text-white/60'}`}
                     >
                       <History className="w-4 h-4" />
                     </button>
-                    <div className="h-6 w-[1px] bg-white/[0.08] mx-2" />
-                    <div className="px-3 py-1 bg-white/5 border border-white/10 rounded-lg">
-                      <span className="text-white/40 text-[11px] font-bold tracking-tighter uppercase">v2.4</span>
-                    </div>
+                    
+                    <button
+                      onClick={() => setIsPersonalityModalOpen(true)}
+                      className="p-2 rounded-lg transition-all hover:bg-white/5 text-white/20 hover:text-white/60"
+                    >
+                      <Settings className="w-4 h-4" />
+                    </button>
                   </div>
-                </div>
-                <div className="flex justify-center -mt-8">
-                  {currentPlan !== 'pro' && (
-                    <RainbowButton onClick={() => window.location.href = '/pricing'}>Get Unlimited Access</RainbowButton>
-                  )}
                 </div>
               </div>
             </div>
@@ -1602,7 +1624,7 @@ export default function ChatInterface({
                   </div>
                 </div>
               ) : (
-                <div className="flex-1 flex flex-col relative overflow-hidden bg-graphite-bg">
+                <div className="flex-1 flex flex-col relative overflow-hidden bg-black">
                   <div className="flex-1 overflow-y-auto px-6 py-4 scroll-smooth">
                     <div className="max-w-3xl mx-auto space-y-4">
                       {activeMission && <MissionStatusHeader mission={activeMission} />}

@@ -136,8 +136,8 @@ export function PersonalitySettingsModal({
             value={personality}
             onChange={(e) => setPersonality(e.target.value)}
             placeholder={placeholderText || placeholderVariations[0]}
-            className="w-full min-h-[200px] p-4 bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/30 resize-none font-sans"
-            style={{ backgroundColor: '#262626' }}
+            className="w-full min-h-[200px] p-4 bg-[#1F2023] border border-[#3a3a3a] rounded-lg text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/30 resize-none font-sans"
+            style={{ backgroundColor: '#1F2023' }}
           />
         </div>
 

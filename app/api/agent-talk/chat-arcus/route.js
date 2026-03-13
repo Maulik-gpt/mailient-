@@ -33,7 +33,8 @@ export async function POST(request) {
       actionType: executionActionType,
       actionPayload,
       approvalToken,
-      actionRequestId
+      actionRequestId,
+      attachments
     } = await request.json();
 
     console.log('🚀 Arcus Chat request received:', message?.substring?.(0, 80));
@@ -459,7 +460,7 @@ Body: ${emailData.body || emailData.snippet}
           message,
           effectiveCanvasType,
           emailContext || '',
-          { userName, userEmail, privacyMode }
+          { userName, userEmail, privacyMode, attachments }
         );
 
         if (operatorRuntime && operatorRun) {
@@ -514,7 +515,8 @@ Body: ${emailData.body || emailData.snippet}
       subscriptionInfo: subscriptionService.getPlanInfo(profile?.plan_type || 'none', profile?.subscription_end_date),
       userEmail,
       userName,
-      privacyMode
+      privacyMode,
+      attachments
     });
 
     const finalResponse = response && response.trim()

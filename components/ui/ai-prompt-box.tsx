@@ -1,7 +1,7 @@
 import React from "react";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { ArrowUp, Paperclip, Square, X, StopCircle, Mic, BrainCog, FolderCode, FileText, FileImage, FileVideo, FileAudio, FileArchive, File as FileIcon } from "lucide-react";
+import { ArrowUp, Paperclip, Square, X, StopCircle, Mic, BrainCog, FolderCode, FileText, Film, Music, Globe } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 // Utility function for className merging
@@ -28,9 +28,10 @@ const styles = `
   }
 `;
 
-// Inject styles into document (Server-side check)
-if (typeof document !== 'undefined') {
+// Inject styles into document (with check for SSR/re-renders)
+if (typeof document !== 'undefined' && !document.getElementById('ai-prompt-box-styles')) {
   const styleSheet = document.createElement("style");
+  styleSheet.id = 'ai-prompt-box-styles';
   styleSheet.innerText = styles;
   document.head.appendChild(styleSheet);
 }
@@ -179,23 +180,19 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   React.useEffect(() => {
     if (isRecording) {
       onStartRecording();
-      if (!timerRef.current) {
-        timerRef.current = setInterval(() => setTime((t) => t + 1), 1000);
-      }
+      timerRef.current = setInterval(() => setTime((t) => t + 1), 1000);
     } else {
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
-      if (time > 0) {
-        onStopRecording(time);
-        setTime(0);
-      }
+      onStopRecording(time);
+      setTime(0);
     }
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isRecording, onStartRecording, onStopRecording, time]);
+  }, [isRecording, onStartRecording, onStopRecording]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -334,7 +331,7 @@ const PromptInput = React.forwardRef<HTMLDivElement, PromptInputProps>(
             ref={ref}
             className={cn(
               "rounded-3xl border border-[#444444] bg-[#1F2023] p-2 shadow-[0_8px_30px_rgba(0,0,0,0.24)] transition-all duration-300",
-              isLoading && "border-white/20",
+              isLoading && "border-red-500/70",
               className
             )}
             onDragOver={onDragOver}
@@ -395,9 +392,12 @@ const PromptInputTextarea: React.FC<PromptInputTextareaProps & React.ComponentPr
   );
 };
 
-interface PromptInputActionsProps extends React.HTMLAttributes<HTMLDivElement> {}
-const PromptInputActions: React.FC<PromptInputActionsProps> = ({ children, className, ...props }) => (
-  <div className={cn("flex items-center gap-2", className)} {...props}>
+interface PromptInputActionsProps {
+  children: React.ReactNode;
+  className?: string;
+}
+const PromptInputActions: React.FC<PromptInputActionsProps> = ({ children, className }) => (
+  <div className={cn("flex items-center gap-2", className)}>
     {children}
   </div>
 );
@@ -432,10 +432,22 @@ const PromptInputAction: React.FC<PromptInputActionProps> = ({
 const CustomDivider: React.FC = () => (
   <div className="relative h-6 w-[1.5px] mx-1">
     <div
-      className="absolute inset-0 bg-gradient-to-t from-transparent via-white/20 to-transparent rounded-full"
+      className="absolute inset-0 bg-gradient-to-t from-transparent via-[#9b87f5]/70 to-transparent rounded-full"
+      style={{
+        clipPath: "polygon(0% 0%, 100% 0%, 100% 40%, 140% 50%, 100% 60%, 100% 100%, 0% 100%, 0% 60%, -40% 50%, 0% 40%)",
+      }}
     />
   </div>
 );
+
+// Helper for file size
+const formatFileSize = (bytes: number) => {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+};
 
 // Main PromptInputBox Component
 interface PromptInputBoxProps {
@@ -478,20 +490,26 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
   const isImageFile = (file: File) => file.type.startsWith("image/");
 
   const getFileIcon = (file: File) => {
-    if (file.type.startsWith("image/")) return <FileImage className="w-5 h-5 text-blue-400" />;
-    if (file.type.startsWith("video/")) return <FileVideo className="w-5 h-5 text-purple-400" />;
-    if (file.type.startsWith("audio/")) return <FileAudio className="w-5 h-5 text-amber-400" />;
-    if (file.type.includes("pdf") || file.type.includes("document") || file.type.includes("text")) return <FileText className="w-5 h-5 text-emerald-400" />;
-    if (file.type.includes("zip") || file.type.includes("archive") || file.type.includes("rar")) return <FileArchive className="w-5 h-5 text-red-400" />;
-    return <FileIcon className="w-5 h-5 text-gray-400" />;
+    const type = file.type;
+    if (type.includes('pdf')) return <FileText className="w-8 h-8 text-red-400" />;
+    if (type.includes('video')) return <Film className="w-8 h-8 text-blue-400" />;
+    if (type.includes('audio')) return <Music className="w-8 h-8 text-green-400" />;
+    return <FileText className="w-8 h-8 text-gray-400" />;
   };
 
   const processFile = (file: File) => {
-    // Handling multiple file types but previews only for images
+    if (file.size > 50 * 1024 * 1024) { // 50MB limit
+      console.log("File too large (max 50MB)");
+      return;
+    }
+    
     setFiles(prev => [...prev, file]);
+    
     if (isImageFile(file)) {
       const reader = new FileReader();
-      reader.onload = (e) => setFilePreviews(prev => ({ ...prev, [file.name]: e.target?.result as string }));
+      reader.onload = (e) => {
+        setFilePreviews(prev => ({ ...prev, [file.name]: e.target?.result as string }));
+      };
       reader.readAsDataURL(file);
     }
   };
@@ -602,37 +620,37 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
                   exit={{ opacity: 0, scale: 0.9 }}
                   className="relative group"
                 >
-                  {isImageFile(file) && filePreviews[file.name] ? (
-                    <div
-                      className="w-16 h-16 rounded-xl overflow-hidden cursor-pointer transition-all duration-300 border border-white/10"
-                      onClick={() => openImageModal(filePreviews[file.name])}
-                    >
-                      <img
-                        src={filePreviews[file.name]}
-                        alt={file.name}
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                  ) : (
-                    <div className="h-16 px-3 flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl text-xs text-white/70 min-w-[120px]">
-                      <div className="p-2 bg-white/5 rounded-lg">
+                  <div className="bg-[#2E3033] border border-[#444444] rounded-xl overflow-hidden p-1 flex items-center gap-2 pr-3 min-w-[120px] max-w-[200px]">
+                    {isImageFile(file) && filePreviews[file.name] ? (
+                      <div
+                        className="w-10 h-10 rounded-lg overflow-hidden cursor-pointer"
+                        onClick={() => openImageModal(filePreviews[file.name])}
+                      >
+                        <img
+                          src={filePreviews[file.name]}
+                          alt={file.name}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-10 h-10 bg-black/20 rounded-lg flex items-center justify-center">
                         {getFileIcon(file)}
                       </div>
-                      <div className="flex flex-col">
-                        <span className="max-w-[80px] truncate font-medium">{file.name}</span>
-                        <span className="text-[10px] opacity-40">{(file.size / 1024).toFixed(0)} KB</span>
-                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] text-gray-200 truncate font-medium">{file.name}</p>
+                      <p className="text-[9px] text-gray-500 font-mono">{formatFileSize(file.size)}</p>
                     </div>
-                  )}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRemoveFile(index);
-                    }}
-                    className="absolute -top-1 -right-1 rounded-full bg-black/70 p-0.5 opacity-0 group-hover:opacity-100 transition-opacity border border-white/10"
-                  >
-                    <X className="h-3 w-3 text-white" />
-                  </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveFile(index);
+                      }}
+                      className="rounded-full bg-black/40 p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/20"
+                    >
+                      <X className="h-3 w-3 text-white" />
+                    </button>
+                  </div>
                 </motion.div>
               ))}
             </motion.div>
@@ -665,17 +683,17 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
           />
         )}
 
-        <PromptInputActions className="flex items-center justify-between gap-2 p-0 pt-2">
+        <PromptInputActions className="flex items-center justify-between gap-2 p-0 pt-2 border-t border-[#444444]/30 mt-1">
           <div
             className={cn(
               "flex items-center gap-1 transition-opacity duration-300",
               isRecording ? "opacity-0 invisible h-0" : "opacity-100 visible"
             )}
           >
-            <PromptInputAction tooltip="Attach files">
+            <PromptInputAction tooltip="Upload files">
               <button
                 onClick={() => uploadInputRef.current?.click()}
-                className="flex h-8 w-8 text-white/50 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-white/10 hover:text-white"
+                className="flex h-8 w-8 text-[#9CA3AF] cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-gray-600/30 hover:text-[#D1D5DB]"
                 disabled={isRecording}
               >
                 <Paperclip className="h-5 w-5 transition-colors" />
@@ -694,39 +712,41 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
               </button>
             </PromptInputAction>
 
-            {onAttachEmailClick && (
-              <PromptInputAction tooltip="Attach email">
-                <button
-                  onClick={onAttachEmailClick}
-                  className={cn(
-                    "flex h-8 px-2 text-white/50 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-white/10 hover:text-white gap-1.5",
-                    selectedEmailsCount > 0 && "bg-white/10 text-white"
-                  )}
-                  disabled={isRecording}
-                >
-                  <FolderCode className="h-4 w-4" />
-                  {selectedEmailsCount > 0 && <span className="text-[10px] font-bold">{selectedEmailsCount}</span>}
-                </button>
-              </PromptInputAction>
-            )}
-
-            {onIntegrationsClick && (
-              <PromptInputAction tooltip="Integrations">
-                <button
-                  onClick={onIntegrationsClick}
-                  className="flex h-8 w-8 text-white/50 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-white/10 hover:text-white"
-                  disabled={isRecording}
-                >
-                  <motion.div whileHover={{ rotate: 90 }}>
-                    <Square className="h-4 w-4" />
-                  </motion.div>
-                </button>
-              </PromptInputAction>
-            )}
-
-            <CustomDivider />
-
             <div className="flex items-center">
+              {/* Note: Integrations & Attach Email buttons added for Mailient integration */}
+              {onIntegrationsClick && (
+                <PromptInputAction tooltip="Integrations">
+                  <button
+                    onClick={onIntegrationsClick}
+                    className="flex h-8 px-2 text-[#9CA3AF] items-center justify-center rounded-full hover:bg-gray-600/30 hover:text-[#D1D5DB] transition-all"
+                  >
+                    <Globe className="h-4 w-4 mr-1.5" />
+                    <span className="text-xs">Integrations</span>
+                  </button>
+                </PromptInputAction>
+              )}
+
+              {onAttachEmailClick && (
+                <PromptInputAction tooltip="Attach Email">
+                  <button
+                    onClick={onAttachEmailClick}
+                    className={cn(
+                      "flex h-8 px-2 items-center justify-center rounded-full transition-all ml-1",
+                      selectedEmailsCount > 0 
+                        ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+                        : "text-[#9CA3AF] hover:bg-gray-600/30 hover:text-[#D1D5DB]"
+                    )}
+                  >
+                    <FolderCode className="h-4 w-4 mr-1.5" />
+                    <span className="text-xs">
+                      {selectedEmailsCount > 0 ? `${selectedEmailsCount} Emails` : 'Attach Email'}
+                    </span>
+                  </button>
+                </PromptInputAction>
+              )}
+
+              {(onIntegrationsClick || onAttachEmailClick) && <CustomDivider />}
+
               <button
                 type="button"
                 onClick={() => handleToggleChange("think")}
@@ -810,11 +830,9 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
                 : "Voice message"
             }
           >
-            <Button
-              variant="default"
-              size="icon"
+            <button
               className={cn(
-                "h-8 w-8 rounded-full transition-all duration-200",
+                "inline-flex items-center justify-center font-medium h-8 w-8 rounded-full transition-all duration-200 outline-none",
                 isRecording
                   ? "bg-transparent hover:bg-gray-600/30 text-red-500 hover:text-red-400"
                   : hasContent
@@ -837,7 +855,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
               ) : (
                 <Mic className="h-5 w-5 text-[#1F2023] transition-colors" />
               )}
-            </Button>
+            </button>
           </PromptInputAction>
         </PromptInputActions>
       </PromptInput>
