@@ -15,6 +15,7 @@ import { SchedulingModal } from './scheduling-modal';
 import { UsageLimitModal } from './usage-limit-modal';
 import { UsageBadge } from './bubble-button';
 import { triggerSuccessConfetti } from '@/lib/confetti';
+import { useDashboardSettings } from '@/lib/DashboardSettingsContext';
 
 // Simple markdown renderer for bold text
 const renderMarkdown = (text: string): string => {
@@ -235,8 +236,14 @@ export function GmailInterfaceFixed() {
     const [isLoadingContactDetail, setIsLoadingContactDetail] = useState(false);
     const [peopleSearchQuery, setPeopleSearchQuery] = useState('');
 
-    // Arcus AI Panel states
-    const [isArcusOpen, setIsArcusOpen] = useState(false);
+    const { 
+        settings, 
+        isArcusOpen, 
+        setIsArcusOpen,
+        playSystemSound,
+        showNotification
+    } = useDashboardSettings();
+
     const [isArcusMinimized, setIsArcusMinimized] = useState(false);
     const [arcusEmailId, setArcusEmailId] = useState<string | null>(null);
     const [arcusEmailSubject, setArcusEmailSubject] = useState('');
@@ -621,7 +628,13 @@ export function GmailInterfaceFixed() {
             const response = await fetch('/api/email/draft-reply', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ emailId, category })
+                body: JSON.stringify({ 
+                    emailId, 
+                    category,
+                    tone: settings.aiTone,
+                    aiProtection: settings.aiProtection,
+                    privacyMode: settings.privacyMode
+                })
             });
 
             const data = await response.json().catch(() => ({}));
@@ -1134,15 +1147,33 @@ export function GmailInterfaceFixed() {
                     // Filter out unsubscribed emails
                     const filteredEmails = sourceEmails.filter(email => !unsubscribedEmailIds.includes(email.id));
 
+                    // Smart Grouping: Group source emails by subject if enabled
+                    let processedEmails = filteredEmails.map(email => ({
+                        id: email.id,
+                        subject: email.subject || 'No Subject',
+                        snippet: email.snippet || '',
+                        sender: email.sender || { name: 'Unknown', email: '' },
+                        receivedAt: email.receivedAt || new Date().toISOString()
+                    }));
+
+                    if (settings.smartGrouping) {
+                        const groups = new Map<string, typeof processedEmails[0]>();
+                        processedEmails.forEach(email => {
+                            // Normalize subject for grouping (remove "Re:", "Fwd:", etc.)
+                            const baseSubject = email.subject.replace(/^(Re|Fwd|Reply):/i, '').trim();
+                            if (!groups.has(baseSubject)) {
+                                groups.set(baseSubject, email);
+                            } else {
+                                // Keep the most recent one? Or combine?
+                                // Let's keep the existing one in the map (usually the first one encountered)
+                            }
+                        });
+                        processedEmails = Array.from(groups.values());
+                    }
+
                     return {
                         ...insight,
-                        source_emails: filteredEmails.map(email => ({
-                            id: email.id,
-                            subject: email.subject || 'No Subject',
-                            snippet: email.snippet || '',
-                            sender: email.sender || { name: 'Unknown', email: '' },
-                            receivedAt: email.receivedAt || new Date().toISOString()
-                        }))
+                        source_emails: processedEmails
                     };
                 }).filter(insight => insight.source_emails.length > 0); // Only keep insights with emails
 
@@ -1193,6 +1224,15 @@ export function GmailInterfaceFixed() {
                 setLastUpdated(new Date().toLocaleString());
                 setHasInitialLoad(true);
                 console.log('✅ Sift AI insights processed successfully');
+
+                // Trigger notification and sound
+                if (enrichedInsights.length > 0) {
+                    showNotification('In-box Intelligence Updated', {
+                        body: `Sift AI identified ${enrichedInsights.length} key insights in your inbox.`,
+                        icon: '/favicon.ico'
+                    });
+                    if (settings.soundEffects) playSystemSound('notification');
+                }
             } else {
                 throw new Error(data.error || 'Unknown error occurred');
             }

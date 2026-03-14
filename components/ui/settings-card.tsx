@@ -33,6 +33,8 @@ import {
 import { ToggleSwitch } from './toggle-switch';
 import { Button } from './button';
 import { useSession, signOut } from 'next-auth/react';
+import { useDashboardSettings } from '@/lib/DashboardSettingsContext';
+import { toast } from 'sonner';
 
 interface SettingsCardProps {
     onClose: () => void;
@@ -42,51 +44,8 @@ type SettingsSection = 'general' | 'system' | 'account' | 'team' | 'plans' | 'pr
 
 export function SettingsCard({ onClose }: SettingsCardProps) {
     const { data: session } = useSession();
+    const { settings, updateSetting, resetCache, relaunchApp } = useDashboardSettings();
     const [activeSection, setActiveSection] = useState<SettingsSection>('general');
-
-    // Persistent Settings State
-    const [settings, setSettings] = useState({
-        // General
-        aiTone: 'professional',
-        defaultLanguage: 'English',
-        smartGrouping: true,
-
-        // System
-        notifications: true,
-        soundEffects: true,
-        compactMode: false,
-        theme: 'dark',
-
-        // Privacy
-        aiProtection: true,
-        aesEncryption: true,
-        trainingData: false,
-        privacyMode: true
-    });
-
-    // Load settings from localStorage on mount
-    useEffect(() => {
-        const savedSettings = localStorage.getItem('mailient_settings');
-        if (savedSettings) {
-            try {
-                setSettings(prev => ({ ...prev, ...JSON.parse(savedSettings) }));
-            } catch (e) {
-                console.error("Failed to load settings", e);
-            }
-        }
-    }, []);
-
-    // Save settings to localStorage whenever they change
-    const updateSetting = (key: keyof typeof settings, value: any) => {
-        const newSettings = { ...settings, [key]: value };
-        setSettings(newSettings);
-        localStorage.setItem('mailient_settings', JSON.stringify(newSettings));
-    };
-
-    const handleReset = () => {
-        localStorage.removeItem('mailient_settings');
-        window.location.reload();
-    };
 
     const [accountInfo, setAccountInfo] = useState({
         firstName: session?.user?.name?.split(' ')[0] || '',
@@ -94,6 +53,47 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
         email: session?.user?.email || '',
         username: session?.user?.name?.toLowerCase().replace(/\s/g, '_') || 'user',
     });
+
+    const [isSaving, setIsSaving] = useState(false);
+
+    const handleSaveAccount = async () => {
+        setIsSaving(true);
+        try {
+            const response = await fetch('/api/user/update-profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: `${accountInfo.firstName} ${accountInfo.lastName}`,
+                    username: accountInfo.username,
+                }),
+            });
+
+            if (response.ok) {
+                toast.success('Profile updated successfully');
+            } else {
+                toast.error('Failed to update profile');
+            }
+        } catch (error) {
+            toast.error('An error occurred');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleDeleteAccount = async () => {
+        if (confirm('Are you sure you want to delete your account? This action is permanent and will wipe all your data.')) {
+            try {
+                const response = await fetch('/api/user/delete-account', { method: 'DELETE' });
+                if (response.ok) {
+                    signOut({ callbackUrl: '/' });
+                } else {
+                    toast.error('Failed to delete account');
+                }
+            } catch (error) {
+                toast.error('An error occurred');
+            }
+        }
+    };
 
     const MenuButton = ({ id, icon: Icon, label, category = false }: { id?: SettingsSection, icon?: any, label: string, category?: boolean }) => {
         if (category) {
@@ -170,7 +170,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
             onClick={onClose}
         >
             <div
-                className="w-full max-w-[920px] h-[680px] bg-[#1a1a1a] rounded-[32px] overflow-hidden flex shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] border border-white/5"
+                className="w-full max-w-[1020px] h-[600px] bg-[#1a1a1a] rounded-[32px] overflow-hidden flex shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] border border-white/5"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Sidebar */}
@@ -251,7 +251,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                 </div>
                                                 <p className="text-sm text-neutral-500">Current: <span className="text-white capitalize">{settings.aiTone}</span></p>
                                             </div>
-                                            <select 
+                                            <select
                                                 value={settings.aiTone}
                                                 onChange={(e) => updateSetting('aiTone', e.target.value)}
                                                 className="bg-white/5 text-neutral-200 px-4 h-10 rounded-xl text-sm font-medium outline-none border-none cursor-pointer"
@@ -319,19 +319,19 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                         <div className="bg-white/5 rounded-[24px] p-6 border border-white/5 flex items-center justify-center gap-4">
                                             <Button
                                                 variant="outline"
-                                                onClick={handleReset}
-                                                className="flex-1 bg-white dark:bg-white/5 border-[#EBE9E2] dark:border-white/10 hover:bg-neutral-50 dark:hover:bg-white/[0.08] text-[#1A1A1A] dark:text-white py-6 rounded-2xl flex items-center justify-center gap-2 group"
+                                                onClick={resetCache}
+                                                className="border-white/10 hover:bg-white/5 text-neutral-400 hover:text-white px-8 h-12 rounded-2xl flex items-center gap-2"
                                             >
-                                                <RefreshCw className="w-4 h-4 text-neutral-400 group-hover:rotate-180 transition-all duration-500" />
-                                                <span>Reset Local Cache</span>
+                                                <RefreshCw className="w-4 h-4" />
+                                                Reset Local Cache
                                             </Button>
                                             <Button
                                                 variant="outline"
-                                                onClick={() => window.location.reload()}
-                                                className="flex-1 bg-white dark:bg-white/5 border-[#EBE9E2] dark:border-white/10 hover:bg-neutral-50 dark:hover:bg-white/[0.08] text-[#1A1A1A] dark:text-white py-6 rounded-2xl flex items-center justify-center gap-2 group"
+                                                onClick={relaunchApp}
+                                                className="border-white/10 hover:bg-white/5 text-neutral-400 hover:text-white px-8 h-12 rounded-2xl flex items-center gap-2"
                                             >
-                                                <Power className="w-4 h-4 text-neutral-400 group-hover:text-red-400 transition-colors" />
-                                                <span>Relaunch App</span>
+                                                <Power className="w-4 h-4" />
+                                                Relaunch App
                                             </Button>
                                         </div>
                                     </div>
@@ -374,7 +374,16 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                             <div className="h-px bg-white/5" />
                                             <div className="flex items-center justify-between">
                                                 <span className="text-[15px] font-medium text-neutral-400">Username</span>
-                                                <span className="text-[15px] text-neutral-300 font-medium">@{accountInfo.username}</span>
+                                                <div className="relative">
+                                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500">@</span>
+                                                    <input
+                                                        type="text"
+                                                        value={accountInfo.username}
+                                                        onChange={(e) => setAccountInfo(p => ({ ...p, username: e.target.value.replace(/[^a-zA-Z0-9_]/g, '') }))}
+                                                        className="bg-white/5 border border-white/10 rounded-xl pl-8 pr-4 py-2 text-[15px] text-white w-64 focus:ring-2 focus:ring-white transition-all outline-none"
+                                                        placeholder="username"
+                                                    />
+                                                </div>
                                             </div>
                                             <div className="h-px bg-white/5" />
                                             <div className="flex items-center justify-between">
@@ -405,14 +414,19 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                             </Button>
                                             <Button
                                                 variant="ghost"
+                                                onClick={handleDeleteAccount}
                                                 className="text-neutral-400 hover:text-red-500 transition-colors flex items-center gap-2 font-medium"
                                             >
                                                 <Trash2 className="w-4 h-4" />
                                                 Delete account
                                             </Button>
                                         </div>
-                                        <Button className="bg-neutral-800 dark:bg-white text-white dark:text-black px-10 h-12 rounded-2xl font-bold hover:opacity-90 transition-opacity">
-                                            Save
+                                        <Button 
+                                            onClick={handleSaveAccount}
+                                            disabled={isSaving}
+                                            className="bg-neutral-800 dark:bg-white text-white dark:text-black px-10 h-12 rounded-2xl font-bold hover:opacity-90 transition-opacity disabled:opacity-50"
+                                        >
+                                            {isSaving ? 'Saving...' : 'Save'}
                                         </Button>
                                     </div>
                                 </motion.div>

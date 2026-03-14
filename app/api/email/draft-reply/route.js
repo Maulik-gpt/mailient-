@@ -32,7 +32,7 @@ export async function POST(request) {
             }, { status: 403 });
         }
 
-        const { emailId, category, context } = await request.json();
+        const { emailId, category, context, tone } = await request.json();
         if (!emailId) {
             return NextResponse.json({ error: 'Email ID required' }, { status: 400 });
         }
@@ -118,7 +118,8 @@ export async function POST(request) {
             email: session.user.email,
             role: context?.role || null,
             goals: context?.goals || [],
-            voiceProfile: voiceProfile // Include voice profile for AI voice cloning
+            voiceProfile: voiceProfile, // Include voice profile for AI voice cloning
+            tone: tone || 'professional' // Include selected AI tone
         };
 
         // Use follow-up generator for follow-up categories, otherwise use draft reply
