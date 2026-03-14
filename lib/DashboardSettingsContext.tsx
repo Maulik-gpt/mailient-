@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 
 interface DashboardSettings {
     arcusShortcut: string;
-    aiTone: 'professional' | 'friendly' | 'concise' | 'humorous';
+    aiTone: 'professional' | 'friendly' | 'concise' | 'humorous' | 'mimic';
     smartGrouping: boolean;
     notifications: boolean;
     soundEffects: boolean;

@@ -28,7 +28,8 @@ import {
     Bell,
     Languages,
     MousePointer2,
-    Volume2
+    Volume2,
+    Sparkles
 } from 'lucide-react';
 import { ToggleSwitch } from './toggle-switch';
 import { Button } from './button';
@@ -240,7 +241,6 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                     Default key: <kbd className="bg-white/10 px-1.5 py-0.5 rounded border border-white/10 text-white">Cmd + K</kbd> to summon Arcus anywhere.
                                                 </p>
                                             </div>
-                                            <Button variant="ghost" className="bg-white/5 hover:bg-white/10 text-neutral-200 px-6 h-10 rounded-xl text-sm font-medium">Rebind</Button>
                                         </div>
                                         <div className="h-px bg-white/5" />
                                         <div className="flex items-center justify-between group">
@@ -260,8 +260,17 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                 <option value="friendly">Friendly</option>
                                                 <option value="concise">Concise</option>
                                                 <option value="humorous">Humorous</option>
+                                                <option value="mimic">Mimic My Style (AI Voice)</option>
                                             </select>
                                         </div>
+                                        {settings.aiTone === 'mimic' && (
+                                            <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 mt-2">
+                                                <p className="text-xs text-amber-200 leading-relaxed">
+                                                    <Sparkles className="w-3 h-3 inline mr-1 mb-0.5" />
+                                                    <strong>AI Voice Cloning:</strong> Mailient will analyze your sent emails to perfectly replicate your writing style. This process happens automatically when drafting.
+                                                </p>
+                                            </div>
+                                        )}
                                         <div className="h-px bg-white/5" />
                                         <div className="flex items-center justify-between">
                                             <div className="space-y-1">

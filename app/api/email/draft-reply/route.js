@@ -103,13 +103,27 @@ export async function POST(request) {
         let voiceProfile = null;
         try {
             voiceProfile = await voiceProfileService.getVoiceProfile(userId);
-            if (voiceProfile) {
+            
+            // SPECIAL FEATURE: If mimic tone is selected but no voice profile exists, create one now
+            if (tone === 'mimic' && (!voiceProfile || voiceProfile.status === 'default')) {
+                console.log('🎙️ Mimic tone selected but no profile - analyzing sent emails now...');
+                const sentEmails = await voiceProfileService.fetchSentEmails(gmailService, 20);
+                if (sentEmails.length >= 3) { // Lower requirement for on-the-fly analysis
+                    voiceProfile = await voiceProfileService.analyzeVoiceProfile(sentEmails);
+                    await voiceProfileService.saveVoiceProfile(userId, voiceProfile);
+                    console.log('✅ Voice profile created on-the-fly');
+                } else {
+                    console.log('⚠️ Not enough sent emails for voice cloning, falling back to professional');
+                }
+            }
+            
+            if (voiceProfile && voiceProfile.status !== 'default') {
                 console.log('🎭 Voice profile found - enabling voice cloning for draft');
             } else {
                 console.log('📝 No voice profile - using standard draft generation');
             }
         } catch (e) {
-            console.warn('Voice profile fetch failed:', e.message);
+            console.warn('Voice profile fetch/analysis failed:', e.message);
         }
 
         // Prepare user context, merging session data with onboarding context and voice profile
