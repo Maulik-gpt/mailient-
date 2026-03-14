@@ -1,4 +1,4 @@
-fix 'use client';
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -234,27 +234,27 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                             <div className="space-y-1">
                                                 <div className="flex items-center gap-2">
                                                     <Zap className="w-4 h-4 text-amber-500" />
-                                                    <h3 className="text-[15px] font-semibold text-[#1A1A1A] dark:text-white">Arcus AI Shortcut</h3>
+                                                    <h3 className="text-[15px] font-semibold text-white">Arcus AI Shortcut</h3>
                                                 </div>
-                                                <p className="text-sm text-neutral-400 dark:text-neutral-500">
+                                                <p className="text-sm text-neutral-400">
                                                     Default key: <kbd className="bg-white/10 px-1.5 py-0.5 rounded border border-white/10 text-white">Cmd + K</kbd> to summon Arcus anywhere.
                                                 </p>
                                             </div>
-                                            <Button variant="ghost" className="bg-[#EBE9E2] dark:bg-white/[0.06] hover:bg-[#DEDCD4] dark:hover:bg-white/[0.1] text-neutral-700 dark:text-neutral-200 px-6 h-10 rounded-xl text-sm font-medium">Rebind</Button>
+                                            <Button variant="ghost" className="bg-white/5 hover:bg-white/10 text-neutral-200 px-6 h-10 rounded-xl text-sm font-medium">Rebind</Button>
                                         </div>
-                                        <div className="h-px bg-[#EBE9E2] dark:bg-white/5" />
+                                        <div className="h-px bg-white/5" />
                                         <div className="flex items-center justify-between group">
                                             <div className="space-y-1">
                                                 <div className="flex items-center gap-2">
                                                     <Keyboard className="w-4 h-4 text-blue-500" />
-                                                    <h3 className="text-[15px] font-semibold text-[#1A1A1A] dark:text-white">Default Draft Tone</h3>
+                                                    <h3 className="text-[15px] font-semibold text-white">Default Draft Tone</h3>
                                                 </div>
-                                                <p className="text-sm text-neutral-400 dark:text-neutral-500">Current: <span className="text-white capitalize">{settings.aiTone}</span></p>
+                                                <p className="text-sm text-neutral-500">Current: <span className="text-white capitalize">{settings.aiTone}</span></p>
                                             </div>
-                                            <select
+                                            <select 
                                                 value={settings.aiTone}
                                                 onChange={(e) => updateSetting('aiTone', e.target.value)}
-                                                className="bg-[#EBE9E2] dark:bg-white/[0.06] text-neutral-700 dark:text-neutral-200 px-4 h-10 rounded-xl text-sm font-medium outline-none border-none cursor-pointer"
+                                                className="bg-white/5 text-neutral-200 px-4 h-10 rounded-xl text-sm font-medium outline-none border-none cursor-pointer"
                                             >
                                                 <option value="professional">Professional</option>
                                                 <option value="friendly">Friendly</option>
@@ -262,14 +262,14 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                 <option value="humorous">Humorous</option>
                                             </select>
                                         </div>
-                                        <div className="h-px bg-[#EBE9E2] dark:bg-white/5" />
+                                        <div className="h-px bg-white/5" />
                                         <div className="flex items-center justify-between">
                                             <div className="space-y-1">
                                                 <div className="flex items-center gap-2">
                                                     <MousePointer2 className="w-4 h-4 text-emerald-500" />
-                                                    <h3 className="text-[15px] font-semibold text-[#1A1A1A] dark:text-white">Smart Thread Grouping</h3>
+                                                    <h3 className="text-[15px] font-semibold text-white">Smart Thread Grouping</h3>
                                                 </div>
-                                                <p className="text-sm text-neutral-400 dark:text-neutral-500">Automatically group related emails using Sift AI.</p>
+                                                <p className="text-sm text-neutral-400">Automatically group related emails using Sift AI.</p>
                                             </div>
                                             <ToggleSwitch checked={settings.smartGrouping} onChange={(v) => updateSetting('smartGrouping', v)} />
                                         </div>
@@ -291,23 +291,23 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-3">
                                                     <Bell className="w-4 h-4 text-neutral-400" />
-                                                    <span className="text-[15px] font-medium text-[#1A1A1A] dark:text-white">Desktop Notifications</span>
+                                                    <span className="text-[15px] font-medium text-white">Desktop Notifications</span>
                                                 </div>
                                                 <ToggleSwitch checked={settings.notifications} onChange={(v) => updateSetting('notifications', v)} />
                                             </div>
-                                            <div className="h-px bg-[#EBE9E2] dark:bg-white/5" />
+                                            <div className="h-px bg-white/5" />
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-3">
                                                     <Volume2 className="w-4 h-4 text-neutral-400" />
-                                                    <span className="text-[15px] font-medium text-[#1A1A1A] dark:text-white">Email Sound Effects</span>
+                                                    <span className="text-[15px] font-medium text-white">Email Sound Effects</span>
                                                 </div>
                                                 <ToggleSwitch checked={settings.soundEffects} onChange={(v) => updateSetting('soundEffects', v)} />
                                             </div>
-                                            <div className="h-px bg-[#EBE9E2] dark:bg-white/5" />
+                                            <div className="h-px bg-white/5" />
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-3">
                                                     <Monitor className="w-4 h-4 text-neutral-400" />
-                                                    <span className="text-[15px] font-medium text-[#1A1A1A] dark:text-white">Compact UI Mode</span>
+                                                    <span className="text-[15px] font-medium text-white">Compact UI Mode</span>
                                                 </div>
                                                 <ToggleSwitch checked={settings.compactMode} onChange={(v) => updateSetting('compactMode', v)} />
                                             </div>
