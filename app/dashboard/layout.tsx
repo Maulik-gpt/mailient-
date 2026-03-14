@@ -1,6 +1,5 @@
 import { auth } from '@/lib/auth.js';
 import { redirect } from 'next/navigation';
-import { DashboardSettingsProvider } from '@/lib/DashboardSettingsContext';
 
 export const metadata = {
   title: 'Arcus | Mailient',
@@ -13,10 +12,8 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <DashboardSettingsProvider>
-      <div className="min-h-screen">
-        {children}
-      </div>
-    </DashboardSettingsProvider>
+    <div className="min-h-screen">
+      {children}
+    </div>
   );
 }

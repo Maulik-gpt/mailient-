@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "../components/ui/theme-provider";
 import { OfflineToast } from "../components/offline-toast";
 import { Toaster } from "../components/ui/sonner";
+import { DashboardSettingsProvider } from "../lib/DashboardSettingsContext";
 
 const queryClient = new QueryClient();
 
@@ -18,9 +19,11 @@ export default function Providers({ children }) {
         disableTransitionOnChange
       >
         <SessionProvider>
-          {children}
-          <OfflineToast />
-          <Toaster />
+          <DashboardSettingsProvider>
+            {children}
+            <OfflineToast />
+            <Toaster />
+          </DashboardSettingsProvider>
         </SessionProvider>
       </ThemeProvider>
     </QueryClientProvider>
