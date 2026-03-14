@@ -1,33 +1,34 @@
-'use client';
+fix 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  X, 
-  Settings, 
-  Monitor, 
-  User, 
-  Users, 
-  CreditCard, 
-  Shield, 
-  RefreshCw,
-  Power,
-  ChevronRight,
-  Command,
-  Cloud,
-  Moon,
-  Keyboard,
-  Settings2,
-  Check,
-  LogOut,
-  Trash2,
-  Lock,
-  Cpu,
-  ShieldCheck,
-  Zap,
-  Bell,
-  Languages,
-  MousePointer2
+import {
+    X,
+    Settings,
+    Monitor,
+    User,
+    Users,
+    CreditCard,
+    Shield,
+    RefreshCw,
+    Power,
+    ChevronRight,
+    Command,
+    Cloud,
+    Moon,
+    Keyboard,
+    Settings2,
+    Check,
+    LogOut,
+    Trash2,
+    Lock,
+    Cpu,
+    ShieldCheck,
+    Zap,
+    Bell,
+    Languages,
+    MousePointer2,
+    Volume2
 } from 'lucide-react';
 import { ToggleSwitch } from './toggle-switch';
 import { Button } from './button';
@@ -42,20 +43,20 @@ type SettingsSection = 'general' | 'system' | 'account' | 'team' | 'plans' | 'pr
 export function SettingsCard({ onClose }: SettingsCardProps) {
     const { data: session } = useSession();
     const [activeSection, setActiveSection] = useState<SettingsSection>('general');
-    
+
     // Persistent Settings State
     const [settings, setSettings] = useState({
         // General
         aiTone: 'professional',
         defaultLanguage: 'English',
         smartGrouping: true,
-        
+
         // System
         notifications: true,
         soundEffects: true,
         compactMode: false,
         theme: 'dark',
-        
+
         // Privacy
         aiProtection: true,
         aesEncryption: true,
@@ -110,11 +111,10 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
         return (
             <button
                 onClick={() => id && setActiveSection(id)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 group ${
-                    isActive 
-                    ? 'bg-[#EBE9E2] dark:bg-white/[0.08] text-[#1A1A1A] dark:text-white font-medium shadow-sm' 
-                    : 'text-[#666666] dark:text-neutral-400 hover:text-[#1A1A1A] dark:hover:text-neutral-200 hover:bg-black/5 dark:hover:bg-white/5'
-                }`}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 ${isActive
+                        ? 'bg-white/[0.08] text-white font-medium shadow-sm'
+                        : 'text-neutral-400 hover:text-neutral-200 hover:bg-white/5'
+                    }`}
             >
                 {Icon && <Icon className={`w-4 h-4 transition-colors ${isActive ? 'text-black dark:text-white' : 'text-neutral-400 group-hover:text-black dark:group-hover:text-white'}`} strokeWidth={isActive ? 2 : 1.5} />}
                 <span className="text-[14px] leading-tight">{label}</span>
@@ -123,11 +123,10 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
     };
 
     const PricingCard = ({ title, price, subtitle, features, buttonText, highlighted = false }: any) => (
-        <div className={`flex-1 p-6 rounded-[24px] border transition-all duration-300 ${
-            highlighted 
-            ? 'bg-white/[0.04] border-white/20 shadow-[0_16px_48px_-12px_rgba(0,0,0,0.5)] scale-[1.02]' 
-            : 'bg-transparent border-white/5 hover:border-white/10'
-        }`}>
+        <div className={`flex-1 p-6 rounded-[24px] border transition-all duration-300 ${highlighted
+                ? 'bg-white/[0.08] border-white/20 shadow-2xl scale-[1.02]'
+                : 'bg-white/5 border-white/5 hover:border-white/10'
+            }`}>
             <div className="mb-6">
                 <p className="text-[11px] text-neutral-500 font-bold tracking-wider uppercase mb-2">{subtitle}</p>
                 <div className="flex items-baseline gap-2">
@@ -140,7 +139,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                     <span className="text-xs text-neutral-500">/month</span>
                 </div>
             </div>
-            
+
             <div className="space-y-4 mb-8">
                 {features.map((feature: string, i: number) => (
                     <div key={i} className="flex gap-3 items-start">
@@ -149,14 +148,13 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                     </div>
                 ))}
             </div>
-            
-            <Button 
-                variant={highlighted ? "default" : "outline"} 
-                className={`w-full py-6 rounded-2xl text-sm font-bold transition-all ${
-                    highlighted 
-                    ? 'bg-white text-black hover:bg-neutral-200' 
-                    : 'bg-white/5 border-white/10 text-white hover:bg-white/10'
-                }`}
+
+            <Button
+                variant={highlighted ? "default" : "outline"}
+                className={`w-full py-6 rounded-2xl text-sm font-bold transition-all ${highlighted
+                        ? 'bg-white text-black hover:bg-neutral-200'
+                        : 'bg-white/5 border-white/10 text-white hover:bg-white/10'
+                    }`}
             >
                 {buttonText}
             </Button>
@@ -164,26 +162,26 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
     );
 
     return (
-        <motion.div 
+        <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
             onClick={onClose}
         >
-            <div 
-                className="w-full max-w-[920px] h-[680px] apple-glass-liquid-dark rounded-[32px] overflow-hidden flex shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] border border-white/5"
+            <div
+                className="w-full max-w-[920px] h-[680px] bg-[#1a1a1a] rounded-[32px] overflow-hidden flex shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] border border-white/5"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Sidebar */}
-                <div className="w-[240px] bg-[#F9F8F6] dark:bg-[#0c0c0c]/80 border-r border-[#EBE9E2] dark:border-white/5 p-3 flex flex-col">
+                <div className="w-[240px] bg-[#141414] border-r border-white/5 p-3 flex flex-col">
                     <div className="flex-1 overflow-y-auto custom-scrollbar pr-1">
                         <MenuButton label="Settings" category />
                         <MenuButton id="general" icon={Settings2} label="General" />
                         <MenuButton id="system" icon={Monitor} label="System" />
-                        
+
                         <div className="my-2 h-px bg-neutral-200 dark:bg-white/5" />
-                        
+
                         <MenuButton label="Account" category />
                         <MenuButton id="account" icon={User} label="Account" />
                         <MenuButton id="team" icon={Users} label="Team" />
@@ -201,10 +199,10 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                 </div>
 
                 {/* Main Content */}
-                <div className="flex-1 bg-white/5 dark:bg-transparent flex flex-col h-full relative">
+                <div className="flex-1 flex flex-col h-full relative">
                     {/* Header Title */}
                     <div className="px-10 pt-12 pb-8 flex items-center justify-between">
-                        <motion.h1 
+                        <motion.h1
                             key={activeSection}
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
@@ -212,8 +210,8 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                         >
                             {activeSection === 'plans' ? 'Plans and Billing' : activeSection === 'privacy' ? 'Data and Privacy' : activeSection.replace('-', ' ')}
                         </motion.h1>
-                        
-                        <button 
+
+                        <button
                             onClick={onClose}
                             className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors group absolute top-6 right-6"
                         >
@@ -231,7 +229,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                     exit={{ opacity: 0, y: -10 }}
                                     className="space-y-6"
                                 >
-                                    <div className="bg-[#FAF9F6] dark:bg-white/[0.03] rounded-3xl p-8 border border-[#EBE9E2] dark:border-white/5 space-y-8">
+                                    <div className="bg-white/5 rounded-3xl p-8 border border-white/5 space-y-8">
                                         <div className="flex items-center justify-between group">
                                             <div className="space-y-1">
                                                 <div className="flex items-center gap-2">
@@ -253,7 +251,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                 </div>
                                                 <p className="text-sm text-neutral-400 dark:text-neutral-500">Current: <span className="text-white capitalize">{settings.aiTone}</span></p>
                                             </div>
-                                            <select 
+                                            <select
                                                 value={settings.aiTone}
                                                 onChange={(e) => updateSetting('aiTone', e.target.value)}
                                                 className="bg-[#EBE9E2] dark:bg-white/[0.06] text-neutral-700 dark:text-neutral-200 px-4 h-10 rounded-xl text-sm font-medium outline-none border-none cursor-pointer"
@@ -289,7 +287,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                 >
                                     <div className="space-y-4">
                                         <h2 className="text-[13px] font-bold tracking-wider text-neutral-400 dark:text-neutral-500 uppercase px-1">Display & Notifications</h2>
-                                        <div className="bg-[#FAF9F6] dark:bg-white/[0.03] rounded-3xl p-8 border border-[#EBE9E2] dark:border-white/5 space-y-8">
+                                        <div className="bg-white/5 rounded-3xl p-8 border border-white/5 space-y-8">
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-3">
                                                     <Bell className="w-4 h-4 text-neutral-400" />
@@ -318,17 +316,17 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
 
                                     <div className="space-y-4">
                                         <h2 className="text-[13px] font-bold tracking-wider text-neutral-400 dark:text-neutral-500 uppercase px-1">App Maintenance</h2>
-                                        <div className="bg-[#FAF9F6] dark:bg-white/[0.03] rounded-[24px] p-6 border border-[#EBE9E2] dark:border-white/5 flex items-center justify-center gap-4">
-                                            <Button 
-                                                variant="outline" 
+                                        <div className="bg-white/5 rounded-[24px] p-6 border border-white/5 flex items-center justify-center gap-4">
+                                            <Button
+                                                variant="outline"
                                                 onClick={handleReset}
                                                 className="flex-1 bg-white dark:bg-white/5 border-[#EBE9E2] dark:border-white/10 hover:bg-neutral-50 dark:hover:bg-white/[0.08] text-[#1A1A1A] dark:text-white py-6 rounded-2xl flex items-center justify-center gap-2 group"
                                             >
                                                 <RefreshCw className="w-4 h-4 text-neutral-400 group-hover:rotate-180 transition-all duration-500" />
                                                 <span>Reset Local Cache</span>
                                             </Button>
-                                            <Button 
-                                                variant="outline" 
+                                            <Button
+                                                variant="outline"
                                                 onClick={() => window.location.reload()}
                                                 className="flex-1 bg-white dark:bg-white/5 border-[#EBE9E2] dark:border-white/10 hover:bg-neutral-50 dark:hover:bg-white/[0.08] text-[#1A1A1A] dark:text-white py-6 rounded-2xl flex items-center justify-center gap-2 group"
                                             >
@@ -347,44 +345,44 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                     animate={{ opacity: 1, scale: 1 }}
                                     className="space-y-10 focus:outline-none"
                                 >
-                                    <div className="bg-[#FAF9F6] dark:bg-white/[0.03] rounded-[32px] p-1 border border-[#EBE9E2] dark:border-white/5 overflow-hidden">
-                                        <div className="p-8 space-y-10">
+                                    <div className="bg-white/5 rounded-[32px] p-1 border border-white/5 overflow-hidden">
+                                    <div className="p-8 space-y-10">
                                             <div className="flex items-center justify-between">
-                                                <span className="text-[15px] font-medium text-neutral-500 dark:text-neutral-400">First name</span>
-                                                <input 
-                                                    type="text" 
+                                                <span className="text-[15px] font-medium text-neutral-400">First name</span>
+                                                <input
+                                                    type="text"
                                                     value={accountInfo.firstName}
-                                                    onChange={(e) => setAccountInfo(p => ({...p, firstName: e.target.value}))}
-                                                    className="bg-white dark:bg-white/[0.05] border border-[#EBE9E2] dark:border-white/10 rounded-xl px-4 py-2 text-[15px] text-[#1A1A1A] dark:text-white w-64 focus:ring-2 focus:ring-black dark:focus:ring-white transition-all outline-none"
+                                                    onChange={(e) => setAccountInfo(p => ({ ...p, firstName: e.target.value }))}
+                                                    className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-[15px] text-white w-64 focus:ring-2 focus:ring-white transition-all outline-none"
                                                 />
                                             </div>
-                                            <div className="h-px bg-[#EBE9E2] dark:bg-white/5" />
+                                            <div className="h-px bg-white/5" />
                                             <div className="flex items-center justify-between">
-                                                <span className="text-[15px] font-medium text-neutral-500 dark:text-neutral-400">Last name</span>
-                                                <input 
-                                                    type="text" 
+                                                <span className="text-[15px] font-medium text-neutral-400">Last name</span>
+                                                <input
+                                                    type="text"
                                                     value={accountInfo.lastName}
-                                                    onChange={(e) => setAccountInfo(p => ({...p, lastName: e.target.value}))}
-                                                    className="bg-white dark:bg-white/[0.05] border border-[#EBE9E2] dark:border-white/10 rounded-xl px-4 py-2 text-[15px] text-[#1A1A1A] dark:text-white w-64 focus:ring-2 focus:ring-black dark:focus:ring-white transition-all outline-none"
+                                                    onChange={(e) => setAccountInfo(p => ({ ...p, lastName: e.target.value }))}
+                                                    className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-[15px] text-white w-64 focus:ring-2 focus:ring-white transition-all outline-none"
                                                 />
                                             </div>
-                                            <div className="h-px bg-[#EBE9E2] dark:bg-white/5" />
+                                            <div className="h-px bg-white/5" />
                                             <div className="flex items-center justify-between">
-                                                <span className="text-[15px] font-medium text-neutral-500 dark:text-neutral-400">Email</span>
-                                                <span className="text-[15px] text-neutral-900 dark:text-neutral-300 font-medium">{accountInfo.email}</span>
+                                                <span className="text-[15px] font-medium text-neutral-400">Email</span>
+                                                <span className="text-[15px] text-neutral-300 font-medium">{accountInfo.email}</span>
                                             </div>
-                                            <div className="h-px bg-[#EBE9E2] dark:bg-white/5" />
+                                            <div className="h-px bg-white/5" />
                                             <div className="flex items-center justify-between">
-                                                <span className="text-[15px] font-medium text-neutral-500 dark:text-neutral-400">Username</span>
-                                                <span className="text-[15px] text-neutral-900 dark:text-neutral-300 font-medium">@{accountInfo.username}</span>
+                                                <span className="text-[15px] font-medium text-neutral-400">Username</span>
+                                                <span className="text-[15px] text-neutral-300 font-medium">@{accountInfo.username}</span>
                                             </div>
-                                            <div className="h-px bg-[#EBE9E2] dark:bg-white/5" />
+                                            <div className="h-px bg-white/5" />
                                             <div className="flex items-center justify-between">
-                                                <span className="text-[15px] font-medium text-neutral-500 dark:text-neutral-400">Profile picture</span>
+                                                <span className="text-[15px] font-medium text-neutral-400">Profile picture</span>
                                                 <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white/10 group cursor-pointer relative">
-                                                    <img 
-                                                        src={session?.user?.image || "/arcus-ai-icon.jpg"} 
-                                                        alt="Profile" 
+                                                    <img
+                                                        src={session?.user?.image || "/arcus-ai-icon.jpg"}
+                                                        alt="Profile"
                                                         className="w-full h-full object-cover group-hover:opacity-50 transition-opacity"
                                                     />
                                                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -397,16 +395,16 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
 
                                     <div className="flex items-center justify-between px-2">
                                         <div className="flex gap-4">
-                                            <Button 
-                                                variant="ghost" 
+                                            <Button
+                                                variant="ghost"
                                                 onClick={() => signOut()}
-                                                className="bg-[#EBE9E2] dark:bg-white/[0.05] hover:bg-neutral-200 dark:hover:bg-white/[0.08] text-neutral-700 dark:text-neutral-300 px-6 h-12 rounded-2xl flex items-center gap-2 font-medium"
+                                                className="bg-white/5 hover:bg-white/10 text-neutral-300 px-6 h-12 rounded-2xl flex items-center gap-2 font-medium"
                                             >
                                                 <LogOut className="w-4 h-4" />
                                                 Sign out
                                             </Button>
-                                            <Button 
-                                                variant="ghost" 
+                                            <Button
+                                                variant="ghost"
                                                 className="text-neutral-400 hover:text-red-500 transition-colors flex items-center gap-2 font-medium"
                                             >
                                                 <Trash2 className="w-4 h-4" />
@@ -428,7 +426,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                     className="space-y-8"
                                 >
                                     <div className="flex gap-6 items-stretch">
-                                        <PricingCard 
+                                        <PricingCard
                                             subtitle="The basics"
                                             title="Free"
                                             price={0}
@@ -441,7 +439,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                             ]}
                                             buttonText="Start Free"
                                         />
-                                        <PricingCard 
+                                        <PricingCard
                                             subtitle="For heavy users"
                                             title="Starter"
                                             price={7.99}
@@ -455,7 +453,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                             ]}
                                             buttonText="Get Started"
                                         />
-                                        <PricingCard 
+                                        <PricingCard
                                             subtitle="Unlimited Power"
                                             title="Pro"
                                             price={29.99}
@@ -479,47 +477,47 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                     animate={{ opacity: 1 }}
                                     className="space-y-8"
                                 >
-                                    <div className="bg-[#FAF9F6] dark:bg-white/[0.03] rounded-[32px] p-8 border border-[#EBE9E2] dark:border-white/5 space-y-10">
+                                    <div className="bg-white/5 rounded-[32px] p-8 border border-white/5 space-y-10">
                                         <div className="flex items-start justify-between">
                                             <div className="space-y-1 max-w-[480px]">
-                                                <h3 className="text-[17px] font-bold text-[#1A1A1A] dark:text-white">Enhanced Privacy Mode</h3>
-                                                <p className="text-sm text-neutral-400 dark:text-neutral-500 leading-relaxed">
+                                                <h3 className="text-[17px] font-bold text-white">Enhanced Privacy Mode</h3>
+                                                <p className="text-sm text-neutral-400 leading-relaxed">
                                                     When active, Mailient does not store your conversation history on our cloud. Everything stays local to your browser.
                                                 </p>
                                             </div>
                                             <ToggleSwitch checked={settings.privacyMode} onChange={(v) => updateSetting('privacyMode', v)} />
                                         </div>
 
-                                        <div className="h-px bg-[#EBE9E2] dark:bg-white/5" />
+                                        <div className="h-px bg-white/5" />
 
                                         <div className="flex items-start justify-between">
                                             <div className="space-y-1 max-w-[480px]">
-                                                <h3 className="text-[17px] font-bold text-[#1A1A1A] dark:text-white">AI Protection Guard</h3>
-                                                <p className="text-sm text-neutral-400 dark:text-neutral-500 leading-relaxed">
+                                                <h3 className="text-[17px] font-bold text-white">AI Protection Guard</h3>
+                                                <p className="text-sm text-neutral-400 leading-relaxed">
                                                     Prevents prompt injection attacks and exfiltration attempts from your email data.
                                                 </p>
                                             </div>
                                             <ToggleSwitch checked={settings.aiProtection} onChange={(v) => updateSetting('aiProtection', v)} />
                                         </div>
 
-                                        <div className="h-px bg-[#EBE9E2] dark:bg-white/5" />
+                                        <div className="h-px bg-white/5" />
 
                                         <div className="flex items-start justify-between">
                                             <div className="space-y-1 max-w-[480px]">
-                                                <h3 className="text-[17px] font-bold text-[#1A1A1A] dark:text-white">Local AES-256 Storage</h3>
-                                                <p className="text-sm text-neutral-400 dark:text-neutral-500 leading-relaxed">
+                                                <h3 className="text-[17px] font-bold text-white">Local AES-256 Storage</h3>
+                                                <p className="text-sm text-neutral-400 leading-relaxed">
                                                     Encrypts all locally cached emails and drafts before saving them to IndexedDB.
                                                 </p>
                                             </div>
                                             <ToggleSwitch checked={settings.aesEncryption} onChange={(v) => updateSetting('aesEncryption', v)} />
                                         </div>
 
-                                        <div className="h-px bg-[#EBE9E2] dark:bg-white/5" />
+                                        <div className="h-px bg-white/5" />
 
                                         <div className="flex items-start justify-between">
                                             <div className="space-y-1 max-w-[480px]">
-                                                <h3 className="text-[17px] font-bold text-[#1A1A1A] dark:text-white">Training Contribution</h3>
-                                                <p className="text-sm text-neutral-400 dark:text-neutral-500 leading-relaxed">
+                                                <h3 className="text-[17px] font-bold text-white">Training Contribution</h3>
+                                                <p className="text-sm text-neutral-400 leading-relaxed">
                                                     Allow Mailient to use anonymized feedback to improve its email composition models.
                                                 </p>
                                             </div>
