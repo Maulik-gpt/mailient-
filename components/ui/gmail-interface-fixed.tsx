@@ -238,12 +238,11 @@ export function GmailInterfaceFixed() {
 
     const { 
         settings, 
-        isArcusOpen, 
-        setIsArcusOpen,
         playSystemSound,
         showNotification
     } = useDashboardSettings();
 
+    const [isEmailArcusOpen, setIsEmailArcusOpen] = useState(false);
     const [isArcusMinimized, setIsArcusMinimized] = useState(false);
     const [arcusEmailId, setArcusEmailId] = useState<string | null>(null);
     const [arcusEmailSubject, setArcusEmailSubject] = useState('');
@@ -374,7 +373,7 @@ export function GmailInterfaceFixed() {
     }, []);
 
     useEffect(() => {
-        if (!isArcusOpen || isArcusMinimized) return;
+        if (!isEmailArcusOpen || isArcusMinimized) return;
         arcusPanelAnimControls.set({ opacity: 0, y: 18, scale: 0.985 });
         arcusPanelAnimControls.start({
             opacity: 1,
@@ -382,7 +381,7 @@ export function GmailInterfaceFixed() {
             scale: 1,
             transition: { type: 'spring', damping: 28, stiffness: 320 }
         });
-    }, [isArcusOpen, isArcusMinimized, arcusPanelAnimControls]);
+    }, [isEmailArcusOpen, isArcusMinimized, arcusPanelAnimControls]);
 
     const minimizeArcus = useCallback(() => {
         setIsArcusMinimized(true);
@@ -393,7 +392,7 @@ export function GmailInterfaceFixed() {
     }, []);
 
     const closeArcus = useCallback(() => {
-        setIsArcusOpen(false);
+        setIsEmailArcusOpen(false);
         setIsArcusMinimized(false);
     }, []);
 
@@ -407,7 +406,7 @@ export function GmailInterfaceFixed() {
     }, [arcusPanelAnimControls]);
 
     useEffect(() => {
-        if (!isArcusOpen) return;
+        if (!isEmailArcusOpen) return;
 
         const onKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
@@ -417,7 +416,7 @@ export function GmailInterfaceFixed() {
 
         window.addEventListener('keydown', onKeyDown);
         return () => window.removeEventListener('keydown', onKeyDown);
-    }, [isArcusOpen, closeArcus]);
+    }, [isEmailArcusOpen, closeArcus]);
 
     // Reset email selection when closing panel or changing insight
     useEffect(() => {
@@ -1814,7 +1813,7 @@ export function GmailInterfaceFixed() {
                                                                 };
                                                                 setArcusMessages([initMsg]);
                                                                 setIsArcusMinimized(false);
-                                                                setIsArcusOpen(true);
+                                                                setIsEmailArcusOpen(true);
                                                             }}
                                                             className="w-9 h-9 bg-white/5 hover:bg-blue-500/20 rounded-xl text-white/30 hover:text-blue-400 transition-all border border-white/5 hover:border-blue-500/30 group/ai flex items-center justify-center overflow-hidden"
                                                             title="Ask Arcus AI"
@@ -2478,7 +2477,7 @@ export function GmailInterfaceFixed() {
 
             {/* Arcus AI Panel */}
             <AnimatePresence>
-                {isArcusOpen && !isArcusMinimized && (
+                {isEmailArcusOpen && !isArcusMinimized && (
                     <motion.div
                         className="arcus-panel arcus-panel-motion"
                         style={{ height: arcusPanelHeight }}
@@ -2588,7 +2587,7 @@ export function GmailInterfaceFixed() {
             </AnimatePresence>
 
             <AnimatePresence>
-                {isArcusOpen && isArcusMinimized && (
+                {isEmailArcusOpen && isArcusMinimized && (
                     <motion.button
                         type="button"
                         className="arcus-minimized-tab"

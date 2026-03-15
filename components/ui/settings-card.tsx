@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { ToggleSwitch } from './toggle-switch';
 import { Button } from './button';
+import { DropdownMenu } from './dropdown-menu';
 import { useSession, signOut } from 'next-auth/react';
 import { useDashboardSettings } from '@/lib/DashboardSettingsContext';
 import { toast } from 'sonner';
@@ -251,23 +252,54 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                 </div>
                                                 <p className="text-sm text-neutral-500">Current: <span className="text-white capitalize">{settings.aiTone}</span></p>
                                             </div>
-                                            <select
-                                                value={settings.aiTone}
-                                                onChange={(e) => updateSetting('aiTone', e.target.value)}
-                                                className="bg-white/5 text-neutral-200 px-4 h-10 rounded-xl text-sm font-medium outline-none border-none cursor-pointer"
+                                            <DropdownMenu
+                                                options={[
+                                                    { 
+                                                        label: "Professional", 
+                                                        onClick: () => updateSetting('aiTone', 'professional'),
+                                                        Icon: <Shield className="w-4 h-4" />,
+                                                        active: settings.aiTone === 'professional'
+                                                    },
+                                                    { 
+                                                        label: "Friendly", 
+                                                        onClick: () => updateSetting('aiTone', 'friendly'),
+                                                        Icon: <Users className="w-4 h-4" />,
+                                                        active: settings.aiTone === 'friendly'
+                                                    },
+                                                    { 
+                                                        label: "Concise", 
+                                                        onClick: () => updateSetting('aiTone', 'concise'),
+                                                        Icon: <Zap className="w-4 h-4" />,
+                                                        active: settings.aiTone === 'concise'
+                                                    },
+                                                    { 
+                                                        label: "Humorous", 
+                                                        onClick: () => updateSetting('aiTone', 'humorous'),
+                                                        Icon: <Sparkles className="w-4 h-4" />,
+                                                        active: settings.aiTone === 'humorous'
+                                                    },
+                                                    { 
+                                                        label: "Mimic My Style", 
+                                                        onClick: () => updateSetting('aiTone', 'mimic'),
+                                                        Icon: <Cpu className="w-4 h-4" />,
+                                                        active: settings.aiTone === 'mimic'
+                                                    },
+                                                ]}
+                                                align="right"
                                             >
-                                                <option value="professional">Professional</option>
-                                                <option value="friendly">Friendly</option>
-                                                <option value="concise">Concise</option>
-                                                <option value="humorous">Humorous</option>
-                                                <option value="mimic">Mimic My Style (AI Voice)</option>
-                                            </select>
+                                                {settings.aiTone === 'professional' ? 'Professional' : 
+                                                 settings.aiTone === 'friendly' ? 'Friendly' :
+                                                 settings.aiTone === 'concise' ? 'Concise' :
+                                                 settings.aiTone === 'humorous' ? 'Humorous' :
+                                                 settings.aiTone === 'mimic' ? 'Mimic (AI)' : 'Select Tone'}
+                                            </DropdownMenu>
                                         </div>
                                         {settings.aiTone === 'mimic' && (
-                                            <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 mt-2">
-                                                <p className="text-xs text-amber-200 leading-relaxed">
-                                                    <Sparkles className="w-3 h-3 inline mr-1 mb-0.5" />
-                                                    <strong>AI Voice Cloning:</strong> Mailient will analyze your sent emails to perfectly replicate your writing style. This process happens automatically when drafting.
+                                            <div className="bg-gradient-to-br from-amber-500/15 via-orange-500/10 to-yellow-500/5 border border-amber-400/25 rounded-2xl p-4 mt-2">
+                                                <p className="text-[13px] text-white/90 leading-relaxed">
+                                                    <Sparkles className="w-3.5 h-3.5 inline mr-1.5 mb-0.5 text-amber-400" />
+                                                    <strong className="text-white font-semibold">AI Voice Cloning:</strong>{' '}
+                                                    <span className="text-neutral-300">Mailient will analyze your sent emails to perfectly replicate your writing style. This process happens automatically when drafting.</span>
                                                 </p>
                                             </div>
                                         )}

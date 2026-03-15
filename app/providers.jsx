@@ -6,6 +6,7 @@ import { ThemeProvider } from "../components/ui/theme-provider";
 import { OfflineToast } from "../components/offline-toast";
 import { Toaster } from "../components/ui/sonner";
 import { DashboardSettingsProvider } from "../lib/DashboardSettingsContext";
+import { ArcusCommandPalette } from "../components/ui/arcus-command-palette";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +22,7 @@ export default function Providers({ children }) {
         <SessionProvider>
           <DashboardSettingsProvider>
             {children}
+            <ArcusCommandPalette />
             <OfflineToast />
             <Toaster />
           </DashboardSettingsProvider>
