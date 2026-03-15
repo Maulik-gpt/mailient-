@@ -62,7 +62,7 @@ export function HomeFeedSidebar({ className = '', onPeopleClick, onSettingsClick
     ];
 
     const bottomNavItems = [
-        { id: 'gift', icon: Gift, label: 'Get a free month', route: '/pricing' },
+        { id: 'gift', icon: Gift, label: 'Rewards', route: '/pricing' },
         { id: 'settings', icon: Settings2, label: 'Settings', route: '/settings', onClick: onSettingsClick },
         { id: 'help', icon: HelpCircle, label: 'Help', route: '/help' },
     ];
