@@ -1943,7 +1943,7 @@ export function GmailInterfaceFixed() {
                     )}
                 </div>
             </div>
-        </div>
+        </motion.div>
 
             {/* Details Modal */}
             <div
