@@ -307,17 +307,32 @@ export function GmailInterfaceFixed() {
         if (!settings.smartNudges || isLoadingNudges) return;
         
         setIsLoadingNudges(true);
+        console.log('📡 Fetching smart nudges...');
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 45000); // 45s timeout
+
         try {
-            const res = await fetch('/api/nudges');
+            const res = await fetch('/api/nudges', { signal: controller.signal });
+            clearTimeout(timeoutId);
+            
             if (res.ok) {
                 const data = await res.json();
+                console.log(`✅ Nudges loaded: ${data.nudges?.length || 0} items`);
                 setNudges(data.nudges || []);
                 setHasAttemptedNudges(true);
+            } else {
+                console.warn('⚠️ Nudges API returned non-OK status:', res.status);
             }
-        } catch (e) {
-            console.error('Failed to fetch nudges', e);
+        } catch (e: any) {
+            if (e.name === 'AbortError') {
+                console.error('💥 Nudges request timed out after 45s');
+            } else {
+                console.error('Failed to fetch nudges', e);
+            }
         } finally {
             setIsLoadingNudges(false);
+            setHasAttemptedNudges(true);
         }
     }, [settings.smartNudges, isLoadingNudges]);
 
@@ -1558,7 +1573,12 @@ export function GmailInterfaceFixed() {
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {isLoadingNudges ? (
                                     Array(3).fill(0).map((_, i) => (
-                                        <div key={i} className="bg-neutral-900/40 border border-neutral-800/50 rounded-2xl p-5 animate-pulse h-[140px]" />
+                                        <div key={i} className="bg-neutral-800/20 border border-neutral-800/50 rounded-2xl p-5 animate-pulse h-[140px] flex flex-col gap-3">
+                                            <div className="w-20 h-3 bg-neutral-800 rounded-full" />
+                                            <div className="w-full h-4 bg-neutral-800 rounded-full" />
+                                            <div className="w-3/4 h-3 bg-neutral-800/60 rounded-full" />
+                                            <div className="mt-auto w-24 h-3 bg-neutral-800/40 rounded-full" />
+                                        </div>
                                     ))
                                 ) : (
                                     nudges.map((nudge) => (

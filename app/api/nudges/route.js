@@ -30,32 +30,41 @@ export async function GET(request) {
     const query = 'is:inbox -from:me -is:answered older_than:2d newer_than:14d';
     const emailList = await gmailService.getEmails(15, query);
 
+    console.log('🔍 [Nudges API] Found ' + (emailList.messages?.length || 0) + ' potential emails');
+
     if (!emailList.messages || emailList.messages.length === 0) {
+      console.log('✅ [Nudges API] No unreplied emails found in the 2-14 day window.');
       return NextResponse.json({ nudges: [] });
     }
 
     // 2. Fetch details for these emails
+    console.log('📡 [Nudges API] Fetching details for ' + emailList.messages.length + ' emails...');
     const emailDetails = await Promise.all(
       emailList.messages.map(msg => gmailService.getEmailDetails(msg.id))
     );
 
     const parsedEmails = emailDetails.map(details => gmailService.parseEmailData(details));
+    console.log('🤖 [Nudges API] Analyzing emails with Arcus AI...');
 
     // 3. Use AI to detect which ones actually need a nudge
     const nudges = await arcusAI.analyzeNeedsNudge(parsedEmails);
+    console.log('✅ [Nudges API] AI returned ' + (nudges?.length || 0) + ' nudges');
 
     // 4. Return nudges with some metadata
     return NextResponse.json({ 
-      nudges: nudges.map(n => ({
+      nudges: (nudges || []).map(n => ({
         ...n,
-        // Match the nudge back to the parsed email to get full details if needed
         fullEmail: parsedEmails.find(e => e.id === n.id)
       })),
       timestamp: new Date().toISOString()
     });
 
   } catch (error) {
-    console.error('💥 Nudges API error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('💥 [Nudges API] Error:', error);
+    return NextResponse.json({ 
+      nudges: [], 
+      error: error.message,
+      status: 'error'
+    }, { status: 500 });
   }
 }
