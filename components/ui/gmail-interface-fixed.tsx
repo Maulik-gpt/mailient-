@@ -1306,6 +1306,8 @@ export function GmailInterfaceFixed() {
 
     const totalItems = summary ? Object.values(summary as Record<string, number>).reduce((a: number, b: number) => a + b, 0) : 0;
 
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
     return (
         <div className="min-h-screen bg-[#F9F8F6] dark:bg-[#0c0c0c] flex overflow-hidden" style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif" }}>
             <UsageLimitModal
@@ -1340,6 +1342,7 @@ export function GmailInterfaceFixed() {
                 onPeopleClick={() => setViewMode(prev => prev === 'people' ? 'home' : 'people')}
                 onSettingsClick={() => setShowSettings(true)}
                 activeView={viewMode}
+                onCollapse={(collapsed) => setSidebarCollapsed(collapsed)}
             />
 
             <AnimatePresence>
@@ -1349,7 +1352,11 @@ export function GmailInterfaceFixed() {
             </AnimatePresence>
 
             {/* Main Content Wrapper */}
-            <div className="flex-1 ml-64 min-h-screen relative overflow-hidden bg-[#F9F8F6] dark:bg-[#0c0c0c]">
+            <motion.div 
+                animate={{ marginLeft: sidebarCollapsed ? 80 : 256 }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                className="flex-1 min-h-screen relative overflow-hidden bg-[#F9F8F6] dark:bg-[#0c0c0c]"
+            >
                 {/* Credits Badge - Now more subtle and professional */}
                 {usageData && usageData.planType !== 'pro' && (
                     <div className="absolute top-6 right-10 z-50">

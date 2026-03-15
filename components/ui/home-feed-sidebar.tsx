@@ -5,13 +5,14 @@ import { useSession, signOut } from 'next-auth/react';
 import { useRouter, usePathname } from 'next/navigation';
 import { 
     LayoutGrid, 
-    Bookmark,
     FileText, 
     Settings2, 
     ChevronRight,
     Sparkles,
     LogOut,
-    CreditCard
+    Gift,
+    HelpCircle,
+    PanelLeft
 } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -21,14 +22,20 @@ interface HomeFeedSidebarProps {
     onPeopleClick?: () => void;
     onSettingsClick?: () => void;
     activeView?: 'home' | 'people';
+    onCollapse?: (collapsed: boolean) => void;
 }
 
-export function HomeFeedSidebar({ className = '', onPeopleClick, onSettingsClick, activeView = 'home' }: HomeFeedSidebarProps) {
+export function HomeFeedSidebar({ className = '', onPeopleClick, onSettingsClick, activeView = 'home', onCollapse }: HomeFeedSidebarProps) {
     const { data: session } = useSession();
     const router = useRouter();
     const pathname = usePathname();
     const [isMoreOptionsOpen, setIsMoreOptionsOpen] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(false);
     const moreMenuRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (onCollapse) onCollapse(isCollapsed);
+    }, [isCollapsed, onCollapse]);
 
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
@@ -51,174 +58,220 @@ export function HomeFeedSidebar({ className = '', onPeopleClick, onSettingsClick
     const mainNavItems = [
         { id: 'home', icon: LayoutGrid, label: 'Home', route: '/home-feed' },
         { id: 'notes', icon: FileText, label: 'Notes', route: '/i/notes' },
-        { id: 'bookmarks', icon: Bookmark, label: 'Bookmarks', route: '/i/bookmarks' },
-        { id: 'arcus', icon: Sparkles, label: 'Arcus AI', route: '/dashboard/agent-talk' },
+        { id: 'arcus', icon: Sparkles, label: 'Arcus', route: '/dashboard/agent-talk' },
     ];
 
     const bottomNavItems = [
+        { id: 'gift', icon: Gift, label: 'Get a free month', route: '/pricing' },
         { id: 'settings', icon: Settings2, label: 'Settings', route: '/settings', onClick: onSettingsClick },
-        { id: 'pricing', icon: CreditCard, label: 'Plans & Billing', route: '/pricing' },
+        { id: 'help', icon: HelpCircle, label: 'Help', route: '/help' },
     ];
 
     return (
         <TooltipProvider>
-            <div className={`fixed left-0 top-0 h-screen w-64 bg-[#F9F8F6] dark:bg-[#0c0c0c] border-r border-[#EBE9E2] dark:border-white/5 flex flex-col z-50 ${className}`}>
+            <motion.div 
+                initial={false}
+                animate={{ width: isCollapsed ? 80 : 256 }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                className={`fixed left-0 top-0 h-screen bg-[#F9F8F6] dark:bg-[#0c0c0c] border-r border-[#EBE9E2] dark:border-white/5 flex flex-col z-50 ${className}`}
+            >
                 
-                {/* Logo & Plan Header */}
-                <div className="px-6 py-8 flex items-center justify-between">
-                    <div className="flex items-center gap-2.5 cursor-pointer group" onClick={() => router.push('/home-feed')}>
-                        <div className="w-9 h-9 relative flex items-center justify-center rounded-[10px] overflow-hidden bg-black dark:bg-white shadow-sm border border-[#EBE9E2] dark:border-white/10">
-                            <img src="/mailient-logo-new.png" alt="Mailient" className="w-full h-full object-cover dark:invert" />
+                {/* Header with Collapse Toggle */}
+                <div className="px-6 py-6 flex items-center justify-between overflow-hidden">
+                    <button 
+                        onClick={() => setIsCollapsed(!isCollapsed)}
+                        className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
+                    >
+                        <PanelLeft className={`w-5 h-5 transition-transform duration-500 ${isCollapsed ? 'rotate-180' : ''}`} />
+                    </button>
+                    {!isCollapsed && (
+                        <div className="flex items-center gap-4 animate-in fade-in duration-500">
+                             <div className="w-8 h-8 rounded-full overflow-hidden border border-[#EBE9E2] dark:border-white/10 bg-white dark:bg-black flex items-center justify-center p-1.5 shadow-sm">
+                                <img
+                                    src={session?.user?.image || "/user-avatar.png?v=2"}
+                                    alt="User"
+                                    className="w-full h-full object-cover grayscale opacity-80"
+                                />
+                            </div>
                         </div>
-                        <span className="text-xl font-bold tracking-tight text-[#1A1A1A] dark:text-white">Mailient</span>
+                    )}
+                </div>
+
+                {/* Logo & App Name */}
+                <div className={`px-6 mb-8 flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} transition-all duration-300`}>
+                    <div className="flex items-center gap-2.5 cursor-pointer group" onClick={() => router.push('/home-feed')}>
+                        <div className="w-10 h-10 relative flex items-center justify-center rounded-xl overflow-hidden bg-black dark:bg-white shadow-md border border-[#EBE9E2] dark:border-white/10 group-hover:scale-105 transition-transform">
+                            <img src="/mailient-logo-new.png" alt="Mailient" className="w-7 h-7 object-contain dark:invert" />
+                        </div>
+                        {!isCollapsed && (
+                            <motion.span 
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                className="text-xl font-bold tracking-tight text-[#1A1A1A] dark:text-white"
+                            >
+                                Flow
+                            </motion.span>
+                        )}
                     </div>
-                    <div className="px-2 py-0.5 rounded-md border border-[#EBE9E2] dark:border-white/10 bg-white dark:bg-white/5 text-[10px] font-medium text-[#1A1A1A] dark:text-neutral-400">
-                        Basic
-                    </div>
+                    {!isCollapsed && (
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="px-2 py-0.5 rounded-md border border-[#EBE9E2] dark:border-white/10 bg-white dark:bg-white/5 text-[10px] font-medium text-[#1A1A1A] dark:text-neutral-400"
+                        >
+                            Basic
+                        </motion.div>
+                    )}
                 </div>
 
                 {/* Sidebar Scroll Area */}
                 <div className="flex-1 px-3 py-2 space-y-8 overflow-y-auto custom-scrollbar pt-2">
-                    {/* General Section */}
+                    {/* Top Section */}
                     <div className="space-y-1">
-                        <h3 className="px-3 mb-2 text-[10px] font-bold tracking-[0.2em] text-neutral-400 dark:text-neutral-600 uppercase">
-                            General
-                        </h3>
+                        {!isCollapsed && (
+                            <h3 className="px-3 mb-2 text-[10px] font-bold tracking-[0.2em] text-neutral-400 dark:text-neutral-600 uppercase">
+                                General
+                            </h3>
+                        )}
                         {mainNavItems.map((item) => {
                             const Icon = item.icon;
                             const isActive = pathname === item.route || (item.id === 'home' && pathname === '/home-feed');
                             
                             return (
-                                <button
-                                    key={item.id}
-                                    onClick={() => router.push(item.route)}
-                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-300 group relative ${
-                                        isActive 
-                                        ? 'bg-white dark:bg-white/[0.05] text-[#1A1A1A] dark:text-white font-semibold shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] border border-[#EBE9E2] dark:border-white/10' 
-                                        : 'text-[#666666] dark:text-neutral-500 hover:text-[#1A1A1A] dark:hover:text-neutral-300'
-                                    }`}
-                                >
-                                    <Icon className={`w-4 h-4 transition-colors duration-300 ${isActive ? 'text-amber-500' : 'text-[#666666] dark:text-neutral-500 group-hover:text-[#1A1A1A] dark:group-hover:text-neutral-300'}`} strokeWidth={ isActive ? 2 : 1.5} />
-                                    <span className="text-[13px] tracking-tight">{item.label}</span>
-                                    {isActive && (
-                                        <div className="absolute right-2 w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]" />
-                                    )}
-                                </button>
+                                <Tooltip key={item.id} delayDuration={0}>
+                                    <TooltipTrigger asChild>
+                                        <motion.button
+                                            whileHover={{ x: isCollapsed ? 0 : 4 }}
+                                            whileTap={{ scale: 0.97 }}
+                                            onClick={() => router.push(item.route)}
+                                            className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3 px-3'} py-2.5 rounded-xl transition-all duration-300 group relative ${
+                                                isActive 
+                                                ? 'bg-white dark:bg-white/[0.05] text-[#1A1A1A] dark:text-white font-semibold shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] border border-[#EBE9E2] dark:border-white/10' 
+                                                : 'text-[#666666] dark:text-neutral-500 hover:text-[#1A1A1A] dark:hover:text-neutral-300'
+                                            }`}
+                                        >
+                                            <Icon size={20} className={`transition-colors duration-300 ${isActive ? 'text-amber-500' : 'text-[#666666] dark:text-neutral-500 group-hover:text-[#1A1A1A] dark:group-hover:text-neutral-300'}`} strokeWidth={ isActive ? 2 : 1.5} />
+                                            {!isCollapsed && <span className="text-[14px] tracking-tight">{item.label}</span>}
+                                            {isActive && !isCollapsed && (
+                                                <div className="absolute right-2 w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]" />
+                                            )}
+                                        </motion.button>
+                                    </TooltipTrigger>
+                                    {isCollapsed && <TooltipContent side="right">{item.label}</TooltipContent>}
+                                </Tooltip>
                             );
                         })}
                     </div>
 
-                    {/* Support Section */}
-                    <div className="space-y-1">
-                        <h3 className="px-3 mb-2 text-[10px] font-bold tracking-[0.2em] text-neutral-400 dark:text-neutral-600 uppercase">
-                            Support
-                        </h3>
+                    {/* Bottom Section */}
+                    <div className="space-y-1 mt-auto">
+                        {!isCollapsed && (
+                            <h3 className="px-3 mb-2 text-[10px] font-bold tracking-[0.2em] text-neutral-400 dark:text-neutral-600 uppercase">
+                                Support
+                            </h3>
+                        )}
                         {bottomNavItems.map((item) => {
                             const Icon = item.icon;
                             const isActive = pathname === item.route;
 
                             return (
-                                <button
-                                    key={item.id}
-                                    onClick={() => {
-                                        if (item.onClick) {
-                                            item.onClick();
-                                        } else {
-                                            router.push(item.route);
-                                        }
-                                    }}
-                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-300 group ${
-                                        isActive 
-                                        ? 'bg-white dark:bg-white/[0.05] text-[#1A1A1A] dark:text-white font-semibold shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] border border-[#EBE9E2] dark:border-white/10' 
-                                        : 'text-[#666666] dark:text-neutral-500 hover:text-[#1A1A1A] dark:hover:text-neutral-300'
-                                    }`}
-                                >
-                                    <Icon className={`w-4 h-4 transition-colors duration-300 ${isActive ? 'text-[#1A1A1A] dark:text-white' : 'text-[#666666] dark:text-neutral-500 group-hover:text-[#1A1A1A] dark:group-hover:text-neutral-300'}`} strokeWidth={1.5} />
-                                    <span className="text-[13px] tracking-tight">{item.label}</span>
-                                </button>
+                                <Tooltip key={item.id} delayDuration={0}>
+                                    <TooltipTrigger asChild>
+                                        <motion.button
+                                            whileHover={{ x: isCollapsed ? 0 : 4 }}
+                                            whileTap={{ scale: 0.97 }}
+                                            onClick={() => {
+                                                if (item.onClick) {
+                                                    item.onClick();
+                                                } else {
+                                                    router.push(item.route);
+                                                }
+                                            }}
+                                            className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3 px-3'} py-2.5 rounded-xl transition-all duration-300 group ${
+                                                isActive 
+                                                ? 'bg-white dark:bg-white/[0.05] text-[#1A1A1A] dark:text-white font-semibold shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] border border-[#EBE9E2] dark:border-white/10' 
+                                                : 'text-[#666666] dark:text-neutral-500 hover:text-[#1A1A1A] dark:hover:text-neutral-300'
+                                            }`}
+                                        >
+                                            <Icon size={20} className={`transition-colors duration-300 ${isActive ? 'text-[#1A1A1A] dark:text-white' : 'text-[#666666] dark:text-neutral-500 group-hover:text-[#1A1A1A] dark:group-hover:text-neutral-300'}`} strokeWidth={1.5} />
+                                            {!isCollapsed && <span className="text-[14px] tracking-tight">{item.label}</span>}
+                                        </motion.button>
+                                    </TooltipTrigger>
+                                    {isCollapsed && <TooltipContent side="right">{item.label}</TooltipContent>}
+                                </Tooltip>
                             );
                         })}
                     </div>
                 </div>
 
-                {/* Pro Upgrade Card - Optional, keeping it subtle at the bottom if needed but removed for a cleaner look as requested */}
-
-                {/* User Profile */}
-                <div className="px-3 pb-6 space-y-1">
-                    <div className="pt-4 border-t border-[#EBE9E2] dark:border-white/5 relative" ref={moreMenuRef}>
-                        <button
-                            onClick={() => setIsMoreOptionsOpen(!isMoreOptionsOpen)}
-                            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white dark:hover:bg-white/[0.05] transition-all group"
-                        >
-                            <div className="w-6 h-6 rounded-full overflow-hidden border border-[#EBE9E2] dark:border-white/10">
+                {/* User Detail (Only shown when expanded) */}
+                <div className="px-3 pb-6 border-t border-[#EBE9E2] dark:border-white/5">
+                    <AnimatePresence>
+                        {!isCollapsed && (
+                            <motion.div 
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="pt-4"
+                                ref={moreMenuRef}
+                            >
+                                <button
+                                    onClick={() => setIsMoreOptionsOpen(!isMoreOptionsOpen)}
+                                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white dark:hover:bg-white/[0.05] transition-all group"
+                                >
+                                    <div className="w-7 h-7 rounded-full overflow-hidden border border-[#EBE9E2] dark:border-white/10 bg-white dark:bg-black">
+                                        <img
+                                            src={session?.user?.image || "/user-avatar.png?v=2"}
+                                            alt="User"
+                                            className="w-full h-full object-cover grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all"
+                                        />
+                                    </div>
+                                    <div className="flex flex-col items-start overflow-hidden">
+                                        <span className="text-[13px] font-medium text-[#1A1A1A] dark:text-white truncate w-full">
+                                            {session?.user?.name || 'Account'}
+                                        </span>
+                                        <span className="text-[10px] text-[#666666] dark:text-neutral-500 truncate w-full">
+                                            Manage Profile
+                                        </span>
+                                    </div>
+                                    <ChevronRight className={`ml-auto w-4 h-4 text-[#666666] dark:text-neutral-600 transition-transform ${isMoreOptionsOpen ? 'rotate-90' : ''}`} />
+                                </button>
+                                
+                                {isMoreOptionsOpen && (
+                                    <motion.div 
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="mt-2 space-y-1 px-1"
+                                    >
+                                        <button
+                                            onClick={handleLogout}
+                                            className="w-full flex items-center gap-3 px-3 py-2 text-red-500/80 hover:bg-red-500/5 rounded-lg transition-all text-sm"
+                                        >
+                                            <LogOut size={16} />
+                                            <span>Logout</span>
+                                        </button>
+                                    </motion.div>
+                                )}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                    {isCollapsed && (
+                        <div className="flex justify-center pt-4">
+                             <div className="w-8 h-8 rounded-full overflow-hidden border border-[#EBE9E2] dark:border-white/10 bg-white dark:bg-black cursor-pointer" onClick={() => setIsCollapsed(false)}>
                                 <img
                                     src={session?.user?.image || "/user-avatar.png?v=2"}
                                     alt="User"
-                                    className="w-full h-full object-cover grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all"
+                                    className="w-full h-full object-cover grayscale opacity-80"
                                 />
                             </div>
-                            <span className="text-sm text-[#666666] dark:text-neutral-400 group-hover:text-[#1A1A1A] dark:group-hover:text-white truncate">
-                                {session?.user?.name || 'Account'}
-                            </span>
-                            <ChevronRight className={`ml-auto w-4 h-4 text-[#666666] dark:text-neutral-600 transition-transform ${isMoreOptionsOpen ? 'rotate-90' : ''}`} />
-                        </button>
-
-                        {/* Dropdown Menu */}
-                        <AnimatePresence>
-                            {isMoreOptionsOpen && (
-                                <motion.div 
-                                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                    className="absolute left-0 bottom-full mb-2 z-50 bg-white dark:bg-[#0a0a0a] border border-[#EBE9E2] dark:border-white/10 rounded-2xl shadow-2xl p-2 min-w-[220px] backdrop-blur-xl"
-                                >
-                                    <div className="px-3 py-3 mb-2 border-b border-[#EBE9E2] dark:border-white/5 flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full overflow-hidden bg-[#EBE9E2] dark:bg-white/5">
-                                            <img
-                                                src={session?.user?.image || "/user-avatar.png?v=2"}
-                                                alt="User"
-                                                className="w-full h-full object-cover"
-                                            />
-                                        </div>
-                                        <div className="flex flex-col overflow-hidden">
-                                            <span className="text-sm font-semibold text-[#1A1A1A] dark:text-white truncate">
-                                                {session?.user?.name || 'User'}
-                                            </span>
-                                            <span className="text-[10px] text-[#666666] dark:text-neutral-500 truncate font-light">
-                                                {session?.user?.email || ''}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <button
-                                        onClick={() => {
-                                            if (onSettingsClick) {
-                                                onSettingsClick();
-                                            } else {
-                                                router.push('/settings');
-                                            }
-                                            setIsMoreOptionsOpen(false);
-                                        }}
-                                        className="w-full flex items-center gap-3 px-3 py-2 text-[#666666] dark:text-neutral-400 hover:text-[#1A1A1A] dark:hover:text-white hover:bg-[#EBE9E2]/50 dark:hover:bg-white/5 rounded-lg transition-all text-sm"
-                                    >
-                                        <Settings2 className="w-4 h-4" />
-                                        <span>Settings</span>
-                                    </button>
-                                    
-                                    <button
-                                        onClick={handleLogout}
-                                        className="w-full flex items-center gap-3 px-3 py-2 text-red-500/80 hover:bg-red-500/5 rounded-lg transition-all text-sm"
-                                    >
-                                        <LogOut className="w-4 h-4" />
-                                        <span>Logout</span>
-                                    </button>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
+                        </div>
+                    )}
                 </div>
-            </div>
+            </motion.div>
         </TooltipProvider>
+    );
+}
+
     );
 }
 
