@@ -55,7 +55,7 @@ export async function GET(request) {
     // 3. AI Usage Check (Arcus Engine)
     // Smart Nudges consume "arcus_ai" credits
     const subscriptionService = (await import('@/lib/subscription-service.js')).subscriptionService;
-    const canUse = await subscriptionService.canUseFeature(session.user.id, 'arcus_ai');
+    const canUse = await subscriptionService.canUseFeature(session.user.email, 'arcus_ai');
     
     if (!canUse) {
       console.log('⚠️ [Nudges API] User has exhausted Arcus AI credits');
@@ -74,7 +74,7 @@ export async function GET(request) {
 
     // 5. Track successful usage
     if (nudges && nudges.length > 0) {
-      await subscriptionService.incrementFeatureUsage(session.user.id, 'arcus_ai');
+      await subscriptionService.incrementFeatureUsage(session.user.email, 'arcus_ai');
     }
 
     // 6. Return nudges with some metadata
