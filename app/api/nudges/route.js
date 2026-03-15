@@ -51,13 +51,33 @@ export async function GET(request) {
     );
 
     const parsedEmails = emailDetails.map(details => gmailService.parseEmailData(details));
+    
+    // 3. AI Usage Check (Arcus Engine)
+    // Smart Nudges consume "arcus_ai" credits
+    const subscriptionService = (await import('@/lib/subscription-service.js')).subscriptionService;
+    const canUse = await subscriptionService.canUseFeature(session.user.id, 'arcus_ai');
+    
+    if (!canUse) {
+      console.log('⚠️ [Nudges API] User has exhausted Arcus AI credits');
+      return NextResponse.json({ 
+        nudges: [], 
+        status: 'limit_reached',
+        error: 'AI usage limit reached. Upgrade to Pro for unlimited nudges.' 
+      }, { status: 403 });
+    }
+
     console.log('🤖 [Nudges API] Analyzing emails with Arcus AI...');
 
-    // 3. Use AI to detect which ones actually need a nudge
+    // 4. Use AI to detect which ones actually need a nudge
     const nudges = await arcusAI.analyzeNeedsNudge(parsedEmails);
     console.log('✅ [Nudges API] AI returned ' + (nudges?.length || 0) + ' nudges');
 
-    // 4. Return nudges with some metadata
+    // 5. Track successful usage
+    if (nudges && nudges.length > 0) {
+      await subscriptionService.incrementFeatureUsage(session.user.id, 'arcus_ai');
+    }
+
+    // 6. Return nudges with some metadata
     return NextResponse.json({ 
       nudges: (nudges || []).map(n => ({
         ...n,
