@@ -29,12 +29,14 @@ import {
     Languages,
     MousePointer2,
     Volume2,
-    Sparkles
+    Sparkles,
+    HelpCircle
 } from 'lucide-react';
 import { ToggleSwitch } from './toggle-switch';
 import { Button } from './button';
 import { DropdownMenu } from './dropdown-menu';
 import { useSession, signOut } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { useDashboardSettings } from '@/lib/DashboardSettingsContext';
 import { toast } from 'sonner';
 
@@ -46,6 +48,7 @@ type SettingsSection = 'general' | 'system' | 'account' | 'team' | 'plans' | 'pr
 
 export function SettingsCard({ onClose }: SettingsCardProps) {
     const { data: session } = useSession();
+    const router = useRouter();
     const { settings, updateSetting, resetCache, relaunchApp } = useDashboardSettings();
     const [activeSection, setActiveSection] = useState<SettingsSection>('general');
 
@@ -189,6 +192,16 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                         <MenuButton id="team" icon={Users} label="Team" />
                         <MenuButton id="plans" icon={CreditCard} label="Plans and Billing" />
                         <MenuButton id="privacy" icon={Shield} label="Data and Privacy" />
+
+                        <div className="my-2 h-px bg-neutral-200 dark:bg-white/5" />
+                        
+                        <button
+                            onClick={() => router.push('/help')}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 text-neutral-400 hover:text-neutral-200 hover:bg-white/5"
+                        >
+                            <HelpCircle className="w-4 h-4 text-neutral-400" strokeWidth={1.5} />
+                            <span className="text-[14px] leading-tight">Help Center</span>
+                        </button>
                     </div>
 
                     {/* Footer Info */}

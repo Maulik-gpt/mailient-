@@ -25,10 +25,17 @@ export async function GET(request) {
     const gmailService = new GmailService(accessToken, refreshToken);
     const arcusAI = new ArcusAIService();
 
-    // 1. Search for unreplied incoming emails older than 2 days but within 14 days
+    // 1. Search for unreplied incoming emails older than 1 day but within 30 days
     // We search for emails in inbox that aren't from 'me' and haven't been replied to.
-    const query = 'is:inbox -from:me -is:answered older_than:2d newer_than:14d';
-    const emailList = await gmailService.getEmails(15, query);
+    let query = 'is:inbox -from:me -is:answered older_than:1d newer_than:30d';
+    let emailList = await gmailService.getEmails(15, query);
+
+    // Fail-safe: if no emails in that window, try a slightly broader one
+    if (!emailList.messages || emailList.messages.length === 0) {
+      console.log('🔄 [Nudges API] No results for 1-30d, trying a broader search...');
+      query = 'is:inbox -from:me -is:answered newer_than:60d';
+      emailList = await gmailService.getEmails(10, query);
+    }
 
     console.log('🔍 [Nudges API] Found ' + (emailList.messages?.length || 0) + ' potential emails');
 
