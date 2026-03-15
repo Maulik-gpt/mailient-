@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 
 interface DashboardSettings {
-    arcusShortcut: string;
+    smartNudges: boolean;
     aiTone: 'professional' | 'friendly' | 'concise' | 'humorous' | 'mimic';
     smartGrouping: boolean;
     notifications: boolean;
@@ -29,7 +29,7 @@ interface DashboardSettingsContextType {
 }
 
 const defaultSettings: DashboardSettings = {
-    arcusShortcut: 'k', // Combined with Ctrl/Cmd
+    smartNudges: true,
     aiTone: 'professional',
     smartGrouping: true,
     notifications: true,
@@ -69,13 +69,13 @@ export function DashboardSettingsProvider({ children }: { children: React.ReactN
         });
     }, []);
 
-    // Keyboard shortcut listener
+    // Keyboard shortcut listener for Arcus (Ctrl+K / Cmd+K)
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
             const modifier = isMac ? e.metaKey : e.ctrlKey;
             
-            if (modifier && e.key.toLowerCase() === settings.arcusShortcut.toLowerCase()) {
+            if (modifier && e.key.toLowerCase() === 'k') {
                 e.preventDefault();
                 setIsArcusOpen(prev => !prev);
                 if (settings.soundEffects) {
@@ -86,7 +86,7 @@ export function DashboardSettingsProvider({ children }: { children: React.ReactN
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [settings.arcusShortcut, settings.soundEffects]);
+    }, [settings.soundEffects]);
 
     // System sounds
     const playSystemSound = useCallback((type: 'toggle' | 'notification' | 'success' | 'click') => {

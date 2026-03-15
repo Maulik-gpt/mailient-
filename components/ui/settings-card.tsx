@@ -235,13 +235,14 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                         <div className="flex items-center justify-between group">
                                             <div className="space-y-1">
                                                 <div className="flex items-center gap-2">
-                                                    <Zap className="w-4 h-4 text-amber-500" />
-                                                    <h3 className="text-[15px] font-semibold text-white">Arcus AI Shortcut</h3>
+                                                    <Sparkles className="w-4 h-4 text-amber-500" />
+                                                    <h3 className="text-[15px] font-semibold text-white">Smart Nudges</h3>
                                                 </div>
                                                 <p className="text-sm text-neutral-400">
-                                                    Default key: <kbd className="bg-white/10 px-1.5 py-0.5 rounded border border-white/10 text-white">Cmd + K</kbd> to summon Arcus anywhere.
+                                                    AI-powered reminders for emails you might have forgotten to reply to.
                                                 </p>
                                             </div>
+                                            <ToggleSwitch checked={settings.smartNudges} onChange={(v) => updateSetting('smartNudges', v)} />
                                         </div>
                                         <div className="h-px bg-white/5" />
                                         <div className="flex items-center justify-between group">
