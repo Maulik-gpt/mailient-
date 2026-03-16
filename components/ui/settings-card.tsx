@@ -67,8 +67,8 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
     const [subView, setSubView] = useState<'summary' | 'manage'>('summary');
     const [isConfirmingCancel, setIsConfirmingCancel] = useState(false);
 
-    const isPro = subscriptionData?.planType === 'pro';
-    const isStarter = subscriptionData?.planType === 'starter';
+    const isPro = subscriptionData?.planType?.toLowerCase() === 'pro';
+    const isStarter = subscriptionData?.planType?.toLowerCase() === 'starter';
     const isFree = !isPro && !isStarter;
 
     useEffect(() => {
@@ -608,7 +608,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                 </div>
 
                                                 {/* Cancellation Section - Moved up for visibility */}
-                                                {(isStarter || isPro) && (
+                                                {!isFree && (
                                                     <div className="pt-4">
                                                         {!isConfirmingCancel ? (
                                                             <div className="bg-red-500/5 border border-red-500/10 rounded-3xl p-8 space-y-4">
