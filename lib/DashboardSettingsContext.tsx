@@ -26,6 +26,8 @@ interface DashboardSettingsContextType {
     relaunchApp: () => void;
     showNotification: (title: string, options?: NotificationOptions) => void;
     playSystemSound: (type: 'toggle' | 'notification' | 'success' | 'click') => void;
+    subscriptionData: any;
+    setSubscriptionData: (data: any) => void;
 }
 
 const defaultSettings: DashboardSettings = {
@@ -46,6 +48,7 @@ const DashboardSettingsContext = createContext<DashboardSettingsContextType | un
 export function DashboardSettingsProvider({ children }: { children: React.ReactNode }) {
     const [settings, setSettings] = useState<DashboardSettings>(defaultSettings);
     const [isArcusOpen, setIsArcusOpen] = useState(false);
+    const [subscriptionData, setSubscriptionData] = useState<any>(null);
     const { data: session } = useSession();
 
     // Load settings from localStorage
@@ -147,7 +150,9 @@ export function DashboardSettingsProvider({ children }: { children: React.ReactN
             resetCache,
             relaunchApp,
             showNotification,
-            playSystemSound
+            playSystemSound,
+            subscriptionData,
+            setSubscriptionData
         }}>
             {children}
         </DashboardSettingsContext.Provider>

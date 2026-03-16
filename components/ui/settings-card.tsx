@@ -61,9 +61,8 @@ type SettingsSection = 'general' | 'system' | 'account' | 'team' | 'subscription
 export function SettingsCard({ onClose }: SettingsCardProps) {
     const { data: session } = useSession();
     const router = useRouter();
-    const { settings, updateSetting, resetCache, relaunchApp } = useDashboardSettings();
+    const { settings, updateSetting, resetCache, relaunchApp, subscriptionData, setSubscriptionData } = useDashboardSettings();
     const [activeSection, setActiveSection] = useState<SettingsSection>('general');
-    const [subscriptionData, setSubscriptionData] = useState<any>(null);
     const [isLoadingSubscription, setIsLoadingSubscription] = useState(false);
     const [subView, setSubView] = useState<'summary' | 'manage'>('summary');
     const [isConfirmingCancel, setIsConfirmingCancel] = useState(false);
@@ -75,7 +74,11 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
     useEffect(() => {
         const fetchSubscription = async () => {
             if (activeSection === 'subscription' || activeSection === 'usage') {
-                setIsLoadingSubscription(true);
+                // Only show loading if we don't have data yet
+                if (!subscriptionData) {
+                    setIsLoadingSubscription(true);
+                }
+                
                 try {
                     const response = await fetch('/api/subscription/usage');
                     if (response.ok) {
@@ -91,7 +94,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
         };
 
         fetchSubscription();
-    }, [activeSection, session]);
+    }, [activeSection, session, setSubscriptionData]);
 
     const [accountInfo, setAccountInfo] = useState({
         firstName: session?.user?.name?.split(' ')[0] || '',
