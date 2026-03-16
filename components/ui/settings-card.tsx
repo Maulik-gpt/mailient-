@@ -547,9 +547,10 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                     <VerificationCard 
                                                         idNumber={(() => {
                                                             if (isFree) {
-                                                                const stableId = subscriptionData?.subscriptionId || session?.user?.email || "0000";
-                                                                const suffix = stableId.toString().slice(-4).toUpperCase().padStart(4, '0');
-                                                                return `FREE MEMBER ${suffix}`;
+                                                                const stableId = subscriptionData?.subscriptionId || session?.user?.email;
+                                                                if (!stableId) return "MEMBER";
+                                                                const suffix = stableId.toString().slice(-4).toUpperCase();
+                                                                return `MEMBER ${suffix}`;
                                                             }
                                                             const latestPayment = subscriptionData?.payments?.[0];
                                                             if (latestPayment?.method) {
@@ -560,11 +561,11 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                                 }
                                                                 return latestPayment.method;
                                                             }
-                                                            return "CARD NOT CONNECTED";
+                                                            return "PENDING";
                                                         })()}
                                                         name={(session?.user?.name || "").toUpperCase()}
-                                                        validThru={subscriptionData?.subscriptionEndsAt ? new Date(subscriptionData.subscriptionEndsAt).toLocaleDateString(undefined, { month: '2-digit', year: '2-digit' }) : "∞"}
-                                                        label={isFree ? "VERIFICATION CARD" : `${subscriptionData?.planType?.toUpperCase()} MEMBER`}
+                                                        validThru={subscriptionData?.subscriptionEndsAt ? new Date(subscriptionData.subscriptionEndsAt).toLocaleDateString(undefined, { month: '2-digit', year: '2-digit' }) : "—"}
+                                                        label={isFree ? "MEMBER CARD" : `${subscriptionData?.planType?.toUpperCase()} MEMBER`}
                                                     />
                                                 </div>
                                             </div>
@@ -749,16 +750,11 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                         <div className="flex items-center gap-3">
                                                             <Sparkles className="w-4 h-4 text-neutral-400" strokeWidth={1.5} />
                                                             <div className="flex items-center gap-1.5">
-                                                                <span className="text-[15px] font-medium text-white">Credits</span>
-                                                                <HelpCircle className="w-3.5 h-3.5 text-neutral-600 cursor-help" />
+                                                                 <span className="text-[15px] font-medium text-white">Credits</span>
+                                                                 <HelpCircle className="w-3.5 h-3.5 text-neutral-600 cursor-help" />
                                                             </div>
                                                         </div>
                                                         <span className="text-[15px] font-medium text-white">{(subscriptionData?.features?.arcus_ai?.remaining || 0) + (subscriptionData?.features?.sift_analysis?.remaining || 0)}</span>
-                                                    </div>
-
-                                                    <div className="flex items-center justify-between">
-                                                        <p className="text-[13px] text-neutral-500 pl-7">Free credits</p>
-                                                        <span className="text-[13px] text-neutral-500">0</span>
                                                     </div>
                                                 </div>
 
