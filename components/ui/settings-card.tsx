@@ -39,18 +39,51 @@ import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useDashboardSettings } from '@/lib/DashboardSettingsContext';
 import { toast } from 'sonner';
+import { 
+    Info, 
+    ArrowRight, 
+    ExternalLink, 
+    History, 
+    CheckCircle2, 
+    AlertCircle 
+} from 'lucide-react';
+import { SubscriptionManagerDialog } from './subscription-manager-dialog';
 
 interface SettingsCardProps {
     onClose: () => void;
 }
 
-type SettingsSection = 'general' | 'system' | 'account' | 'team' | 'plans' | 'privacy';
+type SettingsSection = 'general' | 'system' | 'account' | 'team' | 'subscription' | 'usage' | 'privacy';
 
 export function SettingsCard({ onClose }: SettingsCardProps) {
     const { data: session } = useSession();
     const router = useRouter();
     const { settings, updateSetting, resetCache, relaunchApp } = useDashboardSettings();
     const [activeSection, setActiveSection] = useState<SettingsSection>('general');
+    const [subscriptionData, setSubscriptionData] = useState<any>(null);
+    const [isLoadingSubscription, setIsLoadingSubscription] = useState(false);
+    const [isSubManagerOpen, setIsSubManagerOpen] = useState(false);
+
+    useEffect(() => {
+        const fetchSubscription = async () => {
+            if (activeSection === 'subscription' || activeSection === 'usage') {
+                setIsLoadingSubscription(true);
+                try {
+                    const response = await fetch('/api/subscription/usage');
+                    if (response.ok) {
+                        const data = await response.json();
+                        setSubscriptionData(data);
+                    }
+                } catch (error) {
+                    console.error('Error fetching subscription data:', error);
+                } finally {
+                    setIsLoadingSubscription(false);
+                }
+            }
+        };
+
+        fetchSubscription();
+    }, [activeSection, session]);
 
     const [accountInfo, setAccountInfo] = useState({
         firstName: session?.user?.name?.split(' ')[0] || '',
@@ -127,46 +160,10 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
         );
     };
 
-    const PricingCard = ({ title, price, subtitle, features, buttonText, highlighted = false }: any) => (
-        <div className={`flex-1 p-6 rounded-[24px] border transition-all duration-300 ${highlighted
-                ? 'bg-white/[0.08] border-white/20 shadow-2xl scale-[1.02]'
-                : 'bg-white/5 border-white/5 hover:border-white/10'
-            }`}>
-            <div className="mb-6">
-                <p className="text-[11px] text-neutral-500 font-bold tracking-wider uppercase mb-2">{subtitle}</p>
-                <div className="flex items-baseline gap-2">
-                    <h3 className="text-2xl font-serif text-white">{title}</h3>
-                </div>
-                <div className="mt-4 flex items-baseline gap-1">
-                    <span className="text-2xl font-semibold text-white">
-                        {price === 0 ? 'Free' : price === 7.99 ? '$7.99' : price === 29.99 ? '$29.99' : `₹${price}`}
-                    </span>
-                    <span className="text-xs text-neutral-500">/month</span>
-                </div>
-            </div>
 
-            <div className="space-y-4 mb-8">
-                {features.map((feature: string, i: number) => (
-                    <div key={i} className="flex gap-3 items-start">
-                        <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                        <span className="text-[13px] text-neutral-400 leading-snug">{feature}</span>
-                    </div>
-                ))}
-            </div>
-
-            <Button
-                variant={highlighted ? "default" : "outline"}
-                className={`w-full py-6 rounded-2xl text-sm font-bold transition-all ${highlighted
-                        ? 'bg-white text-black hover:bg-neutral-200'
-                        : 'bg-white/5 border-white/10 text-white hover:bg-white/10'
-                    }`}
-            >
-                {buttonText}
-            </Button>
-        </div>
-    );
 
     return (
+        <>
         <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -190,7 +187,8 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                         <MenuButton label="Account" category />
                         <MenuButton id="account" icon={User} label="Account" />
                         <MenuButton id="team" icon={Users} label="Team" />
-                        <MenuButton id="plans" icon={CreditCard} label="Plans and Billing" />
+                        <MenuButton id="subscription" icon={CreditCard} label="Subscription" />
+                        <MenuButton id="usage" icon={Zap} label="Usage" />
                         <MenuButton id="privacy" icon={Shield} label="Data and Privacy" />
 
                         <div className="my-2 h-px bg-neutral-200 dark:bg-white/5" />
@@ -223,7 +221,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                             animate={{ opacity: 1, x: 0 }}
                             className="text-4xl font-serif text-[#1A1A1A] dark:text-white capitalize tracking-tight"
                         >
-                            {activeSection === 'plans' ? 'Plans and Billing' : activeSection === 'privacy' ? 'Data and Privacy' : activeSection.replace('-', ' ')}
+                            {activeSection === 'subscription' ? 'Subscription' : activeSection === 'usage' ? 'Usage' : activeSection === 'privacy' ? 'Data and Privacy' : activeSection.replace('-', ' ')}
                         </motion.h1>
 
                         <button
@@ -487,55 +485,161 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                 </motion.div>
                             )}
 
-                            {activeSection === 'plans' && (
+                            {activeSection === 'subscription' && (
                                 <motion.div
-                                    key="plans"
+                                    key="subscription"
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     className="space-y-8"
                                 >
-                                    <div className="flex gap-6 items-stretch">
-                                        <PricingCard
-                                            subtitle="The basics"
-                                            title="Free"
-                                            price={0}
-                                            features={[
-                                                "1 AI Draft per day",
-                                                "1 Sift Analysis per day",
-                                                "5 Arcus AI messages per day",
-                                                "3 Email Summaries per day",
-                                                "Secure Google OAuth"
-                                            ]}
-                                            buttonText="Start Free"
-                                        />
-                                        <PricingCard
-                                            subtitle="For heavy users"
-                                            title="Starter"
-                                            price={7.99}
-                                            highlighted={true}
-                                            features={[
-                                                "10 AI Drafts per day",
-                                                "10 Sift Analyses per day",
-                                                "20 Arcus AI messages per day",
-                                                "30 Email Summaries per day",
-                                                "30 Scheduled Calls per month"
-                                            ]}
-                                            buttonText="Get Started"
-                                        />
-                                        <PricingCard
-                                            subtitle="Unlimited Power"
-                                            title="Pro"
-                                            price={29.99}
-                                            features={[
-                                                "Everything in Starter",
-                                                "Unlimited AI Drafts",
-                                                "Unlimited Sift Analyses",
-                                                "Unlimited Arcus messages",
-                                                "Priority Support"
-                                            ]}
-                                            buttonText="Level up to Pro"
-                                        />
-                                    </div>
+                                    {isLoadingSubscription ? (
+                                        <div className="flex items-center justify-center py-20">
+                                            <RefreshCw className="w-8 h-8 text-neutral-500 animate-spin" />
+                                        </div>
+                                    ) : (
+                                        <div className="bg-white/5 rounded-[32px] p-8 border border-white/5 space-y-10">
+                                            <div className="flex items-start justify-between">
+                                                <div className="space-y-1">
+                                                    <p className="text-[11px] text-neutral-500 font-bold tracking-wider uppercase">Current Plan</p>
+                                                    <h3 className="text-4xl font-serif text-white capitalize">{subscriptionData?.planType || 'Free'}</h3>
+                                                </div>
+                                                <Button 
+                                                    onClick={() => setIsSubManagerOpen(true)}
+                                                    className="bg-white text-black hover:bg-neutral-200 px-8 h-12 rounded-2xl font-bold transition-all"
+                                                >
+                                                    Manage Subscription
+                                                </Button>
+                                            </div>
+
+                                            <div className="h-px bg-white/5" />
+
+                                            <div className="grid grid-cols-2 gap-10">
+                                                <div className="space-y-1">
+                                                    <p className="text-[11px] text-neutral-500 font-bold tracking-wider uppercase">Status</p>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`w-2 h-2 rounded-full ${subscriptionData?.hasActiveSubscription ? 'bg-emerald-500' : 'bg-neutral-500'}`} />
+                                                        <p className="text-[15px] font-medium text-white">{subscriptionData?.hasActiveSubscription ? 'Active' : 'Inactive'}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <p className="text-[11px] text-neutral-500 font-bold tracking-wider uppercase">Billing cycle</p>
+                                                    <p className="text-[15px] font-medium text-white">
+                                                        {subscriptionData?.subscriptionEndsAt 
+                                                            ? `Renews on ${new Date(subscriptionData.subscriptionEndsAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}`
+                                                            : 'No active billing cycle'}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div className="h-px bg-white/5" />
+
+                                            <div className="space-y-4">
+                                                <p className="text-[11px] text-neutral-500 font-bold tracking-wider uppercase">Subscription Metadata</p>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
+                                                        <p className="text-[12px] text-neutral-500 mb-1">Source</p>
+                                                        <p className="text-[14px] text-white font-medium">Polar (Direct)</p>
+                                                    </div>
+                                                    <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
+                                                        <p className="text-[12px] text-neutral-500 mb-1">Account ID</p>
+                                                        <p className="text-[14px] text-white font-medium truncate">{session?.user?.email}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </motion.div>
+                            )}
+
+                            {activeSection === 'usage' && (
+                                <motion.div
+                                    key="usage"
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="space-y-6"
+                                >
+                                    {isLoadingSubscription ? (
+                                        <div className="flex items-center justify-center py-20">
+                                            <RefreshCw className="w-8 h-8 text-neutral-500 animate-spin" />
+                                        </div>
+                                    ) : (
+                                        <div className="bg-[#141414] rounded-[32px] p-8 border border-white/5">
+                                            <div className="flex items-center justify-between mb-8">
+                                                <h3 className="text-2xl font-serif text-white capitalize">{subscriptionData?.planType || 'Free'}</h3>
+                                                <Button 
+                                                    className="bg-white text-black hover:bg-neutral-200 px-6 h-9 rounded-full text-[13px] font-bold shadow-sm"
+                                                    onClick={() => setActiveSection('subscription')}
+                                                >
+                                                    Upgrade
+                                                </Button>
+                                            </div>
+
+                                            <div className="border-t border-dashed border-white/10 mb-8" />
+
+                                            <div className="space-y-8">
+                                                <div className="space-y-4">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-3">
+                                                            <Sparkles className="w-4 h-4 text-neutral-400" strokeWidth={1.5} />
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="text-[15px] font-medium text-white">Credits</span>
+                                                                <HelpCircle className="w-3.5 h-3.5 text-neutral-600 cursor-help" />
+                                                            </div>
+                                                        </div>
+                                                        <span className="text-[15px] font-medium text-white">{(subscriptionData?.features?.arcus_ai?.remaining || 0) + (subscriptionData?.features?.sift_analysis?.remaining || 0)}</span>
+                                                    </div>
+
+                                                    <div className="flex items-center justify-between">
+                                                        <p className="text-[13px] text-neutral-500 pl-7">Free credits</p>
+                                                        <span className="text-[13px] text-neutral-500">0</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-3">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-3">
+                                                            <RefreshCw className="w-4 h-4 text-neutral-400" strokeWidth={1.5} />
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="text-[15px] font-medium text-white">Daily refresh credits</span>
+                                                                <HelpCircle className="w-3.5 h-3.5 text-neutral-600 cursor-help" />
+                                                            </div>
+                                                        </div>
+                                                        <span className="text-[15px] font-medium text-white">{subscriptionData?.features?.arcus_ai?.remaining || 0}</span>
+                                                    </div>
+                                                    <p className="text-[11px] text-neutral-600 pl-7">
+                                                        Refresh to {subscriptionData?.features?.arcus_ai?.limit || 50} at 00:00 every day
+                                                    </p>
+                                                </div>
+                                                
+                                                <div className="pt-6 border-t border-white/5 grid grid-cols-2 gap-4">
+                                                    <div className="space-y-1">
+                                                        <span className="text-[11px] text-neutral-500 uppercase font-bold tracking-wider">Sift AI</span>
+                                                        <p className="text-white text-[14px]">{subscriptionData?.features?.sift_analysis?.remaining} / {subscriptionData?.features?.sift_analysis?.limit}</p>
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <span className="text-[11px] text-neutral-500 uppercase font-bold tracking-wider">Summaries</span>
+                                                        <p className="text-white text-[14px]">{subscriptionData?.features?.email_summary?.remaining} / {subscriptionData?.features?.email_summary?.limit}</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="pt-6 border-t border-white/5 space-y-4">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-3">
+                                                            <Cpu className="w-4 h-4 text-neutral-400" strokeWidth={1.5} />
+                                                            <span className="text-[15px] font-medium text-white">OpenAI Native Usage</span>
+                                                        </div>
+                                                        <span className="text-[15px] font-medium text-white">{(subscriptionData?.features?.openai_tokens?.usage || 0).toLocaleString()} <span className="text-[11px] text-neutral-500 font-sans">tokens</span></span>
+                                                    </div>
+                                                    <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                                                        <div 
+                                                            className="h-full bg-white" 
+                                                            style={{ width: `${Math.min(100, ((subscriptionData?.features?.openai_tokens?.usage || 0) / (subscriptionData?.features?.openai_tokens?.limit || 50000)) * 100)}%` }} 
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </motion.div>
                             )}
 
@@ -623,6 +727,12 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                 </div>
             </div>
         </motion.div>
+        <SubscriptionManagerDialog 
+            isOpen={isSubManagerOpen} 
+            onClose={() => setIsSubManagerOpen(false)} 
+            data={subscriptionData}
+        />
+        </>
     );
 }
 

@@ -93,10 +93,16 @@ export async function GET(request) {
 
         const userId = session.user.email;
         const allUsage = await subscriptionService.getAllFeatureUsage(userId);
+        
+        // Add additional payment and invoice data
+        const payments = await subscriptionService.getRecentPayments(userId);
+        const invoices = await subscriptionService.getInvoices(userId);
 
         return NextResponse.json({
             success: true,
-            ...allUsage
+            ...allUsage,
+            payments,
+            invoices
         });
     } catch (error) {
         console.error('Error getting all feature usage:', error);
