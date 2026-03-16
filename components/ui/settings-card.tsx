@@ -579,116 +579,125 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className="space-y-8">
-                                            <div className="flex items-center justify-between">
-                                                <Button 
-                                                    variant="ghost" 
-                                                    onClick={() => setSubView('summary')}
-                                                    className="text-neutral-400 hover:text-white flex items-center gap-2 group"
-                                                >
-                                                    <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
-                                                    Back to overview
-                                                </Button>
-                                                <Button 
-                                                    variant="outline"
-                                                    onClick={() => window.open('https://polar.sh/mailient/portal', '_blank')}
-                                                    className="border-white/10 text-white hover:bg-white/5 rounded-xl h-10 px-4 flex items-center gap-2"
-                                                >
-                                                    <ExternalLink className="w-4 h-4" />
-                                                    Polar Portal
-                                                </Button>
-                                            </div>
+                                            <div className="space-y-8">
+                                                <div className="flex items-center justify-between">
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        onClick={() => setSubView('summary')}
+                                                        className="text-neutral-400 hover:text-white flex items-center gap-2 group"
+                                                    >
+                                                        <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+                                                        Back to overview
+                                                    </Button>
+                                                    <Button 
+                                                        variant="outline"
+                                                        onClick={() => window.open('https://polar.sh/mailient/portal', '_blank')}
+                                                        className="border-white/10 text-white hover:bg-white/5 rounded-xl h-10 px-4 flex items-center gap-2"
+                                                    >
+                                                        <ExternalLink className="w-4 h-4" />
+                                                        Polar Portal
+                                                    </Button>
+                                                </div>
 
-                                            <div className="space-y-6">
-                                                <h4 className="text-xl font-serif text-white">Payment History</h4>
-                                                <div className="bg-white/5 border border-white/5 rounded-3xl overflow-hidden">
-                                                    <table className="w-full text-left">
-                                                        <thead className="bg-white/[0.02] border-b border-white/5">
-                                                            <tr>
-                                                                <th className="px-6 py-4 text-xs font-bold text-neutral-500 uppercase tracking-wider">Invoice</th>
-                                                                <th className="px-6 py-4 text-xs font-bold text-neutral-500 uppercase tracking-wider">Date</th>
-                                                                <th className="px-6 py-4 text-xs font-bold text-neutral-500 uppercase tracking-wider">Amount</th>
-                                                                <th className="px-6 py-4 text-xs font-bold text-neutral-500 uppercase tracking-wider"></th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody className="divide-y divide-white/5">
-                                                            {(subscriptionData?.invoices || []).map((invoice: any) => (
-                                                                <tr key={invoice.id} className="hover:bg-white/[0.02] transition-colors">
-                                                                    <td className="px-6 py-4 font-mono text-[13px] text-white">{invoice.number}</td>
-                                                                    <td className="px-6 py-4 text-[13px] text-neutral-400">{new Date(invoice.date).toLocaleDateString()}</td>
-                                                                    <td className="px-6 py-4 text-[13px] text-white">${invoice.amount}</td>
-                                                                    <td className="px-6 py-4 text-right">
-                                                                        <button 
-                                                                            onClick={() => {
-                                                                                // Generate a simple text blob as a placeholder "PDF"
-                                                                                const content = `Mailient Invoice ${invoice.number}\nDate: ${new Date(invoice.date).toLocaleDateString()}\nAmount: $${invoice.amount}\nStatus: PAID\n\nThank you for choosing Mailient.`;
-                                                                                const blob = new Blob([content], { type: 'text/plain' });
-                                                                                const url = window.URL.createObjectURL(blob);
-                                                                                const link = document.createElement('a');
-                                                                                link.href = url;
-                                                                                link.download = `invoice-${invoice.number}.txt`;
-                                                                                document.body.appendChild(link);
-                                                                                link.click();
-                                                                                document.body.removeChild(link);
-                                                                                window.URL.revokeObjectURL(url);
-                                                                                toast.success('Invoice downloaded successfully');
-                                                                            }}
-                                                                            className="p-2 hover:bg-white/5 rounded-lg text-neutral-400 hover:text-white"
-                                                                        >
-                                                                            <Download className="w-4 h-4" />
-                                                                        </button>
-                                                                    </td>
+                                                <div className="space-y-2">
+                                                    <h3 className="text-2xl font-serif text-white">Billing Management</h3>
+                                                    <p className="text-sm text-neutral-400">View your payment history and manage your active plan.</p>
+                                                </div>
+
+                                                {/* Cancellation Section - Moved up for visibility */}
+                                                {(isStarter || isPro) && (
+                                                    <div className="pt-4">
+                                                        {!isConfirmingCancel ? (
+                                                            <div className="bg-red-500/5 border border-red-500/10 rounded-3xl p-8 space-y-4">
+                                                                <div className="flex items-center gap-3 text-red-500">
+                                                                    <AlertCircle className="w-5 h-5" />
+                                                                    <h4 className="text-lg font-serif">Cancel Subscription</h4>
+                                                                </div>
+                                                                <p className="text-sm text-neutral-400 max-w-lg leading-relaxed">
+                                                                    We're sorry to see you go. If you cancel, you will maintain your {isPro ? 'Pro' : 'Starter'} features until the end of your current billing period on <strong>{subscriptionData?.subscriptionEndsAt ? new Date(subscriptionData.subscriptionEndsAt).toLocaleDateString() : 'the end of the month'}</strong>.
+                                                                </p>
+                                                                <Button 
+                                                                    onClick={() => setIsConfirmingCancel(true)}
+                                                                    variant="ghost" 
+                                                                    className="bg-red-500/10 text-red-500 hover:text-red-400 hover:bg-red-500/20 px-6 h-11 rounded-2xl font-medium flex items-center gap-2 transition-all mt-2"
+                                                                >
+                                                                    Yes, I want to cancel my plan
+                                                                    <ArrowRight className="w-4 h-4" />
+                                                                </Button>
+                                                            </div>
+                                                        ) : (
+                                                            <CancellationFlow
+                                                                isOpen={isConfirmingCancel}
+                                                                onClose={() => setIsConfirmingCancel(false)}
+                                                                subscriptionEndsAt={subscriptionData?.subscriptionEndsAt}
+                                                                onConfirm={async (reasons, feedback) => {
+                                                                    const response = await fetch('/api/subscription/cancel', { 
+                                                                        method: 'POST',
+                                                                        headers: { 'Content-Type': 'application/json' },
+                                                                        body: JSON.stringify({ reasons, feedback })
+                                                                    });
+                                                                    
+                                                                    if (response.ok) {
+                                                                        toast.success('Subscription revoked. Access remains valid until period end.');
+                                                                        setIsConfirmingCancel(false);
+                                                                        // Refresh subscription data
+                                                                        const refresh = await fetch('/api/subscription/usage');
+                                                                        if (refresh.ok) setSubscriptionData(await refresh.json());
+                                                                    } else {
+                                                                        toast.error('Failed to revoke subscription. Please contact support.');
+                                                                    }
+                                                                }}
+                                                            />
+                                                        )}
+                                                    </div>
+                                                )}
+
+                                                <div className="space-y-6 pt-4">
+                                                    <h4 className="text-xl font-serif text-white">Payment History</h4>
+                                                    <div className="bg-white/5 border border-white/5 rounded-3xl overflow-hidden">
+                                                        <table className="w-full text-left">
+                                                            <thead className="bg-white/[0.02] border-b border-white/5">
+                                                                <tr>
+                                                                    <th className="px-6 py-4 text-xs font-bold text-neutral-500 uppercase tracking-wider">Invoice</th>
+                                                                    <th className="px-6 py-4 text-xs font-bold text-neutral-500 uppercase tracking-wider">Date</th>
+                                                                    <th className="px-6 py-4 text-xs font-bold text-neutral-500 uppercase tracking-wider">Amount</th>
+                                                                    <th className="px-6 py-4 text-xs font-bold text-neutral-500 uppercase tracking-wider"></th>
                                                                 </tr>
-                                                            ))}
-                                                        </tbody>
-                                                    </table>
+                                                            </thead>
+                                                            <tbody className="divide-y divide-white/5">
+                                                                {(subscriptionData?.invoices || []).map((invoice: any) => (
+                                                                    <tr key={invoice.id} className="hover:bg-white/[0.02] transition-colors">
+                                                                        <td className="px-6 py-4 font-mono text-[13px] text-white">{invoice.number}</td>
+                                                                        <td className="px-6 py-4 text-[13px] text-neutral-400">{new Date(invoice.date).toLocaleDateString()}</td>
+                                                                        <td className="px-6 py-4 text-[13px] text-white">${invoice.amount}</td>
+                                                                        <td className="px-6 py-4 text-right">
+                                                                            <button 
+                                                                                onClick={() => {
+                                                                                    // Generate a simple text blob as a placeholder "PDF"
+                                                                                    const content = `Mailient Invoice ${invoice.number}\nDate: ${new Date(invoice.date).toLocaleDateString()}\nAmount: $${invoice.amount}\nStatus: PAID\n\nThank you for choosing Mailient.`;
+                                                                                    const blob = new Blob([content], { type: 'text/plain' });
+                                                                                    const url = window.URL.createObjectURL(blob);
+                                                                                    const link = document.createElement('a');
+                                                                                    link.href = url;
+                                                                                    link.download = `invoice-${invoice.number}.txt`;
+                                                                                    document.body.appendChild(link);
+                                                                                    link.click();
+                                                                                    document.body.removeChild(link);
+                                                                                    window.URL.revokeObjectURL(url);
+                                                                                    toast.success('Invoice downloaded successfully');
+                                                                                }}
+                                                                                className="p-2 hover:bg-white/5 rounded-lg text-neutral-400 hover:text-white"
+                                                                            >
+                                                                                <Download className="w-4 h-4" />
+                                                                            </button>
+                                                                        </td>
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
                                                 </div>
                                             </div>
-
-                                            {(subscriptionData?.planType === 'starter' || subscriptionData?.planType === 'pro') && (
-                                                <div className="pt-8 border-t border-white/5">
-                                                    {!isConfirmingCancel ? (
-                                                        <div className="bg-red-500/5 border border-red-500/10 rounded-3xl p-8 space-y-4">
-                                                            <h4 className="text-lg font-serif text-white">Cancel Subscription</h4>
-                                                            <p className="text-sm text-neutral-400 max-w-lg">
-                                                                We're sorry to see you go. If you cancel, you will maintain your Pro features until the end of your current billing period on <strong>{subscriptionData?.subscriptionEndsAt ? new Date(subscriptionData.subscriptionEndsAt).toLocaleDateString() : 'the end of the month'}</strong>.
-                                                            </p>
-                                                            <Button 
-                                                                onClick={() => setIsConfirmingCancel(true)}
-                                                                variant="ghost" 
-                                                                className="text-red-500 hover:text-red-400 hover:bg-red-500/10 px-0 h-auto font-medium flex items-center gap-2"
-                                                            >
-                                                                Yes, I want to cancel my plan
-                                                                <ArrowRight className="w-4 h-4" />
-                                                            </Button>
-                                                        </div>
-                                                    ) : (
-                                                        <CancellationFlow
-                                                            isOpen={isConfirmingCancel}
-                                                            onClose={() => setIsConfirmingCancel(false)}
-                                                            subscriptionEndsAt={subscriptionData?.subscriptionEndsAt}
-                                                            onConfirm={async (reasons, feedback) => {
-                                                                const response = await fetch('/api/subscription/cancel', { 
-                                                                    method: 'POST',
-                                                                    headers: { 'Content-Type': 'application/json' },
-                                                                    body: JSON.stringify({ reasons, feedback })
-                                                                });
-                                                                
-                                                                if (response.ok) {
-                                                                    toast.success('Subscription revoked. Access remains valid until period end.');
-                                                                    setIsConfirmingCancel(false);
-                                                                    // Refresh subscription data
-                                                                    const refresh = await fetch('/api/subscription/usage');
-                                                                    if (refresh.ok) setSubscriptionData(await refresh.json());
-                                                                } else {
-                                                                    toast.error('Failed to revoke subscription. Please contact support.');
-                                                                }
-                                                            }}
-                                                        />
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
                                     )}
                                 </motion.div>
                             )}
