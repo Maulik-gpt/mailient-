@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 interface VerificationCardProps {
-  backgroundImage?: string;
   idNumber?: string;
   name?: string;
   validThru?: string;
@@ -13,94 +12,63 @@ interface VerificationCardProps {
 }
 
 export function VerificationCard({
-  idNumber = "**** **** **** 7421",
-  name = "RUIXEN UI",
-  validThru = "07/31",
+  idNumber = "FREE 0000 0000",
+  name = "THE BUILDER MAULIK",
+  validThru = "03/26",
   label = "VERIFICATION CARD",
 }: VerificationCardProps) {
+  // Split idNumber into two lines if it contains spaces (matches the wrap in the screenshot)
+  const idParts = idNumber.split(' ');
+  const line1 = idParts.slice(0, 2).join(' ');
+  const line2 = idParts.slice(2).join(' ');
+
   return (
     <motion.div
       initial={{ y: 20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
       className={cn(
-        "relative h-[210px] w-[335px] rounded-[24px] p-8 shadow-2xl text-white flex flex-col justify-between overflow-hidden group select-none"
+        "relative h-[225px] w-[355px] rounded-[42px] p-10 shadow-2xl text-white flex flex-col justify-between overflow-hidden select-none group"
       )}
       style={{
-        background: "#080808",
-        boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.05)"
+        background: "#080809",
+        boxShadow: "0 40px 100px -20px rgba(0, 0, 0, 0.8)"
       }}
     >
-      {/* The Glowing Arc (matched to image) */}
+      {/* Background Glow - matches the subtle indigo wash on the left side */}
       <div 
-        className="absolute -bottom-[60px] left-1/2 -translate-x-1/2 w-[400px] h-[200px] blur-[60px] opacity-40 pointer-events-none transition-opacity duration-1000 group-hover:opacity-60"
+        className="absolute -bottom-[20%] -left-[10%] w-[120%] h-[120%] blur-[100px] opacity-30 pointer-events-none transition-opacity duration-1000 group-hover:opacity-40"
         style={{
-          background: "radial-gradient(ellipse at center, #2d26ff 0%, transparent 70%)",
-          borderRadius: "100%",
-        }}
-      />
-      
-      {/* Secondary Glow for depth */}
-      <div 
-        className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[300px] h-[100px] blur-[40px] opacity-20 pointer-events-none"
-        style={{
-          background: "radial-gradient(ellipse at center, #7c3aed 0%, transparent 80%)",
-          borderRadius: "100%",
+          background: "radial-gradient(circle at 20% 80%, #201a5e 0%, transparent 60%)",
         }}
       />
 
-      {/* Top Section */}
-      <div className="relative z-10 flex justify-between items-center">
-        <span className="text-[12px] font-medium tracking-[0.1em] text-white/90">
-          {label}
-        </span>
-        <span className="text-[12px] font-medium tracking-[0.1em] text-white/90">
-          VALID
-        </span>
+      {/* Top Labels */}
+      <div className="relative z-10 flex justify-between items-center text-[11px] font-bold tracking-[0.18em] text-white/50 uppercase">
+        <span>{label}</span>
+        <span>VALID</span>
       </div>
 
-      {/* Middle Section (Card Number) */}
-      <div className="relative z-10">
-        <motion.p 
-            initial={{ letterSpacing: "0.2em", opacity: 0 }}
-            animate={{ letterSpacing: "0.3em", opacity: 1 }}
-            transition={{ delay: 0.2, duration: 1 }}
-            className="text-[22px] font-semibold text-white tracking-[0.3em]"
-        >
-          {idNumber}
-        </motion.p>
+      {/* Main ID - Bold, Wrapped (matches screenshot) */}
+      <div className="relative z-10 mt-1">
+        <h2 className="text-[36px] font-extrabold tracking-tight text-white leading-[1.05] uppercase">
+          {line1}<br />
+          {line2}
+        </h2>
       </div>
 
-      {/* Bottom Section */}
-      <div className="relative z-10 flex justify-between items-center">
-        <span className="text-[16px] font-medium tracking-[0.05em] text-white/95 uppercase">
+      {/* Bottom Info Row */}
+      <div className="relative z-10 flex justify-between items-end uppercase">
+        <span className="text-[17px] font-bold tracking-[0.1em] text-white/80">
           {name}
         </span>
-        <span className="text-[16px] font-medium tracking-[0.05em] text-white/95 font-mono">
+        <span className="text-[19px] font-bold tracking-[0.05em] text-white/80">
           {validThru}
         </span>
       </div>
 
-      {/* Glass Overlay for sheen */}
-      <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
-      
-      {/* Interactive Shine Effect */}
-      <motion.div
-        className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-500 pointer-events-none"
-        style={{
-          background: "linear-gradient(105deg, transparent 20%, rgba(255,255,255,0.2) 50%, transparent 80%)",
-          transform: "translateX(-100%)",
-        }}
-        animate={{
-          translateX: ["-100%", "200%"],
-        }}
-        transition={{
-          duration: 3,
-          repeat: Infinity,
-          ease: "linear",
-          delay: 1
-        }}
-      />
+      {/* Subtle interactive shine */}
+      <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.03] to-transparent pointer-events-none" />
     </motion.div>
   );
 }
