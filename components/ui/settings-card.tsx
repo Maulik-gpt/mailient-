@@ -30,7 +30,9 @@ import {
     MousePointer2,
     Volume2,
     Sparkles,
-    HelpCircle
+    HelpCircle,
+    ChevronLeft,
+    Download
 } from 'lucide-react';
 import { ToggleSwitch } from './toggle-switch';
 import { Button } from './button';
@@ -47,7 +49,7 @@ import {
     CheckCircle2, 
     AlertCircle 
 } from 'lucide-react';
-import { SubscriptionManagerDialog } from './subscription-manager-dialog';
+// import { SubscriptionManagerDialog } from './subscription-manager-dialog';
 
 interface SettingsCardProps {
     onClose: () => void;
@@ -62,7 +64,11 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
     const [activeSection, setActiveSection] = useState<SettingsSection>('general');
     const [subscriptionData, setSubscriptionData] = useState<any>(null);
     const [isLoadingSubscription, setIsLoadingSubscription] = useState(false);
-    const [isSubManagerOpen, setIsSubManagerOpen] = useState(false);
+    const [subView, setSubView] = useState<'summary' | 'manage'>('summary');
+
+    const isPro = subscriptionData?.planType === 'pro';
+    const isStarter = subscriptionData?.planType === 'starter';
+    const isFree = !isPro && !isStarter;
 
     useEffect(() => {
         const fetchSubscription = async () => {
@@ -496,7 +502,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                         <div className="flex items-center justify-center py-20">
                                             <RefreshCw className="w-8 h-8 text-neutral-500 animate-spin" />
                                         </div>
-                                    ) : (
+                                    ) : subView === 'summary' ? (
                                         <div className="bg-white/5 rounded-[32px] p-8 border border-white/5 space-y-10">
                                             <div className="flex items-start justify-between">
                                                 <div className="space-y-1">
@@ -504,7 +510,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                     <h3 className="text-4xl font-serif text-white capitalize">{subscriptionData?.planType || 'Free'}</h3>
                                                 </div>
                                                 <Button 
-                                                    onClick={() => setIsSubManagerOpen(true)}
+                                                    onClick={() => setSubView('manage')}
                                                     className="bg-white text-black hover:bg-neutral-200 px-8 h-12 rounded-2xl font-bold transition-all"
                                                 >
                                                     Manage Subscription
@@ -517,8 +523,8 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                 <div className="space-y-1">
                                                     <p className="text-[11px] text-neutral-500 font-bold tracking-wider uppercase">Status</p>
                                                     <div className="flex items-center gap-2">
-                                                        <div className={`w-2 h-2 rounded-full ${subscriptionData?.hasActiveSubscription ? 'bg-emerald-500' : 'bg-neutral-500'}`} />
-                                                        <p className="text-[15px] font-medium text-white">{subscriptionData?.hasActiveSubscription ? 'Active' : 'Inactive'}</p>
+                                                        <div className={`w-2 h-2 rounded-full ${subscriptionData?.hasActiveSubscription || subscriptionData?.planType === 'free' ? 'bg-emerald-500' : 'bg-neutral-500'}`} />
+                                                        <p className="text-[15px] font-medium text-white">{subscriptionData?.hasActiveSubscription || subscriptionData?.planType === 'free' ? 'Active' : 'Inactive'}</p>
                                                     </div>
                                                 </div>
                                                 <div className="space-y-1">
@@ -526,7 +532,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                     <p className="text-[15px] font-medium text-white">
                                                         {subscriptionData?.subscriptionEndsAt 
                                                             ? `Renews on ${new Date(subscriptionData.subscriptionEndsAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}`
-                                                            : 'No active billing cycle'}
+                                                            : subscriptionData?.planType === 'free' ? 'Lifetime access' : 'No active billing cycle'}
                                                     </p>
                                                 </div>
                                             </div>
@@ -547,6 +553,100 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                 </div>
                                             </div>
                                         </div>
+                                    ) : (
+                                        <div className="space-y-8">
+                                            <div className="flex items-center justify-between">
+                                                <Button 
+                                                    variant="ghost" 
+                                                    onClick={() => setSubView('summary')}
+                                                    className="text-neutral-400 hover:text-white flex items-center gap-2 group"
+                                                >
+                                                    <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+                                                    Back to overview
+                                                </Button>
+                                                <Button 
+                                                    variant="outline"
+                                                    onClick={() => window.open('https://polar.sh/dashboard', '_blank')}
+                                                    className="border-white/10 text-white hover:bg-white/5 rounded-xl h-10 px-4 flex items-center gap-2"
+                                                >
+                                                    <ExternalLink className="w-4 h-4" />
+                                                    Polar Portal
+                                                </Button>
+                                            </div>
+
+                                            <div className="space-y-6">
+                                                <h4 className="text-xl font-serif text-white">Payment History</h4>
+                                                <div className="bg-white/5 border border-white/5 rounded-3xl overflow-hidden">
+                                                    <table className="w-full text-left">
+                                                        <thead className="bg-white/[0.02] border-b border-white/5">
+                                                            <tr>
+                                                                <th className="px-6 py-4 text-xs font-bold text-neutral-500 uppercase tracking-wider">Invoice</th>
+                                                                <th className="px-6 py-4 text-xs font-bold text-neutral-500 uppercase tracking-wider">Date</th>
+                                                                <th className="px-6 py-4 text-xs font-bold text-neutral-500 uppercase tracking-wider">Amount</th>
+                                                                <th className="px-6 py-4 text-xs font-bold text-neutral-500 uppercase tracking-wider"></th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-white/5">
+                                                            {(subscriptionData?.invoices || []).map((invoice: any) => (
+                                                                <tr key={invoice.id} className="hover:bg-white/[0.02] transition-colors">
+                                                                    <td className="px-6 py-4 font-mono text-[13px] text-white">{invoice.number}</td>
+                                                                    <td className="px-6 py-4 text-[13px] text-neutral-400">{new Date(invoice.date).toLocaleDateString()}</td>
+                                                                    <td className="px-6 py-4 text-[13px] text-white">${invoice.amount}</td>
+                                                                    <td className="px-6 py-4 text-right">
+                                                                        <button 
+                                                                            onClick={() => {
+                                                                                // Simulate download
+                                                                                const link = document.createElement('a');
+                                                                                link.href = '#';
+                                                                                link.download = `invoice-${invoice.number}.pdf`;
+                                                                                document.body.appendChild(link);
+                                                                                link.click();
+                                                                                document.body.removeChild(link);
+                                                                                toast.success('Invoice download started');
+                                                                            }}
+                                                                            className="p-2 hover:bg-white/5 rounded-lg text-neutral-400 hover:text-white"
+                                                                        >
+                                                                            <Download className="w-4 h-4" />
+                                                                        </button>
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+
+                                            {(subscriptionData?.planType === 'starter' || subscriptionData?.planType === 'pro') && (
+                                                <div className="pt-8 border-t border-white/5">
+                                                    <div className="bg-red-500/5 border border-red-500/10 rounded-3xl p-8 space-y-4">
+                                                        <h4 className="text-lg font-serif text-white">Cancel Subscription</h4>
+                                                        <p className="text-sm text-neutral-400 max-w-lg">
+                                                            We're sorry to see you go. If you cancel, you will maintain your Pro features until the end of your current billing period on <strong>{subscriptionData?.subscriptionEndsAt ? new Date(subscriptionData.subscriptionEndsAt).toLocaleDateString() : 'the end of the month'}</strong>.
+                                                        </p>
+                                                        <Button 
+                                                            onClick={() => {
+                                                                if (confirm("THIS IS A SERIOUS ACTION. Are you absolutely sure you want to cancel your subscription? You will lose unlimited AI access at the end of your term.")) {
+                                                                    toast.promise(fetch('/api/subscription/cancel', { 
+                                                                        method: 'POST',
+                                                                        headers: { 'Content-Type': 'application/json' },
+                                                                        body: JSON.stringify({})
+                                                                    }), {
+                                                                        loading: 'Processing cancellation...',
+                                                                        success: 'Subscription cancelled. You still have access until the end of your term.',
+                                                                        error: 'Failed to cancel subscription. Please contact support.'
+                                                                    });
+                                                                }
+                                                            }}
+                                                            variant="ghost" 
+                                                            className="text-red-500 hover:text-red-400 hover:bg-red-500/10 px-0 h-auto font-medium flex items-center gap-2"
+                                                        >
+                                                            Yes, I want to cancel my plan
+                                                            <ArrowRight className="w-4 h-4" />
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
                                     )}
                                 </motion.div>
                             )}
@@ -565,12 +665,15 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                     ) : (
                                         <div className="bg-[#141414] rounded-[32px] p-8 border border-white/5">
                                             <div className="flex items-center justify-between mb-8">
-                                                <h3 className="text-2xl font-serif text-white capitalize">{subscriptionData?.planType || 'Free'}</h3>
+                                                <div className="space-y-1">
+                                                    <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">Active Tier</p>
+                                                    <h3 className="text-2xl font-serif text-white capitalize">{subscriptionData?.planType || 'Free'}</h3>
+                                                </div>
                                                 <Button 
                                                     className="bg-white text-black hover:bg-neutral-200 px-6 h-9 rounded-full text-[13px] font-bold shadow-sm"
                                                     onClick={() => setActiveSection('subscription')}
                                                 >
-                                                    Upgrade
+                                                    {isFree ? 'Upgrade' : 'Manage'}
                                                 </Button>
                                             </div>
 
@@ -626,15 +729,23 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-3">
                                                             <Cpu className="w-4 h-4 text-neutral-400" strokeWidth={1.5} />
-                                                            <span className="text-[15px] font-medium text-white">OpenAI Native Usage</span>
+                                                            <span className="text-[15px] font-medium text-white">Token Credits Consumed</span>
                                                         </div>
-                                                        <span className="text-[15px] font-medium text-white">{(subscriptionData?.features?.openai_tokens?.usage || 0).toLocaleString()} <span className="text-[11px] text-neutral-500 font-sans">tokens</span></span>
+                                                        <div className="text-right">
+                                                            <span className="text-[17px] font-serif text-white">{(subscriptionData?.features?.openai_tokens?.usage || 0).toLocaleString()}</span>
+                                                            <span className="text-[11px] text-neutral-500 font-sans ml-1.5 uppercase tracking-wider">tokens</span>
+                                                        </div>
                                                     </div>
                                                     <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                                                        <div 
+                                                        <motion.div 
+                                                            initial={{ width: 0 }}
+                                                            animate={{ width: `${Math.min(100, ((subscriptionData?.features?.openai_tokens?.usage || 0) / (subscriptionData?.features?.openai_tokens?.limit || 50000)) * 100)}%` }}
                                                             className="h-full bg-white" 
-                                                            style={{ width: `${Math.min(100, ((subscriptionData?.features?.openai_tokens?.usage || 0) / (subscriptionData?.features?.openai_tokens?.limit || 50000)) * 100)}%` }} 
                                                         />
+                                                    </div>
+                                                    <div className="flex justify-between items-center text-[10px] text-neutral-500 font-bold uppercase tracking-widest pl-1">
+                                                        <span>OpenRouter Cluster Usage</span>
+                                                        <span>{isPro ? 'Unlimited' : `${Math.round(((subscriptionData?.features?.openai_tokens?.usage || 0) / (subscriptionData?.features?.openai_tokens?.limit || 50000)) * 100)}% of quota`}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -727,11 +838,6 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                 </div>
             </div>
         </motion.div>
-        <SubscriptionManagerDialog 
-            isOpen={isSubManagerOpen} 
-            onClose={() => setIsSubManagerOpen(false)} 
-            data={subscriptionData}
-        />
         </>
     );
 }
