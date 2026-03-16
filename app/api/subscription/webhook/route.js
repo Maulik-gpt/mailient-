@@ -151,16 +151,38 @@ export async function POST(request) {
                     isRenewal: eventType === 'subscription.updated'
                 };
 
+                // Extract payment method details from Polar webhook data
+                // Polar can include payment method info in various locations depending on event type
+                const paymentMethod = data.payment_method 
+                    || data.customer?.payment_method
+                    || data.subscription?.payment_method
+                    || data.order?.payment_method
+                    || null;
+
+                const paymentMethodLast4 = paymentMethod?.last4 
+                    || paymentMethod?.card?.last4
+                    || data.payment_method_last4
+                    || data.card_last4
+                    || null;
+
+                const paymentMethodBrand = paymentMethod?.brand
+                    || paymentMethod?.card?.brand 
+                    || data.payment_method_brand
+                    || data.card_brand
+                    || null;
+
                 console.log(`✅ Activating ${planType} plan for ${userEmail}`);
                 console.log('📅 Polar dates:', polarDates);
                 console.log('🆔 Subscription ID:', subscriptionId);
+                console.log('💳 Payment method:', { last4: paymentMethodLast4, brand: paymentMethodBrand });
 
-                // Activate subscription
+                // Activate subscription with payment method info
                 const activated = await subscriptionService.activateSubscription(
                     userEmail,
                     planType,
                     subscriptionId,
-                    polarDates
+                    polarDates,
+                    { last4: paymentMethodLast4, brand: paymentMethodBrand }
                 );
 
                 console.log(`✅ Subscription activation result:`, !!activated);

@@ -552,7 +552,15 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                                 const suffix = stableId.toString().slice(-4).toUpperCase();
                                                                 return `MEMBER ${suffix}`;
                                                             }
+                                                            // Priority 1: Direct last4 from subscription record (set by Polar webhook)
+                                                            if (subscriptionData?.paymentMethodLast4) {
+                                                                return `**** **** **** ${subscriptionData.paymentMethodLast4}`;
+                                                            }
+                                                            // Priority 2: Parse from payment method string in payments array
                                                             const latestPayment = subscriptionData?.payments?.[0];
+                                                            if (latestPayment?.last4) {
+                                                                return `**** **** **** ${latestPayment.last4}`;
+                                                            }
                                                             if (latestPayment?.method) {
                                                                 const parts = latestPayment.method.split(' ');
                                                                 const lastPart = parts[parts.length - 1];
@@ -561,7 +569,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                                 }
                                                                 return latestPayment.method;
                                                             }
-                                                            return "PENDING";
+                                                            return "CARD PENDING";
                                                         })()}
                                                         name={(session?.user?.name || "").toUpperCase()}
                                                         validThru={subscriptionData?.subscriptionEndsAt ? new Date(subscriptionData.subscriptionEndsAt).toLocaleDateString(undefined, { month: '2-digit', year: '2-digit' }) : "—"}
