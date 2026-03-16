@@ -66,6 +66,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
     const [subscriptionData, setSubscriptionData] = useState<any>(null);
     const [isLoadingSubscription, setIsLoadingSubscription] = useState(false);
     const [subView, setSubView] = useState<'summary' | 'manage'>('summary');
+    const [isConfirmingCancel, setIsConfirmingCancel] = useState(false);
 
     const isPro = subscriptionData?.planType === 'pro';
     const isStarter = subscriptionData?.planType === 'starter';
@@ -607,14 +608,18 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                                     <td className="px-6 py-4 text-right">
                                                                         <button 
                                                                             onClick={() => {
-                                                                                // Simulate download
+                                                                                // Generate a simple text blob as a placeholder "PDF"
+                                                                                const content = `Mailient Invoice ${invoice.number}\nDate: ${new Date(invoice.date).toLocaleDateString()}\nAmount: $${invoice.amount}\nStatus: PAID\n\nThank you for choosing Mailient.`;
+                                                                                const blob = new Blob([content], { type: 'text/plain' });
+                                                                                const url = window.URL.createObjectURL(blob);
                                                                                 const link = document.createElement('a');
-                                                                                link.href = '#';
-                                                                                link.download = `invoice-${invoice.number}.pdf`;
+                                                                                link.href = url;
+                                                                                link.download = `invoice-${invoice.number}.txt`;
                                                                                 document.body.appendChild(link);
                                                                                 link.click();
                                                                                 document.body.removeChild(link);
-                                                                                toast.success('Invoice download started');
+                                                                                window.URL.revokeObjectURL(url);
+                                                                                toast.success('Invoice downloaded successfully');
                                                                             }}
                                                                             className="p-2 hover:bg-white/5 rounded-lg text-neutral-400 hover:text-white"
                                                                         >
@@ -630,32 +635,76 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
 
                                             {(subscriptionData?.planType === 'starter' || subscriptionData?.planType === 'pro') && (
                                                 <div className="pt-8 border-t border-white/5">
-                                                    <div className="bg-red-500/5 border border-red-500/10 rounded-3xl p-8 space-y-4">
-                                                        <h4 className="text-lg font-serif text-white">Cancel Subscription</h4>
-                                                        <p className="text-sm text-neutral-400 max-w-lg">
-                                                            We're sorry to see you go. If you cancel, you will maintain your Pro features until the end of your current billing period on <strong>{subscriptionData?.subscriptionEndsAt ? new Date(subscriptionData.subscriptionEndsAt).toLocaleDateString() : 'the end of the month'}</strong>.
-                                                        </p>
-                                                        <Button 
-                                                            onClick={() => {
-                                                                if (confirm("THIS IS A SERIOUS ACTION. Are you absolutely sure you want to cancel your subscription? You will lose unlimited AI access at the end of your term.")) {
-                                                                    toast.promise(fetch('/api/subscription/cancel', { 
-                                                                        method: 'POST',
-                                                                        headers: { 'Content-Type': 'application/json' },
-                                                                        body: JSON.stringify({})
-                                                                    }), {
-                                                                        loading: 'Processing cancellation...',
-                                                                        success: 'Subscription cancelled. You still have access until the end of your term.',
-                                                                        error: 'Failed to cancel subscription. Please contact support.'
-                                                                    });
-                                                                }
-                                                            }}
-                                                            variant="ghost" 
-                                                            className="text-red-500 hover:text-red-400 hover:bg-red-500/10 px-0 h-auto font-medium flex items-center gap-2"
+                                                    {!isConfirmingCancel ? (
+                                                        <div className="bg-red-500/5 border border-red-500/10 rounded-3xl p-8 space-y-4">
+                                                            <h4 className="text-lg font-serif text-white">Cancel Subscription</h4>
+                                                            <p className="text-sm text-neutral-400 max-w-lg">
+                                                                We're sorry to see you go. If you cancel, you will maintain your Pro features until the end of your current billing period on <strong>{subscriptionData?.subscriptionEndsAt ? new Date(subscriptionData.subscriptionEndsAt).toLocaleDateString() : 'the end of the month'}</strong>.
+                                                            </p>
+                                                            <Button 
+                                                                onClick={() => setIsConfirmingCancel(true)}
+                                                                variant="ghost" 
+                                                                className="text-red-500 hover:text-red-400 hover:bg-red-500/10 px-0 h-auto font-medium flex items-center gap-2"
+                                                            >
+                                                                Yes, I want to cancel my plan
+                                                                <ArrowRight className="w-4 h-4" />
+                                                            </Button>
+                                                        </div>
+                                                    ) : (
+                                                        <motion.div 
+                                                            initial={{ opacity: 0, scale: 0.95 }}
+                                                            animate={{ opacity: 1, scale: 1 }}
+                                                            className="bg-[#1a1a1a] border border-red-500/20 rounded-3xl p-8 space-y-6"
                                                         >
-                                                            Yes, I want to cancel my plan
-                                                            <ArrowRight className="w-4 h-4" />
-                                                        </Button>
-                                                    </div>
+                                                            <div className="flex items-center gap-4 text-red-500">
+                                                                <div className="p-3 bg-red-500/10 rounded-2xl">
+                                                                    <AlertCircle className="w-6 h-6" />
+                                                                </div>
+                                                                <div>
+                                                                    <h4 className="text-lg font-serif text-white">Serious Decision Required</h4>
+                                                                    <p className="text-sm text-neutral-500">This action cannot be easily undone.</p>
+                                                                </div>
+                                                            </div>
+                                                            
+                                                            <div className="space-y-4">
+                                                                <p className="text-[13px] text-neutral-400 leading-relaxed">
+                                                                    By cancelling, you will lose your <span className="text-white font-bold">Unlimited AI Compute</span> and <span className="text-white font-bold">Priority Processing</span>. Mailient helps you save 12+ hours weekly—are you sure you want to go back to manual email management?
+                                                                </p>
+                                                                
+                                                                <div className="flex flex-col gap-3">
+                                                                    <Button 
+                                                                        onClick={() => {
+                                                                            toast.promise(
+                                                                                fetch('/api/subscription/cancel', { 
+                                                                                    method: 'POST',
+                                                                                    headers: { 'Content-Type': 'application/json' },
+                                                                                    body: JSON.stringify({})
+                                                                                }), 
+                                                                                {
+                                                                                    loading: 'Processing cancellation...',
+                                                                                    success: () => {
+                                                                                        setIsConfirmingCancel(false);
+                                                                                        return 'Subscription cancelled. Access remains valid until period end.';
+                                                                                    },
+                                                                                    error: 'Failed to cancel subscription. Please contact support.'
+                                                                                }
+                                                                            );
+                                                                        }}
+                                                                        className="bg-red-500 hover:bg-red-600 text-white font-bold h-12 rounded-2xl w-full"
+                                                                    >
+                                                                        Confirm Serious Cancellation
+                                                                    </Button>
+                                                                    <Button 
+                                                                        variant="ghost" 
+                                                                        onClick={() => setIsConfirmingCancel(false)}
+                                                                        className="text-neutral-400 hover:text-white"
+                                                                    >
+                                                                        Nevermind, I'll keep my plan
+                                                                    </Button>
+                                                                </div>
+                                                            </div>
+                                                        </motion.div>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
