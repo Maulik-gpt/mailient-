@@ -12,12 +12,14 @@ interface VerificationCardProps {
 }
 
 export function VerificationCard({
-  idNumber = "FREE 0000 0000",
-  name = "THE BUILDER MAULIK",
-  validThru = "03/26",
-  label = "VERIFICATION CARD",
+  idNumber,
+  name,
+  validThru,
+  label,
 }: VerificationCardProps) {
-  // Split idNumber into two lines if it contains spaces (matches the wrap in the screenshot)
+  if (!idNumber || !name || !validThru) return null;
+
+  // Split idNumber into two lines for that specific high-fidelity look
   const idParts = idNumber.split(' ');
   const line1 = idParts.slice(0, 2).join(' ');
   const line2 = idParts.slice(2).join(' ');
@@ -28,47 +30,50 @@ export function VerificationCard({
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
       className={cn(
-        "relative h-[225px] w-[355px] rounded-[42px] p-10 shadow-2xl text-white flex flex-col justify-between overflow-hidden select-none group"
+        "relative h-[250px] w-[420px] rounded-[48px] p-12 shadow-2xl text-white flex flex-col justify-between overflow-hidden select-none group"
       )}
       style={{
-        background: "#080809",
-        boxShadow: "0 40px 100px -20px rgba(0, 0, 0, 0.8)"
+        background: "#0a0a0b",
+        boxShadow: "0 50px 100px -20px rgba(0, 0, 0, 0.9), inset 0 0 0 1px rgba(255, 255, 255, 0.03)"
       }}
     >
-      {/* Background Glow - matches the subtle indigo wash on the left side */}
+      {/* Deep Indigo/Blue Glow - Precise placement for that premium wash */}
       <div 
-        className="absolute -bottom-[20%] -left-[10%] w-[120%] h-[120%] blur-[100px] opacity-30 pointer-events-none transition-opacity duration-1000 group-hover:opacity-40"
+        className="absolute -bottom-[30%] -left-[10%] w-[130%] h-[130%] blur-[120px] opacity-25 pointer-events-none transition-opacity duration-1000 group-hover:opacity-35"
         style={{
-          background: "radial-gradient(circle at 20% 80%, #201a5e 0%, transparent 60%)",
+          background: "radial-gradient(circle at 25% 85%, #2a228c 0%, transparent 60%)",
         }}
       />
 
-      {/* Top Labels */}
-      <div className="relative z-10 flex justify-between items-center text-[11px] font-bold tracking-[0.18em] text-white/50 uppercase">
+      {/* Top Section - Pushed to Absolute Corners */}
+      <div className="relative z-10 flex justify-between items-center text-[12px] font-bold tracking-[0.2em] text-white/40 uppercase">
         <span>{label}</span>
         <span>VALID</span>
       </div>
 
-      {/* Main ID - Bold, Wrapped (matches screenshot) */}
-      <div className="relative z-10 mt-1">
-        <h2 className="text-[36px] font-extrabold tracking-tight text-white leading-[1.05] uppercase">
+      {/* Hero Section - The Big Bold Numbers */}
+      <div className="relative z-10 -mt-2">
+        <h2 className="text-[44px] font-black tracking-tight text-white leading-[1] uppercase">
           {line1}<br />
           {line2}
         </h2>
       </div>
 
-      {/* Bottom Info Row */}
-      <div className="relative z-10 flex justify-between items-end uppercase">
-        <span className="text-[17px] font-bold tracking-[0.1em] text-white/80">
+      {/* Bottom Section - Pushed to Absolute Corners */}
+      <div className="relative z-10 flex justify-between items-end">
+        <span className="text-[18px] font-bold tracking-[0.08em] text-white/90 uppercase">
           {name}
         </span>
-        <span className="text-[19px] font-bold tracking-[0.05em] text-white/80">
+        <span className="text-[20px] font-bold tracking-[0.05em] text-white/90">
           {validThru}
         </span>
       </div>
 
-      {/* Subtle interactive shine */}
-      <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.03] to-transparent pointer-events-none" />
+      {/* Subtle Refraction Layer */}
+      <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.02] to-transparent pointer-events-none" />
+      
+      {/* Interactive Hover Glow Overlay */}
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none bg-[radial-gradient(circle_at_var(--mouse-x,50%)_var(--mouse-y,50%),rgba(255,255,255,0.05)_0%,transparent_50%)]" />
     </motion.div>
   );
 }
