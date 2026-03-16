@@ -49,6 +49,7 @@ import {
     CheckCircle2, 
     AlertCircle 
 } from 'lucide-react';
+import { VerificationCard } from './verification-card';
 // import { SubscriptionManagerDialog } from './subscription-manager-dialog';
 
 interface SettingsCardProps {
@@ -539,17 +540,28 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
 
                                             <div className="h-px bg-white/5" />
 
-                                            <div className="space-y-4">
-                                                <p className="text-[11px] text-neutral-500 font-bold tracking-wider uppercase">Subscription Metadata</p>
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
-                                                        <p className="text-[12px] text-neutral-500 mb-1">Source</p>
-                                                        <p className="text-[14px] text-white font-medium">Polar (Direct)</p>
-                                                    </div>
-                                                    <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
-                                                        <p className="text-[12px] text-neutral-500 mb-1">Account ID</p>
-                                                        <p className="text-[14px] text-white font-medium truncate">{session?.user?.email}</p>
-                                                    </div>
+                                            <div className="space-y-6">
+                                                <p className="text-[11px] text-neutral-500 font-bold tracking-wider uppercase">Active Payment Method</p>
+                                                <div className="flex justify-center">
+                                                    <VerificationCard 
+                                                        idNumber={(() => {
+                                                            if (isFree) return "FREE-0000-0000";
+                                                            const latestPayment = subscriptionData?.payments?.[0];
+                                                            if (latestPayment?.method) {
+                                                                const parts = latestPayment.method.split(' ');
+                                                                const lastPart = parts[parts.length - 1];
+                                                                if (lastPart.match(/^\d{4}$/)) {
+                                                                    return `**** **** **** ${lastPart}`;
+                                                                }
+                                                                return latestPayment.method;
+                                                            }
+                                                            return "**** **** **** 4242";
+                                                        })()}
+                                                        name={(session?.user?.name || "Member").toUpperCase()}
+                                                        validThru={subscriptionData?.subscriptionEndsAt ? new Date(subscriptionData.subscriptionEndsAt).toLocaleDateString(undefined, { month: '2-digit', year: '2-digit' }) : "∞"}
+                                                        label={isFree ? "FREE TIER ACCESS" : `${subscriptionData?.planType?.toUpperCase()} MEMBER`}
+                                                        backgroundImage={isFree ? "https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=1000" : "https://images.unsplash.com/photo-1614028674026-a65e31bfd27c?q=80&w=1000"}
+                                                    />
                                                 </div>
                                             </div>
                                         </div>
