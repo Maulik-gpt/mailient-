@@ -50,7 +50,7 @@ import {
     AlertCircle 
 } from 'lucide-react';
 import { VerificationCard } from './verification-card';
-// import { SubscriptionManagerDialog } from './subscription-manager-dialog';
+import { CancellationFlow } from './cancellation-flow';
 
 interface SettingsCardProps {
     onClose: () => void;
@@ -591,7 +591,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                 </Button>
                                                 <Button 
                                                     variant="outline"
-                                                    onClick={() => window.open('https://polar.sh/dashboard', '_blank')}
+                                                    onClick={() => window.open('https://polar.sh/mailient/portal', '_blank')}
                                                     className="border-white/10 text-white hover:bg-white/5 rounded-xl h-10 px-4 flex items-center gap-2"
                                                 >
                                                     <ExternalLink className="w-4 h-4" />
@@ -663,59 +663,28 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                             </Button>
                                                         </div>
                                                     ) : (
-                                                        <motion.div 
-                                                            initial={{ opacity: 0, scale: 0.95 }}
-                                                            animate={{ opacity: 1, scale: 1 }}
-                                                            className="bg-[#1a1a1a] border border-red-500/20 rounded-3xl p-8 space-y-6"
-                                                        >
-                                                            <div className="flex items-center gap-4 text-red-500">
-                                                                <div className="p-3 bg-red-500/10 rounded-2xl">
-                                                                    <AlertCircle className="w-6 h-6" />
-                                                                </div>
-                                                                <div>
-                                                                    <h4 className="text-lg font-serif text-white">Serious Decision Required</h4>
-                                                                    <p className="text-sm text-neutral-500">This action cannot be easily undone.</p>
-                                                                </div>
-                                                            </div>
-                                                            
-                                                            <div className="space-y-4">
-                                                                <p className="text-[13px] text-neutral-400 leading-relaxed">
-                                                                    By cancelling, you will lose your <span className="text-white font-bold">Unlimited AI Compute</span> and <span className="text-white font-bold">Priority Processing</span>. Mailient helps you save 12+ hours weekly—are you sure you want to go back to manual email management?
-                                                                </p>
+                                                        <CancellationFlow
+                                                            isOpen={isConfirmingCancel}
+                                                            onClose={() => setIsConfirmingCancel(false)}
+                                                            subscriptionEndsAt={subscriptionData?.subscriptionEndsAt}
+                                                            onConfirm={async (reasons, feedback) => {
+                                                                const response = await fetch('/api/subscription/cancel', { 
+                                                                    method: 'POST',
+                                                                    headers: { 'Content-Type': 'application/json' },
+                                                                    body: JSON.stringify({ reasons, feedback })
+                                                                });
                                                                 
-                                                                <div className="flex flex-col gap-3">
-                                                                    <Button 
-                                                                        onClick={() => {
-                                                                            toast.promise(
-                                                                                fetch('/api/subscription/cancel', { 
-                                                                                    method: 'POST',
-                                                                                    headers: { 'Content-Type': 'application/json' },
-                                                                                    body: JSON.stringify({})
-                                                                                }), 
-                                                                                {
-                                                                                    loading: 'Processing cancellation...',
-                                                                                    success: () => {
-                                                                                        setIsConfirmingCancel(false);
-                                                                                        return 'Subscription cancelled. Access remains valid until period end.';
-                                                                                    },
-                                                                                    error: 'Failed to cancel subscription. Please contact support.'
-                                                                                }
-                                                                            );
-                                                                        }}
-                                                                        className="bg-red-500 hover:bg-red-600 text-white font-bold h-12 rounded-2xl w-full"
-                                                                    >
-                                                                        Confirm Serious Cancellation
-                                                                    </Button>
-                                                                    <Button 
-                                                                        variant="ghost" 
-                                                                        onClick={() => setIsConfirmingCancel(false)}
-                                                                        className="text-neutral-400 hover:text-white"
-                                                                    >
-                                                                        Nevermind, I'll keep my plan
-                                                                    </Button>
-                                                                </div>
-                                                            </div>
-                                                        </motion.div>
+                                                                if (response.ok) {
+                                                                    toast.success('Subscription revoked. Access remains valid until period end.');
+                                                                    setIsConfirmingCancel(false);
+                                                                    // Refresh subscription data
+                                                                    const refresh = await fetch('/api/subscription/usage');
+                                                                    if (refresh.ok) setSubscriptionData(await refresh.json());
+                                                                } else {
+                                                                    toast.error('Failed to revoke subscription. Please contact support.');
+                                                                }
+                                                            }}
+                                                        />
                                                     )}
                                                 </div>
                                             )}

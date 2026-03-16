@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { subscriptionService } from '@/lib/subscription-service';
+import { Resend } from 'resend';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 /**
  * POST - Cancel user's subscription
@@ -14,6 +17,7 @@ export async function POST(request) {
         }
 
         const userId = session.user.email;
+        const userName = session.user.name || userId;
         const body = await request.json();
         const { reasons = [], feedback = "" } = body;
 
@@ -35,8 +39,6 @@ export async function POST(request) {
         let providerCancellationResult = null;
         let cancellationError = null;
 
-        // Try to cancel with Polar first if we have the membership/subscription ID
-        // Note: we store Polar subscription ID in whop_membership_id column for now
         const subscriptionId = subscription.whop_membership_id;
 
         if (subscriptionId && polarApiKey) {
@@ -66,9 +68,6 @@ export async function POST(request) {
                 console.error('❌ Error cancelling Polar subscription:', polarError);
                 cancellationError = polarError.message || 'Failed to cancel with Polar';
             }
-        } else if (!polarApiKey) {
-            console.warn('⚠️ POLAR_ACCESS_TOKEN not set, skipping provider-side cancellation');
-            cancellationError = 'Payment provider API not configured';
         }
 
         // Always update local subscription status
@@ -78,29 +77,43 @@ export async function POST(request) {
             return NextResponse.json({ error: 'Failed to cancel subscription locally' }, { status: 500 });
         }
 
-        // Log cancellation feedback for analytics
-        console.log('📊 Cancellation feedback:', {
-            userId,
-            reasons,
-            feedback: feedback.substring(0, 200),
-            providerSuccess: !!providerCancellationResult,
-            providerError: cancellationError
-        });
+        // Send feedback email via Resend
+        try {
+            await resend.emails.send({
+                from: 'Mailient <onboarding@resend.dev>',
+                to: 'mailient.xyz@gmail.com',
+                subject: `📉 Subscription Cancelled: ${userName}`,
+                html: `
+                    <div style="font-family: sans-serif; padding: 20px; color: #333;">
+                        <h2 style="color: #e53e3e;">Subscription Cancelled</h2>
+                        <p><strong>User:</strong> ${userName} (${userId})</p>
+                        <p><strong>Plan:</strong> ${subscription.plan_type}</p>
+                        <p><strong>Date:</strong> ${new Date().toLocaleString()}</p>
+                        
+                        <h3 style="margin-top: 30px;">Reasons:</h3>
+                        <ul style="background: #f7fafc; padding: 15px; border-radius: 8px; list-style: none;">
+                            ${reasons.length > 0 ? reasons.map(r => `<li>• ${r}</li>`).join('') : '<li>No specific reasons selected</li>'}
+                        </ul>
+                        
+                        <h3 style="margin-top: 30px;">Feedback:</h3>
+                        <div style="background: #f7fafc; padding: 15px; border-radius: 8px; white-space: pre-wrap;">
+                            ${feedback || 'No detailed feedback provided'}
+                        </div>
+                    </div>
+                `
+            });
+            console.log('📧 Feedback email sent to mailient.xyz@gmail.com');
+        } catch (emailError) {
+            console.error('❌ Failed to send feedback email:', emailError);
+        }
 
         return NextResponse.json({
             success: true,
-            message: providerCancellationResult
-                ? 'Subscription cancelled successfully with your payment provider. You will continue to have access until the end of your current billing period.'
-                : 'Subscription cancelled locally. You will continue to have access until the end of your current billing period.',
+            message: 'Subscription cancelled successfully.',
             subscription: {
                 status: cancelledSubscription.status,
                 subscriptionEndsAt: cancelledSubscription.subscription_ends_at,
                 daysRemaining: subscriptionService.getDaysRemaining(cancelledSubscription.subscription_ends_at)
-            },
-            providerIntegration: {
-                success: !!providerCancellationResult,
-                error: cancellationError,
-                subscriptionId: subscriptionId
             }
         });
     } catch (error) {
@@ -111,3 +124,4 @@ export async function POST(request) {
         }, { status: 500 });
     }
 }
+
