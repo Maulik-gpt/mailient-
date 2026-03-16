@@ -607,54 +607,6 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                     <p className="text-sm text-neutral-400">View your payment history and manage your active plan.</p>
                                                 </div>
 
-                                                {/* Cancellation Section - Moved up for visibility */}
-                                                {!isFree && (
-                                                    <div className="pt-4">
-                                                        {!isConfirmingCancel ? (
-                                                            <div className="bg-red-500/5 border border-red-500/10 rounded-3xl p-8 space-y-4">
-                                                                <div className="flex items-center gap-3 text-red-500">
-                                                                    <AlertCircle className="w-5 h-5" />
-                                                                    <h4 className="text-lg font-serif">Cancel Subscription</h4>
-                                                                </div>
-                                                                <p className="text-sm text-neutral-400 max-w-lg leading-relaxed">
-                                                                    We're sorry to see you go. If you cancel, you will maintain your {isPro ? 'Pro' : 'Starter'} features until the end of your current billing period on <strong>{subscriptionData?.subscriptionEndsAt ? new Date(subscriptionData.subscriptionEndsAt).toLocaleDateString() : 'the end of the month'}</strong>.
-                                                                </p>
-                                                                <Button 
-                                                                    onClick={() => setIsConfirmingCancel(true)}
-                                                                    variant="ghost" 
-                                                                    className="bg-red-500/10 text-red-500 hover:text-red-400 hover:bg-red-500/20 px-6 h-11 rounded-2xl font-medium flex items-center gap-2 transition-all mt-2"
-                                                                >
-                                                                    Yes, I want to cancel my plan
-                                                                    <ArrowRight className="w-4 h-4" />
-                                                                </Button>
-                                                            </div>
-                                                        ) : (
-                                                            <CancellationFlow
-                                                                isOpen={isConfirmingCancel}
-                                                                onClose={() => setIsConfirmingCancel(false)}
-                                                                subscriptionEndsAt={subscriptionData?.subscriptionEndsAt}
-                                                                onConfirm={async (reasons, feedback) => {
-                                                                    const response = await fetch('/api/subscription/cancel', { 
-                                                                        method: 'POST',
-                                                                        headers: { 'Content-Type': 'application/json' },
-                                                                        body: JSON.stringify({ reasons, feedback })
-                                                                    });
-                                                                    
-                                                                    if (response.ok) {
-                                                                        toast.success('Subscription revoked. Access remains valid until period end.');
-                                                                        setIsConfirmingCancel(false);
-                                                                        // Refresh subscription data
-                                                                        const refresh = await fetch('/api/subscription/usage');
-                                                                        if (refresh.ok) setSubscriptionData(await refresh.json());
-                                                                    } else {
-                                                                        toast.error('Failed to revoke subscription. Please contact support.');
-                                                                    }
-                                                                }}
-                                                            />
-                                                        )}
-                                                    </div>
-                                                )}
-
                                                 <div className="space-y-6 pt-4">
                                                     <h4 className="text-xl font-serif text-white">Payment History</h4>
                                                     <div className="bg-white/5 border border-white/5 rounded-3xl overflow-hidden">
@@ -700,6 +652,54 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                         </table>
                                                     </div>
                                                 </div>
+
+                                                {/* Cancellation Section - Moved below payment history per request */}
+                                                {!isFree && (
+                                                    <div className="pt-8 border-t border-white/5">
+                                                        {!isConfirmingCancel ? (
+                                                            <div className="bg-red-500/5 border border-red-500/10 rounded-3xl p-8 space-y-4">
+                                                                <div className="flex items-center gap-3 text-red-500">
+                                                                    <AlertCircle className="w-5 h-5" />
+                                                                    <h4 className="text-lg font-serif">Cancel Subscription</h4>
+                                                                </div>
+                                                                <p className="text-sm text-neutral-400 max-w-lg leading-relaxed">
+                                                                    We're sorry to see you go. If you cancel, you will maintain your {isPro ? 'Pro' : 'Starter'} features until the end of your current billing period on <strong>{subscriptionData?.subscriptionEndsAt ? new Date(subscriptionData.subscriptionEndsAt).toLocaleDateString() : 'the end of the month'}</strong>.
+                                                                </p>
+                                                                <Button 
+                                                                    onClick={() => setIsConfirmingCancel(true)}
+                                                                    variant="ghost" 
+                                                                    className="bg-red-500/10 text-red-500 hover:text-red-400 hover:bg-red-500/20 px-6 h-11 rounded-2xl font-medium flex items-center gap-2 transition-all mt-2"
+                                                                >
+                                                                    Yes, I want to cancel my plan
+                                                                    <ArrowRight className="w-4 h-4" />
+                                                                </Button>
+                                                            </div>
+                                                        ) : (
+                                                            <CancellationFlow
+                                                                isOpen={isConfirmingCancel}
+                                                                onClose={() => setIsConfirmingCancel(false)}
+                                                                subscriptionEndsAt={subscriptionData?.subscriptionEndsAt}
+                                                                onConfirm={async (reasons, feedback) => {
+                                                                    const response = await fetch('/api/subscription/cancel', { 
+                                                                        method: 'POST',
+                                                                        headers: { 'Content-Type': 'application/json' },
+                                                                        body: JSON.stringify({ reasons, feedback })
+                                                                    });
+                                                                    
+                                                                    if (response.ok) {
+                                                                        toast.success('Subscription revoked. Access remains valid until period end.');
+                                                                        setIsConfirmingCancel(false);
+                                                                        // Refresh subscription data
+                                                                        const refresh = await fetch('/api/subscription/usage');
+                                                                        if (refresh.ok) setSubscriptionData(await refresh.json());
+                                                                    } else {
+                                                                        toast.error('Failed to revoke subscription. Please contact support.');
+                                                                    }
+                                                                }}
+                                                            />
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
                                     )}
                                 </motion.div>
