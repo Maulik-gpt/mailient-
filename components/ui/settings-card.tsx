@@ -546,7 +546,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                 <div className="flex justify-center">
                                                     <VerificationCard 
                                                         idNumber={(() => {
-                                                            if (isFree) return "FREE-0000-0000";
+                                                            if (isFree) return "FREE 0000 0000";
                                                             const latestPayment = subscriptionData?.payments?.[0];
                                                             if (latestPayment?.method) {
                                                                 const parts = latestPayment.method.split(' ');
@@ -560,8 +560,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                         })()}
                                                         name={(session?.user?.name || "Member").toUpperCase()}
                                                         validThru={subscriptionData?.subscriptionEndsAt ? new Date(subscriptionData.subscriptionEndsAt).toLocaleDateString(undefined, { month: '2-digit', year: '2-digit' }) : "∞"}
-                                                        label={isFree ? "FREE TIER ACCESS" : `${subscriptionData?.planType?.toUpperCase()} MEMBER`}
-                                                        backgroundImage={isFree ? "https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=1000" : "https://images.unsplash.com/photo-1614028674026-a65e31bfd27c?q=80&w=1000"}
+                                                        label={isFree ? "VERIFICATION CARD" : `${subscriptionData?.planType?.toUpperCase()} MEMBER`}
                                                     />
                                                 </div>
                                             </div>
