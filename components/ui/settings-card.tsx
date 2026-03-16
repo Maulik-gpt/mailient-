@@ -528,15 +528,29 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                 <div className="space-y-1">
                                                     <p className="text-[11px] text-neutral-500 font-bold tracking-wider uppercase">Status</p>
                                                     <div className="flex items-center gap-2">
-                                                        <div className={`w-2 h-2 rounded-full ${subscriptionData?.hasActiveSubscription || subscriptionData?.planType === 'free' ? 'bg-emerald-500' : 'bg-neutral-500'}`} />
-                                                        <p className="text-[15px] font-medium text-white">{subscriptionData?.hasActiveSubscription || subscriptionData?.planType === 'free' ? 'Active' : 'Inactive'}</p>
+                                                        <div className={`w-2 h-2 rounded-full ${
+                                                            subscriptionData?.hasActiveSubscription || subscriptionData?.planType === 'free' 
+                                                                ? 'bg-emerald-500' 
+                                                                : subscriptionData?.planType !== 'free' && subscriptionData?.subscriptionEndsAt && new Date(subscriptionData.subscriptionEndsAt) < new Date()
+                                                                    ? 'bg-red-500'
+                                                                    : 'bg-neutral-500'
+                                                        }`} />
+                                                        <p className="text-[15px] font-medium text-white">
+                                                            {subscriptionData?.hasActiveSubscription || subscriptionData?.planType === 'free' 
+                                                                ? 'Active' 
+                                                                : subscriptionData?.planType !== 'free' && subscriptionData?.subscriptionEndsAt && new Date(subscriptionData.subscriptionEndsAt) < new Date()
+                                                                    ? 'Expired'
+                                                                    : 'Inactive'}
+                                                        </p>
                                                     </div>
                                                 </div>
                                                 <div className="space-y-1">
-                                                    <p className="text-[11px] text-neutral-500 font-bold tracking-wider uppercase">Billing cycle</p>
+                                                    <p className="text-[11px] text-neutral-500 font-bold tracking-wider uppercase">
+                                                        {subscriptionData?.subscriptionEndsAt && new Date(subscriptionData.subscriptionEndsAt) < new Date() ? 'Expiraton date' : 'Billing cycle'}
+                                                    </p>
                                                     <p className="text-[15px] font-medium text-white">
                                                         {subscriptionData?.subscriptionEndsAt 
-                                                            ? `Renews on ${new Date(subscriptionData.subscriptionEndsAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}`
+                                                            ? `${new Date(subscriptionData.subscriptionEndsAt) < new Date() ? 'Expired on' : 'Renews on'} ${new Date(subscriptionData.subscriptionEndsAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}`
                                                             : subscriptionData?.planType === 'free' ? 'Lifetime access' : 'No active billing cycle'}
                                                     </p>
                                                 </div>
