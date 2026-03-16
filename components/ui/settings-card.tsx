@@ -546,7 +546,11 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                 <div className="flex justify-center">
                                                     <VerificationCard 
                                                         idNumber={(() => {
-                                                            if (isFree) return "FREE MEMBER 0000";
+                                                            if (isFree) {
+                                                                const stableId = subscriptionData?.subscriptionId || session?.user?.email || "0000";
+                                                                const suffix = stableId.toString().slice(-4).toUpperCase().padStart(4, '0');
+                                                                return `FREE MEMBER ${suffix}`;
+                                                            }
                                                             const latestPayment = subscriptionData?.payments?.[0];
                                                             if (latestPayment?.method) {
                                                                 const parts = latestPayment.method.split(' ');
