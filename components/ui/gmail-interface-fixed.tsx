@@ -310,7 +310,7 @@ export function GmailInterfaceFixed() {
         console.log('📡 Fetching smart nudges...');
         
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 45000); // 45s timeout
+        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
 
         try {
             const res = await fetch('/api/nudges', { signal: controller.signal });

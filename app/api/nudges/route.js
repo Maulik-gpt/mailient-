@@ -28,26 +28,26 @@ export async function GET(request) {
     // 1. Search for unreplied incoming emails older than 1 day but within 30 days
     // We search for emails in inbox that aren't from 'me' and haven't been replied to.
     let query = 'is:inbox -from:me -is:answered older_than:1d newer_than:30d';
-    let emailList = await gmailService.getEmails(15, query);
+    let emailList = await gmailService.getEmails(8, query);
 
     // Fail-safe: if no emails in that window, try a slightly broader one
     if (!emailList.messages || emailList.messages.length === 0) {
       console.log('🔄 [Nudges API] No results for 1-30d, trying a broader search...');
       query = 'is:inbox -from:me -is:answered newer_than:60d';
-      emailList = await gmailService.getEmails(10, query);
+      emailList = await gmailService.getEmails(5, query);
     }
 
     console.log('🔍 [Nudges API] Found ' + (emailList.messages?.length || 0) + ' potential emails');
 
     if (!emailList.messages || emailList.messages.length === 0) {
-      console.log('✅ [Nudges API] No unreplied emails found in the 2-14 day window.');
+      console.log('✅ [Nudges API] No unreplied emails found.');
       return NextResponse.json({ nudges: [] });
     }
 
-    // 2. Fetch details for these emails
-    console.log('📡 [Nudges API] Fetching details for ' + emailList.messages.length + ' emails...');
+    // 2. Fetch details for these emails (using lightweight metadata format)
+    console.log('📡 [Nudges API] Fetching metadata for ' + emailList.messages.length + ' emails...');
     const emailDetails = await Promise.all(
-      emailList.messages.map(msg => gmailService.getEmailDetails(msg.id))
+      emailList.messages.map(msg => gmailService.getEmailDetails(msg.id, 'metadata'))
     );
 
     const parsedEmails = emailDetails.map(details => gmailService.parseEmailData(details));
