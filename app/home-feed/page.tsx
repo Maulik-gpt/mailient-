@@ -102,11 +102,16 @@ function HomeFeedContent() {
                     console.log('🎉 [HomeFeed] Payment verified! Plan activated:', planType);
                     setPaymentVerified(true);
                     setActivatedPlan(planType === 'starter' ? 'Starter' : planType === 'pro' ? 'Pro' : planType);
-                    // Auto-dismiss after 2.5 seconds
+                    // Auto-dismiss after 2.5 seconds and reload to refresh everything
                     setTimeout(() => {
                       setIsVerifyingPayment(false);
                       setPaymentVerified(false);
                     }, 2500);
+                    
+                    // Force reload after success animation
+                    setTimeout(() => {
+                      window.location.reload();
+                    }, 2800);
                   } else if (justPaid) {
                     setIsVerifyingPayment(false);
                   }

@@ -69,8 +69,39 @@ interface PricingCardProps {
 export function PricingCard({ onClose }: PricingCardProps) {
   const { data: session } = useSession();
   const [selectedPlan, setSelectedPlan] = useState("starter");
+  const [isActivating, setIsActivating] = useState(false);
+
+  const handleFreeActivation = async () => {
+    setIsActivating(true);
+    try {
+      const response = await fetch('/api/subscription/activate-free', {
+        method: 'POST'
+      });
+      if (response.ok) {
+        // Clear pending plan if any
+        localStorage.removeItem('pending_plan');
+        localStorage.removeItem('pending_plan_timestamp');
+        
+        // Wait a tiny bit for satisfaction
+        setTimeout(() => {
+          if (onClose) onClose();
+          // Force a reload of the current page to refresh sub status everywhere
+          window.location.reload();
+        }, 800);
+      }
+    } catch (error) {
+      console.error('Error activating free plan:', error);
+    } finally {
+      setIsActivating(false);
+    }
+  };
 
   const handleSubscribe = (planId: string, checkoutUrl?: string) => {
+    if (planId === 'free') {
+      handleFreeActivation();
+      return;
+    }
+    
     if (checkoutUrl) {
         // Set flags so HomeFeed knows we're waiting for payment
         localStorage.setItem('pending_plan', planId);
@@ -215,6 +246,7 @@ export function PricingCard({ onClose }: PricingCardProps) {
 
                           <Button 
                             onClick={() => handleSubscribe(plan.id, plan.checkoutUrl)}
+                            disabled={isActivating}
                             className={`w-full h-10 rounded-xl font-bold transition-all ${
                                 plan.id === 'free' 
                                 ? 'bg-white/5 text-white hover:bg-white/10' 
@@ -222,6 +254,7 @@ export function PricingCard({ onClose }: PricingCardProps) {
                             }`}
                           >
                             {plan.id === 'free' ? 'Continue with Free' : 'Upgrade Now'}
+                            {isActivating && plan.id === 'free' && <span className="ml-2 animate-spin">◌</span>}
                           </Button>
                         </div>
                       </motion.div>
