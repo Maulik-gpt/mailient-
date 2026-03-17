@@ -68,9 +68,14 @@ interface PricingCardProps {
 export function PricingCard({ onClose }: PricingCardProps) {
   const [selectedPlan, setSelectedPlan] = useState("starter");
 
-  const handleSubscribe = (checkoutUrl?: string) => {
+  const handleSubscribe = (planId: string, checkoutUrl?: string) => {
     if (checkoutUrl) {
-        window.open(checkoutUrl, '_blank');
+        // Set flags so HomeFeed knows we're waiting for payment
+        localStorage.setItem('pending_plan', planId);
+        localStorage.setItem('pending_plan_timestamp', Date.now().toString());
+        
+        // Redirect in the same window so they come back to the app easily
+        window.location.href = checkoutUrl;
     } else if (onClose) {
         onClose();
     }
@@ -197,7 +202,7 @@ export function PricingCard({ onClose }: PricingCardProps) {
                           </div>
 
                           <Button 
-                            onClick={() => handleSubscribe(plan.checkoutUrl)}
+                            onClick={() => handleSubscribe(plan.id, plan.checkoutUrl)}
                             className={`w-full h-10 rounded-xl font-bold transition-all ${
                                 plan.id === 'free' 
                                 ? 'bg-white/5 text-white hover:bg-white/10' 

@@ -12,6 +12,7 @@ function HomeFeedContent() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const [showPricing, setShowPricing] = useState(false);
+  const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
 
   // Check authentication, subscription status, and onboarding status
   useEffect(() => {
@@ -49,6 +50,9 @@ function HomeFeedContent() {
           };
 
           const justPaid = mightHaveJustPaid();
+          if (justPaid) {
+            setIsVerifyingPayment(true);
+          }
           const maxRetries = justPaid ? 5 : 1; // More retries if coming from payment
           const retryDelay = 2000; // 2 seconds between retries
 
@@ -111,6 +115,10 @@ function HomeFeedContent() {
               }
             } catch (subError) {
               console.error('⚠️ [HomeFeed] Subscription check error:', subError);
+            } finally {
+              if (justPaid && attempt === maxRetries - 1) {
+                setIsVerifyingPayment(false);
+              }
             }
           }
 
@@ -247,9 +255,25 @@ function HomeFeedContent() {
   };
 
   return (
-    <div className="satoshi-home-feed w-full h-screen bg-black dark:bg-black">
+    <div className="satoshi-home-feed w-full h-screen bg-black dark:bg-black relative">
       <GmailInterfaceFixed />
-      <PricingOverlay isOpen={showPricing} onClose={() => setShowPricing(false)} />
+      
+      {isVerifyingPayment && (
+          <div className="fixed inset-0 z-[110] bg-black/95 backdrop-blur-md flex flex-col items-center justify-center gap-6">
+              <div className="relative">
+                  <div className="w-16 h-16 border-2 border-white/5 rounded-full" />
+                  <div className="absolute inset-0 w-16 h-16 border-t-2 border-white rounded-full animate-spin" />
+              </div>
+              <div className="space-y-2 text-center">
+                  <h2 className="text-xl font-serif text-white">Verifying your payment</h2>
+                  <p className="text-neutral-500 text-sm max-w-[280px] leading-relaxed">
+                      We're confirming your subscription with Polar. <br/>This will only take a moment.
+                  </p>
+              </div>
+          </div>
+      )}
+      
+      {!isVerifyingPayment && <PricingOverlay isOpen={showPricing} onClose={() => setShowPricing(false)} />}
     </div>
   );
 }
