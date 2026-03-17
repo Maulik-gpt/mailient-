@@ -256,9 +256,19 @@ export default function PricingPage() {
 						index={idx}
 						currentPlan={currentPlan}
 						isLoading={isLoading}
-						onSelect={() => {
+						onSelect={async () => {
 							if (plan.id === 'free') {
-								router.push('/auth/signin');
+								if (session) {
+									// Activate free plan if already logged in
+									try {
+										const resp = await fetch('/api/subscription/activate-free', { method: 'POST' });
+										if (resp.ok) router.push('/home-feed');
+									} catch (e) {
+										console.error('Free activation error:', e);
+									}
+								} else {
+									router.push('/auth/signin');
+								}
 							} else {
 								handleSelectPlan(plan.id, plan.checkoutUrl);
 							}
