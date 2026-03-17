@@ -9,6 +9,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 import { Button } from "./button";
 import { PLANS } from "@/lib/subscription-service";
+import { useSession } from "next-auth/react";
 
 const mailientPlans = [
   {
@@ -66,6 +67,7 @@ interface PricingCardProps {
 }
 
 export function PricingCard({ onClose }: PricingCardProps) {
+  const { data: session } = useSession();
   const [selectedPlan, setSelectedPlan] = useState("starter");
 
   const handleSubscribe = (planId: string, checkoutUrl?: string) => {
@@ -74,8 +76,18 @@ export function PricingCard({ onClose }: PricingCardProps) {
         localStorage.setItem('pending_plan', planId);
         localStorage.setItem('pending_plan_timestamp', Date.now().toString());
         
+        // Build checkout URL with parameters
+        const params = new URLSearchParams();
+        if (session?.user?.email) {
+            params.set('email', session.user.email);
+        }
+        
+        // CRITICAL: Set redirect URL so users come back to our payment success page
+        const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://mailient.xyz';
+        params.set('redirect_url', `${baseUrl}/payment-success`);
+
         // Redirect in the same window so they come back to the app easily
-        window.location.href = checkoutUrl;
+        window.location.href = `${checkoutUrl}?${params.toString()}`;
     } else if (onClose) {
         onClose();
     }

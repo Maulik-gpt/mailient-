@@ -9,8 +9,8 @@ import { useRouter } from 'next/navigation';
 
 // Polar checkout URLs (migrated from Whop)
 const POLAR_CHECKOUT_URLS = {
-	starter: 'https://buy.polar.sh/polar_cl_B9DSDJSz1EeVhR8rtLcVgn1vVvjvizMvp0yOs3IQOJW',
-	pro: 'https://buy.polar.sh/polar_cl_B9DSDJSz1EeVhR8rtLcVgn1vVvjvizMvp0yOs3IQOJW'
+	starter: 'https://buy.polar.sh/polar_cl_ojXGgACq5GNMsUInVP3HX5vpXepohT5P8m7SL2RcCej',
+	pro: 'https://buy.polar.sh/polar_cl_BmoCj2jm6Hxy2Pc4DI6y717wsENNDAniGPfsB1pMO61'
 };
 
 // Helper function to get cookie value
