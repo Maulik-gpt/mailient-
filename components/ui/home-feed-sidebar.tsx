@@ -76,25 +76,17 @@ export function HomeFeedSidebar({ className = '', onPeopleClick, onSettingsClick
                 className={`fixed left-0 top-0 h-screen bg-[#F9F8F6] dark:bg-[#0c0c0c] border-r border-[#EBE9E2] dark:border-white/5 flex flex-col z-50 ${className}`}
             >
                 
-                {/* Header with Collapse Toggle */}
-                <div className="px-6 py-6 flex items-center justify-between overflow-hidden">
-                    <button 
-                        onClick={() => setIsCollapsed(!isCollapsed)}
-                        className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
-                    >
-                        <PanelLeft className={`w-5 h-5 transition-transform duration-500 ${isCollapsed ? 'rotate-180' : ''}`} />
-                    </button>
-                    {!isCollapsed && (
-                        <div className="flex items-center gap-4 animate-in fade-in duration-500">
-                             <div className="w-8 h-8 rounded-full overflow-hidden border border-[#EBE9E2] dark:border-white/10 bg-white dark:bg-black flex items-center justify-center p-1.5 shadow-sm">
-                                <img
-                                    src={session?.user?.image || "/user-avatar.png?v=2"}
-                                    alt="User"
-                                    className="w-full h-full object-cover grayscale opacity-80"
-                                />
-                            </div>
+                {/* Header with Profile Icon */}
+                <div className="px-6 py-4 flex items-center overflow-hidden">
+                    <div className="flex items-center gap-4">
+                         <div className="w-9 h-9 rounded-full overflow-hidden border border-[#EBE9E2] dark:border-white/10 bg-white dark:bg-black flex items-center justify-center p-1.5 shadow-sm">
+                            <img
+                                src={session?.user?.image || "/user-avatar.png?v=2"}
+                                alt="User"
+                                className="w-full h-full object-cover grayscale opacity-80"
+                            />
                         </div>
-                    )}
+                    </div>
                 </div>
 
                 {/* Logo & App Name */}
@@ -109,18 +101,25 @@ export function HomeFeedSidebar({ className = '', onPeopleClick, onSettingsClick
                                 animate={{ opacity: 1, x: 0 }}
                                 className="text-xl font-bold tracking-tight text-[#1A1A1A] dark:text-white"
                             >
-                                Flow
+                                Mailient
                             </motion.span>
                         )}
                     </div>
                     {!isCollapsed && (
-                        <motion.div 
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            className="px-2 py-0.5 rounded-md border border-[#EBE9E2] dark:border-white/10 bg-white dark:bg-white/5 text-[10px] font-medium text-[#1A1A1A] dark:text-neutral-400"
+                        <button 
+                            onClick={() => setIsCollapsed(!isCollapsed)}
+                            className="p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors text-neutral-400 hover:text-neutral-900 dark:hover:text-white border border-transparent hover:border-[#EBE9E2] dark:hover:border-white/10"
                         >
-                            Basic
-                        </motion.div>
+                            <PanelLeft className={`w-5 h-5 transition-transform duration-500 ${isCollapsed ? 'rotate-180' : ''}`} />
+                        </button>
+                    )}
+                    {isCollapsed && (
+                         <button 
+                            onClick={() => setIsCollapsed(!isCollapsed)}
+                            className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white dark:bg-[#0c0c0c] border border-[#EBE9E2] dark:border-white/10 rounded-full flex items-center justify-center text-neutral-400 hover:text-neutral-900 dark:hover:text-white shadow-sm z-50 hover:scale-110 transition-all"
+                         >
+                            <PanelLeft className="w-3.5 h-3.5 rotate-180" />
+                         </button>
                     )}
                 </div>
 
