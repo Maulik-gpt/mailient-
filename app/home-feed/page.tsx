@@ -4,11 +4,14 @@ import { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import { GmailInterfaceFixed } from '@/components/ui/gmail-interface-fixed';
+import { PricingOverlay } from '@/components/ui/pricing-overlay';
 import confetti from 'canvas-confetti';
+import { useState } from 'react';
 
 function HomeFeedContent() {
   const router = useRouter();
   const { data: session, status } = useSession();
+  const [showPricing, setShowPricing] = useState(false);
 
   // Check authentication, subscription status, and onboarding status
   useEffect(() => {
@@ -75,6 +78,12 @@ function HomeFeedContent() {
                   localStorage.removeItem('pending_plan');
                   localStorage.removeItem('pending_plan_timestamp');
                   console.log('✅ [HomeFeed] Access granted', { isActive, planType });
+                  
+                  // If subscription is expired, show the pricing overlay
+                  if (subData.subscription?.isExpired) {
+                    console.log('⚠️ [HomeFeed] Subscription is expired, showing pricing overlay');
+                    setShowPricing(true);
+                  }
                   return;
                 }
 
@@ -240,6 +249,7 @@ function HomeFeedContent() {
   return (
     <div className="satoshi-home-feed w-full h-screen bg-black dark:bg-black">
       <GmailInterfaceFixed />
+      <PricingOverlay isOpen={showPricing} onClose={() => setShowPricing(false)} />
     </div>
   );
 }

@@ -18,6 +18,7 @@ export async function GET(request) {
         // Get subscription details
         const subscription = await subscriptionService.getUserSubscription(userId);
         const isActive = await subscriptionService.isSubscriptionActive(userId);
+        const isExpired = await subscriptionService.isSubscriptionExpired(userId);
         const planType = await subscriptionService.getUserPlanType(userId);
         const allUsage = await subscriptionService.getAllFeatureUsage(userId);
         const isEndingSoon = await subscriptionService.isSubscriptionEndingSoon(userId);
@@ -60,7 +61,8 @@ export async function GET(request) {
                 subscriptionEndsAt: subscription?.subscription_ends_at || null,
                 daysRemaining: allUsage.daysRemaining || 0,
                 status: subscription?.status || 'inactive',
-                isEndingSoon
+                isEndingSoon,
+                isExpired
             },
             features: allUsage.features || {},
             upgradeToStarter: (planType === 'free' || planType === 'none') ? PLANS.starter.checkoutUrl : null,
