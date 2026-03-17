@@ -76,24 +76,13 @@ export function HomeFeedSidebar({ className = '', onPeopleClick, onSettingsClick
                 className={`fixed left-0 top-0 h-screen bg-[#F9F8F6] dark:bg-[#0c0c0c] border-r border-[#EBE9E2] dark:border-white/5 flex flex-col z-50 ${className}`}
             >
                 
-                {/* Header with Profile Icon */}
-                <div className="px-6 py-4 flex items-center overflow-hidden">
-                    <div className="flex items-center gap-4">
-                         <div className="w-9 h-9 rounded-full overflow-hidden border border-[#EBE9E2] dark:border-white/10 bg-white dark:bg-black flex items-center justify-center p-1.5 shadow-sm">
-                            <img
-                                src={session?.user?.image || "/user-avatar.png?v=2"}
-                                alt="User"
-                                className="w-full h-full object-cover grayscale opacity-80"
-                            />
-                        </div>
-                    </div>
-                </div>
+                <div className="pt-6" />
 
                 {/* Logo & App Name */}
                 <div className={`px-6 mb-8 flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} transition-all duration-300`}>
                     <div className="flex items-center gap-2.5 cursor-pointer group" onClick={() => router.push('/home-feed')}>
                         <div className="w-10 h-10 relative flex items-center justify-center rounded-xl overflow-hidden bg-black dark:bg-white shadow-md border border-[#EBE9E2] dark:border-white/10 group-hover:scale-105 transition-transform">
-                            <img src="/mailient-logo-new.png" alt="Mailient" className="w-7 h-7 object-contain dark:invert" />
+                            <img src="/mailient-logo-premium.png" alt="Mailient" className="w-full h-full object-cover scale-110 dark:invert" />
                         </div>
                         {!isCollapsed && (
                             <motion.span 
