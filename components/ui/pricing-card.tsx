@@ -35,7 +35,7 @@ const mailientPlans = [
       "30 Schedule Calls / month",
       "50 AI Notes / month",
     ],
-    checkoutUrl: "https://buy.polar.sh/polar_cl_B9DSDJSz1EeVhR8rtLcVgn1vVvjvizMvp0yOs3IQOJW",
+    checkoutUrl: "https://buy.polar.sh/polar_cl_ojXGgACq5GNMsUInVP3HX5vpXepohT5P8m7SL2RcCej",
   },
   {
     id: "pro",
@@ -50,7 +50,7 @@ const mailientPlans = [
       "Unlimited AI Notes",
       "Priority AI Processing",
     ],
-    checkoutUrl: "https://buy.polar.sh/polar_cl_B9DSDJSz1EeVhR8rtLcVgn1vVvjvizMvp0yOs3IQOJW",
+    checkoutUrl: "https://buy.polar.sh/polar_cl_BmoCj2jm6Hxy2Pc4DI6y717wsENNDAniGPfsB1pMO61",
   },
 ];
 

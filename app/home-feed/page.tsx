@@ -13,6 +13,8 @@ function HomeFeedContent() {
   const { data: session, status } = useSession();
   const [showPricing, setShowPricing] = useState(false);
   const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
+  const [paymentVerified, setPaymentVerified] = useState(false);
+  const [activatedPlan, setActivatedPlan] = useState('');
 
   // Check authentication, subscription status, and onboarding status
   useEffect(() => {
@@ -53,8 +55,8 @@ function HomeFeedContent() {
           if (justPaid) {
             setIsVerifyingPayment(true);
           }
-          const maxRetries = justPaid ? 5 : 1; // More retries if coming from payment
-          const retryDelay = 2000; // 2 seconds between retries
+          const maxRetries = justPaid ? 10 : 1; // More retries if coming from payment
+          const retryDelay = 3000; // 3 seconds between retries
 
           // Check subscription status with potential retries
           console.log('📡 [HomeFeed] Checking subscription status...', { justPaid, maxRetries });
@@ -83,10 +85,30 @@ function HomeFeedContent() {
                   localStorage.removeItem('pending_plan_timestamp');
                   console.log('✅ [HomeFeed] Access granted', { isActive, planType });
                   
-                  // If subscription is expired, show the pricing overlay
-                  if (subData.subscription?.isExpired) {
+                  // If subscription is expired but user just paid, keep polling
+                  if (subData.subscription?.isExpired && justPaid && attempt < maxRetries - 1) {
+                    console.log('⏳ [HomeFeed] Still expired, waiting for webhook...');
+                    continue;
+                  }
+                  
+                  // If subscription is expired and not just paid, show pricing
+                  if (subData.subscription?.isExpired && !justPaid) {
                     console.log('⚠️ [HomeFeed] Subscription is expired, showing pricing overlay');
                     setShowPricing(true);
+                  }
+                  
+                  // If just paid and subscription is now active, show success!
+                  if (justPaid && isActive && !subData.subscription?.isExpired) {
+                    console.log('🎉 [HomeFeed] Payment verified! Plan activated:', planType);
+                    setPaymentVerified(true);
+                    setActivatedPlan(planType === 'starter' ? 'Starter' : planType === 'pro' ? 'Pro' : planType);
+                    // Auto-dismiss after 2.5 seconds
+                    setTimeout(() => {
+                      setIsVerifyingPayment(false);
+                      setPaymentVerified(false);
+                    }, 2500);
+                  } else if (justPaid) {
+                    setIsVerifyingPayment(false);
                   }
                   return;
                 }
@@ -260,16 +282,46 @@ function HomeFeedContent() {
       
       {isVerifyingPayment && (
           <div className="fixed inset-0 z-[110] bg-black/95 backdrop-blur-md flex flex-col items-center justify-center gap-6">
-              <div className="relative">
-                  <div className="w-16 h-16 border-2 border-white/5 rounded-full" />
-                  <div className="absolute inset-0 w-16 h-16 border-t-2 border-white rounded-full animate-spin" />
-              </div>
-              <div className="space-y-2 text-center">
-                  <h2 className="text-xl font-serif text-white">Verifying your payment</h2>
-                  <p className="text-neutral-500 text-sm max-w-[280px] leading-relaxed">
-                      We're confirming your subscription with Polar. <br/>This will only take a moment.
-                  </p>
-              </div>
+              {!paymentVerified ? (
+                  <>
+                      <div className="relative">
+                          <div className="w-16 h-16 border-2 border-white/5 rounded-full" />
+                          <div className="absolute inset-0 w-16 h-16 border-t-2 border-white rounded-full animate-spin" />
+                      </div>
+                      <div className="space-y-2 text-center">
+                          <h2 className="text-xl font-serif text-white">Activating your subscription</h2>
+                          <p className="text-neutral-500 text-sm max-w-[280px] leading-relaxed">
+                              We&apos;re confirming your payment with Polar.<br/>This will only take a moment.
+                          </p>
+                      </div>
+                  </>
+              ) : (
+                  <>
+                      <div className="relative flex items-center justify-center">
+                          <div className="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center" style={{ animation: 'scaleIn 0.4s ease-out' }}>
+                              <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ animation: 'checkDraw 0.5s ease-out 0.2s both' }}>
+                                  <path d="M8 18L15 25L28 11" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                          </div>
+                      </div>
+                      <div className="space-y-2 text-center">
+                          <h2 className="text-xl font-serif text-white">You&apos;re all set!</h2>
+                          <p className="text-neutral-500 text-sm">
+                              {activatedPlan} plan activated successfully.
+                          </p>
+                      </div>
+                  </>
+              )}
+              <style jsx>{`
+                  @keyframes scaleIn {
+                      from { transform: scale(0); opacity: 0; }
+                      to { transform: scale(1); opacity: 1; }
+                  }
+                  @keyframes checkDraw {
+                      from { opacity: 0; transform: scale(0.5); }
+                      to { opacity: 1; transform: scale(1); }
+                  }
+              `}</style>
           </div>
       )}
       
