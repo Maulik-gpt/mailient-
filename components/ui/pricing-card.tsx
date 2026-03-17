@@ -77,8 +77,8 @@ export function PricingCard({ onClose }: PricingCardProps) {
   };
 
   return (
-    <div className="w-full max-w-[450px] flex flex-col gap-6 p-5 px-4 sm:p-6 rounded-[32px] border border-white/10 bg-[#0A0A0A] shadow-2xl transition-colors duration-300 not-prose text-white">
-      <div className="flex flex-col gap-4 mb-2">
+    <div className="w-full max-w-[420px] flex flex-col gap-4 p-4 px-3 sm:p-5 rounded-[28px] border border-white/10 bg-[#0A0A0A] shadow-2xl transition-colors duration-300 not-prose text-white">
+      <div className="flex flex-col gap-3 mb-1">
         <div className="flex items-center justify-between">
             <h1 className="text-2xl font-serif text-white tracking-tight">
               Select a Plan
@@ -110,7 +110,7 @@ export function PricingCard({ onClose }: PricingCardProps) {
                   isSelected ? "z-10 border-white/20 bg-white/[0.05]" : "border-white/5 hover:border-white/10"
                 }`}
               >
-                <div className="p-5">
+                <div className="p-4">
                   <div className="flex justify-between items-start">
                     <div className="flex gap-4">
                       <div className="mt-1 shrink-0">
@@ -173,8 +173,8 @@ export function PricingCard({ onClose }: PricingCardProps) {
                         }}
                         className="overflow-hidden w-full"
                       >
-                        <div className="pt-6 flex flex-col gap-6">
-                          <div className="flex flex-col gap-3.5">
+                        <div className="pt-4 flex flex-col gap-4">
+                          <div className="flex flex-col gap-2.5">
                             {plan.features.map((feature, idx) => (
                               <motion.div
                                 initial={{ opacity: 0, y: 5 }}
@@ -198,7 +198,7 @@ export function PricingCard({ onClose }: PricingCardProps) {
 
                           <Button 
                             onClick={() => handleSubscribe(plan.checkoutUrl)}
-                            className={`w-full h-12 rounded-xl font-bold transition-all ${
+                            className={`w-full h-10 rounded-xl font-bold transition-all ${
                                 plan.id === 'free' 
                                 ? 'bg-white/5 text-white hover:bg-white/10' 
                                 : 'bg-white text-black hover:bg-neutral-200'
