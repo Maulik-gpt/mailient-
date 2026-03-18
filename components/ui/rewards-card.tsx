@@ -17,27 +17,37 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
     const [activeSection, setActiveSection] = useState<'my-rewards' | 'referrals'>('my-rewards');
     const [copied, setCopied] = useState(false);
     const [profile, setProfile] = useState<any>(null);
+    const [rewards, setRewards] = useState<any[]>([]);
+    const [isLoadingRewards, setIsLoadingRewards] = useState(true);
     const [isClaiming, setIsClaiming] = useState<string | null>(null);
 
     const arcusCredits = usageData.features?.arcus_ai || { usage: 0, limit: 10, remaining: 10 };
 
-    useEffect(() => {
-        const fetchProfile = async () => {
-            try {
-                const res = await fetch('/api/user/profile');
-                if (res.ok) {
-                    const data = await res.json();
-                    setProfile(data);
-                }
-            } catch (err) {
-                console.error('Error fetching profile in rewards:', err);
+    const loadData = async () => {
+        try {
+            const [pRes, rRes] = await Promise.all([
+                fetch('/api/user/profile'),
+                fetch('/api/subscription/usage/claim')
+            ]);
+            
+            if (pRes.ok) setProfile(await pRes.json());
+            if (rRes.ok) {
+                const data = await rRes.json();
+                setRewards(data.rewards || []);
             }
-        };
-        fetchProfile();
+        } catch (err) {
+            console.error('Error loading rewards data:', err);
+        } finally {
+            setIsLoadingRewards(false);
+        }
+    };
+
+    useEffect(() => {
+        loadData();
     }, []);
 
     const handleCopyLink = () => {
-        const username = profile?.username || 'maulik_f5';
+        const username = profile?.username || 'user';
         navigator.clipboard.writeText(`https://mailient.xyz/ref/${username}`);
         setCopied(true);
         toast.success('Referral link copied to clipboard');
@@ -56,9 +66,7 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
             if (res.ok) {
                 const result = await res.json();
                 toast.success(result.message || 'Reward claimed successfully!');
-                // Refresh profile to update claimed status
-                const pRes = await fetch('/api/user/profile');
-                if (pRes.ok) setProfile(await pRes.json());
+                await loadData();
             } else {
                 const error = await res.json();
                 toast.error(error.error || 'Failed to claim reward');
@@ -75,7 +83,14 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
         { id: 'referrals', label: 'Referrals', icon: Users },
     ];
 
-    const claimedRewards = profile?.preferences?.claimed_rewards || [];
+    const getIcon = (name: string) => {
+        switch(name) {
+            case 'CreditCard': return CreditCard;
+            case 'Gift': return Gift;
+            case 'Sparkles': return Sparkles;
+            default: return Gift;
+        }
+    };
 
     return (
         <motion.div 
@@ -89,7 +104,7 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
                 initial={{ scale: 0.98, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.98, opacity: 0 }}
-                className="w-full max-w-4xl h-[70vh] bg-white dark:bg-[#0a0a0a] rounded-[16px] shadow-[0_32px_128px_-16px_rgba(0,0,0,0.5)] overflow-hidden flex border border-neutral-200 dark:border-white/5"
+                className="w-full max-w-4xl min-h-[50vh] max-h-[80vh] bg-white dark:bg-[#0a0a0a] rounded-[16px] shadow-[0_32px_128px_-16px_rgba(0,0,0,0.5)] overflow-hidden flex border border-neutral-200 dark:border-white/5"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Sidebar */}
@@ -146,40 +161,49 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
                                     exit={{ opacity: 0, y: -5 }}
                                     className="space-y-6"
                                 >
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {[
-                                            { id: 'standard', title: "Standard Credit Pack", value: `Status: Active`, desc: "Your baseline daily allowance enabled by default.", icon: CreditCard, status: 'claimed' },
-                                            { id: 'referral_bonus_25', title: "Referral Bonus", value: "+25 Arcus Credits", desc: "Permanent injection into your core daily limit.", icon: Sparkles, status: claimedRewards.includes('referral_bonus_25') ? 'claimed' : 'available' },
-                                            { id: 'welcome_bonus_10', title: "Welcome Gift", value: "+10 Arcus Credits", desc: "First-time account creation gift.", icon: Gift, status: claimedRewards.includes('welcome_bonus_10') ? 'claimed' : 'available' },
-                                        ].map((reward, i) => (
-                                            <div key={i} className="p-5 border border-neutral-100 dark:border-white/5 rounded-xl transition-all group">
-                                                <div className="flex justify-between items-start mb-4">
-                                                    <div className="w-10 h-10 bg-neutral-100 dark:bg-white/5 rounded-lg flex items-center justify-center">
-                                                        <reward.icon className="w-5 h-5 text-neutral-500" />
+                                    {isLoadingRewards ? (
+                                        <div className="flex items-center justify-center h-48">
+                                            <Loader2 className="w-6 h-6 animate-spin text-neutral-400" />
+                                        </div>
+                                    ) : rewards.length === 0 ? (
+                                        <div className="text-center py-12">
+                                            <p className="text-sm text-neutral-500">No active rewards found.</p>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {rewards.map((reward, i) => {
+                                                const IconComponent = getIcon(reward.icon);
+                                                return (
+                                                    <div key={i} className="p-5 border border-neutral-100 dark:border-white/5 rounded-xl transition-all group">
+                                                        <div className="flex justify-between items-start mb-4">
+                                                            <div className="w-10 h-10 bg-neutral-100 dark:bg-white/5 rounded-lg flex items-center justify-center">
+                                                                <IconComponent className="w-5 h-5 text-neutral-500" />
+                                                            </div>
+                                                            <div className="flex items-center gap-2">
+                                                                {reward.status === 'claimed' ? (
+                                                                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-white/5 text-neutral-500 flex items-center gap-1">
+                                                                        <Check className="w-3 h-3" /> Claimed
+                                                                    </span>
+                                                                ) : (
+                                                                    <button 
+                                                                        onClick={() => handleClaim(reward.id)}
+                                                                        disabled={isClaiming === reward.id}
+                                                                        className="text-[10px] font-semibold px-3 py-1 bg-black dark:bg-white text-white dark:text-black rounded-lg hover:opacity-80 transition-all flex items-center gap-1"
+                                                                    >
+                                                                        {isClaiming === reward.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                                                                        Claim
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        <h4 className="text-sm font-semibold text-neutral-900 dark:text-white">{reward.title}</h4>
+                                                        <p className="text-lg font-bold text-black dark:text-white mt-1 mb-1">{reward.value}</p>
+                                                        <p className="text-xs text-neutral-500">{reward.desc}</p>
                                                     </div>
-                                                    <div className="flex items-center gap-2">
-                                                        {reward.status === 'claimed' ? (
-                                                            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-white/5 text-neutral-500 flex items-center gap-1">
-                                                                <Check className="w-3 h-3" /> Claimed
-                                                            </span>
-                                                        ) : (
-                                                            <button 
-                                                                onClick={() => handleClaim(reward.id)}
-                                                                disabled={isClaiming === reward.id}
-                                                                className="text-[10px] font-semibold px-3 py-1 bg-black dark:bg-white text-white dark:text-black rounded-lg hover:opacity-80 transition-all flex items-center gap-1"
-                                                            >
-                                                                {isClaiming === reward.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                                                                Claim
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                                <h4 className="text-sm font-semibold text-neutral-900 dark:text-white">{reward.title}</h4>
-                                                <p className="text-lg font-bold text-black dark:text-white mt-1 mb-1">{reward.value}</p>
-                                                <p className="text-xs text-neutral-500">{reward.desc}</p>
-                                            </div>
-                                        ))}
-                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
                                 </motion.div>
                             )}
 
@@ -201,7 +225,7 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
                                             <p className="text-[10px] text-neutral-400 uppercase font-medium">Your Invite Link</p>
                                             <div className="flex gap-2">
                                                 <div className="flex-1 h-10 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-lg flex items-center px-4 text-xs text-neutral-500 truncate">
-                                                    mailient.xyz/ref/{profile?.username || 'maulik_f5'}
+                                                    mailient.xyz/ref/{profile?.username || 'user'}
                                                 </div>
                                                 <button 
                                                     onClick={handleCopyLink}
