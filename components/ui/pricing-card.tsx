@@ -78,16 +78,16 @@ export function PricingCard({ onClose }: PricingCardProps) {
         method: 'POST'
       });
       if (response.ok) {
-        // Clear pending plan if any
-        localStorage.removeItem('pending_plan');
-        localStorage.removeItem('pending_plan_timestamp');
+        // Set flags so HomeFeed shows activation UI even for free
+        localStorage.setItem('pending_plan', 'free');
+        localStorage.setItem('pending_plan_timestamp', Date.now().toString());
         
-        // Wait a tiny bit for satisfaction
+        // Wait a bit for satisfaction
         setTimeout(() => {
           if (onClose) onClose();
           // Force a reload of the current page to refresh sub status everywhere
           window.location.reload();
-        }, 800);
+        }, 1200);
       }
     } catch (error) {
       console.error('Error activating free plan:', error);
