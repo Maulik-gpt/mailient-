@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, HelpCircle, BookOpen, Heart, MessageSquare, Send, CheckCircle2, Search } from 'lucide-react';
+import { X, HelpCircle, BookOpen, Heart, MessageSquare, Send } from 'lucide-react';
 import FAQs from './text-reveal-faqs';
 import { toast } from 'sonner';
 
@@ -61,16 +61,16 @@ export function HelpCard({ onClose }: HelpCardProps) {
                 initial={{ scale: 0.98, opacity: 0, y: 10 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.98, opacity: 0, y: 10 }}
-                className="w-full max-w-5xl h-[85vh] bg-white dark:bg-[#0A0A0A] rounded-[16px] shadow-2xl overflow-hidden flex flex-col md:flex-row border border-neutral-200 dark:border-white/10"
+                className="w-full max-w-5xl h-[85vh] bg-white dark:bg-[#0A0A0A] rounded-[16px] shadow-[0_32px_128px_-16px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col md:flex-row border border-neutral-200 dark:border-white/10"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Sidebar */}
-                <div className="w-full md:w-64 bg-neutral-50 dark:bg-[#111] border-r border-neutral-200 dark:border-white/5 p-6 flex flex-col">
-                    <div className="flex items-center gap-3 mb-10 px-2">
-                        <div className="w-10 h-10 bg-black dark:bg-white rounded-xl flex items-center justify-center">
-                            <HelpCircle className="w-6 h-6 text-white dark:text-black" />
+                <div className="w-full md:w-64 bg-neutral-50 dark:bg-[#070707] border-r border-neutral-100 dark:border-white/5 p-8 flex flex-col">
+                    <div className="flex items-center gap-3 mb-12">
+                        <div className="w-8 h-8 bg-black dark:bg-white rounded flex items-center justify-center">
+                            <HelpCircle className="w-4 h-4 text-white dark:text-black" />
                         </div>
-                        <h2 className="text-xl font-bold dark:text-white">Help</h2>
+                        <h2 className="text-lg font-bold dark:text-white uppercase tracking-tighter">Help Center</h2>
                     </div>
 
                     <nav className="flex-1 space-y-1">
@@ -78,14 +78,14 @@ export function HelpCard({ onClose }: HelpCardProps) {
                             <button
                                 key={section.id}
                                 onClick={() => setActiveSection(section.id as any)}
-                                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${
+                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
                                     activeSection === section.id 
-                                    ? 'bg-black dark:bg-white text-white dark:text-black shadow-[0_4px_12px_rgba(0,0,0,0.1)]' 
-                                    : 'text-neutral-500 hover:bg-neutral-200 dark:hover:bg-white/5'
+                                    ? 'bg-black dark:bg-white text-white dark:text-black shadow-lg font-bold' 
+                                    : 'text-neutral-500 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
                                 }`}
                             >
-                                <section.icon className="w-5 h-5" />
-                                <span className="font-medium">{section.label}</span>
+                                <section.icon className="w-4 h-4" />
+                                <span className="text-sm">{section.label}</span>
                             </button>
                         ))}
                     </nav>
@@ -93,19 +93,19 @@ export function HelpCard({ onClose }: HelpCardProps) {
 
                 {/* Content Area */}
                 <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-[#0A0A0A]">
-                    <header className="h-20 border-b border-neutral-200 dark:border-white/5 flex items-center justify-between px-8">
-                        <h3 className="text-lg font-semibold dark:text-white">
+                    <header className="h-20 border-b border-neutral-100 dark:border-white/5 flex items-center justify-between px-10">
+                        <h3 className="text-sm font-bold uppercase tracking-widest text-neutral-400">
                             {sections.find(s => s.id === activeSection)?.label}
                         </h3>
                         <button 
                             onClick={onClose}
                             className="p-2 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-full transition-colors"
                         >
-                            <X className="w-6 h-6 dark:text-white" />
+                            <X className="w-5 h-5 text-neutral-400 hover:text-black dark:hover:text-white" />
                         </button>
                     </header>
 
-                    <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                    <div className="flex-1 overflow-y-auto p-12 custom-scrollbar">
                         <AnimatePresence mode="wait">
                             {activeSection === 'faq' && (
                                 <motion.div 
@@ -122,26 +122,41 @@ export function HelpCard({ onClose }: HelpCardProps) {
                             {activeSection === 'guide' && (
                                 <motion.div 
                                     key="guide"
-                                    initial={{ opacity: 0, x: 10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: -10 }}
-                                    className="space-y-6"
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    className="space-y-12"
                                 >
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <h4 className="text-3xl font-bold dark:text-white tracking-tighter mb-3">Power User Playbook.</h4>
+                                        <p className="text-neutral-500 text-base leading-relaxed max-w-xl">Advanced strategies and hidden shortcuts to maximize your daily output with Mailient.</p>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-12 pb-12">
                                         {[
-                                            { title: "Smart Nudges", desc: "Enable notifications for high-priority leads in settings." },
-                                            { title: "Draft Tones", desc: "Use 'Mimic My Style' to let AI write exactly like you." },
-                                            { title: "One-Click Calls", desc: "Click the calendar icon on any email to find a slot." },
-                                            { title: "Deep Research", desc: "Use Arcus Chat to ask complex questions across your history." }
+                                            { title: "CMD+K Intelligence", desc: "Use global search to quickly summarize any thread without opening it. Speed is everything." },
+                                            { title: "Dynamic Style Mimicry", desc: "Our AI learns your sign-offs and personal vocabulary over time. It gets scarily accurate." },
+                                            { title: "Integrated Calendar", desc: "Arcus can suggest and book meeting slots directly from your chat. No more tab hopping." },
+                                            { title: "Priority Sifting", desc: "Sift AI automatically pins high-conviction leads to your main home feed based on context." },
+                                            { title: "System Nudges", desc: "Fine-tune notification triggers for specific business events in your system settings panel." },
+                                            { title: "Voice Profile Training", desc: "The more you use Mailient, the more accurate and human your Arcus drafts become." },
+                                            { title: "Multi-Thread Summary", desc: "Summarize dozens of related emails into a single intelligence report for rapid catching up." },
+                                            { title: "Contextual Peeking", desc: "Hover over contacts in People view to see their last AI intelligence sift instantly." },
+                                            { title: "Note Stashing", desc: "Save critical AI insights as 'AI Notes' to prevent losing valuable data in the thread noise." },
+                                            { title: "Adaptive Tones", desc: "Toggle between Founder, Assistant, and Concise modes for any reply depending on the stakes." },
+                                            { title: "Privacy First", desc: "Enable Enhanced Privacy to keep all sensitive AI processing confined to your local device." },
+                                            { title: "Session Awareness", desc: "Arcus remembers your research during the session for better, contextual follow-ups." },
+                                            { title: "Zero-Click Drafting", desc: "Set Mailient to auto-draft replies for routine business inquiries while you focus on deep work." },
+                                            { title: "Usage Monitoring", desc: "Watch the sidebar badge to track your high-intensity AI credits in real-time." },
+                                            { title: "Keyboard Mastery", desc: "Navigate the entire app with shortcuts for a true non-mouse, high-performance workflow." }
                                         ].map((tip, i) => (
-                                            <div key={i} className="p-5 border border-neutral-200 dark:border-white/10 rounded-xl flex gap-4">
-                                                <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center flex-shrink-0">
-                                                    <CheckCircle2 className="w-5 h-5 text-blue-500" />
+                                            <div key={i} className="group">
+                                                <div className="flex items-center gap-4 mb-3">
+                                                    <span className="text-[11px] font-mono text-neutral-300 dark:text-neutral-700 font-bold tracking-widest uppercase">Tip {i + 1}</span>
+                                                    <div className="h-[1px] flex-1 bg-neutral-100 dark:bg-white/5" />
                                                 </div>
-                                                <div>
-                                                    <h5 className="font-bold text-sm mb-1 dark:text-white">{tip.title}</h5>
-                                                    <p className="text-xs text-neutral-500 leading-normal">{tip.desc}</p>
-                                                </div>
+                                                <h5 className="font-bold text-base dark:text-white mb-2 tracking-tight transition-colors">{tip.title}</h5>
+                                                <p className="text-[14px] text-neutral-500 leading-relaxed font-medium">{tip.desc}</p>
                                             </div>
                                         ))}
                                     </div>
@@ -154,29 +169,34 @@ export function HelpCard({ onClose }: HelpCardProps) {
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: -10 }}
-                                    className="prose dark:prose-invert max-w-none"
+                                    className="max-w-2xl py-4"
                                 >
-                                    <div className="relative p-8 bg-neutral-900 rounded-[16px] text-white overflow-hidden group border border-white/5">
-                                        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/20 blur-[100px] group-hover:bg-blue-600/30 transition-all" />
+                                    <div className="space-y-10 text-neutral-800 dark:text-neutral-300">
+                                        <h4 className="text-5xl font-bold dark:text-white tracking-tighter leading-none mb-12">The vision for Mailient.</h4>
                                         
-                                        <h4 className="text-2xl font-bold mb-6 text-white">Hey, I&apos;m Maulik.</h4>
-                                        <p className="text-neutral-400 leading-relaxed mb-6 italic">
+                                        <p className="text-xl leading-relaxed font-semibold dark:text-neutral-100 border-l-2 border-black dark:border-white pl-8 italic">
                                             &quot;I built Mailient because I was tired of fighting my own inbox. It felt like every morning I was drowning in noise, missing opportunities that actually mattered.&quot;
                                         </p>
-                                        <p className="text-neutral-300 leading-relaxed mb-6">
-                                            We built this app to be your second brain. Not another tool that demands your attention, but a partner that clears the path so you can focus on the work that truly moves the needle. Mailient is about reclaiming your time and your sanity.
-                                        </p>
-                                        <p className="text-neutral-300 leading-relaxed">
-                                            We&apos;re just getting started. Every feature, every pixel, and every AI model we train is designed with one goal: making your life simpler. Thanks for joining us on this journey. It means the world to me.
-                                        </p>
                                         
-                                        <div className="mt-10 flex items-center gap-4">
-                                            <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white/20">
+                                        <div className="space-y-8 text-lg leading-relaxed text-neutral-500 dark:text-neutral-400">
+                                            <p>
+                                                We built this app to be your second brain. Not another tool that demands your attention, but a partner that clears the path so you can focus on the work that truly moves the needle. Mailient is about reclaiming your time and your sanity.
+                                            </p>
+                                            <p>
+                                                The truth is, email was never designed for the scale of business we do today. It&apos;s a legacy system that we&apos;re trying to fix with modern intelligence. Every feature you see in Mailient—from the way Arcus drafts replies to how Sift identifies hot leads—is something I personally needed.
+                                            </p>
+                                            <p>
+                                                We&apos;re just getting started. Every feature, every pixel, and every AI model we train is designed with one goal: making your life simpler. Thanks for joining us on this journey. It means the world to me.
+                                            </p>
+                                        </div>
+                                        
+                                        <div className="pt-12 flex items-center gap-8">
+                                            <div className="w-20 h-20 rounded-full overflow-hidden grayscale border border-neutral-200 dark:border-white/10">
                                                 <img src="/mailient-logo-v3.png" className="w-full h-full object-cover bg-black" alt="Maulik" />
                                             </div>
                                             <div>
-                                                <div className="font-bold">Maulik Barsaiyan</div>
-                                                <div className="text-xs text-neutral-500">Founder, Mailient</div>
+                                                <div className="text-2xl font-bold dark:text-white tracking-tight">Maulik Barsaiyan</div>
+                                                <div className="text-sm text-neutral-500 font-mono tracking-widest uppercase mt-1">Founding Engineer & CEO</div>
                                             </div>
                                         </div>
                                     </div>
@@ -189,32 +209,33 @@ export function HelpCard({ onClose }: HelpCardProps) {
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: -10 }}
-                                    className="space-y-6"
+                                    className="space-y-16 max-w-3xl"
                                 >
-                                    <div className="bg-blue-500/5 border border-blue-500/10 p-6 rounded-xl">
-                                        <p className="text-neutral-600 dark:text-neutral-300 leading-relaxed">
+                                    <div className="space-y-6">
+                                        <h4 className="text-5xl font-bold dark:text-white tracking-tighter leading-none">Help us build the future of intelligence.</h4>
+                                        <p className="text-neutral-500 dark:text-neutral-400 text-xl leading-relaxed max-w-xl">
                                             Your feedback matters the most for us. Please input your valuable feedback on this. We&apos;ll try our whole heart to reach out to you as soon as possible.
                                         </p>
                                     </div>
 
-                                    <div className="space-y-4">
+                                    <div className="space-y-12 pb-12">
                                         <textarea
                                             value={feedback}
                                             onChange={(e) => setFeedback(e.target.value)}
-                                            placeholder="Tell us what's on your mind..."
-                                            className="w-full h-40 bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl p-5 text-sm dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-neutral-400"
+                                            placeholder="Tell us what's on your mind... be brutally honest."
+                                            className="w-full h-80 bg-transparent border-b border-neutral-100 dark:border-white/5 p-0 text-2xl dark:text-white focus:outline-none focus:border-black dark:focus:border-white transition-all placeholder:text-neutral-200 dark:placeholder:text-neutral-900 font-bold resize-none leading-tight"
                                         />
                                         <button 
                                             onClick={handleSendFeedback}
                                             disabled={isSubmitting}
-                                            className="w-full h-14 bg-black dark:bg-white text-white dark:text-black rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed group shadow-xl"
+                                            className="w-full h-20 bg-black dark:bg-white text-white dark:text-black rounded-lg font-bold flex items-center justify-center gap-4 hover:opacity-90 active:scale-[0.99] transition-all disabled:opacity-50 disabled:cursor-not-allowed group shadow-2xl"
                                         >
                                             {isSubmitting ? (
-                                                <div className="w-5 h-5 border-2 border-white/30 dark:border-black/30 border-t-white dark:border-t-black rounded-full animate-spin" />
+                                                <div className="w-8 h-8 border-3 border-white/30 dark:border-black/30 border-t-white dark:border-t-black rounded-full animate-spin" />
                                             ) : (
                                                 <>
-                                                    <span>Send Feedback</span>
-                                                    <Send className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                                                    <span className="text-2xl tracking-tighter">Submit Feedback</span>
+                                                    <Send className="w-6 h-6 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                                                 </>
                                             )}
                                         </button>
