@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Zap, Users, Sparkles, Copy, Check, MessageSquare, ZapIcon, Globe, Link2 } from 'lucide-react';
+import { X, Zap, Sparkles, Copy, Check, Link2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface RewardsCardProps {
@@ -50,7 +50,7 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
     const steps = [
         { icon: Link2, text: "Share your invite link", bold: "" },
         { icon: Sparkles, text: "They sign up and get ", bold: "extra 10 credits" },
-        { icon: Zap, text: "You get ", bold: "50 credits", extra: " for every successful referral who signs up" },
+        { icon: Zap, text: "You get ", bold: "50 credits", extra: " for every successful referral" },
     ];
 
     return (
@@ -70,19 +70,19 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
             >
                 {/* Hero Section */}
                 <div className="relative h-56 bg-gradient-to-br from-[#1A1A1A] to-[#0A0A0A] p-8 flex flex-col justify-end overflow-hidden">
-                    {/* Visual Element (Gradient Cube) */}
-                    <div className="absolute top-0 right-0 w-64 h-full pointer-events-none opacity-80 mix-blend-screen overflow-hidden">
+                    {/* Visual Element (Premium Glassy Cube) */}
+                    <div className="absolute top-0 right-0 w-64 h-full pointer-events-none opacity-90 mix-blend-screen overflow-hidden">
                         <img 
                             src="/mailient_cube.png" 
                             className="w-full h-full object-cover scale-150 translate-x-12 translate-y-4 rotate-[-12deg] filter brightness-110 contrast-125 saturate-150 blur-[0.5px]" 
                             alt=""
                         />
-                        <div className="absolute inset-0 bg-gradient-to-l from-transparent via-[#0E0E0E]/40 to-[#0E0E0E]" />
+                        <div className="absolute inset-0 bg-gradient-to-l from-transparent via-[#0E0E0E]/60 to-[#0E0E0E]" />
                     </div>
 
                     <div className="relative z-10 space-y-3">
                         <div className="inline-flex items-center px-3 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
-                            <span className="text-[10px] font-bold text-white tracking-widest uppercase opacity-80">Earn 100+ units</span>
+                            <span className="text-[10px] font-bold text-white tracking-widest uppercase opacity-80">Earn 50+ units</span>
                         </div>
                         <h2 className="text-4xl font-bold text-white tracking-tight leading-[1.1]">
                             Expand the<br />Network
@@ -125,10 +125,14 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
                         </div>
                     </div>
 
-                    <div className="pt-2 border-t border-white/5">
+                    <div className="pt-2 border-t border-white/5 flex items-center justify-between">
                         <p className="text-[13px] font-medium text-white/50">
                             <span className="text-white font-bold">{profile?.invite_count || 0}</span> signed up
                         </p>
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-white/5 border border-white/5">
+                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                            <span className="text-[10px] font-bold text-white/40 uppercase tracking-tighter">Live Status</span>
+                        </div>
                     </div>
 
                     {/* Copy Box */}
