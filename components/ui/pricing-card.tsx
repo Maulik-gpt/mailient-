@@ -78,20 +78,28 @@ export function PricingCard({ onClose }: PricingCardProps) {
         method: 'POST'
       });
       if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Free activation success:', data);
+        
         // Set flags so HomeFeed shows activation UI even for free
         localStorage.setItem('pending_plan', 'free');
         localStorage.setItem('pending_plan_timestamp', Date.now().toString());
         
-        // Wait a bit for satisfaction
+        // Wait a bit longer for DB satisfying consistency
         setTimeout(() => {
           if (onClose) onClose();
           // Force a reload of the current page to refresh sub status everywhere
           window.location.reload();
-        }, 1200);
+        }, 1500);
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown server error' }));
+        console.error('❌ Free activation failed:', errorData);
+        alert(`Could not activate free plan: ${errorData.error || 'Server error'}`);
+        setIsActivating(false);
       }
     } catch (error) {
       console.error('Error activating free plan:', error);
-    } finally {
+      alert('Network error while activating free plan. Please try again.');
       setIsActivating(false);
     }
   };

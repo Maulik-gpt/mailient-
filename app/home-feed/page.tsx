@@ -71,15 +71,19 @@ function HomeFeedContent() {
               const isExpired = subData.subscription?.isExpired;
               const planType = subData.subscription?.planType;
 
-              // CASE 1: SUCCESSFUL ACTIVATION (Returning User + Active + Not Expired)
-              if (justPaid && isActive && !isExpired) {
+              // CASE 1: SUCCESSFUL ACTIVATION (Returning User + (Active OR Free) + Not Expired)
+              const isSuccess = justPaid && !isExpired && (isActive || planType === 'free');
+              
+              if (isSuccess) {
                 console.log('🎉 [HomeFeed] Activation confirmed!', planType);
                 localStorage.setItem('onboarding_completed', 'true');
                 localStorage.removeItem('pending_plan');
                 localStorage.removeItem('pending_plan_timestamp');
-                
-                setActivatedPlan(planType === 'starter' ? 'Starter' : planType === 'pro' ? 'Pro' : 'Active');
-                setPaymentVerified(true);
+                    setPaymentVerified(true);
+                    
+                    // Specific plan name for UI
+                    const planName = planType === 'starter' ? 'Starter' : planType === 'pro' ? 'Pro' : 'Free';
+                    setActivatedPlan(planName);
                 
                 setTimeout(() => {
                   setIsVerifyingPayment(false);
