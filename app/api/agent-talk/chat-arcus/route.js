@@ -377,14 +377,21 @@ Body: ${emailData.body || emailData.snippet}
     // Otherwise, handle general email queries by searching
     else if ((userEmail || gmailAccessToken) && detectedIsEmailQuery && !emailContext) {
       try {
-        const emailActionResult = await executeEmailAction(message, userEmail, session, gmailAccessToken);
+        const emailActionResult = await executeEmailAction(message, userEmail, session, gmailAccessToken, intentAnalysis);
         emailResult = emailActionResult;
+        
         if (emailActionResult && emailActionResult.success) {
           emailContext = formatEmailActionResult(emailActionResult);
+          rawEmailData = emailActionResult.emails || [];
           actionType = 'email';
+          console.log(`✅ Arcus context enriched with ${rawEmailData.length} emails`);
         }
-      } catch (error) {
-        console.error('Email action failed:', error);
+        
+        if (emailActionResult?.error) {
+          console.warn('Arcus email action warning:', emailActionResult.error);
+        }
+      } catch (err) {
+        console.error('Error in Arcus email action:', err);
       }
     }
 
@@ -925,28 +932,20 @@ What would you like help with today?`;
 /**
  * Execute email actions
  */
-async function executeEmailAction(userMessage, userEmail, session, providedAccessToken = null) {
+async function executeEmailAction(userMessage, userEmail, session, providedAccessToken = null, intentAnalysis = null) {
   const lowerMessage = userMessage.toLowerCase();
 
   try {
     let accessToken = providedAccessToken || session?.accessToken;
     let refreshToken = session?.refreshToken;
 
-    console.log('Arcus executeEmailAction: Starting email fetch for:', (userEmail || 'token-user').substring(0, 20) + '...');
-    console.log('Arcus provided accessToken available:', !!providedAccessToken);
-    console.log('Arcus session accessToken available:', !!session?.accessToken);
-
     if (!accessToken && userEmail) {
-      console.log('Arcus no request/session token, trying database...');
       try {
         const db = new DatabaseService();
         const userTokens = await db.getUserTokens(userEmail);
-        console.log('Arcus database tokens found:', !!userTokens?.encrypted_access_token);
-
         if (userTokens?.encrypted_access_token) {
           accessToken = decrypt(userTokens.encrypted_access_token);
           refreshToken = userTokens.encrypted_refresh_token ? decrypt(userTokens.encrypted_refresh_token) : '';
-          console.log('Arcus decrypted token successfully');
         }
       } catch (dbError) {
         console.error('Arcus database token fetch error:', dbError.message);
@@ -954,38 +953,46 @@ async function executeEmailAction(userMessage, userEmail, session, providedAcces
     }
 
     if (!accessToken) {
-      console.log('Arcus no access token available - Gmail not connected');
       return { error: 'Gmail not connected', reconnectRequired: true, success: false };
     }
 
     const { GmailService } = await import('@/lib/gmail');
     const gmailService = new GmailService(accessToken, refreshToken || '');
 
-    // Build query based on user message
+    // 🎯 SMART SEARCH: Use AI-generated query if available
     let query = 'newer_than:7d';
     let maxResults = 5;
+    let isThreadSearch = false;
 
-    if (lowerMessage.includes('unread')) {
-      query = 'is:unread newer_than:7d';
-    } else if (lowerMessage.includes('important') || lowerMessage.includes('urgent')) {
-      query = 'is:important newer_than:7d';
-    } else if (lowerMessage.includes('starred')) {
-      query = 'is:starred';
-    } else if (lowerMessage.includes('sent')) {
-      query = 'in:sent newer_than:7d';
-    } else if (lowerMessage.includes('today')) {
-      query = 'newer_than:1d';
-    } else if (lowerMessage.includes('analytics') || lowerMessage.includes('insights')) {
-      query = 'newer_than:30d';
-      maxResults = 20;
+    // Extract search query from AI plan if possible
+    const aiSearchStep = intentAnalysis?.plan?.find(s => s.type === 'search' || s.action?.toLowerCase().includes('search'));
+    if (aiSearchStep?.description && aiSearchStep.description.length > 5) {
+      query = aiSearchStep.description;
+      console.log('🤖 Arcus: Using AI suggested search query:', query);
+    } else {
+      // Fallback Heuristics
+      if (lowerMessage.includes('unread')) {
+        query = 'is:unread newer_than:7d';
+      } else if (lowerMessage.includes('important') || lowerMessage.includes('urgent')) {
+        query = 'is:important newer_than:7d';
+      } else if (lowerMessage.includes('starred')) {
+        query = 'is:starred';
+      } else if (lowerMessage.includes('sent')) {
+        query = 'in:sent newer_than:7d';
+      } else if (lowerMessage.includes('today')) {
+        query = 'newer_than:1d';
+      } else if (lowerMessage.includes('analytics') || lowerMessage.includes('insights')) {
+        query = 'newer_than:30d';
+        maxResults = 20;
+      }
+
+      const fromMatch = userMessage.match(/from\s+([^\s,]+)/i);
+      if (fromMatch) {
+        query += ` from:${fromMatch[1]}`;
+      }
     }
 
-    const fromMatch = userMessage.match(/from\s+([^\s,]+)/i);
-    if (fromMatch) {
-      query += ` from:${fromMatch[1]}`;
-    }
-
-    console.log('📧 Gmail query:', query);
+    console.log('📧 Arcus Gmail query:', query);
 
     try {
       const emailsResponse = await gmailService.getEmails(maxResults, query, null, 'internalDate desc');
