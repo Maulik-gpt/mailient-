@@ -20,12 +20,20 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface HomeFeedSidebarProps {
     className?: string;
     onPeopleClick?: () => void;
-    onSettingsClick?: () => void;
+    onOpenSettings?: () => void;
+    onOpenHelp?: () => void;
     activeView?: 'home' | 'people';
     onCollapse?: (collapsed: boolean) => void;
 }
 
-export function HomeFeedSidebar({ className = '', onPeopleClick, onSettingsClick, activeView = 'home', onCollapse }: HomeFeedSidebarProps) {
+export function HomeFeedSidebar({ 
+    className = '', 
+    onPeopleClick, 
+    onOpenSettings, 
+    onOpenHelp,
+    activeView = 'home', 
+    onCollapse 
+}: HomeFeedSidebarProps) {
     const { data: session } = useSession();
     const router = useRouter();
     const pathname = usePathname();
@@ -63,8 +71,8 @@ export function HomeFeedSidebar({ className = '', onPeopleClick, onSettingsClick
 
     const bottomNavItems = [
         { id: 'gift', icon: Gift, label: 'Rewards', route: '/pricing' },
-        { id: 'settings', icon: Settings2, label: 'Settings', route: '/settings', onClick: onSettingsClick },
-        { id: 'help', icon: HelpCircle, label: 'Help', route: '/help' },
+        { id: 'settings', icon: Settings2, label: 'Settings', route: '/settings', onClick: onOpenSettings },
+        { id: 'help', icon: HelpCircle, label: 'Help', route: '/help', onClick: onOpenHelp },
     ];
 
     return (

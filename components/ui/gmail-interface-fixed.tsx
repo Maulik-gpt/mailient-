@@ -11,6 +11,7 @@ import { HomeFeedSidebar } from './home-feed-sidebar';
 import { RefreshCw, AlertCircle, TrendingUp, Clock, Target, Zap, Mail, Home, X, User, Sparkles, ArrowLeft, LayoutList, Inbox, ExternalLink, Download, FilePlus, ChevronDown, ChevronRight, Plus, Users, Building, Phone, Loader2, MessageCircle, Send } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './avatar';
 import { toast } from 'sonner';
+import { HelpCard } from './help-card';
 import { SchedulingModal } from './scheduling-modal';
 import { UsageLimitModal } from './usage-limit-modal';
 import { UsageBadge } from './bubble-button';
@@ -252,6 +253,7 @@ export function GmailInterfaceFixed() {
     const [arcusConversationId, setArcusConversationId] = useState<string | null>(null);
     const [arcusPanelHeight, setArcusPanelHeight] = useState(800);
     const [showSettings, setShowSettings] = useState(false);
+    const [showHelp, setShowHelp] = useState(false);
     
     // Smart Nudges state
     const [nudges, setNudges] = useState<any[]>([]);
@@ -1378,16 +1380,15 @@ export function GmailInterfaceFixed() {
             )}
             {/* Sidebar */}
             <HomeFeedSidebar
-                onPeopleClick={() => setViewMode(prev => prev === 'people' ? 'home' : 'people')}
-                onSettingsClick={() => setShowSettings(true)}
+                onOpenSettings={() => setShowSettings(true)}
+                onOpenHelp={() => setShowHelp(true)}
                 activeView={viewMode}
                 onCollapse={(collapsed) => setSidebarCollapsed(collapsed)}
             />
 
             <AnimatePresence>
-                {showSettings && (
-                    <SettingsCard onClose={() => setShowSettings(false)} />
-                )}
+                {showSettings && <SettingsCard onClose={() => setShowSettings(false)} />}
+                {showHelp && <HelpCard onClose={() => setShowHelp(false)} />}
             </AnimatePresence>
 
             {/* Main Content Wrapper */}
