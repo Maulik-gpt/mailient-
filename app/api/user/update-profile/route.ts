@@ -8,7 +8,7 @@ export async function POST(req: Request) {
     }
 
     try {
-        const { name, username } = await req.json();
+        const { name, username, picture } = await req.json();
         const db = new DatabaseService();
         
         const { error } = await db.supabase
@@ -16,6 +16,7 @@ export async function POST(req: Request) {
             .update({ 
                 name, 
                 username,
+                avatar_url: picture,
                 updated_at: new Date().toISOString()
             })
             .eq('user_id', session.user.email.toLowerCase());

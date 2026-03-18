@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     X,
@@ -32,7 +32,11 @@ import {
     Sparkles,
     HelpCircle,
     ChevronLeft,
-    Download
+    Download,
+    Edit3,
+    Camera,
+    CheckCircle2,
+    AlertCircle
 } from 'lucide-react';
 import { ToggleSwitch } from './toggle-switch';
 import { Button } from './button';
@@ -45,9 +49,7 @@ import {
     Info, 
     ArrowRight, 
     ExternalLink, 
-    History, 
-    CheckCircle2, 
-    AlertCircle 
+    History
 } from 'lucide-react';
 import { VerificationCard } from './verification-card';
 import { CancellationFlow } from './cancellation-flow';
@@ -101,7 +103,48 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
         lastName: session?.user?.name?.split(' ').slice(1).join(' ') || '',
         email: session?.user?.email || '',
         username: session?.user?.name?.toLowerCase().replace(/\s/g, '_') || 'user',
+        picture: session?.user?.image || '/arcus-ai-icon.jpg'
     });
+
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handlePhotoClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Visual feedback immediately
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            setAccountInfo(prev => ({ ...prev, picture: event.target?.result as string }));
+        };
+        reader.readAsDataURL(file);
+
+        // Upload to server
+        const formData = new FormData();
+        formData.append('avatar', file);
+
+        try {
+            const response = await fetch('/api/profile/avatar', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setAccountInfo(prev => ({ ...prev, picture: data.url }));
+                toast.success('Photo uploaded!');
+            } else {
+                toast.error('Failed to upload photo');
+            }
+        } catch (error) {
+            console.error('Photo upload error:', error);
+            toast.error('Error uploading photo');
+        }
+    };
 
     const [isSaving, setIsSaving] = useState(false);
 
@@ -114,6 +157,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                 body: JSON.stringify({
                     name: `${accountInfo.firstName} ${accountInfo.lastName}`,
                     username: accountInfo.username,
+                    picture: accountInfo.picture
                 }),
             });
 
@@ -450,17 +494,28 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                 </div>
                                             </div>
                                             <div className="h-px bg-white/5" />
-                                            <div className="flex items-center justify-between">
+                                             <div className="flex items-center justify-between">
                                                 <span className="text-[15px] font-medium text-neutral-400">Profile picture</span>
-                                                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white/10 group cursor-pointer relative">
+                                                <div 
+                                                    onClick={handlePhotoClick}
+                                                    className="w-14 h-14 rounded-full overflow-hidden border-2 border-white/10 group cursor-pointer relative shadow-lg hover:border-white/30 transition-all"
+                                                >
                                                     <img
-                                                        src={session?.user?.image || "/arcus-ai-icon.jpg"}
+                                                        src={accountInfo.picture}
                                                         alt="Profile"
-                                                        className="w-full h-full object-cover group-hover:opacity-50 transition-opacity"
+                                                        className="w-full h-full object-cover group-hover:opacity-40 transition-all duration-300"
                                                     />
-                                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <Edit className="w-4 h-4 text-white" />
+                                                    <div className="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
+                                                        <Camera className="w-5 h-5 text-white mb-0.5" />
+                                                        <span className="text-[8px] font-bold text-white uppercase tracking-tighter">Change</span>
                                                     </div>
+                                                    <input 
+                                                        type="file" 
+                                                        ref={fileInputRef}
+                                                        onChange={handlePhotoChange}
+                                                        accept="image/*"
+                                                        className="hidden" 
+                                                    />
                                                 </div>
                                             </div>
                                         </div>
