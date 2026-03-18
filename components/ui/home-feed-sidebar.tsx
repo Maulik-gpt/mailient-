@@ -81,8 +81,8 @@ export function HomeFeedSidebar({ className = '', onPeopleClick, onSettingsClick
                 {/* Logo & App Name */}
                 <div className={`px-6 mb-8 flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} transition-all duration-300`}>
                     <div className="flex items-center gap-2.5 cursor-pointer group" onClick={() => router.push('/home-feed')}>
-                        <div className="w-11 h-11 relative flex items-center justify-center rounded-[18px] overflow-hidden bg-white shadow-[0_2px_10px_-3px_rgba(0,0,0,0.1)] border border-[#EBE9E2] group-hover:scale-105 transition-transform">
-                            <img src="/mailient-logo-premium.png" alt="Mailient" className="w-[85%] h-[85%] object-contain invert" />
+                        <div className="w-11 h-11 relative flex items-center justify-center rounded-[16px] overflow-hidden bg-black shadow-lg group-hover:scale-105 transition-transform">
+                            <img src="/mailient-logo-v3.png" alt="Mailient" className="w-full h-full object-cover" />
                         </div>
                         {!isCollapsed && (
                             <motion.span 
