@@ -47,8 +47,8 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
     }, []);
 
     const handleCopyLink = () => {
-        const username = profile?.username || 'user';
-        navigator.clipboard.writeText(`https://mailient.xyz/ref/${username}`);
+        const username = profile?.username || profile?.email?.split('@')[0] || '';
+        navigator.clipboard.writeText(`${window.location.origin}/ref/${username}`);
         setCopied(true);
         toast.success('Referral link copied to clipboard');
         setTimeout(() => setCopied(false), 2000);
@@ -225,7 +225,8 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
                                             <p className="text-[10px] text-neutral-400 uppercase font-medium">Your Invite Link</p>
                                             <div className="flex gap-2">
                                                 <div className="flex-1 h-10 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-lg flex items-center px-4 text-xs text-neutral-500 truncate">
-                                                    mailient.xyz/ref/{profile?.username || 'user'}
+                                                    {typeof window !== 'undefined' ? `${window.location.hostname}/ref/` : 'mailient.xyz/ref/'}
+                                                    {profile?.username || profile?.email?.split('@')[0] || ''}
                                                 </div>
                                                 <button 
                                                     onClick={handleCopyLink}
