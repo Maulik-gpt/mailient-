@@ -149,7 +149,7 @@ export function HomeFeedSidebar({ className = '', onPeopleClick, onSettingsClick
                 </div>
 
                 {/* Support Navigation (Pinned at bottom) */}
-                <div className="px-3 pb-8 space-y-1.5 border-t border-[#EBE9E2] dark:border-white/5 pt-4">
+                <div className="px-3 pb-8 space-y-1.5 pt-12">
                     {bottomNavItems.map((item) => {
                         const Icon = item.icon;
                         const isActive = pathname === item.route;
