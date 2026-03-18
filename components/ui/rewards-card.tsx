@@ -49,8 +49,9 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
 
     const steps = [
         { icon: Link2, text: "Share your invite link", bold: "" },
-        { icon: Sparkles, text: "They sign up and get ", bold: "extra 10 credits" },
-        { icon: Zap, text: "You get ", bold: "50 credits", extra: " for every successful referral" },
+        { icon: Sparkles, text: "They sign up and get ", bold: "extra 20 credits" },
+        { icon: Zap, text: "You get ", bold: "50 credits", extra: " per signup, plus " },
+        { icon: Zap, text: "Another ", bold: "100 credits", extra: " if they go Pro" },
     ];
 
     return (
