@@ -657,22 +657,21 @@ Body: ${emailData.body || emailData.snippet}
   }
 }
 
-/**
- * Get integration status for current user
- */
 function buildStepMicroEvent(phase, emailResult, notesResult) {
   if (emailResult?.success) {
     const count = Array.isArray(emailResult.emails) ? emailResult.emails.length : (emailResult.count || 0);
-    if (phase === 'searching') return 'Searching Gmail context for high-priority threads';
-    return `Ranked ${count} relevant thread${count === 1 ? '' : 's'} from Gmail`;
+    const query = emailResult.query || 'recent activity';
+    if (phase === 'searching') return `Deep Search: "${query}" across your inbox...`;
+    return `Context Optimized: Analyzed ${count} high-priority thread${count === 1 ? '' : 's'} with full history.`;
   }
   if (notesResult?.success) {
     const count = Array.isArray(notesResult.notes) ? notesResult.notes.length : 0;
-    return `Analyzed ${count} saved note${count === 1 ? '' : 's'} for context`;
+    if (phase === 'searching') return `Recalling context from your saved notes: "${notesResult.query || 'general'}"`;
+    return `Knowledge Integrated: Found ${count} relevant note${count === 1 ? '' : 's'} for this mission.`;
   }
   return phase === 'searching'
-    ? 'Gathering relevant context for the workflow'
-    : 'Context prepared for output synthesis';
+    ? 'Gathering multi-dimensional context for the mission...'
+    : 'Mission context synthesis complete. Finalizing output...';
 }
 
 function buildEvidenceForStep(step, emailResult, notesResult) {
@@ -960,30 +959,29 @@ async function executeEmailAction(userMessage, userEmail, session, providedAcces
     const gmailService = new GmailService(accessToken, refreshToken || '');
 
     // 🎯 SMART SEARCH: Use AI-generated query if available
-    let query = 'newer_than:7d';
-    let maxResults = 5;
-    let isThreadSearch = false;
-
-    // Extract search query from AI plan if possible
+    let query = 'newer_than:15d';
+    let maxResults = 10;
+    
     const aiSearchStep = intentAnalysis?.plan?.find(s => s.type === 'search' || s.action?.toLowerCase().includes('search'));
     if (aiSearchStep?.description && aiSearchStep.description.length > 5) {
       query = aiSearchStep.description;
-      console.log('🤖 Arcus: Using AI suggested search query:', query);
+      if (!query.includes('newer_than') && !query.includes('after:')) {
+        query += ' newer_than:15d';
+      }
     } else {
-      // Fallback Heuristics
       if (lowerMessage.includes('unread')) {
-        query = 'is:unread newer_than:7d';
+        query = 'is:unread newer_than:15d';
       } else if (lowerMessage.includes('important') || lowerMessage.includes('urgent')) {
-        query = 'is:important newer_than:7d';
+        query = 'is:important newer_than:15d';
       } else if (lowerMessage.includes('starred')) {
-        query = 'is:starred';
+        query = 'is:starred newer_than:30d';
       } else if (lowerMessage.includes('sent')) {
-        query = 'in:sent newer_than:7d';
+        query = 'in:sent newer_than:15d';
       } else if (lowerMessage.includes('today')) {
         query = 'newer_than:1d';
       } else if (lowerMessage.includes('analytics') || lowerMessage.includes('insights')) {
         query = 'newer_than:30d';
-        maxResults = 20;
+        maxResults = 25;
       }
 
       const fromMatch = userMessage.match(/from\s+([^\s,]+)/i);
@@ -992,11 +990,18 @@ async function executeEmailAction(userMessage, userEmail, session, providedAcces
       }
     }
 
-    console.log('📧 Arcus Gmail query:', query);
-
     try {
-      const emailsResponse = await gmailService.getEmails(maxResults, query, null, 'internalDate desc');
-      const messages = emailsResponse?.messages || [];
+      let emailsResponse = await gmailService.getEmails(maxResults, query, null, 'internalDate desc');
+      let messages = emailsResponse?.messages || [];
+
+      // Fallback: If no unread/specific results, try a broader recent search
+      if (messages.length === 0 && (query.includes('is:unread') || query.includes('from:'))) {
+        console.log('🔄 Arcus: No results for specific query, falling back to broader search');
+        const fallbackQuery = 'newer_than:15d';
+        emailsResponse = await gmailService.getEmails(maxResults, fallbackQuery, null, 'internalDate desc');
+        messages = emailsResponse?.messages || [];
+        query = fallbackQuery; // Update query so UI shows fallback
+      }
 
       console.log('📧 Emails found:', messages.length);
 
@@ -1005,13 +1010,42 @@ async function executeEmailAction(userMessage, userEmail, session, providedAcces
       }
 
       const emailDetails = [];
-      for (const message of messages.slice(0, 5)) {
+      // Take up to 8 threads to provide a deep context
+      for (const message of messages.slice(0, 8)) {
         try {
-          const details = await gmailService.getEmailDetails(message.id);
-          const parsed = gmailService.parseEmailData(details);
+          // Deep Retrieval: Fetch the whole thread to see the sequence and history
+          const thread = await gmailService.getThreadDetails(message.threadId);
+          const threadMessages = thread.messages || [];
+          
+          // Map thread messages to a concise history
+          const history = threadMessages.map(m => {
+            const parsed = gmailService.parseEmailData(m);
+            return {
+              from: parsed.from,
+              date: parsed.date,
+              snippet: parsed.snippet,
+              isMe: parsed.from?.includes(userEmail) || parsed.from?.includes('me')
+            };
+          });
 
+          // Focus on the current message details for the main content
+          const currentMsgDetails = await gmailService.getEmailDetails(message.id);
+          const parsed = gmailService.parseEmailData(currentMsgDetails);
           const fullBody = parsed.body || parsed.snippet || '';
-          const bodyContent = fullBody.length > 2000 ? fullBody.substring(0, 2000) + '...' : fullBody;
+          const bodyContent = fullBody.length > 4000 ? fullBody.substring(0, 4000) + '...' : fullBody;
+
+          // Smart Categorization (Business vs Personal)
+          const labels = parsed.labels || [];
+          let category = 'Business'; // Default to Business for professional efficiency
+          const personalKeywords = ['family', 'friend', 'social', 'entertainment', 'netflix', 'spotify', 'amazon', 'order', 'shipping'];
+          const fromLower = (parsed.from || '').toLowerCase();
+          const subLower = (parsed.subject || '').toLowerCase();
+          
+          if (labels.includes('CATEGORY_SOCIAL') || labels.includes('CATEGORY_PROMOTIONS')) {
+            category = 'Personal/Social';
+          } else if (personalKeywords.some(k => fromLower.includes(k) || subLower.includes(k))) {
+            category = 'Personal';
+          }
 
           emailDetails.push({
             id: message.id,
@@ -1021,11 +1055,16 @@ async function executeEmailAction(userMessage, userEmail, session, providedAcces
             date: parsed.date || 'Unknown Date',
             snippet: parsed.snippet || '',
             body: bodyContent,
-            labels: parsed.labels || [],
-            threadId: parsed.threadId || ''
+            labels: labels,
+            threadId: parsed.threadId || '',
+            isUnread: labels.includes('UNREAD'),
+            isImportant: labels.includes('IMPORTANT'),
+            folder: labels.includes('SENT') ? 'Sent' : (labels.includes('TRASH') ? 'Trash' : 'Inbox'),
+            category: category,
+            threadHistory: history.slice(-5) // Last 5 messages in thread for context
           });
         } catch (error) {
-          console.log('Error processing email:', error.message);
+          console.log('Error processing email thread:', error.message);
         }
       }
 
@@ -1069,20 +1108,27 @@ Action: I am stopping execution to ask the user these specific questions.`;
   if (result.action === 'read_emails' && result.success) {
     let context = `=== EMAIL CONTEXT (${result.count} emails) ===\n\n`;
 
-    if (result.emails?.length) {
+    if (result.emails?.length > 0) {
       result.emails.forEach((email, index) => {
-        context += `Email ${index + 1}:\n`;
-        context += `  From: ${email.from}\n`;
-        context += `  Subject: ${email.subject}\n`;
-        context += `  Date: ${email.date}\n`;
-        context += `  Preview: ${email.snippet}\n`;
-        if (email.body) {
-          context += `  Content: ${email.body}\n`;
-        }
-        context += '\n';
+        context += `[Email ${index + 1}]
+  Subject: ${email.subject}
+  From: ${email.from}
+  To: ${email.to}
+  Date: ${email.date}
+  Status: ${email.isUnread ? 'UNREAD' : 'READ'}${email.isImportant ? ', IMPORTANT' : ''}
+  Folder: ${email.folder}
+  Category: ${email.category}
+  ThreadID: ${email.threadId}
+  
+  -- THREAD HISTORY (last 5) --
+${email.threadHistory.map(h => `  * ${h.isMe ? '[ME]' : '[THEM]'} (${h.date}): ${h.snippet}`).join('\n')}
+  
+  -- CONTENT --
+  ${email.body}
+`;
+        context += '\n---\n';
       });
     } else {
-      context += 'No emails found matching the query.';
     }
     return context;
   }
@@ -1134,24 +1180,25 @@ async function executeNotesAction(userMessage, userEmail, providedSearchQuery = 
       return { action: 'notes_search', success: true, notes: [], query: '', count: 0 };
     }
 
-    const response = await fetch('https://mailient.xyz/api/agent-talk/notes-search', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: searchTerm, searchType: 'all' }),
-    });
+    const db = new DatabaseService();
+    // Use direct database search for faster and more reliable notes access
+    // Table name corrected to 'notes' as per schema
+    const { data: notes, error: notesError } = await db.supabase
+      .from('notes')
+      .select('id, subject, content, created_at, tags')
+      .eq('user_id', userEmail)
+      .or(`content.ilike.%${searchTerm}%,subject.ilike.%${searchTerm}%`)
+      .order('created_at', { ascending: false })
+      .limit(10);
 
-    if (!response.ok) {
-      throw new Error(`Notes search failed: ${response.status}`);
-    }
-
-    const data = await response.json();
+    if (notesError) throw notesError;
 
     return {
       action: 'notes_search',
       success: true,
-      notes: data.results || [],
-      query: data.query,
-      count: data.totalFound || 0
+      notes: notes || [],
+      query: searchTerm,
+      count: notes?.length || 0
     };
   } catch (error) {
     console.error('Error executing notes action:', error);
