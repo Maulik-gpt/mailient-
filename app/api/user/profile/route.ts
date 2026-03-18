@@ -15,7 +15,7 @@ export async function GET() {
         const db = new DatabaseService();
         const { data: profile, error } = await db.supabase
             .from('user_profiles')
-            .select('name, username, avatar_url, email')
+            .select('name, username, avatar_url, email, preferences')
             .eq('user_id', session.user.email.toLowerCase())
             .maybeSingle();
 
@@ -26,7 +26,8 @@ export async function GET() {
                 name: session.user.name,
                 username: session.user.name?.toLowerCase().replace(/\s/g, '_'),
                 picture: session.user.image,
-                email: session.user.email
+                email: session.user.email,
+                preferences: {}
             });
         }
         
@@ -34,7 +35,8 @@ export async function GET() {
             name: profile?.name || session.user.name,
             username: profile?.username || session.user.name?.toLowerCase().replace(/\s/g, '_'),
             picture: profile?.avatar_url || session.user.image,
-            email: session.user.email
+            email: session.user.email,
+            preferences: profile?.preferences || {}
         });
     } catch (e) {
         console.error('Unexpected profile fetch error:', e);
