@@ -1,6 +1,9 @@
-/** @type {any} */
-import { auth } from '@/lib/auth.js';
+// @ts-ignore
+import { auth as nextAuth } from '@/lib/auth.js';
 import { DatabaseService } from '@/lib/supabase.js';
+
+// @ts-ignore
+const auth: any = nextAuth;
 
 export async function GET() {
     const session = await auth();
