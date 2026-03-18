@@ -70,16 +70,22 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Hero Section */}
-                <div className="relative h-56 bg-gradient-to-br from-[#1A1A1A] to-[#0A0A0A] p-8 flex flex-col justify-end overflow-hidden">
+                <div className="relative h-56 bg-[#0E0E0E] p-8 flex flex-col justify-end overflow-hidden group">
                     {/* Visual Element (Premium Glassy Cube) */}
-                    <div className="absolute top-0 right-0 w-64 h-full pointer-events-none opacity-90 mix-blend-screen overflow-hidden">
+                    <div className="absolute top-0 right-0 w-80 h-full pointer-events-none opacity-80 mix-blend-screen transition-transform duration-700 group-hover:scale-105">
                         <img 
                             src="/mailient_cube.png" 
-                            className="w-full h-full object-cover scale-150 translate-x-12 translate-y-4 rotate-[-12deg] filter brightness-110 contrast-125 saturate-150 blur-[0.5px]" 
+                            className="w-full h-full object-cover scale-[1.7] translate-x-12 translate-y-2 rotate-[-12deg]"
+                            style={{ 
+                                maskImage: 'linear-gradient(to left, black 40%, transparent 95%), linear-gradient(to bottom, black 80%, transparent)',
+                                WebkitMaskImage: 'linear-gradient(to left, black 40%, transparent 95%), linear-gradient(to bottom, black 80%, transparent)'
+                            }}
                             alt=""
                         />
-                        <div className="absolute inset-0 bg-gradient-to-l from-transparent via-[#0E0E0E]/60 to-[#0E0E0E]" />
                     </div>
+                    
+                    {/* Dark overlay for text clarity */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#0E0E0E] via-[#0E0E0E]/80 to-transparent z-[5]" />
 
                     <div className="relative z-10 space-y-3">
                         <div className="inline-flex items-center px-3 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
