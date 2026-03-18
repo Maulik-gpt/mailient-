@@ -47,28 +47,33 @@ export async function POST(request) {
             return NextResponse.json({ error: 'Invalid reward ID' }, { status: 400 });
         }
 
-        // Apply reward: decrement usage count (credit injection)
-        const result = await subscriptionService.decrementFeatureUsage(
-            userId, 
-            rewardConfig.feature, 
-            rewardConfig.amount
-        );
-
-        if (!result.success) {
-            return NextResponse.json({ error: 'Failed to apply reward' }, { status: 500 });
-        }
-
-        // Record the claim in profile preferences
+        // Apply reward: Permanent Limit Increase
+        const bonusCredits = preferences.bonus_credits || {};
+        const currentBonus = bonusCredits[rewardConfig.feature] || 0;
+        bonusCredits[rewardConfig.feature] = currentBonus + rewardConfig.amount;
+        
+        preferences.bonus_credits = bonusCredits;
         preferences.claimed_rewards = [...claimedRewards, rewardId];
-        await db.supabase
+
+        // Update profile in DB
+        const { error: updateError } = await db.supabase
             .from('user_profiles')
             .update({ preferences, updated_at: new Date().toISOString() })
             .ilike('user_id', userId);
 
+        if (updateError) {
+            console.error('Error updating profile with reward:', updateError);
+            return NextResponse.json({ error: 'Failed to apply reward to account' }, { status: 500 });
+        }
+
+        // Return new status
+        const usage = await subscriptionService.getFeatureUsage(userId, rewardConfig.feature);
+
         return NextResponse.json({ 
             success: true, 
             message: `Successfully claimed ${rewardConfig.amount} credits`,
-            newTotalRemaining: await subscriptionService.getFeatureUsage(userId, rewardConfig.feature).then(u => u.remaining)
+            newTotalLimit: usage.limit,
+            newTotalRemaining: usage.remaining
         });
 
     } catch (error) {
