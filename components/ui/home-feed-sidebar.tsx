@@ -32,6 +32,7 @@ export function HomeFeedSidebar({
     onPeopleClick, 
     onOpenSettings, 
     onOpenHelp,
+    onOpenRewards,
     activeView = 'home', 
     onCollapse 
 }: HomeFeedSidebarProps) {
@@ -71,9 +72,9 @@ export function HomeFeedSidebar({
     ];
 
     const bottomNavItems = [
-        { id: 'gift', icon: Gift, label: 'Rewards', onClick: onOpenRewards },
-        { id: 'settings', icon: Settings2, label: 'Settings', onClick: onOpenSettings },
-        { id: 'help', icon: HelpCircle, label: 'Help', onClick: onOpenHelp },
+        { id: 'gift', icon: Gift, label: 'Rewards', onClick: onOpenRewards, route: '' },
+        { id: 'settings', icon: Settings2, label: 'Settings', onClick: onOpenSettings, route: '' },
+        { id: 'help', icon: HelpCircle, label: 'Help', onClick: onOpenHelp, route: '' },
     ];
 
     return (

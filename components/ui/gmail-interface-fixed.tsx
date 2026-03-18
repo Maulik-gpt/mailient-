@@ -1392,7 +1392,18 @@ export function GmailInterfaceFixed() {
             <AnimatePresence>
                 {showSettings && <SettingsCard onClose={() => setShowSettings(false)} />}
                 {showHelp && <HelpCard onClose={() => setShowHelp(false)} />}
-                {showRewards && <RewardsCard onClose={() => setShowRewards(false)} />}
+                {showRewards && (
+                    <RewardsCard 
+                        onClose={() => setShowRewards(false)} 
+                        usageData={usageData || {
+                            planType: 'free',
+                            features: {
+                                arcus_ai: { usage: 0, limit: 10, remaining: 10, isUnlimited: false, period: 'daily' },
+                                sift_ai: { usage: 0, limit: 5, remaining: 5, isUnlimited: false, period: 'daily' }
+                            }
+                        }} 
+                    />
+                )}
             </AnimatePresence>
 
             {/* Main Content Wrapper */}
