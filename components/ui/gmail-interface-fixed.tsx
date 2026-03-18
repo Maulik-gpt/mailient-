@@ -12,6 +12,7 @@ import { RefreshCw, AlertCircle, TrendingUp, Clock, Target, Zap, Mail, Home, X, 
 import { Avatar, AvatarFallback, AvatarImage } from './avatar';
 import { toast } from 'sonner';
 import { HelpCard } from './help-card';
+import { RewardsCard } from './rewards-card';
 import { SchedulingModal } from './scheduling-modal';
 import { UsageLimitModal } from './usage-limit-modal';
 import { UsageBadge } from './bubble-button';
@@ -252,8 +253,9 @@ export function GmailInterfaceFixed() {
     const [isArcusLoading, setIsArcusLoading] = useState(false);
     const [arcusConversationId, setArcusConversationId] = useState<string | null>(null);
     const [arcusPanelHeight, setArcusPanelHeight] = useState(800);
-    const [showSettings, setShowSettings] = useState(false);
+     const [showSettings, setShowSettings] = useState(false);
     const [showHelp, setShowHelp] = useState(false);
+    const [showRewards, setShowRewards] = useState(false);
     
     // Smart Nudges state
     const [nudges, setNudges] = useState<any[]>([]);
@@ -1382,6 +1384,7 @@ export function GmailInterfaceFixed() {
             <HomeFeedSidebar
                 onOpenSettings={() => setShowSettings(true)}
                 onOpenHelp={() => setShowHelp(true)}
+                onOpenRewards={() => setShowRewards(true)}
                 activeView={viewMode}
                 onCollapse={(collapsed) => setSidebarCollapsed(collapsed)}
             />
@@ -1389,6 +1392,7 @@ export function GmailInterfaceFixed() {
             <AnimatePresence>
                 {showSettings && <SettingsCard onClose={() => setShowSettings(false)} />}
                 {showHelp && <HelpCard onClose={() => setShowHelp(false)} />}
+                {showRewards && <RewardsCard onClose={() => setShowRewards(false)} />}
             </AnimatePresence>
 
             {/* Main Content Wrapper */}

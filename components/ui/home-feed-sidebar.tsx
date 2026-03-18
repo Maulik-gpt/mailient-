@@ -22,6 +22,7 @@ interface HomeFeedSidebarProps {
     onPeopleClick?: () => void;
     onOpenSettings?: () => void;
     onOpenHelp?: () => void;
+    onOpenRewards?: () => void;
     activeView?: 'home' | 'people';
     onCollapse?: (collapsed: boolean) => void;
 }
@@ -70,9 +71,9 @@ export function HomeFeedSidebar({
     ];
 
     const bottomNavItems = [
-        { id: 'gift', icon: Gift, label: 'Rewards', route: '/pricing' },
-        { id: 'settings', icon: Settings2, label: 'Settings', route: '/settings', onClick: onOpenSettings },
-        { id: 'help', icon: HelpCircle, label: 'Help', route: '/help', onClick: onOpenHelp },
+        { id: 'gift', icon: Gift, label: 'Rewards', onClick: onOpenRewards },
+        { id: 'settings', icon: Settings2, label: 'Settings', onClick: onOpenSettings },
+        { id: 'help', icon: HelpCircle, label: 'Help', onClick: onOpenHelp },
     ];
 
     return (
@@ -171,7 +172,7 @@ export function HomeFeedSidebar({
                                         onClick={() => {
                                             if (item.onClick) {
                                                 item.onClick();
-                                            } else {
+                                            } else if (item.route) {
                                                 router.push(item.route);
                                             }
                                         }}
