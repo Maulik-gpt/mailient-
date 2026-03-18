@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Gift, Users, Sparkles, Copy, Check, CreditCard, Loader2 } from 'lucide-react';
+import { X, Zap, Users, Sparkles, Copy, Check, MessageSquare, ZapIcon, Globe, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface RewardsCardProps {
@@ -14,243 +14,139 @@ interface RewardsCardProps {
 }
 
 export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
-    const [activeSection, setActiveSection] = useState<'my-rewards' | 'referrals'>('my-rewards');
     const [copied, setCopied] = useState(false);
     const [profile, setProfile] = useState<any>(null);
-    const [rewards, setRewards] = useState<any[]>([]);
-    const [isLoadingRewards, setIsLoadingRewards] = useState(true);
-    const [isClaiming, setIsClaiming] = useState<string | null>(null);
-
-    const arcusCredits = usageData.features?.arcus_ai || { usage: 0, limit: 10, remaining: 10 };
-
-    const loadData = async () => {
-        try {
-            const [pRes, rRes] = await Promise.all([
-                fetch('/api/user/profile'),
-                fetch('/api/subscription/usage/claim')
-            ]);
-            
-            if (pRes.ok) setProfile(await pRes.json());
-            if (rRes.ok) {
-                const data = await rRes.json();
-                setRewards(data.rewards || []);
-            }
-        } catch (err) {
-            console.error('Error loading rewards data:', err);
-        } finally {
-            setIsLoadingRewards(false);
-        }
-    };
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        loadData();
+        const fetchProfile = async () => {
+            try {
+                const res = await fetch('/api/user/profile');
+                if (res.ok) {
+                    const data = await res.json();
+                    setProfile(data);
+                }
+            } catch (err) {
+                console.error('Error fetching profile:', err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchProfile();
     }, []);
 
     const handleCopyLink = () => {
         const username = profile?.username || profile?.email?.split('@')[0] || '';
-        navigator.clipboard.writeText(`${window.location.origin}/ref/${username}`);
+        const url = `${window.location.origin}/invite/${username}`;
+        navigator.clipboard.writeText(url);
         setCopied(true);
-        toast.success('Referral link copied to clipboard');
+        toast.success('Invite link copied to clipboard');
         setTimeout(() => setCopied(false), 2000);
     };
 
-    const handleClaim = async (rewardId: string) => {
-        try {
-            setIsClaiming(rewardId);
-            const res = await fetch('/api/subscription/usage/claim', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ rewardId })
-            });
+    const username = profile?.username || profile?.email?.split('@')[0] || '';
+    const referralUrl = `${typeof window !== 'undefined' ? window.location.hostname : 'mailient.xyz'}/invite/${username}`;
 
-            if (res.ok) {
-                const result = await res.json();
-                toast.success(result.message || 'Reward claimed successfully!');
-                await loadData();
-            } else {
-                const error = await res.json();
-                toast.error(error.error || 'Failed to claim reward');
-            }
-        } catch (err) {
-            toast.error('An error occurred while claiming');
-        } finally {
-            setIsClaiming(null);
-        }
-    };
-
-    const navItems = [
-        { id: 'my-rewards', label: 'My Rewards', icon: Gift },
-        { id: 'referrals', label: 'Referrals', icon: Users },
+    const steps = [
+        { icon: Link2, text: "Share your invite link", bold: "" },
+        { icon: Sparkles, text: "They sign up and get ", bold: "extra 10 credits" },
+        { icon: Zap, text: "You get ", bold: "50 credits", extra: " for every successful referral who signs up" },
     ];
-
-    const getIcon = (name: string) => {
-        switch(name) {
-            case 'CreditCard': return CreditCard;
-            case 'Gift': return Gift;
-            case 'Sparkles': return Sparkles;
-            default: return Gift;
-        }
-    };
 
     return (
         <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
             onClick={onClose}
         >
             <motion.div 
-                initial={{ scale: 0.98, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.98, opacity: 0 }}
-                className="w-full max-w-4xl min-h-[50vh] max-h-[80vh] bg-white dark:bg-[#0a0a0a] rounded-[16px] shadow-[0_32px_128px_-16px_rgba(0,0,0,0.5)] overflow-hidden flex border border-neutral-200 dark:border-white/5"
+                initial={{ scale: 0.95, y: 20, opacity: 0 }}
+                animate={{ scale: 1, y: 0, opacity: 1 }}
+                exit={{ scale: 0.95, y: 20, opacity: 0 }}
+                className="w-full max-w-[480px] bg-[#0E0E0E] rounded-[24px] shadow-[0_32px_128px_-12px_rgba(0,0,0,0.8)] overflow-hidden border border-white/10 flex flex-col"
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* Sidebar */}
-                <div className="w-64 bg-neutral-50/50 dark:bg-white/[0.02] border-r border-neutral-100 dark:border-white/5 flex flex-col pt-8 pb-4">
-                    <div className="px-6 mb-8 flex items-center gap-2">
-                        <Gift className="w-5 h-5 text-neutral-400" />
-                        <h2 className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">Rewards</h2>
+                {/* Hero Section */}
+                <div className="relative h-56 bg-gradient-to-br from-[#1A1A1A] to-[#0A0A0A] p-8 flex flex-col justify-end overflow-hidden">
+                    {/* Visual Element (Gradient Cube) */}
+                    <div className="absolute top-0 right-0 w-64 h-full pointer-events-none opacity-80 mix-blend-screen overflow-hidden">
+                        <img 
+                            src="/mailient_cube.png" 
+                            className="w-full h-full object-cover scale-150 translate-x-12 translate-y-4 rotate-[-12deg] filter brightness-110 contrast-125 saturate-150 blur-[0.5px]" 
+                            alt=""
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-l from-transparent via-[#0E0E0E]/40 to-[#0E0E0E]" />
                     </div>
 
-                    <nav className="flex-1 space-y-1 px-3">
-                        {navItems.map((item) => (
-                            <button
-                                key={item.id}
-                                onClick={() => setActiveSection(item.id as any)}
-                                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-sm ${
-                                    activeSection === item.id 
-                                    ? 'bg-neutral-100 dark:bg-white/10 text-black dark:text-white font-medium' 
-                                    : 'text-neutral-500 hover:text-black dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-white/5'
-                                }`}
-                            >
-                                <item.icon className="w-4 h-4" />
-                                {item.label}
-                            </button>
-                        ))}
-                    </nav>
-
-                    <div className="mt-auto px-6 pt-6 border-t border-neutral-100 dark:border-white/5">
-                        <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-medium">Daily Limit</p>
-                        <p className="text-xl font-bold text-black dark:text-white mt-1">{arcusCredits.limit} Arcus</p>
+                    <div className="relative z-10 space-y-3">
+                        <div className="inline-flex items-center px-3 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
+                            <span className="text-[10px] font-bold text-white tracking-widest uppercase opacity-80">Earn 100+ units</span>
+                        </div>
+                        <h2 className="text-4xl font-bold text-white tracking-tight leading-[1.1]">
+                            Expand the<br />Network
+                        </h2>
+                        <p className="text-white/40 text-sm font-medium">and earn free AI intelligence</p>
                     </div>
+
+                    <button 
+                        onClick={onClose}
+                        className="absolute top-6 right-6 p-2 rounded-full bg-black/20 hover:bg-white/10 border border-white/10 transition-all z-20"
+                    >
+                        <X className="w-4 h-4 text-white/60" />
+                    </button>
                 </div>
 
-                {/* Main Content Area */}
-                <div className="flex-1 flex flex-col bg-white dark:bg-[#0a0a0a]">
-                    <header className="h-16 border-b border-neutral-100 dark:border-white/5 flex items-center justify-between px-8">
-                        <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">
-                            {navItems.find(n => n.id === activeSection)?.label}
-                        </h3>
-                        <button 
-                            onClick={onClose}
-                            className="p-1.5 hover:bg-neutral-100 dark:hover:bg-white/10 rounded-lg transition-all"
-                        >
-                            <X className="w-4 h-4 text-neutral-400" />
-                        </button>
-                    </header>
-
-                    <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
-                        <AnimatePresence mode="wait">
-                            {activeSection === 'my-rewards' && (
+                {/* Content Section */}
+                <div className="p-8 space-y-8">
+                    <div className="space-y-6">
+                        <h4 className="text-[11px] font-bold text-white/30 tracking-[0.2em] uppercase">How it works:</h4>
+                        
+                        <div className="space-y-6">
+                            {steps.map((step, i) => (
                                 <motion.div 
-                                    key="my-rewards"
-                                    initial={{ opacity: 0, y: 5 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -5 }}
-                                    className="space-y-6"
+                                    key={i}
+                                    initial={{ x: -10, opacity: 0 }}
+                                    animate={{ x: 0, opacity: 1 }}
+                                    transition={{ delay: 0.1 * i }}
+                                    className="flex items-start gap-4"
                                 >
-                                    {isLoadingRewards ? (
-                                        <div className="flex items-center justify-center h-48">
-                                            <Loader2 className="w-6 h-6 animate-spin text-neutral-400" />
-                                        </div>
-                                    ) : rewards.length === 0 ? (
-                                        <div className="text-center py-12">
-                                            <p className="text-sm text-neutral-500">No active rewards found.</p>
-                                        </div>
-                                    ) : (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            {rewards.map((reward, i) => {
-                                                const IconComponent = getIcon(reward.icon);
-                                                return (
-                                                    <div key={i} className="p-5 border border-neutral-100 dark:border-white/5 rounded-xl transition-all group">
-                                                        <div className="flex justify-between items-start mb-4">
-                                                            <div className="w-10 h-10 bg-neutral-100 dark:bg-white/5 rounded-lg flex items-center justify-center">
-                                                                <IconComponent className="w-5 h-5 text-neutral-500" />
-                                                            </div>
-                                                            <div className="flex items-center gap-2">
-                                                                {reward.status === 'claimed' ? (
-                                                                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-white/5 text-neutral-500 flex items-center gap-1">
-                                                                        <Check className="w-3 h-3" /> Claimed
-                                                                    </span>
-                                                                ) : (
-                                                                    <button 
-                                                                        onClick={() => handleClaim(reward.id)}
-                                                                        disabled={isClaiming === reward.id}
-                                                                        className="text-[10px] font-semibold px-3 py-1 bg-black dark:bg-white text-white dark:text-black rounded-lg hover:opacity-80 transition-all flex items-center gap-1"
-                                                                    >
-                                                                        {isClaiming === reward.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                                                                        Claim
-                                                                    </button>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                        <h4 className="text-sm font-semibold text-neutral-900 dark:text-white">{reward.title}</h4>
-                                                        <p className="text-lg font-bold text-black dark:text-white mt-1 mb-1">{reward.value}</p>
-                                                        <p className="text-xs text-neutral-500">{reward.desc}</p>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    )}
-                                </motion.div>
-                            )}
-
-                            {activeSection === 'referrals' && (
-                                <motion.div 
-                                    key="referrals"
-                                    initial={{ opacity: 0, y: 5 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -5 }}
-                                    className="max-w-md"
-                                >
-                                    <div className="space-y-6">
-                                        <div className="space-y-2">
-                                            <h4 className="text-lg font-bold text-neutral-900 dark:text-white">Expand the Network</h4>
-                                            <p className="text-sm text-neutral-500">Every successful referral injects 50 permanent credits into your account.</p>
-                                        </div>
-
-                                        <div className="p-4 bg-neutral-50 dark:bg-white/[0.02] border border-neutral-100 dark:border-white/5 rounded-xl space-y-4">
-                                            <p className="text-[10px] text-neutral-400 uppercase font-medium">Your Invite Link</p>
-                                            <div className="flex gap-2">
-                                                <div className="flex-1 h-10 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-lg flex items-center px-4 text-xs text-neutral-500 truncate">
-                                                    {typeof window !== 'undefined' ? `${window.location.hostname}/ref/` : 'mailient.xyz/ref/'}
-                                                    {profile?.username || profile?.email?.split('@')[0] || ''}
-                                                </div>
-                                                <button 
-                                                    onClick={handleCopyLink}
-                                                    className="w-10 h-10 flex items-center justify-center bg-black dark:bg-white text-white dark:text-black rounded-lg hover:opacity-90 transition-all border border-transparent shadow-sm"
-                                                >
-                                                    {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-8 pt-8 border-t border-neutral-100 dark:border-white/5">
-                                            <div>
-                                                <p className="text-[10px] text-neutral-400 uppercase font-medium mb-1">Total Referrals</p>
-                                                <p className="text-3xl font-bold text-neutral-900 dark:text-white">{profile?.invite_count || 0}</p>
-                                            </div>
-                                            <div>
-                                                <p className="text-[10px] text-neutral-400 uppercase font-medium mb-1">Bonus Credits</p>
-                                                <p className="text-3xl font-bold text-neutral-900 dark:text-white">{(profile?.invite_count || 0) * 50}</p>
-                                            </div>
-                                        </div>
+                                    <div className="mt-0.5 p-1 rounded-md bg-white/5 border border-white/10">
+                                        <step.icon className="w-3.5 h-3.5 text-white/70" />
                                     </div>
+                                    <p className="text-sm text-white/60 leading-tight flex-1">
+                                        {step.text}
+                                        <span className="text-white font-bold">{step.bold}</span>
+                                        {step.extra && <span className="opacity-80">{step.extra}</span>}
+                                    </p>
                                 </motion.div>
-                            )}
-                        </AnimatePresence>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-white/5">
+                        <p className="text-[13px] font-medium text-white/50">
+                            <span className="text-white font-bold">{profile?.invite_count || 0}</span> signed up
+                        </p>
+                    </div>
+
+                    {/* Copy Box */}
+                    <div className="relative group">
+                        <div className="flex h-12 bg-white/5 rounded-xl border border-white/10 focus-within:border-white/20 transition-all p-1">
+                            <div className="flex-1 flex items-center px-4 gap-3 overflow-hidden">
+                                <Link2 className="w-4 h-4 text-white/30" />
+                                <span className="text-xs text-white/50 truncate font-mono tracking-tight">
+                                    https://{referralUrl}
+                                </span>
+                            </div>
+                            <button 
+                                onClick={handleCopyLink}
+                                className="px-6 h-full bg-white text-[#0E0E0E] rounded-[10px] text-xs font-bold hover:scale-[0.98] active:scale-95 transition-all shadow-[0_4px_12px_rgba(255,255,255,0.1)]"
+                            >
+                                {copied ? 'Copied' : 'Copy link'}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </motion.div>

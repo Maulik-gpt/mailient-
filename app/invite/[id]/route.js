@@ -14,6 +14,5 @@ export async function GET(request, { params }) {
     });
     
     // Redirect to home/signup to start the conversion
-    // Using a 307 temporary redirect
     return redirect('/');
 }
