@@ -128,7 +128,7 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
 
                     <div className="pt-2 border-t border-white/5 flex items-center justify-between">
                         <p className="text-[13px] font-medium text-white/50">
-                            <span className="text-white font-bold">{profile?.invite_count || 0}</span> signed up
+                            <span className="text-white font-bold">{profile?.invite_count || 0}</span> signed up, <span className="text-white font-bold">{profile?.conversion_count || 0}</span> converted
                         </p>
                         <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-white/5 border border-white/5">
                             <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
