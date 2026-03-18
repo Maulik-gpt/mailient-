@@ -136,21 +136,16 @@ export async function POST(request) {
       }
     }
 
-    // Get integration status
-    const integrations = await getIntegrationStatus(userEmail, db);
+    // Parallelize data fetching for speed
+    const [integrations, conversationHistoryResult] = await Promise.all([
+      getIntegrationStatus(userEmail, db),
+      (currentConversationId && userEmail) ? getConversationHistory(userEmail, currentConversationId, db) : Promise.resolve([])
+    ]);
+    
+    const conversationHistory = conversationHistoryResult || [];
     const effectiveGmailConnected = Boolean(gmailAccessToken || integrations?.gmail);
     console.log('Arcus Integration status:', integrations);
-
-    // Get conversation history for memory
-    let conversationHistory = [];
-    if (currentConversationId && userEmail) {
-      try {
-        conversationHistory = await getConversationHistory(userEmail, currentConversationId, db);
-        console.log('📝 Loaded conversation history:', conversationHistory.length, 'messages');
-      } catch (err) {
-        console.warn('Error loading conversation history:', err);
-      }
-    }
+    console.log('📝 Loaded conversation history:', conversationHistory.length, 'messages');
 
     // Initialize Arcus AI and Mission Service
     const arcusAI = new ArcusAIService();
@@ -456,15 +451,64 @@ Body: ${emailData.body || emailData.snippet}
 
     const shouldGenerateCanvas = Boolean(isCanvas);
 
-    if (shouldGenerateCanvas) {
-      try {
-        canvasData = await arcusAI.generateCanvasContent(
+    // --- PARALLEL GENERATION: Generate canvas and response at the same time ---
+    let canvasDataResult = null;
+    let responseResult = null;
+
+    try {
+      console.log('⚡ Starting parallel generation for ' + (shouldGenerateCanvas ? 'Canvas + Response' : 'Response only'));
+      const generations = [];
+      
+      // Always generate response
+      const responsePromise = arcusAI.generateResponse(message, {
+        conversationHistory,
+        emailContext,
+        integrations: {
+          gmail: effectiveGmailConnected,
+          calendar: effectiveGmailConnected,
+          'cal.com': !!profile?.integrations?.['cal.com'],
+          'cal.com_link': profile?.integrations?.['cal.com_link']
+        },
+        subscriptionInfo: subscriptionService.getPlanInfo(profile?.plan_type || 'none', profile?.subscription_end_date),
+        userEmail,
+        userName,
+        privacyMode,
+        attachments,
+        isDeepThinking
+      });
+      generations.push(responsePromise);
+
+      // Optionally generate canvas content
+      let canvasPromise = null;
+      if (shouldGenerateCanvas) {
+        canvasPromise = arcusAI.generateCanvasContent(
           message,
           effectiveCanvasType,
           emailContext || '',
           { userName, userEmail, privacyMode, attachments, isDeepThinking }
         );
+        generations.push(canvasPromise);
+      }
 
+      // Wait for all generations to finish
+      const results = await Promise.all(generations);
+      responseResult = results[0];
+      if (shouldGenerateCanvas) {
+        canvasDataResult = results[1];
+      }
+      
+      console.log('✅ Parallel generation completed');
+    } catch (err) {
+      console.error('💥 Parallel generation failed:', err.message);
+      // If parallel fails, we might still have partial results or need to re-try or fall back
+      if (!responseResult) throw err;
+    }
+
+    const response = responseResult;
+    canvasData = canvasDataResult;
+
+    if (shouldGenerateCanvas && canvasData) {
+      try {
         if (operatorRuntime && operatorRun) {
           executionPolicy = operatorRuntime.buildExecutionPolicy(
             effectiveCanvasType,
@@ -500,27 +544,9 @@ Body: ${emailData.body || emailData.snippet}
           step2.status = approvalRequired ? 'blocked_approval' : 'completed';
         }
       } catch (err) {
-        console.error('Canvas generation failed:', err.message);
+        console.error('Canvas post-processing failed:', err.message);
       }
     }
-
-    // --- GENERATE AI RESPONSE ---
-    const response = await arcusAI.generateResponse(message, {
-      conversationHistory,
-      emailContext,
-      integrations: {
-        gmail: effectiveGmailConnected,
-        calendar: effectiveGmailConnected,
-        'cal.com': !!profile?.integrations?.['cal.com'],
-        'cal.com_link': profile?.integrations?.['cal.com_link']
-      },
-      subscriptionInfo: subscriptionService.getPlanInfo(profile?.plan_type || 'none', profile?.subscription_end_date),
-      userEmail,
-      userName,
-      privacyMode,
-      attachments,
-      isDeepThinking
-    });
 
     const finalResponse = response && response.trim()
       ? response
