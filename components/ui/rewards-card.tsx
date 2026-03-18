@@ -77,8 +77,10 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
                             src="/mailient_cube.png" 
                             className="w-full h-full object-cover scale-[1.7] translate-x-12 translate-y-2 rotate-[-12deg]"
                             style={{ 
-                                maskImage: 'linear-gradient(to left, black 40%, transparent 95%), linear-gradient(to bottom, black 80%, transparent)',
-                                WebkitMaskImage: 'linear-gradient(to left, black 40%, transparent 95%), linear-gradient(to bottom, black 80%, transparent)'
+                                maskImage: 'radial-gradient(circle at 65% 50%, black 10%, transparent 80%), linear-gradient(to right, transparent, black 40%)',
+                                WebkitMaskImage: 'radial-gradient(circle at 65% 50%, black 10%, transparent 80%), linear-gradient(to right, transparent, black 40%)',
+                                maskComposite: 'intersect',
+                                WebkitMaskComposite: 'source-in'
                             }}
                             alt=""
                         />

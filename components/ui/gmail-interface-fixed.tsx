@@ -1362,24 +1362,6 @@ export function GmailInterfaceFixed() {
                 period={usageLimitModalData?.period || 'monthly'}
                 currentPlan={usageLimitModalData?.currentPlan || 'starter'}
             />
-            {/* Credits Badge in Header */}
-            {usageData && usageData.planType !== 'pro' && (
-                <div className="fixed top-4 right-4 z-50">
-                    <UsageBadge
-                        icon={<Sparkles className="h-4 w-4" />}
-                        planName={(usageData.planType as string) === 'starter' ? 'Starter' : (usageData.planType as string) === 'pro' ? 'Pro' : 'Free'}
-                        usage={usageData.features?.arcus_ai?.usage || 0}
-                        limit={usageData.features?.arcus_ai?.limit || 5}
-                        tooltipContent={
-                            <p>
-                                You are on the {(usageData.planType as string) === 'starter' ? 'Starter' : (usageData.planType as string) === 'pro' ? 'Pro' : 'Free'} plan.
-                                <br />
-                                {usageData.features?.arcus_ai?.remaining ?? 5} AI credits left today.
-                            </p>
-                        }
-                    />
-                </div>
-            )}
             {/* Sidebar */}
             <HomeFeedSidebar
                 onOpenSettings={() => setShowSettings(true)}
