@@ -81,8 +81,8 @@ export function HomeFeedSidebar({ className = '', onPeopleClick, onSettingsClick
                 {/* Logo & App Name */}
                 <div className={`px-6 mb-8 flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} transition-all duration-300`}>
                     <div className="flex items-center gap-2.5 cursor-pointer group" onClick={() => router.push('/home-feed')}>
-                        <div className="w-10 h-10 relative flex items-center justify-center rounded-xl overflow-hidden bg-black dark:bg-white shadow-md border border-[#EBE9E2] dark:border-white/10 group-hover:scale-105 transition-transform">
-                            <img src="/mailient-logo-premium.png" alt="Mailient" className="w-full h-full object-cover scale-110 dark:invert" />
+                        <div className="w-11 h-11 relative flex items-center justify-center rounded-[18px] overflow-hidden bg-white shadow-[0_2px_10px_-3px_rgba(0,0,0,0.1)] border border-[#EBE9E2] group-hover:scale-105 transition-transform">
+                            <img src="/mailient-logo-premium.png" alt="Mailient" className="w-[85%] h-[85%] object-contain invert" />
                         </div>
                         {!isCollapsed && (
                             <motion.span 
@@ -114,13 +114,8 @@ export function HomeFeedSidebar({ className = '', onPeopleClick, onSettingsClick
 
                 {/* Sidebar Scroll Area */}
                 <div className="flex-1 px-3 py-2 space-y-8 overflow-y-auto custom-scrollbar pt-2">
-                    {/* Top Section */}
+                    {/* Top Navigation */}
                     <div className="space-y-1">
-                        {!isCollapsed && (
-                            <h3 className="px-3 mb-2 text-[10px] font-bold tracking-[0.2em] text-neutral-400 dark:text-neutral-600 uppercase">
-                                General
-                            </h3>
-                        )}
                         {mainNavItems.map((item) => {
                             const Icon = item.icon;
                             const isActive = pathname === item.route || (item.id === 'home' && pathname === '/home-feed');
@@ -151,13 +146,8 @@ export function HomeFeedSidebar({ className = '', onPeopleClick, onSettingsClick
                         })}
                     </div>
 
-                    {/* Bottom Section */}
-                    <div className="space-y-1 mt-auto">
-                        {!isCollapsed && (
-                            <h3 className="px-3 mb-2 text-[10px] font-bold tracking-[0.2em] text-neutral-400 dark:text-neutral-600 uppercase">
-                                Support
-                            </h3>
-                        )}
+                    {/* Bottom Navigation */}
+                    <div className="space-y-1.5 mt-auto pb-12">
                         {bottomNavItems.map((item) => {
                             const Icon = item.icon;
                             const isActive = pathname === item.route;
