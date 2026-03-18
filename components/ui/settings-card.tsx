@@ -258,7 +258,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
             onClick={onClose}
         >
             <div
-                className="w-full max-w-[1020px] h-[600px] bg-[#1a1a1a] rounded-[32px] overflow-hidden flex shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] border border-white/5"
+                className="w-full max-w-[1020px] h-[600px] bg-[#1a1a1a] rounded-[16px] overflow-hidden flex shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] border border-white/5"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Sidebar */}
@@ -484,7 +484,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                     animate={{ opacity: 1, scale: 1 }}
                                     className="space-y-10 focus:outline-none"
                                 >
-                                    <div className="bg-white/5 rounded-[32px] p-1 border border-white/5 overflow-hidden">
+                                    <div className="bg-white/5 rounded-[16px] p-1 border border-white/5 overflow-hidden">
                                     <div className="p-8 space-y-10">
                                             <div className="flex items-center justify-between">
                                                 <span className="text-[15px] font-medium text-neutral-400">First name</span>
@@ -594,7 +594,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                             <RefreshCw className="w-8 h-8 text-neutral-500 animate-spin" />
                                         </div>
                                     ) : subView === 'summary' ? (
-                                        <div className="bg-white/5 rounded-[32px] p-8 border border-white/5 space-y-10">
+                                        <div className="bg-white/5 rounded-[16px] p-8 border border-white/5 space-y-10">
                                             <div className="flex items-start justify-between">
                                                 <div className="space-y-1">
                                                     <p className="text-[11px] text-neutral-500 font-bold tracking-wider uppercase">Current Plan</p>
@@ -818,7 +818,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                             <RefreshCw className="w-8 h-8 text-neutral-500 animate-spin" />
                                         </div>
                                     ) : (
-                                        <div className="bg-[#141414] rounded-[32px] p-8 border border-white/5">
+                                        <div className="bg-[#141414] rounded-[16px] p-8 border border-white/5">
                                             <div className="flex items-center justify-between mb-8">
                                                 <div className="space-y-1">
                                                     <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">Active Tier</p>
@@ -911,7 +911,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                     animate={{ opacity: 1 }}
                                     className="space-y-8"
                                 >
-                                    <div className="bg-white/5 rounded-[32px] p-8 border border-white/5 space-y-10">
+                                    <div className="bg-white/5 rounded-[16px] p-8 border border-white/5 space-y-10">
                                         <div className="flex items-start justify-between">
                                             <div className="space-y-1 max-w-[480px]">
                                                 <h3 className="text-[17px] font-bold text-white">Enhanced Privacy Mode</h3>
@@ -959,7 +959,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                         </div>
                                     </div>
 
-                                    <div className="flex flex-col items-center gap-4 py-8 border border-emerald-500/20 bg-emerald-500/[0.02] rounded-[32px] relative overflow-hidden group">
+                                    <div className="flex flex-col items-center gap-4 py-8 border border-emerald-500/20 bg-emerald-500/[0.02] rounded-[16px] relative overflow-hidden group">
                                         <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
                                         <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center mb-2 shadow-[0_0_20px_rgba(16,185,129,0.1)]">
                                             <ShieldCheck className="w-8 h-8 text-emerald-500" />

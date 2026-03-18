@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, HelpCircle, BookOpen, Heart, MessageSquare, Send, CheckCircle2 } from 'lucide-react';
+import { X, HelpCircle, BookOpen, Heart, MessageSquare, Send, CheckCircle2, Search } from 'lucide-react';
+import FAQs from './text-reveal-faqs';
 import { toast } from 'sonner';
 
 interface HelpCardProps {
@@ -53,14 +54,14 @@ export function HelpCard({ onClose }: HelpCardProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 bg-black/60 backdrop-blur-md"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 bg-black/80 backdrop-blur-md"
             onClick={onClose}
         >
             <motion.div 
-                initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                initial={{ scale: 0.98, opacity: 0, y: 10 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                className="w-full max-w-4xl h-[80vh] bg-white dark:bg-[#0A0A0A] rounded-[32px] shadow-2xl overflow-hidden flex flex-col md:flex-row border border-neutral-200 dark:border-white/10"
+                exit={{ scale: 0.98, opacity: 0, y: 10 }}
+                className="w-full max-w-5xl h-[85vh] bg-white dark:bg-[#0A0A0A] rounded-[16px] shadow-2xl overflow-hidden flex flex-col md:flex-row border border-neutral-200 dark:border-white/10"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Sidebar */}
@@ -72,14 +73,14 @@ export function HelpCard({ onClose }: HelpCardProps) {
                         <h2 className="text-xl font-bold dark:text-white">Help</h2>
                     </div>
 
-                    <nav className="flex-1 space-y-2">
+                    <nav className="flex-1 space-y-1">
                         {sections.map((section) => (
                             <button
                                 key={section.id}
                                 onClick={() => setActiveSection(section.id as any)}
-                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-200 ${
+                                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${
                                     activeSection === section.id 
-                                    ? 'bg-black dark:bg-white text-white dark:text-black shadow-lg translate-x-1' 
+                                    ? 'bg-black dark:bg-white text-white dark:text-black shadow-[0_4px_12px_rgba(0,0,0,0.1)]' 
                                     : 'text-neutral-500 hover:bg-neutral-200 dark:hover:bg-white/5'
                                 }`}
                             >
@@ -109,31 +110,12 @@ export function HelpCard({ onClose }: HelpCardProps) {
                             {activeSection === 'faq' && (
                                 <motion.div 
                                     key="faq"
-                                    initial={{ opacity: 0, x: 10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: -10 }}
-                                    className="space-y-8"
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    className="w-full"
                                 >
-                                    <div className="space-y-6">
-                                        <div className="p-6 bg-neutral-50 dark:bg-white/5 rounded-3xl border border-neutral-100 dark:border-white/5">
-                                            <h4 className="font-bold mb-3 dark:text-white">What is Mailient Sift?</h4>
-                                            <p className="text-neutral-500 dark:text-neutral-400 text-sm leading-relaxed">
-                                                Sift is our proprietary AI that scans your inbox to find high-value opportunities, pending follow-ups, and critical shifts in your business conversations. It&apos;s not just summary; it&apos;s intelligence.
-                                            </p>
-                                        </div>
-                                        <div className="p-6 bg-neutral-50 dark:bg-white/5 rounded-3xl border border-neutral-100 dark:border-white/5">
-                                            <h4 className="font-bold mb-3 dark:text-white">Is my data secure?</h4>
-                                            <p className="text-neutral-500 dark:text-neutral-400 text-sm leading-relaxed">
-                                                Absolutely. We use enterprise-grade encryption and only access the data necessary to provide AI insights. We never store your raw email content permanently unless you save it as an AI note.
-                                            </p>
-                                        </div>
-                                        <div className="p-6 bg-neutral-50 dark:bg-white/5 rounded-3xl border border-neutral-100 dark:border-white/5">
-                                            <h4 className="font-bold mb-3 dark:text-white">How do Arcus credits work?</h4>
-                                            <p className="text-neutral-500 dark:text-neutral-400 text-sm leading-relaxed">
-                                                Arcus AI interactions (summaries, replies, scheduling) use credits based on your plan. Free users get a taste, while Pro users enjoy unlimited power.
-                                            </p>
-                                        </div>
-                                    </div>
+                                    <FAQs />
                                 </motion.div>
                             )}
 
@@ -152,7 +134,7 @@ export function HelpCard({ onClose }: HelpCardProps) {
                                             { title: "One-Click Calls", desc: "Click the calendar icon on any email to find a slot." },
                                             { title: "Deep Research", desc: "Use Arcus Chat to ask complex questions across your history." }
                                         ].map((tip, i) => (
-                                            <div key={i} className="p-5 border border-neutral-200 dark:border-white/10 rounded-2xl flex gap-4">
+                                            <div key={i} className="p-5 border border-neutral-200 dark:border-white/10 rounded-xl flex gap-4">
                                                 <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center flex-shrink-0">
                                                     <CheckCircle2 className="w-5 h-5 text-blue-500" />
                                                 </div>
@@ -169,12 +151,12 @@ export function HelpCard({ onClose }: HelpCardProps) {
                             {activeSection === 'founder' && (
                                 <motion.div 
                                     key="founder"
-                                    initial={{ opacity: 0, x: 10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: -10 }}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
                                     className="prose dark:prose-invert max-w-none"
                                 >
-                                    <div className="relative p-8 bg-neutral-900 rounded-[40px] text-white overflow-hidden group">
+                                    <div className="relative p-8 bg-neutral-900 rounded-[16px] text-white overflow-hidden group border border-white/5">
                                         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/20 blur-[100px] group-hover:bg-blue-600/30 transition-all" />
                                         
                                         <h4 className="text-2xl font-bold mb-6 text-white">Hey, I&apos;m Maulik.</h4>
@@ -204,12 +186,12 @@ export function HelpCard({ onClose }: HelpCardProps) {
                             {activeSection === 'feedback' && (
                                 <motion.div 
                                     key="feedback"
-                                    initial={{ opacity: 0, x: 10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: -10 }}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
                                     className="space-y-6"
                                 >
-                                    <div className="bg-blue-500/5 border border-blue-500/10 p-6 rounded-3xl">
+                                    <div className="bg-blue-500/5 border border-blue-500/10 p-6 rounded-xl">
                                         <p className="text-neutral-600 dark:text-neutral-300 leading-relaxed">
                                             Your feedback matters the most for us. Please input your valuable feedback on this. We&apos;ll try our whole heart to reach out to you as soon as possible.
                                         </p>
@@ -220,12 +202,12 @@ export function HelpCard({ onClose }: HelpCardProps) {
                                             value={feedback}
                                             onChange={(e) => setFeedback(e.target.value)}
                                             placeholder="Tell us what's on your mind..."
-                                            className="w-full h-40 bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-[24px] p-5 text-sm dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-neutral-400"
+                                            className="w-full h-40 bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl p-5 text-sm dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-neutral-400"
                                         />
                                         <button 
                                             onClick={handleSendFeedback}
                                             disabled={isSubmitting}
-                                            className="w-full h-14 bg-black dark:bg-white text-white dark:text-black rounded-[20px] font-bold flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed group shadow-xl"
+                                            className="w-full h-14 bg-black dark:bg-white text-white dark:text-black rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed group shadow-xl"
                                         >
                                             {isSubmitting ? (
                                                 <div className="w-5 h-5 border-2 border-white/30 dark:border-black/30 border-t-white dark:border-t-black rounded-full animate-spin" />
