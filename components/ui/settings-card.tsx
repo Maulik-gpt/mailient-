@@ -564,10 +564,11 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                     <VerificationCard 
                                                         idNumber={(() => {
                                                             if (isFree) {
-                                                                const stableId = subscriptionData?.subscriptionId || session?.user?.email;
-                                                                if (!stableId) return "MEMBER";
-                                                                const suffix = stableId.toString().slice(-4).toUpperCase();
-                                                                return `MEMBER ${suffix}`;
+                                                                const stableId = subscriptionData?.subscriptionId || session?.user?.email || "GUEST";
+                                                                // Generate a cleaner 4-char suffix from the hash of the ID to avoid ".COM" issues
+                                                                const hash = (stableId || "").split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
+                                                                const suffix = (hash % 10000).toString().padStart(4, '0');
+                                                                return `ML-${suffix}`;
                                                             }
                                                             // Priority 1: Direct last4 from subscription record (set by Polar webhook)
                                                             if (subscriptionData?.paymentMethodLast4) {
