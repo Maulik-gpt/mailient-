@@ -61,7 +61,7 @@ interface SettingsCardProps {
 type SettingsSection = 'general' | 'system' | 'account' | 'team' | 'subscription' | 'usage' | 'privacy';
 
 export function SettingsCard({ onClose }: SettingsCardProps) {
-    const { data: session } = useSession();
+    const { data: session, update: updateSession } = useSession();
     const router = useRouter();
     const { settings, updateSetting, resetCache, relaunchApp, subscriptionData, setSubscriptionData } = useDashboardSettings();
     const [activeSection, setActiveSection] = useState<SettingsSection>('general');
@@ -96,15 +96,38 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
         };
 
         fetchSubscription();
-    }, [activeSection, session, setSubscriptionData]);
+    }, [activeSection, setSubscriptionData]);
 
     const [accountInfo, setAccountInfo] = useState({
-        firstName: session?.user?.name?.split(' ')[0] || '',
-        lastName: session?.user?.name?.split(' ').slice(1).join(' ') || '',
-        email: session?.user?.email || '',
-        username: session?.user?.name?.toLowerCase().replace(/\s/g, '_') || 'user',
-        picture: session?.user?.image || '/arcus-ai-icon.jpg'
+        firstName: '',
+        lastName: '',
+        email: '',
+        username: '',
+        picture: '/arcus-ai-icon.jpg'
     });
+
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const response = await fetch('/api/user/profile');
+                if (response.ok) {
+                    const data = await response.json();
+                    setAccountInfo({
+                        firstName: data.name?.split(' ')[0] || '',
+                        lastName: data.name?.split(' ').slice(1).join(' ') || '',
+                        email: data.email || '',
+                        username: data.username || '',
+                        picture: data.picture || '/arcus-ai-icon.jpg'
+                    });
+                } else {
+                    console.error('Failed to fetch profile:', response.status, response.statusText);
+                }
+            } catch (error) {
+                console.error('Error fetching profile:', error);
+            }
+        };
+        fetchProfile();
+    }, []);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -163,8 +186,12 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
 
             if (response.ok) {
                 toast.success('Profile updated successfully');
+                // Force a session update to refresh components globally
+                await updateSession();
             } else {
-                toast.error('Failed to update profile');
+                const errorData = await response.json();
+                console.error('Profile update failed:', errorData);
+                toast.error(errorData.error || 'Failed to update profile');
             }
         } catch (error) {
             toast.error('An error occurred');
