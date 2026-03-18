@@ -146,40 +146,41 @@ export function HomeFeedSidebar({ className = '', onPeopleClick, onSettingsClick
                         })}
                     </div>
 
-                    {/* Bottom Navigation */}
-                    <div className="space-y-1.5 mt-auto pb-12">
-                        {bottomNavItems.map((item) => {
-                            const Icon = item.icon;
-                            const isActive = pathname === item.route;
+                </div>
 
-                            return (
-                                <Tooltip key={item.id} delayDuration={0}>
-                                    <TooltipTrigger asChild>
-                                        <motion.button
-                                            whileHover={{ x: isCollapsed ? 0 : 4 }}
-                                            whileTap={{ scale: 0.97 }}
-                                            onClick={() => {
-                                                if (item.onClick) {
-                                                    item.onClick();
-                                                } else {
-                                                    router.push(item.route);
-                                                }
-                                            }}
-                                            className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3 px-3'} py-2.5 rounded-xl transition-all duration-300 group ${
-                                                isActive 
-                                                ? 'bg-white dark:bg-white/[0.05] text-[#1A1A1A] dark:text-white font-semibold shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] border border-[#EBE9E2] dark:border-white/10' 
-                                                : 'text-[#666666] dark:text-neutral-500 hover:text-[#1A1A1A] dark:hover:text-neutral-300'
-                                            }`}
-                                        >
-                                            <Icon size={20} className={`transition-colors duration-300 ${isActive ? 'text-[#1A1A1A] dark:text-white' : 'text-[#666666] dark:text-neutral-500 group-hover:text-[#1A1A1A] dark:group-hover:text-neutral-300'}`} strokeWidth={1.5} />
-                                            {!isCollapsed && <span className="text-[14px] tracking-tight">{item.label}</span>}
-                                        </motion.button>
-                                    </TooltipTrigger>
-                                    {isCollapsed && <TooltipContent side="right">{item.label}</TooltipContent>}
-                                </Tooltip>
-                            );
-                        })}
-                    </div>
+                {/* Support Navigation (Pinned at bottom) */}
+                <div className="px-3 pb-8 space-y-1.5 border-t border-[#EBE9E2] dark:border-white/5 pt-4">
+                    {bottomNavItems.map((item) => {
+                        const Icon = item.icon;
+                        const isActive = pathname === item.route;
+
+                        return (
+                            <Tooltip key={item.id} delayDuration={0}>
+                                <TooltipTrigger asChild>
+                                    <motion.button
+                                        whileHover={{ x: isCollapsed ? 0 : 4 }}
+                                        whileTap={{ scale: 0.97 }}
+                                        onClick={() => {
+                                            if (item.onClick) {
+                                                item.onClick();
+                                            } else {
+                                                router.push(item.route);
+                                            }
+                                        }}
+                                        className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3 px-3'} py-2.5 rounded-xl transition-all duration-300 group ${
+                                            isActive 
+                                            ? 'bg-white dark:bg-white/[0.05] text-[#1A1A1A] dark:text-white font-semibold shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] border border-[#EBE9E2] dark:border-white/10' 
+                                            : 'text-[#666666] dark:text-neutral-500 hover:text-[#1A1A1A] dark:hover:text-neutral-300'
+                                        }`}
+                                    >
+                                        <Icon size={20} className={`transition-colors duration-300 ${isActive ? 'text-[#1A1A1A] dark:text-white' : 'text-[#666666] dark:text-neutral-500 group-hover:text-[#1A1A1A] dark:group-hover:text-neutral-300'}`} strokeWidth={1.5} />
+                                        {!isCollapsed && <span className="text-[14px] tracking-tight">{item.label}</span>}
+                                    </motion.button>
+                                </TooltipTrigger>
+                                {isCollapsed && <TooltipContent side="right">{item.label}</TooltipContent>}
+                            </Tooltip>
+                        );
+                    })}
                 </div>
 
                 {/* User Detail (Only shown when expanded) */}
