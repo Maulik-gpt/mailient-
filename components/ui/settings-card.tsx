@@ -172,6 +172,10 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
     const [isSaving, setIsSaving] = useState(false);
 
     const handleSaveAccount = async () => {
+        if (!accountInfo.firstName?.trim()) {
+            toast.error('First Name is required');
+            return;
+        }
         setIsSaving(true);
         try {
             const response = await fetch('/api/user/update-profile', {

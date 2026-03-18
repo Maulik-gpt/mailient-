@@ -202,7 +202,7 @@ export function HomeFeedSidebar({ className = '', onPeopleClick, onSettingsClick
                                         <img
                                             src={session?.user?.image || "/user-avatar.png?v=2"}
                                             alt="User"
-                                            className="w-full h-full object-cover grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all"
+                                            className="w-full h-full object-cover"
                                         />
                                     </div>
                                     <div className="flex flex-col items-start overflow-hidden">
