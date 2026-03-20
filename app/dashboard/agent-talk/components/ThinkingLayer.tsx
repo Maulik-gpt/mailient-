@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronDown, ChevronRight, Binary, Sparkles, BrainCircuit, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TextShimmer } from '@/components/ui/text-shimmer';
+import { cn } from "@/lib/utils";
 
 export type ThinkingStep = {
     id: string;
@@ -29,8 +30,24 @@ interface ThinkingLayerProps {
  */
 export function ThinkingLayer({ steps, isVisible, currentThought, isGenerating, generatingLabel, onStop }: ThinkingLayerProps) {
     const [expandedSteps, setExpandedSteps] = useState<Set<string>>(new Set());
+    const [timer, setTimer] = useState(0);
+    const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
-    if (!isVisible || steps.length === 0) return null;
+    // Timer logic
+    useEffect(() => {
+        let interval: any;
+        if (isGenerating && isVisible) {
+            setTimer(0);
+            interval = setInterval(() => {
+                setTimer((prev) => prev + 1);
+            }, 1000);
+        } else {
+            setTimer(0);
+        }
+        return () => clearInterval(interval);
+    }, [isGenerating, isVisible]);
+
+    if (!isVisible || (steps.length === 0 && !isGenerating)) return null;
 
     const toggleStep = (id: string) => {
         setExpandedSteps((prev) => {
@@ -50,7 +67,42 @@ export function ThinkingLayer({ steps, isVisible, currentThought, isGenerating, 
             {/* Vertical Guide Line */}
             <div className="absolute left-1.5 top-3 bottom-0 w-[1px] bg-white/[0.05] z-0" />
 
-            <div className="space-y-1 relative z-10">
+            {/* Premium Thinking Indicator (Pulse + Timer) */}
+            {isGenerating && (
+                <div className="mb-6 ml-4">
+                    <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2.5">
+                            <BrainCircuit className="w-3.5 h-3.5 text-white/40 animate-pulse" />
+                            <span className="text-[10px] font-bold tracking-[0.2em] text-white/30 uppercase">Analysis Engine</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                             <div className="flex items-center bg-white/[0.03] px-1.5 py-0.5 rounded border border-white/[0.05]">
+                                <div className="w-1 h-1 rounded-full bg-blue-400 mr-2 animate-pulse" />
+                                <span className="text-[10px] font-mono text-white/50">{timer}s</span>
+                             </div>
+                             <button 
+                                onClick={() => setIsDetailsOpen(!isDetailsOpen)}
+                                className="p-1 hover:bg-white/5 rounded-md transition-colors text-white/20 hover:text-white/60 group focus:outline-none"
+                             >
+                                <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-300", isDetailsOpen ? "rotate-180" : "rotate-0")} />
+                             </button>
+                        </div>
+                    </div>
+
+                    {/* Ray Pulse Animation */}
+                    <div className="h-[2px] w-full bg-white/[0.03] rounded-full overflow-hidden relative">
+                        <motion.div 
+                            initial={{ x: "-100%" }}
+                            animate={{ x: "240%" }}
+                            transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                            className="absolute inset-y-0 w-1/4 bg-white/40"
+                            style={{ filter: "blur(2px)" }}
+                        />
+                    </div>
+                </div>
+            )}
+
+            <div className={cn("space-y-1 relative z-10 transition-all duration-500", (!isDetailsOpen && isGenerating) ? "opacity-0 max-h-0 overflow-hidden" : "opacity-100 max-h-[1000px]")}>
                 {/* Completed steps */}
                 {completedSteps.map((step, idx) => (
                     <motion.div 
@@ -133,8 +185,6 @@ export function ThinkingLayer({ steps, isVisible, currentThought, isGenerating, 
                 )}
             </div>
 
-            {/* Note: Pending steps are intentionally omitted to provide a "step-by-step" discovery experience */}
-
             {currentThought && (
                 <div className="flex items-start gap-2 pt-2 px-2">
                     <div className="text-white/20 text-[10px] mt-0.5">{'>'}</div>
@@ -145,21 +195,14 @@ export function ThinkingLayer({ steps, isVisible, currentThought, isGenerating, 
             )}
 
             {/* Generation overlay with Stop */}
-            {isGenerating && generatingLabel && (
+            {isGenerating && generatingLabel && !isDetailsOpen && (
                 <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex items-center justify-between py-3 mt-4"
+                    className="flex items-center justify-between py-1 px-4"
                 >
-                    <div className="flex items-center gap-3.5">
-                        <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center relative overflow-hidden">
-                            <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent animate-pulse" />
-                            <BrainCircuit className="w-4 h-4 text-white/50 animate-pulse" />
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-white/80 text-[12px] font-medium tracking-tight">{generatingLabel}</span>
-                            <span className="text-[8px] text-white/20 tracking-wide">Processing...</span>
-                        </div>
+                    <div className="flex flex-col">
+                        <span className="text-white/80 text-[12px] font-medium tracking-tight truncate max-w-[200px]">{generatingLabel}</span>
                     </div>
                     {onStop && (
                         <button
@@ -171,13 +214,6 @@ export function ThinkingLayer({ steps, isVisible, currentThought, isGenerating, 
                     )}
                 </motion.div>
             )}
-
-            <style jsx>{`
-                @keyframes thinkingPulse {
-                    0%, 100% { opacity: 0.2; transform: scale(0.8); }
-                    50% { opacity: 1; transform: scale(1.4); }
-                }
-            `}</style>
         </div>
     );
 }

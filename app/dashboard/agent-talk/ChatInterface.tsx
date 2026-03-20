@@ -187,7 +187,6 @@ function isEmailRelatedQuery(message: string): boolean {
 }
 
 function extractSearchTerm(message: string): string {
-  const lowerMessage = message.toLowerCase();
   const patterns = [
     /find\s+(?:my\s+)?notes?(?:\s+|\s*about|\s*on|\s*regarding)\s+(.+)/i,
     /search\s+(?:for\s+)?notes?(?:\s+|\s*about|\s*on|\s*regarding)\s+(.+)/i,
@@ -206,6 +205,17 @@ function extractSearchTerm(message: string): string {
     }
   }
   return message.trim();
+}
+
+function extractThought(message: string): { thought: string; cleanText: string } {
+  if (typeof message !== 'string') return { thought: '', cleanText: '' };
+  const thoughtMatch = message.match(/<thought>([\s\S]*?)<\/thought>/i);
+  if (thoughtMatch) {
+    const thought = thoughtMatch[1].trim();
+    const cleanText = message.replace(/<thought>[\s\S]*?<\/thought>/gi, '').trim();
+    return { thought, cleanText };
+  }
+  return { thought: '', cleanText: message.trim() };
 }
 
 interface Email {
@@ -236,6 +246,7 @@ interface AgentMessage {
     agentProcess?: any;
     completedSteps?: string[];
     thinkingProcess?: ThinkingStep[];
+    internalThought?: string;
     artifact?: {
       type: string;
       title: string;
@@ -654,9 +665,10 @@ export default function ChatInterface({
 
       if (isDeepThinking) {
         setLiveThinkingSteps([
-          { id: 'deep-analyze', label: 'Deeply analyzing your request...', status: 'active', type: 'think' },
-          { id: 'deep-context', label: 'Processing broad context and deep retrieval...', status: 'pending', type: 'search' },
-          { id: 'deep-synthesis', label: 'Synthesizing comprehensive response...', status: 'pending', type: 'analyze' }
+          { id: 'deep-analyze', label: 'Analyzing request for deep reasoning...', status: 'active', type: 'think' },
+          { id: 'deep-context', label: 'Performing comprehensive context retrieval...', status: 'pending', type: 'search' },
+          { id: 'deep-reasoning', label: 'Processing logical pathways and edge cases...', status: 'pending', type: 'think' },
+          { id: 'deep-synthesis', label: 'Synthesizing final high-quality resolution...', status: 'pending', type: 'analyze' }
         ]);
       } else if (isSearch) {
         setLiveThinkingSteps([
@@ -750,6 +762,12 @@ export default function ChatInterface({
 
       const data = await response.json();
 
+      // Extract AI thought block (deep thinking mode)
+      const { thought: aiThought, cleanText: aiCleanText } = extractThought(data.message || '');
+      if (aiThought) {
+        data.message = aiCleanText;
+      }
+
       if (data?.run?.runId) {
         setActiveRun({
           runId: data.run.runId,
@@ -825,6 +843,7 @@ export default function ChatInterface({
           notesResult: data.notesResult,
           emailResult: data.emailResult,
           thinkingProcess: aiThinkingProcess,
+          internalThought: aiThought || undefined,
           artifact: aiArtifact,
         }
       };
@@ -1973,6 +1992,21 @@ export default function ChatInterface({
                                   </div>
                                 )}
 
+                                {msg.role === 'assistant' && msg.meta?.internalThought && (
+                                  <details className="mt-4 border-t border-white/5 pt-3 group/thought">
+                                    <summary className="flex items-center gap-2 cursor-pointer text-white/30 hover:text-white/60 transition-colors list-none">
+                                      <BrainCircuit className="w-3.5 h-3.5" />
+                                      <span className="text-[11px] font-bold tracking-wide uppercase">Internal Reasoning</span>
+                                      <ChevronDown className="w-3 h-3 transition-transform group-open/thought:rotate-180" />
+                                    </summary>
+                                    <div className="mt-2 pl-4 border-l border-white/10 py-2">
+                                      <p className="text-white/40 text-[12px] leading-relaxed whitespace-pre-wrap italic">
+                                        {msg.meta.internalThought}
+                                      </p>
+                                    </div>
+                                  </details>
+                                )}
+
                                 {msg.role === 'assistant' && msg.meta?.thinkingProcess && (
                                   <div className="mt-4 border-t border-white/5 pt-3">
                                     <ThinkingLayer steps={msg.meta.thinkingProcess} isVisible={true} />
@@ -2059,7 +2093,12 @@ export default function ChatInterface({
                                     <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                                     <span className="text-[10px] font-bold tracking-widest uppercase">Live Activity</span>
                                   </div>
-                                  <ThinkingLayer steps={liveThinkingSteps} isVisible={true} />
+                                  <ThinkingLayer 
+                                    steps={liveThinkingSteps} 
+                                    isVisible={true} 
+                                    isGenerating={isLoading}
+                                    generatingLabel={liveThinkingSteps.find(s => s.status === 'active')?.label || (isDeepThinkingState ? "Deeply reasoning..." : "Processing...")}
+                                  />
                                 </motion.div>
                               )}
                             </AnimatePresence>
