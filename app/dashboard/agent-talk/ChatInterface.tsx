@@ -66,7 +66,7 @@ const linkify = (text: string, isUser: boolean = false): string => {
     const displayUrl = url.length > 55 ? url.substring(0, 52) + '...' : url;
     const linkColorClass = isUser ? "text-blue-600 hover:text-blue-800" : "text-white/60 hover:text-white";
     const decorationClass = isUser ? "decoration-blue-200 hover:decoration-blue-600" : "decoration-white/20 hover:decoration-white/100";
-    
+
     return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="${linkColorClass} underline underline-offset-4 ${decorationClass} transition-all text-[13px] tracking-tight break-all" title="${url}">${displayUrl}</a>`;
   });
 };
@@ -277,8 +277,19 @@ const THINKING_MESSAGES = ["Thinking", "Processing", "Analyzing", "Chilling", "S
 const DEEP_THINKING_MESSAGES = ["Thinking deep", "Reasoning", "Simulating outcomes", "Analyzing layers", "Synthesizing deep context", "Architecting solution", "Deeply processing", "Refining logic"];
 
 function RollingThinkingStatus({ onToggle, isOpen, isDeepThinking }: { onToggle: () => void, isOpen: boolean, isDeepThinking?: boolean }) {
+  const [elapsed, setElapsed] = useState(0);
   const [index, setIndex] = useState(0);
   const messages = isDeepThinking ? DEEP_THINKING_MESSAGES : THINKING_MESSAGES;
+
+  useEffect(() => {
+    let timer: any;
+    if (!isOpen) {
+       timer = setInterval(() => {
+        setElapsed(prev => prev + 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [isOpen]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -289,39 +300,29 @@ function RollingThinkingStatus({ onToggle, isOpen, isDeepThinking }: { onToggle:
 
   return (
     <div className="flex items-center justify-between w-full group/status cursor-pointer select-none" onClick={onToggle}>
-      <div className="flex items-center gap-2.5">
-        <div className="relative flex items-center justify-center w-4 h-4 overflow-hidden shrink-0">
-          <AnimatePresence mode="popLayout" initial={false}>
-            <motion.div
-              key={messages[index]}
-              initial={{ y: -18, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 18, opacity: 0 }}
-              transition={{ 
-                duration: 0.5, 
-                ease: [0.16, 1, 0.3, 1]
-              }}
-              className="absolute inset-0 flex items-center justify-center"
-            >
-              <BrainCircuit className={cn("w-3.5 h-3.5", isDeepThinking ? "text-[#8B5CF6]" : "text-white/40")} />
-            </motion.div>
-          </AnimatePresence>
+      <div className="flex items-center gap-4">
+        {/* Shimmering Ray Pulse */}
+        <div className="relative w-32 h-1 bg-white/[0.03] rounded-full overflow-hidden">
+          <motion.div
+            initial={{ left: '-100%' }}
+            animate={{ left: '100%' }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+            className="absolute top-0 bottom-0 w-1/3 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+          />
         </div>
-        
-        <div className="h-[20px] overflow-hidden flex items-center min-w-[120px]">
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={messages[index]}
-              initial={{ y: -20, opacity: 0, filter: 'blur(4px)' }}
-              animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
-              exit={{ y: 20, opacity: 0, filter: 'blur(4px)' }}
-              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <TextShimmer className={cn("text-[13px] font-bold tracking-tight", isDeepThinking ? "text-[#8B5CF6]" : "text-white/90")} duration={isDeepThinking ? 2.5 : 1.5}>
-                {messages[index]}
-              </TextShimmer>
-            </motion.div>
-          </AnimatePresence>
+
+        {/* Status Text & Timer */}
+        <div className="flex items-center gap-2 min-w-[150px]">
+          <span className={cn("text-[13px] font-medium tracking-tight", isDeepThinking ? "text-[#8B5CF6]" : "text-white/60")}>
+            {messages[index]}
+          </span>
+          <span className="text-[11px] font-mono text-white/20 tabular-nums">
+            {elapsed}s
+          </span>
         </div>
       </div>
 
@@ -544,7 +545,7 @@ export default function ChatInterface({
     const randomStr = Math.random().toString(36).substr(2, 9);
     return `conv_${timestamp}_${randomStr}`;
   };
-  
+
   const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -655,11 +656,11 @@ export default function ChatInterface({
   const processAIMessage = async (messageText: string, conversationIdToUse: string, isNew: boolean, attachments?: any[], options?: { isDeepThinking?: boolean; isCanvas?: boolean; isSearch?: boolean }) => {
     try {
       setIsLoading(true);
-      
+
       const isDeepThinking = options?.isDeepThinking || false;
       const isCanvas = options?.isCanvas || false;
       const isSearch = options?.isSearch || false;
-      
+
       setIsDeepThinkingState(isDeepThinking);
       setIsSearchingState(isSearch);
 
@@ -784,8 +785,12 @@ export default function ChatInterface({
       const hasCanvas = Boolean(data.canvasData && (data.canvasData.content || data.execution?.requiresApproval));
       if (hasCanvas) {
         setCanvasData(data.canvasData);
-        // Don't auto-open canvas until requested
-        setIsCanvasOpen(false);
+        // Auto-open canvas only if requested by mode
+        if (isCanvas) {
+          setIsCanvasOpen(true);
+        } else {
+          setIsCanvasOpen(false);
+        }
       }
 
       await refreshArcusCredits(true);
@@ -1070,7 +1075,7 @@ export default function ChatInterface({
         if (pendingId === conversationId) {
           const pendingMsg = localStorage.getItem('pending_arcus_message');
           const pendingOptionsRaw = localStorage.getItem('pending_arcus_options');
-          
+
           localStorage.removeItem('pending_arcus_id');
           localStorage.removeItem('pending_arcus_message');
           localStorage.removeItem('pending_arcus_options');
@@ -1309,16 +1314,16 @@ export default function ChatInterface({
 
     // Determine if this is a new conversation or continuation
     const shouldCreateNewConversation = !currentConversationId;
-    
+
     // Process files if any
-    const attachments = files && files.length > 0 
+    const attachments = files && files.length > 0
       ? await Promise.all(files.map(async file => ({
-          name: file.name,
-          url: URL.createObjectURL(file), // Local URL for preview
-          type: file.type,
-          size: file.size,
-          base64: await fileToBase64(file)
-        })))
+        name: file.name,
+        url: URL.createObjectURL(file), // Local URL for preview
+        type: file.type,
+        size: file.size,
+        base64: await fileToBase64(file)
+      })))
       : [];
 
     // Include selected emails as attachments
@@ -1327,7 +1332,7 @@ export default function ChatInterface({
         const emailContent = `From: ${email.from}\nSubject: ${email.subject}\nDate: ${email.date}\n\nSnippet: ${email.snippet}`;
         attachments.push({
           name: `Attached Email: ${email.subject}`,
-          url: '', 
+          url: '',
           type: 'text/email',
           size: emailContent.length,
           base64: btoa(encodeURIComponent(emailContent).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode(parseInt(p1, 16)))),
@@ -1616,15 +1621,15 @@ export default function ChatInterface({
           period={usageLimitModalData?.period || 'daily'}
           currentPlan={usageLimitModalData?.currentPlan || 'starter'}
         />
-        
+
         <div className="flex h-screen w-full text-graphite-text bg-black selection:bg-white selection:text-black overflow-hidden relative tracking-tight">
           {/* Apple-style Premium Grain Overlay */}
           <div className="absolute inset-0 pointer-events-none opacity-[0.03] z-[100] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] brightness-100 contrast-150" />
-          
+
           {/* Subtle Ambient Glows for Depth */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-            <GradientWave 
-              colors={["#000000", "#111111", "#080808", "#111111"]} 
+            <GradientWave
+              colors={["#000000", "#111111", "#080808", "#111111"]}
               className="opacity-100"
               deform={{ incline: 0.3, noiseAmp: 150, noiseFlow: 2 }}
             />
@@ -1688,456 +1693,471 @@ export default function ChatInterface({
 
           <HomeFeedSidebar className="z-30" />
 
-          <div className="flex-1 flex flex-col relative ml-64 transition-all duration-500 ease-in-out">
-            {/* Header */}
-            <div className={`sticky top-0 z-40 transition-all duration-300 ${(isIntegrationsModalOpen || isEmailSelectionModalOpen || isPersonalityModalOpen) ? 'blur-sm' : ''}`}>
-              <div className="relative px-8 py-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {/* Leftmost: Title and Dropdown */}
-                    {!isInitialMode && (
-                      <div className="relative" ref={titleMenuRef}>
-                        <div className="flex items-center bg-[#111111] border border-white/[0.06] rounded-lg overflow-hidden shadow-2xl transition-all hover:border-white/10 group">
-                          <button 
-                            onClick={() => setIsTitleMenuOpen(!isTitleMenuOpen)}
-                            className="pl-4 pr-3 py-1.5 hover:bg-white/[0.02] transition-colors flex items-center gap-2 max-w-[240px]"
-                          >
-                            <span className="text-sm font-medium text-white/80 truncate tracking-tight">
-                              {chatTitle || 'New Chat'}
-                            </span>
-                          </button>
-                          <div className="w-[1px] h-3.5 bg-white/[0.08]" />
-                          <button 
-                            onClick={() => setIsTitleMenuOpen(!isTitleMenuOpen)}
-                            className="px-2.5 py-1.5 hover:bg-white/[0.02] transition-colors"
-                          >
-                            <ChevronDown className={`w-3.5 h-3.5 text-white/30 group-hover:text-white/60 transition-transform duration-200 ${isTitleMenuOpen ? 'rotate-180' : ''}`} />
-                          </button>
-                        </div>
-
-                        {/* Dropdown Menu */}
-                        {isTitleMenuOpen && (
-                          <div className="absolute top-full left-0 mt-2 w-48 bg-[#1a1a1a] border border-white/[0.08] rounded-xl shadow-2xl py-1.5 z-[100] animate-in fade-in zoom-in-95 duration-200">
-                            <button 
-                              onClick={() => {
-                                setIsStarred(!isStarred);
-                                setIsTitleMenuOpen(false);
-                                toast.success(isStarred ? 'Removed from favorites' : 'Added to favorites');
-                              }}
-                              className="w-full px-3 py-2 text-left text-sm text-white/70 hover:text-white hover:bg-white/[0.05] transition-colors flex items-center gap-2.5"
+          <div className="flex-1 flex flex-row relative ml-64 transition-all duration-500 ease-in-out overflow-hidden">
+            {/* Chat Column */}
+            <div className="flex-1 flex flex-col relative min-w-0 transition-all duration-500">
+              {/* Header */}
+              <div className={`sticky top-0 z-40 transition-all duration-300 ${(isIntegrationsModalOpen || isEmailSelectionModalOpen || isPersonalityModalOpen) ? 'blur-sm' : ''}`}>
+                <div className="relative px-8 py-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {/* Leftmost: Title and Dropdown */}
+                      {!isInitialMode && (
+                        <div className="relative" ref={titleMenuRef}>
+                          <div className="flex items-center bg-[#111111] border border-white/[0.06] rounded-lg overflow-hidden shadow-2xl transition-all hover:border-white/10 group">
+                            <button
+                              onClick={() => setIsTitleMenuOpen(!isTitleMenuOpen)}
+                              className="pl-4 pr-3 py-1.5 hover:bg-white/[0.02] transition-colors flex items-center gap-2 max-w-[240px]"
                             >
-                              <Sparkles className={`w-4 h-4 ${isStarred ? 'text-yellow-400 fill-yellow-400' : ''}`} />
-                              <span>{isStarred ? 'Unstar' : 'Star'}</span>
+                              <span className="text-sm font-medium text-white/80 truncate tracking-tight">
+                                {chatTitle || 'New Chat'}
+                              </span>
                             </button>
-                            <button 
-                              onClick={() => {
-                                const newTitle = prompt('Rename conversation:', chatTitle);
-                                if (newTitle && newTitle !== chatTitle) {
-                                  setChatTitle(newTitle);
-                                  if (currentConversationId) {
-                                    localStorage.setItem(`conv_${currentConversationId}_title`, newTitle);
-                                    const raw = localStorage.getItem(`conversation_${currentConversationId}`);
-                                    if (raw) {
-                                      const data = JSON.parse(raw);
-                                      data.title = newTitle;
-                                      localStorage.setItem(`conversation_${currentConversationId}`, JSON.stringify(data));
-                                    }
-                                  }
-                                }
-                                setIsTitleMenuOpen(false);
-                              }}
-                              className="w-full px-3 py-2 text-left text-sm text-white/70 hover:text-white hover:bg-white/[0.05] transition-colors flex items-center gap-2.5"
+                            <div className="w-[1px] h-3.5 bg-white/[0.08]" />
+                            <button
+                              onClick={() => setIsTitleMenuOpen(!isTitleMenuOpen)}
+                              className="px-2.5 py-1.5 hover:bg-white/[0.02] transition-colors"
                             >
-                              <PenTool className="w-4 h-4" />
-                              <span>Rename</span>
-                            </button>
-                            <button 
-                              onClick={() => {
-                                setIsTitleMenuOpen(false);
-                                toast.info('Projects integration coming soon');
-                              }}
-                              className="w-full px-3 py-2 text-left text-sm text-white/70 hover:text-white hover:bg-white/[0.05] transition-colors flex items-center gap-2.5"
-                            >
-                              <LayoutGrid className="w-4 h-4" />
-                              <span>Add to project</span>
-                            </button>
-                            <div className="h-[1px] bg-white/[0.05] my-1" />
-                            <button 
-                              onClick={() => {
-                                if (currentConversationId && confirm('Delete this conversation?')) {
-                                  handleConversationDelete(currentConversationId);
-                                }
-                                setIsTitleMenuOpen(false);
-                              }}
-                              className="w-full px-3 py-2 text-left text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors flex items-center gap-2.5"
-                            >
-                              <HugeiconsIcon icon={Cancel01Icon} size={16} />
-                              <span>Delete</span>
+                              <ChevronDown className={`w-3.5 h-3.5 text-white/30 group-hover:text-white/60 transition-transform duration-200 ${isTitleMenuOpen ? 'rotate-180' : ''}`} />
                             </button>
                           </div>
-                        )}
-                      </div>
-                    )}
 
-                    {/* Settings Icon (replaced New Chat/Edit) */}
-                    <Tooltip delayDuration={100}>
-                      <TooltipTrigger asChild>
-                        <button
-                          onClick={() => setIsPersonalityModalOpen(true)}
-                          className="p-2 hover:bg-white/5 rounded-lg transition-all text-white/20 hover:text-white/60 focus:outline-none"
-                        >
-                          <Settings className="w-4 h-4" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom">
-                        <span className="text-[10px]">Settings</span>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
+                          {/* Dropdown Menu */}
+                          {isTitleMenuOpen && (
+                            <div className="absolute top-full left-0 mt-2 w-48 bg-[#1a1a1a] border border-white/[0.08] rounded-xl shadow-2xl py-1.5 z-[100] animate-in fade-in zoom-in-95 duration-200">
+                              <button
+                                onClick={() => {
+                                  setIsStarred(!isStarred);
+                                  setIsTitleMenuOpen(false);
+                                  toast.success(isStarred ? 'Removed from favorites' : 'Added to favorites');
+                                }}
+                                className="w-full px-3 py-2 text-left text-sm text-white/70 hover:text-white hover:bg-white/[0.05] transition-colors flex items-center gap-2.5"
+                              >
+                                <Sparkles className={`w-4 h-4 ${isStarred ? 'text-yellow-400 fill-yellow-400' : ''}`} />
+                                <span>{isStarred ? 'Unstar' : 'Star'}</span>
+                              </button>
+                              <button
+                                onClick={() => {
+                                  const newTitle = prompt('Rename conversation:', chatTitle);
+                                  if (newTitle && newTitle !== chatTitle) {
+                                    setChatTitle(newTitle);
+                                    if (currentConversationId) {
+                                      localStorage.setItem(`conv_${currentConversationId}_title`, newTitle);
+                                      const raw = localStorage.getItem(`conversation_${currentConversationId}`);
+                                      if (raw) {
+                                        const data = JSON.parse(raw);
+                                        data.title = newTitle;
+                                        localStorage.setItem(`conversation_${currentConversationId}`, JSON.stringify(data));
+                                      }
+                                    }
+                                  }
+                                  setIsTitleMenuOpen(false);
+                                }}
+                                className="w-full px-3 py-2 text-left text-sm text-white/70 hover:text-white hover:bg-white/[0.05] transition-colors flex items-center gap-2.5"
+                              >
+                                <PenTool className="w-4 h-4" />
+                                <span>Rename</span>
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setIsTitleMenuOpen(false);
+                                  toast.info('Projects integration coming soon');
+                                }}
+                                className="w-full px-3 py-2 text-left text-sm text-white/70 hover:text-white hover:bg-white/[0.05] transition-colors flex items-center gap-2.5"
+                              >
+                                <LayoutGrid className="w-4 h-4" />
+                                <span>Add to project</span>
+                              </button>
+                              <div className="h-[1px] bg-white/[0.05] my-1" />
+                              <button
+                                onClick={() => {
+                                  if (currentConversationId && confirm('Delete this conversation?')) {
+                                    handleConversationDelete(currentConversationId);
+                                  }
+                                  setIsTitleMenuOpen(false);
+                                }}
+                                className="w-full px-3 py-2 text-left text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors flex items-center gap-2.5"
+                              >
+                                <HugeiconsIcon icon={Cancel01Icon} size={16} />
+                                <span>Delete</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
 
-                  {/* Right Side: New Chat and History */}
-                  <div className="flex items-center gap-1">
-                    <Tooltip delayDuration={100}>
-                      <TooltipTrigger asChild>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            startNewChat();
-                          }}
-                          className="p-2 hover:bg-white/5 rounded-lg transition-all text-white/20 hover:text-white/60 focus:outline-none"
-                        >
-                          <HugeiconsIcon icon={AddSquareIcon} size={16} strokeWidth={1.8} />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom">
-                        <span className="text-[10px]">New Chat</span>
-                      </TooltipContent>
-                    </Tooltip>
+                      {/* Settings Icon (replaced New Chat/Edit) */}
+                      <Tooltip delayDuration={100}>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={() => setIsPersonalityModalOpen(true)}
+                            className="p-2 hover:bg-white/5 rounded-lg transition-all text-white/20 hover:text-white/60 focus:outline-none"
+                          >
+                            <Settings className="w-4 h-4" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">
+                          <span className="text-[10px]">Settings</span>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
 
-                    <Tooltip delayDuration={100}>
-                      <TooltipTrigger asChild>
-                        <button
-                          onClick={() => setShowHistory(!showHistory)}
-                          className={`p-2 rounded-lg transition-all hover:bg-white/5 ${showHistory ? 'text-white bg-white/10' : 'text-white/20 hover:text-white/60'}`}
-                        >
-                          <History className="w-4 h-4" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom">
-                        <span className="text-[10px]">History</span>
-                      </TooltipContent>
-                    </Tooltip>
+                    {/* Right Side: New Chat and History */}
+                    <div className="flex items-center gap-1">
+                      <Tooltip delayDuration={100}>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              startNewChat();
+                            }}
+                            className="p-2 hover:bg-white/5 rounded-lg transition-all text-white/20 hover:text-white/60 focus:outline-none"
+                          >
+                            <HugeiconsIcon icon={AddSquareIcon} size={16} strokeWidth={1.8} />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">
+                          <span className="text-[10px]">New Chat</span>
+                        </TooltipContent>
+                      </Tooltip>
+
+                      <Tooltip delayDuration={100}>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={() => setShowHistory(!showHistory)}
+                            className={`p-2 rounded-lg transition-all hover:bg-white/5 ${showHistory ? 'text-white bg-white/10' : 'text-white/20 hover:text-white/60'}`}
+                          >
+                            <History className="w-4 h-4" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">
+                          <span className="text-[10px]">History</span>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Chat Content */}
-            <div className="flex-1 flex flex-col relative z-10 min-h-0">
-              {isInitialMode ? (
-                <div className="flex-1 overflow-y-auto transition-all duration-300 relative bg-transparent">
-                  {/* Top Status Pill */}
-                  <div className="absolute top-8 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1 bg-[#161616] border border-white/5 rounded-full shadow-lg">
-                    <span className="text-[11px] text-white/50 font-medium">Free plan</span>
-                    <span className="text-[11px] text-white/20">•</span>
-                    <button className="text-[11px] text-white hover:text-white/80 transition-colors font-medium">Upgrade</button>
-                  </div>
+              {/* Chat Content */}
+              <div className="flex-1 flex flex-col relative z-10 min-h-0">
+                {isInitialMode ? (
+                  <div className="flex-1 overflow-y-auto transition-all duration-300 relative bg-transparent">
+                    {/* Top Status Pill */}
+                    <div className="absolute top-8 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1 bg-[#161616] border border-white/5 rounded-full shadow-lg">
+                      <span className="text-[11px] text-white/50 font-medium">Free plan</span>
+                      <span className="text-[11px] text-white/20">•</span>
+                      <button className="text-[11px] text-white hover:text-white/80 transition-colors font-medium">Upgrade</button>
+                    </div>
 
-                  <div className="h-full flex flex-col items-center justify-center px-6">
-                    <div className="w-full max-w-2xl mx-auto flex flex-col items-center">
-                      <div className="text-center mb-12">
-                        <div className="flex justify-center mb-6">
-                          <img 
-                            src="/arcus-ai-icon.jpg" 
-                            className="w-16 h-16 object-cover rounded-[20px] shadow-2xl grayscale brightness-110" 
-                            alt="Arcus AI" 
+                    <div className="h-full flex flex-col items-center justify-center px-6">
+                      <div className="w-full max-w-2xl mx-auto flex flex-col items-center">
+                        <div className="text-center mb-12">
+                          <div className="flex justify-center mb-6">
+                            <img
+                              src="/arcus-ai-icon.jpg"
+                              className="w-16 h-16 object-cover rounded-[20px] shadow-2xl grayscale brightness-110"
+                              alt="Arcus AI"
+                            />
+                          </div>
+                          <h1 className="text-4xl md:text-5xl font-medium text-white tracking-tight" style={{ fontFamily: 'Satoshi, sans-serif' }}>
+                            Ask anything about your emails
+                          </h1>
+                        </div>
+
+                        <div className="w-full relative group">
+                          <PromptInputBox
+                            onSend={(msg, files, opts) => handleSend(msg, files, opts)}
+                            isLoading={isLoading}
+                            placeholder="What would you like to know?"
+                            onSearchClick={() => { }}
+                            onAttachEmailClick={() => setIsEmailSelectionModalOpen(true)}
+                            onPersonalityClick={() => setIsPersonalityModalOpen(true)}
+                            selectedEmailsCount={selectedEmails.length}
+                            suggestionInput={suggestionInput}
                           />
                         </div>
-                        <h1 className="text-4xl md:text-5xl font-medium text-white tracking-tight" style={{ fontFamily: 'Satoshi, sans-serif' }}>
-                          Ask anything about your emails
-                        </h1>
-                      </div>
 
-                      <div className="w-full relative group">
-                        <PromptInputBox
-                          onSend={(msg, files, opts) => handleSend(msg, files, opts)}
-                          isLoading={isLoading}
-                          placeholder="What would you like to know?"
-                          onSearchClick={() => {}}
-                          onAttachEmailClick={() => setIsEmailSelectionModalOpen(true)}
-                          onPersonalityClick={() => setIsPersonalityModalOpen(true)}
-                          selectedEmailsCount={selectedEmails.length}
-                          suggestionInput={suggestionInput}
-                        />
-                      </div>
-
-                      {/* Pill-style Action Buttons */}
-                      <div className="flex flex-wrap justify-center gap-2 mt-6">
-                        <button 
-                          onClick={() => setSuggestionInput({
-                            text: "Please provide me with a comprehensive summary of my recent email correspondence from the last 24 hours. I am particularly interested in any urgent matters, action items directed at me, or important status updates that require my immediate attention.",
-                            id: Date.now()
-                          })}
-                          className="flex items-center gap-2 px-3.5 py-1.5 bg-[#161616] border border-white/5 rounded-full text-white/60 hover:text-white hover:bg-white/5 hover:border-white/10 transition-all text-[13px] font-medium"
-                        >
-                          <Sparkles className="w-3.5 h-3.5" />
-                          Catch up
-                        </button>
-                        <button 
-                          onClick={() => setSuggestionInput({
-                            text: "Could you please analyze my current unread emails and synthesize the core information from each thread? I would like a breakdown that highlights the main subject of each conversation and identifies any deadlines or specific requests made by the senders.",
-                            id: Date.now()
-                          })}
-                          className="flex items-center gap-2 px-3.5 py-1.5 bg-[#161616] border border-white/5 rounded-full text-white/60 hover:text-white hover:bg-white/5 hover:border-white/10 transition-all text-[13px] font-medium"
-                        >
-                          <FileText className="w-3.5 h-3.5" />
-                          Summarize
-                        </button>
-                        <button 
-                          onClick={() => setSuggestionInput({
-                            text: "I would like some assistance in drafting a professional response to my most recent email. Please ensure the reply is articulate, maintains a collaborative tone, and clearly addresses all the questions or points raised by the sender in their message.",
-                            id: Date.now()
-                          })}
-                          className="flex items-center gap-2 px-3.5 py-1.5 bg-[#161616] border border-white/5 rounded-full text-white/60 hover:text-white hover:bg-white/5 hover:border-white/10 transition-all text-[13px] font-medium"
-                        >
-                          <PenTool className="w-3.5 h-3.5" />
-                          Draft reply
-                        </button>
-                        <button 
-                          onClick={() => setSuggestionInput({
-                            text: "I need to facilitate a meeting for tomorrow based on my recent email threads. Could you please review any pending scheduling requests and compare them with my calendar to suggest the most optimal windows for a 30-minute discussion?",
-                            id: Date.now()
-                          })}
-                          className="flex items-center gap-2 px-3.5 py-1.5 bg-[#161616] border border-white/5 rounded-full text-white/60 hover:text-white hover:bg-white/5 hover:border-white/10 transition-all text-[13px] font-medium"
-                        >
-                          <Calendar className="w-3.5 h-3.5" />
-                          Schedule
-                        </button>
-                        <button 
-                          onClick={() => setSuggestionInput({
-                            text: "Please perform an audit of my email engagement and activity over the past seven days. I am looking for a detailed overview of my top communication partners, peak activity times, and any trends in my response frequency or inbox growth.",
-                            id: Date.now()
-                          })}
-                          className="flex items-center gap-2 px-3.5 py-1.5 bg-[#161616] border border-white/5 rounded-full text-white/60 hover:text-white hover:bg-white/5 hover:border-white/10 transition-all text-[13px] font-medium"
-                        >
-                          <BarChart3 className="w-3.5 h-3.5" />
-                          Analytics
-                        </button>
+                        {/* Pill-style Action Buttons */}
+                        <div className="flex flex-wrap justify-center gap-2 mt-6">
+                          <button
+                            onClick={() => setSuggestionInput({
+                              text: "Please provide me with a comprehensive summary of my recent email correspondence from the last 24 hours. I am particularly interested in any urgent matters, action items directed at me, or important status updates that require my immediate attention.",
+                              id: Date.now()
+                            })}
+                            className="flex items-center gap-2 px-3.5 py-1.5 bg-[#161616] border border-white/5 rounded-full text-white/60 hover:text-white hover:bg-white/5 hover:border-white/10 transition-all text-[13px] font-medium"
+                          >
+                            <Sparkles className="w-3.5 h-3.5" />
+                            Catch up
+                          </button>
+                          <button
+                            onClick={() => setSuggestionInput({
+                              text: "Could you please analyze my current unread emails and synthesize the core information from each thread? I would like a breakdown that highlights the main subject of each conversation and identifies any deadlines or specific requests made by the senders.",
+                              id: Date.now()
+                            })}
+                            className="flex items-center gap-2 px-3.5 py-1.5 bg-[#161616] border border-white/5 rounded-full text-white/60 hover:text-white hover:bg-white/5 hover:border-white/10 transition-all text-[13px] font-medium"
+                          >
+                            <FileText className="w-3.5 h-3.5" />
+                            Summarize
+                          </button>
+                          <button
+                            onClick={() => setSuggestionInput({
+                              text: "I would like some assistance in drafting a professional response to my most recent email. Please ensure the reply is articulate, maintains a collaborative tone, and clearly addresses all the questions or points raised by the sender in their message.",
+                              id: Date.now()
+                            })}
+                            className="flex items-center gap-2 px-3.5 py-1.5 bg-[#161616] border border-white/5 rounded-full text-white/60 hover:text-white hover:bg-white/5 hover:border-white/10 transition-all text-[13px] font-medium"
+                          >
+                            <PenTool className="w-3.5 h-3.5" />
+                            Draft reply
+                          </button>
+                          <button
+                            onClick={() => setSuggestionInput({
+                              text: "I need to facilitate a meeting for tomorrow based on my recent email threads. Could you please review any pending scheduling requests and compare them with my calendar to suggest the most optimal windows for a 30-minute discussion?",
+                              id: Date.now()
+                            })}
+                            className="flex items-center gap-2 px-3.5 py-1.5 bg-[#161616] border border-white/5 rounded-full text-white/60 hover:text-white hover:bg-white/5 hover:border-white/10 transition-all text-[13px] font-medium"
+                          >
+                            <Calendar className="w-3.5 h-3.5" />
+                            Schedule
+                          </button>
+                          <button
+                            onClick={() => setSuggestionInput({
+                              text: "Please perform an audit of my email engagement and activity over the past seven days. I am looking for a detailed overview of my top communication partners, peak activity times, and any trends in my response frequency or inbox growth.",
+                              id: Date.now()
+                            })}
+                            className="flex items-center gap-2 px-3.5 py-1.5 bg-[#161616] border border-white/5 rounded-full text-white/60 hover:text-white hover:bg-white/5 hover:border-white/10 transition-all text-[13px] font-medium"
+                          >
+                            <BarChart3 className="w-3.5 h-3.5" />
+                            Analytics
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ) : (
-                 <div className="flex-1 flex flex-col relative overflow-hidden bg-transparent">
-                  <div className="flex-1 overflow-y-auto px-6 py-4 scroll-smooth">
-                    <div className="max-w-3xl mx-auto space-y-4">
-                      {activeMission && <MissionStatusHeader mission={activeMission} />}
-                      {messages.map((msg) => (
-                        <div key={msg.id} className={`flex flex-col animate-fade-in ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                          <div className={`flex gap-2.5 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'} max-w-full items-start`}>
-                            <div className={`w-7 h-7 rounded-lg flex-shrink-0 flex items-center justify-center border ${msg.role === 'user' ? 'bg-white border-white' : 'bg-graphite-surface border-graphite-border'}`}>
-                              {msg.role === 'user' ? <User2 className="w-3.5 h-3.5 text-black" /> : <img src="/arcus-ai-icon.jpg" className="w-full h-full object-cover grayscale" />}
-                            </div>
-                             <div className="flex flex-col max-w-[85%] group/msg">
-                               <div className={`transition-all relative ${msg.role === 'user' ? 'px-4 py-2.5 rounded-xl bg-white text-black shadow-sm' : 'text-graphite-text px-0 py-1'}`}>
-                                 <MessageContent content={msg.content} isUser={msg.role === 'user'} />
-                                 
-                                 {msg.role === 'assistant' && (
-                                   <button 
-                                     onClick={() => {
-                                       const text = typeof msg.content === 'string' ? msg.content : msg.content.text;
-                                       if ('speechSynthesis' in window) {
-                                         window.speechSynthesis.cancel();
-                                         const utterance = new SpeechSynthesisUtterance(text);
-                                         window.speechSynthesis.speak(utterance);
-                                       }
-                                     }}
-                                     className="absolute -right-8 top-1 opacity-0 group-hover/msg:opacity-100 transition-opacity p-1.5 hover:bg-white/5 rounded-full text-white/40 hover:text-white"
-                                     title="Speak"
-                                   >
-                                     <Volume2 className="w-3.5 h-3.5" />
-                                   </button>
-                                 )}
-                                 {msg.role === 'user' && (msg as UserMessage).attachments && (msg as UserMessage).attachments!.length > 0 && (
-                                   <div className="mt-3 flex flex-wrap gap-2 pt-3 border-t border-black/10">
-                                     {(msg as UserMessage).attachments!.map((file, idx) => (
-                                       <div key={idx} className="flex items-center gap-2 p-2 bg-black/5 rounded-lg border border-black/10 max-w-[200px]">
-                                         {file.type.startsWith('image/') ? (
-                                           <div className="w-8 h-8 rounded-md overflow-hidden flex-shrink-0">
-                                             <img src={file.url} alt={file.name} className="w-full h-full object-cover" />
-                                           </div>
-                                         ) : (
-                                           <div className="w-8 h-8 rounded-md bg-black/5 flex items-center justify-center flex-shrink-0">
-                                             <HugeiconsIcon icon={WorkHistoryIcon} size={16} className="text-black/40" />
-                                           </div>
-                                         )}
-                                         <div className="flex flex-col overflow-hidden">
-                                           <span className="text-[11px] font-medium truncate">{file.name}</span>
-                                           <span className="text-[9px] opacity-40">{(file.size / 1024).toFixed(0)} KB</span>
-                                         </div>
-                                       </div>
-                                     ))}
-                                   </div>
-                                 )}
-                                 {msg.role === 'assistant' && msg.notes && msg.notes.length > 0 && (
-                                  <div className="mt-4 space-y-3 pt-4 border-t border-graphite-border/50">
-                                    <div className="grid grid-cols-1 gap-3">
-                                      {msg.notes.map((note: any, idx: number) => (
-                                        <div key={note.id || idx} className="bg-white/[0.04] border border-white/[0.08] rounded-xl p-4">
-                                          <div className="text-graphite-text font-medium leading-snug mb-1">{note.subject || '(No Subject)'}</div>
-                                          {note.content && <div className="text-graphite-muted text-sm line-clamp-2">{note.content}</div>}
+                ) : (
+                  <div className="flex-1 flex flex-col relative overflow-hidden bg-transparent">
+                    <div className="flex-1 overflow-y-auto px-6 py-4 scroll-smooth">
+                      <div className="max-w-3xl mx-auto space-y-4">
+                        {activeMission && <MissionStatusHeader mission={activeMission} />}
+                        {messages.map((msg) => (
+                          <div key={msg.id} className={`flex flex-col animate-fade-in ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                            <div className={`flex gap-2.5 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'} max-w-full items-start`}>
+                              <div className={`w-7 h-7 rounded-lg flex-shrink-0 flex items-center justify-center border ${msg.role === 'user' ? 'bg-white border-white' : 'bg-graphite-surface border-graphite-border'}`}>
+                                {msg.role === 'user' ? <User2 className="w-3.5 h-3.5 text-black" /> : <img src="/arcus-ai-icon.jpg" className="w-full h-full object-cover grayscale" />}
+                              </div>
+                              <div className="flex flex-col max-w-[85%] group/msg">
+                                <div className={`transition-all relative ${msg.role === 'user' ? 'px-4 py-2.5 rounded-xl bg-white text-black shadow-sm' : 'text-graphite-text px-0 py-1'}`}>
+                                  <MessageContent content={msg.content} isUser={msg.role === 'user'} />
+
+                                  {msg.role === 'assistant' && (
+                                    <button
+                                      onClick={() => {
+                                        const text = typeof msg.content === 'string' ? msg.content : msg.content.text;
+                                        if ('speechSynthesis' in window) {
+                                          window.speechSynthesis.cancel();
+                                          const utterance = new SpeechSynthesisUtterance(text);
+                                          window.speechSynthesis.speak(utterance);
+                                        }
+                                      }}
+                                      className="absolute -right-8 top-1 opacity-0 group-hover/msg:opacity-100 transition-opacity p-1.5 hover:bg-white/5 rounded-full text-white/40 hover:text-white"
+                                      title="Speak"
+                                    >
+                                      <Volume2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
+                                  {msg.role === 'user' && (msg as UserMessage).attachments && (msg as UserMessage).attachments!.length > 0 && (
+                                    <div className="mt-3 flex flex-wrap gap-2 pt-3 border-t border-black/10">
+                                      {(msg as UserMessage).attachments!.map((file, idx) => (
+                                        <div key={idx} className="flex items-center gap-2 p-2 bg-black/5 rounded-lg border border-black/10 max-w-[200px]">
+                                          {file.type.startsWith('image/') ? (
+                                            <div className="w-8 h-8 rounded-md overflow-hidden flex-shrink-0">
+                                              <img src={file.url} alt={file.name} className="w-full h-full object-cover" />
+                                            </div>
+                                          ) : (
+                                            <div className="w-8 h-8 rounded-md bg-black/5 flex items-center justify-center flex-shrink-0">
+                                              <HugeiconsIcon icon={WorkHistoryIcon} size={16} className="text-black/40" />
+                                            </div>
+                                          )}
+                                          <div className="flex flex-col overflow-hidden">
+                                            <span className="text-[11px] font-medium truncate">{file.name}</span>
+                                            <span className="text-[9px] opacity-40">{(file.size / 1024).toFixed(0)} KB</span>
+                                          </div>
                                         </div>
                                       ))}
                                     </div>
-                                  </div>
-                                )}
-
-                                {msg.role === 'assistant' && msg.meta?.internalThought && (
-                                  <details className="mt-4 border-t border-white/5 pt-3 group/thought">
-                                    <summary className="flex items-center gap-2 cursor-pointer text-white/30 hover:text-white/60 transition-colors list-none">
-                                      <BrainCircuit className="w-3.5 h-3.5" />
-                                      <span className="text-[11px] font-bold tracking-wide uppercase">Internal Reasoning</span>
-                                      <ChevronDown className="w-3 h-3 transition-transform group-open/thought:rotate-180" />
-                                    </summary>
-                                    <div className="mt-2 pl-4 border-l border-white/10 py-2">
-                                      <p className="text-white/40 text-[12px] leading-relaxed whitespace-pre-wrap italic">
-                                        {msg.meta.internalThought}
-                                      </p>
+                                  )}
+                                  {msg.role === 'assistant' && msg.notes && msg.notes.length > 0 && (
+                                    <div className="mt-4 space-y-3 pt-4 border-t border-graphite-border/50">
+                                      <div className="grid grid-cols-1 gap-3">
+                                        {msg.notes.map((note: any, idx: number) => (
+                                          <div key={note.id || idx} className="bg-white/[0.04] border border-white/[0.08] rounded-xl p-4">
+                                            <div className="text-graphite-text font-medium leading-snug mb-1">{note.subject || '(No Subject)'}</div>
+                                            {note.content && <div className="text-graphite-muted text-sm line-clamp-2">{note.content}</div>}
+                                          </div>
+                                        ))}
+                                      </div>
                                     </div>
-                                  </details>
-                                )}
+                                  )}
 
-                                {msg.role === 'assistant' && msg.meta?.thinkingProcess && (
-                                  <div className="mt-4 border-t border-white/5 pt-3">
-                                    <ThinkingLayer steps={msg.meta.thinkingProcess} isVisible={true} />
-                                  </div>
-                                )}
+                                  {msg.role === 'assistant' && msg.meta?.internalThought && (
+                                    <details className="mt-4 border-t border-white/5 pt-3 group/thought">
+                                      <summary className="flex items-center gap-2 cursor-pointer text-white/30 hover:text-white/60 transition-colors list-none">
+                                        <BrainCircuit className="w-3.5 h-3.5" />
+                                        <span className="text-[11px] font-bold tracking-wide uppercase">Internal Reasoning</span>
+                                        <ChevronDown className="w-3 h-3 transition-transform group-open/thought:rotate-180" />
+                                      </summary>
+                                      <div className="mt-2 pl-4 border-l border-white/10 py-2">
+                                        <p className="text-white/40 text-[12px] leading-relaxed whitespace-pre-wrap italic">
+                                          {msg.meta.internalThought}
+                                        </p>
+                                      </div>
+                                    </details>
+                                  )}
 
-                                {msg.role === 'assistant' && msg.meta?.artifact && (
-                                  <ArtifactCard 
-                                    type={msg.meta.artifact.type}
-                                    title={msg.meta.artifact.title}
-                                    onView={() => {
-                                      if (msg.meta?.artifact) {
-                                        setCanvasData(msg.meta.artifact.canvasData);
-                                        setIsCanvasOpen(true);
-                                      }
-                                    }}
-                                  />
-                                )}
-                              </div>
-                              <div className={`mt-2 px-1 text-[10px] tracking-tight text-graphite-muted-2 opacity-60 ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
-                                {msg.time}
+                                  {msg.role === 'assistant' && msg.meta?.thinkingProcess && (
+                                    <div className="mt-4 border-t border-white/5 pt-3">
+                                      <ThinkingLayer steps={msg.meta.thinkingProcess} isVisible={true} />
+                                    </div>
+                                  )}
+
+                                  {msg.role === 'assistant' && msg.meta?.artifact && (
+                                    <ArtifactCard
+                                      type={msg.meta.artifact.type}
+                                      title={msg.meta.artifact.title}
+                                      onView={() => {
+                                        if (msg.meta?.artifact) {
+                                          setCanvasData(msg.meta.artifact.canvasData);
+                                          setIsCanvasOpen(true);
+                                        }
+                                      }}
+                                    />
+                                  )}
+                                </div>
+                                <div className={`mt-2 px-1 text-[10px] tracking-tight text-graphite-muted-2 opacity-60 ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
+                                  {msg.time}
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
-                      {isLoading && (
-                        <div className="flex items-start gap-2.5 animate-fade-in group pb-24">
-                          <div className="w-7 h-7 rounded-lg bg-graphite-surface border border-graphite-border flex items-center justify-center overflow-hidden shrink-0 relative shadow-2xl">
-                            <motion.img 
-                              src="/arcus-ai-icon.jpg" 
-                              className="w-full h-full object-cover grayscale opacity-40" 
-                              animate={{ 
-                                rotate: [0, 90, 180, 270, 360],
-                                scale: [1, 1.05, 1]
-                              }}
-                              transition={{ 
-                                rotate: { duration: 8, repeat: Infinity, ease: "linear" },
-                                scale: { duration: 3, repeat: Infinity, ease: "easeInOut" }
-                              }}
-                            />
-                            <div className="absolute inset-0 bg-white/5 animate-pulse" />
-                          </div>
-                          
-                          <div className="flex flex-col gap-2.5 max-w-full">
-                            <motion.div 
-                              layout
-                              className="inline-flex items-center min-w-[170px] relative group/bubble"
-                            >
-                             <div className="flex flex-col gap-2">
-                               <RollingThinkingStatus 
-                                 onToggle={() => setIsThinkingStepsOpen(!isThinkingStepsOpen)} 
-                                 isOpen={isThinkingStepsOpen} 
-                                 isDeepThinking={isDeepThinkingState}
-                               />
-                               
-                               {isSearchingState && (
-                                 <motion.div 
-                                   initial={{ opacity: 0, x: -10 }}
-                                   animate={{ opacity: 1, x: 0 }}
-                                   className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full w-fit"
-                                 >
-                                   <Search className="w-3.5 h-3.5 text-blue-400 animate-pulse" />
-                                   <TextShimmer className="text-[11px] text-blue-400 font-medium">Searching...</TextShimmer>
-                                 </motion.div>
-                               )}
-                             </div>
-                            </motion.div>
-                            
-                            <AnimatePresence mode="wait">
-                              {isThinkingStepsOpen && liveThinkingSteps.length > 0 && (
-                                <motion.div 
-                                  layout
-                                  initial={{ height: 0, opacity: 0, scale: 0.98 }}
-                                  animate={{ height: 'auto', opacity: 1, scale: 1 }}
-                                  exit={{ height: 0, opacity: 0, scale: 0.98 }}
-                                  transition={{ 
-                                    height: { duration: 0.5, ease: [0.16, 1, 0.3, 1] },
-                                    opacity: { duration: 0.3 }
-                                  }}
-                                  className="overflow-hidden px-1 ml-1"
-                                >
-                                  <div className="mb-2 flex items-center gap-2 opacity-30 select-none">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                                    <span className="text-[10px] font-bold tracking-widest uppercase">Live Activity</span>
-                                  </div>
-                                  <ThinkingLayer 
-                                    steps={liveThinkingSteps} 
-                                    isVisible={true} 
-                                    isGenerating={isLoading}
-                                    generatingLabel={liveThinkingSteps.find(s => s.status === 'active')?.label || (isDeepThinkingState ? "Deeply reasoning..." : "Processing...")}
+                        ))}
+                        {isLoading && (
+                          <div className="flex items-start gap-2.5 animate-fade-in group pb-24">
+                            <div className="w-7 h-7 rounded-lg bg-graphite-surface border border-graphite-border flex items-center justify-center overflow-hidden shrink-0 relative shadow-2xl">
+                              <motion.img
+                                src="/arcus-ai-icon.jpg"
+                                className="w-full h-full object-cover grayscale opacity-40"
+                                animate={{
+                                  rotate: [0, 90, 180, 270, 360],
+                                  scale: [1, 1.05, 1]
+                                }}
+                                transition={{
+                                  rotate: { duration: 8, repeat: Infinity, ease: "linear" },
+                                  scale: { duration: 3, repeat: Infinity, ease: "easeInOut" }
+                                }}
+                              />
+                              <div className="absolute inset-0 bg-white/5 animate-pulse" />
+                            </div>
+
+                            <div className="flex flex-col gap-2.5 max-w-full">
+                              <motion.div
+                                layout
+                                className="inline-flex items-center min-w-[170px] relative group/bubble"
+                              >
+                                <div className="flex flex-col gap-2">
+                                  <RollingThinkingStatus
+                                    onToggle={() => setIsThinkingStepsOpen(!isThinkingStepsOpen)}
+                                    isOpen={isThinkingStepsOpen}
+                                    isDeepThinking={isDeepThinkingState}
                                   />
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
+
+                                  {isSearchingState && (
+                                    <motion.div
+                                      initial={{ opacity: 0, x: -10 }}
+                                      animate={{ opacity: 1, x: 0 }}
+                                      className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full w-fit"
+                                    >
+                                      <Search className="w-3.5 h-3.5 text-blue-400 animate-pulse" />
+                                      <TextShimmer className="text-[11px] text-blue-400 font-medium">Searching...</TextShimmer>
+                                    </motion.div>
+                                  )}
+                                </div>
+                              </motion.div>
+
+                              <AnimatePresence mode="wait">
+                                {isThinkingStepsOpen && liveThinkingSteps.length > 0 && (
+                                  <motion.div
+                                    layout
+                                    initial={{ height: 0, opacity: 0, scale: 0.98 }}
+                                    animate={{ height: 'auto', opacity: 1, scale: 1 }}
+                                    exit={{ height: 0, opacity: 0, scale: 0.98 }}
+                                    transition={{
+                                      height: { duration: 0.5, ease: [0.16, 1, 0.3, 1] },
+                                      opacity: { duration: 0.3 }
+                                    }}
+                                    className="overflow-hidden px-1 ml-1"
+                                  >
+                                    <div className="mb-2 flex items-center gap-2 opacity-30 select-none">
+                                      <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                                      <span className="text-[10px] font-bold tracking-widest uppercase">Live Activity</span>
+                                    </div>
+                                    <ThinkingLayer
+                                      steps={liveThinkingSteps}
+                                      isVisible={true}
+                                      isGenerating={isLoading}
+                                      generatingLabel={liveThinkingSteps.find(s => s.status === 'active')?.label || (isDeepThinkingState ? "Deeply reasoning..." : "Processing...")}
+                                    />
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </div>
                           </div>
-                        </div>
-                      )}
-                      <div ref={messagesEndRef} className="h-20" />
+                        )}
+                        <div ref={messagesEndRef} className="h-20" />
+                      </div>
+                    </div>
+                    <div className="sticky bottom-0 z-20 w-full px-6 pb-12 mt-auto">
+                      <div className="max-w-3xl mx-auto">
+                        <PromptInputBox
+                          onSend={(msg, files, opts) => handleSend(msg, files, opts)}
+                          isLoading={isLoading}
+                          placeholder="Ask follow-up..."
+                          onSearchClick={() => { }}
+                          onAttachEmailClick={() => setIsEmailSelectionModalOpen(true)}
+                          onPersonalityClick={() => setIsPersonalityModalOpen(true)}
+                          selectedEmailsCount={selectedEmails.length}
+                        />
+                      </div>
                     </div>
                   </div>
-                  <div className="sticky bottom-0 z-20 w-full px-6 pb-12 mt-auto">
-                    <div className="max-w-3xl mx-auto">
-                      <PromptInputBox
-                        onSend={(msg, files, opts) => handleSend(msg, files, opts)}
-                        isLoading={isLoading}
-                        placeholder="Ask follow-up..."
-                        onSearchClick={() => {}}
-                        onAttachEmailClick={() => setIsEmailSelectionModalOpen(true)}
-                        onPersonalityClick={() => setIsPersonalityModalOpen(true)}
-                        selectedEmailsCount={selectedEmails.length}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
+
+              {/* Canvas Split Panel */}
+              <AnimatePresence>
+                {isCanvasOpen && canvasData && (
+                  <CanvasPanel
+                    isOpen={isCanvasOpen}
+                    onClose={() => setIsCanvasOpen(false)}
+                    canvasData={canvasData}
+                    onExecute={handleCanvasExecute}
+                    isExecuting={isCanvasExecuting}
+                  />
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </div>
 
         <IntegrationsModal isOpen={isIntegrationsModalOpen} onClose={() => setIsIntegrationsModalOpen(false)} />
-        <EmailSelectionModal 
-          isOpen={isEmailSelectionModalOpen} 
-          onClose={() => setIsEmailSelectionModalOpen(false)} 
+        <EmailSelectionModal
+          isOpen={isEmailSelectionModalOpen}
+          onClose={() => setIsEmailSelectionModalOpen(false)}
           onSelectEmails={(emails: Email[]) => {
             setSelectedEmails(prev => [...prev, ...emails]);
             setIsEmailSelectionModalOpen(false);
-          }} 
+          }}
         />
         <PersonalitySettingsModal isOpen={isPersonalityModalOpen} onClose={() => setIsPersonalityModalOpen(false)} onSave={handleSavePersonality} initialPersonality={savedPersonality} />
-        <CanvasPanel isOpen={isCanvasOpen} onClose={() => setIsCanvasOpen(false)} canvasData={canvasData} onExecute={handleCanvasExecute} isExecuting={isCanvasExecuting} />
       </>
     </TooltipProvider>
   );

@@ -11,6 +11,8 @@ import { ArcusOperatorRuntime } from '@/lib/arcus-operator-runtime.js';
 import { isFeatureEnabled } from '@/lib/feature-flags.js';
 import crypto from 'crypto';
 
+export const maxDuration = 60; // Allow enough time for Deep Thinking/Arcus logic
+
 /**
  * Main chat handler with Arcus AI + Gmail context + Memory + Integration awareness
  */
@@ -441,21 +443,7 @@ Body: ${emailData.body || emailData.snippet}
         let canvasData = null;
     let executionPolicy = null;
     const messageLower = (message || '').toLowerCase();
-    const forceCanvasByMessage =
-      messageLower.includes('canvas') ||
-      (messageLower.includes('draft') && (messageLower.includes('reply') || messageLower.includes('email')));
-
-    const effectiveCanvasType =
-      intentAnalysis?.canvasType && intentAnalysis.canvasType !== 'none'
-        ? intentAnalysis.canvasType
-        : messageLower.includes('summary')
-          ? 'summary'
-          : messageLower.includes('research')
-            ? 'research'
-            : messageLower.includes('plan')
-              ? 'action_plan'
-              : 'email_draft';
-
+    const effectiveCanvasType = intentAnalysis?.canvasType || 'email_draft';
     const shouldGenerateCanvas = Boolean(isCanvas);
 
     // --- PARALLEL GENERATION: Generate canvas and response at the same time ---
