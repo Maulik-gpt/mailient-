@@ -30,22 +30,6 @@ interface ThinkingLayerProps {
  */
 export function ThinkingLayer({ steps, isVisible, currentThought, isGenerating, generatingLabel, onStop }: ThinkingLayerProps) {
     const [expandedSteps, setExpandedSteps] = useState<Set<string>>(new Set());
-    const [timer, setTimer] = useState(0);
-    const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-
-    // Timer logic
-    useEffect(() => {
-        let interval: any;
-        if (isGenerating && isVisible) {
-            setTimer(0);
-            interval = setInterval(() => {
-                setTimer((prev) => prev + 1);
-            }, 1000);
-        } else {
-            setTimer(0);
-        }
-        return () => clearInterval(interval);
-    }, [isGenerating, isVisible]);
 
     if (!isVisible || (steps.length === 0 && !isGenerating)) return null;
 
@@ -67,42 +51,12 @@ export function ThinkingLayer({ steps, isVisible, currentThought, isGenerating, 
             {/* Vertical Guide Line */}
             <div className="absolute left-1.5 top-3 bottom-0 w-[1px] bg-white/[0.05] z-0" />
 
-            {/* Premium Thinking Indicator (Pulse + Timer) */}
-            {isGenerating && (
-                <div className="mb-6 ml-4">
-                    <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2.5">
-                            <BrainCircuit className="w-3.5 h-3.5 text-white/40 animate-pulse" />
-                            <span className="text-[10px] font-bold tracking-[0.2em] text-white/30 uppercase">Analysis Engine</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                             <div className="flex items-center bg-white/[0.03] px-1.5 py-0.5 rounded border border-white/[0.05]">
-                                <div className="w-1 h-1 rounded-full bg-blue-400 mr-2 animate-pulse" />
-                                <span className="text-[10px] font-mono text-white/50">{timer}s</span>
-                             </div>
-                             <button 
-                                onClick={() => setIsDetailsOpen(!isDetailsOpen)}
-                                className="p-1 hover:bg-white/5 rounded-md transition-colors text-white/20 hover:text-white/60 group focus:outline-none"
-                             >
-                                <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-300", isDetailsOpen ? "rotate-180" : "rotate-0")} />
-                             </button>
-                        </div>
-                    </div>
+            <div className="mb-2 flex items-center gap-2 opacity-30 select-none">
+                <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse ml-0.5" />
+                <span className="text-[10px] font-bold tracking-widest uppercase">Live Activity</span>
+            </div>
 
-                    {/* Ray Pulse Animation */}
-                    <div className="h-[2px] w-full bg-white/[0.03] rounded-full overflow-hidden relative">
-                        <motion.div 
-                            initial={{ x: "-100%" }}
-                            animate={{ x: "240%" }}
-                            transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-                            className="absolute inset-y-0 w-1/4 bg-white/40"
-                            style={{ filter: "blur(2px)" }}
-                        />
-                    </div>
-                </div>
-            )}
-
-            <div className={cn("space-y-1 relative z-10 transition-all duration-500", (!isDetailsOpen && isGenerating) ? "opacity-0 max-h-0 overflow-hidden" : "opacity-100 max-h-[1000px]")}>
+            <div className="space-y-1 relative z-10 transition-all duration-500">
                 {/* Completed steps */}
                 {completedSteps.map((step, idx) => (
                     <motion.div 
@@ -194,26 +148,6 @@ export function ThinkingLayer({ steps, isVisible, currentThought, isGenerating, 
                 </div>
             )}
 
-            {/* Generation overlay with Stop */}
-            {isGenerating && generatingLabel && !isDetailsOpen && (
-                <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex items-center justify-between py-1 px-4"
-                >
-                    <div className="flex flex-col">
-                        <span className="text-white/80 text-[12px] font-medium tracking-tight truncate max-w-[200px]">{generatingLabel}</span>
-                    </div>
-                    {onStop && (
-                        <button
-                            onClick={onStop}
-                            className="bg-white/5 hover:bg-white/10 border border-white/5 text-white/40 hover:text-white/80 text-[9px] tracking-widest px-3 py-1.5 rounded-lg transition-all"
-                        >
-                            Stop
-                        </button>
-                    )}
-                </motion.div>
-            )}
         </div>
     );
 }

@@ -272,7 +272,7 @@ interface UserMessage {
 
 type Message = AgentMessage | UserMessage;
 
-const THINKING_MESSAGES = ["Thinking", "Processing", "Analyzing", "Chilling", "Synthesizing", "Organizing", "Reviewing", "Refining", "Checking", "Polishing"];
+const THINKING_MESSAGES = ["Thinking", "Processing", "Analyzing", "Synthesizing", "Organizing", "Reviewing", "Refining", "Checking", "Polishing"];
 
 const DEEP_THINKING_MESSAGES = ["Thinking deep", "Reasoning", "Simulating outcomes", "Analyzing layers", "Synthesizing deep context", "Architecting solution", "Deeply processing", "Refining logic"];
 
