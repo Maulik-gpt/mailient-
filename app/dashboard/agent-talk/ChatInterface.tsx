@@ -25,7 +25,6 @@ import { ShiningText } from '@/components/ui/shining-text';
 import { Note } from '@/components/ui/note';
 import { Button as Button1 } from '@/components/ui/button-1';
 import { MorphingSquare } from '@/components/ui/morphing-square';
-import { TextShimmer } from '@/components/ui/text-shimmer';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { cn } from "@/lib/utils";
