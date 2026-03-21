@@ -63,13 +63,20 @@ const typeLabels: Record<CanvasType, string> = {
 };
 
 const actionLabelMap: Record<string, string> = {
-    send_email: 'Send',
-    schedule_meeting: 'Confirm',
+    send_email: 'Send Message',
+    schedule_meeting: 'Schedule Meeting',
     save_draft: 'Save Draft',
-    execute_plan: 'Execute',
-    apply_changes: 'Apply',
+    execute_plan: 'Execute Plan',
+    apply_changes: 'Apply Changes',
     revise: 'Revise',
-    cancel: 'Cancel'
+    cancel: 'Cancel',
+    coordinate_event: 'Coordinate Event'
+};
+
+const formatActionLabel = (label: string) => {
+    if (!label) return '';
+    // Clean up underscores and capitalize
+    return label.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 };
 
 export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecuting }: CanvasPanelProps) {
@@ -142,19 +149,21 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
     return (
         <motion.div
             initial={{ width: 0, opacity: 0 }}
-            animate={{ width: '50%', opacity: 1 }}
+            animate={{ width: '45%', opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
-            transition={{ type: 'spring', damping: 30, stiffness: 260, mass: 0.8 }}
-            className="h-full border-l border-white/[0.06] bg-[#0A0A0A] flex flex-col overflow-hidden relative"
-            style={{ fontFamily: "'Satoshi', sans-serif", minWidth: 0 }}
+            transition={{ type: 'spring', damping: 40, stiffness: 300, mass: 1 }}
+            className="h-full border-l border-white/[0.04] bg-[#080808] flex flex-col overflow-hidden relative shadow-[0_0_50px_rgba(0,0,0,0.5)]"
+            style={{ fontFamily: "'Satoshi', sans-serif", minWidth: '400px' }}
         >
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06] shrink-0">
-                <div className="flex items-center gap-3">
-                    <div className="w-1.5 h-1.5 rounded-full bg-white/50" />
-                    <span className="text-[11px] tracking-[0.15em] text-white/40 uppercase" style={{ fontFamily: "'Satoshi', sans-serif" }}>Canvas</span>
-                    <span className="text-white/10">·</span>
-                    <span className="text-[11px] text-white/25 tracking-wide">{typeLabels[canvasData.type]}</span>
+            <div className="flex items-center justify-between px-8 py-5 border-b border-white/[0.03] shrink-0">
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-white/40" />
+                        <span className="text-[10px] tracking-[0.2em] text-white/30 uppercase font-bold" style={{ fontFamily: "'Satoshi', sans-serif" }}>Canvas</span>
+                    </div>
+                    <span className="text-white/5 mx-1">/</span>
+                    <span className="text-[10px] text-white/20 tracking-[0.1em] uppercase font-bold">{typeLabels[canvasData.type]}</span>
                 </div>
                 <div className="flex items-center gap-2">
                     <button
@@ -196,11 +205,13 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
 
                     {/* Banners */}
                     {canvasData.approval?.required && (
-                        <div className="mb-6 bg-amber-500/[0.06] border border-amber-500/15 rounded-xl p-4 flex items-start gap-3">
-                            <ShieldAlert className="w-4 h-4 text-amber-500/70 flex-shrink-0 mt-0.5" />
+                        <div className="mb-8 bg-amber-500/[0.03] border border-amber-500/10 rounded-2xl p-5 flex items-start gap-4 transition-all hover:bg-amber-500/[0.05]">
+                            <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+                                <ShieldAlert className="w-4 h-4 text-amber-500/60" />
+                            </div>
                             <div>
-                                <div className="text-amber-400/80 text-xs font-medium mb-0.5" style={{ fontFamily: "'Satoshi', sans-serif" }}>Approval required</div>
-                                <p className="text-amber-200/40 text-xs leading-relaxed">{canvasData.approval.reason || 'This action needs your confirmation before proceeding.'}</p>
+                                <div className="text-amber-400 text-[11px] font-bold tracking-tight uppercase mb-1" style={{ fontFamily: "'Satoshi', sans-serif" }}>Action Required</div>
+                                <p className="text-white/40 text-[12px] leading-relaxed font-medium">{canvasData.approval.reason || 'Confirm this draft to proceed with execution.'}</p>
                             </div>
                         </div>
                     )}
@@ -275,24 +286,24 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
 
                     {/* ─── MEETING SCHEDULE ─── */}
                     {canvasData.type === 'meeting_schedule' && canvasData.content && (
-                        <div className="space-y-5">
+                        <div className="space-y-8">
                             {/* Meeting details */}
-                            <div className="border border-white/[0.06] rounded-xl overflow-hidden divide-y divide-white/[0.04]">
-                                <div className="px-5 py-4 flex items-center justify-between">
-                                    <div className="flex items-center gap-3 text-white/30">
+                            <div className="space-y-1">
+                                <div className="flex items-center justify-between py-4 border-b border-white/[0.03]">
+                                    <div className="flex items-center gap-4 text-white/20">
                                         <Calendar className="w-4 h-4" />
-                                        <span className="text-[11px] tracking-wide" style={{ fontFamily: "'Satoshi', sans-serif" }}>Date & Time</span>
+                                        <span className="text-[10px] tracking-widest uppercase font-bold" style={{ fontFamily: "'Satoshi', sans-serif" }}>Date & Time</span>
                                     </div>
-                                    <span className="text-white/80 text-sm" style={{ fontFamily: "'Satoshi', sans-serif" }}>
+                                    <span className="text-white/80 text-[13px] font-medium" style={{ fontFamily: "'Satoshi', sans-serif" }}>
                                         {canvasData.content.date || '—'} {canvasData.content.time ? `at ${canvasData.content.time}` : ''}
                                     </span>
                                 </div>
-                                <div className="px-5 py-4 flex items-center justify-between">
-                                    <div className="flex items-center gap-3 text-white/30">
+                                <div className="flex items-center justify-between py-4 border-b border-white/[0.03]">
+                                    <div className="flex items-center gap-4 text-white/20">
                                         <Mail className="w-4 h-4" />
-                                        <span className="text-[11px] tracking-wide" style={{ fontFamily: "'Satoshi', sans-serif" }}>Participants</span>
+                                        <span className="text-[10px] tracking-widest uppercase font-bold" style={{ fontFamily: "'Satoshi', sans-serif" }}>Participants</span>
                                     </div>
-                                    <span className="text-white/70 text-sm" style={{ fontFamily: "'Satoshi', sans-serif" }}>
+                                    <span className="text-white/70 text-[13px] font-medium truncate max-w-[200px]" style={{ fontFamily: "'Satoshi', sans-serif" }}>
                                         {canvasData.content.attendees?.join(', ') || '—'}
                                     </span>
                                 </div>
@@ -300,33 +311,33 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
 
                             {/* Subject / Agenda */}
                             {(canvasData.content.subject || canvasData.content.agenda || canvasData.content.description) && (
-                                <div className="border border-white/[0.06] rounded-xl p-5">
+                                <div className="pt-2">
                                     {canvasData.content.subject && (
-                                        <div className="text-white/80 text-sm font-medium mb-2" style={{ fontFamily: "'Satoshi', sans-serif" }}>
+                                        <div className="text-white text-md font-bold mb-3" style={{ fontFamily: "'Satoshi', sans-serif" }}>
                                             {canvasData.content.subject}
                                         </div>
                                     )}
-                                    <div className="text-white/40 text-sm leading-relaxed whitespace-pre-wrap" style={{ fontFamily: "'Satoshi', sans-serif" }}>
+                                    <p className="text-white/30 text-[13px] leading-relaxed" style={{ fontFamily: "'Satoshi', sans-serif" }}>
                                         {canvasData.content.agenda || canvasData.content.description || ''}
-                                    </div>
+                                    </p>
                                 </div>
                             )}
 
-                            {/* Provider */}
-                            <div className="space-y-3">
-                                <div className="flex items-center gap-2 text-white/25">
+                            {/* Provider selection */}
+                            <div className="pt-4 space-y-4">
+                                <div className="flex items-center gap-3 text-white/15">
                                     <Globe className="w-3.5 h-3.5" />
-                                    <span className="text-[11px] tracking-wide" style={{ fontFamily: "'Satoshi', sans-serif" }}>Provider</span>
+                                    <span className="text-[10px] tracking-widest uppercase font-bold" style={{ fontFamily: "'Satoshi', sans-serif" }}>Conference Provider</span>
                                 </div>
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="flex gap-2 p-1 bg-white/[0.02] border border-white/[0.04] rounded-2xl w-fit">
                                     {(['google', 'cal'] as const).map((p) => (
                                         <button
                                             key={p}
                                             onClick={() => setSelectedProvider(p)}
-                                            className={`px-4 py-3 rounded-xl border text-sm font-medium transition-all ${
+                                            className={`px-6 py-2.5 rounded-xl text-[11px] font-bold transition-all ${
                                                 selectedProvider === p
-                                                    ? 'bg-white text-black border-white'
-                                                    : 'bg-white/[0.02] border-white/[0.08] text-white/50 hover:border-white/15'
+                                                    ? 'bg-white text-black shadow-lg scale-100'
+                                                    : 'text-white/30 hover:text-white/50 hover:bg-white/[0.03]'
                                             }`}
                                             style={{ fontFamily: "'Satoshi', sans-serif" }}
                                         >
@@ -428,11 +439,11 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                                 </div>
                             ))}
 
-                            {/* Raw fallback */}
-                            {(!canvasData.sections || canvasData.sections.length === 0) && canvasData.raw && (
-                                <div className="border border-white/[0.06] rounded-xl p-5">
-                                    <p className="text-white/60 text-sm leading-relaxed whitespace-pre-wrap" style={{ fontFamily: "'Satoshi', sans-serif" }}>
-                                        {canvasData.raw}
+                            {/* Raw content or rawText from fallback */}
+                            {(!canvasData.sections || canvasData.sections.length === 0) && (canvasData.raw || canvasData.content?.rawText) && (
+                                <div className="border border-white/[0.04] rounded-2xl p-6 bg-white/[0.01]">
+                                    <p className="text-white/60 text-[13px] leading-relaxed whitespace-pre-wrap" style={{ fontFamily: "'Satoshi', sans-serif" }}>
+                                        {canvasData.content?.rawText || canvasData.raw}
                                     </p>
                                 </div>
                             )}
@@ -475,7 +486,7 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                                     key={action.actionType}
                                     onClick={() => handleExecute(action.actionType)}
                                     disabled={isExecuting || (canvasData.missingInputs && canvasData.missingInputs.length > 0)}
-                                    className="flex items-center gap-2 h-10 px-5 rounded-lg bg-white text-black text-sm font-medium transition-all hover:bg-white/90 disabled:opacity-30 disabled:cursor-not-allowed"
+                                    className="flex items-center gap-2.5 h-11 px-6 rounded-xl bg-white text-black text-sm font-bold transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed shadow-[0_8px_20px_rgba(255,255,255,0.1)]"
                                     style={{ fontFamily: "'Satoshi', sans-serif" }}
                                 >
                                     {isExecuting ? (
@@ -483,7 +494,7 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                                     ) : (
                                         <ArrowRight className="w-4 h-4" />
                                     )}
-                                    <span>{isExecuting ? 'Processing...' : (action.label || actionLabelMap[action.actionType] || 'Execute')}</span>
+                                    <span>{isExecuting ? 'Processing...' : (action.label || actionLabelMap[action.actionType] || formatActionLabel(action.actionType) || 'Execute')}</span>
                                 </button>
                             ))
                     ) : (

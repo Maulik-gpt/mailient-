@@ -284,7 +284,7 @@ function RollingThinkingStatus({ onToggle, isOpen, isDeepThinking }: { onToggle:
   useEffect(() => {
     let timer: any;
     if (!isOpen) {
-       timer = setInterval(() => {
+      timer = setInterval(() => {
         setElapsed(prev => prev + 1);
       }, 1000);
     }
@@ -2144,12 +2144,3 @@ export default function ChatInterface({
     </TooltipProvider>
   );
 };
-
-
-
-
-
-
-
-
-
