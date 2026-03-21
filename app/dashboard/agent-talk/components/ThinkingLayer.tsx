@@ -51,12 +51,7 @@ export function ThinkingLayer({ steps, isVisible, currentThought, isGenerating, 
             {/* Vertical Guide Line */}
             <div className="absolute left-1.5 top-3 bottom-0 w-[1px] bg-white/[0.05] z-0" />
 
-            <div className="mb-2 flex items-center gap-2 opacity-30 select-none">
-                <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse ml-0.5" />
-                <span className="text-[10px] font-bold tracking-widest uppercase">Live Activity</span>
-            </div>
-
-            <div className="space-y-1 relative z-10 transition-all duration-500">
+            <div className="space-y-1 relative z-10 pt-2 transition-all duration-500">
                 {/* Completed steps */}
                 {completedSteps.map((step, idx) => (
                     <motion.div 

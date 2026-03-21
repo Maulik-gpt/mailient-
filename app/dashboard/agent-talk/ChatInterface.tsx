@@ -18,6 +18,7 @@ import { GradientButton } from '@/components/ui/gradient-button';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { RainbowButton } from '@/components/ui/rainbow-button';
 import { HomeFeedSidebar } from "@/components/ui/home-feed-sidebar";
+import { TextShimmer } from '@/components/ui/text-shimmer';
 import NotesFetchingDisplay from '@/components/ui/notes-fetching-display';
 import { UsageLimitModal } from '@/components/ui/usage-limit-modal';
 import { ShiningText } from '@/components/ui/shining-text';
@@ -300,29 +301,11 @@ function RollingThinkingStatus({ onToggle, isOpen, isDeepThinking }: { onToggle:
 
   return (
     <div className="flex items-center justify-between w-full group/status cursor-pointer select-none" onClick={onToggle}>
-      <div className="flex items-center gap-4">
-        {/* Shimmering Ray Pulse */}
-        <div className="relative w-32 h-1 bg-white/[0.03] rounded-full overflow-hidden">
-          <motion.div
-            initial={{ left: '-100%' }}
-            animate={{ left: '100%' }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-            className="absolute top-0 bottom-0 w-1/3 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-          />
-        </div>
-
-        {/* Status Text & Timer */}
-        <div className="flex items-center gap-2 min-w-[150px]">
-          <span className={cn("text-[13px] font-medium tracking-tight", isDeepThinking ? "text-[#8B5CF6]" : "text-white/60")}>
-            {messages[index]}
-          </span>
-          <span className="text-[11px] font-mono text-white/20 tabular-nums">
-            {elapsed}s
-          </span>
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 px-1">
+          <TextShimmer className="text-[14px] font-medium tracking-tight text-white/90" duration={1.5}>
+            {`Thinking for ${elapsed}s`}
+          </TextShimmer>
         </div>
       </div>
 
