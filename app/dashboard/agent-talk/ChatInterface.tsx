@@ -252,6 +252,8 @@ interface AgentMessage {
       title: string;
       canvasData: any;
     };
+    limitReached?: boolean;
+    usageData?: any;
   };
 }
 
@@ -738,6 +740,26 @@ export default function ChatInterface({
             currentPlan: errorData.planType || 'starter'
           });
           setIsUsageLimitModalOpen(true);
+
+          // Add a special credit depletion message to the thread
+          const limitMessage: AgentMessage = {
+            id: Date.now() + 1,
+            type: 'agent',
+            role: 'assistant',
+            content: `You don't have enough credits. Please upgrade via the below link to continue.`,
+            time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+            meta: {
+              limitReached: true,
+              actionType: 'limit'
+            }
+          };
+
+          setMessages(prev => [...prev, limitMessage]);
+          setIsLoading(false);
+          setIsSearchingState(false);
+          setIsDeepThinkingState(false);
+          
+          scrollToBottom(true);
           return;
         }
         throw new Error(errorData.message || `Failed to send message (${response.status})`);
@@ -1922,6 +1944,14 @@ export default function ChatInterface({
                               </div>
                               <div className="flex flex-col max-w-[85%] group/msg">
                                 <div className={`transition-all relative ${msg.role === 'user' ? 'px-4 py-2.5 rounded-xl bg-white text-black shadow-sm' : 'text-graphite-text px-0 py-1'}`}>
+                                  {msg.role === 'assistant' && msg.meta?.limitReached && (
+                                    <div className="flex items-center gap-2 mb-3 opacity-60">
+                                      <img src="/arcus-ai-icon.jpg" className="w-4 h-4 rounded-md grayscale" />
+                                      <span className="text-[12px] text-white/90 font-medium tracking-tight">Arcus AI</span>
+                                      <span className="px-1.5 py-0.5 bg-white/10 text-white/40 text-[9px] font-bold rounded uppercase tracking-widest leading-none">Lite</span>
+                                    </div>
+                                  )}
+
                                   <MessageContent content={msg.content} isUser={msg.role === 'user'} />
 
                                   {msg.role === 'assistant' && (
@@ -1992,6 +2022,37 @@ export default function ChatInterface({
                                   {msg.role === 'assistant' && msg.meta?.thinkingProcess && (
                                     <div className="mt-4 border-t border-white/5 pt-3">
                                       <ThinkingLayer steps={msg.meta.thinkingProcess} isVisible={true} />
+                                    </div>
+                                  )}
+
+                                  {msg.role === 'assistant' && msg.meta?.limitReached && (
+                                    <div className="flex flex-col gap-4 mt-2">
+                                      <a href="/pricing" className="text-white/40 hover:text-white underline underline-offset-4 decoration-white/10 hover:decoration-white transition-all text-[13px] tracking-tight truncate w-fit">
+                                        https://mailient.com/pricing
+                                      </a>
+
+                                      <div className="group relative flex items-center justify-between gap-4 p-4 mt-2 w-full max-w-[500px] bg-white/[0.03] border border-white/[0.08] rounded-2xl transition-all duration-300 hover:bg-white/[0.05] hover:border-white/12 shadow-2xl overflow-hidden">
+                                        <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent pointer-events-none opacity-50" />
+                                        
+                                        <div className="flex items-center gap-3.5 z-10">
+                                          <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center relative shadow-inner shrink-0 transition-transform group-hover:scale-105">
+                                            <Sparkles className="w-5 h-5 text-white/50 group-hover:text-white transition-colors" />
+                                          </div>
+                                          <div className="flex flex-col gap-0.5">
+                                            <p className="text-white/90 text-[13px] font-bold tracking-tight leading-relaxed">
+                                              Your credits have been used up.
+                                            </p>
+                                            <p className="text-white/40 text-[11px] font-medium">Please upgrade your plan for more credits.</p>
+                                          </div>
+                                        </div>
+
+                                        <button 
+                                          onClick={() => router.push('/pricing')}
+                                          className="relative z-10 px-5 py-2.5 bg-white hover:bg-neutral-200 text-black font-bold text-[12px] tracking-tight uppercase rounded-full transition-all group-active:scale-95 shadow-lg"
+                                        >
+                                          Upgrade
+                                        </button>
+                                      </div>
                                     </div>
                                   )}
 
