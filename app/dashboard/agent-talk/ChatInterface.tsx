@@ -7,7 +7,7 @@ import { signOut } from 'next-auth/react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { AddSquareIcon, Cancel01Icon, WorkHistoryIcon } from '@hugeicons/core-free-icons';
 import { ChatHistoryModal } from './components/ChatHistoryModal';
-import { ThinkingLayer, ArtifactCard, type ThinkingStep } from './components/ThinkingLayer';
+import { ThinkingLayer, ArtifactCard, type ThinkingStep, type ThinkingBlock } from './components/ThinkingLayer';
 import { CanvasPanel, type CanvasData } from './components/CanvasPanel';
 
 import { PromptInputBox } from '@/components/ui/ai-prompt-box';
@@ -245,8 +245,10 @@ interface AgentMessage {
     planCard?: any;
     agentProcess?: any;
     completedSteps?: string[];
-    thinkingProcess?: ThinkingStep[];
+    thinkingBlocks?: ThinkingBlock[];
     internalThought?: string;
+    isStreaming?: boolean;
+    actionHistory?: any[];
     artifact?: {
       type: string;
       title: string;
@@ -391,7 +393,24 @@ export default function ChatInterface({
   const [pendingReplyProposal, setPendingReplyProposal] = useState<any>(null);
 
   // Live thinking state (AI-generated, shown during loading)
-  const [liveThinkingSteps, setLiveThinkingSteps] = useState<LiveThinkingStep[]>([]);
+  const [liveThinkingBlocks, setLiveThinkingBlocks] = useState<ThinkingBlock[]>([]);
+
+  // ... (inside the component)
+
+  const normalizeIntentPlanBlock = (plan: any[], initialResponse?: string): ThinkingBlock => {
+    return {
+      id: 'main-work',
+      title: plan[0]?.description || 'Executing requested task',
+      status: 'active',
+      initialContext: initialResponse,
+      steps: plan.map((step: any, index: number) => ({
+        id: `live-${step.step || index}`,
+        label: step.action || step.description || `Working on step ${index + 1}`,
+        status: 'pending' as const,
+        type: (step.type || 'think') as any
+      }))
+    };
+  };
   const [isThinkingStepsOpen, setIsThinkingStepsOpen] = useState<boolean>(false);
 
   // Canvas Panel state
@@ -584,36 +603,20 @@ export default function ChatInterface({
     return fallbackTitle.length > 40 ? fallbackTitle.substring(0, 40) + '...' : fallbackTitle;
   };
 
-  const buildFallbackThinkingSteps = (messageText: string): LiveThinkingStep[] => {
+  const buildFallbackThinkingBlocks = (messageText: string): ThinkingBlock[] => {
     const emailRelated = isEmailRelatedQuery(messageText);
     const notesRelated = isNotesRelatedQuery(messageText);
 
-    return [
-      {
-        id: 'fallback-analyze',
-        label: 'Understanding your request',
-        status: 'active',
-        type: 'analyze'
-      },
-      {
-        id: 'fallback-context',
-        label: notesRelated
-          ? 'Reviewing relevant notes and saved context'
-          : emailRelated
-            ? 'Searching relevant Gmail threads and context'
-            : 'Gathering the context needed to complete this task',
-        status: 'pending',
-        type: emailRelated ? 'search' : 'read'
-      },
-      {
-        id: 'fallback-output',
-        label: emailRelated
-          ? 'Preparing a draft, summary, or next action for review'
-          : 'Preparing the best output for review',
-        status: 'pending',
-        type: 'draft'
-      }
-    ];
+    return [{
+      id: 'fallback-block',
+      title: 'Planning and initialization',
+      status: 'active',
+      initialContext: 'Identifying the most efficient roadmap to fulfill your objective...',
+      steps: [
+        { id: 'fb-1', label: 'Analyzing intent', status: 'active', type: 'think' },
+        { id: 'fb-2', label: notesRelated ? 'Retrieving notes' : emailRelated ? 'Searching Gmail' : 'Checking context', status: 'pending', type: emailRelated ? 'search' : 'read' }
+      ]
+    }];
   };
 
   const normalizeIntentPlanSteps = (plan: any[]): LiveThinkingStep[] =>
@@ -649,20 +652,32 @@ export default function ChatInterface({
       setIsSearchingState(isSearch);
 
       if (isDeepThinking) {
-        setLiveThinkingSteps([
-          { id: 'deep-analyze', label: 'Analyzing request for deep reasoning...', status: 'active', type: 'think' },
-          { id: 'deep-context', label: 'Performing comprehensive context retrieval...', status: 'pending', type: 'search' },
-          { id: 'deep-reasoning', label: 'Processing logical pathways and edge cases...', status: 'pending', type: 'think' },
-          { id: 'deep-synthesis', label: 'Synthesizing final high-quality resolution...', status: 'pending', type: 'analyze' }
-        ]);
+        setLiveThinkingBlocks([{
+          id: 'deep-block',
+          title: 'Deep Reasoning Process',
+          status: 'active',
+          initialContext: 'Initializing multi-path logical analysis...',
+          steps: [
+            { id: 'deep-analyze', label: 'Analyzing request for deep reasoning...', status: 'active', type: 'think' },
+            { id: 'deep-context', label: 'Performing comprehensive context retrieval...', status: 'pending', type: 'search' },
+            { id: 'deep-reasoning', label: 'Processing logical pathways and edge cases...', status: 'pending', type: 'think' },
+            { id: 'deep-synthesis', label: 'Synthesizing final high-quality resolution...', status: 'pending', type: 'analyze' }
+          ]
+        }]);
       } else if (isSearch) {
-        setLiveThinkingSteps([
-          { id: 'search-intent', label: 'Identifying search parameters...', status: 'active', type: 'analyze' },
-          { id: 'search-exec', label: 'Executing deep email search...', status: 'pending', type: 'search' },
-          { id: 'search-process', label: 'Processing search results...', status: 'pending', type: 'analyze' }
-        ]);
+        setLiveThinkingBlocks([{
+          id: 'search-block',
+          title: 'Advanced Search',
+          status: 'active',
+          initialContext: 'Configuring deep search parameters...',
+          steps: [
+            { id: 'search-intent', label: 'Identifying search parameters...', status: 'active', type: 'analyze' },
+            { id: 'search-exec', label: 'Executing deep email search...', status: 'pending', type: 'search' },
+            { id: 'search-process', label: 'Processing search results...', status: 'pending', type: 'analyze' }
+          ]
+        }]);
       } else {
-        setLiveThinkingSteps(buildFallbackThinkingSteps(messageText));
+        setLiveThinkingBlocks(buildFallbackThinkingBlocks(messageText));
       }
 
       // Detect query types
@@ -707,31 +722,133 @@ export default function ChatInterface({
       });
 
       // 3) Intent usually returns first — show live thinking steps
+      const assistantMsgId = Date.now() + 1;
+      
+      // 3) Intent usually returns first — show acknowledgement and live thinking steps
       const intentData = await intentPromise;
-      if (intentData?.plan && intentData.plan.length > 0 && !isDeepThinking) {
-        const steps = normalizeIntentPlanSteps(intentData.plan);
-        setLiveThinkingSteps(steps);
+      if (intentData) {
+        // --- PHASE I: Immediate Acknowledgement ---
+        if (intentData.initialResponse) {
+          const initialMessage: AgentMessage = {
+            id: assistantMsgId,
+            type: 'agent',
+            role: 'assistant',
+            content: {
+              text: intentData.initialResponse,
+              list: [],
+              footer: ''
+            },
+            time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+            meta: {
+              actionType: 'thought',
+              isStreaming: true // Mark as streaming/loading
+            }
+          };
+          setMessages(prev => [...prev, initialMessage]);
+        }
 
-        for (let i = 0; i < steps.length; i++) {
-          setLiveThinkingSteps(prev =>
-            prev.map((step, index) => ({
-              ...step,
-              status: index < i ? 'completed' : index === i ? 'active' : 'pending'
+        // --- PHASE II: Sequential Managed Blocks ---
+        const rawBlocks = (intentData.thinkingBlocks && intentData.thinkingBlocks.length > 0)
+          ? intentData.thinkingBlocks
+          : buildFallbackThinkingBlocks(messageText);
+
+        if (rawBlocks && rawBlocks.length > 0 && !isDeepThinking) {
+          const blocks = rawBlocks.map((b: any) => ({
+            ...b,
+            status: 'pending' as const,
+            steps: b.steps.map((s: any, idx: number) => ({
+              ...s,
+              id: `${b.id}-step-${idx}`,
+              label: s.action || s.label,
+              status: 'pending' as const,
+              type: s.type || 'think'
             }))
-          );
+          }));
+          
+          setLiveThinkingBlocks(blocks);
 
-          if (i < steps.length - 1) {
-            await new Promise(r => setTimeout(r, 400));
+          // --- Trigger Arcus Workspace Canvas ---
+          if (intentData.needsCanvas || blocks.length > 1) {
+            setCanvasData({
+              type: 'workflow',
+              title: "Arcus's workspace",
+              content: {
+                steps: blocks.map((b: any) => ({
+                  id: b.id,
+                  title: b.title,
+                  status: 'pending' as const
+                }))
+              }
+            });
+            setIsCanvasOpen(true);
           }
+
+          for (let bIndex = 0; bIndex < blocks.length; bIndex++) {
+            // Update Block status to active in both Chat and Canvas
+            setLiveThinkingBlocks(prev => prev.map((b, i) => i === bIndex ? { ...b, status: 'active' } : b));
+            setCanvasData(prev => {
+              if (prev?.type === 'workflow') {
+                const newSteps = prev.content.steps.map((s: any, i: number) => ({
+                  ...s,
+                  status: i === bIndex ? 'active' as const : s.status
+                }));
+                return { ...prev, content: { ...prev.content, steps: newSteps } };
+              }
+              return prev;
+            });
+            
+            const stepsCount = blocks[bIndex].steps.length;
+            for (let sIndex = 0; sIndex < stepsCount; sIndex++) {
+              setLiveThinkingBlocks(prev => prev.map((b, i) => {
+                if (i === bIndex) {
+                  const newSteps = b.steps.map((s, si) => ({
+                    ...s,
+                    status: si < sIndex ? 'completed' as const : si === sIndex ? 'active' as const : 'pending' as const
+                  }));
+                  return { ...b, steps: newSteps };
+                }
+                return b;
+              }));
+              
+              if (sIndex < stepsCount - 1 || bIndex < blocks.length - 1) {
+                await new Promise(r => setTimeout(r, 600)); 
+              }
+            }
+            
+          }
+
+          // --- Deliberate Final Synthesis (Breathing Room) ---
+          setLiveThinkingBlocks(prev => prev.map(b => ({
+            ...b,
+            status: 'completed',
+            steps: b.steps.map(s => ({ ...s, status: 'completed' }))
+          })));
+          
+          const synthesisMessageId = Date.now() + 5;
+          setLiveThinkingBlocks(prev => [...prev, {
+            id: 'synthesis-block',
+            title: 'Completing synthesis',
+            status: 'active',
+            initialContext: 'Aggregating all findings and finalizing the optimal response...',
+            steps: [
+              { id: 'synth-1', label: 'Formatting final output', status: 'active', type: 'think' }
+            ]
+          }]);
+          
+          await new Promise(r => setTimeout(r, 1200)); 
         }
       }
 
-      // 4) Wait for main chat response
+      // 4) Wait for main chat response (Phase III)
       const response = await chatPromise;
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        // Remove the partial message on error
+        setMessages(prev => prev.filter(m => m.id !== assistantMsgId));
+        
         if (errorData?.error === 'limit_reached') {
+          // ... (existing limit handling)
           setUsageLimitModalData({
             featureName: 'Ask AI',
             currentUsage: errorData.usage || 0,
@@ -741,24 +858,26 @@ export default function ChatInterface({
           });
           setIsUsageLimitModalOpen(true);
 
-          // Add a special credit depletion message to the thread
           const limitMessage: AgentMessage = {
-            id: Date.now() + 1,
+            id: Date.now() + 2,
             type: 'agent',
             role: 'assistant',
-            content: `You don't have enough credits. Please upgrade via the below link to continue.`,
+            content: {
+              text: "You've reached your daily AI limit for the Starter plan. To keep using Arcus AI and other premium features, please upgrade to Pro.",
+              list: [
+                "Unlock unlimited Arcus AI tasks",
+                "Priority processing for faster results",
+                "Advanced email analytics and search"
+              ],
+              footer: `[Upgrade to Pro at mailient.xyz/pricing](https://mailient.xyz/pricing)`
+            },
             time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
-            meta: {
-              limitReached: true,
-              actionType: 'limit'
-            }
+            meta: { limitReached: true, actionType: 'limit' }
           };
-
           setMessages(prev => [...prev, limitMessage]);
           setIsLoading(false);
           setIsSearchingState(false);
           setIsDeepThinkingState(false);
-          
           scrollToBottom(true);
           return;
         }
@@ -781,53 +900,41 @@ export default function ChatInterface({
         });
       }
 
-      // Mark all live steps as completed
-      setLiveThinkingSteps(prev => prev.map(s => ({ ...s, status: 'completed' as const })));
-      await new Promise(r => setTimeout(r, 250));
+      // Mark all live blocks and steps as completed
+      setLiveThinkingBlocks(prev => prev.map(b => ({
+        ...b,
+        status: 'completed',
+        steps: b.steps.map(s => ({ ...s, status: 'completed' }))
+      })));
+      await new Promise(r => setTimeout(r, 300));
 
       // Canvas data handling
       const hasCanvas = Boolean(data.canvasData && (data.canvasData.content || data.execution?.requiresApproval));
       if (hasCanvas) {
         setCanvasData(data.canvasData);
-        // Auto-open canvas only if requested by mode
-        if (isCanvas) {
-          setIsCanvasOpen(true);
-        } else {
-          setIsCanvasOpen(false);
-        }
+        if (isCanvas) setIsCanvasOpen(true);
       }
 
       await refreshArcusCredits(true);
 
-      // Update currentConversationId if needed
       if (data.conversationId && data.conversationId !== conversationIdToUse) {
         setCurrentConversationId(data.conversationId);
         conversationIdToUse = data.conversationId;
       }
 
-      if (data.integrations) {
-        setIntegrations(data.integrations);
-      }
+      if (data.integrations) setIntegrations(data.integrations);
 
-      // Use AI-generated thinking steps from the MAIN response (most accurate)
+      // Final Thinking & Artifact Metadata
       const aiThinkingProcess = (data.thinkingSteps && data.thinkingSteps.length > 0)
         ? data.thinkingSteps.map((s: any, i: number) => ({
-          id: `step-${s.step || i}`,
+          id: `step-${s.id || s.step || i}`,
           label: s.description || s.action || '',
           expandedContent: s.detail || '',
           status: 'completed' as const,
           type: (s.type || 'think') as any
         }))
-        : (intentData?.plan && intentData.plan.length > 0)
-          ? intentData.plan.map((s: any, i: number) => ({
-            id: `step-${s.step || i}`,
-            label: s.description || s.action || '',
-            status: 'completed' as const,
-            type: (s.type || 'think') as any
-          }))
-          : undefined;
+        : undefined;
 
-      // Use AI-generated artifact title
       const aiArtifact = hasCanvas
         ? {
           type: data.canvasData.type,
@@ -836,8 +943,9 @@ export default function ChatInterface({
         }
         : undefined;
 
-      const agentMessage: AgentMessage = {
-        id: Date.now() + 1,
+      // --- PHASE III: Update the acknowledgment message with final content ---
+      const finalAgentMessage: AgentMessage = {
+        id: assistantMsgId,
         type: 'agent',
         role: 'assistant',
         notes: data.notesResult?.notes || [],
@@ -846,25 +954,35 @@ export default function ChatInterface({
           list: [],
           footer: ''
         },
-        time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true }),
+        time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
         meta: {
-          actionType: data.actionType,
+          actionHistory: data.actionHistory || [],
+          thinkingBlocks: liveThinkingBlocks, // Use the actual blocks shown during streaming
+          artifact: aiArtifact,
+          actionType: data.actionType || 'chat',
+          isStreaming: false,
           notesResult: data.notesResult,
           emailResult: data.emailResult,
-          thinkingProcess: aiThinkingProcess,
           internalThought: aiThought || undefined,
-          artifact: aiArtifact,
         }
       };
+
+      setMessages(prev => {
+        const index = prev.findIndex(m => m.id === assistantMsgId);
+        if (index !== -1) {
+          const newMessages = [...prev];
+          newMessages[index] = finalAgentMessage;
+          return newMessages;
+        }
+        return [...prev, finalAgentMessage];
+      });
+
+      setNewMessageIds(prev => new Set(prev).add(assistantMsgId));
 
       // First stop loading to show the message
       setIsLoading(false);
       setIsSearchingState(false);
       setIsDeepThinkingState(false);
-
-      // Add agent message to state
-      setMessages(prev => [...prev, agentMessage]);
-      setNewMessageIds(prev => new Set(prev).add(agentMessage.id));
 
       // Force scroll after state update
       requestAnimationFrame(() => {
@@ -945,7 +1063,7 @@ export default function ChatInterface({
       if (!userMsgExists) {
         allMessages.push(userMessage);
       }
-      allMessages.push(agentMessage);
+      allMessages.push(finalAgentMessage);
 
       // Remove duplicates by ID
       const uniqueMessages = allMessages.filter((msg, index, self) =>
@@ -986,7 +1104,7 @@ export default function ChatInterface({
     } finally {
       setIsLoading(false);
       setIsDeepThinkingState(false);
-      setLiveThinkingSteps([]);
+      setLiveThinkingBlocks([]);
       setShowNotesFetching(false);
       setTimeout(() => scrollToBottom(true), 100);
     }
@@ -1584,13 +1702,19 @@ export default function ChatInterface({
         if (cancelled) return;
 
         if (Array.isArray(data.steps) && data.steps.length > 0) {
-          setLiveThinkingSteps(data.steps.map((s: any) => ({
-            id: s.id || `step-${s.order}`,
-            label: s.label || `Step ${s.order}`,
-            status: (s.status === 'blocked_approval' ? 'active' : (s.status || 'pending')) as 'pending' | 'active' | 'completed' | 'error',
-            type: (s.kind || 'think') as LiveThinkingStep['type'],
-            expandedContent: [s.detail || '', formatStepEvidence(s.evidence)].filter(Boolean).join('\n\n')
-          })));
+          setLiveThinkingBlocks([{
+            id: 'running-mission',
+            title: 'Strategic mission execution',
+            status: 'active',
+            initialContext: 'Processing live telemetry and execution steps from Arcus...',
+            steps: data.steps.map((s: any) => ({
+              id: s.id || `step-${s.order}`,
+              label: s.label || `Step ${s.order}`,
+              status: (s.status === 'blocked_approval' ? 'active' : (s.status || 'pending')) as 'pending' | 'active' | 'completed' | 'error',
+              type: (s.kind || 'think') as 'pending' | 'active' | 'completed' | 'error' | 'think' | 'search' | 'read' | 'binary' | 'script' | 'brain' | 'draft' | 'execute' | 'spark' | 'mail' | 'calendar' | 'chart',
+              expandedContent: [s.detail || '', formatStepEvidence(s.evidence)].filter(Boolean).join('\n\n')
+            }))
+          }]);
         }
 
         if (data.run?.runId) {
@@ -2019,9 +2143,12 @@ export default function ChatInterface({
                                     </details>
                                   )}
 
-                                  {msg.role === 'assistant' && msg.meta?.thinkingProcess && (
-                                    <div className="mt-4 border-t border-white/5 pt-3">
-                                      <ThinkingLayer steps={msg.meta.thinkingProcess} isVisible={true} />
+                                  {msg.role === 'assistant' && msg.meta?.thinkingBlocks && (
+                                    <div className="mt-4 border-t border-white/5 pt-3 px-1">
+                                      <ThinkingLayer
+                                        blocks={msg.meta.thinkingBlocks}
+                                        isVisible={true}
+                                      />
                                     </div>
                                   )}
 
@@ -2120,7 +2247,7 @@ export default function ChatInterface({
                               </motion.div>
 
                               <AnimatePresence mode="wait">
-                                {isThinkingStepsOpen && liveThinkingSteps.length > 0 && (
+                                {isThinkingStepsOpen && liveThinkingBlocks.length > 0 && (
                                   <motion.div
                                     layout
                                     initial={{ height: 0, opacity: 0, scale: 0.98 }}
@@ -2137,10 +2264,9 @@ export default function ChatInterface({
                                       <span className="text-[10px] font-bold tracking-widest uppercase">Live Activity</span>
                                     </div>
                                     <ThinkingLayer
-                                      steps={liveThinkingSteps}
+                                      blocks={liveThinkingBlocks}
                                       isVisible={true}
                                       isGenerating={isLoading}
-                                      generatingLabel={liveThinkingSteps.find(s => s.status === 'active')?.label || (isDeepThinkingState ? "Deeply reasoning..." : "Processing...")}
                                     />
                                   </motion.div>
                                 )}

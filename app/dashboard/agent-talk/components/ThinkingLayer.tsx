@@ -1,148 +1,166 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { ChevronDown, ChevronRight, Binary, Sparkles, BrainCircuit, AlertCircle, Mail, FileText, Search, Zap, Calendar, BarChart3 } from 'lucide-react';
+import { ChevronRight, Binary, Sparkles, BrainCircuit, Mail, FileText, Search, Zap, Calendar, BarChart3, Pencil, Terminal, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { TextShimmer } from '@/components/ui/text-shimmer';
 import { cn } from "@/lib/utils";
 
 export type ThinkingStep = {
     id: string;
     label: string;
     status: 'pending' | 'active' | 'completed' | 'error' | 'blocked_approval';
-    type: 'think' | 'search' | 'read' | 'analyze' | 'draft' | 'execute';
+    type: 'think' | 'search' | 'read' | 'analyze' | 'draft' | 'execute' | 'code';
     detail?: string;
-    expandedContent?: string;
+};
+
+export type ThinkingBlock = {
+    id: string;
+    title: string;
+    status: 'pending' | 'active' | 'completed';
+    initialContext?: string;
+    steps: ThinkingStep[];
+    interimConclusion?: string;
+    nextActionContext?: string;
+    isPreviewable?: boolean;
+    previewData?: any;
 };
 
 interface ThinkingLayerProps {
-    steps: ThinkingStep[];
+    blocks: ThinkingBlock[];
     isVisible: boolean;
     currentThought?: string;
     isGenerating?: boolean;
-    generatingLabel?: string;
     onStop?: () => void;
 }
 
 /**
- * ThinkingLayer — Modern, premium "Mono" reasoning display.
- * Inspired by high-end diagnostic tools and Apple's interface guidelines.
+ * ThinkingLayer — Redesigned "Managed AI" Flow inspired by Manus.
+ * Groups activity pills under major objectives with human-like transitions.
  */
-export function ThinkingLayer({ steps, isVisible, currentThought, isGenerating, generatingLabel, onStop }: ThinkingLayerProps) {
-    const [expandedSteps, setExpandedSteps] = useState<Set<string>>(new Set());
+export function ThinkingLayer({ blocks, isVisible, currentThought, isGenerating }: ThinkingLayerProps) {
+    if (!isVisible || (blocks.length === 0 && !isGenerating)) return null;
 
-    if (!isVisible || (steps.length === 0 && !isGenerating)) return null;
-
-    const toggleStep = (id: string) => {
-        setExpandedSteps((prev) => {
-            const next = new Set(prev);
-            if (next.has(id)) next.delete(id);
-            else next.add(id);
-            return next;
-        });
+    const getIcon = (type: string) => {
+        switch (type) {
+            case 'search': return <Search className="w-3 h-3" />;
+            case 'read': return <FileText className="w-3 h-3" />;
+            case 'analyze': return <Binary className="w-3 h-3" />;
+            case 'think': return <BrainCircuit className="w-3 h-3" />;
+            case 'draft': return <Pencil className="w-3 h-3" />;
+            case 'execute': return <Terminal className="w-3 h-3" />;
+            case 'code': return <Binary className="w-3 h-3" />;
+            default: return <Sparkles className="w-3 h-3" />;
+        }
     };
 
-    const completedSteps = steps.filter(s => s.status === 'completed');
-    const activeStep = steps.find(s => s.status === 'active');
-    const blockedStep = steps.find(s => s.status === 'blocked_approval');
-
     return (
-        <div className="relative pl-1 py-1">
-            {/* Vertical Guide Line */}
-            <div className="absolute left-1.5 top-3 bottom-0 w-[1px] bg-white/[0.05] z-0" />
-
-            <div className="space-y-1 relative z-10 pt-2 transition-all duration-500">
-                {/* Completed steps */}
-                {completedSteps.map((step, idx) => (
-                    <motion.div 
-                        key={step.id} 
-                        initial={{ opacity: 0, x: -10 }} 
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.4, delay: idx * 0.05 }}
-                        className="group"
+        <div className="relative pt-2 pb-2 space-y-6">
+            <AnimatePresence mode="popLayout">
+                {blocks.map((block) => (
+                    <motion.div
+                        key={block.id}
+                        initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        className="group flex flex-col gap-3 relative"
                     >
-                        <button
-                            onClick={() => step.expandedContent && toggleStep(step.id)}
-                            className="flex items-center gap-3 py-1.5 w-full text-left col-span-full hover:bg-white/[0.02] rounded-lg transition-all -mx-1 px-1 group"
-                        >
-                            <div className="w-1.5 h-1.5 rounded-full bg-white/20 border border-white/10 flex-shrink-0 group-hover:bg-white/40 transition-colors z-10" />
-                            <span className="text-white/40 text-[12px] tracking-tight flex-1 font-medium group-hover:text-white/70 transition-colors font-mono">{step.label}</span>
-                            
-                            {step.expandedContent && (
-                                <div className="flex items-center gap-2 text-white/20 group-hover:text-white/40 transition-colors bg-white/[0.03] px-1.5 py-0.5 rounded-md">
-                                    <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${expandedSteps.has(step.id) ? 'rotate-180' : ''}`} />
-                                </div>
-                            )}
-                        </button>
+                        {/* Major Objective Header */}
+                        <div className="flex items-start gap-2.5 group/header cursor-default">
+                            <div className={cn(
+                                "mt-1 flex items-center justify-center w-4 h-4 rounded-full border shrink-0 transition-all duration-700",
+                                block.status === 'completed' 
+                                    ? "bg-white/10 border-white/20 text-white/50" 
+                                    : "bg-white/5 border-white/10 text-white/20 ring-1 ring-white/10 ring-offset-0"
+                            )}>
+                                {block.status === 'completed' ? (
+                                    <CheckCircle2 className="w-2.5 h-2.5" />
+                                ) : (
+                                    <div className="w-1.5 h-1.5 rounded-full bg-white/40 animate-pulse" />
+                                )}
+                            </div>
+                            <h3 className={cn(
+                                "text-[14px] font-bold tracking-tight py-0.5 transition-all duration-500",
+                                block.status === 'completed' ? "text-white/60" : "text-white/95"
+                            )}>
+                                {block.title}
+                            </h3>
+                        </div>
 
-                        {/* Expanded detail content */}
-                        <AnimatePresence>
-                            {step.expandedContent && expandedSteps.has(step.id) && (
+                        {/* Initial Context Statement */}
+                        {block.initialContext && block.status !== 'pending' && (
+                            <motion.p 
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                className="pl-6.5 text-[14px] text-white/50 leading-relaxed tracking-tight max-w-[95%] font-medium"
+                            >
+                                {block.initialContext}
+                            </motion.p>
+                        )}
+
+                        {/* Nested Activity Pills */}
+                        <div className="pl-6.5 flex flex-wrap gap-2 py-1">
+                            {block.steps.map((step) => (
                                 <motion.div
-                                    initial={{ height: 0, opacity: 0 }}
-                                    animate={{ height: 'auto', opacity: 1 }}
-                                    exit={{ height: 0, opacity: 0 }}
-                                    className="overflow-hidden"
+                                    key={step.id}
+                                    initial={{ opacity: 0, x: -5 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    className={cn(
+                                        "inline-flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all duration-500",
+                                        step.status === 'completed' 
+                                            ? "bg-white/[0.03] border-white/[0.06] text-white/25" 
+                                            : "bg-white/[0.06] border-white/15 text-white/90 shadow-[0_0_20px_rgba(255,255,255,0.03)]"
+                                    )}
                                 >
-                                    <div className="ml-0.5 pl-4 border-l border-white/10 py-1 my-1">
-                                        <p className="text-white/50 text-[12px] leading-relaxed whitespace-pre-wrap selection:bg-white/10 italic">
-                                            {step.expandedContent}
-                                        </p>
+                                    <div className={cn(
+                                        "p-0.5 rounded shrink-0",
+                                        step.status === 'active' ? "text-white/80" : "text-white/15"
+                                    )}>
+                                        {getIcon(step.type)}
                                     </div>
+                                    <span className="text-[12px] font-semibold tracking-tight">
+                                        {step.label}
+                                    </span>
                                 </motion.div>
-                            )}
-                        </AnimatePresence>
+                            ))}
+                        </div>
+
+                        {/* Transition/Conclusion Context */}
+                        {(block.interimConclusion || block.nextActionContext) && block.status !== 'pending' && (
+                            <motion.p 
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                className="pl-6.5 text-[14px] text-white/50 leading-relaxed tracking-tight max-w-[95%] font-medium"
+                            >
+                                {block.interimConclusion} {block.nextActionContext}
+                            </motion.p>
+                        )}
+                        
+                        {/* Preview (Small Data Square) */}
+                        {block.isPreviewable && block.previewData && (
+                            <div className="pl-6.5 mt-1">
+                                <div className="w-12 h-12 bg-white/[0.02] border border-white/10 rounded-lg flex flex-col items-center justify-center p-2 group hover:bg-white/5 transition-all cursor-pointer">
+                                    <div className="w-full h-0.5 bg-white/10 rounded-full mb-1" />
+                                    <div className="w-3/4 h-0.5 bg-white/10 rounded-full mb-1" />
+                                    <div className="w-full h-0.5 bg-white/10 rounded-full" />
+                                    <span className="text-[6px] text-white/20 mt-1 uppercase font-black tracking-tighter">PREVIEW</span>
+                                </div>
+                            </div>
+                        )}
                     </motion.div>
                 ))}
+            </AnimatePresence>
 
-                {/* Active step */}
-                {activeStep && (
-                    <motion.div 
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="flex items-center gap-3 py-2 -mx-1 px-1 relative"
-                    >
-                        <div className="relative flex items-center justify-center w-1.5 h-1.5 shrink-0 z-10">
-                            <div className="absolute inset-x-[-4px] inset-y-[-4px] bg-white/20 rounded-full blur-[2px] animate-pulse" />
-                            <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                        </div>
-                        <div className="flex-1 flex flex-col">
-                            <div className="flex items-center justify-between">
-                                <TextShimmer className="text-white/90 text-[12px] font-bold tracking-tight font-mono" duration={1.2}>
-                                    {activeStep.label}
-                                </TextShimmer>
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-
-                {/* Blocked step */}
-                {blockedStep && (
-                    <motion.div 
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="flex items-center gap-3 py-2 -mx-1 px-1 relative"
-                    >
-                        <div className="w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)] z-10" />
-                        <div className="flex-1 flex flex-col">
-                            <div className="flex items-center justify-between">
-                                <span className="text-amber-200/80 text-[12px] font-bold tracking-tight font-mono">{blockedStep.label}</span>
-                                <span className="text-[8px] text-amber-500 font-bold tracking-widest uppercase">WAITING</span>
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-            </div>
-
+            {/* Live Thought Stream (Footer) */}
             {currentThought && (
-                <div className="flex items-start gap-2 pt-2 px-2">
-                    <div className="text-white/20 text-[10px] mt-0.5">{'>'}</div>
-                    <p className="text-white/40 text-[12px] tracking-tight leading-relaxed">
+                <motion.div 
+                    initial={{ opacity: 0 }} 
+                    animate={{ opacity: 1 }}
+                    className="pl-6.5 py-1"
+                >
+                    <p className="text-[13px] text-white/40 italic font-medium tracking-tight leading-relaxed flex items-center gap-2">
+                        <span className="w-1 h-3 bg-white/10 rounded-full animate-pulse" />
                         {currentThought}
                     </p>
-                </div>
+                </motion.div>
             )}
-
         </div>
     );
 }

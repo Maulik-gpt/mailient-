@@ -54,6 +54,7 @@ export async function POST(request) {
 
         return NextResponse.json({
             runId: runInit?.run?.runId || runId || runtime.generateRunId(),
+            initialResponse: intentAnalysis?.initialResponse || "I hear you. I'm starting on that now.",
             intent: intentAnalysis?.intent || 'general_chat',
             complexity: intentAnalysis?.complexity || runtime.inferComplexity(message, intentAnalysis?.plan || []),
             plan: normalizedPlan.map((step, idx) => ({
@@ -70,13 +71,13 @@ export async function POST(request) {
             needsCanvas: Boolean(intentAnalysis?.needsCanvas || forceCanvas),
             canvasType: intentAnalysis?.canvasType || (forceCanvas ? 'email_draft' : 'none'),
             requiresApproval,
-            reasoning: intentAnalysis?.reasoning || '',
         });
     } catch (error) {
         console.error('Intent analysis error:', error);
         const fallbackRunId = `run_fallback_${Date.now()}`;
         return NextResponse.json({
             runId: fallbackRunId,
+            initialResponse: "I'm looking into that for you.",
             intent: 'general_chat',
             complexity: 'simple',
             plan: [
@@ -87,7 +88,6 @@ export async function POST(request) {
             needsCanvas: false,
             canvasType: 'none',
             requiresApproval: false,
-            reasoning: ''
         });
     }
 }

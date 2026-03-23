@@ -997,34 +997,35 @@ async function executeEmailAction(userMessage, userEmail, session, providedAcces
         return { action: 'read_emails', success: true, emails: [], query, count: 0 };
       }
 
-      const emailDetails = [];
-      // Take up to 8 threads to provide a deep context
-      for (const message of messages.slice(0, 8)) {
+      // 🚀 PERFORMANCE FIX: Fetch email details in parallel (was sequential)
+      const emailDetails = await Promise.all(messages.slice(0, 8).map(async (message) => {
         try {
           // Deep Retrieval: Fetch the whole thread to see the sequence and history
           const thread = await gmailService.getThreadDetails(message.threadId);
           const threadMessages = thread.messages || [];
+          if (threadMessages.length === 0) return null;
+
+          // Focus on the message the search actually pointed to (or the last one if not found)
+          const targetMsg = threadMessages.find(m => m.id === message.id) || threadMessages[threadMessages.length - 1];
+          const parsed = gmailService.parseEmailData(targetMsg);
           
           // Map thread messages to a concise history
           const history = threadMessages.map(m => {
-            const parsed = gmailService.parseEmailData(m);
+            const mParsed = gmailService.parseEmailData(m);
             return {
-              from: parsed.from,
-              date: parsed.date,
-              snippet: parsed.snippet,
-              isMe: parsed.from?.includes(userEmail) || parsed.from?.includes('me')
+              from: mParsed.from,
+              date: mParsed.date,
+              snippet: mParsed.snippet,
+              isMe: mParsed.from?.includes(userEmail) || mParsed.from?.includes('me')
             };
           });
 
-          // Focus on the current message details for the main content
-          const currentMsgDetails = await gmailService.getEmailDetails(message.id);
-          const parsed = gmailService.parseEmailData(currentMsgDetails);
           const fullBody = parsed.body || parsed.snippet || '';
           const bodyContent = fullBody.length > 4000 ? fullBody.substring(0, 4000) + '...' : fullBody;
 
           // Smart Categorization (Business vs Personal)
           const labels = parsed.labels || [];
-          let category = 'Business'; // Default to Business for professional efficiency
+          let category = 'Business'; 
           const personalKeywords = ['family', 'friend', 'social', 'entertainment', 'netflix', 'spotify', 'amazon', 'order', 'shipping'];
           const fromLower = (parsed.from || '').toLowerCase();
           const subLower = (parsed.subject || '').toLowerCase();
@@ -1035,8 +1036,8 @@ async function executeEmailAction(userMessage, userEmail, session, providedAcces
             category = 'Personal';
           }
 
-          emailDetails.push({
-            id: message.id,
+          return {
+            id: targetMsg.id,
             subject: parsed.subject || '(No Subject)',
             from: parsed.from || 'Unknown Sender',
             to: parsed.to || '',
@@ -1049,14 +1050,18 @@ async function executeEmailAction(userMessage, userEmail, session, providedAcces
             isImportant: labels.includes('IMPORTANT'),
             folder: labels.includes('SENT') ? 'Sent' : (labels.includes('TRASH') ? 'Trash' : 'Inbox'),
             category: category,
-            threadHistory: history.slice(-5) // Last 5 messages in thread for context
-          });
+            threadHistory: history.slice(-5) 
+          };
         } catch (error) {
           console.log('Error processing email thread:', error.message);
+          return null;
         }
-      }
+      }));
 
-      return { action: 'read_emails', success: true, emails: emailDetails, query, count: emailDetails.length };
+      // Filter out failed parallel fetches
+      const validEmailDetails = emailDetails.filter(d => d !== null);
+
+      return { action: 'read_emails', success: true, emails: validEmailDetails, query, count: validEmailDetails.length };
     } catch (error) {
       return { action: 'read_emails', success: false, error: error.message };
     }
