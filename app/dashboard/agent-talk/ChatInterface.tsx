@@ -1825,13 +1825,6 @@ export default function ChatInterface({
               <div className="flex-1 flex flex-col relative z-10 min-h-0">
                 {isInitialMode ? (
                   <div className="flex-1 overflow-y-auto transition-all duration-300 relative bg-transparent">
-                    {/* Top Status Pill */}
-                    <div className="absolute top-8 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1 bg-[#161616] border border-white/5 rounded-full shadow-lg">
-                      <span className="text-[11px] text-white/50 font-medium">Free plan</span>
-                      <span className="text-[11px] text-white/20">•</span>
-                      <button className="text-[11px] text-white hover:text-white/80 transition-colors font-medium">Upgrade</button>
-                    </div>
-
                     <div className="h-full flex flex-col items-center justify-center px-6">
                       <div className="w-full max-w-2xl mx-auto flex flex-col items-center">
                         <div className="text-center mb-12">
@@ -2098,6 +2091,15 @@ export default function ChatInterface({
                       </div>
                     </div>
                     <div className="sticky bottom-0 z-20 w-full px-6 pb-12 mt-auto">
+                      {/* Premium Status Pill moved to bottom */}
+                      <div className="flex justify-center mb-6">
+                        <div className="flex items-center gap-1.5 px-3 py-1 bg-[#111111]/80 backdrop-blur-md border border-white/5 rounded-full shadow-2xl">
+                          <span className="text-[10px] text-white/40 font-medium tracking-wide">Free plan</span>
+                          <span className="text-[10px] text-white/10">•</span>
+                          <button className="text-[10px] text-white hover:text-white/80 transition-colors font-bold uppercase tracking-tight">Upgrade</button>
+                        </div>
+                      </div>
+
                       <div className="max-w-3xl mx-auto">
                         <PromptInputBox
                           onSend={(msg, files, opts) => handleSend(msg, files, opts)}
@@ -2114,16 +2116,28 @@ export default function ChatInterface({
                 )}
               </div>
 
-              {/* Canvas Split Panel */}
+              {/* Canvas Split Panel - Correctly placed as a sibling of the chat column */}
               <AnimatePresence>
                 {isCanvasOpen && canvasData && (
-                  <CanvasPanel
-                    isOpen={isCanvasOpen}
-                    onClose={() => setIsCanvasOpen(false)}
-                    canvasData={canvasData}
-                    onExecute={handleCanvasExecute}
-                    isExecuting={isCanvasExecuting}
-                  />
+                  <div className="flex-1 min-w-0 h-full flex flex-col relative">
+                    {/* Manus-style Computer Window Header */}
+                    <div className="shrink-0 h-8 flex items-center justify-between px-3 bg-[#0d0d0d] border-b border-white/[0.04]">
+                        <div className="flex items-center gap-2">
+                             <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f56]" />
+                             <div className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]" />
+                             <div className="w-2.5 h-2.5 rounded-full bg-[#27c93f]" />
+                             <span className="ml-2 text-[10px] text-white/20 font-mono tracking-tighter uppercase">Arcus Device 01</span>
+                        </div>
+                    </div>
+                    
+                    <CanvasPanel
+                      isOpen={isCanvasOpen}
+                      onClose={() => setIsCanvasOpen(false)}
+                      canvasData={canvasData}
+                      onExecute={handleCanvasExecute}
+                      isExecuting={isCanvasExecuting}
+                    />
+                  </div>
                 )}
               </AnimatePresence>
             </div>

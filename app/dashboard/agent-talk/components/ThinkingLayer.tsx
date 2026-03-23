@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ChevronDown, ChevronRight, Binary, Sparkles, BrainCircuit, AlertCircle } from 'lucide-react';
+import { ChevronDown, ChevronRight, Binary, Sparkles, BrainCircuit, AlertCircle, Mail, FileText, Search, Zap, Calendar, BarChart3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TextShimmer } from '@/components/ui/text-shimmer';
 import { cn } from "@/lib/utils";
@@ -158,56 +158,80 @@ interface ArtifactCardProps {
 }
 
 const artifactIcons: Record<string, any> = {
-    email_draft: <Sparkles className="w-3.5 h-3.5" />,
-    summary: <div className="w-3.5 h-3.5 border-2 border-white/20 rounded-sm" />,
-    research: <Binary className="w-3.5 h-3.5" />,
-    action_plan: <div className="w-3.5 h-3.5 flex items-center justify-center"><div className="w-1.5 h-1.5 bg-white/50 rounded-full" /></div>,
-    reply: <div className="w-3.5 h-3.5 border border-white/30 rounded-full" />,
-    notes: <div className="w-3.5 h-3.5 bg-white/10 rotate-45" />,
+    email_draft: <Mail className="w-4 h-4" />,
+    summary: <FileText className="w-4 h-4" />,
+    research: <Search className="w-4 h-4" />,
+    action_plan: <Zap className="w-4 h-4" />,
+    reply: <Mail className="w-4 h-4" />,
+    notes: <FileText className="w-4 h-4" />,
+    meeting_schedule: <Calendar className="w-4 h-4" />,
+    analytics: <BarChart3 className="w-4 h-4" />,
 };
 
 const artifactLabels: Record<string, string> = {
     email_draft: 'Email draft',
-    summary: 'Summary',
+    summary: 'Email summary',
     research: 'Research report',
     action_plan: 'Action plan',
     reply: 'Suggested reply',
-    notes: 'Note',
+    notes: 'Drafted notes',
+    meeting_schedule: 'Meeting schedule',
+    analytics: 'Email analytics',
+};
+
+const artifactColors: Record<string, string> = {
+    email_draft: '#6366f1',
+    summary: '#8b5cf6',
+    research: '#06b6d4',
+    action_plan: '#f59e0b',
+    reply: '#10b981',
+    notes: '#ec4899',
+    meeting_schedule: '#3b82f6',
+    analytics: '#f97316',
 };
 
 export function ArtifactCard({ type, title, version = 'v2.4', onView }: ArtifactCardProps) {
+    const color = artifactColors[type] || '#a855f7';
+    
     return (
-        <button
+        <motion.button
+            whileHover={{ scale: 1.01, y: -2 }}
+            whileTap={{ scale: 0.99 }}
             onClick={onView}
-            className="group relative flex items-center gap-4 py-3 mt-3 mb-2 w-full max-w-[340px] transition-all duration-300"
+            className="group relative flex items-center gap-4 p-4 mt-4 mb-4 w-full max-w-[400px] bg-white/[0.03] border border-white/[0.06] rounded-2xl transition-all duration-300 hover:bg-white/[0.05] hover:border-white/10 shadow-2xl overflow-hidden"
         >
-            <div className="absolute inset-x-0 bottom-0 h-[1px] bg-white/[0.05] group-hover:bg-white/10 transition-colors" />
-
-            <div className="w-10 h-10 rounded-xl bg-[#0A0A0B] border border-white/[0.05] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-500">
-                <div className="text-white/30 group-hover:text-white/90 transition-all duration-500">
+            {/* Background Glow */}
+            <div className="absolute -right-4 -top-4 w-24 h-24 blur-[40px] opacity-10 rounded-full transition-opacity group-hover:opacity-20 pointer-events-none" style={{ backgroundColor: color }} />
+            
+            {/* Left Icon Section */}
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-all duration-500 relative"
+                 style={{ background: `${color}15`, border: `1px solid ${color}25` }}>
+                <div className="absolute inset-0 blur-[10px] opacity-0 group-hover:opacity-40 transition-opacity rounded-xl" style={{ backgroundColor: color }} />
+                <div className="relative z-10" style={{ color: color }}>
                     {artifactIcons[type] || <Sparkles className="w-5 h-5" />}
                 </div>
             </div>
 
-            <div className="flex flex-col items-start gap-1 flex-1 min-w-0 z-10">
+            {/* Content Section */}
+            <div className="flex flex-col items-start gap-0.5 flex-1 min-w-0 z-10">
                 <div className="flex items-center gap-2 w-full">
-                    <span className="text-white/90 text-[14px] font-bold tracking-tight truncate group-hover:text-white transition-colors">
+                    <span className="text-white/90 text-[15px] font-semibold tracking-tight truncate group-hover:text-white transition-colors">
                         {title || (artifactLabels[type] || 'Resource').replace('_', ' ')}
                     </span>
                 </div>
-                <div className="flex items-center gap-2.5">
-                    <span className="text-[9px] text-white/30 tracking-wide">
+                <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold tracking-[0.1em] uppercase opacity-30 group-hover:opacity-50 transition-opacity" style={{ color: color }}>
                         {artifactLabels[type] || 'Resource'}
                     </span>
                     <div className="w-1 h-1 rounded-full bg-white/10" />
-                    <span className="text-[9px] text-white/20 font-bold">{version}</span>
+                    <span className="text-[10px] text-white/15 font-mono">{version}</span>
                 </div>
             </div>
 
-            <div className="flex items-center gap-2 text-white/20 group-hover:text-white/60 transition-all duration-500 transform group-hover:translate-x-1 z-10">
-                <span className="text-[10px] font-bold tracking-tight">View</span>
-                <ChevronRight className="w-4 h-4" />
+            {/* Action Section */}
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-white/[0.05] border border-white/[0.05] text-white/20 group-hover:text-white/80 group-hover:bg-white/10 group-hover:border-white/20 transition-all duration-500 mr-1">
+                <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
             </div>
-        </button>
+        </motion.button>
     );
 }
