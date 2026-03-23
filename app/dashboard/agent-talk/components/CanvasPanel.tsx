@@ -195,48 +195,54 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                                 key="workflow"
                                 initial={{ opacity: 0, scale: 0.98 }}
                                 animate={{ opacity: 1, scale: 1 }}
-                                className="bg-[#0f0f0f] border border-white/[0.03] rounded-2xl p-6 shadow-2xl relative overflow-hidden group"
+                                className="space-y-6"
                             >
-                                <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
-                                <div className="flex items-center justify-between mb-8">
-                                    <h4 className="text-[18px] font-bold text-white/90 tracking-tight">Task progress</h4>
-                                    <span className="text-[13px] font-mono text-white/20">
-                                        {canvasData.content?.steps?.filter((s: any) => s.status === 'completed').length || 0} / {canvasData.content?.steps?.length || 0}
-                                    </span>
+                                <div className="bg-zinc-900/40 border border-white/5 rounded-2xl p-6 shadow-2xl relative overflow-hidden">
+                                    <div className="flex items-center justify-between mb-8">
+                                        <h3 className="text-[17px] font-bold text-white tracking-tight">Task progress</h3>
+                                        <span className="text-[14px] font-mono text-zinc-500 font-medium">
+                                            {canvasData.content?.steps?.filter((s: any) => s.status === 'completed').length || 0} / {canvasData.content?.steps?.length || 0}
+                                        </span>
+                                    </div>
+
+                                    <div className="space-y-6">
+                                        {canvasData.content?.steps?.map((step: any, index: number) => (
+                                            <div 
+                                                key={step.id || index}
+                                                className={cn(
+                                                    "flex items-start gap-4 transition-all duration-500",
+                                                    step.status === 'completed' || step.status === 'active' ? "opacity-100" : "opacity-30"
+                                                )}
+                                            >
+                                                <div className="mt-1">
+                                                    {step.status === 'completed' ? (
+                                                        <CheckCircle2 className="w-5 h-5 text-green-500" />
+                                                    ) : (
+                                                        <Clock className={cn(
+                                                            "w-5 h-5",
+                                                            step.status === 'active' ? "text-white animate-pulse" : "text-zinc-600"
+                                                        )} />
+                                                    )}
+                                                </div>
+                                                <p className={cn(
+                                                    "flex-1 text-[15px] font-medium leading-tight tracking-tight pt-0.5",
+                                                    step.status === 'completed' || step.status === 'active' ? "text-white/90" : "text-zinc-500"
+                                                )}>
+                                                    {step.title}
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
 
-                                <div className="space-y-6">
-                                    {canvasData.content?.steps?.map((step: any, index: number) => (
-                                        <motion.div 
-                                            key={step.id || index}
-                                            initial={{ opacity: 0, x: -10 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            transition={{ delay: index * 0.1 }}
-                                            className={cn(
-                                                "flex items-start gap-4 transition-all duration-500",
-                                                step.status === 'completed' ? "opacity-100" : "opacity-30"
-                                            )}
-                                        >
-                                            <div className={cn(
-                                                "mt-1 w-5 h-5 flex items-center justify-center rounded-full border transition-all duration-700",
-                                                step.status === 'completed' 
-                                                    ? "bg-green-500/10 border-green-500/20 text-green-500" 
-                                                    : "bg-white/5 border-white/10 text-white/20"
-                                            )}>
-                                                {step.status === 'completed' ? (
-                                                    <CheckCircle2 className="w-3.5 h-3.5" />
-                                                ) : (
-                                                    <Circle className="w-2.5 h-2.5 animate-pulse" />
-                                                )}
-                                            </div>
-                                            <p className={cn(
-                                                "flex-1 text-[15px] font-medium leading-tight tracking-tight pt-0.5",
-                                                step.status === 'completed' ? "text-white/80" : "text-white/60"
-                                            )}>
-                                                {step.label || step.title}
-                                            </p>
-                                        </motion.div>
-                                    ))}
+                                <div className="px-2">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <Sparkles className="w-4 h-4 text-zinc-600" />
+                                        <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-600">Mission Intelligence</span>
+                                    </div>
+                                    <p className="text-[14px] text-zinc-500 leading-relaxed italic border-l border-zinc-800 pl-4 py-1">
+                                        "Arcus is currently optimizing the extraction strategy across multiple high-priority datasets while cross-referencing founder LinkedIn profiles for 100% verification accuracy."
+                                    </p>
                                 </div>
                             </motion.div>
                         ) : canvasData.type === 'email_draft' ? (
