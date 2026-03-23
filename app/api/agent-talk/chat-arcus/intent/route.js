@@ -54,9 +54,10 @@ export async function POST(request) {
 
         return NextResponse.json({
             runId: runInit?.run?.runId || runId || runtime.generateRunId(),
-            initialResponse: intentAnalysis?.initialResponse || "I hear you. I'm starting on that now.",
+            initialResponse: intentAnalysis?.initialResponse,
             intent: intentAnalysis?.intent || 'general_chat',
             complexity: intentAnalysis?.complexity || runtime.inferComplexity(message, intentAnalysis?.plan || []),
+            thinkingBlocks: intentAnalysis?.thinkingBlocks || [],
             plan: normalizedPlan.map((step, idx) => ({
                 step: idx + 1,
                 id: step.id,
