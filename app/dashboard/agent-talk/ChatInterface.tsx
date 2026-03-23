@@ -768,7 +768,7 @@ export default function ChatInterface({
           setLiveThinkingBlocks(blocks);
 
           // --- Trigger Arcus Workspace Canvas ---
-          if (intentData.needsCanvas || blocks.length > 1) {
+          if (intentData.needsCanvas === true) {
             setCanvasData({
               type: 'workflow',
               title: "Arcus's workspace",
