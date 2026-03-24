@@ -2380,10 +2380,10 @@ export function GmailInterfaceFixed() {
 
             {/* Draft Editor Modal */}
             <div
-                className={`fixed top-1/2 left-1/2 bg-[#1a1a1a] rounded-[2.5rem] shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-[60] flex flex-col border border-neutral-800`}
+                className={`fixed top-1/2 left-1/2 bg-[#0a0a0a] rounded-[2.5rem] shadow-[0_0_100px_rgba(0,0,0,0.8)] transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-[60] flex flex-col border border-white/[0.03] overflow-hidden`}
                 style={{
-                    width: '60%',
-                    height: '75vh',
+                    width: '50%',
+                    height: '85vh',
                     transform: showDraftEditor ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -45%) scale(0.95)',
                     opacity: showDraftEditor ? 1 : 0,
                     pointerEvents: showDraftEditor ? 'auto' : 'none'
@@ -2572,9 +2572,11 @@ export function GmailInterfaceFixed() {
             {/* Draft Backdrop */}
             {showDraftEditor && (
                 <div
-                    className="fixed inset-0 bg-black/80 backdrop-blur-xl z-[55] transition-opacity duration-500"
+                    className="fixed inset-0 bg-black/40 backdrop-blur-[40px] z-[55] transition-opacity duration-700"
                     onClick={() => setShowDraftEditor(false)}
-                />
+                >
+                    <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-transparent pointer-events-none" />
+                </div>
             )}
 
             {/* Note Editor - Premium UI in bottom-right */}
