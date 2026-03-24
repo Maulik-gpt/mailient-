@@ -76,7 +76,7 @@ const plans = [
             { text: "Secure Google OAuth" },
             { text: "Basic Relationship Tracking" }
         ],
-        btn: { text: "Start Free", href: "/auth/signin" }
+        btn: { text: "Start Free", href: "/auth/signup" }
     },
     {
         name: "Starter",
@@ -89,7 +89,7 @@ const plans = [
             { text: "30 Email Summaries per day" },
             { text: "Standard Relationship Tracking" }
         ],
-        btn: { text: "Get Started", href: "/auth/signin" },
+        btn: { text: "Get Started", href: "/auth/signup" },
         highlighted: true
     },
     {
@@ -104,7 +104,7 @@ const plans = [
             { text: "Priority Support" },
             { text: "Unlimited Draft Replies" }
         ],
-        btn: { text: "Go Pro", href: "/auth/signin" }
+        btn: { text: "Go Pro", href: "/auth/signup" }
     }
 ];
 
@@ -215,7 +215,7 @@ export function LinearLanding() {
                         ) : (
                             <>
                                 <button onClick={() => router.push('/auth/signin')} className="hidden sm:block text-sm font-medium text-zinc-500 hover:text-white transition-colors">Log in</button>
-                                <LiquidButton onClick={() => router.push('/auth/signin')} size="default" className="text-white">
+                                <LiquidButton onClick={() => router.push('/auth/signup')} size="default" className="text-white">
                                     Unlock My Inbox
                                 </LiquidButton>
                             </>
@@ -238,7 +238,7 @@ export function LinearLanding() {
                             className="absolute inset-0 w-full h-full"
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                             allowFullScreen
-                            loading="eager"
+                            loading="lazy"
                         />
                     </div>
                 </div>
@@ -272,7 +272,7 @@ export function LinearLanding() {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ delay: 0.2 }}
-                            className="text-zinc-500 max-w-2xl mx-auto text-lg leading-relaxed"
+                            className="text-zinc-400 max-w-2xl mx-auto text-lg leading-relaxed"
                         >
                             Every hour spent triaging emails is an hour stolen from growing your business.
                             The noise isn't just annoying—it's expensive.
@@ -310,7 +310,7 @@ export function LinearLanding() {
                             >
                                 <item.icon className={`w-8 h-8 ${item.color} mb-6 group-hover:scale-110 transition-transform`} />
                                 <h3 className="text-xl font-bold mb-4">{item.title}</h3>
-                                <p className="text-zinc-500 text-sm leading-relaxed">{item.desc}</p>
+                                <p className="text-zinc-400 text-sm leading-relaxed">{item.desc}</p>
                             </motion.div>
                         ))}
                     </div>
@@ -345,7 +345,7 @@ export function LinearLanding() {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ delay: 0.2 }}
-                            className="text-zinc-500 max-w-2xl mx-auto text-base md:text-lg leading-relaxed px-4"
+                            className="text-zinc-400 max-w-2xl mx-auto text-base md:text-lg leading-relaxed px-4"
                         >
                             Watch how AI transforms your chaotic inbox into clear opportunities.
                         </motion.p>
@@ -503,7 +503,7 @@ export function LinearLanding() {
                                         <p className="text-zinc-400">Join founders who transformed their inbox.</p>
                                     </div>
                                     <LiquidButton
-                                        onClick={() => router.push('/auth/signin')}
+                                        onClick={() => router.push('/auth/signup')}
                                         size="xxl"
                                         className="text-white"
                                     >
@@ -564,7 +564,7 @@ export function LinearLanding() {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ delay: 0.2 }}
-                            className="text-zinc-500 max-w-xl mx-auto text-lg leading-relaxed"
+                            className="text-zinc-400 max-w-xl mx-auto text-lg leading-relaxed"
                         >
                             Intelligence that understands your business. Built for high-performance founders.
                         </motion.p>
@@ -595,7 +595,7 @@ export function LinearLanding() {
                             </div>
 
                             <h3 className="text-xl md:text-2xl font-bold mb-3 md:mb-4">Find What Matters</h3>
-                            <p className="text-zinc-500 text-sm leading-relaxed max-w-[280px] md:max-w-[240px]">
+                            <p className="text-zinc-400 text-sm leading-relaxed max-w-[280px] md:max-w-[240px]">
                                 AI scans your inbox to surface important emails, opportunities, and urgent items you might miss.
                             </p>
                         </motion.div>
@@ -631,7 +631,7 @@ export function LinearLanding() {
                             </div>
 
                             <h3 className="text-xl md:text-2xl font-bold mb-3 md:mb-4">Save 10+ Hours/Week</h3>
-                            <p className="text-zinc-500 text-sm leading-relaxed max-w-[280px] md:max-w-[240px]">
+                            <p className="text-zinc-400 text-sm leading-relaxed max-w-[280px] md:max-w-[240px]">
                                 Automate email triage, draft replies instantly, and reclaim time for what truly matters.
                             </p>
                         </motion.div>
@@ -662,7 +662,7 @@ export function LinearLanding() {
                             </div>
 
                             <h3 className="text-xl md:text-2xl font-bold mb-3 md:mb-4">Zero Inbox Anxiety</h3>
-                            <p className="text-zinc-500 text-sm leading-relaxed max-w-[280px] md:max-w-[240px]">
+                            <p className="text-zinc-400 text-sm leading-relaxed max-w-[280px] md:max-w-[240px]">
                                 Wake up to a clean, organized inbox. Know exactly what needs your attention right now.
                             </p>
                         </motion.div>
@@ -697,7 +697,7 @@ export function LinearLanding() {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ delay: 0.2 }}
-                            className="text-zinc-500 max-w-xl mx-auto text-lg leading-relaxed"
+                            className="text-zinc-400 max-w-xl mx-auto text-lg leading-relaxed"
                         >
                             Simplify workflows, grow faster.
                         </motion.p>
@@ -716,7 +716,7 @@ export function LinearLanding() {
                                     <Cpu className="w-5 h-5 text-white" />
                                 </div>
                                 <h3 className="text-2xl font-bold mb-4">Arcus</h3>
-                                <p className="text-zinc-500 text-sm leading-relaxed">
+                                <p className="text-zinc-400 text-sm leading-relaxed">
                                     Command-driven AI that understands context and executes complex tasks with intelligent reasoning. Arcus transforms your email workflow into an intuitive, conversational experience.
                                 </p>
                             </div>
@@ -777,7 +777,7 @@ export function LinearLanding() {
                             </div>
                             <div className="relative z-10">
                                 <h3 className="text-2xl font-bold mb-4">Mailient Sift</h3>
-                                <p className="text-zinc-500 text-sm leading-relaxed max-w-sm">
+                                <p className="text-zinc-400 text-sm leading-relaxed max-w-sm">
                                     Start intelligence analysis and let the AI distribute your emails to smart insights like Opportunities, Urgent and Follow-ups followed by one-click smart actions.
                                 </p>
                             </div>
@@ -821,7 +821,7 @@ export function LinearLanding() {
                             </div>
                             <div className="relative z-10">
                                 <h3 className="text-2xl font-bold mb-4">Notes</h3>
-                                <p className="text-zinc-500 text-sm leading-relaxed max-w-sm">
+                                <p className="text-zinc-400 text-sm leading-relaxed max-w-sm">
                                     Add AI-assisted notes, share them as text or image with your team seamlessly. You don't have to miss important stuff now!
                                 </p>
                             </div>
@@ -899,7 +899,7 @@ export function LinearLanding() {
                                     <Inbox className="w-5 h-5 text-white" />
                                 </div>
                                 <h3 className="text-2xl font-bold mb-4">Traditional Inbox</h3>
-                                <p className="text-zinc-500 text-sm leading-relaxed">
+                                <p className="text-zinc-400 text-sm leading-relaxed">
                                     Inbox in a traditional way so you don't lose the record of your emails. Ask AI button in every email connected with Arcus intelligence.
                                 </p>
                             </div>
@@ -908,7 +908,7 @@ export function LinearLanding() {
 
                     <div className="flex flex-col sm:flex-row justify-center gap-4 mt-20">
                         <LiquidButton
-                            onClick={() => router.push('/auth/signin')}
+                            onClick={() => router.push('/auth/signup')}
                             size="xxl"
                             className="text-white"
                         >
@@ -931,7 +931,7 @@ export function LinearLanding() {
             {/* Security Section */}
             <section id="integration" className="py-32 px-6 bg-zinc-950/30 z-10 relative">
                 <div className="max-w-4xl mx-auto text-center mb-24">
-                    <Badge variant="outline" className="rounded-full mb-6 border-white/10 text-zinc-500">Data Integrity</Badge>
+                    <Badge variant="outline" className="rounded-full mb-6 border-white/10 text-zinc-400">Data Integrity</Badge>
                     <h2 className="text-5xl md:text-7xl font-bold mb-8 tracking-tighter">Gmail Native Security.</h2>
                     <p className="text-xl text-zinc-400 leading-relaxed italic">
                         Mailient respects your privacy perimeter. We use enterprise Google OAuth 2.0 to process data in real-time without storing a single byte of your private content.
@@ -997,7 +997,7 @@ export function LinearLanding() {
                                 whileInView={{ opacity: 1, x: 0 }}
                                 viewport={{ once: true }}
                                 transition={{ delay: 0.1 }}
-                                className="text-zinc-500 font-bold mb-8 text-sm uppercase tracking-[0.4em]"
+                                className="text-zinc-400 font-bold mb-8 text-sm uppercase tracking-[0.4em]"
                             >
                                 14 y/o founder
                             </motion.p>
@@ -1048,7 +1048,7 @@ export function LinearLanding() {
                             <span className="text-xs font-bold uppercase tracking-[0.2em] text-white/80">FAQ</span>
                         </div>
                         <h2 className="text-4xl md:text-7xl font-bold mb-6 tracking-tighter">Questions? Answers!</h2>
-                        <p className="text-zinc-500 text-lg max-w-2xl">
+                        <p className="text-zinc-400 text-lg max-w-2xl">
                             Everything you need to know about Mailient. Can't find what you're looking for? <a href="mailto:support@mailient.com" className="text-white font-bold hover:underline">Contact us</a>.
                         </p>
                     </div>
@@ -1100,7 +1100,7 @@ export function LinearLanding() {
 
                             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10">
                                 <LiquidButton
-                                    onClick={() => router.push('/auth/signin')}
+                                    onClick={() => router.push('/auth/signup')}
                                     size="xxl"
                                 >
                                     Unlock My Inbox
@@ -1118,7 +1118,7 @@ export function LinearLanding() {
 
                             <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-zinc-500 text-sm font-medium">
                                 <span className="flex items-center gap-2">
-                                    Direct access to founder
+                                    Direct access to founder (Google Workspace)
                                 </span>
                                 <span className="hidden sm:block text-zinc-800">•</span>
                                 <span className="flex items-center gap-2">
@@ -1227,7 +1227,7 @@ export function LinearLanding() {
                         </div>
                         <span className="font-bold tracking-tight text-white">Mailient</span>
                     </div>
-                    <div className="flex gap-8 text-sm font-bold text-zinc-500 uppercase tracking-widest">
+                    <div className="flex gap-8 text-sm font-bold text-zinc-400 uppercase tracking-widest">
                         <a href="https://x.com/Maulik_055" target="_blank" className="hover:text-white transition-colors">Twitter</a>
 
                         <a href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</a>
@@ -1302,6 +1302,11 @@ export function LinearLanding() {
                         <p className="text-xs text-zinc-600">© 2026 Mailient Intelligence.</p>
                     </div>
                 </div>
+                <div className="flex justify-center pt-10 text-zinc-500 text-xs text-center max-w-2xl mx-auto">
+                    <p>
+                        Mailient is a product of Maulik. All claims and features are based on the developer's statements and are subject to verification.
+                    </p>
+                </div>
                 <div className="pt-20 -mb-20 flex justify-center opacity-[0.03] select-none pointer-events-none w-full overflow-hidden">
                     <span className="text-[15vw] md:text-[22vw] font-black uppercase tracking-tighter leading-none text-white whitespace-nowrap">
                         mailient
@@ -1321,7 +1326,7 @@ function SecurityCard({ icon, title, desc }: { icon: React.ReactNode, title: str
                 {icon}
             </div>
             <h3 className="text-xl font-bold mb-4">{title}</h3>
-            <p className="text-zinc-500 text-sm leading-relaxed">{desc}</p>
+            <p className="text-zinc-400 text-sm leading-relaxed">{desc}</p>
         </div>
     );
 }
@@ -1416,7 +1421,7 @@ function ComparisonSection() {
                                     initial={{ opacity: 0, x: -10 }}
                                     whileInView={{ opacity: 1, x: 0 }}
                                     transition={{ delay: i * 0.1 }}
-                                    className="flex items-center gap-3 text-zinc-300"
+                                    className="flex items-center gap-3 text-zinc-400"
                                 >
                                     <div className="flex-shrink-0 w-5 h-5 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
                                         <Check className="w-3 h-3 text-white" />
@@ -1430,7 +1435,7 @@ function ComparisonSection() {
                             className="w-full bg-white text-black hover:bg-zinc-200 rounded-2xl py-6 text-base font-bold group/btn shadow-[0_20px_40px_-15px_rgba(255,255,255,0.15)]"
                             asChild
                         >
-                            <a href="/auth/signin">
+                            <a href="/auth/signup">
                                 Get Started
                                 <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                             </a>
@@ -1455,13 +1460,14 @@ function ComparisonSection() {
                                     key={i}
                                     initial={{ opacity: 0, x: 10 }}
                                     whileInView={{ opacity: 1, x: 0 }}
+                                    viewport={{ once: true }}
                                     transition={{ delay: i * 0.1 }}
                                     className="flex items-center gap-3 text-zinc-500"
                                 >
                                     <div className="flex-shrink-0 w-5 h-5 rounded-full bg-white/5 border border-white/5 flex items-center justify-center">
                                         <Check className="w-3 h-3 text-zinc-600" />
                                     </div>
-                                    <span className="text-sm">{feature}</span>
+                                    <span className="text-sm font-medium">{feature}</span>
                                 </motion.li>
                             ))}
                         </ul>
