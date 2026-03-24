@@ -36,11 +36,17 @@ import { Badge } from "@/components/ui/badge"
 import { BackgroundShaders } from "@/components/ui/background-paper-shaders"
 import { PricingSection } from "@/components/ui/pricing"
 import { useRouter } from "next/navigation"
-import { useSession } from "next-auth/react"
+import { useSession, signIn } from "next-auth/react"
 import { HeroGeometric } from "@/components/ui/shape-landing-hero"
 import { LiquidButton } from "@/components/ui/liquid-glass-button"
 import { CTASection } from "@/components/ui/hero-dithering-card"
 import { useSmoothScroll } from "@/hooks/use-smooth-scroll"
+
+declare global {
+    interface Window {
+        google: any;
+    }
+}
 
 
 const features = [
@@ -116,6 +122,54 @@ export function LinearLanding() {
     const { handleClick } = useSmoothScroll()
     const [activeStep, setActiveStep] = useState(0)
     const containerRef = useRef<HTMLDivElement>(null)
+
+    // Google One Tap Login Initialization
+    useEffect(() => {
+        // Only trigger for unauthenticated guest users
+        if (status !== "unauthenticated") return;
+
+        const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+        if (!clientId) {
+            console.warn("One Tap Login skipped: NEXT_PUBLIC_GOOGLE_CLIENT_ID is missing.");
+            return;
+        }
+
+        // Load Google Identity script
+        const script = document.createElement("script");
+        script.src = "https://accounts.google.com/gsi/client";
+        script.async = true;
+        script.defer = true;
+        script.onload = () => {
+            const google = (window as any).google;
+            if (google) {
+                google.accounts.id.initialize({
+                    client_id: clientId,
+                    callback: async (response: any) => {
+                        console.log("🚀 One Tap Credential Received. Bridging Login...");
+                        await signIn("google-one-tap", {
+                            credential: response.credential,
+                            callbackUrl: "/onboarding",
+                            redirect: true,
+                        });
+                    },
+                    auto_select: false,
+                    cancel_on_tap_outside: true,
+                    context: "signin",
+                });
+                
+                // Show the "Smart Toggle" prompt from the screenshot
+                google.accounts.id.prompt();
+            }
+        };
+        document.head.appendChild(script);
+
+        return () => {
+            // Clean up to prevent script duplication
+            if (document.head.contains(script)) {
+                document.head.removeChild(script);
+            }
+        };
+    }, [status]);
 
     const { scrollYProgress } = useScroll({
         target: containerRef,
