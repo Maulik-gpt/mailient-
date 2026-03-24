@@ -8,7 +8,7 @@ import { Button } from './button';
 import { SettingsCard } from './settings-card';
 import { Badge } from './badge';
 import { HomeFeedSidebar } from './home-feed-sidebar';
-import { RefreshCw, AlertCircle, TrendingUp, Clock, Target, Zap, Mail, Home, X, User, Sparkles, ArrowLeft, LayoutList, Inbox, ExternalLink, Download, FilePlus, ChevronDown, ChevronRight, Plus, Users, Building, Phone, Loader2, MessageCircle, Send } from 'lucide-react';
+import { RefreshCw, AlertCircle, TrendingUp, Clock, Target, Zap, Mail, Home, X, User, Sparkles, ArrowLeft, LayoutList, Inbox, ExternalLink, Download, FilePlus, ChevronDown, ChevronRight, Plus, Users, Building, Phone, Loader2, MessageCircle, Send, ArrowUp, CornerDownLeft } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './avatar';
 import { toast } from 'sonner';
 import { HelpCard } from './help-card';
@@ -207,6 +207,14 @@ export function GmailInterfaceFixed() {
         period: 'daily' | 'monthly';
         currentPlan: 'free' | 'starter' | 'pro' | 'none';
     } | null>(null);
+
+    // AI Refinement State for Sift
+    const [selection, setSelection] = useState<{ text: string; rect: DOMRect; start: number; end: number } | null>(null);
+    const [isRefinementActive, setIsRefinementActive] = useState(false);
+    const [refinementInstruction, setRefinementInstruction] = useState('');
+    const [isProcessingRefinement, setIsProcessingRefinement] = useState(false);
+    const [proposedRefinement, setProposedRefinement] = useState<string | null>(null);
+    const [showTooltip, setShowTooltip] = useState(false);
 
     // --- All State Hooks ---
 
@@ -800,6 +808,96 @@ export function GmailInterfaceFixed() {
         } finally {
             setIsArcusLoading(false);
         }
+    };
+
+    // --- Sift Refinement Logic ---
+    const handleSiftMouseUp = () => {
+        if (!showDraftEditor || isDrafting || isRefinementActive || isProcessingRefinement || proposedRefinement) return;
+        
+        const sel = window.getSelection();
+        if (sel && sel.toString().trim().length > 0) {
+            const range = sel.getRangeAt(0);
+            const rect = range.getBoundingClientRect();
+            const text = sel.toString();
+            
+            const start = draftContent.indexOf(text);
+            const end = start + text.length;
+
+            if (start !== -1) {
+                setSelection({ text, rect, start, end });
+                setShowTooltip(true);
+            }
+        } else {
+            setShowTooltip(false);
+            setSelection(null);
+        }
+    };
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (!showDraftEditor) return;
+            
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'm') {
+                if (selection && !isRefinementActive) {
+                    setIsRefinementActive(true);
+                    e.preventDefault();
+                }
+            }
+            if (e.key === 'Escape' && proposedRefinement) {
+                setProposedRefinement(null);
+                e.preventDefault();
+            }
+            if (e.key === 'Escape' && isRefinementActive) {
+                setIsRefinementActive(false);
+                setSelection(null);
+                e.preventDefault();
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && proposedRefinement) {
+                handleAcceptSiftRefinement();
+                e.preventDefault();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [showDraftEditor, selection, isRefinementActive, proposedRefinement, draftContent]);
+
+    const handleSiftRefinementSubmit = async () => {
+        if (!selection || !refinementInstruction.trim()) return;
+        
+        setIsProcessingRefinement(true);
+        try {
+            const res = await fetch('/api/email/refine-reply', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    fullContent: draftContent,
+                    selectedText: selection.text,
+                    instruction: refinementInstruction
+                })
+            });
+            const data = await res.json();
+            if (data.refinedText) {
+                setProposedRefinement(data.refinedText);
+                setIsRefinementActive(false);
+            }
+        } catch (error) {
+            console.error('Refinement failed:', error);
+            toast.error('AI refinement failed');
+        } finally {
+            setIsProcessingRefinement(false);
+            setRefinementInstruction('');
+        }
+    };
+
+    const handleAcceptSiftRefinement = () => {
+        if (!selection || !proposedRefinement) return;
+        const newContent = 
+            draftContent.slice(0, selection.start) + 
+            proposedRefinement + 
+            draftContent.slice(selection.end);
+        setDraftContent(newContent);
+        setProposedRefinement(null);
+        setSelection(null);
     };
 
     const handleScheduleCall = async (emailId: string) => {
@@ -2310,7 +2408,7 @@ export function GmailInterfaceFixed() {
                         </button>
                     </div>
 
-                    <div className="flex-1 bg-neutral-900/30 rounded-[2rem] border border-neutral-800/50 p-8 overflow-hidden flex flex-col shadow-inner relative">
+                    <div className="flex-1 bg-neutral-900/30 rounded-[2rem] border border-neutral-800/50 p-8 overflow-hidden flex flex-col shadow-inner relative" onMouseUp={handleSiftMouseUp}>
                         {isDrafting ? (
                             <div className="flex-1 flex flex-col items-center justify-center">
                                 <div className="relative mb-6">
@@ -2330,16 +2428,127 @@ export function GmailInterfaceFixed() {
                                         placeholder="Subject"
                                     />
                                 </div>
-                                <textarea
-                                    value={draftContent}
-                                    onChange={(e) => setDraftContent(e.target.value)}
-                                    className="flex-1 bg-transparent text-neutral-200 resize-none focus:outline-none font-light leading-relaxed text-xl custom-scrollbar"
-                                    placeholder="AI generated draft will appear here..."
-                                />
+                                <div className="flex-1 overflow-y-auto custom-scrollbar relative">
+                                    {proposedRefinement && selection ? (
+                                        <div className="text-neutral-200 font-light leading-relaxed text-xl whitespace-pre-wrap">
+                                            {draftContent.slice(0, selection.start)}
+                                            <span className="text-white/20 line-through decoration-red-500/30 decoration-1 bg-red-500/5">
+                                                {selection.text}
+                                            </span>
+                                            <span className="text-white bg-blue-500/30 px-1 rounded-md border-b-2 border-blue-500/50 shadow-[0_0_20px_rgba(59,130,246,0.1)]">
+                                                {proposedRefinement}
+                                            </span>
+                                            {draftContent.slice(selection.end)}
+                                        </div>
+                                    ) : (
+                                        <textarea
+                                            value={draftContent}
+                                            onChange={(e) => setDraftContent(e.target.value)}
+                                            className="w-full h-full bg-transparent text-neutral-200 resize-none focus:outline-none font-light leading-relaxed text-xl selection:bg-white selection:text-black"
+                                            placeholder="AI generated draft will appear here..."
+                                        />
+                                    )}
+                                </div>
                                 {/* Progressive Blur for Textarea */}
                                 <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-neutral-900/80 to-transparent pointer-events-none z-10" />
                             </>
                         )}
+
+                        {/* World-Class AI Refinement Tooltip for Sift */}
+                        <AnimatePresence mode="wait">
+                            {(showTooltip || isRefinementActive || proposedRefinement) && selection && (
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.98, y: 10, filter: 'blur(8px)' }}
+                                    animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
+                                    exit={{ opacity: 0, scale: 0.98, y: 10, filter: 'blur(8px)' }}
+                                    transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+                                    style={{
+                                        position: 'fixed',
+                                        left: selection.rect.left + (selection.rect.width / 2),
+                                        top: selection.rect.top - 16,
+                                        transform: 'translate(-50%, -100%)',
+                                        zIndex: 100
+                                    }}
+                                    className="pointer-events-auto"
+                                >
+                                    {!isRefinementActive && !proposedRefinement && (
+                                        <button
+                                            onClick={() => setIsRefinementActive(true)}
+                                            className="bg-black/80 border border-white/20 rounded-full px-5 py-2.5 flex items-center gap-4 shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_20px_rgba(255,255,255,0.05)] backdrop-blur-2xl hover:bg-black hover:border-white/30 transition-all group active:scale-95"
+                                        >
+                                            <Sparkles className="w-3.5 h-3.5 text-blue-400 group-hover:animate-pulse" />
+                                            <span className="text-white font-bold text-xs tracking-tight">Ask for changes</span>
+                                            <div className="flex items-center gap-1 opacity-40">
+                                                <div className="px-1.5 py-0.5 rounded border border-white/20 bg-white/5 text-[9px] font-bold">Ctrl</div>
+                                                <div className="px-1.5 py-0.5 rounded border border-white/20 bg-white/5 text-[9px] font-bold">M</div>
+                                            </div>
+                                        </button>
+                                    )}
+
+                                    {isRefinementActive && (
+                                        <div className="bg-black/90 border border-white/10 rounded-[1.5rem] p-1.5 shadow-[0_30px_70px_rgba(0,0,0,0.9),0_0_30px_rgba(255,255,255,0.03)] w-[360px] backdrop-blur-3xl overflow-hidden ring-1 ring-white/10">
+                                            <div className="relative group/input">
+                                                <input
+                                                    autoFocus
+                                                    value={refinementInstruction}
+                                                    onChange={(e) => setRefinementInstruction(e.target.value)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') handleSiftRefinementSubmit();
+                                                        if (e.key === 'Escape') setIsRefinementActive(false);
+                                                    }}
+                                                    placeholder="Describe your changes"
+                                                    className="w-full bg-white/[0.04] text-white text-[14px] py-3.5 px-5 pr-14 rounded-2xl border border-white/[0.08] focus:outline-none focus:border-white/20 transition-all placeholder:text-white/20 font-medium tracking-tight"
+                                                />
+                                                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                                                    {refinementInstruction && !isProcessingRefinement && (
+                                                        <button 
+                                                            onClick={() => setRefinementInstruction('')}
+                                                            className="w-6 h-6 rounded-lg flex items-center justify-center text-white/30 hover:text-white transition-colors"
+                                                        >
+                                                            <X className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    )}
+                                                    <button 
+                                                        onClick={handleSiftRefinementSubmit}
+                                                        disabled={isProcessingRefinement || !refinementInstruction.trim()}
+                                                        className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white hover:bg-blue-500 transition-all disabled:opacity-30 disabled:grayscale shadow-lg shadow-blue-500/20 active:scale-90"
+                                                    >
+                                                        {isProcessingRefinement ? (
+                                                            <div className="w-4 h-4 border-[2.5px] border-white/20 border-t-white rounded-full animate-spin" />
+                                                        ) : (
+                                                            <ArrowUp className="w-4 h-4 stroke-[3]" />
+                                                        )}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {proposedRefinement && (
+                                        <div className="bg-black/90 border border-white/20 rounded-2xl p-2 flex items-center gap-2 shadow-[0_30px_70px_rgba(0,0,0,0.9)] backdrop-blur-3xl ring-1 ring-white/10">
+                                            <button 
+                                                onClick={() => setProposedRefinement(null)}
+                                                className="h-10 px-5 rounded-xl text-white/70 hover:text-white hover:bg-white/5 text-[13px] font-bold transition-all flex items-center gap-3 active:scale-95"
+                                            >
+                                                Undo
+                                                <div className="px-1.5 py-0.5 rounded border border-white/10 bg-white/5 text-[9px] font-bold opacity-40 uppercase">Esc</div>
+                                            </button>
+                                            <div className="w-px h-6 bg-white/10 mx-1" />
+                                            <button 
+                                                onClick={handleAcceptSiftRefinement}
+                                                className="h-10 px-5 bg-blue-600 hover:bg-blue-500 rounded-xl text-white text-[13px] font-bold transition-all flex items-center gap-4 shadow-xl shadow-blue-500/25 active:scale-95 active:translate-y-0.5"
+                                            >
+                                                Accept
+                                                <div className="flex items-center gap-1 opacity-70">
+                                                    <div className="px-1.5 py-0.5 rounded border border-white/30 bg-white/10 text-[9px] font-bold uppercase tracking-tighter">Ctrl</div>
+                                                    <CornerDownLeft className="w-3 h-3" />
+                                                </div>
+                                            </button>
+                                        </div>
+                                    )}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
 
                     <div className="mt-8 flex justify-end gap-4">
