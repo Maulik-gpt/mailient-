@@ -811,22 +811,24 @@ export function GmailInterfaceFixed() {
     };
 
     // --- Sift Refinement Logic ---
-    const handleSiftMouseUp = () => {
+    const handleSiftMouseUp = (e: React.MouseEvent) => {
         if (!showDraftEditor || isDrafting || isRefinementActive || isProcessingRefinement || proposedRefinement) return;
         
-        const sel = window.getSelection();
-        if (sel && sel.toString().trim().length > 0) {
-            const range = sel.getRangeAt(0);
-            const rect = range.getBoundingClientRect();
-            const text = sel.toString();
-            
-            const start = draftContent.indexOf(text);
-            const end = start + text.length;
+        // Target the draft textarea specifically for reliable selection tracking
+        const textarea = document.querySelector('textarea[placeholder="AI generated draft will appear here..."]') as HTMLTextAreaElement;
+        if (!textarea) return;
 
-            if (start !== -1) {
-                setSelection({ text, rect, start, end });
-                setShowTooltip(true);
-            }
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const text = textarea.value.substring(start, end);
+
+        if (text && text.trim().length > 0) {
+            // Calculate tooltip position relative to the modal rather than the viewport
+            // This bypasses the 'transform' context issue
+            const rect = textarea.getBoundingClientRect();
+            // We use the cursor position or the textarea's relative position
+            setSelection({ text, rect, start, end });
+            setShowTooltip(true);
         } else {
             setShowTooltip(false);
             setSelection(null);
@@ -865,6 +867,8 @@ export function GmailInterfaceFixed() {
         if (!selection || !refinementInstruction.trim()) return;
         
         setIsProcessingRefinement(true);
+        console.log("🚀 Sift Refinement Initiated:", { text: selection.text, instruction: refinementInstruction });
+        
         try {
             const res = await fetch('/api/email/refine-reply', {
                 method: 'POST',
@@ -875,14 +879,27 @@ export function GmailInterfaceFixed() {
                     instruction: refinementInstruction
                 })
             });
+            
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error || 'Refinement API failed');
+            }
+
             const data = await res.json();
             if (data.refinedText) {
+                console.log("✅ Sift Refinement Received:", data.refinedText);
                 setProposedRefinement(data.refinedText);
                 setIsRefinementActive(false);
+            } else {
+                throw new Error("No refined text returned from AI");
             }
         } catch (error) {
-            console.error('Refinement failed:', error);
-            toast.error('AI refinement failed');
+            console.error('❌ Refinement failed:', error);
+            toast.error('AI refinement failed', { 
+                description: error instanceof Error ? error.message : 'Please try again' 
+            });
+            setIsRefinementActive(false);
+            setSelection(null);
         } finally {
             setIsProcessingRefinement(false);
             setRefinementInstruction('');
@@ -2463,10 +2480,10 @@ export function GmailInterfaceFixed() {
                                     exit={{ opacity: 0, scale: 0.98, y: 10, filter: 'blur(8px)' }}
                                     transition={{ type: 'spring', damping: 20, stiffness: 300 }}
                                     style={{
-                                        position: 'fixed',
-                                        left: selection.rect.left + (selection.rect.width / 2),
-                                        top: selection.rect.top - 16,
-                                        transform: 'translate(-50%, -100%)',
+                                        position: 'absolute', // Absolute to the relative parent modal content
+                                        left: '50%',
+                                        top: '10%', // Place it near the top of the container area
+                                        transform: 'translateX(-50%)',
                                         zIndex: 100
                                     }}
                                     className="pointer-events-auto"
