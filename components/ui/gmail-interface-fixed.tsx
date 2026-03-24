@@ -812,6 +812,7 @@ export function GmailInterfaceFixed() {
 
     // --- Sift Refinement Logic ---
     const handleSiftMouseUp = (e: React.MouseEvent) => {
+        // Prevent clearing if we are clicking inside the toolkit or actively refining
         if (!showDraftEditor || isDrafting || isRefinementActive || isProcessingRefinement || proposedRefinement) return;
         
         // Target the draft textarea specifically for reliable selection tracking
@@ -823,15 +824,16 @@ export function GmailInterfaceFixed() {
         const text = textarea.value.substring(start, end);
 
         if (text && text.trim().length > 0) {
-            // Calculate tooltip position relative to the modal rather than the viewport
-            // This bypasses the 'transform' context issue
             const rect = textarea.getBoundingClientRect();
-            // We use the cursor position or the textarea's relative position
             setSelection({ text, rect, start, end });
             setShowTooltip(true);
         } else {
-            setShowTooltip(false);
-            setSelection(null);
+            // Only clear selection if we actually clicked away from everything
+            const target = e.target as HTMLElement;
+            if (!target.closest('.refinement-toolkit')) {
+                setShowTooltip(false);
+                setSelection(null);
+            }
         }
     };
 
@@ -2449,10 +2451,10 @@ export function GmailInterfaceFixed() {
                                     {proposedRefinement && selection ? (
                                         <div className="text-neutral-200 font-light leading-relaxed text-xl whitespace-pre-wrap">
                                             {draftContent.slice(0, selection.start)}
-                                            <span className="text-white/20 line-through decoration-red-500/30 decoration-1 bg-red-500/5">
+                                            <span className="text-white/20 line-through decoration-white/30 decoration-1 bg-white/[0.03]">
                                                 {selection.text}
                                             </span>
-                                            <span className="text-white bg-blue-500/30 px-1 rounded-md border-b-2 border-blue-500/50 shadow-[0_0_20px_rgba(59,130,246,0.1)]">
+                                            <span className="text-black bg-white px-1.5 py-0.5 rounded-md shadow-[0_0_25px_rgba(255,255,255,0.1)] border border-white/20 font-medium">
                                                 {proposedRefinement}
                                             </span>
                                             {draftContent.slice(selection.end)}
@@ -2480,30 +2482,29 @@ export function GmailInterfaceFixed() {
                                     exit={{ opacity: 0, scale: 0.98, y: 10, filter: 'blur(8px)' }}
                                     transition={{ type: 'spring', damping: 20, stiffness: 300 }}
                                     style={{
-                                        position: 'absolute', // Absolute to the relative parent modal content
+                                        position: 'absolute',
                                         left: '50%',
-                                        top: '10%', // Place it near the top of the container area
+                                        top: '10%',
                                         transform: 'translateX(-50%)',
                                         zIndex: 100
                                     }}
-                                    className="pointer-events-auto"
+                                    className="pointer-events-auto refinement-toolkit"
                                 >
                                     {!isRefinementActive && !proposedRefinement && (
                                         <button
-                                            onClick={() => setIsRefinementActive(true)}
-                                            className="bg-black/80 border border-white/20 rounded-full px-5 py-2.5 flex items-center gap-4 shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_20px_rgba(255,255,255,0.05)] backdrop-blur-2xl hover:bg-black hover:border-white/30 transition-all group active:scale-95"
+                                            onClick={(e) => { e.stopPropagation(); setIsRefinementActive(true); }}
+                                            className="bg-zinc-900 border border-white/10 rounded-full px-5 py-2.5 flex items-center gap-4 shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_20px_rgba(255,255,255,0.05)] backdrop-blur-2xl hover:bg-zinc-800 hover:border-white/20 transition-all group active:scale-95"
                                         >
-                                            <Sparkles className="w-3.5 h-3.5 text-blue-400 group-hover:animate-pulse" />
+                                            <Sparkles className="w-3.5 h-3.5 text-zinc-400 group-hover:text-white transition-colors" />
                                             <span className="text-white font-bold text-xs tracking-tight">Ask for changes</span>
                                             <div className="flex items-center gap-1 opacity-40">
-                                                <div className="px-1.5 py-0.5 rounded border border-white/20 bg-white/5 text-[9px] font-bold">Ctrl</div>
-                                                <div className="px-1.5 py-0.5 rounded border border-white/20 bg-white/5 text-[9px] font-bold">M</div>
+                                                <div className="px-1.5 py-0.5 rounded border border-white/20 bg-white/5 text-[9px] font-bold uppercase tracking-tighter">M</div>
                                             </div>
                                         </button>
                                     )}
 
                                     {isRefinementActive && (
-                                        <div className="bg-black/90 border border-white/10 rounded-[1.5rem] p-1.5 shadow-[0_30px_70px_rgba(0,0,0,0.9),0_0_30px_rgba(255,255,255,0.03)] w-[360px] backdrop-blur-3xl overflow-hidden ring-1 ring-white/10">
+                                        <div className="bg-zinc-950/90 border border-white/10 rounded-[1.5rem] p-1.5 shadow-[0_30px_70px_rgba(0,0,0,0.9)] w-[360px] backdrop-blur-3xl overflow-hidden ring-1 ring-white/10" onClick={(e) => e.stopPropagation()}>
                                             <div className="relative group/input">
                                                 <input
                                                     autoFocus
@@ -2514,24 +2515,16 @@ export function GmailInterfaceFixed() {
                                                         if (e.key === 'Escape') setIsRefinementActive(false);
                                                     }}
                                                     placeholder="Describe your changes"
-                                                    className="w-full bg-white/[0.04] text-white text-[14px] py-3.5 px-5 pr-14 rounded-2xl border border-white/[0.08] focus:outline-none focus:border-white/20 transition-all placeholder:text-white/20 font-medium tracking-tight"
+                                                    className="w-full bg-white/[0.04] text-white text-[14px] py-3.5 px-5 pr-14 rounded-2xl border border-white/[0.08] focus:outline-none focus:border-white/20 transition-all placeholder:text-zinc-600 font-medium tracking-tight"
                                                 />
                                                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
-                                                    {refinementInstruction && !isProcessingRefinement && (
-                                                        <button 
-                                                            onClick={() => setRefinementInstruction('')}
-                                                            className="w-6 h-6 rounded-lg flex items-center justify-center text-white/30 hover:text-white transition-colors"
-                                                        >
-                                                            <X className="w-3.5 h-3.5" />
-                                                        </button>
-                                                    )}
                                                     <button 
-                                                        onClick={handleSiftRefinementSubmit}
+                                                        onClick={(e) => { e.stopPropagation(); handleSiftRefinementSubmit(); }}
                                                         disabled={isProcessingRefinement || !refinementInstruction.trim()}
-                                                        className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white hover:bg-blue-500 transition-all disabled:opacity-30 disabled:grayscale shadow-lg shadow-blue-500/20 active:scale-90"
+                                                        className="w-9 h-9 bg-white rounded-xl flex items-center justify-center text-black hover:bg-zinc-200 transition-all disabled:opacity-30 disabled:grayscale shadow-lg shadow-white/5 active:scale-90"
                                                     >
                                                         {isProcessingRefinement ? (
-                                                            <div className="w-4 h-4 border-[2.5px] border-white/20 border-t-white rounded-full animate-spin" />
+                                                            <div className="w-4 h-4 border-[2px] border-black/20 border-t-black rounded-full animate-spin" />
                                                         ) : (
                                                             <ArrowUp className="w-4 h-4 stroke-[3]" />
                                                         )}
@@ -2542,22 +2535,22 @@ export function GmailInterfaceFixed() {
                                     )}
 
                                     {proposedRefinement && (
-                                        <div className="bg-black/90 border border-white/20 rounded-2xl p-2 flex items-center gap-2 shadow-[0_30px_70px_rgba(0,0,0,0.9)] backdrop-blur-3xl ring-1 ring-white/10">
+                                        <div className="bg-zinc-950/90 border border-white/20 rounded-2xl p-2 flex items-center gap-2 shadow-[0_30px_70px_rgba(0,0,0,0.9)] backdrop-blur-3xl ring-1 ring-white/10" onClick={(e) => e.stopPropagation()}>
                                             <button 
-                                                onClick={() => setProposedRefinement(null)}
-                                                className="h-10 px-5 rounded-xl text-white/70 hover:text-white hover:bg-white/5 text-[13px] font-bold transition-all flex items-center gap-3 active:scale-95"
+                                                onClick={(e) => { e.stopPropagation(); setProposedRefinement(null); }}
+                                                className="h-10 px-5 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 text-[13px] font-bold transition-all flex items-center gap-3 active:scale-95"
                                             >
                                                 Undo
                                                 <div className="px-1.5 py-0.5 rounded border border-white/10 bg-white/5 text-[9px] font-bold opacity-40 uppercase">Esc</div>
                                             </button>
                                             <div className="w-px h-6 bg-white/10 mx-1" />
                                             <button 
-                                                onClick={handleAcceptSiftRefinement}
-                                                className="h-10 px-5 bg-blue-600 hover:bg-blue-500 rounded-xl text-white text-[13px] font-bold transition-all flex items-center gap-4 shadow-xl shadow-blue-500/25 active:scale-95 active:translate-y-0.5"
+                                                onClick={(e) => { e.stopPropagation(); handleAcceptSiftRefinement(); }}
+                                                className="h-10 px-5 bg-white hover:bg-zinc-200 rounded-xl text-black text-[13px] font-bold transition-all flex items-center gap-4 shadow-xl shadow-white/5 active:scale-95"
                                             >
                                                 Accept
                                                 <div className="flex items-center gap-1 opacity-70">
-                                                    <div className="px-1.5 py-0.5 rounded border border-white/30 bg-white/10 text-[9px] font-bold uppercase tracking-tighter">Ctrl</div>
+                                                    <div className="px-1.5 py-0.5 rounded border border-black/30 bg-black/10 text-[9px] font-bold uppercase tracking-tighter">Ctrl</div>
                                                     <CornerDownLeft className="w-3 h-3" />
                                                 </div>
                                             </button>
