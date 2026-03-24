@@ -1751,13 +1751,50 @@ export function GmailInterfaceFixed() {
                         </div>
                     )}
 
-                    {/* Error */}
+                    {/* Error & Limit Reached States */}
                     {error && (
-                        <div className="mb-12 p-4 border border-neutral-800 rounded-lg bg-neutral-900/30">
-                            <div className="flex items-center gap-3">
-                                <AlertCircle className="h-4 w-4 text-neutral-500" />
-                                <p className="text-sm text-neutral-400 font-light">{error}</p>
-                            </div>
+                        <div className="mb-12">
+                            {error === 'limit_reached' ? (
+                                <div className="bg-[#0a0a0a] border border-zinc-800/50 rounded-3xl p-10 flex flex-col items-center text-center shadow-2xl relative overflow-hidden group">
+                                    <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent opacity-50 pointer-events-none" />
+                                    <div className="relative z-10">
+                                        <div className="w-20 h-20 bg-amber-500/10 rounded-full flex items-center justify-center mb-6 mx-auto border border-amber-500/20 group-hover:scale-110 transition-transform duration-500">
+                                            <Sparkles className="w-10 h-10 text-amber-500 animate-pulse" />
+                                        </div>
+                                        <h3 className="text-2xl font-semibold text-white mb-3">Daily Limit Reached</h3>
+                                        <p className="text-neutral-400 text-lg font-light max-w-md mx-auto mb-8 leading-relaxed">
+                                            You have used all of your credits. <span className="text-white font-medium">Please UPGRADE to continue</span> and unlock unlimited AI intelligence.
+                                        </p>
+                                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                                            <a 
+                                                href="https://buy.polar.sh/polar_cl_ojXGgACq5GNMsUInVP3HX5vpXepohT5P8m7SL2RcCej"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="h-14 px-10 bg-zinc-800 hover:bg-zinc-700 text-white rounded-2xl text-lg font-medium transition-all shadow-xl shadow-black/20 flex items-center justify-center gap-3 border border-zinc-700 w-full sm:w-auto active:scale-95"
+                                            >
+                                                Starter Plan
+                                            </a>
+                                            <a 
+                                                href="https://buy.polar.sh/polar_cl_BmoCj2jm6Hxy2Pc4DI6y717wsENNDAniGPfsB1pMO61"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="h-14 px-10 bg-white hover:bg-zinc-200 text-black rounded-2xl text-lg font-medium transition-all shadow-xl shadow-white/5 flex items-center justify-center gap-3 w-full sm:w-auto active:scale-95"
+                                            >
+                                                Upgrade to Pro
+                                                <Zap className="w-5 h-5 fill-current" />
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-amber-500/5 blur-[100px] rounded-full" />
+                                </div>
+                            ) : (
+                                <div className="p-6 border border-zinc-800 rounded-2xl bg-zinc-900/30 backdrop-blur-xl">
+                                    <div className="flex items-center gap-4">
+                                        <AlertCircle className="h-5 w-5 text-zinc-500" />
+                                        <p className="text-base text-zinc-400 font-light">{error}</p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
 
