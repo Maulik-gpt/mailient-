@@ -121,13 +121,23 @@ export function DraftReplyBox({
                     instruction: refinementInstruction
                 })
             });
-            const data = await res.json();
+            // Parse response ONCE
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                throw new Error(data?.error || 'Refinement failed');
+            }
             if (data.refinedText) {
                 setProposedRefinement(data.refinedText);
                 setIsRefinementActive(false);
+                setShowTooltip(false);
+            } else {
+                throw new Error('No refined text returned');
             }
         } catch (error) {
             console.error('Refinement failed:', error);
+            setIsRefinementActive(false);
+            setSelection(null);
+            setShowTooltip(false);
         } finally {
             setIsProcessingRefinement(false);
             setRefinementInstruction('');

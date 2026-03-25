@@ -811,6 +811,8 @@ export function GmailInterfaceFixed() {
     };
 
     // --- Sift Refinement Logic ---
+    const draftContainerRef = React.useRef<HTMLDivElement>(null);
+
     const handleSiftMouseUp = (e: React.MouseEvent) => {
         // Prevent clearing if we are clicking inside the toolkit or actively refining
         if (!showDraftEditor || isDrafting || isRefinementActive || isProcessingRefinement || proposedRefinement) return;
@@ -824,8 +826,28 @@ export function GmailInterfaceFixed() {
         const text = textarea.value.substring(start, end);
 
         if (text && text.trim().length > 0) {
-            const rect = textarea.getBoundingClientRect();
-            setSelection({ text, rect, start, end });
+            // Get the container's bounding rect for relative positioning
+            const containerRect = draftContainerRef.current?.getBoundingClientRect();
+            const textareaRect = textarea.getBoundingClientRect();
+
+            // Estimate vertical position based on selection offset within the textarea
+            const textBeforeSelection = textarea.value.substring(0, start);
+            const lineCount = (textBeforeSelection.match(/\n/g) || []).length;
+            const lineHeight = parseFloat(getComputedStyle(textarea).lineHeight) || 28;
+            const scrollTop = textarea.scrollTop;
+
+            // Calculate position relative to the container
+            const selectionTopRelative = textareaRect.top - (containerRect?.top || 0) + (lineCount * lineHeight) - scrollTop;
+
+            // Create a synthetic rect for positioning the tooltip
+            const syntheticRect = new DOMRect(
+                textareaRect.left + textareaRect.width / 2, // center X
+                Math.max(0, selectionTopRelative - 12), // slightly above the line
+                0,
+                0
+            );
+
+            setSelection({ text, rect: syntheticRect, start, end });
             setShowTooltip(true);
         } else {
             // Only clear selection if we actually clicked away from everything
@@ -882,16 +904,31 @@ export function GmailInterfaceFixed() {
                 })
             });
             
+            // Parse response ONCE
+            const data = await res.json().catch(() => ({}));
+
             if (!res.ok) {
-                const errorData = await res.json();
-                throw new Error(errorData.error || 'Refinement API failed');
+                // Handle limit_reached by showing the upgrade modal
+                if (data?.error === 'limit_reached') {
+                    setUsageLimitModalData({
+                        featureName: 'AI Refinement',
+                        currentUsage: data.usage || 0,
+                        limit: data.limit || 0,
+                        period: data.period || 'daily',
+                        currentPlan: data.planType || 'starter'
+                    });
+                    setIsUsageLimitModalOpen(true);
+                    setIsRefinementActive(false);
+                    return;
+                }
+                throw new Error(data?.error || 'Refinement API failed');
             }
 
-            const data = await res.json();
             if (data.refinedText) {
                 console.log("✅ Sift Refinement Received:", data.refinedText);
                 setProposedRefinement(data.refinedText);
                 setIsRefinementActive(false);
+                setShowTooltip(false);
             } else {
                 throw new Error("No refined text returned from AI");
             }
@@ -902,6 +939,7 @@ export function GmailInterfaceFixed() {
             });
             setIsRefinementActive(false);
             setSelection(null);
+            setShowTooltip(false);
         } finally {
             setIsProcessingRefinement(false);
             setRefinementInstruction('');
@@ -2422,10 +2460,12 @@ export function GmailInterfaceFixed() {
 
             {/* Draft Editor Modal */}
             <div
-                className={`fixed top-1/2 left-1/2 bg-[#0a0a0a] rounded-[2.5rem] shadow-[0_0_100px_rgba(0,0,0,0.8)] transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-[60] flex flex-col border border-white/[0.03] overflow-hidden`}
+                className={`fixed top-1/2 left-1/2 bg-[#0d0d0d]/95 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_0_120px_rgba(0,0,0,0.6),0_0_60px_rgba(255,255,255,0.02)] transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-[60] flex flex-col border border-white/[0.06] overflow-hidden`}
                 style={{
-                    width: '50%',
-                    height: '85vh',
+                    width: '55%',
+                    minWidth: '600px',
+                    maxWidth: '900px',
+                    height: '88vh',
                     transform: showDraftEditor ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -45%) scale(0.95)',
                     opacity: showDraftEditor ? 1 : 0,
                     pointerEvents: showDraftEditor ? 'auto' : 'none'
@@ -2450,7 +2490,7 @@ export function GmailInterfaceFixed() {
                         </button>
                     </div>
 
-                    <div className="flex-1 bg-neutral-900/30 rounded-[2rem] border border-neutral-800/50 p-8 overflow-hidden flex flex-col shadow-inner relative" onMouseUp={handleSiftMouseUp}>
+                    <div ref={draftContainerRef} className="flex-1 bg-neutral-900/30 rounded-[2rem] border border-neutral-800/50 p-8 overflow-hidden flex flex-col shadow-inner relative" onMouseUp={handleSiftMouseUp}>
                         {isDrafting ? (
                             <div className="flex-1 flex flex-col items-center justify-center">
                                 <div className="relative mb-6">
@@ -2500,14 +2540,14 @@ export function GmailInterfaceFixed() {
                         <AnimatePresence mode="wait">
                             {(showTooltip || isRefinementActive || proposedRefinement) && selection && (
                                 <motion.div
-                                    initial={{ opacity: 0, scale: 0.98, y: 10, filter: 'blur(8px)' }}
+                                    initial={{ opacity: 0, scale: 0.96, y: 8, filter: 'blur(6px)' }}
                                     animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
-                                    exit={{ opacity: 0, scale: 0.98, y: 10, filter: 'blur(8px)' }}
-                                    transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+                                    exit={{ opacity: 0, scale: 0.96, y: 8, filter: 'blur(6px)' }}
+                                    transition={{ type: 'spring', damping: 22, stiffness: 320 }}
                                     style={{
                                         position: 'absolute',
                                         left: '50%',
-                                        top: '10%',
+                                        top: `${Math.max(8, selection.rect.y - 56)}px`,
                                         transform: 'translateX(-50%)',
                                         zIndex: 100
                                     }}
@@ -2605,10 +2645,10 @@ export function GmailInterfaceFixed() {
             {/* Draft Backdrop */}
             {showDraftEditor && (
                 <div
-                    className="fixed inset-0 bg-black/40 backdrop-blur-[40px] z-[55] transition-opacity duration-700"
+                    className="fixed inset-0 bg-black/30 backdrop-blur-[60px] z-[55] transition-opacity duration-700"
                     onClick={() => setShowDraftEditor(false)}
                 >
-                    <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-transparent pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/[0.01] via-transparent to-black/20 pointer-events-none" />
                 </div>
             )}
 
