@@ -46,15 +46,9 @@ export default function OnboardingPage() {
             return;
           }
 
-          // Check local storage first for instant redirection
+          // Check local storage status but don't force redirect
           const localDone = localStorage.getItem('onboarding_completed') === 'true';
           console.log(`📋 [Onboarding] Local status: ${localDone}`);
-
-          if (localDone) {
-            console.log('🚀 [Onboarding] Redirecting to /home-feed (localStorage)');
-            router.push("/home-feed");
-            return;
-          }
 
           console.log('📡 [Onboarding] Fetching status from server...');
 
@@ -72,10 +66,9 @@ export default function OnboardingPage() {
 
                 if (data.completed) {
                   serverCompleted = true;
-                  // Already completed onboarding, cache it and redirect
-                  console.log('🚀 [Onboarding] Redirecting to /home-feed (server)');
+                  // Already completed onboarding, ensure cached locally for status indicators but don't force redirect
+                  console.log('📋 [Onboarding] Onboarding completed according to server.');
                   localStorage.setItem('onboarding_completed', 'true');
-                  router.push("/home-feed");
                 } else if (data.lastStep !== undefined) {
                   // Not completed, redirect to the last step they were on
                   const currentParam = new URLSearchParams(window.location.search).get('step');
