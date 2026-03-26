@@ -28,17 +28,9 @@ export async function POST(request) {
             console.warn('Privacy check error:', e);
         }
 
-        // Generate AI note content
+        // Generate AI note content using the unified StepFun model
         const aiService = new OpenRouterAIService();
-
-        // For note generation, use OPENROUTER_API_KEY2 and bytedance-seed/seed-1.6-flash model
-        aiService.apiKey = (process.env.OPENROUTER_API_KEY2 || '').trim();
-        aiService.model = 'bytedance-seed/seed-1.6-flash';
-
         const isAIConfigured = !!aiService.apiKey;
-        if (!isAIConfigured) {
-            console.warn('⚠️ OPENROUTER_API_KEY2 not configured for note generation, using fallback');
-        }
 
         if (isAIConfigured) {
             const canUse = await subscriptionService.canUseFeature(userId, FEATURE_TYPES.AI_NOTES);
