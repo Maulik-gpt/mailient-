@@ -13,11 +13,9 @@ export class SchedulingAIService {
         this.apiKey = (process.env.OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY2 || process.env.OPENROUTER_API_KEY3 || '').trim();
         // Fallback chain of free/cheap models to handle rate limits
         this.models = [
-            'arcee-ai/trinity-large-preview:free',
-            'qwen/qwen3-coder:free',
-            'nvidia/nemotron-nano-9b-v2:free',
-            'openai/gpt-oss-20b:free',
-            'z-ai/glm-4.5-air:free'
+            'stepfun/step-3.5-flash:free',
+            'meta-llama/llama-3.1-8b-instruct:free',
+            'qwen/qwen3-coder:free'
         ];
         this.baseURL = 'https://openrouter.ai/api/v1';
     }

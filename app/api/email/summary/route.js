@@ -120,6 +120,10 @@ export async function POST(request) {
 
     } catch (error) {
         console.error('Error generating summary:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        const isAIError = error.message?.includes('AI summary failed') || error.message?.includes('OpenRouter');
+        return NextResponse.json(
+            { error: isAIError ? error.message : 'Failed to generate summary. Please try again.' },
+            { status: 500 }
+        );
     }
 }
