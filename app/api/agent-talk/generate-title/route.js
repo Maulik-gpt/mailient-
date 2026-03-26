@@ -58,7 +58,7 @@ export async function POST(request) {
         }
 
         // Use Liquid Thinking for title generation as requested
-        const model = 'liquid/lfm-2.5-1.2b-thinking:free';
+        const model = 'stepfun/step-3.5-flash:free';
 
         const systemPrompt = `You are a chat title generator that creates SHORT, DESCRIPTIVE titles for conversations.
 

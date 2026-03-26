@@ -43,7 +43,7 @@ interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(({ className, ...props }, ref) => (
   <textarea
     className={cn(
-      "flex w-full rounded-md border-none bg-transparent px-3 py-3 text-base text-white placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50 min-h-[60px] resize-none scrollbar-thin scrollbar-thumb-[#444444] scrollbar-track-transparent hover:scrollbar-thumb-[#555555]",
+      "flex w-full rounded-md border-none bg-transparent px-3 py-3 text-base text-[#1a1a1a] placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50 min-h-[60px] resize-none scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent hover:scrollbar-thumb-gray-300",
       className
     )}
     ref={ref}
@@ -336,7 +336,7 @@ const PromptInput = React.forwardRef<HTMLDivElement, PromptInputProps>(
             onFocus={onFocus}
             onBlur={onBlur}
             className={cn(
-              "rounded-3xl border border-white/10 bg-black p-2 shadow-[0_8px_30px_rgba(0,0,0,0.4)] transition-all duration-300",
+              "rounded-3xl border border-black/10 bg-white p-2 shadow-[0_8px_30px_rgba(0,0,0,0.08)] transition-all duration-300",
               isLoading && "border-red-500/70",
               className
             )}
@@ -437,7 +437,7 @@ const PromptInputAction: React.FC<PromptInputActionProps> = ({
 // Custom Divider Component
 const CustomDivider: React.FC = () => (
   <div className="relative h-6 w-[1px] mx-0.5">
-    <div className="absolute inset-0 bg-white/20 rounded-full" />
+    <div className="absolute inset-0 bg-black/10 rounded-full" />
   </div>
 );
 
@@ -453,6 +453,7 @@ const formatFileSize = (bytes: number) => {
 // Main PromptInputBox Component
 interface PromptInputBoxProps {
   onSend?: (message: string, files?: File[], options?: { isDeepThinking?: boolean; isCanvas?: boolean; isSearch?: boolean }) => void;
+  onStop?: () => void;
   isLoading?: boolean;
   placeholder?: string;
   className?: string;
@@ -466,6 +467,7 @@ interface PromptInputBoxProps {
 export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxProps>((props, ref) => {
   const { 
     onSend = () => {}, 
+    onStop,
     isLoading = false, 
     placeholder = "Type your message here...", 
     className,
@@ -672,7 +674,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         className={cn(
-          "w-full bg-black border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.4)] transition-all duration-300 ease-in-out focus:ring-0 focus:outline-none focus-within:ring-0 focus-within:outline-none",
+          "w-full bg-white border-black/10 shadow-[0_8px_30px_rgba(0,0,0,0.08)] transition-all duration-300 ease-in-out focus:ring-0 focus:outline-none focus-within:ring-0 focus-within:outline-none",
           isRecording && "border-red-500/70",
           className
         )}
@@ -694,7 +696,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                    exit={{ opacity: 0, scale: 0.9 }}
                    className="relative group"
                 >
-                  <div className="bg-[#2E3033] border border-[#444444] rounded-xl overflow-hidden p-1 flex items-center gap-2 pr-3 min-w-[120px] max-w-[200px]">
+                  <div className="bg-gray-100 border border-black/5 rounded-xl overflow-hidden p-1 flex items-center gap-2 pr-3 min-w-[120px] max-w-[200px]">
                     {isImageFile(file) && filePreviews[file.name] ? (
                       <div
                         className="w-10 h-10 rounded-lg overflow-hidden cursor-pointer"
@@ -707,13 +709,13 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                         />
                       </div>
                     ) : (
-                      <div className="w-10 h-10 bg-black/20 rounded-lg flex items-center justify-center">
+                      <div className="w-10 h-10 bg-white/50 rounded-lg flex items-center justify-center">
                         {getFileIcon(file)}
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="text-[10px] text-gray-200 truncate font-medium">{file.name}</p>
-                      <p className="text-[9px] text-gray-500 font-mono">{formatFileSize(file.size)}</p>
+                      <p className="text-[10px] text-gray-700 truncate font-medium">{file.name}</p>
+                      <p className="text-[9px] text-gray-400 font-mono">{formatFileSize(file.size)}</p>
                     </div>
                     <button
                       onClick={(e) => {
@@ -770,7 +772,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
               <button
                 type="button"
                 onClick={() => uploadInputRef.current?.click()}
-                className="flex h-8 w-8 text-[#9CA3AF] cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-white/5 hover:text-[#D1D5DB]"
+                className="flex h-8 w-8 text-[#9CA3AF] cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-black/5 hover:text-[#4B5563]"
                 disabled={isRecording}
               >
                 <Paperclip className="h-[18px] w-[18px] transition-colors" />
@@ -797,7 +799,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                   "flex h-8 px-2 items-center justify-center rounded-lg transition-all border outline-none focus:ring-0",
                   showSearch
                     ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
-                    : "text-[#9CA3AF] hover:bg-white/5 hover:text-[#D1D5DB] border-transparent hover:border-white/5"
+                    : "text-[#9CA3AF] hover:bg-black/5 hover:text-[#4B5563] border-transparent hover:border-black/5"
                 )}
               >
                 <Search className="h-4 w-4 mr-1" />
@@ -814,7 +816,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                     "flex h-8 px-2 items-center justify-center rounded-lg transition-all border outline-none focus:ring-0",
                     selectedEmailsCount > 0 
                       ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
-                      : "text-[#9CA3AF] hover:bg-white/5 hover:text-[#D1D5DB] border-transparent hover:border-white/5"
+                      : "text-[#9CA3AF] hover:bg-black/5 hover:text-[#4B5563] border-transparent hover:border-black/5"
                   )}
                 >
                   <Mail className="h-4 w-4 mr-1" />
@@ -834,7 +836,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                 "rounded-full transition-all flex items-center gap-1 px-2 py-1 border h-8",
                 showThink
                   ? "bg-[#8B5CF6]/15 border-[#8B5CF6] text-[#8B5CF6]"
-                  : "bg-transparent border-transparent text-[#9CA3AF] hover:text-[#D1D5DB]"
+                  : "bg-transparent border-transparent text-[#9CA3AF] hover:text-[#4B5563]"
               )}
             >
               <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
@@ -870,7 +872,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                 "rounded-full transition-all flex items-center gap-1 px-2 py-1 border h-8",
                 showCanvas
                   ? "bg-[#F97316]/15 border-[#F97316] text-[#F97316]"
-                  : "bg-transparent border-transparent text-[#9CA3AF] hover:text-[#D1D5DB]"
+                  : "bg-transparent border-transparent text-[#9CA3AF] hover:text-[#4B5563]"
               )}
             >
               <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
@@ -914,26 +916,30 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
               className={cn(
                 "inline-flex items-center justify-center font-medium h-8 w-8 rounded-full transition-all duration-200 outline-none",
                 isRecording
-                  ? "bg-transparent hover:bg-gray-600/30 text-red-500 hover:text-red-400"
+                  ? "bg-transparent hover:bg-gray-100 text-red-500 hover:text-red-400"
+                  : isLoading
+                  ? "bg-black hover:bg-black/80 text-white"
                   : hasContent
-                  ? "bg-white hover:bg-white/80 text-[#1F2023]"
-                  : "bg-transparent hover:bg-gray-600/30 text-white hover:text-white/80"
+                  ? "bg-black hover:bg-black/80 text-white"
+                  : "bg-transparent hover:bg-gray-100 text-[#9CA3AF] hover:text-[#4B5563]"
               )}
-              onClick={() => {
-                if (isRecording) setIsRecording(false);
+              onClick={(e) => {
+                e.stopPropagation();
+                if (isLoading && onStop) onStop();
+                else if (isRecording) setIsRecording(false);
                 else if (hasContent) handleSubmit();
                 else setIsRecording(true);
               }}
-              disabled={isLoading && !hasContent}
+              disabled={isLoading && !onStop}
             >
               {isLoading ? (
-                <Square className="h-4 w-4 fill-[#1F2023] animate-pulse" />
+                <Square className="h-4 w-4 fill-white" />
               ) : isRecording ? (
                 <StopCircle className="h-5 w-5 text-red-500" />
               ) : hasContent ? (
-                <ArrowUp className="h-4 w-4 text-[#1F2023]" />
+                <ArrowUp className="h-4 w-4 text-white" />
               ) : (
-                <Mic className="h-5 w-5 text-white transition-colors" />
+                <Mic className="h-5 w-5 text-[#9CA3AF] transition-colors" />
               )}
             </button>
           </PromptInputAction>

@@ -4,8 +4,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   X, Copy, Check, Edit3, FileText, Mail, Sparkles, ChevronDown, 
   ChevronRight, Calendar, Globe, AlertCircle, ShieldAlert, Send, 
-  ArrowRight, Maximize2, Minimize2, BarChart3, Clock, Users, Zap, 
-  MoreHorizontal, Monitor, CheckCircle2, Circle, Edit, Terminal,
+  ArrowRight, BarChart3, Clock, Users, Zap, 
+  MoreHorizontal, CheckCircle2, Circle, Edit, Terminal,
   Code, Layout, Laptop, GripVertical
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -42,7 +42,7 @@ const typeConfig: Record<CanvasType, { label: string; icon: any; color: string }
     meeting_schedule: { label: 'Schedule', icon: <Calendar className="w-4 h-4" />, color: '#3b82f6' },
     analytics: { label: 'Analytics', icon: <BarChart3 className="w-4 h-4" />, color: '#f97316' },
     workflow: { label: 'Review', icon: <Layout className="w-4 h-4" />, color: '#a855f7' },
-    none: { label: 'Work', icon: <Monitor className="w-4 h-4" />, color: '#a855f7' },
+    none: { label: 'Work', icon: <Sparkles className="w-4 h-4" />, color: '#a855f7' },
 };
 
 export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecuting }: CanvasPanelProps) {
@@ -113,15 +113,13 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
 
     if (!isOpen || !canvasData) return null;
 
-    const config = typeConfig[canvasData.type] || typeConfig.none;
-
     return (
         <motion.div
             initial={{ x: 100, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: 100, opacity: 0 }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="h-[calc(100vh-24px)] flex flex-col overflow-hidden relative mr-3 my-3 rounded-[32px] bg-[#1c1c1c] border border-white/5 shadow-[0_30px_60px_rgba(0,0,0,0.6)] z-40 group/canvas selection:bg-blue-500/30"
+            className="h-[calc(100vh-24px)] flex flex-col overflow-hidden relative ml-auto flex-shrink-0 mr-3 my-3 rounded-[32px] bg-[#1c1c1c] border border-white/5 shadow-[0_30px_60px_rgba(0,0,0,0.6)] z-50 group/canvas selection:bg-blue-500/30"
             style={{ width: `${width}px` }}
         >
             {/* Resize Handle */}
@@ -130,7 +128,7 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                 className="absolute left-0 top-0 bottom-0 w-1.5 cursor-ew-resize hover:bg-white/10 transition-colors z-[100]"
             />
 
-            {/* Manus-style Header */}
+            {/* Premium Header - Reusing Chat Interface Design Language */}
             <div className="shrink-0 pt-6 px-6 pb-2">
                 <div className="flex items-center justify-between">
                     <div className="flex flex-col">
@@ -139,9 +137,12 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                         </h2>
                     </div>
                     <div className="flex items-center gap-3">
-                        <Monitor className="w-4 h-4 text-white/40 hover:text-white transition-colors cursor-pointer" />
-                        <Maximize2 className="w-4 h-4 text-white/40 hover:text-white transition-colors cursor-pointer" />
-                        <X className="w-5 h-5 text-white/40 hover:text-white transition-colors cursor-pointer" onClick={onClose} />
+                        <button 
+                            onClick={onClose}
+                            className="p-2 hover:bg-white/5 rounded-lg transition-all text-white/40 hover:text-white"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
                     </div>
                 </div>
                 <div className="mt-2 flex items-center gap-2">
@@ -153,7 +154,7 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                 </div>
             </div>
 
-            {/* Inner Content Window (The "Manus Computer" bit) */}
+            {/* Inner Content Window (The "Arcus Computer" bit) */}
             <div className="flex-1 px-4 py-4 overflow-hidden flex flex-col">
                 <div className="flex-1 bg-black border border-white/5 rounded-2xl flex flex-col overflow-hidden shadow-2xl relative">
                     {/* Inner Header */}
@@ -221,8 +222,12 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className="h-full flex items-center justify-center opacity-20">
-                                            <Terminal className="w-12 h-12" />
+                                        <div className="h-full flex flex-col items-center justify-center opacity-30 px-12 text-center">
+                                            <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-4">
+                                                <Sparkles className="w-6 h-6 text-white/40" />
+                                            </div>
+                                            <p className="text-[13px] font-bold text-white tracking-tight">Mission Active</p>
+                                            <p className="text-[11px] text-white/40 mt-1 leading-relaxed">Arcus is analyzing the objective and preparing context for the workspace...</p>
                                         </div>
                                     )}
                                 </motion.div>

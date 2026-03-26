@@ -348,6 +348,7 @@ export default function ChatInterface({
   } | null>(null);
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(initialConversationId || null);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const [conversations, setConversations] = useState<{ [key: string]: Message[] }>({});
   const [isNewConversation, setIsNewConversation] = useState<boolean>(!initialConversationId);
   const [selectedEmails, setSelectedEmails] = useState<Email[]>([]);
@@ -632,6 +633,11 @@ export default function ChatInterface({
   };
 
   const processAIMessage = async (messageText: string, conversationIdToUse: string, isNew: boolean, attachments?: any[], options?: { isDeepThinking?: boolean; isCanvas?: boolean; isSearch?: boolean }) => {
+    // Create new abort controller for this request
+    if (abortControllerRef.current) abortControllerRef.current.abort();
+    abortControllerRef.current = new AbortController();
+    const assistantMsgId = Date.now() + 1;
+
     try {
       setIsLoading(true);
 
@@ -703,6 +709,7 @@ export default function ChatInterface({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: messageText, conversationId: conversationIdToUse, runId: requestRunId, attachments: attachments || [] }),
+        signal: abortControllerRef.current.signal
       }).then(r => r.json()).catch(() => null);
 
       // 2) Fire main chat request (takes longer - does search, canvas, response)
@@ -710,10 +717,11 @@ export default function ChatInterface({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),
+        signal: abortControllerRef.current.signal
       });
 
       // 3) Intent usually returns first — show live thinking steps
-      const assistantMsgId = Date.now() + 1;
+      // const assistantMsgId was moved up to be available in catch block
       
       // 3) Intent usually returns first — show acknowledgement and live thinking steps
       const intentData = await intentPromise;
@@ -1078,7 +1086,11 @@ export default function ChatInterface({
         [conversationIdToUse]: uniqueMessages
       }));
 
-    } catch (error) {
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        setMessages(prev => prev.filter(m => m.id !== assistantMsgId));
+        return;
+      }
       console.error('Error in processAIMessage:', error);
       const errorAgentMessage: AgentMessage = {
         id: Date.now() + 1,
@@ -1815,7 +1827,7 @@ export default function ChatInterface({
 
           <div className="flex-1 flex flex-row relative ml-64 transition-all duration-500 ease-in-out overflow-hidden">
             {/* Chat Column */}
-            <div className="flex-1 flex flex-col relative min-w-0 transition-all duration-500">
+            <div className="flex-1 flex flex-col relative min-w-[450px] transition-all duration-500">
               {/* Header */}
               <div className="sticky top-0 z-40 transition-all duration-300">
                 <div className="relative px-8 py-3">
@@ -1981,6 +1993,7 @@ export default function ChatInterface({
                         <div className="w-full relative group">
                           <PromptInputBox
                             onSend={(msg, files, opts) => handleSend(msg, files, opts)}
+                            onStop={() => abortControllerRef.current?.abort()}
                             isLoading={isLoading}
                             placeholder="What would you like to know?"
                             onSearchClick={() => { }}
@@ -2282,6 +2295,7 @@ export default function ChatInterface({
                       <div className="max-w-3xl mx-auto">
                         <PromptInputBox
                           onSend={(msg, files, opts) => handleSend(msg, files, opts)}
+                          onStop={() => abortControllerRef.current?.abort()}
                           isLoading={isLoading}
                           placeholder="Ask follow-up..."
                           onSearchClick={() => { }}
@@ -2295,16 +2309,20 @@ export default function ChatInterface({
                 )}
               </div>
 
-              {/* Canvas Sidebar Column */}
+              {/* Canvas Sidebar - Fixed on the right */}
               <AnimatePresence>
                 {isCanvasOpen && canvasData && (
-                  <CanvasPanel
-                    isOpen={isCanvasOpen}
-                    onClose={() => setIsCanvasOpen(false)}
-                    canvasData={canvasData}
-                    onExecute={handleCanvasExecute}
-                    isExecuting={isCanvasExecuting}
-                  />
+                  <div className="fixed top-0 right-0 h-full z-[100] pointer-events-none p-3">
+                    <div className="pointer-events-auto h-full">
+                      <CanvasPanel
+                        isOpen={isCanvasOpen}
+                        onClose={() => setIsCanvasOpen(false)}
+                        canvasData={canvasData}
+                        onExecute={handleCanvasExecute}
+                        isExecuting={isCanvasExecuting}
+                      />
+                    </div>
+                  </div>
                 )}
               </AnimatePresence>
             </div>
