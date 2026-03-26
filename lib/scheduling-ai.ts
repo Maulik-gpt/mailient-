@@ -81,17 +81,26 @@ export class SchedulingAIService {
         EMAIL CONTENT:
         ${emailContent}
         
-        RETURN JSON ONLY:
+        RULES:
+        1. Be specific to the context (e.g., "Discuss [Topic]" instead of "Follow-up")
+        2. Description should summarize the goal from the sender's perspective.
+        3. suggested_duration should be numbers (15, 30, or 60).
+        
+        RETURN JSON ONLY in this format:
         {
-          "suggested_title": "1-5 words summary",
-          "suggested_description": "A brief objective for the call",
-          "suggested_duration": 15, 30, or 60 (minutes)
+          "suggested_title": "Short title",
+          "suggested_description": "Objective summary",
+          "suggested_duration": 30
         }
         `;
 
         try {
             const response = await this.callOpenRouter([{ role: 'user', content: prompt }]);
-            const cleanJson = response.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+            // Extract JSON even if AI wraps it in code blocks or adds text
+            const firstBrace = response.indexOf('{');
+            const lastBrace = response.lastIndexOf('}');
+            if (firstBrace === -1 || lastBrace === -1) throw new Error('No JSON found');
+            const cleanJson = response.substring(firstBrace, lastBrace + 1);
             return JSON.parse(cleanJson);
         } catch {
             console.warn('⚠️ AI recommendation failed, using defaults');

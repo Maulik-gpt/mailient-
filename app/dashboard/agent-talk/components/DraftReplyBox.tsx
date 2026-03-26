@@ -56,18 +56,52 @@ export function DraftReplyBox({
     }, [draftData]);
 
     // Handle Selection for Refinement
-    const handleMouseUp = () => {
-        if (isEditing || isRefinementActive || isProcessingRefinement || proposedRefinement) return;
+    const handleMouseUp = (e: React.MouseEvent) => {
+        if (isRefinementActive || isProcessingRefinement || proposedRefinement) return;
         
         const sel = window.getSelection();
-        if (sel && sel.toString().trim().length > 0) {
+        const textarea = e.currentTarget.querySelector('textarea');
+        
+        if (isEditing && textarea) {
+            // Textarea selection handling
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const text = editedContent.substring(start, end);
+
+            if (text.trim().length > 0) {
+                // Approximate position for textarea (tough to get exact rect without a mirror div)
+                // Use the mouse position as a fallback or a fixed offset
+                const rect = textarea.getBoundingClientRect();
+                setSelection({ 
+                    text, 
+                    rect: { 
+                        ...rect, 
+                        top: e.clientY, 
+                        left: e.clientX,
+                        width: 0,
+                        height: 0,
+                        right: e.clientX,
+                        bottom: e.clientY,
+                        x: e.clientX,
+                        y: e.clientY,
+                        toJSON: () => {}
+                    } as DOMRect, 
+                    start, 
+                    end 
+                });
+                setShowTooltip(true);
+            } else {
+                setShowTooltip(false);
+                setSelection(null);
+            }
+        } else if (sel && sel.toString().trim().length > 0) {
+            // Standard DOM selection
             const range = sel.getRangeAt(0);
             const rect = range.getBoundingClientRect();
             const text = sel.toString();
             
-            // Calculate offsets within editedContent
-            const textContent = editedContent;
-            const start = textContent.indexOf(text); // Simple approach for now
+            // For view mode, we need the exact offset in the text
+            const start = editedContent.indexOf(text);
             const end = start + text.length;
 
             if (start !== -1) {
