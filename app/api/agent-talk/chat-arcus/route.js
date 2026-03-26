@@ -166,7 +166,7 @@ export async function POST(request) {
     const requestedAction = executeCanvasAction || executionActionType;
     const requestedPayload = canvasActionData || actionPayload;
     if (requestedAction && requestedPayload && canvasActionsV2Enabled) {
-      const criticalAction = requestedAction === 'send_email' || requestedAction === 'execute_plan';
+      const criticalAction = requestedAction === 'send_email' || requestedAction === 'arcus_outreach' || requestedAction === 'arcus_auto_pilot' || requestedAction === 'execute_plan';
       const effectiveRunId = runId || null;
       const effectiveActionRequestId = actionRequestId || crypto
         .createHash('sha256')
@@ -212,7 +212,7 @@ export async function POST(request) {
       console.log('🎯 Canvas action requested:', requestedAction);
       let executionResult = { success: false, message: '' };
 
-      if (requestedAction === 'send_email' && requestedPayload.to && requestedPayload.body) {
+      if ((requestedAction === 'send_email' || requestedAction === 'arcus_outreach') && requestedPayload.to && (requestedPayload.body || requestedPayload.html)) {
         try {
           const db2 = new DatabaseService();
           const userTokens = await db2.getUserTokens(userEmail);
@@ -224,12 +224,12 @@ export async function POST(request) {
             const result = await gmailService.sendEmail({
               to: requestedPayload.to,
               subject: requestedPayload.subject || '',
-              body: requestedPayload.body,
-              isHtml: false
+              body: requestedPayload.body || requestedPayload.html || '',
+              isHtml: !!requestedPayload.html
             });
             executionResult = {
               success: true,
-              message: `Email sent to ${requestedPayload.to}`,
+              message: requestedAction === 'arcus_outreach' ? `Intro email sent to ${requestedPayload.to}` : `Email sent to ${requestedPayload.to}`,
               result,
               externalRefs: {
                 gmailMessageId: result?.id || result?.messageId || null,
@@ -242,6 +242,72 @@ export async function POST(request) {
           }
         } catch (err) {
           executionResult = { success: false, message: `Failed to send: ${err.message}` };
+        }
+      } else if (requestedAction === 'arcus_auto_pilot' && (requestedPayload.body || requestedPayload.html)) {
+        try {
+          const db2 = new DatabaseService();
+          const userTokens = await db2.getUserTokens(userEmail);
+          if (userTokens?.encrypted_access_token) {
+            const accessToken = decrypt(userTokens.encrypted_access_token);
+            const refreshToken = userTokens.encrypted_refresh_token ? decrypt(userTokens.encrypted_refresh_token) : '';
+            const { GmailService } = await import('@/lib/gmail');
+            const gmailService = new GmailService(accessToken, refreshToken);
+            
+            let threadId = requestedPayload.threadId || requestedPayload.messageId;
+            let targetTo = requestedPayload.to || '';
+            let targetSubject = requestedPayload.subject || '';
+            
+            // If target information is missing, fetch from the original message/thread
+            if (!targetTo && threadId) {
+              try {
+                const details = await gmailService.getEmailDetails(requestedPayload.messageId || threadId);
+                const parsed = gmailService.parseEmailData(details);
+                targetTo = parsed.from; // Reply to the sender
+                targetSubject = parsed.subject.toLowerCase().startsWith('re:') ? parsed.subject : `Re: ${parsed.subject}`;
+              } catch (e) {
+                console.warn('Failed to fetch reply context:', e.message);
+              }
+            }
+
+            const result = await gmailService.sendEmail({
+              to: targetTo,
+              subject: targetSubject || 'Re: Message',
+              body: requestedPayload.body || requestedPayload.html || '',
+              threadId: threadId,
+              isHtml: !!requestedPayload.html
+            });
+            executionResult = {
+              success: true,
+              message: `Reply sent successfully to ${targetTo}`,
+              result,
+              externalRefs: {
+                gmailMessageId: result?.id || result?.messageId || null,
+                threadId: result?.threadId || threadId || null
+              },
+              nextRecommendedActions: ['mark_as_done', 'set_reminder']
+            };
+          } else {
+            executionResult = { success: false, message: 'Gmail is not connected for this account' };
+          }
+        } catch (err) {
+          executionResult = { success: false, message: `Failed to reply: ${err.message}` };
+        }
+      } else if (requestedAction === 'arcus_inbox_review') {
+        try {
+          const limit = requestedPayload.limit || 10;
+          const emailActionResult = await executeEmailAction(`latest ${limit} emails`, userEmail, session, gmailAccessToken, null);
+          if (emailActionResult && emailActionResult.success) {
+            executionResult = {
+              success: true,
+              message: `Fetched ${emailActionResult.emails?.length || 0} recent messages`,
+              emails: emailActionResult.emails,
+              nextRecommendedActions: ['summarize_inbox', 'draft_replies']
+            };
+          } else {
+            executionResult = { success: false, message: emailActionResult.error || 'Failed to fetch inbox' };
+          }
+        } catch (err) {
+          executionResult = { success: false, message: `Failed to read inbox: ${err.message}` };
         }
       } else if (requestedAction === 'save_draft' && requestedPayload.body) {
         try {
@@ -291,7 +357,7 @@ export async function POST(request) {
         executionResult = { success: true, message: 'Action completed' };
       }
 
-      if (operatorRuntime && (requestedAction === 'send_email' || requestedAction === 'execute_plan') && runId && executionResult.success) {
+      if (operatorRuntime && (requestedAction === 'send_email' || requestedAction === 'arcus_outreach' || requestedAction === 'arcus_auto_pilot' || requestedAction === 'execute_plan') && runId && executionResult.success) {
         await operatorRuntime.consumeApprovalToken(runId, requestedAction, approvalToken);
         const effectiveActionRequestId = actionRequestId || crypto
           .createHash('sha256')

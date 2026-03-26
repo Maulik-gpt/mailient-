@@ -166,16 +166,15 @@ export function ThinkingLayer({ blocks, isVisible, currentThought, isGenerating 
 }
 
 /**
- * ArtifactCard — Premium glassmorphism card for Arcus creations
+ * ResultCard — Simple and clear card for Arcus execution results
  */
-interface ArtifactCardProps {
+interface ResultCardProps {
     type: string;
     title: string;
-    version?: string;
     onView: () => void;
 }
 
-const artifactIcons: Record<string, any> = {
+const resultIcons: Record<string, any> = {
     email_draft: <Mail className="w-4 h-4" />,
     summary: <FileText className="w-4 h-4" />,
     research: <Search className="w-4 h-4" />,
@@ -186,68 +185,41 @@ const artifactIcons: Record<string, any> = {
     analytics: <BarChart3 className="w-4 h-4" />,
 };
 
-const artifactLabels: Record<string, string> = {
-    email_draft: 'Email draft',
-    summary: 'Email summary',
-    research: 'Research report',
-    action_plan: 'Action plan',
-    reply: 'Suggested reply',
-    notes: 'Drafted notes',
-    meeting_schedule: 'Meeting schedule',
-    analytics: 'Email analytics',
+const resultLabels: Record<string, string> = {
+    email_draft: 'Draft',
+    summary: 'Summary',
+    research: 'Report',
+    action_plan: 'Plan',
+    reply: 'Reply',
+    notes: 'Notes',
+    meeting_schedule: 'Schedule',
+    analytics: 'Analytics',
 };
 
-const artifactColors: Record<string, string> = {
-    email_draft: '#6366f1',
-    summary: '#8b5cf6',
-    research: '#06b6d4',
-    action_plan: '#f59e0b',
-    reply: '#10b981',
-    notes: '#ec4899',
-    meeting_schedule: '#3b82f6',
-    analytics: '#f97316',
-};
-
-export function ArtifactCard({ type, title, version = 'v2.4', onView }: ArtifactCardProps) {
-    const color = artifactColors[type] || '#a855f7';
+export function ResultCard({ type, title, onView }: ResultCardProps) {
+    const label = resultLabels[type] || 'View Result';
     
     return (
         <motion.button
-            whileHover={{ scale: 1.01, y: -2 }}
-            whileTap={{ scale: 0.99 }}
+            whileHover={{ y: -1 }}
+            whileTap={{ scale: 0.98 }}
             onClick={onView}
-            className="group relative flex items-center gap-4 p-4 mt-4 mb-4 w-full max-w-[400px] bg-white/[0.03] border border-white/[0.06] rounded-2xl transition-all duration-300 hover:bg-white/[0.05] hover:border-white/10 shadow-2xl overflow-hidden"
+            className="group relative flex items-center gap-4 p-5 mt-4 mb-4 w-full max-w-[400px] bg-[#111111] border border-white/5 rounded-2xl transition-all hover:bg-[#161616] hover:border-white/10"
         >
-            {/* Background Glow */}
-            <div className="absolute -right-4 -top-4 w-24 h-24 blur-[40px] opacity-10 rounded-full transition-opacity group-hover:opacity-20 pointer-events-none" style={{ backgroundColor: color }} />
-            
-            {/* Left Icon Section */}
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-all duration-500 relative"
-                 style={{ background: `${color}15`, border: `1px solid ${color}25` }}>
-                <div className="absolute inset-0 blur-[10px] opacity-0 group-hover:opacity-40 transition-opacity rounded-xl" style={{ backgroundColor: color }} />
-                <div className="relative z-10" style={{ color: color }}>
-                    {artifactIcons[type] || <Sparkles className="w-5 h-5" />}
-                </div>
+            <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center shrink-0 border border-white/5 group-hover:border-white/10 group-hover:bg-white/10 transition-all text-white/40 group-hover:text-white/80">
+                {resultIcons[type] || <Sparkles className="w-4 h-4" />}
             </div>
 
-            {/* Content Section */}
-            <div className="flex flex-col items-start gap-0.5 flex-1 min-w-0 z-10">
-                <div className="flex items-center gap-2 w-full">
-                    <span className="text-white/90 text-[15px] font-semibold tracking-tight truncate group-hover:text-white transition-colors">
-                        {title || (artifactLabels[type] || 'Resource').replace('_', ' ')}
-                    </span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold tracking-[0.1em] uppercase opacity-30 group-hover:opacity-50 transition-opacity" style={{ color: color }}>
-                        {artifactLabels[type] || 'Resource'}
-                    </span>
-                    <div className="w-1 h-1 rounded-full bg-white/10" />
-                    <span className="text-[10px] text-white/15 font-mono">{version}</span>
-                </div>
+            <div className="flex flex-col items-start gap-0.5 flex-1 min-w-0">
+                <span className="text-white/90 text-[14px] font-bold tracking-tight truncate group-hover:text-white transition-colors">
+                    {title || label}
+                </span>
+                <span className="text-[10px] font-bold tracking-widest uppercase text-white/20 group-hover:text-white/40 transition-colors">
+                    {label}
+                </span>
             </div>
 
-            {/* Action Section */}
-            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-white/[0.05] border border-white/[0.05] text-white/20 group-hover:text-white/80 group-hover:bg-white/10 group-hover:border-white/20 transition-all duration-500 mr-1">
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-white/5 text-white/10 group-hover:text-white/40 transition-all">
                 <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
             </div>
         </motion.button>

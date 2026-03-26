@@ -7,7 +7,7 @@ import { signOut } from 'next-auth/react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { AddSquareIcon, Cancel01Icon, WorkHistoryIcon } from '@hugeicons/core-free-icons';
 import { ChatHistoryModal } from './components/ChatHistoryModal';
-import { ThinkingLayer, ArtifactCard, type ThinkingStep, type ThinkingBlock } from './components/ThinkingLayer';
+import { ThinkingLayer, ResultCard, type ThinkingStep, type ThinkingBlock } from './components/ThinkingLayer';
 import { CanvasPanel, type CanvasData } from './components/CanvasPanel';
 
 import { PromptInputBox } from '@/components/ui/ai-prompt-box';
@@ -133,31 +133,22 @@ const MessageContent = ({ content, isUser }: { content: any, isUser?: boolean })
 const MissionStatusHeader = ({ mission }: { mission: any }) => {
   if (!mission) return null;
 
-  const statusColors: any = {
-    draft: 'bg-white text-black',
-    waiting_on_user: 'bg-white text-black',
-    waiting_on_other: 'bg-neutral-700 text-white',
-    done: 'bg-neutral-800 text-white/60',
-    archived: 'bg-transparent border border-white/10 text-white/30'
-  };
-
   const statusLabels: any = {
-    draft: 'Draft reply',
-    waiting_on_user: 'Waiting on you',
-    waiting_on_other: 'Waiting on them',
-    done: 'Done',
+    draft: 'Draft ready',
+    waiting_on_user: 'Input required',
+    waiting_on_other: 'In progress',
+    done: 'Completed',
     archived: 'Archived'
   };
 
   return (
-    <div className="flex items-center gap-2.5 px-3 py-1.5 bg-neutral-900/60 border border-white/10 rounded-lg w-fit mb-6 transition-all">
+    <div className="flex items-center gap-3 px-4 py-2 bg-[#111111] border border-white/5 rounded-xl w-fit mb-8 shadow-sm">
       <div className="flex items-center gap-2">
-        <span className="text-white/40 text-[9px] font-bold uppercase tracking-tight">Active</span>
-        <span className="text-white/20">/</span>
-        <span className="text-white/80 text-[13px] font-medium tracking-tight">{mission.goal}</span>
+        <div className="w-1.5 h-1.5 rounded-full bg-white/40 animate-pulse shrink-0" />
+        <span className="text-white/95 text-[13px] font-bold tracking-tight">{mission.goal}</span>
       </div>
-      <div className="h-3 w-[1px] bg-white/20 mx-1" />
-      <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-tight ${statusColors[mission.status] || 'bg-white text-black'}`}>
+      <div className="h-3 w-[1px] bg-white/10" />
+      <span className="text-[10px] font-black uppercase tracking-widest text-white/20">
         {statusLabels[mission.status] || mission.status}
       </span>
     </div>
@@ -249,7 +240,7 @@ interface AgentMessage {
     internalThought?: string;
     isStreaming?: boolean;
     actionHistory?: any[];
-    artifact?: {
+    result?: {
       type: string;
       title: string;
       canvasData: any;
@@ -767,11 +758,11 @@ export default function ChatInterface({
           
           setLiveThinkingBlocks(blocks);
 
-          // --- Trigger Arcus Workspace Canvas ---
+          // --- Trigger Arcus Workspace Preparation ---
           if (intentData.needsCanvas === true) {
             setCanvasData({
               type: 'workflow',
-              title: "Arcus's workspace",
+              title: "Arcus's Computer",
               content: {
                 steps: blocks.map((b: any) => ({
                   id: b.id,
@@ -780,7 +771,8 @@ export default function ChatInterface({
                 }))
               }
             });
-            setIsCanvasOpen(true);
+            // Removed automatic setIsCanvasOpen(true) to respect user requirement:
+            // "only opens after the user clicks on the tab which is given by Arcus"
           }
 
           for (let bIndex = 0; bIndex < blocks.length; bIndex++) {
@@ -935,7 +927,7 @@ export default function ChatInterface({
         }))
         : undefined;
 
-      const aiArtifact = hasCanvas
+      const aiResult = hasCanvas
         ? {
           type: data.canvasData.type,
           title: data.canvasData.title || data.canvasData.content?.title || data.canvasData.content?.subject || intentData?.canvasType || 'Result',
@@ -958,7 +950,7 @@ export default function ChatInterface({
         meta: {
           actionHistory: data.actionHistory || [],
           thinkingBlocks: liveThinkingBlocks, // Use the actual blocks shown during streaming
-          artifact: aiArtifact,
+          result: aiResult,
           actionType: data.actionType || 'chat',
           isStreaming: false,
           notesResult: data.notesResult,
@@ -1766,7 +1758,7 @@ export default function ChatInterface({
           </div>
 
           {showHistory && (
-            <div className="fixed right-0 top-0 h-screen w-80 bg-black/60 border-l border-white/[0.08] flex flex-col backdrop-blur-3xl z-40">
+            <div className="fixed right-0 top-0 h-screen w-80 bg-[#0d0d0d] border-l border-white/[0.08] flex flex-col z-40">
               <div className="p-6 border-b border-white/[0.05]">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-[11px] tracking-widest text-white/30 uppercase">History</h2>
@@ -1825,7 +1817,7 @@ export default function ChatInterface({
             {/* Chat Column */}
             <div className="flex-1 flex flex-col relative min-w-0 transition-all duration-500">
               {/* Header */}
-              <div className={`sticky top-0 z-40 transition-all duration-300 ${(isIntegrationsModalOpen || isEmailSelectionModalOpen || isPersonalityModalOpen) ? 'blur-sm' : ''}`}>
+              <div className="sticky top-0 z-40 transition-all duration-300">
                 <div className="relative px-8 py-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -2183,13 +2175,13 @@ export default function ChatInterface({
                                     </div>
                                   )}
 
-                                  {msg.role === 'assistant' && msg.meta?.artifact && (
-                                    <ArtifactCard
-                                      type={msg.meta.artifact.type}
-                                      title={msg.meta.artifact.title}
+                                  {msg.role === 'assistant' && msg.meta?.result && (
+                                    <ResultCard
+                                      type={msg.meta.result.type}
+                                      title={msg.meta.result.title}
                                       onView={() => {
-                                        if (msg.meta?.artifact) {
-                                          setCanvasData(msg.meta.artifact.canvasData);
+                                        if (msg.meta?.result) {
+                                          setCanvasData(msg.meta.result.canvasData);
                                           setIsCanvasOpen(true);
                                         }
                                       }}
@@ -2280,7 +2272,7 @@ export default function ChatInterface({
                     <div className="sticky bottom-0 z-20 w-full px-6 pb-12 mt-auto">
                       {/* Premium Status Pill moved to bottom */}
                       <div className="flex justify-center mb-6">
-                        <div className="flex items-center gap-1.5 px-3 py-1 bg-[#111111]/80 backdrop-blur-md border border-white/5 rounded-full shadow-2xl">
+                        <div className="flex items-center gap-1.5 px-3 py-1 bg-[#111111] border border-white/5 rounded-full shadow-2xl">
                           <span className="text-[10px] text-white/40 font-medium tracking-wide">Free plan</span>
                           <span className="text-[10px] text-white/10">•</span>
                           <button className="text-[10px] text-white hover:text-white/80 transition-colors font-bold uppercase tracking-tight">Upgrade</button>
@@ -2303,28 +2295,16 @@ export default function ChatInterface({
                 )}
               </div>
 
-              {/* Canvas Split Panel - Correctly placed as a sibling of the chat column */}
+              {/* Canvas Sidebar Column */}
               <AnimatePresence>
                 {isCanvasOpen && canvasData && (
-                  <div className="flex-1 min-w-0 h-full flex flex-col relative">
-                    {/* Manus-style Computer Window Header */}
-                    <div className="shrink-0 h-8 flex items-center justify-between px-3 bg-[#0d0d0d] border-b border-white/[0.04]">
-                        <div className="flex items-center gap-2">
-                             <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f56]" />
-                             <div className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]" />
-                             <div className="w-2.5 h-2.5 rounded-full bg-[#27c93f]" />
-                             <span className="ml-2 text-[10px] text-white/20 font-mono tracking-tighter uppercase">Arcus Device 01</span>
-                        </div>
-                    </div>
-                    
-                    <CanvasPanel
-                      isOpen={isCanvasOpen}
-                      onClose={() => setIsCanvasOpen(false)}
-                      canvasData={canvasData}
-                      onExecute={handleCanvasExecute}
-                      isExecuting={isCanvasExecuting}
-                    />
-                  </div>
+                  <CanvasPanel
+                    isOpen={isCanvasOpen}
+                    onClose={() => setIsCanvasOpen(false)}
+                    canvasData={canvasData}
+                    onExecute={handleCanvasExecute}
+                    isExecuting={isCanvasExecuting}
+                  />
                 )}
               </AnimatePresence>
             </div>
