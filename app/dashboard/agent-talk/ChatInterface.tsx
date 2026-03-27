@@ -1826,8 +1826,8 @@ export default function ChatInterface({
           <HomeFeedSidebar className="z-30" />
 
           <div className="flex-1 flex flex-row relative ml-64 transition-all duration-500 ease-in-out overflow-hidden">
-            {/* Chat Column */}
-            <div className="flex-1 flex flex-col relative min-w-[450px] transition-all duration-500">
+            {/* Chat Column (Order 1 - LEFT) */}
+            <div className="flex-1 flex flex-col relative min-w-[500px] transition-all duration-500 order-1">
               {/* Header */}
               <div className="sticky top-0 z-40 transition-all duration-300">
                 <div className="relative px-8 py-3">
@@ -2068,11 +2068,11 @@ export default function ChatInterface({
                         {messages.map((msg) => (
                           <div key={msg.id} className={`flex flex-col animate-fade-in ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                             <div className={`flex gap-2.5 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'} max-w-full items-start`}>
-                              <div className={`w-7 h-7 rounded-lg flex-shrink-0 flex items-center justify-center border ${msg.role === 'user' ? 'bg-white border-white' : 'bg-graphite-surface border-graphite-border'}`}>
-                                {msg.role === 'user' ? <User2 className="w-3.5 h-3.5 text-black" /> : <img src="/arcus-ai-icon.jpg" className="w-full h-full object-cover grayscale" />}
+                              <div className={`w-7 h-7 rounded-lg flex-shrink-0 flex items-center justify-center border ${msg.role === 'user' ? 'bg-[#2b2b2b] border-white/10' : 'bg-graphite-surface border-graphite-border'}`}>
+                                {msg.role === 'user' ? <User2 className="w-3.5 h-3.5 text-white/50" /> : <img src="/arcus-ai-icon.jpg" className="w-full h-full object-cover grayscale" />}
                               </div>
                               <div className="flex flex-col max-w-[85%] group/msg">
-                                <div className={`transition-all relative ${msg.role === 'user' ? 'px-4 py-2.5 rounded-xl bg-white text-black shadow-sm' : 'text-graphite-text px-0 py-1'}`}>
+                                <div className={`transition-all relative ${msg.role === 'user' ? 'px-4 py-2.5 rounded-xl bg-[#2b2b2b] text-white border border-white/5 shadow-sm' : 'text-graphite-text px-0 py-1'}`}>
                                   {msg.role === 'assistant' && msg.meta?.limitReached && (
                                     <div className="flex items-center gap-2 mb-3 opacity-60">
                                       <img src="/arcus-ai-icon.jpg" className="w-4 h-4 rounded-md grayscale" />
@@ -2100,9 +2100,9 @@ export default function ChatInterface({
                                     </button>
                                   )}
                                   {msg.role === 'user' && (msg as UserMessage).attachments && (msg as UserMessage).attachments!.length > 0 && (
-                                    <div className="mt-3 flex flex-wrap gap-2 pt-3 border-t border-black/10">
+                                    <div className="mt-3 flex flex-wrap gap-2 pt-3 border-t border-white/10">
                                       {(msg as UserMessage).attachments!.map((file, idx) => (
-                                        <div key={idx} className="flex items-center gap-2 p-2 bg-black/5 rounded-lg border border-black/10 max-w-[200px]">
+                                        <div key={idx} className="flex items-center gap-2 p-2 bg-white/5 rounded-lg border border-white/10 max-w-[200px]">
                                           {file.type.startsWith('image/') ? (
                                             <div className="w-8 h-8 rounded-md overflow-hidden flex-shrink-0">
                                               <img src={file.url} alt={file.name} className="w-full h-full object-cover" />
@@ -2309,7 +2309,7 @@ export default function ChatInterface({
                 )}
               </div>
 
-              {/* Canvas Sidebar - Side-by-side differentiated element */}
+              {/* Canvas Sidebar (Order 2 - RIGHT) */}
               <AnimatePresence>
                 {isCanvasOpen && canvasData && (
                   <motion.div 
@@ -2317,7 +2317,7 @@ export default function ChatInterface({
                     animate={{ width: 'auto', opacity: 1 }}
                     exit={{ width: 0, opacity: 0 }}
                     transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                    className="h-full flex-shrink-0 border-l border-white/5 bg-[#0a0a0a] z-50 overflow-hidden"
+                    className="h-full flex-shrink-0 border-l border-white/5 bg-[#0a0a0a] z-50 overflow-hidden order-2"
                   >
                     <CanvasPanel
                       isOpen={isCanvasOpen}
