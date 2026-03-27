@@ -336,7 +336,7 @@ const PromptInput = React.forwardRef<HTMLDivElement, PromptInputProps>(
             onFocus={onFocus}
             onBlur={onBlur}
             className={cn(
-              "rounded-3xl border border-black/10 bg-white p-2 shadow-[0_8px_30px_rgba(0,0,0,0.08)] transition-all duration-300",
+              "rounded-3xl border border-white/10 bg-[#2b2b2b] p-2 shadow-[0_8px_30px_rgba(0,0,0,0.3)] transition-all duration-300",
               isLoading && "border-red-500/70",
               className
             )}
@@ -799,7 +799,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                   "flex h-8 px-2 items-center justify-center rounded-lg transition-all border outline-none focus:ring-0",
                   showSearch
                     ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
-                    : "text-[#9CA3AF] hover:bg-black/5 hover:text-[#4B5563] border-transparent hover:border-black/5"
+                    : "text-white/40 hover:bg-white/5 hover:text-white border-transparent hover:border-white/5"
                 )}
               >
                 <Search className="h-4 w-4 mr-1" />
@@ -816,7 +816,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                     "flex h-8 px-2 items-center justify-center rounded-lg transition-all border outline-none focus:ring-0",
                     selectedEmailsCount > 0 
                       ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
-                      : "text-[#9CA3AF] hover:bg-black/5 hover:text-[#4B5563] border-transparent hover:border-black/5"
+                      : "text-white/40 hover:bg-white/5 hover:text-white border-transparent hover:border-white/5"
                   )}
                 >
                   <Mail className="h-4 w-4 mr-1" />
@@ -836,7 +836,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                 "rounded-full transition-all flex items-center gap-1 px-2 py-1 border h-8",
                 showThink
                   ? "bg-[#8B5CF6]/15 border-[#8B5CF6] text-[#8B5CF6]"
-                  : "bg-transparent border-transparent text-[#9CA3AF] hover:text-[#4B5563]"
+                  : "bg-transparent border-transparent text-white/40 hover:text-white/60"
               )}
             >
               <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
@@ -872,7 +872,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                 "rounded-full transition-all flex items-center gap-1 px-2 py-1 border h-8",
                 showCanvas
                   ? "bg-[#F97316]/15 border-[#F97316] text-[#F97316]"
-                  : "bg-transparent border-transparent text-[#9CA3AF] hover:text-[#4B5563]"
+                  : "bg-transparent border-transparent text-white/40 hover:text-white/60"
               )}
             >
               <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
@@ -916,12 +916,12 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
               className={cn(
                 "inline-flex items-center justify-center font-medium h-8 w-8 rounded-full transition-all duration-200 outline-none",
                 isRecording
-                  ? "bg-transparent hover:bg-gray-100 text-red-500 hover:text-red-400"
+                  ? "bg-transparent hover:bg-white/5 text-red-500 hover:text-red-400"
                   : isLoading
-                  ? "bg-black hover:bg-black/80 text-white"
+                  ? "bg-white hover:bg-white/80 text-black"
                   : hasContent
-                  ? "bg-black hover:bg-black/80 text-white"
-                  : "bg-transparent hover:bg-gray-100 text-[#9CA3AF] hover:text-[#4B5563]"
+                  ? "bg-white hover:bg-white/80 text-black"
+                  : "bg-transparent hover:bg-white/5 text-white/40 hover:text-white/60"
               )}
               onClick={(e) => {
                 e.stopPropagation();
