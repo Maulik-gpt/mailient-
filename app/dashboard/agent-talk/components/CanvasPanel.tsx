@@ -114,12 +114,8 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
     if (!isOpen || !canvasData) return null;
 
     return (
-        <motion.div
-            initial={{ x: 100, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: 100, opacity: 0 }}
-            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="h-[calc(100vh-24px)] flex flex-col overflow-hidden relative ml-auto flex-shrink-0 mr-3 my-3 rounded-[32px] bg-[#1c1c1c] border border-white/5 shadow-[0_30px_60px_rgba(0,0,0,0.6)] z-50 group/canvas selection:bg-blue-500/30"
+        <div
+            className="h-full flex flex-col overflow-hidden relative flex-shrink-0 bg-[#161616] border-l border-white/[0.05] z-50 group/canvas selection:bg-blue-500/30"
             style={{ width: `${width}px` }}
         >
             {/* Resize Handle */}
@@ -308,6 +304,6 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.05); border-radius: 10px; }
             `}</style>
-        </motion.div>
+        </div>
     );
 }

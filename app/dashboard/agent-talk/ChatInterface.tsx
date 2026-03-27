@@ -2309,20 +2309,24 @@ export default function ChatInterface({
                 )}
               </div>
 
-              {/* Canvas Sidebar - Fixed on the right */}
+              {/* Canvas Sidebar - Side-by-side differentiated element */}
               <AnimatePresence>
                 {isCanvasOpen && canvasData && (
-                  <div className="fixed top-0 right-0 h-full z-[100] pointer-events-none p-3">
-                    <div className="pointer-events-auto h-full">
-                      <CanvasPanel
-                        isOpen={isCanvasOpen}
-                        onClose={() => setIsCanvasOpen(false)}
-                        canvasData={canvasData}
-                        onExecute={handleCanvasExecute}
-                        isExecuting={isCanvasExecuting}
-                      />
-                    </div>
-                  </div>
+                  <motion.div 
+                    initial={{ width: 0, opacity: 0 }}
+                    animate={{ width: 'auto', opacity: 1 }}
+                    exit={{ width: 0, opacity: 0 }}
+                    transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+                    className="h-full flex-shrink-0 border-l border-white/5 bg-[#0a0a0a] z-50 overflow-hidden"
+                  >
+                    <CanvasPanel
+                      isOpen={isCanvasOpen}
+                      onClose={() => setIsCanvasOpen(false)}
+                      canvasData={canvasData}
+                      onExecute={handleCanvasExecute}
+                      isExecuting={isCanvasExecuting}
+                    />
+                  </motion.div>
                 )}
               </AnimatePresence>
             </div>

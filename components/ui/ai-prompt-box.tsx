@@ -43,7 +43,7 @@ interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(({ className, ...props }, ref) => (
   <textarea
     className={cn(
-      "flex w-full rounded-md border-none bg-transparent px-3 py-3 text-base text-[#1a1a1a] placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50 min-h-[60px] resize-none scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent hover:scrollbar-thumb-gray-300",
+      "flex w-full rounded-md border-none bg-transparent px-3 py-3 text-base text-white placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50 min-h-[60px] resize-none scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-gray-500",
       className
     )}
     ref={ref}
@@ -136,8 +136,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = "default", size = "default", ...props }, ref) => {
     const variantClasses = {
       default: "bg-white hover:bg-white/80 text-black",
-      outline: "border border-[#444444] bg-transparent hover:bg-[#3A3A40]",
-      ghost: "bg-transparent hover:bg-[#3A3A40]",
+      outline: "border border-white/10 bg-transparent hover:bg-white/5",
+      ghost: "bg-transparent hover:bg-white/5",
     };
     const sizeClasses = {
       default: "h-10 px-4 py-2",
@@ -437,7 +437,7 @@ const PromptInputAction: React.FC<PromptInputActionProps> = ({
 // Custom Divider Component
 const CustomDivider: React.FC = () => (
   <div className="relative h-6 w-[1px] mx-0.5">
-    <div className="absolute inset-0 bg-black/10 rounded-full" />
+    <div className="absolute inset-0 bg-white/10 rounded-full" />
   </div>
 );
 
@@ -674,7 +674,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         className={cn(
-          "w-full bg-white border-black/10 shadow-[0_8px_30px_rgba(0,0,0,0.08)] transition-all duration-300 ease-in-out focus:ring-0 focus:outline-none focus-within:ring-0 focus-within:outline-none",
+          "w-full bg-[#2b2b2b] border border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.3)] transition-all duration-300 ease-in-out focus:ring-0 focus:outline-none focus-within:ring-0 focus-within:outline-none",
           isRecording && "border-red-500/70",
           className
         )}
@@ -696,7 +696,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                    exit={{ opacity: 0, scale: 0.9 }}
                    className="relative group"
                 >
-                  <div className="bg-gray-100 border border-black/5 rounded-xl overflow-hidden p-1 flex items-center gap-2 pr-3 min-w-[120px] max-w-[200px]">
+                  <div className="bg-[#1a1a1a] border border-white/10 rounded-xl overflow-hidden p-1 flex items-center gap-2 pr-3 min-w-[120px] max-w-[200px]">
                     {isImageFile(file) && filePreviews[file.name] ? (
                       <div
                         className="w-10 h-10 rounded-lg overflow-hidden cursor-pointer"
@@ -714,8 +714,8 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="text-[10px] text-gray-700 truncate font-medium">{file.name}</p>
-                      <p className="text-[9px] text-gray-400 font-mono">{formatFileSize(file.size)}</p>
+                      <p className="text-[10px] text-white/70 truncate font-medium">{file.name}</p>
+                      <p className="text-[9px] text-white/30 font-mono">{formatFileSize(file.size)}</p>
                     </div>
                     <button
                       onClick={(e) => {
