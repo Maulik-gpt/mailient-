@@ -1,6 +1,6 @@
 "use client";
 
-import { Send, Mail, Upload, User, User2, MessageCircle, DoorOpen, Bell, Mail as EmailIcon, MoreHorizontal, LogOut, Settings, ChevronRight, ChevronDown, CheckCircle2, Circle, Edit, History, LayoutGrid, Zap, Volume2, Sparkles, FileText, Calendar, BarChart3, PenTool, BrainCircuit, Search } from 'lucide-react';
+import { Send, Mail, Upload, User, User2, MessageCircle, DoorOpen, Bell, Mail as EmailIcon, MoreHorizontal, LogOut, Settings, ChevronRight, ChevronDown, CheckCircle2, Circle, Edit, History, LayoutGrid, Zap, Volume2, Sparkles, FileText, Calendar, BarChart3, PenTool, BrainCircuit, Search, Check, X } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
@@ -247,6 +247,12 @@ interface AgentMessage {
     };
     limitReached?: boolean;
     usageData?: any;
+    canvasApproval?: {
+      status: 'pending' | 'accepted' | 'declined';
+      title?: string;
+      description?: string;
+      canvasData?: any;
+    };
   };
 }
 
@@ -439,6 +445,49 @@ export default function ChatInterface({
     period: 'daily' | 'monthly';
     isUnlimited?: boolean;
   } | null>(null);
+
+  const handleAcceptCanvas = (msgId: number) => {
+    setMessages(prev => prev.map(m => {
+      if (m.id === msgId && m.type === 'agent') {
+        const agentMsg = m as AgentMessage;
+        if (agentMsg.meta?.canvasApproval) {
+          const approval = agentMsg.meta.canvasApproval;
+          if (approval.canvasData) {
+            setCanvasData(approval.canvasData);
+            setIsCanvasOpen(true);
+          }
+          return {
+            ...agentMsg,
+            meta: {
+              ...agentMsg.meta,
+              canvasApproval: { ...approval, status: 'accepted' as const }
+            }
+          } as AgentMessage;
+        }
+      }
+      return m;
+    }));
+    toast.success('Mission accepted', { description: 'Opening Arcus Workspace...' });
+  };
+
+  const handleDeclineCanvas = (msgId: number) => {
+    setMessages(prev => prev.map(m => {
+      if (m.id === msgId && m.type === 'agent') {
+        const agentMsg = m as AgentMessage;
+        if (agentMsg.meta?.canvasApproval) {
+          return {
+            ...agentMsg,
+            meta: {
+              ...agentMsg.meta,
+              canvasApproval: { ...agentMsg.meta.canvasApproval, status: 'declined' as const }
+            }
+          } as AgentMessage;
+        }
+      }
+      return m;
+    }));
+    toast.info('Mission declined', { description: 'Continuing in chat mode.' });
+  };
 
   const refreshArcusCredits = async (showToast = false) => {
     try {
@@ -780,11 +829,11 @@ export default function ChatInterface({
 
           setLiveThinkingBlocks(blocks);
 
-          // --- Trigger Arcus Workspace Preparation ---
-          if (intentData.needsCanvas === true) {
-            setCanvasData({
-              type: 'workflow',
-              title: "Arcus's Computer",
+          // --- Trigger Arcus Workspace Approval Step ---
+          if (intentData.needsCanvas === true || isCanvas) {
+            const canvasInitialData = {
+              type: 'workflow' as const,
+              title: intentData.canvasTitle || "Arcus's Computer",
               content: {
                 steps: blocks.map((b: any) => ({
                   id: b.id,
@@ -792,9 +841,25 @@ export default function ChatInterface({
                   status: 'pending' as const
                 }))
               }
-            });
-            // Removed automatic setIsCanvasOpen(true) to respect user requirement:
-            // "only opens after the user clicks on the tab which is given by Arcus"
+            };
+
+            setMessages(prev => prev.map(m => {
+              if (m.id === assistantMsgId && m.type === 'agent') {
+                return {
+                  ...m,
+                  meta: {
+                    ...m.meta,
+                    canvasApproval: {
+                      status: 'pending' as const,
+                      canvasData: canvasInitialData,
+                      title: intentData.canvasTitle || "Launch Arcus Mission?",
+                      description: intentData.canvasDescription || "This request would be best handled in the Arcus Workspace. Would you like to open it?"
+                    }
+                  }
+                };
+              }
+              return m;
+            }));
           }
 
           for (let bIndex = 0; bIndex < blocks.length; bIndex++) {
@@ -2208,13 +2273,70 @@ export default function ChatInterface({
                                     </div>
                                   )}
 
-                                  {msg.role === 'assistant' && msg.meta?.result && (
+                                  {msg.role === 'assistant' && (msg as AgentMessage).meta?.canvasApproval && (
+                                    <div className="mt-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                                      <div className={cn(
+                                        "relative group overflow-hidden bg-[#1a1a1a] border border-white/5 rounded-2xl p-5 shadow-2xl transition-all",
+                                        (msg as AgentMessage).meta!.canvasApproval!.status !== 'pending' && "opacity-60"
+                                      )}>
+                                        <div className="flex items-start gap-3.5 relative z-10">
+                                          <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                                            <Sparkles className={cn("w-5 h-5", (msg as AgentMessage).meta!.canvasApproval!.status === 'accepted' ? "text-blue-400" : "text-white/40")} />
+                                          </div>
+                                          <div className="flex-1 min-w-0">
+                                            <h4 className="text-white font-bold text-[14px] tracking-tight mb-1">
+                                              {(msg as AgentMessage).meta!.canvasApproval!.title || 'Launch Arcus Mission?'}
+                                            </h4>
+                                            <p className="text-white/40 text-[12px] leading-relaxed line-clamp-2">
+                                              {(msg as AgentMessage).meta!.canvasApproval!.description || 'This request would be best handled in the specialized Arcus Workspace. Would you like to open it?'}
+                                            </p>
+                                          </div>
+                                        </div>
+
+                                        {(msg as AgentMessage).meta!.canvasApproval!.status === 'pending' ? (
+                                          <div className="flex items-center gap-2 mt-5 pt-4 border-t border-white/[0.03]">
+                                            <button
+                                              onClick={() => handleAcceptCanvas(msg.id)}
+                                              className="px-5 py-2 bg-white hover:bg-neutral-200 text-black font-bold text-[12px] rounded-full transition-all flex items-center gap-2 active:scale-95"
+                                            >
+                                              <CheckCircle2 className="w-4 h-4" />
+                                              <span>Yes, open Canvas</span>
+                                            </button>
+                                            <button
+                                              onClick={() => handleDeclineCanvas(msg.id)}
+                                              className="px-5 py-2 bg-white/5 hover:bg-white/10 text-white/60 font-medium text-[12px] rounded-full transition-all active:scale-95"
+                                            >
+                                              <span>No, stay here</span>
+                                            </button>
+                                          </div>
+                                        ) : (
+                                          <div className="flex items-center gap-2 mt-5 pt-4 border-t border-white/[0.03]">
+                                            <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-full border border-white/5">
+                                              {(msg as AgentMessage).meta!.canvasApproval!.status === 'accepted' ? (
+                                                <div className="flex items-center gap-2 text-blue-400 text-[12px] font-bold">
+                                                  <Check className="w-4 h-4" />
+                                                  <span>Mission Accepted</span>
+                                                </div>
+                                              ) : (
+                                                <div className="flex items-center gap-2 text-white/30 text-[12px] font-bold">
+                                                  <X className="w-4 h-4" />
+                                                  <span>Stayed in chat</span>
+                                                </div>
+                                              )}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {msg.role === 'assistant' && (msg as AgentMessage).meta?.result && !(msg as AgentMessage).meta?.canvasApproval && (
                                     <ResultCard
-                                      type={msg.meta.result.type}
-                                      title={msg.meta.result.title}
+                                      type={(msg as AgentMessage).meta!.result!.type}
+                                      title={(msg as AgentMessage).meta!.result!.title}
                                       onView={() => {
-                                        if (msg.meta?.result) {
-                                          setCanvasData(msg.meta.result.canvasData);
+                                        if ((msg as AgentMessage).meta?.result) {
+                                          setCanvasData((msg as AgentMessage).meta!.result!.canvasData);
                                           setIsCanvasOpen(true);
                                         }
                                       }}
