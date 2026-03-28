@@ -6,10 +6,16 @@ import {
   ChevronRight, Calendar, Globe, AlertCircle, ShieldAlert, Send, 
   ArrowRight, BarChart3, Clock, Users, Zap, 
   MoreHorizontal, CheckCircle2, Circle, Edit, Terminal,
-  Code, Layout, Laptop, GripVertical
+  Code, Layout, Laptop, GripVertical, ChevronLeft, Presentation,
+  LineChart, PieChart, TrendingUp, Info
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from "@/lib/utils";
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, 
+  ResponsiveContainer, PieChart as RePieChart, Pie, Cell, 
+  AreaChart, Area 
+} from 'recharts';
 
 export type CanvasType = 'email_draft' | 'summary' | 'research' | 'action_plan' | 'reply' | 'notes' | 'meeting_schedule' | 'analytics' | 'workflow' | 'none';
 
@@ -31,6 +37,7 @@ interface CanvasPanelProps {
     onExecute: (action: string, data: unknown) => void;
     isExecuting?: boolean;
     isSidebarCollapsed?: boolean;
+    onSendToChat?: (message: string) => void;
 }
 
 const typeConfig: Record<CanvasType, { label: string; icon: any; color: string }> = {
@@ -46,12 +53,13 @@ const typeConfig: Record<CanvasType, { label: string; icon: any; color: string }
     none: { label: 'Work', icon: <Sparkles className="w-4 h-4" />, color: '#a855f7' },
 };
 
-export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecuting, isSidebarCollapsed }: CanvasPanelProps) {
+export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecuting, isSidebarCollapsed, onSendToChat }: CanvasPanelProps) {
     const [editMode, setEditMode] = useState(false);
     const [editedBody, setEditedBody] = useState('');
     const [copied, setCopied] = useState(false);
     const [width, setWidth] = useState(520);
     const [isResizing, setIsResizing] = useState(false);
+    const [deckIndex, setDeckIndex] = useState(0);
     const scrollRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -142,6 +150,15 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                         </h2>
                     </div>
                     <div className="flex items-center gap-3">
+                        {canvasData.type === 'analytics' && onSendToChat && (
+                            <button 
+                                onClick={() => onSendToChat("Can you explain the current analytics trends for my emails?")}
+                                className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 text-[11px] font-bold rounded-lg transition-all border border-blue-500/20"
+                            >
+                                <Info className="w-3.5 h-3.5" />
+                                <span>Explain Chart</span>
+                            </button>
+                        )}
                         <button 
                             onClick={onClose}
                             className="p-2 hover:bg-white/5 rounded-lg transition-all text-white/40 hover:text-white"
@@ -189,6 +206,168 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                                         </div>
                                     ))}
                                 </motion.div>
+                            ) : canvasData.type === 'summary' ? (
+                                <div className="h-full flex flex-col">
+                                    <div className="shrink-0 flex items-center justify-between mb-8">
+                                        <div className="flex items-center gap-2">
+                                            <Presentation className="w-4 h-4 text-blue-400" />
+                                            <span className="text-[11px] font-bold uppercase tracking-widest text-white/40">Email Summary Deck</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <button 
+                                            disabled={deckIndex === 0}
+                                            onClick={() => setDeckIndex(p => Math.max(0, p - 1))}
+                                            className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 disabled:opacity-20 transition-all"
+                                          >
+                                            <ChevronLeft className="w-4 h-4 text-white" />
+                                          </button>
+                                          <span className="text-[12px] font-mono text-white/60">{deckIndex + 1} / {canvasData.content?.items?.length || 1}</span>
+                                          <button 
+                                            disabled={deckIndex >= (canvasData.content?.items?.length || 1) - 1}
+                                            onClick={() => setDeckIndex(p => Math.min((canvasData.content?.items?.length || 1) - 1, p + 1))}
+                                            className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 disabled:opacity-20 transition-all"
+                                          >
+                                            <ChevronRight className="w-4 h-4 text-white" />
+                                          </button>
+                                        </div>
+                                    </div>
+
+                                    <AnimatePresence mode="wait">
+                                      <motion.div 
+                                        key={deckIndex}
+                                        initial={{ opacity: 0, x: 20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: -20 }}
+                                        className="flex-1 flex flex-col items-center justify-center text-center px-8"
+                                      >
+                                          <div className="w-16 h-16 rounded-3xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-6">
+                                            <Sparkles className="w-8 h-8 text-blue-400" />
+                                          </div>
+                                          <h3 className="text-[20px] font-bold text-white mb-2 leading-tight">
+                                            {canvasData.content?.items?.[deckIndex]?.subject || 'Email Summary'}
+                                          </h3>
+                                          <p className="text-[14px] text-white/50 leading-relaxed font-mono">
+                                            {canvasData.content?.items?.[deckIndex]?.summary || 'No summary available for this item.'}
+                                          </p>
+                                          {canvasData.content?.items?.[deckIndex]?.sender && (
+                                            <div className="mt-8 flex items-center gap-3">
+                                              <div className="px-4 py-2 bg-white/5 rounded-full border border-white/5 text-[11px] text-white/40 font-mono">
+                                                From: {canvasData.content.items[deckIndex].sender}
+                                              </div>
+                                              {canvasData.content?.items?.[deckIndex]?.priority && (
+                                                <div className={cn(
+                                                  "px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest border",
+                                                  canvasData.content.items[deckIndex].priority === 'high' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
+                                                  canvasData.content.items[deckIndex].priority === 'medium' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                                                  'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                                                )}>
+                                                  {canvasData.content.items[deckIndex].priority}
+                                                </div>
+                                              )}
+                                            </div>
+                                          )}
+                                      </motion.div>
+                                    </AnimatePresence>
+                                </div>
+                            ) : canvasData.type === 'analytics' ? (
+                                <div className="h-full flex flex-col space-y-8 overflow-y-auto pr-2 custom-scrollbar">
+                                  {/* Dynamic Stats Row */}
+                                  <div className="grid grid-cols-2 gap-4">
+                                    {(canvasData.content?.stats || []).map((stat: any, i: number) => (
+                                      <div key={i} className="p-5 bg-white/[0.03] border border-white/5 rounded-2xl">
+                                        <div className="flex items-center gap-2 mb-2 text-white/30">
+                                          {stat.changeDirection === 'up' ? <TrendingUp className="w-3.5 h-3.5" /> : <Users className="w-3.5 h-3.5" />}
+                                          <span className="text-[10px] font-bold uppercase tracking-widest">{stat.label}</span>
+                                        </div>
+                                        <div className="text-[24px] font-bold text-white">{stat.value}</div>
+                                        {stat.change && (
+                                          <div className={cn("text-[10px] mt-1 font-mono", stat.changeDirection === 'up' ? 'text-emerald-400' : stat.changeDirection === 'down' ? 'text-red-400' : 'text-blue-400')}>
+                                            {stat.change}
+                                          </div>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+
+                                  {/* Dynamic Area Chart */}
+                                  {canvasData.content?.areaChart && (
+                                    <div className="p-6 bg-black border border-white/5 rounded-2xl h-[280px]">
+                                      <div className="flex items-center justify-between mb-6">
+                                        <div className="text-[12px] font-bold text-white flex items-center gap-2">
+                                          <LineChart className="w-4 h-4 text-emerald-400" />
+                                          {canvasData.content.areaChart.label || 'Trend Overview'}
+                                        </div>
+                                      </div>
+                                      <div className="h-full w-full pb-8">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                          <AreaChart data={canvasData.content.areaChart.data || []}>
+                                            <defs>
+                                              <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                                                <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                                              </linearGradient>
+                                            </defs>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                                            <XAxis dataKey="name" stroke="rgba(255,255,255,0.2)" fontSize={10} axisLine={false} tickLine={false} />
+                                            <YAxis hide />
+                                            <RechartsTooltip 
+                                              contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', fontSize: '11px' }}
+                                              itemStyle={{ color: '#fff' }}
+                                            />
+                                            <Area type="monotone" dataKey="value" stroke="#10b981" fillOpacity={1} fill="url(#colorValue)" strokeWidth={2} />
+                                          </AreaChart>
+                                        </ResponsiveContainer>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Dynamic Pie Chart */}
+                                  {canvasData.content?.pieChart && (
+                                    <div className="p-6 bg-white/[0.02] rounded-2xl border border-white/5">
+                                      <div className="text-[12px] font-bold text-white mb-4 flex items-center gap-2">
+                                        <PieChart className="w-4 h-4 text-blue-400" />
+                                        {canvasData.content.pieChart.label || 'Distribution'}
+                                      </div>
+                                      <div className="flex items-center gap-8">
+                                        <div className="w-[120px] h-[120px]">
+                                          <ResponsiveContainer width="100%" height="100%">
+                                            <RePieChart>
+                                              <Pie
+                                                data={canvasData.content.pieChart.data || []}
+                                                cx="50%"
+                                                cy="50%"
+                                                innerRadius={40}
+                                                outerRadius={60}
+                                                paddingAngle={5}
+                                                dataKey="value"
+                                              >
+                                                {(canvasData.content.pieChart.data || []).map((_: any, index: number) => (
+                                                  <Cell key={`cell-${index}`} fill={['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981'][index % 5]} />
+                                                ))}
+                                              </Pie>
+                                            </RePieChart>
+                                          </ResponsiveContainer>
+                                        </div>
+                                        <div className="flex-1 space-y-3">
+                                          {(canvasData.content.pieChart.data || []).map((seg: any, i: number) => {
+                                            const total = (canvasData.content.pieChart.data || []).reduce((sum: number, d: any) => sum + (d.value || 0), 0);
+                                            const pct = total > 0 ? Math.round((seg.value / total) * 100) : 0;
+                                            const colors = ['bg-blue-500', 'bg-purple-500', 'bg-pink-500', 'bg-amber-500', 'bg-emerald-500'];
+                                            return (
+                                              <div key={i} className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                  <div className={cn("w-2 h-2 rounded-full", colors[i % colors.length])} />
+                                                  <span className="text-[11px] text-white/70">{seg.name}</span>
+                                                </div>
+                                                <span className="text-[11px] font-mono text-white/40">{pct}%</span>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
                             ) : (
                                 <motion.div key="content" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-full flex flex-col font-mono">
                                     {canvasData.type === 'email_draft' || canvasData.type === 'reply' ? (

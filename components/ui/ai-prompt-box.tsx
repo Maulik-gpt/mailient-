@@ -43,7 +43,7 @@ interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(({ className, ...props }, ref) => (
   <textarea
     className={cn(
-      "flex w-full rounded-md border-none bg-transparent px-3 py-3 text-base text-white placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50 min-h-[60px] resize-none scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-gray-500",
+      "flex w-full rounded-md border-none bg-transparent px-3 py-3 text-base text-white placeholder:text-white/40 focus-visible:outline-none focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50 min-h-[60px] resize-none scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-gray-500",
       className
     )}
     ref={ref}
@@ -269,7 +269,7 @@ interface PromptInputContextType {
 const PromptInputContext = React.createContext<PromptInputContextType>({
   isLoading: false,
   value: "",
-  setValue: () => {},
+  setValue: () => { },
   maxHeight: 240,
   onSubmit: undefined,
   disabled: false,
@@ -465,11 +465,11 @@ interface PromptInputBoxProps {
 }
 
 export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxProps>((props, ref) => {
-  const { 
-    onSend = () => {}, 
+  const {
+    onSend = () => { },
     onStop,
-    isLoading = false, 
-    placeholder = "Type your message here...", 
+    isLoading = false,
+    placeholder = "Type your message here...",
     className,
     onSearchClick,
     onAttachEmailClick,
@@ -532,9 +532,9 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
     if (file.size > 50 * 1024 * 1024) { // 50MB limit
       return;
     }
-    
+
     setFiles(prev => [...prev, file]);
-    
+
     if (isImageFile(file)) {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -594,8 +594,8 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
 
   const handleSubmit = () => {
     if (input.trim() || files.length > 0) {
-      onSend(input, files, { 
-        isDeepThinking: showThink, 
+      onSend(input, files, {
+        isDeepThinking: showThink,
         isCanvas: showCanvas,
         isSearch: showSearch
       });
@@ -681,20 +681,20 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
       >
         <AnimatePresence>
           {files.length > 0 && !isRecording && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 10 }}
               className="flex flex-wrap gap-2 p-2 pb-1 transition-all duration-300"
             >
               {files.map((file, index) => (
-                <motion.div 
-                   key={`${file.name}-${index}`} 
-                   layout
-                   initial={{ opacity: 0, scale: 0.9 }}
-                   animate={{ opacity: 1, scale: 1 }}
-                   exit={{ opacity: 0, scale: 0.9 }}
-                   className="relative group"
+                <motion.div
+                  key={`${file.name}-${index}`}
+                  layout
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="relative group"
                 >
                   <div className="bg-[#1a1a1a] border border-white/10 rounded-xl overflow-hidden p-1 flex items-center gap-2 pr-3 min-w-[120px] max-w-[200px]">
                     {isImageFile(file) && filePreviews[file.name] ? (
@@ -744,10 +744,10 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
               showThink
                 ? "Think deeply..."
                 : showCanvas
-                ? "Create on canvas..."
-                : showSearch
-                ? "Search my emails..."
-                : placeholder
+                  ? "Create on canvas..."
+                  : showSearch
+                    ? "Search my emails..."
+                    : placeholder
             }
             className="text-base"
           />
@@ -814,7 +814,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                   onClick={onAttachEmailClick}
                   className={cn(
                     "flex h-8 px-2 items-center justify-center rounded-lg transition-all border outline-none focus:ring-0",
-                    selectedEmailsCount > 0 
+                    selectedEmailsCount > 0
                       ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
                       : "text-white/40 hover:bg-white/5 hover:text-white border-transparent hover:border-white/5"
                   )}
@@ -905,10 +905,10 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
               isLoading
                 ? "Stop generation"
                 : isRecording
-                ? "Stop recording"
-                : hasContent
-                ? "Send message"
-                : "Voice message"
+                  ? "Stop recording"
+                  : hasContent
+                    ? "Send message"
+                    : "Voice message"
             }
           >
             <button
@@ -918,10 +918,10 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                 isRecording
                   ? "bg-transparent hover:bg-white/5 text-red-500 hover:text-red-400"
                   : isLoading
-                  ? "bg-[#333333] hover:bg-[#444444] text-white"
-                  : hasContent
-                  ? "bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/10"
-                  : "bg-transparent hover:bg-white/5 text-white/40 hover:text-white/60"
+                    ? "bg-white hover:bg-white/80 text-black"
+                    : hasContent
+                      ? "bg-white hover:bg-white/80 text-black"
+                      : "bg-transparent hover:bg-white/5 text-white/40 hover:text-white/60"
               )}
               onClick={(e) => {
                 e.stopPropagation();

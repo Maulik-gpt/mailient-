@@ -77,7 +77,7 @@ const renderMarkdown = (text: string, isUser: boolean = false): string => {
   const paragraphs = text.split(/\n\n+/);
 
   const renderedParagraphs = paragraphs.map(para => {
-    let processedPara = para.replace(/\*\*(.*?)\*\*/g, `<strong class="font-bold ${isUser ? 'text-black' : 'text-white'} tracking-tight">$1</strong>`);
+    let processedPara = para.replace(/\*\*(.*?)\*\*/g, `<strong class="font-bold text-white tracking-tight">$1</strong>`);
 
     if (processedPara.includes('\n- ') || processedPara.startsWith('- ') || processedPara.includes('\n* ') || processedPara.startsWith('* ')) {
       const lines = processedPara.split('\n');
@@ -99,7 +99,7 @@ const renderMarkdown = (text: string, isUser: boolean = false): string => {
     processedPara = linkify(processedPara, isUser);
     processedPara = processedPara.replace(/\n/g, '<br/>');
 
-    const textColorClass = isUser ? "text-black/80" : "text-white/70";
+    const textColorClass = isUser ? "text-white" : "text-white/70";
     return `<p class="mb-3 last:mb-0 leading-relaxed ${textColorClass} text-[14px]">${processedPara}</p>`;
   });
 
@@ -247,12 +247,13 @@ interface AgentMessage {
     };
     limitReached?: boolean;
     usageData?: any;
-    canvasApproval?: {
-      status: 'pending' | 'accepted' | 'declined';
-      title?: string;
-      description?: string;
-      canvasData?: any;
-    };
+      canvasApproval?: {
+        status: 'pending' | 'accepted' | 'declined';
+        title?: string;
+        description?: string;
+        canvasData?: any;
+        canvasType?: string;
+      };
   };
 }
 
@@ -766,50 +767,49 @@ export default function ChatInterface({
         isSearch
       };
 
-      // --- PARALLEL REQUESTS: Fast intent + Full chat ---
-      // 1) Fire fast intent analysis (returns AI-generated thinking steps quickly)
-      const intentPromise = fetch('/api/agent-talk/chat-arcus/intent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: messageText, conversationId: conversationIdToUse, runId: requestRunId, attachments: attachments || [] }),
-        signal: abortControllerRef.current.signal
-      }).then(r => r.json()).catch(() => null);
+      // --- PHASE I: Fast Intent Analysis (AI-Driven Assessment) ---
+      let intentData: any = null;
+      try {
+        const intentRes = await fetch('/api/agent-talk/chat-arcus/intent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: messageText, conversationId: conversationIdToUse, runId: requestRunId, attachments: attachments || [] }),
+          signal: abortControllerRef.current.signal
+        });
+        if (intentRes.ok) intentData = await intentRes.json();
+      } catch (e) {
+        console.warn('Intent analysis failed:', e);
+      }
 
-      // 2) Fire main chat request (takes longer - does search, canvas, response)
-      const chatPromise = fetch('/api/agent-talk/chat-arcus', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
-        signal: abortControllerRef.current.signal
-      });
+      // --- PHASE II: Immediate AI Assessment ---
+      if (intentData?.initialResponse) {
+        const initialMessage: AgentMessage = {
+          id: assistantMsgId,
+          type: 'agent',
+          role: 'assistant',
+          content: {
+            text: intentData.initialResponse,
+            list: [],
+            footer: ''
+          },
+          time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+          meta: {
+            actionType: 'thought',
+            isStreaming: true,
+            canvasApproval: (intentData.needsCanvas === true || isCanvas) ? {
+              status: 'pending' as const,
+              title: intentData.canvasTitle || 'Launch Arcus Mission?',
+              description: intentData.canvasDescription || intentData.initialResponse || 'This request would be best handled in the specialized Arcus Workspace.',
+              canvasType: intentData.canvasType || 'none',
+              canvasData: null
+            } : undefined
+          }
+        };
+        setMessages(prev => [...prev, initialMessage]);
+      }
 
-      // 3) Intent usually returns first — show live thinking steps
-      // const assistantMsgId was moved up to be available in catch block
-
-      // 3) Intent usually returns first — show acknowledgement and live thinking steps
-      const intentData = await intentPromise;
       if (intentData) {
-        // --- PHASE I: Immediate Acknowledgement ---
-        if (intentData.initialResponse) {
-          const initialMessage: AgentMessage = {
-            id: assistantMsgId,
-            type: 'agent',
-            role: 'assistant',
-            content: {
-              text: intentData.initialResponse,
-              list: [],
-              footer: ''
-            },
-            time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
-            meta: {
-              actionType: 'thought',
-              isStreaming: true // Mark as streaming/loading
-            }
-          };
-          setMessages(prev => [...prev, initialMessage]);
-        }
-
-        // --- PHASE II: Sequential Managed Blocks ---
+        // --- Sequential Managed Blocks ---
         const rawBlocks = (intentData.thinkingBlocks && intentData.thinkingBlocks.length > 0)
           ? intentData.thinkingBlocks
           : buildFallbackThinkingBlocks(messageText);
@@ -914,20 +914,26 @@ export default function ChatInterface({
             ]
           }]);
 
-          await new Promise(r => setTimeout(r, 1200));
+          await new Promise(r => setTimeout(r, 600));
         }
       }
 
-      // 4) Wait for main chat response (Phase III)
-      const response = await chatPromise;
+      // --- PHASE II: Main Execution & Chat Result ---
+      const chatRes = await fetch('/api/agent-talk/chat-arcus', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...requestBody,
+          intentAnalysis: intentData // Pass analysis to avoid backend re-processing
+        }),
+        signal: abortControllerRef.current.signal
+      });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        // Remove the partial message on error
+      if (!chatRes.ok) {
+        const errorData = await chatRes.json().catch(() => ({}));
         setMessages(prev => prev.filter(m => m.id !== assistantMsgId));
 
         if (errorData?.error === 'limit_reached') {
-          // ... (existing limit handling)
           setUsageLimitModalData({
             featureName: 'Ask AI',
             currentUsage: errorData.usage || 0,
@@ -960,10 +966,10 @@ export default function ChatInterface({
           scrollToBottom(true);
           return;
         }
-        throw new Error(errorData.message || `Failed to send message (${response.status})`);
+        throw new Error(errorData.message || `Failed to send message (${chatRes.status})`);
       }
 
-      const data = await response.json();
+      const data = await chatRes.json();
 
       // Extract AI thought block (deep thinking mode)
       const { thought: aiThought, cleanText: aiCleanText } = extractThought(data.message || '');
@@ -2296,14 +2302,14 @@ export default function ChatInterface({
                                         {(msg as AgentMessage).meta!.canvasApproval!.status === 'pending' ? (
                                           <div className="flex items-center gap-2 mt-5 pt-4 border-t border-white/[0.03]">
                                             <button
-                                              onClick={() => handleAcceptCanvas(msg.id)}
+                                              onClick={() => handleAcceptCanvas(msg.id as number)}
                                               className="px-5 py-2 bg-white hover:bg-neutral-200 text-black font-bold text-[12px] rounded-full transition-all flex items-center gap-2 active:scale-95"
                                             >
                                               <CheckCircle2 className="w-4 h-4" />
                                               <span>Yes, open Canvas</span>
                                             </button>
                                             <button
-                                              onClick={() => handleDeclineCanvas(msg.id)}
+                                              onClick={() => handleDeclineCanvas(msg.id as number)}
                                               className="px-5 py-2 bg-white/5 hover:bg-white/10 text-white/60 font-medium text-[12px] rounded-full transition-all active:scale-95"
                                             >
                                               <span>No, stay here</span>

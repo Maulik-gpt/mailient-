@@ -71,6 +71,12 @@ export async function POST(request) {
             })),
             needsCanvas: Boolean(intentAnalysis?.needsCanvas || forceCanvas),
             canvasType: intentAnalysis?.canvasType || (forceCanvas ? 'email_draft' : 'none'),
+            canvasTitle: intentAnalysis?.canvasType === 'analytics' 
+                ? 'Generate Analytics Dashboard?' 
+                : intentAnalysis?.canvasType === 'summary' 
+                    ? 'Summarize Emails in Workspace?' 
+                    : intentAnalysis?.initialResponse ? `${(intentAnalysis.initialResponse || '').substring(0, 60)}...` : 'Launch Arcus Mission?',
+            canvasDescription: intentAnalysis?.initialResponse || 'Arcus is ready to execute this task in the specialized workspace.',
             requiresApproval,
         });
     } catch (error) {

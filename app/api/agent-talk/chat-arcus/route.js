@@ -38,7 +38,8 @@ export async function POST(request) {
       actionRequestId,
       attachments,
       isDeepThinking,
-      isCanvas
+      isCanvas,
+      intentAnalysis: frontendIntentAnalysis
     } = await request.json();
 
     console.log('🚀 Arcus Chat request received:', message?.substring?.(0, 80));
@@ -379,13 +380,17 @@ export async function POST(request) {
       }, { status: executionResult.success ? 200 : 500 });
     }
 
-    // --- INTENT ANALYSIS: Understand what the user wants ---
-    let intentAnalysis = null;
-    try {
-      intentAnalysis = await arcusAI.analyzeIntentAndPlan(message, { userEmail, userName });
-      console.log('🧠 Intent analysis:', intentAnalysis?.intent, '| Canvas:', intentAnalysis?.needsCanvas);
-    } catch (err) {
-      console.warn('Intent analysis failed, proceeding with direct chat:', err.message);
+    // --- INTENT ANALYSIS: Use frontend's pre-analyzed intent or analyze fresh ---
+    let intentAnalysis = frontendIntentAnalysis || null;
+    if (!intentAnalysis) {
+      try {
+        intentAnalysis = await arcusAI.analyzeIntentAndPlan(message, { userEmail, userName });
+        console.log('🧠 Intent analysis:', intentAnalysis?.intent, '| Canvas:', intentAnalysis?.needsCanvas);
+      } catch (err) {
+        console.warn('Intent analysis failed, proceeding with direct chat:', err.message);
+      }
+    } else {
+      console.log('⚡ Using pre-analyzed intent from frontend (skipping re-analysis)');
     }
 
     let operatorRun = null;
@@ -1182,8 +1187,8 @@ Action: I am stopping execution to ask the user these specific questions.`;
   -- THREAD HISTORY (last 5) --
 ${email.threadHistory.map(h => `  * ${h.isMe ? '[ME]' : '[THEM]'} (${h.date}): ${h.snippet}`).join('\n')}
   
-  -- CONTENT --
-  ${email.body}
+  -- CONTENT (Truncated for speed) --
+  ${(email.body || email.snippet || '').substring(0, 1500)}${(email.body?.length > 1500) ? '... [Content Truncated]' : ''}
 `;
         context += '\n---\n';
       });
