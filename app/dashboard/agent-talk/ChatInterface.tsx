@@ -1733,7 +1733,7 @@ export default function ChatInterface({
     }
   };
 
-  const handleConversationDelete = (deletedConversationId: string) => {
+  const handleConversationDelete = async (deletedConversationId: string) => {
     console.log('Conversation deleted:', deletedConversationId);
     console.log('Current conversation ID:', currentConversationId);
 
@@ -1855,47 +1855,7 @@ export default function ChatInterface({
           </div>
 
           {showHistory && (
-            <div className="fixed right-0 top-0 h-screen w-80 bg-[#0d0d0d] border-l border-white/[0.08] flex flex-col z-40">
-              <div className="p-6 border-b border-white/[0.05]">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-[11px] tracking-widest text-white/30 uppercase">History</h2>
-                  <div className="flex items-center gap-2">
-                    <Tooltip delayDuration={100}>
-                      <TooltipTrigger asChild>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            startNewChat();
-                          }}
-                          className="p-2 hover:bg-[#2a2a2a] rounded-lg transition-all duration-300 text-gray-400 hover:text-white hover:scale-105"
-                        >
-                          <HugeiconsIcon icon={AddSquareIcon} size={18} strokeWidth={1.8} />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom">
-                        <p>New Chat</p>
-                      </TooltipContent>
-                    </Tooltip>
-                    <Tooltip delayDuration={100}>
-                      <TooltipTrigger asChild>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setShowHistory(false);
-                          }}
-                          className="p-2 hover:bg-[#2a2a2a] rounded-lg transition-all duration-300 text-gray-400 hover:text-white hover:scale-105"
-                        >
-                          <HugeiconsIcon icon={Cancel01Icon} size={18} strokeWidth={1.8} />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom">
-                        <p>Close</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                </div>
-              </div>
-
+            <div className="fixed right-0 top-0 h-screen w-80 bg-[#111111] border-l border-white/[0.05] flex flex-col z-[60] shadow-2xl">
               <div className="flex-1 overflow-y-auto">
                 <ChatHistoryModal
                   key={`history-${historyRefreshKey}`}
@@ -1903,6 +1863,7 @@ export default function ChatInterface({
                   onClose={() => setShowHistory(false)}
                   onConversationSelect={loadConversation}
                   onConversationDelete={handleConversationDelete}
+                  onNewMission={startNewChat}
                 />
               </div>
             </div>
@@ -2026,7 +1987,22 @@ export default function ChatInterface({
                     </div>
 
                     {/* Right Side: New Chat and History */}
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-3">
+                      {/* Subscription Badge */}
+                      {currentPlan !== 'pro' && (
+                        <div className="flex items-center gap-1.5 px-3 py-1 bg-[#111111] border border-white/5 rounded-full shadow-sm hover:border-white/10 transition-all">
+                          <span className="text-[10px] text-white/40 font-medium tracking-wide whitespace-nowrap">Free plan</span>
+                          <span className="text-[10px] text-white/10">•</span>
+                          <button 
+                            onClick={() => router.push('/dashboard/settings/billing')}
+                            className="text-[10px] text-white hover:text-white/80 transition-colors font-bold uppercase tracking-tight whitespace-nowrap"
+                          >
+                            Upgrade
+                          </button>
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center gap-1">
                       <Tooltip delayDuration={100}>
                         <TooltipTrigger asChild>
                           <button
@@ -2432,13 +2408,6 @@ export default function ChatInterface({
                     </div>
 
                     <div className="sticky bottom-0 z-20 w-full px-6 pb-12 mt-auto">
-                      <div className="flex justify-center mb-6">
-                        <div className="flex items-center gap-1.5 px-3 py-1 bg-[#111111] border border-white/5 rounded-full shadow-2xl">
-                          <span className="text-[10px] text-white/40 font-medium tracking-wide">Free plan</span>
-                          <span className="text-[10px] text-white/10">•</span>
-                          <button className="text-[10px] text-white hover:text-white/80 transition-colors font-bold uppercase tracking-tight">Upgrade</button>
-                        </div>
-                      </div>
 
                       <div className="max-w-3xl mx-auto">
                         <PromptInputBox
@@ -2481,6 +2450,7 @@ export default function ChatInterface({
               </AnimatePresence>
             </div>
           </div>
+        </div>
         <NoScrollbarStyles />
         <IntegrationsModal isOpen={isIntegrationsModalOpen} onClose={() => setIsIntegrationsModalOpen(false)} />
         <EmailSelectionModal
