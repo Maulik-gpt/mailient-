@@ -317,6 +317,19 @@ interface ChatInterfaceProps {
   onConversationDelete?: (conversationId: string) => void;
 }
 
+// Global styles for hide scrollbar but maintain functionality
+const NoScrollbarStyles = () => (
+  <style jsx global>{`
+    .no-scrollbar::-webkit-scrollbar {
+      display: none !important;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none !important; /* IE and Edge */
+      scrollbar-width: none !important; /* Firefox */
+    }
+  `}</style>
+);
+
 export default function ChatInterface({
   initialConversationId = null,
   onConversationSelect,
@@ -2062,7 +2075,7 @@ export default function ChatInterface({
                   </div>
                 ) : (
                   <div className="flex-1 flex flex-col relative overflow-hidden bg-transparent">
-                    <div className="flex-1 overflow-y-auto px-6 py-4 scroll-smooth">
+                    <div className="flex-1 overflow-y-auto px-6 py-4 scroll-smooth no-scrollbar">
                       <div className="max-w-3xl mx-auto space-y-4">
                         {activeMission && <MissionStatusHeader mission={activeMission} />}
                         {messages.map((msg) => (
@@ -2332,6 +2345,7 @@ export default function ChatInterface({
               </AnimatePresence>
             </div>
           </div>
+        <NoScrollbarStyles />
         <IntegrationsModal isOpen={isIntegrationsModalOpen} onClose={() => setIsIntegrationsModalOpen(false)} />
         <EmailSelectionModal
           isOpen={isEmailSelectionModalOpen}
@@ -2345,4 +2359,4 @@ export default function ChatInterface({
       </>
     </TooltipProvider>
   );
-};
+}

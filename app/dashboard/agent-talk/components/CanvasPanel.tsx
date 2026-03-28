@@ -141,25 +141,11 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                         </button>
                     </div>
                 </div>
-                <div className="mt-2 flex items-center gap-2">
-                    <Edit3 className="w-3 h-3 text-white/30" />
-                    <span className="text-[11px] text-white/30 font-medium tracking-tight">
-                        Arcus is using Editor <span className="mx-1.5 opacity-40">|</span> 
-                        {canvasData.type === 'workflow' ? 'Running mission_plan.py' : `Editing ${canvasData.title?.toLowerCase().replace(/\s+/g, '_') || 'file'}.txt`}
-                    </span>
-                </div>
             </div>
 
             {/* Inner Content Window (The "Arcus Computer" bit) */}
             <div className="flex-1 px-4 py-4 overflow-hidden flex flex-col">
                 <div className="flex-1 bg-black border border-white/5 rounded-2xl flex flex-col overflow-hidden shadow-2xl relative">
-                    {/* Inner Header */}
-                    <div className="shrink-0 h-10 flex items-center justify-center border-b border-white/5">
-                        <span className="text-[11px] font-mono text-white/40 italic">
-                            {canvasData.title?.toLowerCase().replace(/\s+/g, '_') || 'active_mission'}.py
-                        </span>
-                    </div>
-
                     {/* Content Scroll Area */}
                     <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar p-6">
                         <AnimatePresence mode="wait">
@@ -231,43 +217,16 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                         </AnimatePresence>
                     </div>
 
-                    {/* Inner Window Footer (Progress Bar) */}
-                    <div className="shrink-0 p-4 border-t border-white/5 bg-black">
-                        <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-3 shrink-0">
-                                <Clock className="w-4 h-4 text-white/20" />
-                                <ChevronRight className="w-4 h-4 text-white/20" />
-                            </div>
-                            <div className="flex-1 h-[2px] bg-white/5 rounded-full relative overflow-hidden">
-                                <motion.div 
-                                    className="absolute inset-y-0 left-0 bg-blue-500 rounded-full"
-                                    initial={{ width: '0%' }}
-                                    animate={{ width: `${(canvasData.content?.steps?.filter((s: any) => s.status === 'completed').length || 1) / (canvasData.content?.steps?.length || 5) * 100}%` }}
-                                    transition={{ duration: 1 }}
-                                />
-                            </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_#3b82f6]" />
-                                <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Live</span>
-                            </div>
-                        </div>
-                    </div>
+                    {/* Inner Window Footer (Removed Progress Bar) */}
                 </div>
             </div>
 
             {/* Bottom Status Bar */}
             <div className="shrink-0 h-14 px-6 border-t border-white/5 flex items-center justify-between text-white/30">
                 <div className="flex items-center gap-3">
-                    <Clock className="w-3.5 h-3.5" />
                     <span className="text-[11px] font-medium truncate max-w-[300px]">
                         Automating mission workflows and data synthesis for {canvasData.title || 'the objective'}...
                     </span>
-                </div>
-                <div className="flex items-center gap-4">
-                    <span className="text-[11px] font-mono tracking-widest">
-                        {canvasData.content?.steps?.filter((s: any) => s.status === 'completed').length || 0} / {canvasData.content?.steps?.length || 0}
-                    </span>
-                    <ChevronDown className="w-4 h-4 rotate-180 hover:text-white transition-colors cursor-pointer" />
                 </div>
             </div>
 
