@@ -2059,7 +2059,7 @@ export default function ChatInterface({
               {/* Chat Content */}
               <div className="flex-1 flex flex-col relative z-10 min-h-0">
                 {isInitialMode ? (
-                  <div className="flex-1 transition-all duration-300 relative bg-transparent flex flex-col items-center justify-center">
+                  <div className="flex-1 transition-all duration-300 relative bg-transparent flex flex-col items-center justify-center translate-y-10">
                     <div className="w-full max-w-2xl mx-auto flex flex-col items-center">
                         <div className="text-center mb-10">
                           <div className="flex justify-center mb-8">
