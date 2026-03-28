@@ -30,6 +30,7 @@ interface CanvasPanelProps {
     canvasData: CanvasData | null;
     onExecute: (action: string, data: unknown) => void;
     isExecuting?: boolean;
+    isSidebarCollapsed?: boolean;
 }
 
 const typeConfig: Record<CanvasType, { label: string; icon: any; color: string }> = {
@@ -45,7 +46,7 @@ const typeConfig: Record<CanvasType, { label: string; icon: any; color: string }
     none: { label: 'Work', icon: <Sparkles className="w-4 h-4" />, color: '#a855f7' },
 };
 
-export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecuting }: CanvasPanelProps) {
+export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecuting, isSidebarCollapsed }: CanvasPanelProps) {
     const [editMode, setEditMode] = useState(false);
     const [editedBody, setEditedBody] = useState('');
     const [copied, setCopied] = useState(false);
@@ -95,12 +96,20 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
 
     const resize = useCallback((e: MouseEvent) => {
         if (isResizing) {
+            const sidebarWidth = isSidebarCollapsed ? 80 : 256;
+            const chatMinWidth = 500;
+            const paddingAndGap = 48; // 32px padding (p-4 * 2) + 16px gap (gap-4)
+            const maxAllowedWidth = window.innerWidth - sidebarWidth - chatMinWidth - paddingAndGap;
+            
             const newWidth = window.innerWidth - e.clientX;
-            if (newWidth > 380 && newWidth < window.innerWidth * 0.8) {
+            // Clamp between reasonable min (380) and derived max
+            if (newWidth > 380 && newWidth < maxAllowedWidth) {
                 setWidth(newWidth);
+            } else if (newWidth >= maxAllowedWidth) {
+                setWidth(maxAllowedWidth);
             }
         }
-    }, [isResizing]);
+    }, [isResizing, isSidebarCollapsed]);
 
     useEffect(() => {
         window.addEventListener('mousemove', resize);

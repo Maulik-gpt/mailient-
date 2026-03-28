@@ -2346,6 +2346,7 @@ export default function ChatInterface({
                       canvasData={canvasData}
                       onExecute={handleCanvasExecute}
                       isExecuting={isCanvasExecuting}
+                      isSidebarCollapsed={isSidebarCollapsed}
                     />
                   </motion.div>
                 )}
