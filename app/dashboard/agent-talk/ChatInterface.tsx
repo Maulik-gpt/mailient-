@@ -425,6 +425,7 @@ export default function ChatInterface({
   const [activeRun, setActiveRun] = useState<{ runId: string; status?: string; phase?: string } | null>(null);
   const [isDeepThinkingState, setIsDeepThinkingState] = useState<boolean>(false);
   const [isSearchingState, setIsSearchingState] = useState<boolean>(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
 
 
 
@@ -1836,9 +1837,15 @@ export default function ChatInterface({
             </div>
           )}
 
-          <HomeFeedSidebar className="z-30" />
+          <HomeFeedSidebar 
+            className="z-30" 
+            onCollapse={(collapsed) => setIsSidebarCollapsed(collapsed)}
+          />
 
-          <div className="flex-1 flex flex-row relative ml-64 p-4 gap-4 transition-all duration-500 ease-in-out overflow-hidden bg-black">
+          <div className={cn(
+            "flex-1 flex flex-row relative p-4 gap-4 transition-all duration-500 ease-in-out overflow-hidden bg-black",
+            isSidebarCollapsed ? "ml-20" : "ml-64"
+          )}>
             {/* Chat Column (Order 1 - LEFT) */}
             <div className="flex-1 flex flex-col relative min-w-[500px] transition-all duration-500 order-1 bg-[#161616] border border-white/5 rounded-[32px] shadow-2xl overflow-hidden">
               {/* Header */}
