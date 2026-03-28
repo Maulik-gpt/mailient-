@@ -1454,12 +1454,11 @@ export default function ChatInterface({
     }
   }, [currentConversationId ?? null, isInitialMode]);
 
-  // Restore conversation state from localStorage on component mount
+  // Initial Load: Restore conversation from URL or handle manual re-sync
   useEffect(() => {
-    const lastActive = localStorage.getItem('lastActiveConversation');
-    if (lastActive && !initialConversationId && isInitialMode) {
-      console.log('Found last active conversation, but staying in initial mode for fresh look');
-      // We could auto-load it here if we wanted, but the design seems to prefer fresh start
+    if (initialConversationId && isInitialMode) {
+      console.log('🔄 Initial conversion ID detected, hydrating workspace:', initialConversationId);
+      loadConversation(initialConversationId);
     }
   }, [initialConversationId, isInitialMode]);
 
@@ -2059,7 +2058,7 @@ export default function ChatInterface({
               {/* Chat Content */}
               <div className="flex-1 flex flex-col relative z-10 min-h-0">
                 {isInitialMode ? (
-                  <div className="flex-1 transition-all duration-300 relative bg-transparent flex flex-col items-center justify-center translate-y-10">
+                  <div className="flex-1 transition-all duration-300 relative bg-transparent flex flex-col items-center justify-center translate-y-24">
                     <div className="w-full max-w-2xl mx-auto flex flex-col items-center">
                         <div className="text-center mb-10">
                           <div className="flex justify-center mb-8">
