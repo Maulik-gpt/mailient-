@@ -1855,7 +1855,15 @@ export default function ChatInterface({
           </div>
 
           {showHistory && (
-            <div className="fixed right-0 top-0 h-screen w-80 bg-[#111111] border-l border-white/[0.05] flex flex-col z-[60] shadow-2xl">
+            <div className="fixed right-4 top-4 bottom-4 w-80 bg-[#111111] border border-white/[0.08] flex flex-col z-[100] shadow-2xl rounded-[32px] overflow-hidden">
+              <div className="absolute top-6 right-6 z-[110]">
+                <button 
+                  onClick={() => setShowHistory(false)}
+                  className="p-2 hover:bg-white/5 rounded-full transition-all text-white/20 hover:text-white/60"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
               <div className="flex-1 overflow-y-auto">
                 <ChatHistoryModal
                   key={`history-${historyRefreshKey}`}
@@ -2041,9 +2049,8 @@ export default function ChatInterface({
               {/* Chat Content */}
               <div className="flex-1 flex flex-col relative z-10 min-h-0">
                 {isInitialMode ? (
-                  <div className="flex-1 overflow-y-auto transition-all duration-300 relative bg-transparent">
-                    <div className="h-full flex flex-col items-center justify-center px-6">
-                      <div className="w-full max-w-2xl mx-auto flex flex-col items-center">
+                  <div className="flex-1 transition-all duration-300 relative bg-transparent flex flex-col items-center justify-center">
+                    <div className="w-full max-w-2xl mx-auto flex flex-col items-center">
                         <div className="text-center mb-12">
                           <div className="flex justify-center mb-6">
                             <img
@@ -2126,7 +2133,6 @@ export default function ChatInterface({
                         </div>
                       </div>
                     </div>
-                  </div>
                 ) : (
                   <div className="flex-1 flex flex-col relative overflow-hidden bg-transparent">
                     <div className="flex-1 overflow-y-auto px-6 py-4 scroll-smooth no-scrollbar">
