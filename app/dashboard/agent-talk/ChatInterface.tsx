@@ -1274,6 +1274,7 @@ export default function ChatInterface({
         console.log('DEBUG: Loaded', loadedMessages.length, 'messages for conversation:', conversationId);
 
         // Navigate to the conversation URL
+        router.push(`/dashboard/agent-talk/${conversationId}`);
         if (onConversationSelect && conversationId !== initialConversationId) {
           onConversationSelect(conversationId);
         }
@@ -1327,6 +1328,7 @@ export default function ChatInterface({
             setChatTitle(data.title || '');
 
             // Navigate to the conversation URL
+            router.push(`/dashboard/agent-talk/${conversationId}`);
             if (onConversationSelect) {
               onConversationSelect(conversationId);
             }
@@ -1854,28 +1856,36 @@ export default function ChatInterface({
             <div className="absolute -bottom-[10%] -left-[10%] w-[50%] h-[50%] bg-graphite-surface/30 rounded-full blur-[120px]" />
           </div>
 
-          {showHistory && (
-            <div className="fixed right-4 top-4 bottom-4 w-80 bg-[#111111] border border-white/[0.08] flex flex-col z-[100] shadow-2xl rounded-[32px] overflow-hidden">
-              <div className="absolute top-6 right-6 z-[110]">
-                <button 
-                  onClick={() => setShowHistory(false)}
-                  className="p-2 hover:bg-white/5 rounded-full transition-all text-white/20 hover:text-white/60"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-              <div className="flex-1 overflow-y-auto">
-                <ChatHistoryModal
-                  key={`history-${historyRefreshKey}`}
-                  isOpen={showHistory}
-                  onClose={() => setShowHistory(false)}
-                  onConversationSelect={loadConversation}
-                  onConversationDelete={handleConversationDelete}
-                  onNewMission={startNewChat}
-                />
-              </div>
-            </div>
-          )}
+          <AnimatePresence>
+            {showHistory && (
+              <motion.div 
+                initial={{ x: '110%', opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: '110%', opacity: 0 }}
+                transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+                className="fixed right-4 top-4 bottom-4 w-80 bg-[#111111] border border-white/[0.08] flex flex-col z-[100] shadow-2xl rounded-[32px] overflow-hidden"
+              >
+                <div className="absolute top-6 right-6 z-[110]">
+                  <button 
+                    onClick={() => setShowHistory(false)}
+                    className="p-2 hover:bg-white/5 rounded-full transition-all text-white/20 hover:text-white/60"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto">
+                  <ChatHistoryModal
+                    key={`history-${historyRefreshKey}`}
+                    isOpen={showHistory}
+                    onClose={() => setShowHistory(false)}
+                    onConversationSelect={loadConversation}
+                    onConversationDelete={handleConversationDelete}
+                    onNewMission={startNewChat}
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <HomeFeedSidebar 
             className="z-30" 
@@ -1889,7 +1899,10 @@ export default function ChatInterface({
             {/* Chat Column (Order 1 - LEFT) */}
             <div className="flex-1 flex flex-col relative min-w-[500px] transition-all duration-500 order-1 bg-[#161616] border border-white/5 rounded-[32px] shadow-2xl overflow-hidden">
               {/* Header */}
-              <div className="sticky top-0 z-40 transition-all duration-300">
+              <div className={cn(
+                "z-40 transition-all duration-300",
+                isInitialMode ? "absolute top-0 left-0 right-0" : "sticky top-0"
+              )}>
                 <div className="relative px-8 py-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -2049,10 +2062,10 @@ export default function ChatInterface({
               {/* Chat Content */}
               <div className="flex-1 flex flex-col relative z-10 min-h-0">
                 {isInitialMode ? (
-                  <div className="flex-1 transition-all duration-300 relative bg-transparent flex flex-col items-center justify-center">
+                  <div className="flex-1 transition-all duration-300 relative bg-transparent flex flex-col items-center justify-center -mt-10">
                     <div className="w-full max-w-2xl mx-auto flex flex-col items-center">
-                        <div className="text-center mb-12">
-                          <div className="flex justify-center mb-6">
+                        <div className="text-center mb-10">
+                          <div className="flex justify-center mb-8">
                             <img
                               src="/arcus-ai-icon.jpg"
                               className="w-16 h-16 object-cover rounded-[20px] shadow-2xl grayscale brightness-110"

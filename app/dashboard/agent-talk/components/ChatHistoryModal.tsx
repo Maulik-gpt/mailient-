@@ -35,6 +35,12 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [localEditValue, setLocalEditValue] = useState("");
+  
+  // Feedback state
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const [feedbackText, setFeedbackText] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const [isSent, setIsSent] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -129,6 +135,24 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
       onConversationDelete?.(id);
       setHistory(prev => prev.filter(i => i.id !== id));
     } catch (e) { console.error(e); }
+  };
+
+  const handleSendFeedback = async () => {
+    if (!feedbackText.trim() || isSending) return;
+    setIsSending(true);
+    try {
+      const res = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ feedback: feedbackText })
+      });
+      if (res.ok) {
+        setIsSent(true);
+        setFeedbackText("");
+        setTimeout(() => { setIsSent(false); setIsFeedbackOpen(false); }, 2000);
+      }
+    } catch (e) { console.error(e); }
+    finally { setIsSending(false); }
   };
 
   return (
@@ -257,12 +281,62 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
         </div>
       </div>
       
-      {/* Footer Branding or Context */}
-      <div className="p-6 border-t border-white/[0.03]">
-        <div className="flex items-center gap-2 opacity-20">
-          <Sparkles className="w-3.5 h-3.5" />
-          <span className="text-[10px] font-bold tracking-widest uppercase">Arcus Intelligence</span>
-        </div>
+      {/* Footer / Feedback Section */}
+      <div className="p-4 border-t border-white/[0.03] bg-[#0d0d0d]">
+        <AnimatePresence mode="wait">
+          {!isFeedbackOpen ? (
+            <motion.button
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setIsFeedbackOpen(true)}
+              className="w-full py-3 px-4 rounded-xl border border-dashed border-white/10 hover:border-white/20 hover:bg-white/[0.02] transition-all text-left group"
+            >
+              <span className="text-[12px] font-medium text-white/30 group-hover:text-white/50">Have Feedback? <span className="text-white/60">Write here!</span></span>
+            </motion.button>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              className="w-full bg-[#161616] border border-white/10 rounded-2xl p-4 shadow-2xl relative overflow-hidden"
+            >
+               <textarea
+                 autoFocus
+                 placeholder="Share your feedback..."
+                 value={feedbackText}
+                 onChange={e => setFeedbackText(e.target.value)}
+                 onKeyDown={e => {
+                   if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSendFeedback();
+                   if (e.key === 'Escape') setIsFeedbackOpen(false);
+                 }}
+                 className="w-full bg-white/[0.03] border border-white/5 rounded-xl p-3 text-[13px] text-white/90 placeholder:text-white/20 resize-none min-h-[100px] outline-none focus:border-white/10 transition-all mb-4"
+               />
+               
+               <div className="flex items-center justify-between">
+                  <button 
+                    onClick={() => window.open('mailto:mailient.xyz@gmail.com')}
+                    className="text-[12px] text-white/40 hover:text-white/80 transition-colors"
+                  >
+                    Need help? <span className="underline decoration-white/20">Contact us</span>
+                  </button>
+                  
+                  <button 
+                    onClick={handleSendFeedback}
+                    disabled={!feedbackText.trim() || isSending || isSent}
+                    className={cn(
+                      "flex items-center gap-2 px-4 py-1.5 rounded-full text-[12px] font-bold transition-all",
+                      isSent ? "bg-emerald-500 text-white" : "bg-white text-black hover:bg-neutral-200"
+                    )}
+                  >
+                    {isSent ? "Sent!" : isSending ? "Sending..." : "Send"}
+                    {!isSending && !isSent && (
+                       <div className="flex items-center gap-0.5 opacity-40 ml-1">
+                          <span className="text-[10px]">⌘</span>
+                          <span className="text-[10px]">↵</span>
+                       </div>
+                    )}
+                  </button>
+               </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
