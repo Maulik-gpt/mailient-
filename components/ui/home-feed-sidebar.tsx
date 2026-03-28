@@ -233,6 +233,16 @@ export function HomeFeedSidebar({
                                         className="mt-2 space-y-1 px-1"
                                     >
                                         <button
+                                            onClick={() => router.push('/changelog')}
+                                            className="w-full flex items-center gap-3 px-3 py-2 text-white/60 hover:text-white hover:bg-white/[0.05] rounded-lg transition-all text-sm group"
+                                        >
+                                            <div className="w-4 h-4 rounded-full border border-white/20 flex items-center justify-center group-hover:border-white/40 transition-all">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                                            </div>
+                                            <span>What's New</span>
+                                        </button>
+                                        <div className="h-px w-full bg-white/[0.05] my-1" />
+                                        <button
                                             onClick={handleLogout}
                                             className="w-full flex items-center gap-3 px-3 py-2 text-red-500/80 hover:bg-red-500/5 rounded-lg transition-all text-sm"
                                         >

@@ -1899,10 +1899,7 @@ export default function ChatInterface({
             {/* Chat Column (Order 1 - LEFT) */}
             <div className="flex-1 flex flex-col relative min-w-[500px] transition-all duration-500 order-1 bg-[#161616] border border-white/5 rounded-[32px] shadow-2xl overflow-hidden">
               {/* Header */}
-              <div className={cn(
-                "z-40 transition-all duration-300",
-                isInitialMode ? "absolute top-0 left-0 right-0" : "sticky top-0"
-              )}>
+              <div className="sticky top-0 z-40 transition-all duration-300">
                 <div className="relative px-8 py-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -2015,7 +2012,7 @@ export default function ChatInterface({
                           <span className="text-[10px] text-white/40 font-medium tracking-wide whitespace-nowrap">Free plan</span>
                           <span className="text-[10px] text-white/10">•</span>
                           <button 
-                            onClick={() => router.push('/dashboard/settings/billing')}
+                            onClick={() => router.push('/pricing')}
                             className="text-[10px] text-white hover:text-white/80 transition-colors font-bold uppercase tracking-tight whitespace-nowrap"
                           >
                             Upgrade
@@ -2062,7 +2059,7 @@ export default function ChatInterface({
               {/* Chat Content */}
               <div className="flex-1 flex flex-col relative z-10 min-h-0">
                 {isInitialMode ? (
-                  <div className="flex-1 transition-all duration-300 relative bg-transparent flex flex-col items-center justify-center -mt-10">
+                  <div className="flex-1 transition-all duration-300 relative bg-transparent flex flex-col items-center justify-center">
                     <div className="w-full max-w-2xl mx-auto flex flex-col items-center">
                         <div className="text-center mb-10">
                           <div className="flex justify-center mb-8">
