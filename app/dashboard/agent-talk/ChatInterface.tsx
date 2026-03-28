@@ -2422,7 +2422,7 @@ export default function ChatInterface({
                       </div>
                     </div>
 
-                    <div className="sticky bottom-0 z-20 w-full px-6 pb-12 mt-auto">
+                    <div className="absolute bottom-0 left-0 right-0 z-20 w-full px-6 pb-6 bg-gradient-to-t from-black via-black/80 to-transparent">
 
                       <div className="max-w-3xl mx-auto">
                         <PromptInputBox
