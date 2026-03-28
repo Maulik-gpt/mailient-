@@ -1825,9 +1825,9 @@ export default function ChatInterface({
 
           <HomeFeedSidebar className="z-30" />
 
-          <div className="flex-1 flex flex-row relative ml-64 transition-all duration-500 ease-in-out overflow-hidden">
+          <div className="flex-1 flex flex-row relative ml-64 p-4 gap-4 transition-all duration-500 ease-in-out overflow-hidden bg-black">
             {/* Chat Column (Order 1 - LEFT) */}
-            <div className="flex-1 flex flex-col relative min-w-[500px] transition-all duration-500 order-1">
+            <div className="flex-1 flex flex-col relative min-w-[500px] transition-all duration-500 order-1 bg-[#161616] border border-white/5 rounded-[32px] shadow-2xl overflow-hidden">
               {/* Header */}
               <div className="sticky top-0 z-40 transition-all duration-300">
                 <div className="relative px-8 py-3">
@@ -2310,29 +2310,28 @@ export default function ChatInterface({
               </div>
             </div>
 
-            {/* Canvas Sidebar (Order 2 - RIGHT) - Properly Sibling to Chat Column */}
-            <AnimatePresence>
-              {isCanvasOpen && canvasData && (
-                <motion.div
-                  initial={{ width: 0, opacity: 0 }}
-                  animate={{ width: 'auto', opacity: 1 }}
-                  exit={{ width: 0, opacity: 0 }}
-                  transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                  className="h-full flex-shrink-0 border-l border-white/10 bg-[#0a0a0a] z-50 overflow-hidden order-2 relative shadow-2xl"
-                >
-                  <CanvasPanel
-                    isOpen={isCanvasOpen}
-                    onClose={() => setIsCanvasOpen(false)}
-                    canvasData={canvasData}
-                    onExecute={handleCanvasExecute}
-                    isExecuting={isCanvasExecuting}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
+              {/* Canvas Sidebar (Order 2 - RIGHT) - Properly Sibling to Chat Column */}
+              <AnimatePresence>
+                {isCanvasOpen && canvasData && (
+                  <motion.div
+                    initial={{ width: 0, opacity: 0 }}
+                    animate={{ width: 'auto', opacity: 1 }}
+                    exit={{ width: 0, opacity: 0 }}
+                    transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+                    className="h-full flex-shrink-0 bg-[#161616] border border-white/5 rounded-[32px] z-50 overflow-hidden order-2 relative shadow-2xl"
+                  >
+                    <CanvasPanel
+                      isOpen={isCanvasOpen}
+                      onClose={() => setIsCanvasOpen(false)}
+                      canvasData={canvasData}
+                      onExecute={handleCanvasExecute}
+                      isExecuting={isCanvasExecuting}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
-        </div>
-
         <IntegrationsModal isOpen={isIntegrationsModalOpen} onClose={() => setIsIntegrationsModalOpen(false)} />
         <EmailSelectionModal
           isOpen={isEmailSelectionModalOpen}
