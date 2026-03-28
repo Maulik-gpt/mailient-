@@ -722,7 +722,7 @@ export default function ChatInterface({
 
       // 3) Intent usually returns first — show live thinking steps
       // const assistantMsgId was moved up to be available in catch block
-      
+
       // 3) Intent usually returns first — show acknowledgement and live thinking steps
       const intentData = await intentPromise;
       if (intentData) {
@@ -763,7 +763,7 @@ export default function ChatInterface({
               type: s.type || 'think'
             }))
           }));
-          
+
           setLiveThinkingBlocks(blocks);
 
           // --- Trigger Arcus Workspace Preparation ---
@@ -796,7 +796,7 @@ export default function ChatInterface({
               }
               return prev;
             });
-            
+
             const stepsCount = blocks[bIndex].steps.length;
             for (let sIndex = 0; sIndex < stepsCount; sIndex++) {
               setLiveThinkingBlocks(prev => prev.map((b, i) => {
@@ -809,12 +809,12 @@ export default function ChatInterface({
                 }
                 return b;
               }));
-              
+
               if (sIndex < stepsCount - 1 || bIndex < blocks.length - 1) {
-                await new Promise(r => setTimeout(r, 600)); 
+                await new Promise(r => setTimeout(r, 600));
               }
             }
-            
+
           }
 
           // --- Deliberate Final Synthesis (Breathing Room) ---
@@ -823,7 +823,7 @@ export default function ChatInterface({
             status: 'completed',
             steps: b.steps.map(s => ({ ...s, status: 'completed' }))
           })));
-          
+
           const synthesisMessageId = Date.now() + 5;
           setLiveThinkingBlocks(prev => [...prev, {
             id: 'synthesis-block',
@@ -834,8 +834,8 @@ export default function ChatInterface({
               { id: 'synth-1', label: 'Formatting final output', status: 'active', type: 'think' }
             ]
           }]);
-          
-          await new Promise(r => setTimeout(r, 1200)); 
+
+          await new Promise(r => setTimeout(r, 1200));
         }
       }
 
@@ -846,7 +846,7 @@ export default function ChatInterface({
         const errorData = await response.json().catch(() => ({}));
         // Remove the partial message on error
         setMessages(prev => prev.filter(m => m.id !== assistantMsgId));
-        
+
         if (errorData?.error === 'limit_reached') {
           // ... (existing limit handling)
           setUsageLimitModalData({
@@ -2165,7 +2165,7 @@ export default function ChatInterface({
 
                                       <div className="group relative flex items-center justify-between gap-4 p-4 mt-2 w-full max-w-[500px] bg-white/[0.03] border border-white/[0.08] rounded-2xl transition-all duration-300 hover:bg-white/[0.05] hover:border-white/12 shadow-2xl overflow-hidden">
                                         <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent pointer-events-none opacity-50" />
-                                        
+
                                         <div className="flex items-center gap-3.5 z-10">
                                           <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center relative shadow-inner shrink-0 transition-transform group-hover:scale-105">
                                             <Sparkles className="w-5 h-5 text-white/50 group-hover:text-white transition-colors" />
@@ -2178,7 +2178,7 @@ export default function ChatInterface({
                                           </div>
                                         </div>
 
-                                        <button 
+                                        <button
                                           onClick={() => router.push('/pricing')}
                                           className="relative z-10 px-5 py-2.5 bg-white hover:bg-neutral-200 text-black font-bold text-[12px] tracking-tight uppercase rounded-full transition-all group-active:scale-95 shadow-lg"
                                         >
@@ -2282,8 +2282,8 @@ export default function ChatInterface({
                         <div ref={messagesEndRef} className="h-20" />
                       </div>
                     </div>
+
                     <div className="sticky bottom-0 z-20 w-full px-6 pb-12 mt-auto">
-                      {/* Premium Status Pill moved to bottom */}
                       <div className="flex justify-center mb-6">
                         <div className="flex items-center gap-1.5 px-3 py-1 bg-[#111111] border border-white/5 rounded-full shadow-2xl">
                           <span className="text-[10px] text-white/40 font-medium tracking-wide">Free plan</span>
@@ -2308,28 +2308,28 @@ export default function ChatInterface({
                   </div>
                 )}
               </div>
-
-              {/* Canvas Sidebar (Order 2 - RIGHT) */}
-              <AnimatePresence>
-                {isCanvasOpen && canvasData && (
-                  <motion.div 
-                    initial={{ width: 0, opacity: 0 }}
-                    animate={{ width: 'auto', opacity: 1 }}
-                    exit={{ width: 0, opacity: 0 }}
-                    transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                    className="h-full flex-shrink-0 border-l border-white/5 bg-[#0a0a0a] z-50 overflow-hidden order-2"
-                  >
-                    <CanvasPanel
-                      isOpen={isCanvasOpen}
-                      onClose={() => setIsCanvasOpen(false)}
-                      canvasData={canvasData}
-                      onExecute={handleCanvasExecute}
-                      isExecuting={isCanvasExecuting}
-                    />
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </div>
+
+            {/* Canvas Sidebar (Order 2 - RIGHT) - Properly Sibling to Chat Column */}
+            <AnimatePresence>
+              {isCanvasOpen && canvasData && (
+                <motion.div
+                  initial={{ width: 0, opacity: 0 }}
+                  animate={{ width: 'auto', opacity: 1 }}
+                  exit={{ width: 0, opacity: 0 }}
+                  transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+                  className="h-full flex-shrink-0 border-l border-white/10 bg-[#0a0a0a] z-50 overflow-hidden order-2 relative shadow-2xl"
+                >
+                  <CanvasPanel
+                    isOpen={isCanvasOpen}
+                    onClose={() => setIsCanvasOpen(false)}
+                    canvasData={canvasData}
+                    onExecute={handleCanvasExecute}
+                    isExecuting={isCanvasExecuting}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 
