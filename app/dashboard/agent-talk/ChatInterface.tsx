@@ -328,17 +328,21 @@ interface ChatInterfaceProps {
 const NoScrollbarStyles = () => (
   <style jsx global>{`
     .arcus-scrollbar::-webkit-scrollbar {
-      width: 4px;
+      width: 5px;
     }
     .arcus-scrollbar::-webkit-scrollbar-track {
       background: transparent;
     }
     .arcus-scrollbar::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(255, 255, 255, 0.15);
       border-radius: 10px;
     }
     .arcus-scrollbar::-webkit-scrollbar-thumb:hover {
-      background: rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.25);
+    }
+    .arcus-scrollbar {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
     }
     .no-scrollbar::-webkit-scrollbar {
       display: none !important;
@@ -2435,9 +2439,8 @@ export default function ChatInterface({
                       </div>
                     </div>
 
-                    <div className="absolute bottom-10 left-0 right-0 z-20 w-full px-6 bg-gradient-to-t from-black via-black/90 to-transparent pt-16">
-
-                      <div className="max-w-3xl mx-auto">
+                    <div className="absolute bottom-0 left-0 right-0 z-20 w-full px-6 bg-gradient-to-t from-[#161616] via-[#161616]/95 to-transparent pt-20 pb-8 pointer-events-none">
+                      <div className="max-w-3xl mx-auto pointer-events-auto">
                         <PromptInputBox
                           onSend={(msg, files, opts) => handleSend(msg, files, opts)}
                           onStop={() => abortControllerRef.current?.abort()}
