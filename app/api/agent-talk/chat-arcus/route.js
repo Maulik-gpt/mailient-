@@ -8,6 +8,9 @@ import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service.j
 import { addDays, setHours, setMinutes, startOfDay, format, parse, isWeekend, nextMonday } from 'date-fns';
 import { ArcusMissionService } from '@/lib/arcus-mission.js';
 import { ArcusOperatorRuntime } from '@/lib/arcus-operator-runtime.js';
+import { ArcusPlanEngine } from '@/lib/arcus-plan-engine.js';
+import { NotionAdapter } from '@/lib/notion-adapter.js';
+import { GoogleTasksAdapter } from '@/lib/google-tasks-adapter.js';
 import { isFeatureEnabled } from '@/lib/feature-flags.js';
 import crypto from 'crypto';
 
@@ -354,6 +357,140 @@ export async function POST(request) {
             payload: requestedPayload
           });
         }
+      } else if (requestedAction === 'approve_plan' && requestedPayload?.planId) {
+        // ── Plan Approval Gate ────────────────────────────────
+        try {
+          const planEngine = new ArcusPlanEngine({ db, userEmail });
+          const approval = await planEngine.approvePlan(requestedPayload.planId);
+          const todos = await planEngine.convertPlanToTodoGraph(requestedPayload.planId);
+          executionResult = {
+            success: true,
+            message: `Plan approved and locked (v${approval.approvedAt}). ${todos.length} tasks queued for execution.`,
+            externalRefs: { planId: requestedPayload.planId },
+            nextRecommendedActions: ['execute_plan', 'review_todos']
+          };
+        } catch (err) {
+          executionResult = { success: false, message: `Plan approval failed: ${err.message}` };
+        }
+      } else if (requestedAction === 'notion_create_page' && requestedPayload?.title) {
+        // ── Notion: Create Page ───────────────────────────────
+        try {
+          const notionToken = process.env.NOTION_INTEGRATION_TOKEN;
+          if (!notionToken) throw new Error('Notion integration not configured. Set NOTION_INTEGRATION_TOKEN.');
+          const notion = new NotionAdapter({ token: notionToken, defaultDatabaseId: process.env.NOTION_DEFAULT_DATABASE_ID || null });
+          const page = await notion.createPage({
+            title: requestedPayload.title,
+            content: requestedPayload.content || '',
+            databaseId: requestedPayload.databaseId || null,
+            parentPageId: requestedPayload.parentPageId || null,
+            tags: requestedPayload.tags || []
+          });
+          executionResult = {
+            success: true,
+            message: `Notion page "${page.title}" created successfully.`,
+            externalRefs: { notionPageId: page.pageId, notionUrl: page.url },
+            nextRecommendedActions: ['notion_append', 'share_link']
+          };
+        } catch (err) {
+          executionResult = { success: false, message: `Notion create failed: ${err.message}` };
+        }
+      } else if (requestedAction === 'notion_search' && requestedPayload?.query) {
+        // ── Notion: Search ────────────────────────────────────
+        try {
+          const notionToken = process.env.NOTION_INTEGRATION_TOKEN;
+          if (!notionToken) throw new Error('Notion integration not configured.');
+          const notion = new NotionAdapter({ token: notionToken });
+          const results = await notion.search(requestedPayload.query, {
+            filter: requestedPayload.filter || null,
+            limit: requestedPayload.limit || 10
+          });
+          executionResult = {
+            success: true,
+            message: `Found ${results.length} results in Notion for "${requestedPayload.query}".`,
+            results,
+            externalRefs: {},
+            nextRecommendedActions: ['notion_create_page', 'notion_append']
+          };
+        } catch (err) {
+          executionResult = { success: false, message: `Notion search failed: ${err.message}` };
+        }
+      } else if (requestedAction === 'notion_append' && requestedPayload?.pageId && requestedPayload?.content) {
+        // ── Notion: Append Content ────────────────────────────
+        try {
+          const notionToken = process.env.NOTION_INTEGRATION_TOKEN;
+          if (!notionToken) throw new Error('Notion integration not configured.');
+          const notion = new NotionAdapter({ token: notionToken });
+          const appendResult = await notion.appendToPage(requestedPayload.pageId, requestedPayload.content);
+          executionResult = {
+            success: true,
+            message: `Appended ${appendResult.blocksAdded} blocks to Notion page.`,
+            externalRefs: { notionPageId: requestedPayload.pageId },
+            nextRecommendedActions: ['view_page']
+          };
+        } catch (err) {
+          executionResult = { success: false, message: `Notion append failed: ${err.message}` };
+        }
+      } else if ((requestedAction === 'tasks_add_task' || requestedAction === 'tasks_add_tasks') && userEmail) {
+        // ── Google Tasks: Add Task(s) ─────────────────────────
+        try {
+          const db2 = new DatabaseService();
+          const userTokens = await db2.getUserTokens(userEmail);
+          if (!userTokens?.encrypted_access_token) throw new Error('Google account not connected.');
+          const accessToken = decrypt(userTokens.encrypted_access_token);
+          const refreshToken = userTokens.encrypted_refresh_token ? decrypt(userTokens.encrypted_refresh_token) : '';
+          const tasksAdapter = new GoogleTasksAdapter(accessToken, refreshToken);
+
+          // Get or create target task list
+          const listTitle = requestedPayload.taskListTitle || 'Arcus Tasks';
+          const taskList = requestedPayload.taskListId
+            ? { id: requestedPayload.taskListId, title: listTitle }
+            : await tasksAdapter.getOrCreateTaskList(listTitle);
+
+          if (requestedAction === 'tasks_add_tasks' && Array.isArray(requestedPayload.tasks)) {
+            const results = await tasksAdapter.createTasks(taskList.id, requestedPayload.tasks);
+            const successCount = results.filter(r => r.success).length;
+            executionResult = {
+              success: successCount > 0,
+              message: `Created ${successCount}/${requestedPayload.tasks.length} tasks in "${taskList.title}".`,
+              results,
+              externalRefs: { taskListId: taskList.id, taskListTitle: taskList.title },
+              nextRecommendedActions: ['tasks_list', 'tasks_complete_task']
+            };
+          } else {
+            const task = await tasksAdapter.createTask(taskList.id, {
+              title: requestedPayload.title,
+              notes: requestedPayload.notes || '',
+              due: requestedPayload.due || null
+            });
+            executionResult = {
+              success: true,
+              message: `Task "${task.title}" added to "${taskList.title}".`,
+              externalRefs: { taskListId: taskList.id, taskId: task.id },
+              nextRecommendedActions: ['tasks_add_task', 'tasks_complete_task']
+            };
+          }
+        } catch (err) {
+          executionResult = { success: false, message: `Google Tasks failed: ${err.message}` };
+        }
+      } else if (requestedAction === 'tasks_complete_task' && requestedPayload?.taskListId && requestedPayload?.taskId) {
+        // ── Google Tasks: Complete Task ───────────────────────
+        try {
+          const db2 = new DatabaseService();
+          const userTokens = await db2.getUserTokens(userEmail);
+          if (!userTokens?.encrypted_access_token) throw new Error('Google account not connected.');
+          const accessToken = decrypt(userTokens.encrypted_access_token);
+          const refreshToken = userTokens.encrypted_refresh_token ? decrypt(userTokens.encrypted_refresh_token) : '';
+          const tasksAdapter = new GoogleTasksAdapter(accessToken, refreshToken);
+          const task = await tasksAdapter.completeTask(requestedPayload.taskListId, requestedPayload.taskId);
+          executionResult = {
+            success: true,
+            message: `Task "${task.title}" marked as completed.`,
+            externalRefs: { taskListId: requestedPayload.taskListId, taskId: task.id },
+            nextRecommendedActions: ['tasks_list']
+          };
+        } catch (err) {
+          executionResult = { success: false, message: `Failed to complete task: ${err.message}` };
+        }
       } else {
         executionResult = { success: true, message: 'Action completed' };
       }
@@ -396,6 +533,11 @@ export async function POST(request) {
     let operatorRun = null;
     let normalizedPlan = [];
     let requiresApproval = false;
+    
+    // --- SEARCH SESSION TRANSPARENCY (Perplexity-style) ---
+    const planEngine = new ArcusPlanEngine({ db, userEmail });
+    let searchSessions = [];
+
     if (operatorRuntimeEnabled && operatorRuntime) {
       const runInit = await operatorRuntime.initializeRun({
         message,
@@ -449,15 +591,48 @@ Body: ${emailData.body || emailData.snippet}
     }
     // Otherwise, handle general email queries by searching
     else if ((userEmail || gmailAccessToken) && detectedIsEmailQuery && !emailContext) {
+      // Create a search session for transparency
+      let emailSearchSession = null;
+      try {
+        const sessionResult = await planEngine.createSearchSession({
+          runId: operatorRun?.runId || null,
+          query: message,
+          sourceType: 'email'
+        });
+        emailSearchSession = sessionResult;
+        await planEngine.transitionSearchSession(sessionResult.sessionId, 'searching', { query: message });
+      } catch (e) {
+        console.warn('Search session creation failed (non-fatal):', e.message);
+      }
+
       try {
         const emailActionResult = await executeEmailAction(message, userEmail, session, gmailAccessToken, intentAnalysis);
         emailResult = emailActionResult;
         
         if (emailActionResult && emailActionResult.success) {
           emailContext = formatEmailActionResult(emailActionResult);
-          rawEmailData = emailActionResult.emails || [];
+          const rawEmailData = emailActionResult.emails || [];
           actionType = 'email';
           console.log(`✅ Arcus context enriched with ${rawEmailData.length} emails`);
+
+          // Complete search session with results
+          if (emailSearchSession) {
+            await planEngine.transitionSearchSession(emailSearchSession.sessionId, 'complete', {
+              resultCount: rawEmailData.length,
+              selectedSnippets: rawEmailData.slice(0, 5).map(e => ({
+                subject: e.subject,
+                from: e.from,
+                date: e.date
+              }))
+            });
+            searchSessions.push({
+              sessionId: emailSearchSession.sessionId,
+              query: message,
+              sourceType: 'email',
+              status: 'complete',
+              resultCount: rawEmailData.length
+            });
+          }
         }
         
         if (emailActionResult?.error) {
@@ -465,6 +640,9 @@ Body: ${emailData.body || emailData.snippet}
         }
       } catch (err) {
         console.error('Error in Arcus email action:', err);
+        if (emailSearchSession) {
+          await planEngine.transitionSearchSession(emailSearchSession.sessionId, 'complete', { resultCount: 0 }).catch(() => {});
+        }
       }
     }
 
@@ -701,6 +879,7 @@ Body: ${emailData.body || emailData.snippet}
         requiresApproval: false,
         approvalTokens: {}
       },
+      searchSessions: searchSessions.length > 0 ? searchSessions : undefined,
       postExecutionSuggestion: runPhase === 'approval'
         ? 'Your draft is ready in canvas. Approve, revise, or save it as draft.'
         : "Your task is complete. Want me to track replies or prepare a follow-up draft?"

@@ -7,7 +7,7 @@ import { signOut } from 'next-auth/react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { AddSquareIcon, Cancel01Icon, WorkHistoryIcon } from '@hugeicons/core-free-icons';
 import { ChatHistoryModal } from './components/ChatHistoryModal';
-import { ThinkingLayer, ResultCard, type ThinkingStep, type ThinkingBlock } from './components/ThinkingLayer';
+import { ThinkingLayer, ResultCard, type ThinkingStep, type ThinkingBlock, type SearchSession } from './components/ThinkingLayer';
 import { CanvasPanel, type CanvasData } from './components/CanvasPanel';
 
 import { PromptInputBox } from '@/components/ui/ai-prompt-box';
@@ -423,6 +423,7 @@ export default function ChatInterface({
 
   // Live thinking state (AI-generated, shown during loading)
   const [liveThinkingBlocks, setLiveThinkingBlocks] = useState<ThinkingBlock[]>([]);
+  const [searchSessions, setSearchSessions] = useState<SearchSession[]>([]);
 
   // ... (inside the component)
 
@@ -1026,6 +1027,11 @@ export default function ChatInterface({
 
       if (data.integrations) setIntegrations(data.integrations);
 
+      // Store search sessions for transparency
+      if (data.searchSessions && data.searchSessions.length > 0) {
+        setSearchSessions(data.searchSessions);
+      }
+
       // Final Thinking & Artifact Metadata
       const aiThinkingProcess = (data.thinkingSteps && data.thinkingSteps.length > 0)
         ? data.thinkingSteps.map((s: any, i: number) => ({
@@ -1066,6 +1072,7 @@ export default function ChatInterface({
           notesResult: data.notesResult,
           emailResult: data.emailResult,
           internalThought: aiThought || undefined,
+          searchSessions: data.searchSessions || undefined,
         }
       };
 
@@ -2252,6 +2259,7 @@ export default function ChatInterface({
                                       <ThinkingLayer
                                         blocks={msg.meta.thinkingBlocks}
                                         isVisible={true}
+                                        searchSessions={(msg.meta as any)?.searchSessions}
                                       />
                                     </div>
                                   )}
@@ -2428,6 +2436,7 @@ export default function ChatInterface({
                                       blocks={liveThinkingBlocks}
                                       isVisible={true}
                                       isGenerating={isLoading}
+                                      searchSessions={searchSessions}
                                     />
                                   </motion.div>
                                 )}
