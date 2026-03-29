@@ -1905,11 +1905,11 @@ export default function ChatInterface({
           />
 
           <div className={cn(
-            "flex-1 flex flex-row relative p-4 gap-4 transition-all duration-500 ease-in-out overflow-hidden bg-black",
+            "flex-1 flex flex-row relative h-full gap-4 transition-all duration-500 ease-in-out overflow-hidden bg-black",
             isSidebarCollapsed ? "ml-20" : "ml-64"
           )}>
             {/* Chat Column (Order 1 - LEFT) */}
-            <div className="flex-1 flex flex-col relative min-w-[500px] h-full transition-all duration-500 order-1 bg-[#161616] border border-white/5 rounded-[32px] shadow-2xl overflow-hidden">
+            <div className="flex-1 flex flex-col relative min-w-[500px] h-full transition-all duration-500 order-1 bg-[#161616] border-x border-t border-white/5 rounded-t-[32px] shadow-2xl overflow-hidden">
               {/* Header */}
               <div className="sticky top-0 z-40 transition-all duration-300">
                 <div className="relative px-8 py-3">
@@ -2435,7 +2435,7 @@ export default function ChatInterface({
                       </div>
                     </div>
 
-                    <div className="absolute bottom-0 left-0 right-0 z-20 w-full px-6 pb-10 bg-gradient-to-t from-black via-black/90 to-transparent pt-12">
+                    <div className="absolute bottom-10 left-0 right-0 z-20 w-full px-6 bg-gradient-to-t from-black via-black/90 to-transparent pt-16">
 
                       <div className="max-w-3xl mx-auto">
                         <PromptInputBox
