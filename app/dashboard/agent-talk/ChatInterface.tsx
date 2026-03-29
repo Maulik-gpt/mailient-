@@ -2439,7 +2439,7 @@ export default function ChatInterface({
                       </div>
                     </div>
 
-                    <div className="absolute bottom-0 left-0 right-0 z-20 w-full px-6 bg-gradient-to-t from-[#161616] via-[#161616]/95 to-transparent pt-20 pb-8 pointer-events-none">
+                    <div className="absolute bottom-0 left-0 right-0 z-20 w-full px-6 bg-gradient-to-t from-[#161616] via-[#161616]/95 to-transparent pt-20 pb-2 pointer-events-none">
                       <div className="max-w-3xl mx-auto pointer-events-auto">
                         <PromptInputBox
                           onSend={(msg, files, opts) => handleSend(msg, files, opts)}
