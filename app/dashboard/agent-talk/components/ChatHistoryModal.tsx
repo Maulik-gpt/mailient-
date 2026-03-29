@@ -230,9 +230,9 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
             </div>
           ) : (
             filteredHistory.map((item) => (
-              <div key={item.id} className="group relative">
+              <div key={item.conversation_id || item.id} className="group relative">
                 <div
-                  onClick={() => onConversationSelect?.(item.id)}
+                  onClick={() => onConversationSelect?.(item.conversation_id || item.id)}
                   className={cn(
                     "flex items-center gap-3 p-2.5 rounded-xl transition-all cursor-pointer",
                     "hover:bg-white/[0.04]"
@@ -242,14 +242,14 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
                     {getMissionIconMinimal(item.user_message)}
                   </div>
                   
-                  {editingId === item.id ? (
+                  {editingId === (item.conversation_id || item.id) ? (
                     <input 
                       autoFocus
                       className="flex-1 bg-transparent border-none outline-none text-[14px] font-medium text-white/90"
                       value={localEditValue}
                       onChange={e => setLocalEditValue(e.target.value)}
-                      onBlur={() => handleRename(item.id, localEditValue)}
-                      onKeyDown={e => e.key === 'Enter' && handleRename(item.id, localEditValue)}
+                      onBlur={() => handleRename(item.conversation_id || item.id, localEditValue)}
+                      onKeyDown={e => e.key === 'Enter' && handleRename(item.conversation_id || item.id, localEditValue)}
                       onClick={e => e.stopPropagation()}
                     />
                   ) : (
@@ -261,13 +261,13 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
                   {!editingId && (
                     <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
                       <button 
-                        onClick={(e) => { e.stopPropagation(); setEditingId(item.id); setLocalEditValue(item.user_message); }}
+                        onClick={(e) => { e.stopPropagation(); setEditingId(item.conversation_id || item.id); setLocalEditValue(item.user_message); }}
                         className="p-1 hover:text-white text-white/20"
                       >
                         <Edit3 className="w-3.5 h-3.5" />
                       </button>
                       <button 
-                        onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}
+                        onClick={(e) => { e.stopPropagation(); handleDelete(item.conversation_id || item.id); }}
                         className="p-1 hover:text-red-400 text-white/20"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
