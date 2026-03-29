@@ -327,6 +327,19 @@ interface ChatInterfaceProps {
 // Global styles for hide scrollbar but maintain functionality
 const NoScrollbarStyles = () => (
   <style jsx global>{`
+    .arcus-scrollbar::-webkit-scrollbar {
+      width: 4px;
+    }
+    .arcus-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .arcus-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+    }
+    .arcus-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
     .no-scrollbar::-webkit-scrollbar {
       display: none !important;
     }
@@ -2144,7 +2157,7 @@ export default function ChatInterface({
                     </div>
                 ) : (
                   <div className="flex-1 flex flex-col relative overflow-hidden bg-transparent grow h-full">
-                    <div className="flex-1 overflow-y-auto px-6 py-4 scroll-smooth no-scrollbar">
+                    <div className="flex-1 overflow-y-auto px-6 py-4 scroll-smooth arcus-scrollbar">
                       <div className="max-w-3xl mx-auto space-y-4">
                         {activeMission && <MissionStatusHeader mission={activeMission} />}
                         {messages.map((msg) => (
@@ -2418,7 +2431,7 @@ export default function ChatInterface({
                             </div>
                           </div>
                         )}
-                        <div ref={messagesEndRef} className="h-20" />
+                        <div ref={messagesEndRef} className="h-48" />
                       </div>
                     </div>
 
