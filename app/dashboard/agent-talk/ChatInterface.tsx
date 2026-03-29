@@ -1896,7 +1896,7 @@ export default function ChatInterface({
             isSidebarCollapsed ? "ml-20" : "ml-64"
           )}>
             {/* Chat Column (Order 1 - LEFT) */}
-            <div className="flex-1 flex flex-col relative min-w-[500px] transition-all duration-500 order-1 bg-[#161616] border border-white/5 rounded-[32px] shadow-2xl overflow-hidden">
+            <div className="flex-1 flex flex-col relative min-w-[500px] h-full transition-all duration-500 order-1 bg-[#161616] border border-white/5 rounded-[32px] shadow-2xl overflow-hidden">
               {/* Header */}
               <div className="sticky top-0 z-40 transition-all duration-300">
                 <div className="relative px-8 py-3">
@@ -2143,7 +2143,7 @@ export default function ChatInterface({
                       </div>
                     </div>
                 ) : (
-                  <div className="flex-1 flex flex-col relative overflow-hidden bg-transparent">
+                  <div className="flex-1 flex flex-col relative overflow-hidden bg-transparent grow h-full">
                     <div className="flex-1 overflow-y-auto px-6 py-4 scroll-smooth no-scrollbar">
                       <div className="max-w-3xl mx-auto space-y-4">
                         {activeMission && <MissionStatusHeader mission={activeMission} />}
@@ -2422,7 +2422,7 @@ export default function ChatInterface({
                       </div>
                     </div>
 
-                    <div className="absolute bottom-0 left-0 right-0 z-20 w-full px-6 pb-6 bg-gradient-to-t from-black via-black/80 to-transparent">
+                    <div className="absolute bottom-0 left-0 right-0 z-20 w-full px-6 pb-10 bg-gradient-to-t from-black via-black/90 to-transparent pt-12">
 
                       <div className="max-w-3xl mx-auto">
                         <PromptInputBox
