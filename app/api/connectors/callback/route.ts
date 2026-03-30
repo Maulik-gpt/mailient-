@@ -76,10 +76,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[OAuth Callback] Error:', error);
     return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/connectors/error?error=server_error&description=${encodeURIComponent(error.message)}`
+      `${process.env.NEXT_PUBLIC_APP_URL}/connectors/error?error=server_error&description=${encodeURIComponent(error.message || '')}`
     );
   }
 }
@@ -105,10 +105,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result);
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[OAuth Callback POST] Error:', error);
     return NextResponse.json(
-      { error: error.message },
+      { error: error.message || 'Unknown error' },
       { status: 500 }
     );
   }
