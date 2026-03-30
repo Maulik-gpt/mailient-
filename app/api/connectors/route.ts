@@ -15,16 +15,25 @@ import {
   hasConnectedAccounts 
 } from '@/lib/arcus-connector-registry';
 
-// Initialize Supabase
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Lazy initialization - only create client when needed
+function getSupabaseClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  
+  if (!url || !key) {
+    throw new Error('Supabase environment variables not configured');
+  }
+  
+  return createClient(url, key);
+}
 
-const connectorService = new ConnectorService({ 
-  db: supabase,
-  supabase 
-});
+function getConnectorService() {
+  const supabase = getSupabaseClient();
+  return new ConnectorService({ 
+    db: supabase,
+    supabase 
+  });
+}
 
 /**
  * GET /api/connectors
@@ -42,7 +51,8 @@ export async function GET(request: NextRequest) {
     }
 
     const token = authHeader.split(' ')[1];
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const supabaseClient = getSupabaseClient();
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
 
     if (authError || !user) {
       return NextResponse.json(
@@ -52,7 +62,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user's connected accounts
-    const accounts = await connectorService.getUserAccounts(user.id);
+    const accounts = await getConnectorService().getUserAccounts(user.id);
 
     // Get all available connectors with connection status
     const allConnectors = getAllConnectors().map((connector: { id: string }) => {
@@ -97,7 +107,8 @@ export async function POST(request: NextRequest) {
     }
 
     const token = authHeader.split(' ')[1];
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const supabaseClient = getSupabaseClient();
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
 
     if (authError || !user) {
       return NextResponse.json(
@@ -117,17 +128,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Initiate OAuth
-    const result = await connectorService.initiateOAuth(
-      user.id,
-      connectorId,
-      redirectUri
-    );
+    const authUrl = await getConnectorService().initiateOAuth(connectorId, user.id, redirectUri);
 
     return NextResponse.json({
       success: true,
-      oauthUrl: result.oauthUrl,
-      sessionId: result.sessionId,
-      state: result.state
+      oauthUrl: authUrl.oauthUrl,
+      sessionId: authUrl.sessionId,
+      state: authUrl.state
     });
 
   } catch (error) {
@@ -155,7 +162,8 @@ export async function DELETE(request: NextRequest) {
     }
 
     const token = authHeader.split(' ')[1];
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const supabaseClient = getSupabaseClient();
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
 
     if (authError || !user) {
       return NextResponse.json(
@@ -176,7 +184,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Disconnect account
-    await connectorService.disconnectAccount(accountId, user.id);
+    await getConnectorService().disconnectAccount(accountId, user.id);
 
     return NextResponse.json({
       success: true,
