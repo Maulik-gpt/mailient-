@@ -7,17 +7,22 @@ import {
   ArrowRight, BarChart3, Clock, Users, Zap, 
   MoreHorizontal, CheckCircle2, Circle, Edit, Terminal,
   Code, Layout, Laptop, GripVertical, ChevronLeft, Presentation,
-  LineChart, PieChart, TrendingUp, Info
+  LineChart, PieChart, TrendingUp, Info, ListTodo, AlertTriangle, 
+  Target, HelpCircle, Shield, Play, Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from "@/lib/utils";
+import { ExecutionTimeline } from './ExecutionTimeline';
+import { ActionOutputCards } from './ActionOutputCards';
+import { CanvasArtifacts } from './CanvasArtifacts';
+import { NextActionControls } from './NextActionControls';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, 
   ResponsiveContainer, PieChart as RePieChart, Pie, Cell, 
   AreaChart, Area 
 } from 'recharts';
 
-export type CanvasType = 'email_draft' | 'summary' | 'research' | 'action_plan' | 'reply' | 'notes' | 'meeting_schedule' | 'analytics' | 'workflow' | 'none';
+export type CanvasType = 'email_draft' | 'summary' | 'research' | 'action_plan' | 'reply' | 'notes' | 'meeting_schedule' | 'analytics' | 'workflow' | 'execution' | 'artifacts' | 'action_outputs' | 'next_actions' | 'none';
 
 export interface CanvasData {
     type: CanvasType;
@@ -50,6 +55,10 @@ const typeConfig: Record<CanvasType, { label: string; icon: any; color: string }
     meeting_schedule: { label: 'Schedule', icon: <Calendar className="w-4 h-4" />, color: '#3b82f6' },
     analytics: { label: 'Analytics', icon: <BarChart3 className="w-4 h-4" />, color: '#f97316' },
     workflow: { label: 'Review', icon: <Layout className="w-4 h-4" />, color: '#a855f7' },
+    execution: { label: 'Execution', icon: <Play className="w-4 h-4" />, color: '#3b82f6' },
+    artifacts: { label: 'Artifacts', icon: <FileText className="w-4 h-4" />, color: '#8b5cf6' },
+    action_outputs: { label: 'Results', icon: <CheckCircle2 className="w-4 h-4" />, color: '#10b981' },
+    next_actions: { label: 'Next Steps', icon: <ArrowRight className="w-4 h-4" />, color: '#f59e0b' },
     none: { label: 'Work', icon: <Sparkles className="w-4 h-4" />, color: '#a855f7' },
 };
 
@@ -269,6 +278,12 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                                       </motion.div>
                                     </AnimatePresence>
                                 </div>
+                            ) : canvasData.type === 'action_plan' ? (
+                                <PlanArtifactView 
+                                    content={canvasData.content} 
+                                    onExecute={onExecute}
+                                    isExecuting={isExecuting}
+                                />
                             ) : canvasData.type === 'analytics' ? (
                                 <div className="h-full flex flex-col space-y-8 overflow-y-auto pr-2 custom-scrollbar">
                                   {/* Dynamic Stats Row */}
@@ -391,6 +406,35 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                                                 ) : canvasData.content.body}
                                             </div>
                                         </div>
+                                    ) : canvasData.type === 'execution' ? (
+                                        <ExecutionTimeline 
+                                            steps={canvasData.content?.steps || []}
+                                            currentStepId={canvasData.content?.currentStepId}
+                                            overallProgress={canvasData.content?.progress || 0}
+                                            runStatus={canvasData.content?.runStatus || 'initializing'}
+                                        />
+                                    ) : canvasData.type === 'artifacts' ? (
+                                        <CanvasArtifacts 
+                                            artifacts={canvasData.content?.artifacts || []}
+                                            onDownload={(id) => onExecute('download_artifact', { id })}
+                                        />
+                                    ) : canvasData.type === 'action_outputs' ? (
+                                        <ActionOutputCards 
+                                            outputs={canvasData.content?.outputs || []}
+                                            onViewDetails={(output: any) => {
+                                                if (output?.externalRefs?.notionPageUrl) {
+                                                    window.open(output.externalRefs.notionPageUrl, '_blank');
+                                                } else if (output?.externalRefs?.calendarEventUrl) {
+                                                    window.open(output.externalRefs.calendarEventUrl, '_blank');
+                                                }
+                                            }}
+                                        />
+                                    ) : canvasData.type === 'next_actions' ? (
+                                        <NextActionControls 
+                                            actions={canvasData.content?.actions || []}
+                                            onExecute={(actionId: string) => onExecute(actionId, canvasData.content?.context)}
+                                            disabled={isExecuting}
+                                        />
                                     ) : (
                                         <div className="h-full flex flex-col items-center justify-center opacity-30 px-12 text-center">
                                             <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-4">
@@ -451,6 +495,383 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.05); border-radius: 10px; }
             `}</style>
+        </div>
+    );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PLAN ARTIFACT VIEW (Phase 2)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+interface PlanArtifactViewProps {
+    content: {
+        planId?: string;
+        title?: string;
+        objective?: string;
+        assumptions?: string[];
+        questionsAnswered?: string[];
+        acceptanceCriteria?: string[];
+        status?: 'draft' | 'approved' | 'executing' | 'completed' | 'failed' | 'cancelled';
+        todos?: Array<{
+            todoId: string;
+            title: string;
+            description?: string;
+            status: 'pending' | 'ready' | 'running' | 'completed' | 'failed' | 'skipped' | 'blocked_approval';
+            actionType: string;
+            sortOrder: number;
+            approvalMode: 'auto' | 'manual';
+            attemptCount: number;
+            errorMessage?: string;
+            resultPayload?: any;
+        }>;
+        progress?: {
+            total: number;
+            completed: number;
+            failed: number;
+            running: number;
+            ready: number;
+        };
+        approvedAt?: string;
+        completedAt?: string;
+    };
+    onExecute: (action: string, data: unknown) => void;
+    isExecuting?: boolean;
+}
+
+const todoStatusConfig: Record<string, { label: string; color: string; bgColor: string; icon: any }> = {
+    pending: { label: 'Pending', color: 'text-white/30', bgColor: 'bg-white/5', icon: Clock },
+    ready: { label: 'Ready', color: 'text-blue-400', bgColor: 'bg-blue-500/10', icon: CheckCircle2 },
+    running: { label: 'Running', color: 'text-amber-400', bgColor: 'bg-amber-500/10', icon: Loader2 },
+    completed: { label: 'Done', color: 'text-emerald-400', bgColor: 'bg-emerald-500/10', icon: CheckCircle2 },
+    failed: { label: 'Failed', color: 'text-red-400', bgColor: 'bg-red-500/10', icon: AlertTriangle },
+    skipped: { label: 'Skipped', color: 'text-neutral-400', bgColor: 'bg-neutral-500/10', icon: CheckCircle2 },
+    blocked_approval: { label: 'Blocked', color: 'text-orange-400', bgColor: 'bg-orange-500/10', icon: AlertTriangle }
+};
+
+const planStatusConfig: Record<string, { label: string; color: string; bgColor: string }> = {
+    draft: { label: 'Draft', color: 'text-amber-400', bgColor: 'bg-amber-500/10' },
+    approved: { label: 'Approved', color: 'text-emerald-400', bgColor: 'bg-emerald-500/10' },
+    executing: { label: 'Executing', color: 'text-blue-400', bgColor: 'bg-blue-500/10' },
+    completed: { label: 'Completed', color: 'text-emerald-400', bgColor: 'bg-emerald-500/10' },
+    failed: { label: 'Failed', color: 'text-red-400', bgColor: 'bg-red-500/10' },
+    cancelled: { label: 'Cancelled', color: 'text-neutral-400', bgColor: 'bg-neutral-500/10' }
+};
+
+function PlanArtifactView({ content, onExecute, isExecuting: isExecutingProp }: PlanArtifactViewProps) {
+    const [activeTab, setActiveTab] = useState<'overview' | 'todos' | 'timeline'>('overview');
+    const [expandedTodos, setExpandedTodos] = useState(true);
+
+    const status = content.status || 'draft';
+    const statusInfo = planStatusConfig[status];
+    const todos = content.todos || [];
+    const progress = content.progress || {
+        total: todos.length,
+        completed: todos.filter(t => t.status === 'completed').length,
+        failed: todos.filter(t => t.status === 'failed').length,
+        running: todos.filter(t => t.status === 'running').length,
+        ready: todos.filter(t => t.status === 'ready').length
+    };
+
+    const progressPercent = progress.total > 0 ? (progress.completed / progress.total) * 100 : 0;
+    const isExecuting = status === 'executing' || status === 'approved';
+    const needsApproval = status === 'draft';
+
+    return (
+        <div className="h-full flex flex-col space-y-6 overflow-y-auto pr-2 custom-scrollbar">
+            {/* Header */}
+            <div className="space-y-4">
+                <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className={cn(
+                            "w-12 h-12 rounded-xl flex items-center justify-center border",
+                            statusInfo.bgColor, statusInfo.color.replace('text-', 'border-').replace('400', '500/30')
+                        )}>
+                            <ListTodo className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h2 className="text-[18px] font-bold text-white/95">{content.title || 'Execution Plan'}</h2>
+                            <p className="text-[13px] text-white/50 mt-0.5">{content.objective}</p>
+                        </div>
+                    </div>
+                    <span className={cn(
+                        "text-[11px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border",
+                        statusInfo.bgColor, statusInfo.color, statusInfo.color.replace('text-', 'border-').replace('400', '500/30')
+                    )}>
+                        {statusInfo.label}
+                    </span>
+                </div>
+
+                {/* Progress Bar */}
+                {progress.total > 0 && (
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between text-[11px] text-white/40">
+                            <span>Progress</span>
+                            <span>{progress.completed}/{progress.total} completed</span>
+                        </div>
+                        <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                            <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${progressPercent}%` }}
+                                className="h-full bg-gradient-to-r from-blue-500 via-amber-500 to-emerald-500 rounded-full"
+                                transition={{ duration: 0.5 }}
+                            />
+                        </div>
+                        <div className="flex items-center gap-4 text-[11px]">
+                            {progress.running > 0 && (
+                                <span className="text-amber-400 flex items-center gap-1">
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                    {progress.running} running
+                                </span>
+                            )}
+                            {progress.failed > 0 && (
+                                <span className="text-red-400 flex items-center gap-1">
+                                    <AlertTriangle className="w-3 h-3" />
+                                    {progress.failed} failed
+                                </span>
+                            )}
+                            {progress.ready > 0 && status === 'approved' && (
+                                <span className="text-blue-400">{progress.ready} ready to start</span>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Action Button */}
+            {needsApproval && (
+                <button
+                    onClick={() => onExecute('approve_plan', { planId: content.planId })}
+                    disabled={isExecutingProp}
+                    className="flex items-center justify-center gap-2 w-full py-3 bg-white text-black text-[14px] font-bold rounded-xl hover:bg-neutral-200 transition-all disabled:opacity-50"
+                >
+                    <Shield className="w-4 h-4" />
+                    Approve & Execute Plan
+                </button>
+            )}
+
+            {/* Tabs */}
+            <div className="flex items-center gap-1 p-1 bg-white/5 rounded-lg">
+                {(['overview', 'todos', 'timeline'] as const).map((tab) => (
+                    <button
+                        key={tab}
+                        onClick={() => setActiveTab(tab)}
+                        className={cn(
+                            "flex-1 py-2 text-[12px] font-bold rounded-md transition-all",
+                            activeTab === tab 
+                                ? "bg-white/10 text-white" 
+                                : "text-white/40 hover:text-white/60"
+                        )}
+                    >
+                        {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                    </button>
+                ))}
+            </div>
+
+            {/* Tab Content */}
+            <AnimatePresence mode="wait">
+                {activeTab === 'overview' && (
+                    <motion.div
+                        key="overview"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="space-y-6"
+                    >
+                        {/* Assumptions */}
+                        {content.assumptions && content.assumptions.length > 0 && (
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-2 text-white/40">
+                                    <Target className="w-4 h-4" />
+                                    <span className="text-[12px] font-bold uppercase tracking-wider">Assumptions</span>
+                                </div>
+                                <ul className="space-y-2">
+                                    {content.assumptions.map((assumption, i) => (
+                                        <li key={i} className="flex items-start gap-2 text-[13px] text-white/60">
+                                            <span className="text-white/30 mt-1">•</span>
+                                            {assumption}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+
+                        {/* Questions Answered */}
+                        {content.questionsAnswered && content.questionsAnswered.length > 0 && (
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-2 text-white/40">
+                                    <HelpCircle className="w-4 h-4" />
+                                    <span className="text-[12px] font-bold uppercase tracking-wider">Questions Answered</span>
+                                </div>
+                                <ul className="space-y-2">
+                                    {content.questionsAnswered.map((q, i) => (
+                                        <li key={i} className="flex items-start gap-2 text-[13px] text-white/60">
+                                            <span className="text-emerald-400/60 mt-1">✓</span>
+                                            {q}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+
+                        {/* Acceptance Criteria */}
+                        {content.acceptanceCriteria && content.acceptanceCriteria.length > 0 && (
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-2 text-white/40">
+                                    <CheckCircle2 className="w-4 h-4" />
+                                    <span className="text-[12px] font-bold uppercase tracking-wider">Acceptance Criteria</span>
+                                </div>
+                                <ul className="space-y-2">
+                                    {content.acceptanceCriteria.map((criteria, i) => (
+                                        <li key={i} className="flex items-start gap-2 text-[13px] text-white/60">
+                                            <span className="text-white/30 mt-1">{i + 1}.</span>
+                                            {criteria}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                    </motion.div>
+                )}
+
+                {activeTab === 'todos' && (
+                    <motion.div
+                        key="todos"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="space-y-2"
+                    >
+                        {todos.map((todo, index) => (
+                            <TodoItemCard key={todo.todoId} todo={todo} index={index} />
+                        ))}
+                    </motion.div>
+                )}
+
+                {activeTab === 'timeline' && (
+                    <motion.div
+                        key="timeline"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="space-y-4"
+                    >
+                        <div className="relative pl-4 border-l border-white/10 space-y-6">
+                            {content.approvedAt && (
+                                <TimelineItem 
+                                    status="completed"
+                                    title="Plan Approved"
+                                    timestamp={content.approvedAt}
+                                    description="User approved the execution plan"
+                                />
+                            )}
+                            {todos.filter(t => t.status !== 'pending').map((todo) => (
+                                <TimelineItem
+                                    key={todo.todoId}
+                                    status={todo.status}
+                                    title={todo.title}
+                                    description={todo.resultPayload?.message || todo.errorMessage}
+                                    isError={todo.status === 'failed'}
+                                />
+                            ))}
+                            {content.completedAt && (
+                                <TimelineItem 
+                                    status="completed"
+                                    title="Plan Completed"
+                                    timestamp={content.completedAt}
+                                    description="All tasks finished successfully"
+                                />
+                            )}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+}
+
+function TodoItemCard({ todo, index }: { todo: NonNullable<PlanArtifactViewProps['content']['todos']>[number]; index: number }) {
+    const status = todoStatusConfig[todo.status];
+    const StatusIcon = status.icon;
+    const isRunning = todo.status === 'running';
+    const isCompleted = todo.status === 'completed';
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: index * 0.05 }}
+            className={cn(
+                "flex items-start gap-3 p-3 rounded-xl border transition-all",
+                isRunning ? "bg-amber-500/5 border-amber-500/20" :
+                isCompleted ? "bg-emerald-500/5 border-emerald-500/10" :
+                todo.status === 'failed' ? "bg-red-500/5 border-red-500/20" :
+                todo.status === 'blocked_approval' ? "bg-orange-500/5 border-orange-500/20" :
+                "bg-white/[0.02] border-white/5"
+            )}
+        >
+            <div className={cn("w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mt-0.5", status.bgColor)}>
+                <StatusIcon className={cn("w-3.5 h-3.5", isRunning && "animate-spin", status.color)} />
+            </div>
+            <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-2">
+                    <h4 className={cn("text-[13px] font-semibold leading-tight", isCompleted ? 'text-white/40 line-through' : 'text-white/80')}>
+                        {todo.title}
+                    </h4>
+                    <span className={cn("text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0", status.bgColor, status.color)}>
+                        {status.label}
+                    </span>
+                </div>
+                {todo.description && !isCompleted && (
+                    <p className="text-[12px] text-white/40 mt-1">{todo.description}</p>
+                )}
+                {todo.errorMessage && (
+                    <p className="text-[11px] text-red-400/80 mt-1">{todo.errorMessage}</p>
+                )}
+                {todo.attemptCount > 1 && (
+                    <p className="text-[10px] text-white/30 mt-2">Attempt {todo.attemptCount}</p>
+                )}
+            </div>
+        </motion.div>
+    );
+}
+
+function TimelineItem({ 
+    status, 
+    title, 
+    description, 
+    timestamp, 
+    isError 
+}: { 
+    status: string; 
+    title: string; 
+    description?: string; 
+    timestamp?: string;
+    isError?: boolean;
+}) {
+    const statusColors: Record<string, string> = {
+        completed: 'bg-emerald-500',
+        failed: 'bg-red-500',
+        running: 'bg-amber-500',
+        ready: 'bg-blue-500',
+        pending: 'bg-white/20'
+    };
+
+    return (
+        <div className="relative">
+            <div className={cn("absolute -left-[21px] w-3 h-3 rounded-full", statusColors[status] || 'bg-white/20')} />
+            <div className="space-y-1">
+                <h4 className="text-[13px] font-semibold text-white/80">{title}</h4>
+                {description && (
+                    <p className={cn("text-[12px]", isError ? 'text-red-400/80' : 'text-white/50')}>
+                        {description}
+                    </p>
+                )}
+                {timestamp && (
+                    <p className="text-[11px] text-white/30">
+                        {new Date(timestamp).toLocaleString()}
+                    </p>
+                )}
+            </div>
         </div>
     );
 }

@@ -9,6 +9,7 @@ import { addDays, setHours, setMinutes, startOfDay, format, parse, isWeekend, ne
 import { ArcusMissionService } from '@/lib/arcus-mission.js';
 import { ArcusOperatorRuntime } from '@/lib/arcus-operator-runtime.js';
 import { ArcusPlanEngine } from '@/lib/arcus-plan-engine.js';
+import { PlanModeEngine } from '@/lib/arcus-plan-mode-engine.js';
 import { NotionAdapter } from '@/lib/notion-adapter.js';
 import { GoogleTasksAdapter } from '@/lib/google-tasks-adapter.js';
 import { isFeatureEnabled } from '@/lib/feature-flags.js';
@@ -164,6 +165,13 @@ export async function POST(request) {
       userEmail,
       userName,
       conversationId: currentConversationId
+    }) : null;
+    
+    // Initialize Plan Mode Engine for AI-driven plan generation (Phase 2)
+    const planModeEngine = userEmail ? new PlanModeEngine({
+      arcusAI,
+      db,
+      userEmail
     }) : null;
 
     // Operator Runtime V2: unified canvas execution contract with approval + idempotency
@@ -533,6 +541,7 @@ export async function POST(request) {
     let operatorRun = null;
     let normalizedPlan = [];
     let requiresApproval = false;
+    let planArtifact = null; // Phase 2: Plan artifact for complex intents
     
     // --- SEARCH SESSION TRANSPARENCY (Perplexity-style) ---
     const planEngine = new ArcusPlanEngine({ db, userEmail });
@@ -548,6 +557,27 @@ export async function POST(request) {
       operatorRun = runInit?.run || null;
       normalizedPlan = runInit?.plan || [];
       requiresApproval = !!runInit?.requiresApproval;
+      
+      // Phase 2: Generate AI plan for complex intents
+      if (planModeEngine && runInit?.planArtifact) {
+        planArtifact = runInit.planArtifact;
+      } else if (planModeEngine && (intentAnalysis?.complexity === 'complex' || intentAnalysis?.intent === 'multi_step')) {
+        try {
+          console.log('🎯 Generating AI plan for complex intent...');
+          const planResult = await planModeEngine.generatePlan({
+            message,
+            runId: operatorRun?.runId,
+            conversationId: currentConversationId,
+            context: { emailContext, notesResult },
+            intent: intentAnalysis?.intent || 'general',
+            complexity: intentAnalysis?.complexity || 'simple'
+          });
+          planArtifact = planResult.plan;
+          console.log(`✅ Plan generated: ${planResult.planId} with ${planResult.todos?.length || 0} todos`);
+        } catch (err) {
+          console.warn('Plan generation failed (non-fatal):', err.message);
+        }
+      }
     }
 
     // --- CONTEXT SEARCH ---
@@ -843,6 +873,7 @@ Body: ${emailData.body || emailData.snippet}
       integrations,
       intentAnalysis,
       canvasData,
+      planArtifact: planArtifact || undefined, // Phase 2: Include plan artifact for complex intents
       thinkingSteps: normalizedPlan.length > 0
         ? normalizedPlan.map((s, i) => ({
           step: i + 1,

@@ -9,6 +9,7 @@ import { AddSquareIcon, Cancel01Icon, WorkHistoryIcon } from '@hugeicons/core-fr
 import { ChatHistoryModal } from './components/ChatHistoryModal';
 import { ThinkingLayer, ResultCard, type ThinkingStep, type ThinkingBlock, type SearchSession } from './components/ThinkingLayer';
 import { CanvasPanel, type CanvasData } from './components/CanvasPanel';
+import { PlanArtifactCard, type PlanArtifact } from './components/PlanArtifactCard';
 
 import { PromptInputBox } from '@/components/ui/ai-prompt-box';
 import { IntegrationsModal } from '@/components/ui/integrations-modal';
@@ -247,13 +248,15 @@ interface AgentMessage {
     };
     limitReached?: boolean;
     usageData?: any;
-      canvasApproval?: {
-        status: 'pending' | 'accepted' | 'declined';
-        title?: string;
-        description?: string;
-        canvasData?: any;
-        canvasType?: string;
-      };
+    canvasApproval?: {
+      status: 'pending' | 'accepted' | 'declined';
+      title?: string;
+      description?: string;
+      canvasData?: any;
+      canvasType?: string;
+    };
+    searchSessions?: SearchSession[];
+    planArtifact?: PlanArtifact; // Phase 2: Plan artifact for execution
   };
 }
 
@@ -448,6 +451,7 @@ export default function ChatInterface({
   const [canvasData, setCanvasData] = useState<CanvasData | null>(null);
   const [isCanvasExecuting, setIsCanvasExecuting] = useState(false);
   const [activeRun, setActiveRun] = useState<{ runId: string; status?: string; phase?: string } | null>(null);
+  const [isProcessingPlan, setIsProcessingPlan] = useState(false);
   const [isDeepThinkingState, setIsDeepThinkingState] = useState<boolean>(false);
   const [isSearchingState, setIsSearchingState] = useState<boolean>(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
@@ -1073,6 +1077,7 @@ export default function ChatInterface({
           emailResult: data.emailResult,
           internalThought: aiThought || undefined,
           searchSessions: data.searchSessions || undefined,
+          planArtifact: data.planArtifact || undefined, // Phase 2: Include plan artifact
         }
       };
 
@@ -1275,6 +1280,70 @@ export default function ChatInterface({
       console.error('Canvas execution error:', error);
     } finally {
       setIsCanvasExecuting(false);
+    }
+  };
+
+  // Plan approval handler (Phase 2)
+  const handlePlanApprove = async (planId: string, messageId: number) => {
+    setIsProcessingPlan(true);
+    try {
+      const response = await fetch('/api/agent-talk/chat-arcus', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: `Approve and execute plan: ${planId}`,
+          runId: activeRun?.runId || null,
+          conversationId: currentConversationId,
+          isNewConversation: false,
+          actionType: 'approve_plan',
+          actionPayload: { planId },
+          executeCanvasAction: 'approve_plan',
+          canvasActionData: { planId }
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.executionResult?.success || result.success) {
+        toast.success(result.message || 'Plan approved and execution started');
+        
+        // Update the message to show the plan is now executing
+        setMessages(prev => prev.map(m => {
+          if (m.id === messageId && m.type === 'agent') {
+            const agentMsg = m as AgentMessage;
+            const currentPlan = agentMsg.meta?.planArtifact;
+            if (!currentPlan) return m;
+            
+            return {
+              ...agentMsg,
+              meta: {
+                ...agentMsg.meta,
+                planArtifact: {
+                  ...currentPlan,
+                  status: 'executing' as const
+                }
+              }
+            };
+          }
+          return m;
+        }));
+
+        // Poll for execution updates
+        if (result.run?.runId) {
+          setActiveRun({
+            runId: result.run.runId,
+            status: 'executing',
+            phase: 'execution'
+          });
+        }
+      } else {
+        toast.error(result.message || 'Plan approval failed');
+      }
+    } catch (error) {
+      toast.error('Failed to approve plan');
+      console.error('Plan approval error:', error);
+    } finally {
+      setIsProcessingPlan(false);
     }
   };
 
@@ -2264,6 +2333,20 @@ export default function ChatInterface({
                                     </div>
                                   )}
 
+                                  {/* Plan Artifact Card (Phase 2) */}
+                                  {msg.role === 'assistant' && (msg as AgentMessage).meta?.planArtifact && (
+                                    <div className="mt-4">
+                                      <PlanArtifactCard
+                                        plan={(msg as AgentMessage).meta!.planArtifact as PlanArtifact}
+                                        onApprove={async (planId) => {
+                                          // Execute the plan approval
+                                          await handlePlanApprove(planId, msg.id as number);
+                                        }}
+                                        isProcessing={isProcessingPlan}
+                                      />
+                                    </div>
+                                  )}
+
                                   {msg.role === 'assistant' && msg.meta?.limitReached && (
                                     <div className="flex flex-col gap-4 mt-2">
                                       <a href="/pricing" className="text-white/40 hover:text-white underline underline-offset-4 decoration-white/10 hover:decoration-white transition-all text-[13px] tracking-tight truncate w-fit">
@@ -2444,12 +2527,13 @@ export default function ChatInterface({
                             </div>
                           </div>
                         )}
-                        <div ref={messagesEndRef} className="h-48" />
+                        <div ref={messagesEndRef} className="h-8" />
                       </div>
                     </div>
 
-                    <div className="absolute bottom-0 left-0 right-0 z-20 w-full px-6 bg-gradient-to-t from-[#161616] via-[#161616]/95 to-transparent pt-20 pb-2 pointer-events-none">
-                      <div className="max-w-3xl mx-auto pointer-events-auto">
+                    <div className="shrink-0 relative w-full px-6 bg-[#161616] z-20 pb-6 pt-2 transition-all">
+                      <div className="absolute bottom-full left-0 right-0 h-16 bg-gradient-to-t from-[#161616] to-transparent pointer-events-none" />
+                      <div className="max-w-3xl mx-auto w-full">
                         <PromptInputBox
                           onSend={(msg, files, opts) => handleSend(msg, files, opts)}
                           onStop={() => abortControllerRef.current?.abort()}
