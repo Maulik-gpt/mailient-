@@ -6,13 +6,13 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { CheckCircle2, ArrowRight, Sparkles } from 'lucide-react';
 import { getConnector } from '@/lib/arcus-connector-registry';
 
-export default function ConnectorSuccessPage() {
+function ConnectorSuccessContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [countdown, setCountdown] = useState(5);
@@ -94,10 +94,10 @@ export default function ConnectorSuccessPage() {
             <span className="text-sm font-medium text-gray-300">AI-Powered Actions</span>
           </div>
           <ul className="text-left text-sm text-gray-400 space-y-2">
-            {connector?.actions.slice(0, 4).map((action, i) => (
+            {connector?.actions.slice(0, 4).map((action: string, i: number) => (
               <li key={i} className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-                {action.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                {action.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
               </li>
             ))}
           </ul>
@@ -123,5 +123,13 @@ export default function ConnectorSuccessPage() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+export default function ConnectorSuccessPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4 text-white">Loading...</div>}>
+      <ConnectorSuccessContent />
+    </Suspense>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import SiftOnboardingPage from "./sift-onboarding";
@@ -116,6 +116,14 @@ export default function OnboardingPage() {
     return null;
   }
 
-  // Use the new Sift onboarding flow
-  return <SiftOnboardingPage />;
+  // Use the new Sift onboarding flow with Suspense
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-neutral-800 border-t-[#fafafa] rounded-full animate-spin"></div>
+      </div>
+    }>
+      <SiftOnboardingPage />
+    </Suspense>
+  );
 }

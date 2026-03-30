@@ -6,12 +6,13 @@
 
 'use client';
 
+import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { AlertCircle, ArrowLeft, RefreshCw } from 'lucide-react';
 
-export default function ConnectorErrorPage() {
+function ConnectorErrorContent() {
   const searchParams = useSearchParams();
   
   const error = searchParams.get('error');
@@ -97,5 +98,13 @@ export default function ConnectorErrorPage() {
         </p>
       </motion.div>
     </div>
+  );
+}
+
+export default function ConnectorErrorPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4"><p className="text-white">Loading...</p></div>}>
+      <ConnectorErrorContent />
+    </Suspense>
   );
 }
