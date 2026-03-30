@@ -8,15 +8,25 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { ConnectorService } from '@/lib/arcus-connector-service';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Lazy initialization - only create client when needed
+function getSupabaseClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  
+  if (!url || !key) {
+    throw new Error('Supabase environment variables not configured');
+  }
+  
+  return createClient(url, key);
+}
 
-const connectorService = new ConnectorService({ 
-  db: supabase,
-  supabase 
-});
+function getConnectorService() {
+  const supabase = getSupabaseClient();
+  return new ConnectorService({ 
+    db: supabase,
+    supabase 
+  });
+}
 
 /**
  * GET /api/connectors/callback
@@ -48,7 +58,7 @@ export async function GET(request: NextRequest) {
     // Process the callback
     const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/connectors/callback`;
     
-    const result = await connectorService.handleCallback(state, code, redirectUri);
+    const result = await getConnectorService().handleCallback(state, code, redirectUri);
 
     if (result.success) {
       // Redirect to success page with account info
@@ -91,7 +101,7 @@ export async function POST(request: NextRequest) {
     }
 
     const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/connectors/callback`;
-    const result = await connectorService.handleCallback(state, code, redirectUri);
+    const result = await getConnectorService().handleCallback(state, code, redirectUri);
 
     return NextResponse.json(result);
 
