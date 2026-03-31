@@ -2124,7 +2124,7 @@ export default function ChatInterface({
           currentPlan={usageLimitModalData?.currentPlan || 'starter'}
         />
 
-        <div className="flex h-full w-full text-graphite-text bg-black selection:bg-white selection:text-black overflow-hidden relative tracking-tight">
+        <div className="flex h-full w-full text-graphite-text bg-black selection:bg-white selection:text-black overflow-hidden relative tracking-tight" style={{ height: '100vh', overflow: 'hidden' }}>
           {/* Apple-style Premium Grain Overlay */}
           <div className="absolute inset-0 pointer-events-none opacity-[0.03] z-[100] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] brightness-100 contrast-150" />
 
@@ -2178,7 +2178,7 @@ export default function ChatInterface({
           <div className={cn(
             "flex-1 flex flex-row relative h-full gap-4 transition-all duration-500 ease-in-out overflow-hidden bg-black",
             isSidebarCollapsed ? "ml-20" : "ml-64"
-          )}>
+          )} style={{ height: '100%', overflow: 'hidden' }}>
             {/* Chat Column (Order 1 - LEFT) */}
             <div
               className="flex-1 flex flex-col relative h-full min-w-0 transition-all duration-500 order-1 bg-[#161616] border-x border-t border-white/5 rounded-t-[32px] shadow-2xl overflow-hidden"
