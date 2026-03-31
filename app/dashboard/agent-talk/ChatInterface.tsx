@@ -2117,7 +2117,7 @@ export default function ChatInterface({
           currentPlan={usageLimitModalData?.currentPlan || 'starter'}
         />
 
-        <div className="flex h-screen w-full text-graphite-text bg-black selection:bg-white selection:text-black overflow-hidden relative tracking-tight">
+        <div className="flex h-full w-full text-graphite-text bg-black selection:bg-white selection:text-black overflow-hidden relative tracking-tight">
           {/* Apple-style Premium Grain Overlay */}
           <div className="absolute inset-0 pointer-events-none opacity-[0.03] z-[100] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] brightness-100 contrast-150" />
 
@@ -2332,11 +2332,10 @@ export default function ChatInterface({
                 </div>
               </div>
 
-              {/* Chat Content */}
               {/* Chat Content Container */}
-              <div className="flex-1 flex flex-col relative z-20 min-h-0 h-full overflow-hidden">
+              <div className="flex-1 flex flex-col relative z-20 min-h-0 overflow-hidden">
                 {/* Scrollable Message List */}
-                <div className="flex-1 overflow-y-auto px-6 py-4 scroll-smooth arcus-scrollbar relative min-h-0 h-full">
+                <div className="flex-1 overflow-y-auto px-6 py-4 scroll-smooth arcus-scrollbar relative min-h-0">
                   <div className="max-w-3xl mx-auto w-full">
                     {isInitialMode ? (
                       <div className="flex flex-col items-center justify-center min-h-[60vh] py-12 animate-fade-in">
