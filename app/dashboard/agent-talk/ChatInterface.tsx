@@ -11,6 +11,7 @@ import { ThinkingLayer, ResultCard, type ThinkingStep, type ThinkingBlock, type 
 import { CanvasPanel, type CanvasData } from './components/CanvasPanel';
 import { PlanArtifactCard, type PlanArtifact } from './components/PlanArtifactCard';
 import { SearchExecutionPanel } from './components/SearchExecutionPanel';
+import { ConnectorBar } from './components/ConnectorBar';
 
 import { PromptInputBox } from '@/components/ui/ai-prompt-box';
 import { IntegrationsModal } from '@/components/ui/integrations-modal';
@@ -744,7 +745,7 @@ export default function ChatInterface({
     }).join('\\n');
   };
 
-  const processAIMessage = async (messageText: string, conversationIdToUse: string, isNew: boolean, attachments?: any[], options?: { isDeepThinking?: boolean; isCanvas?: boolean; isSearch?: boolean }) => {
+  const processAIMessage = async (messageText: string, conversationIdToUse: string, isNew: boolean, attachments?: any[], options?: { isDeepThinking?: boolean; isCanvas?: boolean; isSearch?: boolean; isPlanMode?: boolean }) => {
     // Create new abort controller for this request
     if (abortControllerRef.current) abortControllerRef.current.abort();
     abortControllerRef.current = new AbortController();
@@ -756,6 +757,7 @@ export default function ChatInterface({
       const isDeepThinking = options?.isDeepThinking || false;
       const isCanvas = options?.isCanvas || false;
       const isSearch = options?.isSearch || false;
+      const isPlanMode = options?.isPlanMode || false;
 
       setIsDeepThinkingState(isDeepThinking);
       setIsSearchingState(isSearch);
@@ -812,7 +814,8 @@ export default function ChatInterface({
         attachments: attachments || [],
         isDeepThinking,
         isCanvas,
-        isSearch
+        isSearch,
+        isPlanMode
       };
 
       // --- PHASE I: Fast Intent Analysis (AI-Driven Assessment) ---
@@ -1780,13 +1783,14 @@ export default function ChatInterface({
     return conversations;
   };
 
-  const handleSend = async (forcedMessage?: string, files?: File[], options?: { isDeepThinking?: boolean; isCanvas?: boolean; isSearch?: boolean }) => {
+  const handleSend = async (forcedMessage?: string, files?: File[], options?: { isDeepThinking?: boolean; isCanvas?: boolean; isSearch?: boolean; isPlanMode?: boolean }) => {
     const messageText = (forcedMessage || message).trim();
     if (!messageText && (!files || files.length === 0)) return;
 
     const isDeepThinking = options?.isDeepThinking || false;
     const isCanvas = options?.isCanvas || false;
     const isSearch = options?.isSearch || false;
+    const isPlanMode = options?.isPlanMode || false;
 
     // Determine if this is a new conversation or continuation
     const shouldCreateNewConversation = !currentConversationId;
@@ -1885,7 +1889,7 @@ export default function ChatInterface({
     }
 
     // Process the AI message directly - don't rely on navigation/loadConversation
-    processAIMessage(messageText, conversationIdToUse as string, shouldCreateNewConversation, attachments, { isDeepThinking, isCanvas, isSearch });
+    processAIMessage(messageText, conversationIdToUse as string, shouldCreateNewConversation, attachments, { isDeepThinking, isCanvas, isSearch, isPlanMode });
   };
 
 
@@ -2348,6 +2352,19 @@ export default function ChatInterface({
                             onPersonalityClick={() => setIsPersonalityModalOpen(true)}
                             selectedEmailsCount={selectedEmails.length}
                             suggestionInput={suggestionInput}
+                          />
+                        </div>
+
+                        {/* Connector Bar - Phase 4 */}
+                        <div className="mt-3">
+                          <ConnectorBar
+                            connectors={[
+                              { id: 'gmail', name: 'Gmail', icon: 'mail', connected: integrations.gmail, description: 'Send and manage emails' },
+                              { id: 'google_calendar', name: 'Google Calendar', icon: 'calendar', connected: integrations['google-calendar'], description: 'Schedule meetings' },
+                              { id: 'notion', name: 'Notion', icon: 'notion', connected: false, description: 'Create pages and databases' },
+                              { id: 'google_tasks', name: 'Google Tasks', icon: 'check-square', connected: false, description: 'Manage tasks' }
+                            ]}
+                            onOpenConnectors={() => setIsIntegrationsModalOpen(true)}
                           />
                         </div>
 

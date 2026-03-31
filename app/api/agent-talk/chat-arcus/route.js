@@ -44,6 +44,7 @@ export async function POST(request) {
       attachments,
       isDeepThinking,
       isCanvas,
+      isPlanMode,
       intentAnalysis: frontendIntentAnalysis
     } = await request.json();
 
@@ -154,6 +155,12 @@ export async function POST(request) {
     const effectiveGmailConnected = Boolean(gmailAccessToken || integrations?.gmail);
     console.log('Arcus Integration status:', integrations);
     console.log('📝 Loaded conversation history:', conversationHistory.length, 'messages');
+
+    // Initialize AI Services
+    const arcusAI = new ArcusAIService();
+    const operatorRuntime = new ArcusOperatorRuntime({ db, arcusAI, userEmail });
+    const planModeEngine = new PlanModeEngine({ db, arcusAI });
+    const operatorRuntimeEnabled = isFeatureEnabled('arcusOperatorRuntimeV1');
 
     // Initialize Arcus Execution Gateway (Phase 1 - Unified)
     const executionGateway = isFeatureEnabled('arcusExecutionGatewayV1') 
@@ -395,11 +402,20 @@ export async function POST(request) {
           const planEngine = new ArcusPlanEngine({ db, userEmail });
           const approval = await planEngine.approvePlan(requestedPayload.planId);
           const todos = await planEngine.convertPlanToTodoGraph(requestedPayload.planId);
+          
+          // PHASE 2: Trigger immediate execution upon approval
+          if (operatorRuntime && runId) {
+            await operatorRuntime.enqueueJob(runId, 'execute_plan', {
+              action: 'execute_plan',
+              payload: { planId: requestedPayload.planId }
+            });
+          }
+
           executionResult = {
             success: true,
-            message: `Plan approved and locked (v${approval.approvedAt}). ${todos.length} tasks queued for execution.`,
+            message: `Plan approved and execution started. ${todos.length} tasks are now running.`,
             externalRefs: { planId: requestedPayload.planId },
-            nextRecommendedActions: ['execute_plan', 'review_todos']
+            nextRecommendedActions: ['monitor_execution', 'review_results']
           };
         } catch (err) {
           executionResult = { success: false, message: `Plan approval failed: ${err.message}` };
@@ -582,8 +598,38 @@ export async function POST(request) {
       normalizedPlan = runInit?.plan || [];
       requiresApproval = !!runInit?.requiresApproval;
       
-      // Phase 2: Generate AI plan for complex intents
-      if (planModeEngine && runInit?.planArtifact) {
+      // Phase 2: Generate AI plan for complex intents OR if Plan Mode is forced
+      if (isPlanMode && planModeEngine) {
+        try {
+          console.log('🎯 Forced Plan Mode: Generating detailed execution plan...');
+          
+          // Force complex intent for plan mode
+          intentAnalysis = {
+            ...intentAnalysis,
+            intent: 'multi_step',
+            complexity: 'complex',
+            needsCanvas: true,
+            canvasType: 'action_plan'
+          };
+
+          const planResult = await planModeEngine.generatePlan({
+            message,
+            runId: operatorRun?.runId || runId || `run_${Date.now()}`,
+            conversationId: currentConversationId,
+            context: { emailContext, notesResult, userName },
+            intent: 'multi_step',
+            complexity: 'complex'
+          });
+          
+          planArtifact = planResult.plan;
+          console.log(`✅ Plan generated for Plan Mode: ${planResult.planId}`);
+          
+          // If we forced plan mode, we can skip other heavier logic if desired,
+          // but here we let it fall through to generate the response message mentioning the plan.
+        } catch (err) {
+          console.error('Forced plan generation failed:', err.message);
+        }
+      } else if (planModeEngine && runInit?.planArtifact) {
         planArtifact = runInit.planArtifact;
       } else if (planModeEngine && (intentAnalysis?.complexity === 'complex' || intentAnalysis?.intent === 'multi_step')) {
         try {

@@ -60,7 +60,7 @@ export function ConnectorBar({ connectors, onOpenConnectors, className }: Connec
       )}
     >
       {/* Connector Icons */}
-      <div className="flex items-center -space-x-2">
+      <div className="flex items-center gap-1">
         {visibleConnectors.map((connector, index) => {
           const Icon = iconMap[connector.icon] || Link2;
           const isConnected = connector.connected;
@@ -72,19 +72,19 @@ export function ConnectorBar({ connectors, onOpenConnectors, className }: Connec
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: index * 0.1 }}
               className={cn(
-                "relative w-8 h-8 rounded-lg flex items-center justify-center",
-                "border-2 border-[#0a0a0a] bg-white/[0.08]",
-                isConnected && "bg-white/20"
+                "relative w-7 h-7 rounded-md flex items-center justify-center shrink-0",
+                "bg-white/[0.06] border border-white/[0.1]",
+                isConnected && "bg-white/15 border-white/20"
               )}
             >
               <Icon className={cn(
-                "w-4 h-4",
-                isConnected ? "text-white" : "text-white/40"
+                "w-3.5 h-3.5",
+                isConnected ? "text-white" : "text-white/50"
               )} />
               
-              {/* Connected indicator */}
+              {/* Connected indicator dot */}
               {isConnected && (
-                <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-white border border-[#0a0a0a]" />
+                <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-white border border-[#1a1a1a]" />
               )}
             </motion.div>
           );
@@ -92,8 +92,8 @@ export function ConnectorBar({ connectors, onOpenConnectors, className }: Connec
         
         {/* More indicator */}
         {connectors.length > 4 && (
-          <div className="w-8 h-8 rounded-lg bg-white/[0.05] border-2 border-[#0a0a0a] flex items-center justify-center">
-            <span className="text-[10px] text-white/50 font-medium">
+          <div className="w-7 h-7 rounded-md bg-white/[0.03] border border-white/[0.1] flex items-center justify-center shrink-0">
+            <span className="text-[10px] text-white/40 font-medium">
               +{connectors.length - 4}
             </span>
           </div>

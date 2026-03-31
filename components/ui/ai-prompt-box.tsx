@@ -452,7 +452,7 @@ const formatFileSize = (bytes: number) => {
 
 // Main PromptInputBox Component
 interface PromptInputBoxProps {
-  onSend?: (message: string, files?: File[], options?: { isDeepThinking?: boolean; isCanvas?: boolean; isSearch?: boolean }) => void;
+  onSend?: (message: string, files?: File[], options?: { isDeepThinking?: boolean; isCanvas?: boolean; isSearch?: boolean; isPlanMode?: boolean }) => void;
   onStop?: () => void;
   isLoading?: boolean;
   placeholder?: string;
@@ -462,15 +462,13 @@ interface PromptInputBoxProps {
   onPersonalityClick?: () => void;
   selectedEmailsCount?: number;
   suggestionInput?: { text: string; id: number };
-  activeMode?: 'agent' | 'plan' | 'debug' | 'ask';
-  onModeChange?: (mode: 'agent' | 'plan' | 'debug' | 'ask') => void;
+  activeMode?: 'agent' | 'plan';
+  onModeChange?: (mode: 'agent' | 'plan') => void;
 }
 
 const MODES = [
   { id: 'agent', label: 'Agent', icon: Infinity, description: 'Autonomous agent for complex workflows' },
   { id: 'plan', label: 'Plan', icon: Workflow, description: 'Create detailed plans for accomplishing tasks' },
-  { id: 'debug', label: 'Debug', icon: Bug, description: 'Diagnose and fix technical issues' },
-  { id: 'ask', label: 'Ask', icon: MessageSquare, description: 'Quick questions and answers' },
 ] as const;
 
 type AgentMode = typeof MODES[number]['id'];
@@ -494,7 +492,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
   const [selectedImage, setSelectedImage] = React.useState<string | null>(null);
   const [isRecording, setIsRecording] = React.useState(false);
   const [isFocused, setIsFocused] = React.useState(false);
-  const [activeMode, setActiveMode] = React.useState<AgentMode>(props.activeMode || 'plan');
+  const [activeMode, setActiveMode] = React.useState<AgentMode>(props.activeMode || 'agent');
   const [isModeMenuOpen, setIsModeMenuOpen] = React.useState(false);
   const recognitionRef = React.useRef<any>(null);
   const uploadInputRef = React.useRef<HTMLInputElement>(null);
@@ -591,7 +589,8 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
       onSend(input, files, {
         isDeepThinking: activeMode === 'plan',
         isCanvas: activeMode === 'plan',
-        isSearch: activeMode === 'agent'
+        isSearch: activeMode === 'agent',
+        isPlanMode: activeMode === 'plan'
       });
       setInput("");
       setFiles([]);
