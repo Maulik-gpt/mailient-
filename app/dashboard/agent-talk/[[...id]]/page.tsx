@@ -101,7 +101,8 @@ export default function AgentTalkPage() {
             className="satoshi-agent-talk agent-talk-container bg-black"
             style={{
                 fontFamily: 'Satoshi, sans-serif',
-                minHeight: '100vh'
+                height: '100vh',
+                overflow: 'hidden'
             }}
         >
             <ChatInterface
