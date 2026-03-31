@@ -2335,7 +2335,7 @@ export default function ChatInterface({
               {/* Chat Content Container */}
               <div className="flex-1 flex flex-col relative z-20 min-h-0 overflow-hidden">
                 {/* Scrollable Message List */}
-                <div className="flex-1 overflow-y-auto px-6 py-4 scroll-smooth arcus-scrollbar relative min-h-0">
+                <div className="flex-1 overflow-y-auto px-6 py-4 scroll-smooth arcus-scrollbar relative min-h-0 h-0">
                   <div className="max-w-3xl mx-auto w-full">
                     {isInitialMode ? (
                       <div className="flex flex-col items-center justify-center min-h-[60vh] py-12 animate-fade-in">
