@@ -12,6 +12,7 @@ import { ArcusPlanEngine } from '@/lib/arcus-plan-engine.js';
 import { PlanModeEngine } from '@/lib/arcus-plan-mode-engine.js';
 import { NotionAdapter } from '@/lib/notion-adapter.js';
 import { GoogleTasksAdapter } from '@/lib/google-tasks-adapter.js';
+import { ArcusExecutionGateway } from '@/lib/arcus-execution-gateway.js';
 import { isFeatureEnabled } from '@/lib/feature-flags.js';
 import crypto from 'crypto';
 
@@ -154,75 +155,98 @@ export async function POST(request) {
     console.log('Arcus Integration status:', integrations);
     console.log('📝 Loaded conversation history:', conversationHistory.length, 'messages');
 
-    // Initialize Arcus AI and Mission Service
-    const arcusAI = new ArcusAIService();
-    const missionService = userEmail ? new ArcusMissionService(userEmail) : null;
-    const operatorRuntimeEnabled = isFeatureEnabled('arcusOperatorRuntimeV2');
-    const canvasActionsV2Enabled = isFeatureEnabled('arcusCanvasActionsV2');
-    const operatorRuntime = operatorRuntimeEnabled ? new ArcusOperatorRuntime({
-      db,
-      arcusAI,
-      userEmail,
-      userName,
-      conversationId: currentConversationId
-    }) : null;
-    
-    // Initialize Plan Mode Engine for AI-driven plan generation (Phase 2)
-    const planModeEngine = userEmail ? new PlanModeEngine({
-      arcusAI,
-      db,
-      userEmail
-    }) : null;
+    // Initialize Arcus Execution Gateway (Phase 1 - Unified)
+    const executionGateway = isFeatureEnabled('arcusExecutionGatewayV1') 
+      ? new ArcusExecutionGateway({
+          db,
+          arcusAI,
+          userEmail,
+          userName,
+          conversationId: currentConversationId,
+          missionId: activeMission?.missionId || null
+        })
+      : null;
 
-    // Operator Runtime V2: unified canvas execution contract with approval + idempotency
+    // Check if this is a canvas action execution request
     const requestedAction = executeCanvasAction || executionActionType;
     const requestedPayload = canvasActionData || actionPayload;
-    if (requestedAction && requestedPayload && canvasActionsV2Enabled) {
-      const criticalAction = requestedAction === 'send_email' || requestedAction === 'arcus_outreach' || requestedAction === 'arcus_auto_pilot' || requestedAction === 'execute_plan';
-      const effectiveRunId = runId || null;
-      const effectiveActionRequestId = actionRequestId || crypto
-        .createHash('sha256')
-        .update(`${effectiveRunId || 'na'}:${requestedAction}:${JSON.stringify(requestedPayload)}`)
-        .digest('hex')
-        .slice(0, 32);
 
-      if (operatorRuntime && criticalAction && effectiveRunId) {
-        const idempotent = await operatorRuntime.getIdempotentResult(effectiveRunId, effectiveActionRequestId);
-        if (idempotent) {
-          return NextResponse.json({
-            message: idempotent.message || 'Action already completed',
-            resultStatus: 'completed',
-            executionResult: idempotent,
-            externalRefs: idempotent.externalRefs || {},
-            nextRecommendedActions: idempotent.nextRecommendedActions || [],
-            conversationId: currentConversationId,
-            run: { runId: effectiveRunId, status: 'completed', phase: 'post_execution' },
-            timestamp: new Date().toISOString()
-          });
+    // Use Arcus Execution Gateway for all canvas actions (Phase 1 - Unified)
+    if (requestedAction && requestedPayload && executionGateway) {
+      console.log('[Arcus Phase 1] Routing action through Execution Gateway:', requestedAction);
+      
+      try {
+        // Validate action type
+        const validActions = ['send_email', 'save_draft', 'arcus_outreach', 'arcus_auto_pilot', 
+          'schedule_meeting', 'notion_create_page', 'notion_search', 'notion_append',
+          'tasks_add_task', 'tasks_add_tasks', 'tasks_complete_task', 'tasks_list',
+          'execute_plan', 'approve_plan', 'arcus_inbox_review'];
+        
+        if (!validActions.includes(requestedAction)) {
+          throw new Error(`Unsupported action type: ${requestedAction}`);
         }
 
-        const approvalValidation = await operatorRuntime.validateApprovalToken(
-          effectiveRunId,
+        // Execute through unified gateway
+        const executionResult = await executionGateway.executeCanvasAction(
           requestedAction,
+          requestedPayload,
+          runId,
           approvalToken
         );
-        if (!approvalValidation.ok) {
-          return NextResponse.json({
-            error: 'approval_required',
-            message: `Approval token invalid: ${approvalValidation.reason}`,
-            resultStatus: 'blocked_approval',
-            conversationId: currentConversationId,
-            run: { runId: effectiveRunId, status: 'blocked_approval', phase: 'approval' },
-            timestamp: new Date().toISOString()
-          }, { status: 403 });
-        }
+
+        // Determine response status
+        const success = executionResult.success || executionResult.status === 'already_completed';
+        const statusCode = success ? 200 : (executionResult.status === 'blocked' ? 403 : 500);
+        
+        return NextResponse.json({
+          message: executionResult.message,
+          resultStatus: executionResult.status,
+          executionResult: {
+            success,
+            message: executionResult.message,
+            data: executionResult.data,
+            externalRefs: executionResult.externalRefs,
+            error: executionResult.error,
+            metadata: executionResult.metadata
+          },
+          externalRefs: executionResult.externalRefs || {},
+          nextRecommendedActions: executionResult.nextRecommendedActions || [],
+          conversationId: currentConversationId,
+          run: runId ? { 
+            runId, 
+            status: executionResult.status, 
+            phase: executionResult.status === 'completed' ? 'post_execution' : 
+                   executionResult.status === 'blocked' ? 'approval' : 'executing'
+          } : null,
+          timestamp: new Date().toISOString(),
+          // Include error recovery hint if available
+          recoveryHint: executionResult.error?.recoveryHint || null
+        }, { status: statusCode });
+
+      } catch (gatewayError) {
+        console.error('[Arcus Phase 1] Execution Gateway error:', gatewayError);
+        
+        // Return categorized error with recovery hint
+        return NextResponse.json({
+          message: gatewayError.message || 'Action execution failed',
+          resultStatus: 'failed',
+          error: {
+            category: 'internal_error',
+            message: gatewayError.message,
+            recoveryHint: {
+              userMessage: 'An unexpected error occurred. Please try again.',
+              recoveryAction: 'retry',
+              requiresUserAction: false
+            }
+          },
+          conversationId: currentConversationId,
+          timestamp: new Date().toISOString()
+        }, { status: 500 });
       }
     }
 
-    // --- HANDLE CANVAS EXECUTION ACTIONS ---
-    if (requestedAction && requestedPayload) {
-      console.log('🎯 Canvas action requested:', requestedAction);
-      let executionResult = { success: false, message: '' };
+    // Fallback: Legacy canvas action handling (will be removed after full migration)
+    if (requestedAction && requestedPayload && !executionGateway) {
 
       if ((requestedAction === 'send_email' || requestedAction === 'arcus_outreach') && requestedPayload.to && (requestedPayload.body || requestedPayload.html)) {
         try {

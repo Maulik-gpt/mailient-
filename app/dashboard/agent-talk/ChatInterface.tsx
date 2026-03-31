@@ -10,6 +10,7 @@ import { ChatHistoryModal } from './components/ChatHistoryModal';
 import { ThinkingLayer, ResultCard, type ThinkingStep, type ThinkingBlock, type SearchSession } from './components/ThinkingLayer';
 import { CanvasPanel, type CanvasData } from './components/CanvasPanel';
 import { PlanArtifactCard, type PlanArtifact } from './components/PlanArtifactCard';
+import { SearchExecutionPanel } from './components/SearchExecutionPanel';
 
 import { PromptInputBox } from '@/components/ui/ai-prompt-box';
 import { IntegrationsModal } from '@/components/ui/integrations-modal';
@@ -257,6 +258,31 @@ interface AgentMessage {
     };
     searchSessions?: SearchSession[];
     planArtifact?: PlanArtifact; // Phase 2: Plan artifact for execution
+    executionResult?: any; // Phase 1: Execution gateway result
+    error?: any; // Phase 1: Error with recovery hints
+    recoveryHint?: any; // Phase 1: Error recovery guidance
+    externalRefs?: any; // Phase 1: External references from execution
+    requiresRetry?: boolean; // Phase 1: Whether retry is required
+    searchExecution?: {
+      mainQuery: string;
+      subQueries: Array<{
+        id: string;
+        query: string;
+        status: 'pending' | 'running' | 'completed' | 'error';
+        results?: number;
+      }>;
+      sources: Array<{
+        id: string;
+        title: string;
+        url?: string;
+        icon?: string;
+        snippet?: string;
+        type: 'web' | 'email' | 'document' | 'calendar' | 'database';
+        connectorId?: string;
+      }>;
+      answer?: string;
+      isSearching: boolean;
+    };
   };
 }
 
@@ -1228,7 +1254,7 @@ export default function ChatInterface({
     }
   };
 
-  // Canvas execution handler
+  // Canvas execution handler - Phase 1: Integrated with Execution Gateway
   const handleCanvasExecute = async (action: string, data: any) => {
     setIsCanvasExecuting(true);
     try {
@@ -1254,11 +1280,23 @@ export default function ChatInterface({
 
       const result = await response.json();
 
-      if (result.executionResult?.success) {
-        toast.success(result.message || 'Action completed');
+      // Phase 1: Handle all execution statuses from the gateway
+      const executionStatus = result.resultStatus || result.executionResult?.status;
+      const isSuccess = result.executionResult?.success || executionStatus === 'completed' || executionStatus === 'already_completed';
+      
+      if (isSuccess) {
+        // Handle already_completed (idempotency) differently
+        if (executionStatus === 'already_completed') {
+          toast.info(result.message || 'This action was already completed', {
+            description: 'No duplicate action was performed.'
+          });
+        } else {
+          toast.success(result.message || 'Action completed successfully');
+        }
+        
         setIsCanvasOpen(false);
 
-        // Add confirmation message
+        // Add confirmation message with external refs if available
         const confirmMessage: AgentMessage = {
           id: Date.now() + 1,
           type: 'agent',
@@ -1266,20 +1304,153 @@ export default function ChatInterface({
           notes: [],
           content: {
             text: result.message || 'Done! The action was completed successfully.',
-            list: [],
-            footer: ''
+            list: result.executionResult?.externalRefs ? 
+              Object.entries(result.executionResult.externalRefs).map(([key, value]) => `${key}: ${value}`) : 
+              [],
+            footer: result.nextRecommendedActions?.length ? 
+              `Next: ${result.nextRecommendedActions.join(', ')}` : 
+              ''
+          },
+          meta: {
+            executionResult: result.executionResult,
+            externalRefs: result.externalRefs,
+            recoveryHint: result.recoveryHint
           },
           time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
         };
         setMessages(prev => [...prev, confirmMessage]);
       } else {
-        toast.error(result.message || 'Action failed');
+        // Phase 1: Handle categorized errors with recovery hints
+        const errorCategory = result.error?.category || result.executionResult?.error?.category;
+        const recoveryHint = result.recoveryHint || result.executionResult?.error?.recoveryHint;
+        
+        let errorMessage = result.message || 'Action failed';
+        let actionDescription = '';
+        
+        if (recoveryHint) {
+          errorMessage = recoveryHint.userMessage || errorMessage;
+          
+          // Add actionable guidance based on recovery action
+          if (recoveryHint.requiresUserAction) {
+            switch (recoveryHint.recoveryAction) {
+              case 'reconnect_integration':
+                actionDescription = 'Please reconnect your Gmail account in Integrations settings.';
+                break;
+              case 'check_permissions':
+                actionDescription = 'Check your account permissions and try again.';
+                break;
+              case 'revise_input':
+                actionDescription = 'Please review your input and try again.';
+                break;
+              case 'request_approval':
+                actionDescription = 'This action requires your approval to proceed.';
+                break;
+            }
+          } else if (recoveryHint.autoRetry) {
+            actionDescription = 'We\'ll automatically retry this action.';
+          }
+        }
+        
+        toast.error(errorMessage, {
+          description: actionDescription,
+          duration: 6000
+        });
+
+        // Add error message to chat with recovery guidance
+        const errorAgentMessage: AgentMessage = {
+          id: Date.now() + 1,
+          type: 'agent',
+          role: 'assistant',
+          notes: [],
+          content: {
+            text: errorMessage,
+            list: actionDescription ? [actionDescription] : [],
+            footer: errorCategory ? `Error: ${errorCategory}` : ''
+          },
+          meta: {
+            error: result.error || result.executionResult?.error,
+            recoveryHint: recoveryHint,
+            requiresRetry: recoveryHint?.autoRetry || false
+          },
+          time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+        };
+        setMessages(prev => [...prev, errorAgentMessage]);
       }
     } catch (error) {
-      toast.error('Failed to execute action');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to execute action';
+      toast.error('Execution failed', {
+        description: errorMessage
+      });
       console.error('Canvas execution error:', error);
+      
+      // Add error to chat
+      const errorAgentMessage: AgentMessage = {
+        id: Date.now() + 1,
+        type: 'agent',
+        role: 'assistant',
+        notes: [],
+        content: {
+          text: 'Sorry, something went wrong while executing that action.',
+          list: [errorMessage],
+          footer: 'Please try again or contact support if the issue persists.'
+        },
+        time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+      };
+      setMessages(prev => [...prev, errorAgentMessage]);
     } finally {
       setIsCanvasExecuting(false);
+    }
+  };
+
+  // Plan approval handlers (Phase 2)
+  const handleAcceptPlan = async (plan: PlanArtifact) => {
+    setIsProcessingPlan(true);
+    try {
+      await fetch('/api/agent-talk/chat-arcus', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: `Approve and execute plan: ${plan.planId}`,
+          runId: activeRun?.runId || null,
+          conversationId: currentConversationId,
+          isNewConversation: false,
+          actionType: 'approve_plan',
+          actionPayload: { planId: plan.planId },
+          executeCanvasAction: 'approve_plan',
+          canvasActionData: { planId: plan.planId }
+        })
+      });
+      
+      toast.success('Plan approved and execution started');
+    } catch (error) {
+      console.error('Error approving plan:', error);
+      toast.error('Error approving plan');
+    } finally {
+      setIsProcessingPlan(false);
+    }
+  };
+
+  const handleDeclinePlan = async (plan: PlanArtifact) => {
+    try {
+      await fetch('/api/agent-talk/chat-arcus', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: `Decline plan: ${plan.planId}`,
+          runId: activeRun?.runId || null,
+          conversationId: currentConversationId,
+          isNewConversation: false,
+          actionType: 'decline_plan',
+          actionPayload: { planId: plan.planId },
+          executeCanvasAction: 'decline_plan',
+          canvasActionData: { planId: plan.planId }
+        })
+      });
+      
+      toast.info('Plan declined');
+    } catch (error) {
+      console.error('Error declining plan:', error);
+      toast.error('Error declining plan');
     }
   };
 
@@ -2337,12 +2508,32 @@ export default function ChatInterface({
                                   {msg.role === 'assistant' && (msg as AgentMessage).meta?.planArtifact && (
                                     <div className="mt-4">
                                       <PlanArtifactCard
-                                        plan={(msg as AgentMessage).meta!.planArtifact as PlanArtifact}
+                                        plan={(msg as AgentMessage).meta!.planArtifact!}
                                         onApprove={async (planId) => {
-                                          // Execute the plan approval
-                                          await handlePlanApprove(planId, msg.id as number);
+                                          await handleAcceptPlan((msg as AgentMessage).meta!.planArtifact!);
+                                        }}
+                                        onReject={async (planId) => {
+                                          await handleDeclinePlan((msg as AgentMessage).meta!.planArtifact!);
                                         }}
                                         isProcessing={isProcessingPlan}
+                                      />
+                                    </div>
+                                  )}
+
+                                  {/* Search Execution Panel (Phase 4) */}
+                                  {msg.role === 'assistant' && (msg as AgentMessage).meta?.searchExecution && (
+                                    <div className="mt-4">
+                                      <SearchExecutionPanel
+                                        mainQuery={(msg as AgentMessage).meta!.searchExecution!.mainQuery}
+                                        subQueries={(msg as AgentMessage).meta!.searchExecution!.subQueries}
+                                        isSearching={(msg as AgentMessage).meta!.searchExecution!.isSearching}
+                                        sources={(msg as AgentMessage).meta!.searchExecution!.sources}
+                                        answer={(msg as AgentMessage).meta!.searchExecution!.answer}
+                                        onSourceClick={(source) => {
+                                          if (source.url) {
+                                            window.open(source.url, '_blank');
+                                          }
+                                        }}
                                       />
                                     </div>
                                   )}
