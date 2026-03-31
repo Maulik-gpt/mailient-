@@ -2333,9 +2333,9 @@ export default function ChatInterface({
               </div>
 
               {/* Chat Content Container */}
-              <div className="flex-1 flex flex-col relative z-20 min-h-0 overflow-hidden pb-24">
+              <div className="flex-1 flex flex-col relative z-20 h-0 min-h-0 overflow-hidden">
                 {/* Scrollable Message List */}
-                <div className="flex-1 overflow-y-auto px-6 py-4 scroll-smooth arcus-scrollbar relative min-h-0 pb-24">
+                <div className="flex-1 overflow-y-auto px-6 py-4 scroll-smooth arcus-scrollbar relative min-h-0 pb-32">
                   <div className="max-w-3xl mx-auto w-full">
                     {isInitialMode ? (
                       <div className="flex flex-col items-center justify-center min-h-[60vh] py-12 animate-fade-in">
@@ -2680,7 +2680,6 @@ export default function ChatInterface({
 
                             <div className="flex flex-col gap-2.5 max-w-full">
                               <motion.div
-                                layout
                                 className="inline-flex items-center min-w-[170px] relative group/bubble"
                               >
                                 <div className="flex flex-col gap-2">
@@ -2706,7 +2705,6 @@ export default function ChatInterface({
                               <AnimatePresence mode="wait">
                                 {isThinkingStepsOpen && liveThinkingBlocks.length > 0 && (
                                   <motion.div
-                                    layout
                                     initial={{ height: 0, opacity: 0, scale: 0.98 }}
                                     animate={{ height: 'auto', opacity: 1, scale: 1 }}
                                     exit={{ height: 0, opacity: 0, scale: 0.98 }}
