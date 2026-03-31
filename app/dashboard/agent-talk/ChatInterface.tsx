@@ -2406,6 +2406,22 @@ export default function ChatInterface({
                             Analytics
                           </button>
                         </div>
+
+                        {/* Centered Prompt Box for Initial Mode */}
+                        <div className="w-full mt-10 relative group max-w-2xl mx-auto">
+                          <PromptInputBox
+                            onSend={(msg, files, opts) => handleSend(msg, files, opts)}
+                            onStop={() => abortControllerRef.current?.abort()}
+                            isLoading={isLoading}
+                            placeholder="What would you like to know?"
+                            onSearchClick={() => { }}
+                            onAttachEmailClick={() => setIsEmailSelectionModalOpen(true)}
+                            onPersonalityClick={() => setIsPersonalityModalOpen(true)}
+                            selectedEmailsCount={selectedEmails.length}
+                            suggestionInput={suggestionInput}
+                            showConnectBanner={true}
+                          />
+                        </div>
                       </div>
                     ) : (
                       <div className="space-y-4 pb-20">
@@ -2723,24 +2739,25 @@ export default function ChatInterface({
                   </div>
                 </div>
 
-                {/* Fixed Prompt Box Container */}
-                <div className="shrink-0 relative w-full px-6 bg-[#161616] z-20 pb-6 pt-2 transition-all">
-                  <div className="absolute bottom-full left-0 right-0 h-16 bg-gradient-to-t from-[#161616] to-transparent pointer-events-none" />
-                  <div className="max-w-3xl mx-auto w-full relative">
-                    <PromptInputBox
-                      onSend={(msg, files, opts) => handleSend(msg, files, opts)}
-                      onStop={() => abortControllerRef.current?.abort()}
-                      isLoading={isLoading}
-                      placeholder={isInitialMode ? "What would you like to know?" : "Ask follow-up..."}
-                      onSearchClick={() => { }}
-                      onAttachEmailClick={() => setIsEmailSelectionModalOpen(true)}
-                      onPersonalityClick={() => setIsPersonalityModalOpen(true)}
-                      selectedEmailsCount={selectedEmails.length}
-                      suggestionInput={suggestionInput}
-                      showConnectBanner={isInitialMode}
-                    />
+                {/* Fixed Prompt Box Container - Only for Active Conversation */}
+                {!isInitialMode && (
+                  <div className="shrink-0 relative w-full px-6 bg-[#161616] z-20 pb-6 pt-2 transition-all">
+                    <div className="absolute bottom-full left-0 right-0 h-16 bg-gradient-to-t from-[#161616] to-transparent pointer-events-none" />
+                    <div className="max-w-3xl mx-auto w-full relative">
+                      <PromptInputBox
+                        onSend={(msg, files, opts) => handleSend(msg, files, opts)}
+                        onStop={() => abortControllerRef.current?.abort()}
+                        isLoading={isLoading}
+                        placeholder="Ask follow-up..."
+                        onSearchClick={() => { }}
+                        onAttachEmailClick={() => setIsEmailSelectionModalOpen(true)}
+                        onPersonalityClick={() => setIsPersonalityModalOpen(true)}
+                        selectedEmailsCount={selectedEmails.length}
+                        suggestionInput={suggestionInput}
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
 
