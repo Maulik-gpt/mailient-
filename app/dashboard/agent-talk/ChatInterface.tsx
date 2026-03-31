@@ -2342,16 +2342,16 @@ export default function ChatInterface({
                 </div>
               </div>
 
-              {/* Chat Content Container - flex column: scrollable area + prompt box */}
+              {/* Chat Content Container - relative positioned, prompt is absolute at bottom */}
               <div
-                className="flex-1 flex flex-col relative z-20 min-h-0 overflow-hidden"
-                style={{ flex: '1 1 0%', minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+                className="flex-1 relative z-20 min-h-0"
+                style={{ flex: '1 1 0%', minHeight: 0, position: 'relative', overflow: 'hidden' }}
               >
-                {/* Scrollable Message List */}
+                {/* Scrollable Message List - height:100% so it fills container, NOT flex-1 */}
                 <div 
                   ref={scrollContainerRef}
-                  className="flex-1 overflow-y-auto px-6 py-4 scroll-smooth arcus-scrollbar min-h-0"
-                  style={{ flex: '1 1 0%', minHeight: 0, overflowY: 'auto' }}
+                  className="overflow-y-auto px-6 py-4 scroll-smooth arcus-scrollbar"
+                  style={{ height: '100%', overflowY: 'auto', paddingBottom: isInitialMode ? undefined : '140px' }}
                 >
                   <div className="max-w-3xl mx-auto w-full">
                     {isInitialMode ? (
@@ -2753,13 +2753,20 @@ export default function ChatInterface({
                   </div>
                 </div>
 
-                {/* Pinned Prompt Box Area - shrink-0 INSIDE the flex column, always at bottom */}
+                {/* Pinned Prompt Box - ABSOLUTE positioned, cannot be displaced by content */}
                 {!isInitialMode && (
                   <div
-                    className="shrink-0 relative w-full px-6 bg-[#161616] z-[60] pb-6 pt-3 border-t border-white/[0.05]"
-                    style={{ flexShrink: 0, position: 'relative', zIndex: 60, backgroundColor: '#161616' }}
+                    className="w-full px-6 bg-[#161616] pb-6 pt-3 border-t border-white/[0.05]"
+                    style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      zIndex: 60,
+                      backgroundColor: '#161616',
+                    }}
                   >
-                    <div className="absolute bottom-full left-0 right-0 h-20 bg-gradient-to-t from-[#161616] via-[#161616]/80 to-transparent pointer-events-none" />
+                    <div className="absolute bottom-full left-0 right-0 h-24 bg-gradient-to-t from-[#161616] via-[#161616]/90 to-transparent pointer-events-none" />
                     <div className="max-w-3xl mx-auto w-full relative">
                       <PromptInputBox
                         onSend={(msg, files, opts) => handleSend(msg, files, opts)}
