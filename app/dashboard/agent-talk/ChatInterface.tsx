@@ -354,25 +354,25 @@ interface ChatInterfaceProps {
   onConversationDelete?: (conversationId: string) => void;
 }
 
-// Global styles for hide scrollbar but maintain functionality
+// Global styles for custom scrollbar
 const NoScrollbarStyles = () => (
   <style jsx global>{`
     .arcus-scrollbar::-webkit-scrollbar {
-      width: 5px;
+      width: 6px;
     }
     .arcus-scrollbar::-webkit-scrollbar-track {
       background: transparent;
     }
     .arcus-scrollbar::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.1);
       border-radius: 10px;
     }
     .arcus-scrollbar::-webkit-scrollbar-thumb:hover {
-      background: rgba(255, 255, 255, 0.25);
+      background: rgba(255, 255, 255, 0.2);
     }
     .arcus-scrollbar {
       scrollbar-width: thin;
-      scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+      scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
     }
     .no-scrollbar::-webkit-scrollbar {
       display: none !important;
@@ -2333,10 +2333,13 @@ export default function ChatInterface({
               </div>
 
               {/* Chat Content */}
-              <div className="flex-1 flex flex-col relative z-10 min-h-0">
-                {isInitialMode ? (
-                  <div className="flex-1 transition-all duration-300 relative bg-transparent flex flex-col items-center justify-center translate-y-24">
-                    <div className="w-full max-w-2xl mx-auto flex flex-col items-center">
+              {/* Chat Content Container */}
+              <div className="flex-1 flex flex-col relative z-10 min-h-0 overflow-hidden">
+                {/* Messages & Content Area */}
+                <div className="flex-1 overflow-y-auto px-6 py-4 scroll-smooth arcus-scrollbar relative min-h-0">
+                  <div className="max-w-3xl mx-auto w-full">
+                    {isInitialMode ? (
+                      <div className="flex flex-col items-center justify-center min-h-[60vh] py-12 animate-fade-in">
                         <div className="text-center mb-10">
                           <div className="flex justify-center mb-8">
                             <img
@@ -2348,21 +2351,6 @@ export default function ChatInterface({
                           <h1 className="text-4xl md:text-5xl font-medium text-white tracking-tight" style={{ fontFamily: 'Satoshi, sans-serif' }}>
                             Ask anything about your emails
                           </h1>
-                        </div>
-
-                        <div className="w-full relative group">
-                          <PromptInputBox
-                            onSend={(msg, files, opts) => handleSend(msg, files, opts)}
-                            onStop={() => abortControllerRef.current?.abort()}
-                            isLoading={isLoading}
-                            placeholder="What would you like to know?"
-                            onSearchClick={() => { }}
-                            onAttachEmailClick={() => setIsEmailSelectionModalOpen(true)}
-                            onPersonalityClick={() => setIsPersonalityModalOpen(true)}
-                            selectedEmailsCount={selectedEmails.length}
-                            suggestionInput={suggestionInput}
-                            showConnectBanner={true}
-                          />
                         </div>
 
                         {/* Pill-style Action Buttons */}
@@ -2419,11 +2407,8 @@ export default function ChatInterface({
                           </button>
                         </div>
                       </div>
-                    </div>
-                ) : (
-                  <div className="flex-1 flex flex-col relative overflow-hidden bg-transparent grow h-full">
-                    <div className="flex-1 overflow-y-auto px-6 py-4 scroll-smooth arcus-scrollbar">
-                      <div className="max-w-3xl mx-auto space-y-4">
+                    ) : (
+                      <div className="space-y-4 pb-20">
                         {activeMission && <MissionStatusHeader mission={activeMission} />}
                         {messages.map((msg) => (
                           <div key={msg.id} className={`flex flex-col animate-fade-in ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
@@ -2661,7 +2646,7 @@ export default function ChatInterface({
                           </div>
                         ))}
                         {isLoading && (
-                          <div className="flex items-start gap-2.5 animate-fade-in group pb-24">
+                          <div className="flex items-start gap-2.5 animate-fade-in group">
                             <div className="w-7 h-7 rounded-lg bg-graphite-surface border border-graphite-border flex items-center justify-center overflow-hidden shrink-0 relative shadow-2xl">
                               <motion.img
                                 src="/arcus-ai-icon.jpg"
@@ -2734,25 +2719,28 @@ export default function ChatInterface({
                         )}
                         <div ref={messagesEndRef} className="h-8" />
                       </div>
-                    </div>
-
-                    <div className="shrink-0 relative w-full px-6 bg-[#161616] z-20 pb-6 pt-2 transition-all">
-                      <div className="absolute bottom-full left-0 right-0 h-16 bg-gradient-to-t from-[#161616] to-transparent pointer-events-none" />
-                      <div className="max-w-3xl mx-auto w-full">
-                        <PromptInputBox
-                          onSend={(msg, files, opts) => handleSend(msg, files, opts)}
-                          onStop={() => abortControllerRef.current?.abort()}
-                          isLoading={isLoading}
-                          placeholder="Ask follow-up..."
-                          onSearchClick={() => { }}
-                          onAttachEmailClick={() => setIsEmailSelectionModalOpen(true)}
-                          onPersonalityClick={() => setIsPersonalityModalOpen(true)}
-                          selectedEmailsCount={selectedEmails.length}
-                        />
-                      </div>
-                    </div>
+                    )}
                   </div>
-                )}
+                </div>
+
+                {/* Fixed Prompt Box Container */}
+                <div className="shrink-0 relative w-full px-6 bg-[#161616] z-20 pb-6 pt-2 transition-all">
+                  <div className="absolute bottom-full left-0 right-0 h-16 bg-gradient-to-t from-[#161616] to-transparent pointer-events-none" />
+                  <div className="max-w-3xl mx-auto w-full relative">
+                    <PromptInputBox
+                      onSend={(msg, files, opts) => handleSend(msg, files, opts)}
+                      onStop={() => abortControllerRef.current?.abort()}
+                      isLoading={isLoading}
+                      placeholder={isInitialMode ? "What would you like to know?" : "Ask follow-up..."}
+                      onSearchClick={() => { }}
+                      onAttachEmailClick={() => setIsEmailSelectionModalOpen(true)}
+                      onPersonalityClick={() => setIsPersonalityModalOpen(true)}
+                      selectedEmailsCount={selectedEmails.length}
+                      suggestionInput={suggestionInput}
+                      showConnectBanner={isInitialMode}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
