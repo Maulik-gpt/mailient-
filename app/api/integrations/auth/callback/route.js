@@ -10,8 +10,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { auth } from '@/lib/auth';
 import { ArcusIntegrationManager } from '@/lib/arcus-integration-manager';
 import { supabase } from '@/lib/supabase';
 
@@ -56,7 +55,7 @@ const integrationManager = new ArcusIntegrationManager(db);
  */
 export async function GET(request) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user?.email) {
       return NextResponse.redirect(
         `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/agent-talk?error=unauthorized`
