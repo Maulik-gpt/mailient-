@@ -465,6 +465,7 @@ interface PromptInputBoxProps {
   suggestionInput?: { text: string; id: number };
   activeMode?: 'agent' | 'plan';
   onModeChange?: (mode: 'agent' | 'plan') => void;
+  showConnectBanner?: boolean;
 }
 
 const MODES = [
@@ -496,7 +497,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
   const [activeMode, setActiveMode] = React.useState<AgentMode>(props.activeMode || 'agent');
   const [isModeMenuOpen, setIsModeMenuOpen] = React.useState(false);
   const [isConnectorsModalOpen, setIsConnectorsModalOpen] = React.useState(false);
-  const [showConnectBanner, setShowConnectBanner] = React.useState(true);
+  const [isDismissedConnectBanner, setIsDismissedConnectBanner] = React.useState(false);
   const [integrationStatuses, setIntegrationStatuses] = React.useState<Record<string, boolean>>({});
 
   React.useEffect(() => {
@@ -834,11 +835,6 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
               </AnimatePresence>
             </div>
 
-            <div className="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-white/[0.02] border border-transparent text-white/20">
-              <span className="text-[11px] font-bold tracking-tight">Auto</span>
-              <ChevronDown className="w-3 h-3" />
-            </div>
-
             <div className="h-4 w-[1px] bg-white/10 mx-1" />
 
             <PromptInputAction tooltip="Upload files">
@@ -863,26 +859,9 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                     }}
                   />
                 </button>
-                {/* Integration Icons Pill */}
-                <div className="flex items-center gap-1 border-l border-white/10 pl-1.5 pr-0.5">
-                  <div className={cn("w-4 h-4 text-white/20", integrationStatuses['gmail'] && "text-white/60")}>
-                    <Mail className="w-3.5 h-3.5" />
-                  </div>
-                  <div className={cn("w-4 h-4 text-white/20", integrationStatuses['notion'] && "text-white/60")}>
-                    <Database className="w-3.5 h-3.5" />
-                  </div>
-                </div>
               </div>
             </PromptInputAction>
 
-            <PromptInputAction tooltip="Browser instance">
-              <button
-                type="button"
-                className="flex h-8 w-8 text-white/20 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-white/10 hover:text-white/60"
-              >
-                <Layout className="h-[18px] w-[18px]" />
-              </button>
-            </PromptInputAction>
           </div>
 
           <PromptInputAction
@@ -932,7 +911,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
 
         {/* Connect Banner */}
         <AnimatePresence>
-          {showConnectBanner && !isRecording && (
+          {props.showConnectBanner && !isDismissedConnectBanner && !isRecording && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
@@ -962,7 +941,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                   </div>
                 </div>
                 <button 
-                  onClick={() => setShowConnectBanner(false)}
+                  onClick={() => setIsDismissedConnectBanner(true)}
                   className="p-1 hover:bg-white/5 rounded-md text-white/10 hover:text-white/30 transition-all"
                 >
                   <X className="w-3 h-3" />

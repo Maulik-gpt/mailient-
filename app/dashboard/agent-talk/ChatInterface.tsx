@@ -2361,19 +2361,7 @@ export default function ChatInterface({
                             onPersonalityClick={() => setIsPersonalityModalOpen(true)}
                             selectedEmailsCount={selectedEmails.length}
                             suggestionInput={suggestionInput}
-                          />
-                        </div>
-
-                        {/* Connector Bar - Phase 4 */}
-                        <div className="mt-3">
-                          <ConnectorBar
-                            connectors={[
-                              { id: 'gmail', name: 'Gmail', icon: 'mail', connected: integrations.gmail, description: 'Send and manage emails' },
-                              { id: 'google_calendar', name: 'Google Calendar', icon: 'calendar', connected: integrations['google-calendar'], description: 'Schedule meetings' },
-                              { id: 'notion', name: 'Notion', icon: 'notion', connected: false, description: 'Create pages and databases' },
-                              { id: 'google_tasks', name: 'Google Tasks', icon: 'check-square', connected: false, description: 'Manage tasks' }
-                            ]}
-                            onOpenConnectors={() => setIsIntegrationsModalOpen(true)}
+                            showConnectBanner={true}
                           />
                         </div>
 
