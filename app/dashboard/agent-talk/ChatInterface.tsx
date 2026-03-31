@@ -1705,6 +1705,7 @@ export default function ChatInterface({
   }, [isEmailSelectionModalOpen]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const loadedConversationIdRef = useRef<string | null>(null);
 
   // Load initial conversation if provided via URL
@@ -1738,26 +1739,32 @@ export default function ChatInterface({
     }
   }, [initialConversationId, isInitialMode]);
 
-  const scrollToBottom = (force = false) => {
+  const scrollToBottom = (instant = false) => {
     if (messagesEndRef.current) {
-      if (messages.length > 0 || force) {
-        messagesEndRef.current.scrollIntoView({
-          behavior: "smooth",
-          block: "end"
-        });
-      }
+      messagesEndRef.current.scrollIntoView({
+        behavior: instant ? "auto" : "smooth",
+        block: "end"
+      });
     }
   };
 
+  // Scroll to bottom when messages or thinking state changes
   useEffect(() => {
-    if (messages.length > 0) {
+    const timeoutId = setTimeout(() => {
+      scrollToBottom();
+    }, 100);
+    return () => clearTimeout(timeoutId);
+  }, [messages, isThinkingStepsOpen, isLoading]);
+
+  // Handle thinking expansion scroll
+  useEffect(() => {
+    if (isThinkingStepsOpen) {
       const timeoutId = setTimeout(() => {
         scrollToBottom();
-      }, 100);
-
+      }, 300); // Allow animation to finish or start well
       return () => clearTimeout(timeoutId);
     }
-  }, [messages]);
+  }, [isThinkingStepsOpen]);
 
   // Remove new message IDs after animation
   useEffect(() => {
@@ -2173,7 +2180,7 @@ export default function ChatInterface({
             isSidebarCollapsed ? "ml-20" : "ml-64"
           )}>
             {/* Chat Column (Order 1 - LEFT) */}
-            <div className="flex-1 flex flex-col relative min-w-[500px] h-full transition-all duration-500 order-1 bg-[#161616] border-x border-t border-white/5 rounded-t-[32px] shadow-2xl overflow-hidden">
+            <div className="flex-1 flex flex-col relative h-full min-w-0 transition-all duration-500 order-1 bg-[#161616] border-x border-t border-white/5 rounded-t-[32px] shadow-2xl overflow-hidden">
               {/* Header */}
               <div className="sticky top-0 z-40 transition-all duration-300">
                 <div className="relative px-8 py-3">
@@ -2332,10 +2339,13 @@ export default function ChatInterface({
                 </div>
               </div>
 
-              {/* Chat Content Container */}
-              <div className="flex-1 flex flex-col relative z-20 h-0 min-h-0 overflow-hidden">
+              {/* Chat Content Container - FIXED: Removed h-full as it conflicts with flex-1 and its sibling header */}
+              <div className="flex-1 flex flex-col relative z-20 min-h-0 overflow-hidden">
                 {/* Scrollable Message List */}
-                <div className="flex-1 overflow-y-auto px-6 py-4 scroll-smooth arcus-scrollbar relative min-h-0 pb-32">
+                <div 
+                  ref={scrollContainerRef}
+                  className="flex-1 overflow-y-auto px-6 py-4 scroll-smooth arcus-scrollbar relative min-h-0 pb-12"
+                >
                   <div className="max-w-3xl mx-auto w-full">
                     {isInitialMode ? (
                       <div className="flex flex-col items-center justify-center min-h-[60vh] py-12 animate-fade-in">
@@ -2407,7 +2417,7 @@ export default function ChatInterface({
                         </div>
 
                         {/* Centered Prompt Box for Initial Mode */}
-                        <div className="w-full mt-10 relative group max-w-2xl mx-auto">
+                        <div className="w-full mt-auto mb-12 relative group max-w-2xl mx-auto px-4">
                           <PromptInputBox
                             onSend={(msg, files, opts) => handleSend(msg, files, opts)}
                             onStop={() => abortControllerRef.current?.abort()}
@@ -2738,8 +2748,8 @@ export default function ChatInterface({
 
                 {/* Pinned Prompt Box Area - Only for Active Conversation */}
                 {!isInitialMode && (
-                  <div className="shrink-0 absolute bottom-0 left-0 right-0 w-full px-6 bg-[#161616] z-30 pb-6 pt-2 border-t border-white/[0.02]">
-                    <div className="absolute bottom-full left-0 right-0 h-16 bg-gradient-to-t from-[#161616] to-transparent pointer-events-none" />
+                  <div className="shrink-0 relative w-full px-6 bg-[#161616] z-[60] pb-6 pt-3 border-t border-white/[0.05] shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+                    <div className="absolute bottom-full left-0 right-0 h-20 bg-gradient-to-t from-[#161616] via-[#161616]/80 to-transparent pointer-events-none" />
                     <div className="max-w-3xl mx-auto w-full relative">
                       <PromptInputBox
                         onSend={(msg, files, opts) => handleSend(msg, files, opts)}
