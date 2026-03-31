@@ -2333,9 +2333,9 @@ export default function ChatInterface({
               </div>
 
               {/* Chat Content Container */}
-              <div className="flex-1 flex flex-col relative z-20 min-h-0 max-h-full overflow-hidden h-0">
+              <div className="flex-1 flex flex-col relative z-20 min-h-0 overflow-hidden pb-24">
                 {/* Scrollable Message List */}
-                <div className="flex-1 overflow-y-auto px-6 py-4 scroll-smooth arcus-scrollbar relative min-h-0 max-h-full">
+                <div className="flex-1 overflow-y-auto px-6 py-4 scroll-smooth arcus-scrollbar relative min-h-0 pb-24">
                   <div className="max-w-3xl mx-auto w-full">
                     {isInitialMode ? (
                       <div className="flex flex-col items-center justify-center min-h-[60vh] py-12 animate-fade-in">
@@ -2740,7 +2740,7 @@ export default function ChatInterface({
 
                 {/* Pinned Prompt Box Area - Only for Active Conversation */}
                 {!isInitialMode && (
-                  <div className="shrink-0 sticky bottom-0 w-full px-6 bg-[#161616] z-30 pb-6 pt-2 border-t border-white/[0.02]">
+                  <div className="shrink-0 absolute bottom-0 left-0 right-0 w-full px-6 bg-[#161616] z-30 pb-6 pt-2 border-t border-white/[0.02]">
                     <div className="absolute bottom-full left-0 right-0 h-16 bg-gradient-to-t from-[#161616] to-transparent pointer-events-none" />
                     <div className="max-w-3xl mx-auto w-full relative">
                       <PromptInputBox
