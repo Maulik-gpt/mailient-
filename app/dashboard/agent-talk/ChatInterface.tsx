@@ -2334,9 +2334,9 @@ export default function ChatInterface({
 
               {/* Chat Content */}
               {/* Chat Content Container */}
-              <div className="flex-1 relative z-10 min-h-0 overflow-hidden">
-                {/* Main Scrollable Area */}
-                <div className="absolute inset-0 overflow-y-auto px-6 py-4 scroll-smooth arcus-scrollbar">
+              <div className="flex-1 flex flex-col relative z-20 min-h-0 overflow-hidden">
+                {/* Messages & Content Area */}
+                <div className="flex-1 overflow-y-auto px-6 py-4 scroll-smooth arcus-scrollbar relative min-h-0">
                   <div className="max-w-3xl mx-auto w-full">
                     {isInitialMode ? (
                       <div className="flex flex-col items-center justify-center min-h-[60vh] py-12 animate-fade-in mb-10">
@@ -2424,7 +2424,7 @@ export default function ChatInterface({
                         </div>
                       </div>
                     ) : (
-                      <div className="space-y-4 pb-32 pt-4">
+                      <div className="space-y-4 pb-20">
                         {activeMission && <MissionStatusHeader mission={activeMission} />}
                         {messages.map((msg) => (
                           <div key={msg.id} className={`flex flex-col animate-fade-in ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
@@ -2739,10 +2739,10 @@ export default function ChatInterface({
                   </div>
                 </div>
 
-                {/* Strictly Fixed Prompt Box for Active Conversation */}
+                {/* Fixed Prompt Box Container - Only for Active Conversation */}
                 {!isInitialMode && (
-                  <div className="absolute bottom-0 left-0 right-0 z-30 px-6 pb-6 pt-2 bg-[#161616]">
-                    <div className="absolute bottom-full left-0 right-0 h-20 bg-gradient-to-t from-[#161616] via-[#161616]/80 to-transparent pointer-events-none" />
+                  <div className="shrink-0 relative w-full px-6 bg-[#161616] z-30 pb-6 pt-2">
+                    <div className="absolute bottom-full left-0 right-0 h-16 bg-gradient-to-t from-[#161616] to-transparent pointer-events-none" />
                     <div className="max-w-3xl mx-auto w-full relative">
                       <PromptInputBox
                         onSend={(msg, files, opts) => handleSend(msg, files, opts)}
