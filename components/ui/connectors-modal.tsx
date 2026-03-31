@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Calendar, 
+  Video,
+  CalendarDays,
   Mail,
   X,
   Check,
@@ -23,14 +25,6 @@ import { cn } from '@/lib/utils';
 // Definitive list of supported connectors (Phase 4 canonical)
 const SUPPORTED_APPS = [
   { 
-    id: 'gmail', 
-    name: 'Gmail', 
-    icon: Mail, 
-    color: '#EA4335',
-    description: 'Draft replies, search your inbox, and summarize email threads instantly',
-    details: 'Connect Arcus to your Gmail to enable automated drafting, high-speed inbox searches, and intelligent thread summarization.'
-  },
-  { 
     id: 'google_calendar', 
     name: 'Google Calendar', 
     icon: Calendar, 
@@ -39,12 +33,28 @@ const SUPPORTED_APPS = [
     details: 'Sync your Google Calendar to let Arcus schedule meetings, find availability, and manage your daily agenda autonomously.'
   },
   { 
+    id: 'google_meet', 
+    name: 'Google Meet', 
+    icon: Video, 
+    color: '#00897B',
+    description: 'Automate video conferencing links and manage collaborative calls',
+    details: 'Link Google Meet to auto-generate meeting rooms, manage call recordings, and integrate video links into your calendar events.'
+  },
+  { 
     id: 'notion', 
     name: 'Notion', 
     icon: Database, 
     color: '#000000',
     description: 'Create pages, update databases, and organize content straight from Arcus',
     details: 'Link your Notion workspace to enable Arcus to create meeting notes, update project trackers, and append data to your pages.'
+  },
+  { 
+    id: 'notion_calendar', 
+    name: 'Notion Calendar', 
+    icon: CalendarDays, 
+    color: '#000000',
+    description: 'Unified time management across Notion pages and external timelines',
+    details: 'Integrate Notion Calendar to bridge your project timelines with your personal schedule for comprehensive mission planning.'
   },
   { 
     id: 'google_tasks', 
