@@ -581,9 +581,7 @@ export async function POST(request) {
     let operatorRun = null;
     let normalizedPlan = [];
     let requiresApproval = false;
-    let planArtifact = null; // Phase 2: Plan artifact for complex intents
-    
-    // --- SEARCH SESSION TRANSPARENCY (Perplexity-style) ---
+    let planArtifact = null; 
     const planEngine = new ArcusPlanEngine({ db, userEmail });
     let searchSessions = [];
 
@@ -597,57 +595,6 @@ export async function POST(request) {
       operatorRun = runInit?.run || null;
       normalizedPlan = runInit?.plan || [];
       requiresApproval = !!runInit?.requiresApproval;
-      
-      // Phase 2: Generate AI plan for complex intents OR if Plan Mode is forced
-      if (isPlanMode && planModeEngine) {
-        try {
-          console.log('🎯 Forced Plan Mode: Generating detailed execution plan...');
-          
-          // Force complex intent for plan mode
-          intentAnalysis = {
-            ...intentAnalysis,
-            intent: 'multi_step',
-            complexity: 'complex',
-            needsCanvas: true,
-            canvasType: 'action_plan'
-          };
-
-          const planResult = await planModeEngine.generatePlan({
-            message,
-            runId: operatorRun?.runId || runId || `run_${Date.now()}`,
-            conversationId: currentConversationId,
-            context: { emailContext, notesResult, userName },
-            intent: 'multi_step',
-            complexity: 'complex'
-          });
-          
-          planArtifact = planResult.plan;
-          console.log(`✅ Plan generated for Plan Mode: ${planResult.planId}`);
-          
-          // If we forced plan mode, we can skip other heavier logic if desired,
-          // but here we let it fall through to generate the response message mentioning the plan.
-        } catch (err) {
-          console.error('Forced plan generation failed:', err.message);
-        }
-      } else if (planModeEngine && runInit?.planArtifact) {
-        planArtifact = runInit.planArtifact;
-      } else if (planModeEngine && (intentAnalysis?.complexity === 'complex' || intentAnalysis?.intent === 'multi_step')) {
-        try {
-          console.log('🎯 Generating AI plan for complex intent...');
-          const planResult = await planModeEngine.generatePlan({
-            message,
-            runId: operatorRun?.runId,
-            conversationId: currentConversationId,
-            context: { emailContext, notesResult },
-            intent: intentAnalysis?.intent || 'general',
-            complexity: intentAnalysis?.complexity || 'simple'
-          });
-          planArtifact = planResult.plan;
-          console.log(`✅ Plan generated: ${planResult.planId} with ${planResult.todos?.length || 0} todos`);
-        } catch (err) {
-          console.warn('Plan generation failed (non-fatal):', err.message);
-        }
-      }
     }
 
     // --- CONTEXT SEARCH ---
@@ -696,11 +643,11 @@ Body: ${emailData.body || emailData.snippet}
       try {
         const sessionResult = await planEngine.createSearchSession({
           runId: operatorRun?.runId || null,
-          query: message,
+          query: intentAnalysis?.searchQuery || message,
           sourceType: 'email'
         });
         emailSearchSession = sessionResult;
-        await planEngine.transitionSearchSession(sessionResult.sessionId, 'searching', { query: message });
+        await planEngine.transitionSearchSession(sessionResult.sessionId, 'searching', { query: intentAnalysis?.searchQuery || message });
       } catch (e) {
         console.warn('Search session creation failed (non-fatal):', e.message);
       }
@@ -727,7 +674,7 @@ Body: ${emailData.body || emailData.snippet}
             });
             searchSessions.push({
               sessionId: emailSearchSession.sessionId,
-              query: message,
+              query: intentAnalysis?.searchQuery || message,
               sourceType: 'email',
               status: 'complete',
               resultCount: rawEmailData.length
@@ -742,6 +689,120 @@ Body: ${emailData.body || emailData.snippet}
         console.error('Error in Arcus email action:', err);
         if (emailSearchSession) {
           await planEngine.transitionSearchSession(emailSearchSession.sessionId, 'complete', { resultCount: 0 }).catch(() => {});
+        }
+      }
+    }
+
+    if (operatorRuntimeEnabled && operatorRuntime && operatorRun) {
+      // Phase 2: Generate AI plan for complex intents OR if Plan Mode is forced
+      if (isPlanMode && planModeEngine) {
+        try {
+          console.log('🎯 Forced Plan Mode: Generating detailed execution plan...');
+          
+          // Force complex intent for plan mode
+          intentAnalysis = {
+            ...intentAnalysis,
+            intent: 'multi_step',
+            complexity: 'complex',
+            needsCanvas: true,
+            canvasType: 'action_plan'
+          };
+
+          const planResult = await planModeEngine.generatePlan({
+            message,
+            runId: operatorRun?.runId || runId || `run_${Date.now()}`,
+            conversationId: currentConversationId,
+            context: { emailContext, notesResult, userName },
+            intent: 'multi_step',
+            complexity: 'complex'
+          });
+          
+          if (planResult.plan) {
+            // Normalize plan artifact for frontend (camelCase + parsed JSON + todos)
+            const rawPlan = planResult.plan;
+            planArtifact = {
+              planId: rawPlan.plan_id,
+              title: rawPlan.title,
+              objective: rawPlan.objective,
+              status: rawPlan.status,
+              version: rawPlan.version,
+              locked: rawPlan.locked,
+              intent: rawPlan.intent,
+              complexity: rawPlan.complexity,
+              canvasType: rawPlan.canvas_type,
+              runId: rawPlan.run_id,
+              createdAt: rawPlan.created_at || new Date().toISOString(),
+              assumptions: typeof rawPlan.assumptions === 'string' ? JSON.parse(rawPlan.assumptions) : (rawPlan.assumptions || []),
+              questionsAnswered: typeof rawPlan.questions_answered === 'string' ? JSON.parse(rawPlan.questions_answered) : (rawPlan.questions_answered || []),
+              acceptanceCriteria: typeof rawPlan.acceptance_criteria === 'string' ? JSON.parse(rawPlan.acceptance_criteria) : (rawPlan.acceptance_criteria || []),
+              todos: planResult.todos?.map((t, idx) => ({
+                todoId: t.todo_id || `todo_${idx}`,
+                title: t.title,
+                description: t.description || '',
+                status: t.status || 'pending',
+                actionType: t.action_type || 'generic_task',
+                sortOrder: t.sort_order || idx,
+                dependsOn: t.depends_on || [],
+                approvalMode: t.approval_mode || 'auto',
+                attemptCount: t.attempt_count || 0,
+                resultPayload: typeof t.result_payload === 'string' ? JSON.parse(t.result_payload) : t.result_payload
+              })) || []
+            };
+          }
+          
+          console.log(`✅ Plan generated and normalized for Plan Mode: ${planResult.planId}`);
+          
+          // CRITICAL: Force approval required for Plan Mode to show the card prominently
+          requiresApproval = true;
+        } catch (err) {
+          console.error('Forced plan generation failed:', err.message);
+        }
+      } else if (planModeEngine && (intentAnalysis?.complexity === 'complex' || intentAnalysis?.intent === 'multi_step')) {
+        try {
+          console.log('🎯 Generating AI plan for complex intent...');
+          const planResult = await planModeEngine.generatePlan({
+            message,
+            runId: operatorRun?.runId,
+            conversationId: currentConversationId,
+            context: { emailContext, notesResult },
+            intent: intentAnalysis?.intent || 'general',
+            complexity: intentAnalysis?.complexity || 'simple'
+          });
+          
+          if (planResult.plan) {
+            const rawPlan = planResult.plan;
+            planArtifact = {
+              planId: rawPlan.plan_id,
+              title: rawPlan.title,
+              objective: rawPlan.objective,
+              status: rawPlan.status,
+              version: rawPlan.version,
+              locked: rawPlan.locked,
+              intent: rawPlan.intent,
+              complexity: rawPlan.complexity,
+              canvasType: rawPlan.canvas_type,
+              runId: rawPlan.run_id,
+              createdAt: rawPlan.created_at || new Date().toISOString(),
+              assumptions: typeof rawPlan.assumptions === 'string' ? JSON.parse(rawPlan.assumptions) : (rawPlan.assumptions || []),
+              questionsAnswered: typeof rawPlan.questions_answered === 'string' ? JSON.parse(rawPlan.questions_answered) : (rawPlan.questions_answered || []),
+              acceptanceCriteria: typeof rawPlan.acceptance_criteria === 'string' ? JSON.parse(rawPlan.acceptance_criteria) : (rawPlan.acceptance_criteria || []),
+              todos: planResult.todos?.map((t, idx) => ({
+                todoId: t.todo_id || `todo_${idx}`,
+                title: t.title,
+                description: t.description || '',
+                status: t.status || 'pending',
+                actionType: t.action_type || 'generic_task',
+                sortOrder: t.sort_order || idx,
+                dependsOn: t.depends_on || [],
+                approvalMode: t.approval_mode || 'auto',
+                attemptCount: t.attempt_count || 0,
+                resultPayload: typeof t.result_payload === 'string' ? JSON.parse(t.result_payload) : t.result_payload
+              })) || []
+            };
+          }
+          console.log(`✅ Plan generated: ${planResult.planId} with ${planResult.todos?.length || 0} todos`);
+        } catch (err) {
+          console.warn('Plan generation failed (non-fatal):', err.message);
         }
       }
     }
@@ -793,7 +854,8 @@ Body: ${emailData.body || emailData.snippet}
     let executionPolicy = null;
     const messageLower = (message || '').toLowerCase();
     const effectiveCanvasType = intentAnalysis?.canvasType || 'email_draft';
-    const shouldGenerateCanvas = Boolean(isCanvas);
+    // CRITICAL: Disable canvas generation if we are in plan mode to prevent UI confusion
+    const shouldGenerateCanvas = isPlanMode ? false : Boolean(isCanvas);
 
     // --- PARALLEL GENERATION: Generate canvas and response at the same time ---
     let canvasDataResult = null;

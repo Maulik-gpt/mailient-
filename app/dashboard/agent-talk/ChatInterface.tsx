@@ -14,7 +14,7 @@ import { SearchExecutionPanel } from './components/SearchExecutionPanel';
 import { ConnectorBar } from './components/ConnectorBar';
 
 import { PromptInputBox } from '@/components/ui/ai-prompt-box';
-import { IntegrationsModal } from '@/components/ui/integrations-modal';
+import { ConnectorsModal } from '@/components/ui/connectors-modal';
 import { EmailSelectionModal } from '@/components/ui/email-selection-modal';
 import { PersonalitySettingsModal } from '@/components/ui/personality-settings-modal';
 import { GradientButton } from '@/components/ui/gradient-button';
@@ -824,7 +824,16 @@ export default function ChatInterface({
         const intentRes = await fetch('/api/agent-talk/chat-arcus/intent', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: messageText, conversationId: conversationIdToUse, runId: requestRunId, attachments: attachments || [] }),
+          body: JSON.stringify({ 
+            message: messageText, 
+            conversationId: conversationIdToUse, 
+            runId: requestRunId, 
+            attachments: attachments || [],
+            isPlanMode,
+            isCanvas,
+            isSearch,
+            isDeepThinking
+          }),
           signal: abortControllerRef.current.signal
         });
         if (intentRes.ok) intentData = await intentRes.json();
@@ -847,7 +856,7 @@ export default function ChatInterface({
           meta: {
             actionType: 'thought',
             isStreaming: true,
-            canvasApproval: (intentData.needsCanvas === true || isCanvas) ? {
+            canvasApproval: ((intentData.needsCanvas === true || isCanvas) && !isPlanMode) ? {
               status: 'pending' as const,
               title: intentData.canvasTitle || 'Launch Arcus Mission?',
               description: intentData.canvasDescription || intentData.initialResponse || 'This request would be best handled in the specialized Arcus Workspace.',
@@ -2784,7 +2793,7 @@ export default function ChatInterface({
           </div>
         </div>
         <NoScrollbarStyles />
-        <IntegrationsModal isOpen={isIntegrationsModalOpen} onClose={() => setIsIntegrationsModalOpen(false)} />
+        <ConnectorsModal isOpen={isIntegrationsModalOpen} onClose={() => setIsIntegrationsModalOpen(false)} />
         <EmailSelectionModal
           isOpen={isEmailSelectionModalOpen}
           onClose={() => setIsEmailSelectionModalOpen(false)}

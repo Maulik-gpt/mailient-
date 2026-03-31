@@ -1,8 +1,9 @@
-import React from "react";
+import React, { forwardRef, useState, useEffect, useRef, useCallback, createContext, useContext, TextareaHTMLAttributes, ElementRef, ComponentPropsWithoutRef } from "react";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { ArrowUp, Paperclip, Square, X, StopCircle, Mic, BrainCog, Monitor, FileText, Film, Music, Globe, Mail, Search, Infinity, Workflow, Bug, MessageSquare, Check, ChevronDown } from "lucide-react";
+import { ArrowUp, Paperclip, Square, X, StopCircle, Mic, BrainCog, Monitor, FileText, Film, Music, Globe, Mail, Search, Infinity, Workflow, Bug, MessageSquare, Check, ChevronDown, Plus, Plug, Database, Calendar, Layout } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { ConnectorsModal } from './connectors-modal';
 
 // Utility function for className merging
 const cn = (...classes: (string | undefined | null | false)[]) => classes.filter(Boolean).join(" ");
@@ -37,10 +38,10 @@ if (typeof document !== 'undefined' && !document.getElementById('ai-prompt-box-s
 }
 
 // Textarea Component
-interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   className?: string;
 }
-const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(({ className, ...props }, ref) => (
+const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(({ className, ...props }, ref) => (
   <textarea
     className={cn(
       "flex w-full rounded-md border-none bg-transparent px-3 py-3 text-base text-white placeholder:text-white/40 focus-visible:outline-none focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50 min-h-[60px] resize-none scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-gray-500",
@@ -57,9 +58,9 @@ Textarea.displayName = "Textarea";
 const TooltipProvider = TooltipPrimitive.Provider;
 const Tooltip = TooltipPrimitive.Root;
 const TooltipTrigger = TooltipPrimitive.Trigger;
-const TooltipContent = React.forwardRef<
-  React.ElementRef<typeof TooltipPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
+const TooltipContent = forwardRef<
+  ElementRef<typeof TooltipPrimitive.Content>,
+  ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
 >(({ className, sideOffset = 4, ...props }, ref) => (
   <TooltipPrimitive.Content
     ref={ref}
@@ -76,9 +77,9 @@ TooltipContent.displayName = TooltipPrimitive.Content.displayName;
 // Dialog Components
 const Dialog = DialogPrimitive.Root;
 const DialogPortal = DialogPrimitive.Portal;
-const DialogOverlay = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Overlay>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
+const DialogOverlay = forwardRef<
+  ElementRef<typeof DialogPrimitive.Overlay>,
+  ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Overlay
     ref={ref}
@@ -91,9 +92,9 @@ const DialogOverlay = React.forwardRef<
 ));
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
-const DialogContent = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
+const DialogContent = forwardRef<
+  ElementRef<typeof DialogPrimitive.Content>,
+  ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
 >(({ className, children, ...props }, ref) => (
   <DialogPortal>
     <DialogOverlay />
@@ -115,9 +116,9 @@ const DialogContent = React.forwardRef<
 ));
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 
-const DialogTitle = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Title>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>
+const DialogTitle = forwardRef<
+  ElementRef<typeof DialogPrimitive.Title>,
+  ComponentPropsWithoutRef<typeof DialogPrimitive.Title>
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Title
     ref={ref}
@@ -132,7 +133,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "default" | "outline" | "ghost";
   size?: "default" | "sm" | "lg" | "icon";
 }
-const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = "default", size = "default", ...props }, ref) => {
     const variantClasses = {
       default: "bg-white hover:bg-white/80 text-black",
@@ -295,7 +296,7 @@ interface PromptInputProps {
   onFocus?: () => void;
   onBlur?: () => void;
 }
-const PromptInput = React.forwardRef<HTMLDivElement, PromptInputProps>(
+const PromptInput = forwardRef<HTMLDivElement, PromptInputProps>(
   (
     {
       className,
@@ -473,7 +474,7 @@ const MODES = [
 
 type AgentMode = typeof MODES[number]['id'];
 
-export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxProps>((props, ref) => {
+export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((props, ref) => {
   const {
     onSend = () => { },
     onStop,
@@ -494,6 +495,28 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
   const [isFocused, setIsFocused] = React.useState(false);
   const [activeMode, setActiveMode] = React.useState<AgentMode>(props.activeMode || 'agent');
   const [isModeMenuOpen, setIsModeMenuOpen] = React.useState(false);
+  const [isConnectorsModalOpen, setIsConnectorsModalOpen] = React.useState(false);
+  const [showConnectBanner, setShowConnectBanner] = React.useState(true);
+  const [integrationStatuses, setIntegrationStatuses] = React.useState<Record<string, boolean>>({});
+
+  React.useEffect(() => {
+    const fetchStatus = async () => {
+      try {
+        const res = await fetch('/api/integrations/status');
+        if (res.ok) {
+          const data = await res.json();
+          const statuses: Record<string, boolean> = {};
+          Object.entries(data.integrations).forEach(([key, val]: [string, any]) => {
+            statuses[key] = (val as any).connected;
+          });
+          setIntegrationStatuses(statuses);
+        }
+      } catch (err) {
+        console.error('Failed to fetch integration status:', err);
+      }
+    };
+    fetchStatus();
+  }, []);
   const recognitionRef = React.useRef<any>(null);
   const uploadInputRef = React.useRef<HTMLInputElement>(null);
   const promptBoxRef = React.useRef<HTMLDivElement>(null);
@@ -819,25 +842,45 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
             <div className="h-4 w-[1px] bg-white/10 mx-1" />
 
             <PromptInputAction tooltip="Upload files">
+              <div className="flex items-center gap-1.5 p-1 bg-white/[0.03] border border-white/10 rounded-full mr-1">
+                <button
+                  type="button"
+                  onClick={() => uploadInputRef.current?.click()}
+                  className="flex h-6 w-6 text-white/40 cursor-pointer items-center justify-center rounded-full transition-all hover:bg-white/10 hover:text-white"
+                  disabled={isRecording}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  <input
+                    ref={uploadInputRef}
+                    type="file"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => {
+                      if (e.target.files) {
+                        Array.from(e.target.files).forEach(processFile);
+                      }
+                      if (e.target) e.target.value = "";
+                    }}
+                  />
+                </button>
+                {/* Integration Icons Pill */}
+                <div className="flex items-center gap-1 border-l border-white/10 pl-1.5 pr-0.5">
+                  <div className={cn("w-4 h-4 text-white/20", integrationStatuses['gmail'] && "text-white/60")}>
+                    <Mail className="w-3.5 h-3.5" />
+                  </div>
+                  <div className={cn("w-4 h-4 text-white/20", integrationStatuses['notion'] && "text-white/60")}>
+                    <Database className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+              </div>
+            </PromptInputAction>
+
+            <PromptInputAction tooltip="Browser instance">
               <button
                 type="button"
-                onClick={() => uploadInputRef.current?.click()}
                 className="flex h-8 w-8 text-white/20 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-white/10 hover:text-white/60"
-                disabled={isRecording}
               >
-                <Paperclip className="h-[18px] w-[18px]" />
-                <input
-                  ref={uploadInputRef}
-                  type="file"
-                  multiple
-                  className="hidden"
-                  onChange={(e) => {
-                    if (e.target.files) {
-                      Array.from(e.target.files).forEach(processFile);
-                    }
-                    if (e.target) e.target.value = "";
-                  }}
-                />
+                <Layout className="h-[18px] w-[18px]" />
               </button>
             </PromptInputAction>
           </div>
@@ -886,7 +929,54 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
             </button>
           </PromptInputAction>
         </PromptInputActions>
+
+        {/* Connect Banner */}
+        <AnimatePresence>
+          {showConnectBanner && !isRecording && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="mt-3 pt-3 border-t border-white/[0.03] flex items-center justify-between group"
+            >
+              <button 
+                onClick={() => setIsConnectorsModalOpen(true)}
+                className="flex items-center gap-2.5 text-white/40 hover:text-white/80 transition-all text-[12px] font-medium"
+              >
+                <div className="w-6 h-6 bg-white/[0.03] rounded-lg flex items-center justify-center border border-white/[0.05] group-hover:bg-white/[0.08] transition-colors">
+                  <Plug className="w-3 h-3 rotate-45" />
+                </div>
+                Connect your tools to Arcus
+              </button>
+              
+              <div className="flex items-center gap-2">
+                <div className="flex items-center -space-x-1.5 opacity-40 group-hover:opacity-70 transition-opacity">
+                  <div className="w-5 h-5 rounded-md bg-[#EA4335] border border-black/20 flex items-center justify-center">
+                    <Mail className="w-2.5 h-2.5 text-white" />
+                  </div>
+                  <div className="w-5 h-5 rounded-md bg-[#4285F4] border border-black/20 flex items-center justify-center">
+                    <Calendar className="w-2.5 h-2.5 text-white" />
+                  </div>
+                  <div className="w-5 h-5 rounded-md bg-white border border-black/20 flex items-center justify-center">
+                    <Database className="w-2.5 h-2.5 text-black" />
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowConnectBanner(false)}
+                  className="p-1 hover:bg-white/5 rounded-md text-white/10 hover:text-white/30 transition-all"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </PromptInput>
+
+      <ConnectorsModal 
+        isOpen={isConnectorsModalOpen} 
+        onClose={() => setIsConnectorsModalOpen(false)} 
+      />
 
       <ImageViewDialog imageUrl={selectedImage} onClose={() => setSelectedImage(null)} />
     </>

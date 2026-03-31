@@ -15,7 +15,7 @@ export async function POST(request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { message, conversationId = null, runId = null, attachments = [] } = await request.json();
+        const { message, conversationId = null, runId = null, attachments = [], isPlanMode = false } = await request.json();
         if (!message) {
             return NextResponse.json({ error: 'Message required' }, { status: 400 });
         }
@@ -36,7 +36,8 @@ export async function POST(request) {
         const intentAnalysis = await arcusAI.analyzeIntentAndPlan(message, {
             userEmail: session.user.email,
             userName: session.user.name || 'User',
-            attachments
+            attachments,
+            isPlanMode
         });
 
         const runInit = await runtime.initializeRun({
@@ -57,6 +58,7 @@ export async function POST(request) {
             initialResponse: intentAnalysis?.initialResponse,
             intent: intentAnalysis?.intent || 'general_chat',
             complexity: intentAnalysis?.complexity || runtime.inferComplexity(message, intentAnalysis?.plan || []),
+            searchQuery: intentAnalysis?.searchQuery || message,
             thinkingBlocks: intentAnalysis?.thinkingBlocks || [],
             plan: normalizedPlan.map((step, idx) => ({
                 step: idx + 1,
@@ -69,7 +71,7 @@ export async function POST(request) {
                 description: step.label,
                 type: step.kind
             })),
-            needsCanvas: Boolean(intentAnalysis?.needsCanvas || forceCanvas),
+            needsCanvas: isPlanMode ? false : Boolean(intentAnalysis?.needsCanvas || forceCanvas),
             canvasType: intentAnalysis?.canvasType || (forceCanvas ? 'email_draft' : 'none'),
             canvasTitle: intentAnalysis?.canvasType === 'analytics' 
                 ? 'Generate Analytics Dashboard?' 
