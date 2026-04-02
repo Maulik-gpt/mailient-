@@ -162,14 +162,12 @@ export function ConnectorsModal({
             </button>
           </div>
 
-          {/* Navigation - Apps Only */}
-          <div className="px-8 flex items-center gap-8 border-b border-white/[0.03]">
+          {/* Navigation - Apps Only (Tabs removed) */}
+          <div className="px-8 flex items-center border-b border-white/[0.03]">
             <button className="pb-4 text-[14px] font-bold text-white relative">
               Apps
-              <motion.div layoutId="tab-underline" className="absolute bottom-0 left-0 right-0 h-[2px] bg-white rounded-full" />
+              <motion.div layoutId="tab-underline" className="absolute bottom-0 left-0 right-0 h-[3px] bg-white rounded-full" />
             </button>
-            <button className="pb-4 text-[14px] font-bold text-white/20 cursor-not-allowed">Custom API</button>
-            <button className="pb-4 text-[14px] font-bold text-white/20 cursor-not-allowed">Custom MCP</button>
           </div>
 
           {/* Grid Area */}
