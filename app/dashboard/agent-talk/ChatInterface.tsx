@@ -354,9 +354,15 @@ interface ChatInterfaceProps {
   onConversationDelete?: (conversationId: string) => void;
 }
 
-// Global styles for custom scrollbar
+// Global styles for custom scrollbar and typography
 const NoScrollbarStyles = () => (
   <style jsx global>{`
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+    
+    body {
+      font-family: 'Montserrat', sans-serif !important;
+    }
+
     .arcus-scrollbar::-webkit-scrollbar {
       width: 6px;
     }
@@ -2375,7 +2381,7 @@ export default function ChatInterface({
                               alt="Arcus AI"
                             />
                           </div>
-                          <h1 className="text-4xl md:text-6xl font-medium text-white tracking-tighter" style={{ fontFamily: 'Satoshi, sans-serif' }}>
+                          <h1 className="text-4xl md:text-6xl font-medium text-white tracking-tighter" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                             Ask anything about your emails
                           </h1>
                         </div>
