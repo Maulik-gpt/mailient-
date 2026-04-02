@@ -37,7 +37,7 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const code = searchParams.get('code');
     const userEmail = session.user.email;
-    const provider = 'notion_calendar';
+    const provider = 'slack';
 
     if (!code) return NextResponse.redirect(`/dashboard/agent-talk?error=missing_code`);
 

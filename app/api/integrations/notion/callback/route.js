@@ -32,21 +32,21 @@ const integrationManager = new ArcusIntegrationManager(db);
 export async function GET(request) {
   try {
     const session = await getSession();
-    if (!session?.user?.email) return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard/agent-talk?error=unauthorized`);
+    if (!session?.user?.email) return NextResponse.redirect(`/dashboard/agent-talk?error=unauthorized`);
 
     const { searchParams } = new URL(request.url);
     const code = searchParams.get('code');
     const userEmail = session.user.email;
     const provider = 'notion';
 
-    if (!code) return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard/agent-talk?error=missing_code`);
+    if (!code) return NextResponse.redirect(`/dashboard/agent-talk?error=missing_code`);
 
     const credentials = await integrationManager.exchangeCode(provider, code);
     await integrationManager.storeCredentials(userEmail, provider, credentials);
     await db.logIntegrationEvent(userEmail, provider, 'connected', { scopes: credentials.scopes });
 
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard/agent-talk?success=connected&provider=${provider}`);
+    return NextResponse.redirect(`/dashboard/agent-talk?success=connected&provider=${provider}`);
   } catch (err) {
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard/agent-talk?error=exchange_failed&message=${encodeURIComponent(err.message)}`);
+    return NextResponse.redirect(`/dashboard/agent-talk?error=exchange_failed&message=${encodeURIComponent(err.message)}`);
   }
 }

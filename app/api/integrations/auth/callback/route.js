@@ -58,7 +58,7 @@ export async function GET(request) {
     const session = await auth();
     if (!session?.user?.email) {
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/agent-talk?error=unauthorized`
+        `/dashboard/agent-talk?error=unauthorized`
       );
     }
 
@@ -72,13 +72,13 @@ export async function GET(request) {
     if (error) {
       console.error(`[OAuth Callback] ${provider} error:`, error, errorDescription);
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/agent-talk?error=oauth_failed&provider=${provider}&message=${encodeURIComponent(errorDescription || error)}`
+        `/dashboard/agent-talk?error=oauth_failed&provider=${provider}&message=${encodeURIComponent(errorDescription || error)}`
       );
     }
 
     if (!provider || !code) {
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/agent-talk?error=missing_params`
+        `/dashboard/agent-talk?error=missing_params`
       );
     }
 
@@ -97,12 +97,12 @@ export async function GET(request) {
 
     // Redirect back to chat with success
     return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/agent-talk?success=connected&provider=${provider}`
+      `/dashboard/agent-talk?success=connected&provider=${provider}`
     );
   } catch (error) {
     console.error('[OAuth Callback] Error:', error);
     return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/agent-talk?error=exchange_failed&message=${encodeURIComponent(error.message)}`
+      `/dashboard/agent-talk?error=exchange_failed&message=${encodeURIComponent(error.message)}`
     );
   }
 }

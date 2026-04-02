@@ -47,7 +47,7 @@ export async function GET(request) {
     const session = await getSession();
     if (!session?.user?.email) {
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/agent-talk?error=unauthorized`
+        `/dashboard/agent-talk?error=unauthorized`
       );
     }
 
@@ -63,13 +63,13 @@ export async function GET(request) {
     if (error) {
       console.error(`[Google Calendar Callback] error:`, error, errorDescription);
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/agent-talk?error=oauth_failed&provider=${provider}&message=${encodeURIComponent(errorDescription || error)}`
+        `/dashboard/agent-talk?error=oauth_failed&provider=${provider}&message=${encodeURIComponent(errorDescription || error)}`
       );
     }
 
     if (!code) {
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/agent-talk?error=missing_code`
+        `/dashboard/agent-talk?error=missing_code`
       );
     }
 
@@ -86,12 +86,12 @@ export async function GET(request) {
 
     // Redirect back to chat with success
     return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/agent-talk?success=connected&provider=${provider}`
+      `/dashboard/agent-talk?success=connected&provider=${provider}`
     );
   } catch (err) {
     console.error('[Google Calendar Callback] Error:', err);
     return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/agent-talk?error=exchange_failed&message=${encodeURIComponent(err.message)}`
+      `/dashboard/agent-talk?error=exchange_failed&message=${encodeURIComponent(err.message)}`
     );
   }
 }
