@@ -2392,7 +2392,7 @@ export default function ChatInterface({
                             onSend={(msg, files, opts) => handleSend(msg, files, opts)}
                             onStop={() => abortControllerRef.current?.abort()}
                             isLoading={isLoading}
-                            placeholder="What would you like to know?"
+                            placeholder="Assign a task or ask anything"
                             onSearchClick={() => { }}
                             onAttachEmailClick={() => setIsEmailSelectionModalOpen(true)}
                             onPersonalityClick={() => setIsPersonalityModalOpen(true)}

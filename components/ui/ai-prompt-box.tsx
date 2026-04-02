@@ -480,7 +480,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
     onSend = () => { },
     onStop,
     isLoading = false,
-    placeholder = "Type your message here...",
+    placeholder = "Assign a task or ask anything",
     className,
     onSearchClick,
     onAttachEmailClick,
@@ -909,35 +909,46 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
           </PromptInputAction>
         </PromptInputActions>
 
-        {/* Connect Banner */}
+        {/* Connect Banner - Manus Aesthetic Refinement */}
         <AnimatePresence>
           {props.showConnectBanner && !isDismissedConnectBanner && !isRecording && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              className="mt-3 pt-3 border-t border-white/[0.03] flex items-center justify-between group"
+              className="mt-3 pt-3 border-t border-white/[0.06] flex items-center justify-between group"
             >
               <button 
                 onClick={() => setIsConnectorsModalOpen(true)}
-                className="flex items-center gap-2.5 text-white/40 hover:text-white/80 transition-all text-[12px] font-medium"
+                className="flex items-center gap-2.5 text-white/50 hover:text-white/90 transition-all text-[13px] font-medium tracking-tight"
               >
-                <div className="w-6 h-6 bg-white/[0.03] rounded-lg flex items-center justify-center border border-white/[0.05] group-hover:bg-white/[0.08] transition-colors">
-                  <Plug className="w-3 h-3 rotate-45" />
+                <div className="w-5 h-5 flex items-center justify-center opacity-70 group-hover:opacity-100 transition-opacity">
+                  <Plug className="w-3.5 h-3.5" />
                 </div>
                 Connect your tools to Arcus
               </button>
               
-              <div className="flex items-center gap-2">
-                <div className="flex items-center -space-x-1.5 opacity-40 group-hover:opacity-70 transition-opacity">
-                  <div className="w-5 h-5 rounded-md bg-[#EA4335] border border-black/20 flex items-center justify-center">
-                    <Mail className="w-2.5 h-2.5 text-white" />
+              <div className="flex items-center gap-3">
+                <div className="flex items-center -space-x-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                  {/* Google Icon Approximation */}
+                  <div className="w-5 h-5 rounded-full bg-white/10 border border-white/5 flex items-center justify-center backdrop-blur-sm">
+                    <Plug className="w-2.5 h-2.5 text-orange-400" />
                   </div>
-                  <div className="w-5 h-5 rounded-md bg-[#4285F4] border border-black/20 flex items-center justify-center">
-                    <Calendar className="w-2.5 h-2.5 text-white" />
+                  {/* Gmail Icon Approximation */}
+                  <div className="w-5 h-5 rounded-full bg-[#EA4335]/20 border border-[#EA4335]/30 flex items-center justify-center backdrop-blur-sm">
+                    <Mail className="w-2.5 h-2.5 text-[#EA4335]" />
                   </div>
-                  <div className="w-5 h-5 rounded-md bg-white border border-black/20 flex items-center justify-center">
-                    <Database className="w-2.5 h-2.5 text-black" />
+                  {/* Calendar Icon Approximation */}
+                  <div className="w-5 h-5 rounded-full bg-[#4285F4]/20 border border-[#4285F4]/30 flex items-center justify-center backdrop-blur-sm">
+                    <Calendar className="w-2.5 h-2.5 text-[#4285F4]" />
+                  </div>
+                  {/* Database/Notion Icon Approximation */}
+                  <div className="w-5 h-5 rounded-full bg-white/10 border border-white/5 flex items-center justify-center backdrop-blur-sm">
+                    <Database className="w-2.5 h-2.5 text-white/80" />
+                  </div>
+                  {/* Misc Icon */}
+                  <div className="w-5 h-5 rounded-full bg-white/10 border border-white/5 flex items-center justify-center backdrop-blur-sm">
+                    <Layout className="w-2.5 h-2.5 text-white/40" />
                   </div>
                 </div>
                 <button 
