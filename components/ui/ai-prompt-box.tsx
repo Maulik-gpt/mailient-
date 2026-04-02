@@ -901,7 +901,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
               ) : isRecording ? (
                 <StopCircle className="h-5 w-5 text-red-500" />
               ) : hasContent ? (
-                <ArrowUp className="h-4 w-4 text-white" />
+                <ArrowUp className="h-4 w-4 text-black" />
               ) : (
                 <Mic className="h-5 w-5 text-[#9CA3AF] transition-colors" />
               )}

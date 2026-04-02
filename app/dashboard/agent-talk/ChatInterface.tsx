@@ -2367,75 +2367,21 @@ export default function ChatInterface({
                   <div className="max-w-3xl mx-auto w-full">
                     {isInitialMode ? (
                       <div className="flex flex-col items-center justify-center min-h-[50vh] py-12 animate-fade-in relative">
-                        <div className="text-center mb-10">
+                        <div className="text-center mb-16">
                           <div className="flex justify-center mb-8">
                             <img
                               src="/arcus-ai-icon.jpg"
-                              className="w-16 h-16 object-cover rounded-[20px] shadow-2xl grayscale brightness-110"
+                              className="w-16 h-16 object-cover rounded-[24px] shadow-2xl grayscale brightness-110"
                               alt="Arcus AI"
                             />
                           </div>
-                          <h1 className="text-4xl md:text-5xl font-medium text-white tracking-tight" style={{ fontFamily: 'Satoshi, sans-serif' }}>
+                          <h1 className="text-4xl md:text-6xl font-medium text-white tracking-tighter" style={{ fontFamily: 'Satoshi, sans-serif' }}>
                             Ask anything about your emails
                           </h1>
                         </div>
 
-                        {/* Pill-style Action Buttons */}
-                        <div className="flex flex-wrap justify-center gap-2 mt-6">
-                          <button
-                            onClick={() => setSuggestionInput({
-                              text: "Please provide me with a comprehensive summary of my recent email correspondence from the last 24 hours. I am particularly interested in any urgent matters, action items directed at me, or important status updates that require my immediate attention.",
-                              id: Date.now()
-                            })}
-                            className="flex items-center gap-2 px-3.5 py-1.5 bg-[#161616] border border-white/5 rounded-full text-white/60 hover:text-white hover:bg-white/5 hover:border-white/10 transition-all text-[13px] font-medium"
-                          >
-                            <Sparkles className="w-3.5 h-3.5" />
-                            Catch up
-                          </button>
-                          <button
-                            onClick={() => setSuggestionInput({
-                              text: "Could you please analyze my current unread emails and synthesize the core information from each thread? I would like a breakdown that highlights the main subject of each conversation and identifies any deadlines or specific requests made by the senders.",
-                              id: Date.now()
-                            })}
-                            className="flex items-center gap-2 px-3.5 py-1.5 bg-[#161616] border border-white/5 rounded-full text-white/60 hover:text-white hover:bg-white/5 hover:border-white/10 transition-all text-[13px] font-medium"
-                          >
-                            <FileText className="w-3.5 h-3.5" />
-                            Summarize
-                          </button>
-                          <button
-                            onClick={() => setSuggestionInput({
-                              text: "I would like some assistance in drafting a professional response to my most recent email. Please ensure the reply is articulate, maintains a collaborative tone, and clearly addresses all the questions or points raised by the sender in their message.",
-                              id: Date.now()
-                            })}
-                            className="flex items-center gap-2 px-3.5 py-1.5 bg-[#161616] border border-white/5 rounded-full text-white/60 hover:text-white hover:bg-white/5 hover:border-white/10 transition-all text-[13px] font-medium"
-                          >
-                            <PenTool className="w-3.5 h-3.5" />
-                            Draft reply
-                          </button>
-                          <button
-                            onClick={() => setSuggestionInput({
-                              text: "I need to facilitate a meeting for tomorrow based on my recent email threads. Could you please review any pending scheduling requests and compare them with my calendar to suggest the most optimal windows for a 30-minute discussion?",
-                              id: Date.now()
-                            })}
-                            className="flex items-center gap-2 px-3.5 py-1.5 bg-[#161616] border border-white/5 rounded-full text-white/60 hover:text-white hover:bg-white/5 hover:border-white/10 transition-all text-[13px] font-medium"
-                          >
-                            <Calendar className="w-3.5 h-3.5" />
-                            Schedule
-                          </button>
-                          <button
-                            onClick={() => setSuggestionInput({
-                              text: "Please perform an audit of my email engagement and activity over the past seven days. I am looking for a detailed overview of my top communication partners, peak activity times, and any trends in my response frequency or inbox growth.",
-                              id: Date.now()
-                            })}
-                            className="flex items-center gap-2 px-3.5 py-1.5 bg-[#161616] border border-white/5 rounded-full text-white/60 hover:text-white hover:bg-white/5 hover:border-white/10 transition-all text-[13px] font-medium"
-                          >
-                            <BarChart3 className="w-3.5 h-3.5" />
-                            Analytics
-                          </button>
-                        </div>
-
                         {/* Centered Prompt Box for Initial Mode */}
-                        <div className="w-full mt-auto mb-12 relative group max-w-2xl mx-auto px-4">
+                        <div className="w-full relative group max-w-2xl mx-auto px-4 z-10">
                           <PromptInputBox
                             onSend={(msg, files, opts) => handleSend(msg, files, opts)}
                             onStop={() => abortControllerRef.current?.abort()}
@@ -2448,6 +2394,60 @@ export default function ChatInterface({
                             suggestionInput={suggestionInput}
                             showConnectBanner={true}
                           />
+                        </div>
+
+                        {/* Pill-style Action Buttons - Now shifted BELOW */}
+                        <div className="flex flex-wrap justify-center gap-2.5 mt-10 max-w-2xl mx-auto">
+                          <button
+                            onClick={() => setSuggestionInput({
+                              text: "Please provide me with a comprehensive summary of my recent email correspondence from the last 24 hours. I am particularly interested in any urgent matters, action items directed at me, or important status updates that require my immediate attention.",
+                              id: Date.now()
+                            })}
+                            className="flex items-center gap-2 px-4 py-2 bg-white/[0.03] border border-white/5 rounded-full text-white/40 hover:text-white hover:bg-white/10 hover:border-white/10 transition-all text-[13px] font-medium"
+                          >
+                            <Sparkles className="w-3.5 h-3.5" />
+                            Catch up
+                          </button>
+                          <button
+                            onClick={() => setSuggestionInput({
+                              text: "Could you please analyze my current unread emails and synthesize the core information from each thread? I would like a breakdown that highlights the main subject of each conversation and identifies any deadlines or specific requests made by the senders.",
+                              id: Date.now()
+                            })}
+                            className="flex items-center gap-2 px-4 py-2 bg-white/[0.03] border border-white/5 rounded-full text-white/40 hover:text-white hover:bg-white/10 hover:border-white/10 transition-all text-[13px] font-medium"
+                          >
+                            <FileText className="w-3.5 h-3.5" />
+                            Summarize
+                          </button>
+                          <button
+                            onClick={() => setSuggestionInput({
+                              text: "I would like some assistance in drafting a professional response to my most recent email. Please ensure the reply is articulate, maintains a collaborative tone, and clearly addresses all the questions or points raised by the sender in their message.",
+                              id: Date.now()
+                            })}
+                            className="flex items-center gap-2 px-4 py-2 bg-white/[0.03] border border-white/5 rounded-full text-white/40 hover:text-white hover:bg-white/10 hover:border-white/10 transition-all text-[13px] font-medium"
+                          >
+                            <PenTool className="w-3.5 h-3.5" />
+                            Draft reply
+                          </button>
+                          <button
+                            onClick={() => setSuggestionInput({
+                              text: "I need to facilitate a meeting for tomorrow based on my recent email threads. Could you please review any pending scheduling requests and compare them with my calendar to suggest the most optimal windows for a 30-minute discussion?",
+                              id: Date.now()
+                            })}
+                            className="flex items-center gap-2 px-4 py-2 bg-white/[0.03] border border-white/5 rounded-full text-white/40 hover:text-white hover:bg-white/10 hover:border-white/10 transition-all text-[13px] font-medium"
+                          >
+                            <Calendar className="w-3.5 h-3.5" />
+                            Schedule
+                          </button>
+                          <button
+                            onClick={() => setSuggestionInput({
+                              text: "Please perform an audit of my email engagement and activity over the past seven days. I am looking for a detailed overview of my top communication partners, peak activity times, and any trends in my response frequency or inbox growth.",
+                              id: Date.now()
+                            })}
+                            className="flex items-center gap-2 px-4 py-2 bg-white/[0.03] border border-white/5 rounded-full text-white/40 hover:text-white hover:bg-white/10 hover:border-white/10 transition-all text-[13px] font-medium"
+                          >
+                            <BarChart3 className="w-3.5 h-3.5" />
+                            Analytics
+                          </button>
                         </div>
                       </div>
                     ) : (
