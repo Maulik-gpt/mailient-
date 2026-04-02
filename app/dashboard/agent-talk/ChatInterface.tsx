@@ -1731,6 +1731,13 @@ export default function ChatInterface({
     }
   }, [currentConversationId ?? null, isInitialMode]);
 
+  // Automatic scroll to latest content (messages or thinking steps)
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+  }, [messages, isLoading, isThinkingStepsOpen, liveThinkingBlocks]);
+
   // Initial Load: Restore conversation from URL or handle manual re-sync
   useEffect(() => {
     if (initialConversationId && isInitialMode) {
@@ -2175,40 +2182,46 @@ export default function ChatInterface({
             onCollapse={(collapsed) => setIsSidebarCollapsed(collapsed)}
           />
 
-          <div className={cn(
-            "flex-1 flex flex-row relative h-full gap-4 transition-all duration-500 ease-in-out overflow-hidden bg-black",
-            isSidebarCollapsed ? "ml-20" : "ml-64"
-          )} style={{ height: '100%', overflow: 'hidden' }}>
-            {/* Chat Column (Order 1 - LEFT) */}
+          {/* Main Layout Wrapper - Absolute positioned to fill screen strictly */}
+          <div 
+            className={cn(
+              "absolute inset-0 transition-all duration-500 ease-in-out bg-black overflow-hidden flex flex-row",
+              isSidebarCollapsed ? "left-20" : "left-64"
+            )} 
+            style={{ height: '100vh', maxHeight: '100vh' }}
+          >
+            {/* Chat Column (Order 1 - LEFT) - Premium Refinement */}
             <div
-              className="flex-1 flex flex-col relative h-full min-w-0 transition-all duration-500 order-1 bg-[#161616] border-x border-t border-white/5 rounded-t-[32px] shadow-2xl overflow-hidden"
-              style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}
+              className="flex-1 flex flex-col relative h-full min-w-0 transition-all duration-500 order-1 bg-[#111111]/80 backdrop-blur-3xl border-x border-t border-white/5 rounded-t-[40px] shadow-[0_-20px_50px_-15px_rgba(0,0,0,0.5)] overflow-hidden"
+              style={{ display: 'flex', flexDirection: 'column', height: '100%', maxHeight: '100%' }}
             >
-              {/* Header - MUST be shrink-0, NOT sticky */}
-              <div className="shrink-0 z-40 transition-all duration-300" style={{ flexShrink: 0 }}>
-                <div className="relative px-8 py-3">
+              {/* Header - Glassmorphic fixed height */}
+              <div className="shrink-0 z-40 transition-all duration-300 bg-black/40 backdrop-blur-md border-b border-white/[0.03]" style={{ flexShrink: 0 }}>
+                <div className="relative px-8 py-4">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      {/* Leftmost: Title and Dropdown */}
+                    <div className="flex items-center gap-3">
+                      {/* Leftmost: Title and Dropdown with refined Zinc styling */}
                       {!isInitialMode && (
                         <div className="relative" ref={titleMenuRef}>
-                          <div className="flex items-center bg-[#111111] border border-white/[0.06] rounded-lg overflow-hidden shadow-2xl transition-all hover:border-white/10 group">
+                          <div className="flex items-center bg-white/[0.03] border border-white/[0.08] rounded-xl overflow-hidden shadow-xl transition-all hover:border-white/15 group">
                             <button
                               onClick={() => setIsTitleMenuOpen(!isTitleMenuOpen)}
-                              className="pl-4 pr-3 py-1.5 hover:bg-white/[0.02] transition-colors flex items-center gap-2 max-w-[240px]"
+                              className="pl-4 pr-3 py-2 hover:bg-white/[0.05] transition-colors flex items-center gap-2.5 max-w-[280px]"
                             >
-                              <span className="text-sm font-medium text-white/80 truncate tracking-tight">
-                                {chatTitle || 'New Chat'}
+                              <span className="text-[13px] font-bold text-white/90 truncate tracking-tight lowercase">
+                                {chatTitle || 'new conversation'}
                               </span>
                             </button>
-                            <div className="w-[1px] h-3.5 bg-white/[0.08]" />
+                            <div className="w-[1px] h-4 bg-white/[0.12]" />
                             <button
                               onClick={() => setIsTitleMenuOpen(!isTitleMenuOpen)}
-                              className="px-2.5 py-1.5 hover:bg-white/[0.02] transition-colors"
+                              className="px-3 py-2 hover:bg-white/[0.05] transition-colors"
                             >
-                              <ChevronDown className={`w-3.5 h-3.5 text-white/30 group-hover:text-white/60 transition-transform duration-200 ${isTitleMenuOpen ? 'rotate-180' : ''}`} />
+                              <ChevronDown className={`w-3.5 h-3.5 text-white/40 group-hover:text-white/80 transition-transform duration-300 ease-out ${isTitleMenuOpen ? 'rotate-180' : ''}`} />
                             </button>
                           </div>
+                        </div>
+                      )}
 
                           {/* Dropdown Menu */}
                           {isTitleMenuOpen && (
@@ -2271,8 +2284,6 @@ export default function ChatInterface({
                               </button>
                             </div>
                           )}
-                        </div>
-                      )}
 
                       {/* Settings Icon (replaced New Chat/Edit) */}
                       <Tooltip delayDuration={100}>
@@ -2341,21 +2352,21 @@ export default function ChatInterface({
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* Chat Content Container - relative positioned, prompt is absolute at bottom */}
-              <div
-                className="flex-1 relative z-20 min-h-0"
-                style={{ flex: '1 1 0%', minHeight: 0, position: 'relative', overflow: 'hidden' }}
+            {/* Chat Body - Absolute Layout Rebuild to avoid displacement */}
+            <div
+              className="flex-1 relative z-20 min-h-0 min-w-0"
+              style={{ flex: '1 1 0%', minHeight: 0, overflow: 'hidden' }}
+            >
+              <div 
+                ref={scrollContainerRef}
+                className="absolute inset-0 overflow-y-auto px-6 py-4 scroll-smooth arcus-scrollbar"
+                style={{ paddingBottom: isInitialMode ? undefined : '140px' }}
               >
-                {/* Scrollable Message List - height:100% so it fills container, NOT flex-1 */}
-                <div 
-                  ref={scrollContainerRef}
-                  className="overflow-y-auto px-6 py-4 scroll-smooth arcus-scrollbar"
-                  style={{ height: '100%', overflowY: 'auto', paddingBottom: isInitialMode ? undefined : '140px' }}
-                >
                   <div className="max-w-3xl mx-auto w-full">
                     {isInitialMode ? (
-                      <div className="flex flex-col items-center justify-center min-h-[60vh] py-12 animate-fade-in">
+                      <div className="flex flex-col items-center justify-center min-h-[50vh] py-12 animate-fade-in relative">
                         <div className="text-center mb-10">
                           <div className="flex justify-center mb-8">
                             <img
@@ -2440,7 +2451,7 @@ export default function ChatInterface({
                         </div>
                       </div>
                     ) : (
-                      <div className="space-y-4 pb-20 pt-4">
+                      <div className="space-y-4 pt-4">
                         {activeMission && <MissionStatusHeader mission={activeMission} />}
                         {messages.map((msg) => (
                           <div key={msg.id} className={`flex flex-col animate-fade-in ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
@@ -2753,21 +2764,16 @@ export default function ChatInterface({
                   </div>
                 </div>
 
-                {/* Pinned Prompt Box - ABSOLUTE positioned, cannot be displaced by content */}
+                {/* Fixed Prompt Box for Conversation Mode */}
                 {!isInitialMode && (
                   <div
-                    className="w-full px-6 bg-[#161616] pb-6 pt-3 border-t border-white/[0.05]"
-                    style={{
-                      position: 'absolute',
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      zIndex: 60,
-                      backgroundColor: '#161616',
-                    }}
+                    className="absolute bottom-0 left-0 right-0 z-50 bg-[#161616]"
+                    style={{ backgroundColor: '#161616' }}
                   >
+                    {/* Shadow gradient to hide content as it scrolls under prompt box */}
                     <div className="absolute bottom-full left-0 right-0 h-24 bg-gradient-to-t from-[#161616] via-[#161616]/90 to-transparent pointer-events-none" />
-                    <div className="max-w-3xl mx-auto w-full relative">
+                    
+                    <div className="max-w-3xl mx-auto w-full px-6 py-6 relative">
                       <PromptInputBox
                         onSend={(msg, files, opts) => handleSend(msg, files, opts)}
                         onStop={() => abortControllerRef.current?.abort()}
@@ -2806,7 +2812,6 @@ export default function ChatInterface({
                   </motion.div>
                 )}
               </AnimatePresence>
-            </div>
           </div>
         </div>
         <NoScrollbarStyles />
