@@ -73,10 +73,13 @@ export function FeedbackDialog({
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent
         className={cn(
-          "max-w-md w-full p-8 gap-6 overflow-hidden border border-white/10 bg-[#0c0c0c] text-neutral-200",
-          "shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] rounded-[32px]",
-              "animate-in fade-in zoom-in-0 duration-300",
-              "animate-out fade-out zoom-out-0 duration-300"
+          "max-w-md w-full p-9 gap-6 overflow-hidden border border-white/10 bg-[#0c0c0c] text-neutral-200",
+          "shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] rounded-[40px]",
+          "duration-300 data-[state=open]:animate-in data-[state=closed]:animate-out",
+          "data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0",
+          "data-[state=open]:zoom-in-100 data-[state=closed]:zoom-out-100",
+          "data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-1/2",
+          "data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-1/2"
         )}
       >
         <div className="space-y-6 pt-2">
@@ -85,7 +88,7 @@ export function FeedbackDialog({
             onChange={(e) => setFeedback(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Share your feedback..."
-            className="w-full min-h-[180px] rounded-[24px] bg-neutral-900/50 border border-white/5 p-6 text-base resize-none outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 text-neutral-200 placeholder:text-neutral-500 transition-all font-medium"
+            className="w-full min-h-[180px] rounded-[28px] bg-neutral-900/50 border border-white/5 p-7 text-base resize-none outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 text-neutral-200 placeholder:text-neutral-500 transition-all font-medium"
             autoFocus
           />
           
@@ -93,7 +96,7 @@ export function FeedbackDialog({
             <Button
               onClick={handleSend}
               disabled={isSending || !feedback.trim()}
-              className="rounded-2xl px-6 py-2.5 bg-white hover:bg-neutral-200 text-black transition-all font-bold flex items-center gap-2 group border-none shadow-xl"
+              className="rounded-[20px] px-8 py-3 bg-white hover:bg-neutral-200 text-black transition-all font-bold flex items-center gap-2 group border-none shadow-2xl"
             >
               {isSending ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
