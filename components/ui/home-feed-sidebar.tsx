@@ -12,10 +12,12 @@ import {
     LogOut,
     Gift,
     HelpCircle,
-    PanelLeft
+    PanelLeft,
+    MessageCircle
 } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { motion, AnimatePresence } from 'framer-motion';
+import { FeedbackDialog } from './feedback-dialog';
 
 interface HomeFeedSidebarProps {
     className?: string;
@@ -41,7 +43,26 @@ export function HomeFeedSidebar({
     const pathname = usePathname();
     const [isMoreOptionsOpen, setIsMoreOptionsOpen] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(false);
+    const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+    const [userHandle, setUserHandle] = useState<string>('');
     const moreMenuRef = useRef<HTMLDivElement>(null);
+
+    // Fetch user handle for logout button
+    useEffect(() => {
+        if (session?.user?.email) {
+            const emailPart = session.user.email.split('@')[0];
+            setUserHandle(emailPart); // Default to email part
+            
+            // Try to fetch profile for actual username
+            fetch('/api/profile')
+                .then(res => res.json())
+                .then(data => {
+                    const username = data?.preferences?.username || data?.username;
+                    if (username) setUserHandle(username);
+                })
+                .catch(err => console.error('Failed to fetch profile for handle:', err));
+        }
+    }, [session?.user?.email]);
 
     useEffect(() => {
         if (onCollapse) onCollapse(isCollapsed);
@@ -233,13 +254,14 @@ export function HomeFeedSidebar({
                                         className="mt-2 space-y-1 px-1"
                                     >
                                         <button
-                                            onClick={() => router.push('/changelog')}
+                                            onClick={() => {
+                                                setIsFeedbackOpen(true);
+                                                setIsMoreOptionsOpen(false);
+                                            }}
                                             className="w-full flex items-center gap-3 px-3 py-2 text-white/60 hover:text-white hover:bg-white/[0.05] rounded-lg transition-all text-sm group"
                                         >
-                                            <div className="w-4 h-4 rounded-full border border-white/20 flex items-center justify-center group-hover:border-white/40 transition-all">
-                                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
-                                            </div>
-                                            <span>What's New</span>
+                                            <MessageCircle size={16} className="text-neutral-500 group-hover:text-white transition-colors" />
+                                            <span>Feedback</span>
                                         </button>
                                         <div className="h-px w-full bg-white/[0.05] my-1" />
                                         <button
@@ -247,7 +269,7 @@ export function HomeFeedSidebar({
                                             className="w-full flex items-center gap-3 px-3 py-2 text-red-500/80 hover:bg-red-500/5 rounded-lg transition-all text-sm"
                                         >
                                             <LogOut size={16} />
-                                            <span>Logout</span>
+                                            <span>Log out @{userHandle}</span>
                                         </button>
                                     </motion.div>
                                 )}
@@ -266,6 +288,7 @@ export function HomeFeedSidebar({
                         </div>
                     )}
                 </div>
+                <FeedbackDialog open={isFeedbackOpen} onOpenChange={setIsFeedbackOpen} />
             </motion.div>
         </TooltipProvider>
     );

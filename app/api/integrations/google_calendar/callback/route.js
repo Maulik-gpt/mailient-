@@ -56,6 +56,8 @@ export async function GET(request) {
     const error = searchParams.get('error');
     const errorDescription = searchParams.get('error_description');
 
+    console.log('[Google Calendar Callback] Code received:', !!code, 'Error:', error);
+
     const provider = 'google_calendar';
     const userEmail = session.user.email;
 

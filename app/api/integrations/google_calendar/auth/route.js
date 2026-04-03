@@ -63,6 +63,7 @@ export async function GET(request) {
     })).toString('base64');
 
     const authUrl = integrationManager.getAuthUrl('google_calendar', state);
+    console.log('[Google Calendar Auth] Generated Auth URL:', authUrl);
 
     return NextResponse.json({ url: authUrl });
   } catch (err) {
