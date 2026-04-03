@@ -33,7 +33,8 @@ export function FeedbackDialog({
   const setOpen = isControlled ? controlledOnOpenChange : setUncontrolledOpen;
 
   const handleSend = async () => {
-    if (!feedback.trim() || isSending) return;
+    const trimmedFeedback = feedback.trim();
+    if (!trimmedFeedback || isSending) return;
 
     setIsSending(true);
     try {
@@ -42,7 +43,7 @@ export function FeedbackDialog({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ feedback }),
+        body: JSON.stringify({ feedback: trimmedFeedback }),
       });
 
       if (!response.ok) {
@@ -62,6 +63,7 @@ export function FeedbackDialog({
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+      e.preventDefault();
       handleSend();
     }
   };
@@ -72,16 +74,18 @@ export function FeedbackDialog({
       <DialogContent
         className={cn(
           "max-w-md w-full p-6 gap-6 overflow-hidden border border-white/10 bg-[#0c0c0c] text-neutral-200",
-          "shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] rounded-[24px]"
+          "shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] rounded-[32px]",
+              "animate-in fade-in zoom-in-0 duration-300",
+              "animate-out fade-out zoom-out-0 duration-300"
         )}
       >
-        <div className="space-y-4">
+        <div className="space-y-6">
           <textarea
             value={feedback}
             onChange={(e) => setFeedback(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Share your feedback..."
-            className="w-full min-h-[160px] rounded-2xl bg-neutral-900/50 border border-white/5 p-4 text-sm resize-none focus:outline-none focus:border-white/10 text-neutral-200 placeholder:text-neutral-500 transition-all"
+            className="w-full min-h-[160px] rounded-2xl bg-neutral-900/50 border border-white/5 p-5 text-base resize-none focus:outline-none focus:border-white/10 text-neutral-200 placeholder:text-neutral-500 transition-all font-medium"
             autoFocus
           />
           
@@ -89,16 +93,16 @@ export function FeedbackDialog({
             <Button
               onClick={handleSend}
               disabled={isSending || !feedback.trim()}
-              className="rounded-xl px-4 py-2 bg-[#2a2a2a] hover:bg-[#333333] text-white transition-all font-medium flex items-center gap-2 border border-white/5 group"
+              className="rounded-2xl px-6 py-2.5 bg-white hover:bg-neutral-200 text-black transition-all font-bold flex items-center gap-2 group border-none"
             >
               {isSending ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <>
                   <span className="text-sm">Send</span>
-                  <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-white/5 border border-white/10 ml-1">
-                    <span className="text-[10px] text-neutral-400">⌘</span>
-                    <CornerDownLeft className="w-2.5 h-2.5 text-neutral-400" />
+                  <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-lg bg-black/5 ml-1">
+                    <span className="text-[10px] text-black/40">⌘</span>
+                    <CornerDownLeft className="w-2.5 h-2.5 text-black/40" />
                   </div>
                 </>
               )}
