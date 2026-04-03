@@ -74,7 +74,7 @@ export function FeedbackDialog({
       <DialogContent
         className={cn(
           "max-w-md w-full p-9 gap-6 overflow-hidden border border-white/10 bg-[#0c0c0c] text-neutral-200",
-          "shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] rounded-[40px]",
+          "shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] rounded-[50px]",
           "!animate-none !duration-0 transition-none"
         )}
       >
