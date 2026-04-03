@@ -73,19 +73,19 @@ export function FeedbackDialog({
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent
         className={cn(
-          "max-w-md w-full p-6 gap-6 overflow-hidden border border-white/10 bg-[#0c0c0c] text-neutral-200",
+          "max-w-md w-full p-8 gap-6 overflow-hidden border border-white/10 bg-[#0c0c0c] text-neutral-200",
           "shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] rounded-[32px]",
               "animate-in fade-in zoom-in-0 duration-300",
               "animate-out fade-out zoom-out-0 duration-300"
         )}
       >
-        <div className="space-y-6">
+        <div className="space-y-6 pt-2">
           <textarea
             value={feedback}
             onChange={(e) => setFeedback(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Share your feedback..."
-            className="w-full min-h-[160px] rounded-2xl bg-neutral-900/50 border border-white/5 p-5 text-base resize-none focus:outline-none focus:border-white/10 text-neutral-200 placeholder:text-neutral-500 transition-all font-medium"
+            className="w-full min-h-[180px] rounded-[24px] bg-neutral-900/50 border border-white/5 p-6 text-base resize-none outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 text-neutral-200 placeholder:text-neutral-500 transition-all font-medium"
             autoFocus
           />
           
@@ -93,7 +93,7 @@ export function FeedbackDialog({
             <Button
               onClick={handleSend}
               disabled={isSending || !feedback.trim()}
-              className="rounded-2xl px-6 py-2.5 bg-white hover:bg-neutral-200 text-black transition-all font-bold flex items-center gap-2 group border-none"
+              className="rounded-2xl px-6 py-2.5 bg-white hover:bg-neutral-200 text-black transition-all font-bold flex items-center gap-2 group border-none shadow-xl"
             >
               {isSending ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
