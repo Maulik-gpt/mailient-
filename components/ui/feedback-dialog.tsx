@@ -75,11 +75,7 @@ export function FeedbackDialog({
         className={cn(
           "max-w-md w-full p-9 gap-6 overflow-hidden border border-white/10 bg-[#0c0c0c] text-neutral-200",
           "shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] rounded-[40px]",
-          "duration-300 data-[state=open]:animate-in data-[state=closed]:animate-out",
-          "data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0",
-          "data-[state=open]:zoom-in-100 data-[state=closed]:zoom-out-100",
-          "data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-1/2",
-          "data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-1/2"
+          "!animate-none !duration-0 transition-none"
         )}
       >
         <div className="space-y-6 pt-2">
