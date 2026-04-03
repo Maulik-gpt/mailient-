@@ -186,26 +186,26 @@ export function ConnectorsModal({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6 md:p-12 overflow-hidden">
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="absolute inset-0 bg-black/85 backdrop-blur-3xl"
+          className="absolute inset-0 bg-black/80 backdrop-blur-3xl"
         />
 
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          initial={{ opacity: 0, scale: 0.98, y: 30 }}
           animate={{ 
             opacity: 1, 
             scale: 1, 
             y: 0,
-            filter: selectedApp ? 'blur(10px) brightness(0.6)' : 'none'
+            filter: selectedApp ? 'blur(12px) brightness(0.5)' : 'none'
           }}
-          exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-          className="relative w-full max-w-[900px] h-[640px] bg-[#161616] rounded-[32px] border border-white/[0.08] shadow-2xl flex flex-col overflow-hidden pointer-events-auto"
+          exit={{ opacity: 0, scale: 0.98, y: 30 }}
+          transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+          className="relative w-full max-w-[560px] h-full max-h-[720px] bg-[#121212] rounded-[48px] border border-white/10 shadow-[0_0_100px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden pointer-events-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -228,8 +228,8 @@ export function ConnectorsModal({
           </div>
 
           {/* Grid Area */}
-          <div className="flex-1 overflow-y-auto p-6 arcus-scrollbar">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+          <div className="flex-1 overflow-y-auto p-8 arcus-scrollbar pb-12">
+            <div className="grid grid-cols-1 gap-4">
               {SUPPORTED_APPS.map((app) => {
                 const statusKey = app.id === 'google_calendar' ? 'google-calendar' : 
                                  app.id === 'google_tasks' ? 'google-tasks' : 
