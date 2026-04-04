@@ -214,7 +214,7 @@ export function ConnectorsModal({
           const res = await fetch('/api/integrations/status');
           if (res.ok) {
             const data = await res.json();
-            setStatuses(data.integrations || {});
+            setStatuses(Array.isArray(data.integrations) ? data.integrations : []);
           }
         } catch (err) {
           console.error('Failed to fetch status:', err);
@@ -409,7 +409,8 @@ export function ConnectorsModal({
                 <div className="relative flex-1">
                   <button
                     onClick={() => {
-                      const statusObj = statuses.find((s: any) => s.provider === selectedApp.id);
+                      const statusList = Array.isArray(statuses) ? statuses : [];
+                      const statusObj = statusList.find((s: any) => s.provider === selectedApp.id);
                       if (statusObj?.connected) {
                         setManageDropdownOpen(!manageDropdownOpen);
                       } else {
@@ -418,8 +419,8 @@ export function ConnectorsModal({
                     }}
                     className="w-full py-4 bg-[#2a2a2a] text-white rounded-2xl font-bold text-[15px] hover:bg-[#333] active:scale-95 transition-all flex items-center justify-center gap-2"
                   >
-                    {statuses.find((s: any) => s.provider === selectedApp.id)?.connected ? 'Manage' : 'Connect'}
-                    {statuses.find((s: any) => s.provider === selectedApp.id)?.connected && <ChevronDown className={cn("w-4 h-4 transition-transform", manageDropdownOpen && "rotate-180")} />}
+                    {(Array.isArray(statuses) ? statuses : []).find((s: any) => s.provider === selectedApp.id)?.connected ? 'Manage' : 'Connect'}
+                    {(Array.isArray(statuses) ? statuses : []).find((s: any) => s.provider === selectedApp.id)?.connected && <ChevronDown className={cn("w-4 h-4 transition-transform", manageDropdownOpen && "rotate-180")} />}
                   </button>
 
                   {/* Manage Dropdown */}
