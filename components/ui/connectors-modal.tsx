@@ -93,7 +93,8 @@ const SUPPORTED_APPS = [
     documentation: 'https://developers.google.com/calendar',
     privacyPolicy: 'https://policies.google.com/privacy',
     description: 'Google Calendar MCP lets you connect tools to your Google Calendar workspace, so you can create, edit, search, and organize events straight from Arcus.',
-    details: 'Sync your Google Calendar to let Arcus schedule meetings, find availability, and manage your daily agenda autonomously.'
+    details: 'Sync your Google Calendar to let Arcus schedule meetings, find availability, and manage your daily agenda autonomously.',
+    smartPrompt: "Check my calendar for tomorrow morning and summarize what my schedule looks like."
   },
   { 
     id: 'google_meet', 
@@ -107,7 +108,8 @@ const SUPPORTED_APPS = [
     documentation: 'https://developers.google.com/meet',
     privacyPolicy: 'https://policies.google.com/privacy',
     description: 'Google Meet MCP lets you automate video conferencing links and manage collaborative calls straight from Arcus workspace.',
-    details: 'Link Google Meet to auto-generate meeting rooms, manage call recordings, and integrate video links into your calendar events.'
+    details: 'Link Google Meet to auto-generate meeting rooms, manage call recordings, and integrate video links into your calendar events.',
+    smartPrompt: "Create a Google Meet link for a quick 15-min sync with my team tomorrow at 11 AM."
   },
   { 
     id: 'notion', 
@@ -121,7 +123,8 @@ const SUPPORTED_APPS = [
     documentation: 'https://developers.notion.com',
     privacyPolicy: 'https://notion.so/privacy',
     description: 'Notion MCP lets you connect tools to your Notion workspace, so you can create, edit, search, and organize content straight from Arcus.',
-    details: 'Link your Notion workspace to enable Arcus to create meeting notes, update project trackers, and append data to your pages.'
+    details: 'Link your Notion workspace to enable Arcus to create meeting notes, update project trackers, and append data to your pages.',
+    smartPrompt: "Search my Notion workspace for any pages related to 'Product Roadmap' and give me a summary."
   },
   { 
     id: 'notion_calendar', 
@@ -135,7 +138,8 @@ const SUPPORTED_APPS = [
     documentation: 'https://developers.notion.com',
     privacyPolicy: 'https://notion.so/privacy',
     description: 'Notion Calendar MCP provides unified time management across Notion pages and external timelines straight from Arcus.',
-    details: 'Integrate Notion Calendar to bridge your project timelines with your personal schedule for comprehensive mission planning.'
+    details: 'Integrate Notion Calendar to bridge your project timelines with your personal schedule for comprehensive mission planning.',
+    smartPrompt: "Combine my Notion project timelines with my calendar and let me know if I have any overlapping deadlines next week."
   },
   { 
     id: 'slack', 
@@ -149,7 +153,8 @@ const SUPPORTED_APPS = [
     documentation: 'https://api.slack.com',
     privacyPolicy: 'https://slack.com/trust/privacy/privacy-policy',
     description: 'Slack MCP lets you read and write Slack conversations in Arcus to centralize communication and team coordination.',
-    details: 'Connect Slack to allow Arcus to monitor channels, draft messages, and coordinate across your teams.'
+    details: 'Connect Slack to allow Arcus to monitor channels, draft messages, and coordinate across your teams.',
+    smartPrompt: "Summarize the latest 5 messages from my most active Slack channel."
   },
   { 
     id: 'cal_com', 
@@ -163,7 +168,8 @@ const SUPPORTED_APPS = [
     documentation: 'https://developer.cal.com',
     privacyPolicy: 'https://cal.com/privacy',
     description: 'Cal.com MCP enables professional scheduling with automated link generation and booking straight from Arcus.',
-    details: 'Integrate Cal.com to let Arcus share your booking links and automatically handle appointment scheduling with external partners.'
+    details: 'Integrate Cal.com to let Arcus share your booking links and automatically handle appointment scheduling with external partners.',
+    smartPrompt: "Share my Cal.com booking link and check if there's any availability for a 30-min call this Friday afternoon."
   }
 ];
 
@@ -172,13 +178,15 @@ interface ConnectorsModalProps {
   onClose: () => void;
   onConnect?: (id: string) => void;
   onDisconnect?: (id: string) => void;
+  onTryOut?: (prompt: string) => void;
 }
 
 export function ConnectorsModal({ 
-  isOpen, 
+  isOpen,
   onClose,
   onConnect,
-  onDisconnect
+  onDisconnect,
+  onTryOut
 }: ConnectorsModalProps) {
   const [statuses, setStatuses] = useState<any[]>([]);
   const [selectedApp, setSelectedApp] = useState<any | null>(null);
@@ -399,54 +407,65 @@ export function ConnectorsModal({
 
               {/* Action Buttons */}
               <div className="flex items-center gap-3 w-full mb-8">
-                <button
-                  className="flex-1 py-4 bg-white text-black rounded-2xl font-bold text-[15px] hover:bg-white/90 active:scale-95 transition-all flex items-center justify-center gap-2"
-                >
-                  <Zap className="w-4 h-4 fill-black" />
-                  Try it out
-                </button>
-                
-                <div className="relative flex-1">
-                  <button
-                    onClick={() => {
-                      const statusList = Array.isArray(statuses) ? statuses : [];
-                      const statusObj = statusList.find((s: any) => s.provider === selectedApp.id);
-                      if (statusObj?.connected) {
-                        setManageDropdownOpen(!manageDropdownOpen);
-                      } else {
-                        handleConnectAction(selectedApp.id);
-                      }
-                    }}
-                    className="w-full py-4 bg-[#2a2a2a] text-white rounded-2xl font-bold text-[15px] hover:bg-[#333] active:scale-95 transition-all flex items-center justify-center gap-2"
-                  >
-                    {(Array.isArray(statuses) ? statuses : []).find((s: any) => s.provider === selectedApp.id)?.connected ? 'Manage' : 'Connect'}
-                    {(Array.isArray(statuses) ? statuses : []).find((s: any) => s.provider === selectedApp.id)?.connected && <ChevronDown className={cn("w-4 h-4 transition-transform", manageDropdownOpen && "rotate-180")} />}
-                  </button>
-
-                  {/* Manage Dropdown */}
-                  <AnimatePresence>
-                    {manageDropdownOpen && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        className="absolute bottom-full mb-3 left-0 right-0 bg-[#222] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[220]"
+                {Array.isArray(statuses) && statuses.find((s: any) => s.provider === selectedApp.id)?.connected ? (
+                  <>
+                    <button
+                      onClick={() => {
+                        if (onTryOut) {
+                          onTryOut(selectedApp.smartPrompt);
+                          onClose();
+                          setSelectedApp(null);
+                        }
+                      }}
+                      className="flex-1 py-4 bg-white text-black rounded-2xl font-bold text-[15px] hover:bg-white/90 active:scale-95 transition-all flex items-center justify-center gap-2"
+                    >
+                      <Zap className="w-4 h-4 fill-black" />
+                      Try it out
+                    </button>
+                    
+                    <div className="relative flex-1">
+                      <button
+                        onClick={() => setManageDropdownOpen(!manageDropdownOpen)}
+                        className="w-full py-4 bg-[#2a2a2a] text-white rounded-2xl font-bold text-[15px] hover:bg-[#333] active:scale-95 transition-all flex items-center justify-center gap-2"
                       >
-                        <button className="w-full px-4 py-3 text-left text-[14px] font-medium text-white/70 hover:bg-white/5 hover:text-white flex items-center gap-3 transition-all">
-                          <Plus className="w-4 h-4" />
-                          Configure
-                        </button>
-                        <button 
-                          onClick={() => handleDisconnect(selectedApp.id)}
-                          className="w-full px-4 py-3 text-left text-[14px] font-medium text-red-400 hover:bg-red-500/10 flex items-center gap-3 transition-all border-t border-white/[0.03]"
-                        >
-                          <X className="w-4 h-4" />
-                          Delete
-                        </button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+                        Manage
+                        <ChevronDown className={cn("w-4 h-4 transition-transform", manageDropdownOpen && "rotate-180")} />
+                      </button>
+
+                      {/* Manage Dropdown */}
+                      <AnimatePresence>
+                        {manageDropdownOpen && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                            className="absolute bottom-full mb-3 left-0 right-0 bg-[#222] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[220]"
+                          >
+                            <button className="w-full px-4 py-3 text-left text-[14px] font-medium text-white/70 hover:bg-white/5 hover:text-white flex items-center gap-3 transition-all">
+                              <Plus className="w-4 h-4" />
+                              Configure
+                            </button>
+                            <button 
+                              onClick={() => handleDisconnect(selectedApp.id)}
+                              className="w-full px-4 py-3 text-left text-[14px] font-medium text-red-400 hover:bg-red-500/10 flex items-center gap-3 transition-all border-t border-white/[0.03]"
+                            >
+                              <X className="w-4 h-4" />
+                              Delete
+                            </button>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => handleConnectAction(selectedApp.id)}
+                    className="w-full py-4 bg-white text-black rounded-2xl font-bold text-[15px] hover:bg-white/90 active:scale-95 transition-all flex items-center justify-center gap-2"
+                  >
+                    <Zap className="w-4 h-4 fill-black" />
+                    Connect
+                  </button>
+                )}
               </div>
 
               {/* Details Accordion */}

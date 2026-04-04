@@ -1949,6 +1949,11 @@ export default function ChatInterface({
     console.log('Started new chat - all conversation state cleared');
   };
 
+  const handleTryOut = (prompt: string) => {
+    setSuggestionInput({ text: prompt, id: Date.now() });
+    setIsIntegrationsModalOpen(false);
+  };
+
 
 
   const saveConversation = async () => {
@@ -2823,7 +2828,7 @@ export default function ChatInterface({
           </div>
         </div>
         <NoScrollbarStyles />
-        <ConnectorsModal isOpen={isIntegrationsModalOpen} onClose={() => setIsIntegrationsModalOpen(false)} />
+        <ConnectorsModal isOpen={isIntegrationsModalOpen} onClose={() => setIsIntegrationsModalOpen(false)} onTryOut={handleTryOut} />
         <EmailSelectionModal
           isOpen={isEmailSelectionModalOpen}
           onClose={() => setIsEmailSelectionModalOpen(false)}
