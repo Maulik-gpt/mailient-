@@ -417,7 +417,7 @@ export default function TermsOfService() {
             transition={{ duration: 0.6 }}
           >
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-black dark:text-white mb-6">
-              Terms of Conditions for Mailient (mailient.xyz)
+              Terms of Use
             </h1>
             <p className="text-sm font-semibold tracking-wide text-neutral-400 dark:text-neutral-500 uppercase">
               Last Updated: {currentDate}

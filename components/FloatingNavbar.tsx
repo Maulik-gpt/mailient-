@@ -51,7 +51,7 @@ export function FloatingNavbar() {
           className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] w-fit px-4 pointer-events-none"
         >
           <LayoutGroup>
-            <nav className="flex items-center gap-1.5 p-1.5 bg-white/60 dark:bg-black/60 backdrop-blur-3xl border border-neutral-200/30 dark:border-white/5 rounded-[26px] shadow-[0_10px_40px_rgba(0,0,0,0.05)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.4)] pointer-events-auto">
+            <nav className="flex items-center gap-1.5 p-1.5 bg-white/25 dark:bg-black/30 backdrop-blur-3xl border border-white/40 dark:border-white/5 rounded-[26px] shadow-[0_10px_60px_rgba(0,0,0,0.03)] dark:shadow-[0_20px_80px_rgba(0,0,0,0.4)] pointer-events-auto transition-all duration-500">
               {navItems.map((item) => {
                 const isActive = pathname === item.href;
                 const isHovered = hoveredId === item.id;
