@@ -86,7 +86,13 @@ const SUPPORTED_APPS = [
     name: 'Google Calendar', 
     icon: BrandIcons.GoogleCalendar, 
     color: '#4285F4',
-    description: 'Understand your schedule, manage events, and optimize your time effectively',
+    type: 'MCP',
+    author: 'Google',
+    uuid: 'gc-0a8b-4c2d-9e1f-7h8i9j0k1l2m',
+    website: 'https://calendar.google.com',
+    documentation: 'https://developers.google.com/calendar',
+    privacyPolicy: 'https://policies.google.com/privacy',
+    description: 'Google Calendar MCP lets you connect tools to your Google Calendar workspace, so you can create, edit, search, and organize events straight from Arcus.',
     details: 'Sync your Google Calendar to let Arcus schedule meetings, find availability, and manage your daily agenda autonomously.'
   },
   { 
@@ -94,7 +100,13 @@ const SUPPORTED_APPS = [
     name: 'Google Meet', 
     icon: BrandIcons.GoogleMeet, 
     color: '#00897B',
-    description: 'Automate video conferencing links and manage collaborative calls',
+    type: 'MCP',
+    author: 'Google',
+    uuid: 'gm-1b2c-3d4e-5f6g-7h8i9j0k1l2m',
+    website: 'https://meet.google.com',
+    documentation: 'https://developers.google.com/meet',
+    privacyPolicy: 'https://policies.google.com/privacy',
+    description: 'Google Meet MCP lets you automate video conferencing links and manage collaborative calls straight from Arcus workspace.',
     details: 'Link Google Meet to auto-generate meeting rooms, manage call recordings, and integrate video links into your calendar events.'
   },
   { 
@@ -102,7 +114,13 @@ const SUPPORTED_APPS = [
     name: 'Notion', 
     icon: BrandIcons.Notion, 
     color: '#000000',
-    description: 'Create pages, update databases, and organize content straight from Arcus',
+    type: 'MCP',
+    author: 'Notion',
+    uuid: 'nt-2c3d-4e5f-6g7h-8i9j0k1l2m3n',
+    website: 'https://notion.so',
+    documentation: 'https://developers.notion.com',
+    privacyPolicy: 'https://notion.so/privacy',
+    description: 'Notion MCP lets you connect tools to your Notion workspace, so you can create, edit, search, and organize content straight from Arcus.',
     details: 'Link your Notion workspace to enable Arcus to create meeting notes, update project trackers, and append data to your pages.'
   },
   { 
@@ -110,7 +128,13 @@ const SUPPORTED_APPS = [
     name: 'Notion Calendar', 
     icon: BrandIcons.NotionCalendar, 
     color: '#000000',
-    description: 'Unified time management across Notion pages and external timelines',
+    type: 'MCP',
+    author: 'Notion',
+    uuid: 'nc-3d4e-5f6g-7h8i-9j0k1l2m3n4o',
+    website: 'https://calendar.notion.so',
+    documentation: 'https://developers.notion.com',
+    privacyPolicy: 'https://notion.so/privacy',
+    description: 'Notion Calendar MCP provides unified time management across Notion pages and external timelines straight from Arcus.',
     details: 'Integrate Notion Calendar to bridge your project timelines with your personal schedule for comprehensive mission planning.'
   },
   { 
@@ -118,7 +142,13 @@ const SUPPORTED_APPS = [
     name: 'Slack', 
     icon: BrandIcons.Slack, 
     color: '#E01E5A',
-    description: 'Read and write Slack conversations in Arcus to centralize communication',
+    type: 'MCP',
+    author: 'Slack',
+    uuid: 'sl-4e5f-6g7h-8i9j-0k1l2m3n4o5p',
+    website: 'https://slack.com',
+    documentation: 'https://api.slack.com',
+    privacyPolicy: 'https://slack.com/trust/privacy/privacy-policy',
+    description: 'Slack MCP lets you read and write Slack conversations in Arcus to centralize communication and team coordination.',
     details: 'Connect Slack to allow Arcus to monitor channels, draft messages, and coordinate across your teams.'
   },
   { 
@@ -126,7 +156,13 @@ const SUPPORTED_APPS = [
     name: 'Cal.com', 
     icon: BrandIcons.CalCom, 
     color: '#ffffff',
-    description: 'Professional scheduling with automated link generation and booking',
+    type: 'MCP',
+    author: 'Cal.com',
+    uuid: 'cal-5f6g-7h8i-9j0k-1l2m3n4o5p6q',
+    website: 'https://cal.com',
+    documentation: 'https://developer.cal.com',
+    privacyPolicy: 'https://cal.com/privacy',
+    description: 'Cal.com MCP enables professional scheduling with automated link generation and booking straight from Arcus.',
     details: 'Integrate Cal.com to let Arcus share your booking links and automatically handle appointment scheduling with external partners.'
   }
 ];
@@ -145,7 +181,30 @@ export function ConnectorsModal({
   onDisconnect
 }: ConnectorsModalProps) {
   const [statuses, setStatuses] = useState<any[]>([]);
-  const [selectedApp, setSelectedApp] = useState<typeof SUPPORTED_APPS[0] | null>(null);
+  const [selectedApp, setSelectedApp] = useState<any | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
+  const [manageDropdownOpen, setManageDropdownOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Check for successful auth redirect
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const success = params.get('success');
+      const provider = params.get('provider');
+      
+      if (success === 'connected' && provider) {
+        const app = SUPPORTED_APPS.find(a => a.id === provider);
+        if (app) {
+          setSelectedApp(app);
+          setSuccessMessage('Connection Successful');
+          setShowDetails(true);
+          // Clear query params without reload
+          window.history.replaceState({}, '', window.location.pathname);
+        }
+      }
+    }
+  }, []);
 
   // Fetch integration statuses
   useEffect(() => {
@@ -166,33 +225,48 @@ export function ConnectorsModal({
   }, [isOpen]);
 
   const handleConnectAction = async (appId: string) => {
-    if (onConnect) {
-      onConnect(appId);
-    } else {
-      try {
-        const res = await fetch(`/api/integrations/${appId}/auth`);
-        if (res.ok) {
-          const { url } = await res.json();
-          window.location.href = url;
-        }
-      } catch (err) {
-        console.error('Failed to get auth URL:', err);
+    try {
+      const res = await fetch(`/api/integrations/${appId}/auth`);
+      if (res.ok) {
+        const { url } = await res.json();
+        window.location.href = url;
       }
+    } catch (err) {
+      console.error('Failed to get auth URL:', err);
     }
-    setSelectedApp(null);
+  };
+
+  const handleDisconnect = async (appId: string) => {
+    try {
+      const res = await fetch(`/api/integrations?provider=${appId}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        // Refresh statuses
+        const resStatus = await fetch('/api/integrations/status');
+        if (resStatus.ok) {
+          const data = await resStatus.json();
+          setStatuses(data.integrations || []);
+        }
+        setSelectedApp(null);
+        setManageDropdownOpen(false);
+      }
+    } catch (err) {
+      console.error('Failed to disconnect:', err);
+    }
   };
 
   if (!isOpen) return null;
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6 md:p-12 overflow-hidden">
+      <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 md:p-8 overflow-hidden isolate">
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="absolute inset-0 bg-black/80 backdrop-blur-3xl"
+          className="absolute inset-0 bg-black/60 backdrop-blur-[20px] transition-all duration-500"
         />
 
         <motion.div
@@ -270,40 +344,165 @@ export function ConnectorsModal({
           </div>
         </motion.div>
 
-        {/* Sub Modal (Selection) */}
+        {/* Sub Modal (App Detail View) */}
         <AnimatePresence>
           {selectedApp && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 15 }}
+              initial={{ opacity: 0, scale: 0.95, y: 30 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 15 }}
-              className="absolute z-[210] w-full max-w-[380px] bg-[#161616] rounded-[40px] border border-white/10 shadow-[0_0_80px_rgba(0,0,0,0.6)] p-10 flex flex-col items-center text-center"
+              exit={{ opacity: 0, scale: 0.95, y: 30 }}
+              className="absolute z-[210] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[480px] bg-[#1a1a1a] rounded-[48px] border border-white/10 shadow-[0_40px_120px_rgba(0,0,0,0.9)] p-8 flex flex-col items-center pointer-events-auto"
               onClick={(e) => e.stopPropagation()}
             >
+              {/* Close Button */}
               <button 
-                onClick={() => setSelectedApp(null)}
-                className="absolute top-8 right-8 p-1.5 hover:bg-white/5 rounded-lg text-white/20 hover:text-white transition-all"
+                onClick={() => {
+                  setSelectedApp(null);
+                  setSuccessMessage(null);
+                  setShowDetails(false);
+                  setManageDropdownOpen(false);
+                }}
+                className="absolute top-6 right-6 p-2 hover:bg-white/5 rounded-full text-white/20 hover:text-white transition-all"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
 
+              {/* App Icon */}
               <div 
-                className="w-20 h-20 rounded-[28px] flex items-center justify-center border border-white/5 shadow-2xl mb-8 mt-2 transition-transform hover:scale-105 bg-black/40 p-4"
+                className={cn(
+                  "w-24 h-24 rounded-[28px] flex items-center justify-center border border-white/5 shadow-2xl mb-6 mt-4 p-5",
+                  selectedApp.id === 'notion' || selectedApp.id === 'cal_com' ? "bg-white" : "bg-black/60"
+                )}
               >
-                <selectedApp.icon />
+                <selectedApp.icon className="w-full h-full" />
               </div>
 
-              <h3 className="text-2xl font-bold text-white mb-3 tracking-tighter">{selectedApp.name}</h3>
-              <p className="text-[14px] text-white/40 leading-relaxed mb-10 px-4 font-medium">
+              {/* Success Message */}
+              {successMessage && (
+                <motion.div 
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-4 py-1.5 px-4 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center gap-2"
+                >
+                  <div className="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center">
+                    <Check className="w-2.5 h-2.5 text-black font-bold" />
+                  </div>
+                  <span className="text-[13px] font-bold text-emerald-500 uppercase tracking-widest">{successMessage}</span>
+                </motion.div>
+              )}
+
+              <h3 className="text-2xl font-bold text-white mb-4 tracking-tight">{selectedApp.name}</h3>
+              
+              <p className="text-[14px] text-white/50 leading-relaxed text-center mb-8 px-4">
                 {selectedApp.description}
               </p>
 
-              <button
-                onClick={() => handleConnectAction(selectedApp.id)}
-                className="w-full py-4 bg-white text-black rounded-2xl font-bold text-[15px] hover:bg-white/90 active:scale-95 transition-all shadow-xl shadow-white/[0.05]"
-              >
-                Connect to {selectedApp.name}
-              </button>
+              {/* Action Buttons */}
+              <div className="flex items-center gap-3 w-full mb-8">
+                <button
+                  className="flex-1 py-4 bg-white text-black rounded-2xl font-bold text-[15px] hover:bg-white/90 active:scale-95 transition-all flex items-center justify-center gap-2"
+                >
+                  <Zap className="w-4 h-4 fill-black" />
+                  Try it out
+                </button>
+                
+                <div className="relative flex-1">
+                  <button
+                    onClick={() => {
+                      const statusObj = statuses.find((s: any) => s.provider === selectedApp.id);
+                      if (statusObj?.connected) {
+                        setManageDropdownOpen(!manageDropdownOpen);
+                      } else {
+                        handleConnectAction(selectedApp.id);
+                      }
+                    }}
+                    className="w-full py-4 bg-[#2a2a2a] text-white rounded-2xl font-bold text-[15px] hover:bg-[#333] active:scale-95 transition-all flex items-center justify-center gap-2"
+                  >
+                    {statuses.find((s: any) => s.provider === selectedApp.id)?.connected ? 'Manage' : 'Connect'}
+                    {statuses.find((s: any) => s.provider === selectedApp.id)?.connected && <ChevronDown className={cn("w-4 h-4 transition-transform", manageDropdownOpen && "rotate-180")} />}
+                  </button>
+
+                  {/* Manage Dropdown */}
+                  <AnimatePresence>
+                    {manageDropdownOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        className="absolute bottom-full mb-3 left-0 right-0 bg-[#222] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[220]"
+                      >
+                        <button className="w-full px-4 py-3 text-left text-[14px] font-medium text-white/70 hover:bg-white/5 hover:text-white flex items-center gap-3 transition-all">
+                          <Plus className="w-4 h-4" />
+                          Configure
+                        </button>
+                        <button 
+                          onClick={() => handleDisconnect(selectedApp.id)}
+                          className="w-full px-4 py-3 text-left text-[14px] font-medium text-red-400 hover:bg-red-500/10 flex items-center gap-3 transition-all border-t border-white/[0.03]"
+                        >
+                          <X className="w-4 h-4" />
+                          Delete
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+
+              {/* Details Accordion */}
+              <div className="w-full border-t border-white/[0.05] pt-4">
+                <button 
+                  onClick={() => setShowDetails(!showDetails)}
+                  className="w-full flex items-center justify-center gap-2 py-2 text-white/30 hover:text-white/60 transition-all text-[13px] font-medium mb-4"
+                >
+                  {showDetails ? 'Hide Details' : 'Show Details'}
+                  <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", showDetails && "rotate-180")} />
+                </button>
+
+                <AnimatePresence>
+                  {showDetails && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="bg-black/20 rounded-3xl p-6 border border-white/[0.03] space-y-4 mb-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[13px] text-white/30">Connector Type</span>
+                          <span className="text-[13px] text-white/70 font-medium">{selectedApp.type}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[13px] text-white/30">Author</span>
+                          <span className="text-[13px] text-white/70 font-medium">{selectedApp.author}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[13px] text-white/30">UUID</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-white/40 font-mono text-[11px] truncate max-w-[120px]">{selectedApp.uuid}</span>
+                            <button className="text-white/20 hover:text-white transition-all"><Plus className="w-3.5 h-3.5 rotate-45" /></button>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[13px] text-white/30">Website</span>
+                          <a href={selectedApp.website} target="_blank" className="text-white/20 hover:text-white transition-all"><ExternalLink className="w-3.5 h-3.5" /></a>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[13px] text-white/30">Documentation</span>
+                          <a href={selectedApp.documentation} target="_blank" className="text-white/20 hover:text-white transition-all"><ExternalLink className="w-3.5 h-3.5" /></a>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[13px] text-white/30">Privacy Policy</span>
+                          <a href={selectedApp.privacyPolicy} target="_blank" className="text-white/20 hover:text-white transition-all"><ExternalLink className="w-3.5 h-3.5" /></a>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                
+                <div className="flex justify-center mt-6">
+                  <button className="text-[13px] text-white/20 hover:text-white/40 transition-all underline underline-offset-4">Provide feedback</button>
+                </div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

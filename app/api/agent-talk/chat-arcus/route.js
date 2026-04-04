@@ -1173,20 +1173,43 @@ function enrichCanvasData({ canvasData, message, canvasType, requiresApproval, r
 }
 async function getIntegrationStatus(userEmail, db) {
   const defaultStatus = {
-    gmail: false
+    gmail: false,
+    google_calendar: false,
+    google_meet: false,
+    google_tasks: false,
+    notion: false,
+    notion_calendar: false,
+    slack: false,
+    cal_com: false
   };
 
   if (!userEmail) return defaultStatus;
 
   try {
     const tokens = await db.getUserTokens(userEmail);
-    const profile = await db.getUserProfile(userEmail);
+    const result = { ...defaultStatus };
+    
+    // Gmail status from legacy tokens table
+    result.gmail = !!tokens;
 
-    const tokenScopes = tokens?.scopes || '';
+    // Others from new integration_credentials table
+    const { data: credentials, error } = await db.supabase
+      .from('integration_credentials')
+      .select('provider')
+      .eq('user_email', userEmail);
 
-    return {
-      gmail: !!tokens
-    };
+    if (!error && credentials) {
+      credentials.forEach(cred => {
+        const provider = cred.provider;
+        if (provider in result) {
+          result[provider] = true;
+        } else if (provider === 'cal.com') {
+          result.cal_com = true;
+        }
+      });
+    }
+
+    return result;
   } catch (error) {
     console.error('Error getting integration status:', error);
     return defaultStatus;

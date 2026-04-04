@@ -161,11 +161,7 @@ Individual connector modal with:
 - Provider name and description
 - "Connect" or "Disconnect" button
 - Show Details toggle with:
-  - Required permissions list
-  - Privacy/security information
-- Error/reauth warning banners
-
-**Manus AI Style:**
+  - Required permissions Arcus AI Style:
 - Dark modal (#1a1a1a)
 - White icon containers with subtle gradients
 - Clean typography hierarchy
@@ -282,13 +278,15 @@ CREATE TABLE integration_events (
 - [x] ConnectorBar component (5 connectors in prompt box)
 - [x] ConnectorsModal (main connector selection grid)
 - [x] ConnectorConnectModal (individual connection flow)
-- [x] Black/white premium aesthetic (Manus AI style)
+- [x] Black/white premium aesthetic (Arcus AI style)
 - [x] Connection status indicators
 - [x] Reauth required warnings
 
 ✅ **Integration**
 - [x] Canvas actions updated with integration options
 - [x] Execution gateway can route to integration adapters
+- [x] Error recovery hints include connect CTAs
+route to integration adapters
 - [x] Error recovery hints include connect CTAs
 
 ---

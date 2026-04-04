@@ -2399,6 +2399,7 @@ export default function ChatInterface({
                             selectedEmailsCount={selectedEmails.length}
                             suggestionInput={suggestionInput}
                             showConnectBanner={true}
+                            onConnectClick={() => setIsIntegrationsModalOpen(true)}
                           />
                         </div>
 
@@ -2790,6 +2791,7 @@ export default function ChatInterface({
                         onPersonalityClick={() => setIsPersonalityModalOpen(true)}
                         selectedEmailsCount={selectedEmails.length}
                         suggestionInput={suggestionInput}
+                        onConnectClick={() => setIsIntegrationsModalOpen(true)}
                       />
                     </div>
                   </div>

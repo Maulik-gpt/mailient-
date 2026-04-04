@@ -466,6 +466,7 @@ interface PromptInputBoxProps {
   activeMode?: 'agent' | 'plan';
   onModeChange?: (mode: 'agent' | 'plan') => void;
   showConnectBanner?: boolean;
+  onConnectClick?: () => void;
 }
 
 const MODES = [
@@ -496,7 +497,6 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
   const [isFocused, setIsFocused] = React.useState(false);
   const [activeMode, setActiveMode] = React.useState<AgentMode>(props.activeMode || 'agent');
   const [isModeMenuOpen, setIsModeMenuOpen] = React.useState(false);
-  const [isConnectorsModalOpen, setIsConnectorsModalOpen] = React.useState(false);
   const [isDismissedConnectBanner, setIsDismissedConnectBanner] = React.useState(false);
   const [integrationStatuses, setIntegrationStatuses] = React.useState<Record<string, boolean>>({});
 
@@ -836,7 +836,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
             </div>
 
             {/* Brand Integration Dock */}
-            <div className="flex items-center -space-x-2 ml-1 opacity-40 hover:opacity-100 transition-all cursor-pointer" onClick={() => setIsConnectorsModalOpen(true)}>
+            <div className="flex items-center -space-x-2 ml-1 opacity-40 hover:opacity-100 transition-all cursor-pointer" onClick={() => props.onConnectClick?.()}>
               {/* Google Calendar */}
               <div className="w-5 h-5 rounded-full bg-white/5 border border-white/5 flex items-center justify-center backdrop-blur-md overflow-hidden shadow-sm">
                 <svg className="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 141.7 141.7"><path fill="#fff" d="M95.8,45.9H45.9V95.8H95.8Z"/><path fill="#34a853" d="M95.8,95.8H45.9v22.5H95.8Z"/><path fill="#4285f4" d="M95.8,23.4H30.9a7.55462,7.55462,0,0,0-7.5,7.5V95.8H45.9V45.9H95.8Z"/><path fill="#188038" d="M23.4,95.8v15a7.55462,7.55462,0,0,0,7.5,7.5h15V95.8Z"/><path fill="#fbbc04" d="M118.3,45.9H95.8V95.8h22.5Z"/><path fill="#1967d2" d="M118.3,45.9v-15a7.55462,7.55462,0,0,0-7.5-7.5h-15V45.9Z"/><path fill="#ea4335" d="M95.8,118.3l22.5-22.5H95.8Z"/></svg>
@@ -925,7 +925,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
           </PromptInputAction>
         </PromptInputActions>
 
-        {/* Connect Banner - Manus Aesthetic Refinement */}
+        {/* Connect Banner - Arcus Aesthetic Refinement */}
         <AnimatePresence>
           {props.showConnectBanner && !isDismissedConnectBanner && !isRecording && (
             <motion.div
@@ -935,7 +935,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
               className="mt-3 pt-3 border-t border-white/[0.06] flex items-center justify-between group"
             >
               <button 
-                onClick={() => setIsConnectorsModalOpen(true)}
+                onClick={() => props.onConnectClick?.()}
                 className="flex items-center gap-2.5 text-white/50 hover:text-white/90 transition-all text-[13px] font-medium tracking-tight"
               >
                 <div className="w-5 h-5 flex items-center justify-center opacity-70 group-hover:opacity-100 transition-opacity">
@@ -979,10 +979,6 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
         </AnimatePresence>
       </PromptInput>
 
-      <ConnectorsModal 
-        isOpen={isConnectorsModalOpen} 
-        onClose={() => setIsConnectorsModalOpen(false)} 
-      />
 
       <ImageViewDialog imageUrl={selectedImage} onClose={() => setSelectedImage(null)} />
     </>

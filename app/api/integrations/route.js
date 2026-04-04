@@ -73,6 +73,20 @@ const db = {
         metadata,
         created_at: new Date().toISOString()
       });
+  },
+ 
+  async logIntegrationEvent(userEmail, provider, event, metadata = {}) {
+    const { error } = await supabase
+      .from('integration_events')
+      .insert({
+        user_email: userEmail,
+        provider,
+        event,
+        metadata,
+        created_at: new Date().toISOString()
+      });
+    
+    if (error) console.error('Failed to log integration event:', error);
   }
 };
 
@@ -187,6 +201,47 @@ export async function POST(request) {
           retryable: false
         }
       },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * DELETE /api/integrations - Disconnect integration
+ */
+export async function DELETE(request) {
+  try {
+    const session = await auth();
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const provider = searchParams.get('provider');
+
+    if (!provider) {
+      return NextResponse.json({ error: 'Provider is required' }, { status: 400 });
+    }
+
+    const userEmail = session.user.email;
+
+    // Remove credentials
+    const { error } = await supabase
+      .from('integration_credentials')
+      .delete()
+      .eq('user_email', userEmail)
+      .eq('provider', provider);
+
+    if (error) throw error;
+
+    // Log the disconnection
+    await db.logIntegrationEvent(userEmail, provider, 'disconnected');
+
+    return NextResponse.json({ success: true, message: `Disconnected ${provider}` });
+  } catch (error) {
+    console.error('[Integrations API] Disconnect error:', error);
+    return NextResponse.json(
+      { error: 'Failed to disconnect integration', details: error.message },
       { status: 500 }
     );
   }
