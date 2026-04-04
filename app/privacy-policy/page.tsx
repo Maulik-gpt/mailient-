@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { ArrowLeft, ShieldCheck, Mail, Calendar, Video, Lock, UserCheck, RefreshCw, Trash2, Globe } from "lucide-react";
+import { FloatingNavbar } from "@/components/FloatingNavbar";
 
 export default function PrivacyPolicy() {
     return (
@@ -13,7 +14,7 @@ export default function PrivacyPolicy() {
                 <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-900/10 rounded-full blur-[160px] opacity-50" />
             </div>
 
-            <main className="relative z-10 max-w-3xl mx-auto pt-20 pb-32 px-6">
+            <main className="relative z-10 max-w-3xl mx-auto pt-20 pb-48 px-6">
                 <Link
                     href="/"
                     className="inline-flex items-center gap-2 text-neutral-500 hover:text-white transition-colors mb-12 group"
@@ -267,6 +268,8 @@ export default function PrivacyPolicy() {
                     </section>
                 </div>
             </main>
+
+            <FloatingNavbar />
         </div>
     );
 }

@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Sparkles, Zap, Bug, Rocket, ChevronLeft, ArrowRight, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import { FloatingNavbar } from "@/components/FloatingNavbar";
 
 const LOG_ENTRIES = [
     {
@@ -42,7 +43,7 @@ export default function ChangelogPage() {
     const router = useRouter();
 
     return (
-        <div className="min-h-screen bg-black text-white font-sans overflow-y-auto pb-32">
+        <div className="min-h-screen bg-black text-white font-sans overflow-y-auto pb-48">
             {/* Background Effects */}
             <div className="fixed inset-0 pointer-events-none opacity-[0.03]"
                 style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/carbon-fibre.png")' }}></div>
@@ -135,6 +136,8 @@ export default function ChangelogPage() {
                     </button>
                 </div>
             </div>
+
+            <FloatingNavbar />
         </div>
     );
 }

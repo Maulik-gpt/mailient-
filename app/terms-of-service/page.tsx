@@ -1,17 +1,9 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
-import {
-  Home,
-  HelpCircle,
-  Scale,
-  FileText,
-  LayoutList
-} from "lucide-react";
 import { motion } from "framer-motion";
 import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
-import { cn } from "@/lib/utils";
+import { FloatingNavbar } from "@/components/FloatingNavbar";
 
 interface Section {
   id: number;
@@ -498,34 +490,7 @@ export default function TermsOfService() {
         </footer>
       </main>
 
-      {/* Apple-style Floating Nav Bar */}
-      <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50">
-        <nav className="flex items-center gap-2 p-1.5 bg-white/80 dark:bg-black/80 backdrop-blur-2xl border border-neutral-200/50 dark:border-white/10 rounded-[22px] shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
-
-          <Link href="/" className="w-10 h-10 flex items-center justify-center rounded-full text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors">
-            <Home className="w-5 h-5" />
-          </Link>
-
-          <Link href="/changelog" className="w-10 h-10 flex items-center justify-center rounded-full text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors">
-            <LayoutList className="w-5 h-5" />
-          </Link>
-
-          <Link href="/contact" className="w-10 h-10 flex items-center justify-center rounded-full text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors">
-            <HelpCircle className="w-5 h-5" />
-          </Link>
-
-          {/* Active State */}
-          <div className="flex items-center gap-2 px-4 h-10 bg-black dark:bg-white text-white dark:text-black rounded-full shadow-sm">
-            <Scale className="w-4 h-4" />
-            <span className="text-xs font-bold uppercase tracking-wider">Terms</span>
-          </div>
-
-          <Link href="/privacy-policy" className="w-10 h-10 flex items-center justify-center rounded-full text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors">
-            <FileText className="w-5 h-5" />
-          </Link>
-
-        </nav>
-      </div>
+      <FloatingNavbar />
 
     </div>
   );
