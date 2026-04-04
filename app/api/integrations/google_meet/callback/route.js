@@ -30,23 +30,25 @@ const db = {
 const integrationManager = new ArcusIntegrationManager(db);
 
 export async function GET(request) {
+  const baseUrl = new URL(request.url).origin;
+
   try {
     const session = await getSession();
-    if (!session?.user?.email) return NextResponse.redirect(`/dashboard/agent-talk?error=unauthorized`);
+    if (!session?.user?.email) return NextResponse.redirect(new URL('/dashboard/agent-talk?error=unauthorized', baseUrl));
 
     const { searchParams } = new URL(request.url);
     const code = searchParams.get('code');
     const userEmail = session.user.email;
     const provider = 'google_meet';
 
-    if (!code) return NextResponse.redirect(`/dashboard/agent-talk?error=missing_code`);
+    if (!code) return NextResponse.redirect(new URL('/dashboard/agent-talk?error=missing_code', baseUrl));
 
-    const credentials = await integrationManager.exchangeCode(provider, code);
+    const credentials = await integrationManager.exchangeCode(provider, code, baseUrl);
     await integrationManager.storeCredentials(userEmail, provider, credentials);
     await db.logIntegrationEvent(userEmail, provider, 'connected', { scopes: credentials.scopes });
 
-    return NextResponse.redirect(`/dashboard/agent-talk?success=connected&provider=${provider}`);
+    return NextResponse.redirect(new URL(`/dashboard/agent-talk?success=connected&provider=${provider}`, baseUrl));
   } catch (err) {
-    return NextResponse.redirect(`/dashboard/agent-talk?error=exchange_failed&message=${encodeURIComponent(err.message)}`);
+    return NextResponse.redirect(new URL(`/dashboard/agent-talk?error=exchange_failed&message=${encodeURIComponent(err.message)}`, baseUrl));
   }
 }

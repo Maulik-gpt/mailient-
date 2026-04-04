@@ -43,11 +43,13 @@ const integrationManager = new ArcusIntegrationManager(db);
  * Handles the OAuth callback from Google specifically for Calendar
  */
 export async function GET(request) {
+  const baseUrl = new URL(request.url).origin;
+
   try {
     const session = await getSession();
     if (!session?.user?.email) {
       return NextResponse.redirect(
-        `/dashboard/agent-talk?error=unauthorized`
+        new URL('/dashboard/agent-talk?error=unauthorized', baseUrl)
       );
     }
 
@@ -65,18 +67,18 @@ export async function GET(request) {
     if (error) {
       console.error(`[Google Calendar Callback] error:`, error, errorDescription);
       return NextResponse.redirect(
-        `/dashboard/agent-talk?error=oauth_failed&provider=${provider}&message=${encodeURIComponent(errorDescription || error)}`
+        new URL(`/dashboard/agent-talk?error=oauth_failed&provider=${provider}&message=${encodeURIComponent(errorDescription || error)}`, baseUrl)
       );
     }
 
     if (!code) {
       return NextResponse.redirect(
-        `/dashboard/agent-talk?error=missing_code`
+        new URL('/dashboard/agent-talk?error=missing_code', baseUrl)
       );
     }
 
     // Exchange code for tokens
-    const credentials = await integrationManager.exchangeCode(provider, code);
+    const credentials = await integrationManager.exchangeCode(provider, code, baseUrl);
 
     // Store credentials
     await integrationManager.storeCredentials(userEmail, provider, credentials);
@@ -88,12 +90,12 @@ export async function GET(request) {
 
     // Redirect back to chat with success
     return NextResponse.redirect(
-      `/dashboard/agent-talk?success=connected&provider=${provider}`
+      new URL(`/dashboard/agent-talk?success=connected&provider=${provider}`, baseUrl)
     );
   } catch (err) {
     console.error('[Google Calendar Callback] Error:', err);
     return NextResponse.redirect(
-      `/dashboard/agent-talk?error=exchange_failed&message=${encodeURIComponent(err.message)}`
+      new URL(`/dashboard/agent-talk?error=exchange_failed&message=${encodeURIComponent(err.message)}`, baseUrl)
     );
   }
 }

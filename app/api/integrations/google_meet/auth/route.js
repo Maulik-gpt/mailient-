@@ -29,7 +29,9 @@ export async function GET(request) {
       provider: 'google_meet'
     })).toString('base64');
 
-    const authUrl = integrationManager.getAuthUrl('google_meet', state);
+    const { origin } = new URL(request.url);
+    const authUrl = integrationManager.getAuthUrl('google_meet', state, origin);
+    console.log('[Google Meet Auth] Generated Auth URL:', authUrl);
     return NextResponse.json({ url: authUrl });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });

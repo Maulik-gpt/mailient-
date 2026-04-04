@@ -29,7 +29,9 @@ export async function GET(request) {
       provider: 'cal_com'
     })).toString('base64');
 
-    const authUrl = integrationManager.getAuthUrl('cal_com', state);
+    const { origin } = new URL(request.url);
+    const authUrl = integrationManager.getAuthUrl('cal_com', state, origin);
+    console.log('[CalCom Auth] Generated Auth URL:', authUrl);
     return NextResponse.json({ url: authUrl });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });

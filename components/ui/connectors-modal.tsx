@@ -144,7 +144,7 @@ export function ConnectorsModal({
   onConnect,
   onDisconnect
 }: ConnectorsModalProps) {
-  const [statuses, setStatuses] = useState<Record<string, boolean>>({});
+  const [statuses, setStatuses] = useState<any[]>([]);
   const [selectedApp, setSelectedApp] = useState<typeof SUPPORTED_APPS[0] | null>(null);
 
   // Fetch integration statuses
@@ -230,11 +230,11 @@ export function ConnectorsModal({
           {/* Grid Area */}
           <div className="flex-1 overflow-y-auto p-8 arcus-scrollbar pb-12">
             <div className="grid grid-cols-1 gap-4">
-              {SUPPORTED_APPS.map((app) => {
-                const statusKey = app.id === 'google_calendar' ? 'google-calendar' : 
-                                 app.id === 'google_tasks' ? 'google-tasks' : 
-                                 app.id === 'cal_com' ? 'cal-com' : app.id;
-                const isConnected = statuses[statusKey] || false;
+            {SUPPORTED_APPS.map((app) => {
+                const statusObj = Array.isArray(statuses) 
+                  ? statuses.find((s: any) => s.provider === app.id)
+                  : (statuses as any)?.[app.id];
+                const isConnected = statusObj?.connected || false;
 
                 return (
                   <button

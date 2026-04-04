@@ -41,7 +41,8 @@ export async function GET(request) {
 
     if (!code) return NextResponse.redirect(`/dashboard/agent-talk?error=missing_code`);
 
-    const credentials = await integrationManager.exchangeCode(provider, code);
+    const { origin } = new URL(request.url);
+    const credentials = await integrationManager.exchangeCode(provider, code, origin);
     await integrationManager.storeCredentials(userEmail, provider, credentials);
     await db.logIntegrationEvent(userEmail, provider, 'connected', { scopes: credentials.scopes });
 

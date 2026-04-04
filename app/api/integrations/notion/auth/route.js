@@ -29,7 +29,9 @@ export async function GET(request) {
       provider: 'notion'
     })).toString('base64');
 
-    const authUrl = integrationManager.getAuthUrl('notion', state);
+    const { origin } = new URL(request.url);
+    const authUrl = integrationManager.getAuthUrl('notion', state, origin);
+    console.log('[Notion Auth] Generated Auth URL:', authUrl);
     return NextResponse.json({ url: authUrl });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });

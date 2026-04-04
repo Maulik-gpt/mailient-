@@ -29,7 +29,9 @@ export async function GET(request) {
       provider: 'notion_calendar'
     })).toString('base64');
 
-    const authUrl = integrationManager.getAuthUrl('notion_calendar', state);
+    const { origin } = new URL(request.url);
+    const authUrl = integrationManager.getAuthUrl('notion_calendar', state, origin);
+    console.log('[Notion Calendar Auth] Generated Auth URL:', authUrl);
     return NextResponse.json({ url: authUrl });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });

@@ -62,7 +62,8 @@ export async function GET(request) {
       provider: 'google_calendar'
     })).toString('base64');
 
-    const authUrl = integrationManager.getAuthUrl('google_calendar', state);
+    const { origin } = new URL(request.url);
+    const authUrl = integrationManager.getAuthUrl('google_calendar', state, origin);
     console.log('[Google Calendar Auth] Generated Auth URL:', authUrl);
 
     return NextResponse.json({ url: authUrl });
