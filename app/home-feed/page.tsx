@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import { GmailInterfaceFixed } from '@/components/ui/gmail-interface-fixed';
 import { PricingOverlay } from '@/components/ui/pricing-overlay';
+import { FloatingNavbar } from "@/components/FloatingNavbar";
 import confetti from 'canvas-confetti';
 import { useState } from 'react';
 
@@ -213,6 +214,7 @@ function HomeFeedContent() {
   return (
     <div className="satoshi-home-feed w-full h-screen bg-black dark:bg-black relative">
       <GmailInterfaceFixed />
+      <FloatingNavbar />
       
       {isVerifyingPayment && (
           <div className="fixed inset-0 z-[110] bg-black/95 backdrop-blur-md flex flex-col items-center justify-center gap-6">
