@@ -1,143 +1,112 @@
 "use client";
 
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Sparkles, Zap, Bug, Rocket, ChevronLeft, ArrowRight, Star } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useRouter } from 'next/navigation';
+import React from "react";
+import { Changelog1 } from "@/components/ui/changelog-1";
 import { FloatingNavbar } from "@/components/FloatingNavbar";
-
-const LOG_ENTRIES = [
-    {
-        date: "March 28, 2026",
-        version: "v2.4.0",
-        title: "The Intelligence Update",
-        updates: [
-            { type: "new", text: "Introduced Arcus Mission History — a persistent indexed timeline of all agentic operations.", icon: Rocket },
-            { type: "improved", text: "Overhauled Chat Interface with perfect ergonomic vertical symmetry and fluid spring physics.", icon: Zap },
-            { type: "improved", text: "Integrated Floating Feedback Utility with ⌘+Enter rapid submission bypass.", icon: Sparkles }
-        ]
-    },
-    {
-        date: "March 24, 2026",
-        version: "v2.3.5",
-        title: "Protocol Refinement",
-        updates: [
-            { type: "new", text: "High-contrast 'Intelligence Tiers' pricing system for optimized membership routing.", icon: Star },
-            { type: "fixed", text: "Resolved deep-linking latency when navigating between distant mission records.", icon: Bug },
-            { type: "improved", text: "Enhanced glassmorphic textures for all top-level dashboard control panels.", icon: Zap }
-        ]
-    },
-    {
-        date: "March 18, 2026",
-        version: "v2.2.0",
-        title: "Aether Engine v2",
-        updates: [
-            { type: "new", text: "Launched Aether: the multi-agent orchestration engine for complex mission planning.", icon: Rocket },
-            { type: "improved", text: "Reduced AI response latency by 40% through localized intelligence streaming.", icon: Zap }
-        ]
-    }
-];
+import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 
 export default function ChangelogPage() {
-    const router = useRouter();
+  const entries = [
+    {
+      version: "v2.5.0",
+      date: "04 April 2026",
+      title: "Navigation & Legal Refinement",
+      description: "A complete overhaul of our legal documentation UI and a new global navigation layer designed for fluid workspace movement.",
+      items: [
+        "Apple-inspired UI: Linear, minimalist design for Terms of Use and Privacy Policy for maximum legibility.",
+        "Frosted Glass Navbar: A brand new floating navigation pill with 25% glassmorphism and spring-physics labels.",
+        "Home Feed Auto-Fade: Intelligent navigation behavior that hides the navbar after 5 seconds on the home feed to maximize focus.",
+        "Themed Toggle: Integrated persistent theme toggler at the top level for all support routes."
+      ],
+      image: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=1200"
+    },
+    {
+      version: "v2.4.0",
+      date: "28 March 2026",
+      title: "The Intelligence Update",
+      description: "A major overhaul of our agentic intelligence and mission tracking system. We've introduced persistent memory protocols and fluid UI transitions.",
+      items: [
+        "Arcus Mission History: A persistent, indexed timeline of all agentic operations across your workspace.",
+        "Ergonomic Symmetry: Completely redesigned chat interface with perfect vertical physics and responsive springs.",
+        "⌘+Enter Bypass: New floating feedback utility with rapid submission shortcuts for power users.",
+      ],
+      image: "https://images.unsplash.com/photo-1620712943543-bcc4628c6bb5?auto=format&fit=crop&q=80&w=1200",
+      button: {
+        url: "/dashboard/agent-talk",
+        text: "Launch Arcus"
+      }
+    },
+    {
+      version: "v2.3.5",
+      date: "24 March 2026",
+      title: "Protocol Refinement",
+      description: "Focusing on infrastructure performance and high-tier accessibility for our power user base.",
+      items: [
+        "Intelligence Tiers: New high-contrast pricing system for optimized membership and resource routing.",
+        "Route Latency Resolution: Fixed deep-linking lag when navigating between distant mission records in the history panel.",
+        "Glassmorphic Dashboards: Enhanced texture and refraction levels for all top-level workspace controls.",
+      ],
+      image: "https://images.unsplash.com/photo-1614850523296-60c000dc0506?auto=format&fit=crop&q=80&w=1200"
+    },
+    {
+      version: "v2.2.0",
+      date: "18 March 2026",
+      title: "Aether Engine v2",
+      description: "The core engine powering our multi-agent orchestration has been upgraded to version 2.0 with significant speed improvements.",
+      items: [
+        "Aether Engine Deployment: Multi-agent orchestration for complex, multi-step mission planning is now live.",
+        "Localized Intelligence Streaming: Reduced AI response latency by ~40% using localized edge processing.",
+        "Workspace Utility Pack: Added native support for direct Notion and Google Calendar task synchronization.",
+      ],
+      image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&q=80&w=1200"
+    },
+    {
+        version: "v2.1.0",
+        date: "10 March 2026",
+        title: "Sift Intelligence Release",
+        description: "Launching Sift AI—our specialized intelligence layer for high-intent signal extraction.",
+        items: [
+          "Signal Intelligence: Automatically extract revenue opportunities and high-priority leads from the noise.",
+          "Inbox Prioritization: Neural sorting that learns your priority levels based on historical engagement.",
+          "Daily Sift Summaries: Automated morning reports delivered with key action items for the day."
+        ],
+        image: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&q=80&w=1200"
+    },
+    {
+        version: "v2.0.0",
+        date: "01 March 2026",
+        title: "The Agentic Core",
+        description: "Initial Arcus Alpha launch—transitioning Mailient from an email tool to an agentic workspace.",
+        items: [
+          "Arcus Alpha: Our first production-ready AI agent capable of multi-app orchestration.",
+          "Universal Prompt Bar: A single command interface for email, calendar, and task management.",
+          "Secure OAuth Tunneling: Military-grade secure tunneling for all integrated Google and Notion accounts."
+        ],
+        image: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?auto=format&fit=crop&q=80&w=1200",
+        button: {
+          url: "/",
+          text: "Start Exploring"
+        }
+    }
+  ];
 
-    return (
-        <div className="min-h-screen bg-black text-white font-sans overflow-y-auto pb-48">
-            {/* Background Effects */}
-            <div className="fixed inset-0 pointer-events-none opacity-[0.03]"
-                style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/carbon-fibre.png")' }}></div>
-            <div className="fixed top-[-20%] right-[-10%] w-[800px] h-[800px] bg-white/[0.02] rounded-full blur-[150px] pointer-events-none" />
-            
-            <div className="relative z-10 max-w-4xl mx-auto px-6 pt-24">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-16">
-                    <button 
-                        onClick={() => router.back()}
-                        className="group flex items-center gap-2 text-white/40 hover:text-white transition-all text-sm"
-                    >
-                        <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                        Back
-                    </button>
-                    <div className="px-4 py-1.5 bg-white/5 border border-white/10 rounded-full text-[10px] font-black uppercase tracking-[0.2em] text-white/40">
-                        Operational Log
-                    </div>
-                </div>
+  return (
+    <div className="min-h-screen bg-white dark:bg-[#0a0a0a] text-[#1a1a1a] dark:text-[#fafafa] transition-colors duration-500">
+      
+      {/* Top Header Theme Toggle */}
+      <div className="fixed top-8 right-8 z-50">
+        <AnimatedThemeToggler className="bg-white/80 dark:bg-black/80 backdrop-blur-md shadow-sm border border-neutral-200 dark:border-neutral-800" />
+      </div>
 
-                <div className="mb-24">
-                    <h1 className="text-6xl font-bold tracking-tighter mb-6">Changelog</h1>
-                    <p className="text-white/40 text-xl max-w-lg font-medium">Tracking the evolution of agentic intelligence and workspace utility at Mailient.</p>
-                </div>
+      <div className="relative">
+        <Changelog1
+          title="Protocol Evolution"
+          description="A chronological record of Mailient's architectural growth—from the initial agentic core to the advanced Aether orchestration engine."
+          entries={entries}
+        />
+      </div>
 
-                {/* Timeline */}
-                <div className="space-y-32">
-                    {LOG_ENTRIES.map((entry, entryIdx) => (
-                        <motion.div 
-                            key={entry.version}
-                            initial={{ opacity: 0, y: 30 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 0.7, delay: entryIdx * 0.1 }}
-                            className="relative grid grid-cols-1 md:grid-cols-[200px_1fr] gap-8 md:gap-16"
-                        >
-                            {/* Date & Version */}
-                            <div className="flex flex-col gap-2 pt-1">
-                                <span className="text-[14px] font-bold text-white/20 uppercase tracking-widest">{entry.date}</span>
-                                <div className="text-sm font-medium text-white/40">{entry.version}</div>
-                            </div>
-
-                            {/* Content */}
-                            <div className="flex flex-col gap-8">
-                                <h2 className="text-3xl font-bold tracking-tight">{entry.title}</h2>
-                                <div className="space-y-6">
-                                    {entry.updates.map((update, idx) => (
-                                        <div key={idx} className="group flex items-start gap-5">
-                                            <div className="mt-1 w-10 h-10 rounded-2xl bg-white/[0.03] border border-white/5 flex items-center justify-center shrink-0 group-hover:bg-white/[0.06] transition-all">
-                                                <update.icon className="w-4 h-4 text-white/60" />
-                                            </div>
-                                            <div className="flex flex-col gap-1.5 pt-1">
-                                                <div className={cn(
-                                                    "text-[10px] font-black uppercase tracking-[0.2em] w-fit px-2 py-0.5 rounded border",
-                                                    update.type === 'new' ? "text-emerald-500/80 border-emerald-500/20 bg-emerald-500/5" :
-                                                    update.type === 'improved' ? "text-blue-500/80 border-blue-500/20 bg-blue-500/5" :
-                                                    "text-orange-500/80 border-orange-500/20 bg-orange-500/5"
-                                                )}>
-                                                    {update.type}
-                                                </div>
-                                                <p className="text-[15px] leading-relaxed text-white/50 font-medium group-hover:text-white/80 transition-colors">
-                                                    {update.text}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Top divider */}
-                            {entryIdx !== LOG_ENTRIES.length - 1 && (
-                                <div className="absolute left-0 right-0 -bottom-16 h-px bg-white/[0.05]" />
-                            )}
-                        </motion.div>
-                    ))}
-                </div>
-
-                {/* Footer CTA */}
-                <div className="mt-40 p-12 rounded-[48px] bg-gradient-to-br from-white/[0.03] to-transparent border border-white/5 text-center flex flex-col items-center gap-6">
-                    <div className="w-16 h-16 rounded-3xl bg-white flex items-center justify-center shadow-2xl">
-                        <Rocket className="w-8 h-8 text-black" />
-                    </div>
-                    <h3 className="text-2xl font-bold tracking-tight">Ready for your next mission?</h3>
-                    <button 
-                        onClick={() => router.push('/dashboard/agent-talk')}
-                        className="px-8 py-3.5 bg-white text-black rounded-full font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:scale-105 transition-all active:scale-95"
-                    >
-                        Start Operations
-                        <ArrowRight className="w-4 h-4" />
-                    </button>
-                </div>
-            </div>
-
-            <FloatingNavbar />
-        </div>
-    );
+      <FloatingNavbar />
+    </div>
+  );
 }
