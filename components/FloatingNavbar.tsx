@@ -26,104 +26,144 @@ export function FloatingNavbar() {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [isVisible, setIsVisible] = useState(true);
 
-  // Special behavior for /home-feed: Fade out after 5 seconds
   useEffect(() => {
     if (pathname === "/home-feed") {
       const timer = setTimeout(() => {
         setIsVisible(false);
       }, 5000);
-      
       return () => clearTimeout(timer);
     } else {
-      // On other pages, ensure it is visible
       setIsVisible(true);
     }
   }, [pathname]);
 
   return (
-    <AnimatePresence>
-      {isVisible && (
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 10 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] w-fit px-4 pointer-events-none"
-        >
-          <LayoutGroup>
-            <nav className="flex items-center gap-1.5 p-1.5 bg-white/25 dark:bg-black/30 backdrop-blur-3xl border border-white/40 dark:border-white/5 rounded-[26px] shadow-[0_10px_60px_rgba(0,0,0,0.03)] dark:shadow-[0_20px_80px_rgba(0,0,0,0.4)] pointer-events-auto transition-all duration-500">
-              {navItems.map((item) => {
-                const isActive = pathname === item.href;
-                const isHovered = hoveredId === item.id;
-                const Icon = item.icon;
+    <>
+      {/* SVG Filter for Liquid Distortion */}
+      <svg className="hidden pointer-events-none absolute h-0 w-0">
+        <filter id="liquid-glass-distortion">
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency="0.01 0.01"
+            numOctaves="1"
+            seed="2"
+            result="noise"
+          />
+          <feDisplacementMap
+            in="SourceGraphic"
+            in2="noise"
+            scale="10"
+            xChannelSelector="R"
+            yChannelSelector="G"
+          />
+        </filter>
+      </svg>
 
-                return (
-                  <Link
-                    key={item.id}
-                    href={item.href}
-                    onMouseEnter={() => setHoveredId(item.id)}
-                    onMouseLeave={() => setHoveredId(null)}
-                    className="relative flex items-center no-underline"
-                  >
-                    <motion.div
-                      layout
-                      transition={{
-                        type: "spring",
-                        stiffness: 380,
-                        damping: 35
-                      }}
-                      className={cn(
-                        "relative flex items-center h-11 rounded-full overflow-hidden px-1.5 transition-colors duration-300",
-                        isActive 
-                          ? "bg-black dark:bg-white text-white dark:text-black shadow-lg" 
-                          : isHovered 
-                            ? "bg-neutral-100 dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100" 
-                            : "text-neutral-500"
-                      )}
-                    >
-                      <div 
-                        className={cn(
-                          "flex items-center justify-center w-8 h-8 rounded-full shrink-0 transition-colors duration-300",
-                          isActive ? "bg-white dark:bg-black" : ""
-                        )}
+      <AnimatePresence>
+        {isVisible && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] w-fit px-4 pointer-events-none"
+          >
+            <LayoutGroup>
+              <nav className="relative flex items-center gap-1.5 p-1.5 rounded-[26px] pointer-events-auto transition-all duration-700 hover:scale-[1.02] shadow-[0_6px_6px_rgba(0,0,0,0.2),0_0_20px_rgba(0,0,0,0.1)] overflow-hidden">
+                
+                {/* Liquid Glass Layers */}
+                <div 
+                  className="absolute inset-0 z-0 backdrop-blur-[12px]"
+                  style={{
+                    filter: "url(#liquid-glass-distortion)",
+                    isolation: "isolate",
+                  }}
+                />
+                <div className="absolute inset-0 z-[1] bg-white/20 dark:bg-[#2e2e2e]/40" />
+                <div 
+                  className="absolute inset-0 z-[2] rounded-[26px]"
+                  style={{
+                    boxShadow: "inset 2px 2px 1px 0 rgba(255, 255, 255, 0.15), inset -1px -1px 1px 1px rgba(255, 255, 255, 0.05)"
+                  }}
+                />
+
+                {/* Navbar Items Content */}
+                <div className="relative z-10 flex items-center gap-1.5">
+                  {navItems.map((item) => {
+                    const isActive = pathname === item.href;
+                    const isHovered = hoveredId === item.id;
+                    const Icon = item.icon;
+
+                    return (
+                      <Link
+                        key={item.id}
+                        href={item.href}
+                        onMouseEnter={() => setHoveredId(item.id)}
+                        onMouseLeave={() => setHoveredId(null)}
+                        className="relative flex items-center no-underline"
                       >
-                        <Icon className={cn("w-[18px] h-[18px]", isActive ? "text-black dark:text-white" : "text-neutral-500 dark:text-neutral-400")} />
-                      </div>
-                      
-                      <AnimatePresence initial={false}>
-                        {(isActive || isHovered) && (
-                          <motion.span
-                            initial={{ opacity: 0, width: 0, x: -5 }}
-                            animate={{ opacity: 1, width: "auto", x: 0 }}
-                            exit={{ opacity: 0, width: 0, x: -5 }}
-                            transition={{ 
-                              duration: 0.25, 
-                              ease: "circOut"
-                            }}
-                            className="overflow-hidden"
+                        <motion.div
+                          layout
+                          transition={{
+                            type: "spring",
+                            stiffness: 175,
+                            damping: 12,
+                            mass: 0.5
+                          }}
+                          className={cn(
+                            "relative flex items-center h-11 rounded-full overflow-hidden px-1.5 transition-all duration-500",
+                            isActive 
+                              ? "bg-black dark:bg-white text-white dark:text-black shadow-lg" 
+                              : isHovered 
+                                ? "bg-white/30 dark:bg-white/10 text-neutral-900 dark:text-neutral-100" 
+                                : "text-neutral-500 dark:text-neutral-400"
+                          )}
+                        >
+                          <div 
+                            className={cn(
+                              "flex items-center justify-center w-8 h-8 rounded-full shrink-0 transition-colors duration-300",
+                              isActive ? "bg-white dark:bg-black" : ""
+                            )}
                           >
-                            <span className="ml-2 pr-3 text-[13px] font-bold tracking-tight whitespace-nowrap uppercase">
-                              {item.label}
-                            </span>
-                          </motion.span>
-                        )}
-                      </AnimatePresence>
-                    </motion.div>
+                            <Icon className={cn("w-[18px] h-[18px]", isActive ? "text-black dark:text-white" : "text-current")} />
+                          </div>
+                          
+                          <AnimatePresence initial={false}>
+                            {(isActive || isHovered) && (
+                              <motion.span
+                                initial={{ opacity: 0, width: 0, x: -5 }}
+                                animate={{ opacity: 1, width: "auto", x: 0 }}
+                                exit={{ opacity: 0, width: 0, x: -5 }}
+                                transition={{ 
+                                  duration: 0.4, 
+                                  ease: [0.175, 0.885, 0.32, 1.275]
+                                }}
+                                className="overflow-hidden"
+                              >
+                                <span className="ml-2 pr-3 text-[13px] font-bold tracking-tight whitespace-nowrap uppercase">
+                                  {item.label}
+                                </span>
+                              </motion.span>
+                            )}
+                          </AnimatePresence>
+                        </motion.div>
 
-                    {isActive && (
-                      <motion.div
-                        layoutId="pill"
-                        className="absolute inset-0 z-[-1] bg-black dark:bg-white rounded-full"
-                        transition={{ type: "spring", stiffness: 380, damping: 35 }}
-                      />
-                    )}
-                  </Link>
-                );
-              })}
-            </nav>
-          </LayoutGroup>
-        </motion.div>
-      )}
-    </AnimatePresence>
+                        {isActive && (
+                          <motion.div
+                            layoutId="pill"
+                            className="absolute inset-0 z-[-1] bg-black dark:bg-white rounded-full"
+                            transition={{ type: "spring", stiffness: 175, damping: 12 }}
+                          />
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </nav>
+            </LayoutGroup>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
