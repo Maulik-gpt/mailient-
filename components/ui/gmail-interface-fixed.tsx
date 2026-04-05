@@ -2793,13 +2793,34 @@ export function GmailInterfaceFixed() {
                         <div className="max-w-4xl mx-auto space-y-12 pb-20">
                             <div className="traditional-email-content font-sans text-lg">
                                 {selectedTraditionalEmail.isHtml ? (
-                                    <div
-                                        className="whitespace-pre-wrap transition-all selection:bg-blue-500/30"
-                                        dangerouslySetInnerHTML={{ __html: cleanHtml(selectedTraditionalEmail.body) }}
-                                    />
+                                    <div className="bg-white dark:bg-white/95 rounded-xl overflow-hidden shadow-inner border border-neutral-200 dark:border-white/10 ring-1 ring-black/5 flex">
+                                        <iframe
+                                            title="Email Content"
+                                            srcDoc={selectedTraditionalEmail.body}
+                                            className="w-full min-h-[60vh] border-none bg-transparent"
+                                            sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin"
+                                            style={{ backgroundColor: 'transparent', colorSchemes: 'light dark' } as any}
+                                            onLoad={(e) => {
+                                                const iframe = e.target as HTMLIFrameElement;
+                                                if (iframe.contentWindow) {
+                                                    // Add base target blank so all links open in new tab
+                                                    const base = iframe.contentDocument?.createElement('base');
+                                                    if (base) {
+                                                        base.target = '_blank';
+                                                        iframe.contentDocument?.head.appendChild(base);
+                                                    }
+                                                    // Auto-resize height based on content
+                                                    try {
+                                                        const height = iframe.contentWindow.document.documentElement.scrollHeight;
+                                                        if (height > 0) iframe.style.height = `${height}px`;
+                                                    } catch (err) {}
+                                                }
+                                            }}
+                                        />
+                                    </div>
                                 ) : (
                                     <div
-                                        className="whitespace-pre-wrap selection:bg-blue-500/30"
+                                        className="whitespace-pre-wrap selection:bg-blue-500/30 text-black dark:text-neutral-300 font-light leading-relaxed p-6 bg-black/5 dark:bg-white/5 rounded-2xl font-mono text-sm"
                                         dangerouslySetInnerHTML={{ __html: linkify(selectedTraditionalEmail.body) }}
                                     />
                                 )}
