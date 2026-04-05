@@ -450,7 +450,7 @@ export default function ProfileBubble() {
           {/* Desktop Dropdown */}
           <div
             id="profile-dropdown"
-            className="hidden md:block absolute right-0 mt-2 w-80 bg-white dark:bg-white dark:bg-[#121212] border border-neutral-200 dark:border-[#333333] rounded-lg shadow-2xl z-50 animate-in fade-in-0 zoom-in-95 duration-200"
+            className="hidden md:block absolute right-0 mt-2 w-80 bg-white dark:bg-[#121212] border border-neutral-200 dark:border-[#333333] rounded-lg shadow-2xl z-50 animate-in fade-in-0 zoom-in-95 duration-200"
             role="menu"
             aria-label="Profile menu"
             aria-labelledby="profile-button"
@@ -780,7 +780,7 @@ export default function ProfileBubble() {
           {/* Mobile Bottom Sheet */}
           <div
             id="mobile-profile-dropdown"
-            className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-white dark:bg-[#121212] border-t border-[#333333] rounded-t-lg shadow-2xl z-50 animate-in slide-in-from-bottom-2 duration-200 max-h-[80vh] overflow-hidden"
+            className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-[#121212] border-t border-[#333333] rounded-t-lg shadow-2xl z-50 animate-in slide-in-from-bottom-2 duration-200 max-h-[80vh] overflow-hidden"
             role="dialog"
             aria-modal="true"
             aria-labelledby="mobile-profile-title"

@@ -287,7 +287,7 @@ export function ConnectorsModal({
           }}
           exit={{ opacity: 0, scale: 0.98, y: 30 }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          className="relative w-full max-w-[560px] h-full max-h-[720px] bg-white dark:bg-white dark:bg-[#121212] rounded-[48px] border border-white/10 shadow-[0_0_100px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden pointer-events-auto"
+          className="relative w-full max-w-[560px] h-full max-h-[720px] bg-white dark:bg-[#121212] rounded-[48px] border border-white/10 shadow-[0_0_100px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden pointer-events-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -322,7 +322,7 @@ export function ConnectorsModal({
                   <button
                     key={app.id}
                     onClick={() => setSelectedApp(app)}
-                    className="flex items-start gap-4 p-4 rounded-[24px] bg-neutral-50 dark:bg-white dark:bg-white dark:bg-[#222]/40 border border-white/[0.04] hover:bg-white/[0.04] hover:border-white/[0.08] transition-all text-left group"
+                    className="flex items-start gap-4 p-4 rounded-[24px] bg-neutral-50 dark:bg-white dark:bg-[#222]/40 border border-white/[0.04] hover:bg-white/[0.04] hover:border-white/[0.08] transition-all text-left group"
                   >
                     <div 
                       className={cn(
@@ -359,7 +359,7 @@ export function ConnectorsModal({
               initial={{ opacity: 0, scale: 0.95, y: 30 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 30 }}
-              className="absolute z-[210] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[480px] bg-white dark:bg-white dark:bg-[#1a1a1a] rounded-[48px] border border-white/10 shadow-[0_40px_120px_rgba(0,0,0,0.9)] p-8 flex flex-col items-center pointer-events-auto"
+              className="absolute z-[210] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[480px] bg-white dark:bg-[#1a1a1a] rounded-[48px] border border-white/10 shadow-[0_40px_120px_rgba(0,0,0,0.9)] p-8 flex flex-col items-center pointer-events-auto"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Close Button */}
@@ -439,7 +439,7 @@ export function ConnectorsModal({
                             initial={{ opacity: 0, y: 10, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                            className="absolute bottom-full mb-3 left-0 right-0 bg-white dark:bg-white dark:bg-[#222] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[220]"
+                            className="absolute bottom-full mb-3 left-0 right-0 bg-white dark:bg-[#222] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[220]"
                           >
                             <button className="w-full px-4 py-3 text-left text-[14px] font-medium text-white/70 hover:bg-white/5 hover:text-white flex items-center gap-3 transition-all">
                               <Plus className="w-4 h-4" />

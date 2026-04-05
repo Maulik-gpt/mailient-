@@ -1571,7 +1571,7 @@ export function GmailInterfaceFixed() {
                 )}
 
                 {/* The Curvy Content Area */}
-                <div className="mt-2.5 mr-2.5 mb-2.5 bg-white dark:bg-white dark:bg-[#111111] rounded-[2.5rem] min-h-[calc(100vh-20px)] border border-[#EBE9E2] dark:border-white/[0.05] shadow-[0_20px_50px_rgba(0,0,0,0.06)] dark:shadow-none overflow-y-auto custom-scrollbar">
+                <div className="mt-2.5 mr-2.5 mb-2.5 bg-white dark:bg-[#111111] rounded-[2.5rem] min-h-[calc(100vh-20px)] border border-[#EBE9E2] dark:border-white/[0.05] shadow-[0_20px_50px_rgba(0,0,0,0.06)] dark:shadow-none overflow-y-auto custom-scrollbar">
                     <div className={`${viewMode === 'people' ? 'max-w-[1600px]' : 'max-w-5xl'} mx-auto px-10 py-12 transition-all duration-500`}>
 
                     {/* Header */}
@@ -1827,7 +1827,7 @@ export function GmailInterfaceFixed() {
                         <div className="flex gap-6 min-h-[700px] animate-in fade-in slide-in-from-bottom-2 duration-500">
 
                             {/* Left Column: Context Sidebar (Blank until click) */}
-                            <div className="w-64 bg-neutral-900/10 border border-neutral-200 dark:border-neutral-800/30 rounded-3xl overflow-hidden flex flex-col transition-all duration-500 border-dashed">
+                            <div className="w-64 bg-neutral-50 dark:bg-neutral-900/10 border border-neutral-200 dark:border-neutral-800/30 rounded-3xl overflow-hidden flex flex-col transition-all duration-500 border-dashed">
                                 {!selectedContactEmail ? (
                                     <div className="flex-1 flex items-center justify-center p-8 opacity-20">
                                         <div className="w-px h-12 bg-white/20" />
@@ -2247,7 +2247,7 @@ export function GmailInterfaceFixed() {
 
             {/* Details Modal */}
             <div
-                className={`fixed top-1/2 left-1/2 bg-white dark:bg-white dark:bg-[#1a1a1a] rounded-[2.5rem] shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-50 flex flex-col border border-neutral-200 dark:border-neutral-800`}
+                className={`fixed top-1/2 left-1/2 bg-white dark:bg-[#1a1a1a] rounded-[2.5rem] shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-50 flex flex-col border border-neutral-200 dark:border-neutral-800`}
                 style={{
                     width: '70%',
                     height: '85vh',

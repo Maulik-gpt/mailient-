@@ -160,7 +160,7 @@ export function HomeFeedSidebar({
                                             onClick={() => router.push(item.route)}
                                             className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3 px-3'} py-2.5 rounded-xl transition-all duration-300 group relative ${
                                                 isActive 
-                                                ? 'bg-white dark:bg-white/[0.05] text-[#1A1A1A] dark:text-white font-semibold shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] border border-[#EBE9E2] dark:border-white/10' 
+                                                ? 'bg-white/[0.05] text-[#1A1A1A] dark:text-white font-semibold shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] border border-[#EBE9E2] dark:border-white/10' 
                                                 : 'text-[#666666] dark:text-neutral-600 dark:text-neutral-500 hover:text-[#1A1A1A] dark:hover:text-neutral-900 dark:text-neutral-300'
                                             }`}
                                         >
@@ -200,7 +200,7 @@ export function HomeFeedSidebar({
                                         }}
                                         className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3 px-3'} py-2.5 rounded-xl transition-all duration-300 group ${
                                             isActive 
-                                            ? 'bg-white dark:bg-white/[0.05] text-[#1A1A1A] dark:text-white font-semibold shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] border border-[#EBE9E2] dark:border-white/10' 
+                                            ? 'bg-white/[0.05] text-[#1A1A1A] dark:text-white font-semibold shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] border border-[#EBE9E2] dark:border-white/10' 
                                             : 'text-[#666666] dark:text-neutral-600 dark:text-neutral-500 hover:text-[#1A1A1A] dark:hover:text-neutral-900 dark:text-neutral-300'
                                         }`}
                                     >

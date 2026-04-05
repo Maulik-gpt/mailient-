@@ -259,7 +259,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
             onClick={onClose}
         >
             <div
-                className="w-full max-w-[1020px] h-[600px] bg-black dark:bg-white dark:bg-[#1a1a1a] rounded-[16px] overflow-hidden flex shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] border border-neutral-200 dark:border-white/5"
+                className="w-full max-w-[1020px] h-[600px] bg-black dark:bg-[#1a1a1a] rounded-[16px] overflow-hidden flex shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] border border-neutral-200 dark:border-white/5"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Sidebar */}
@@ -291,9 +291,9 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
 
                     {/* Footer Info */}
                     <div className="px-4 py-4 flex items-center justify-between mt-auto">
-                        <span className="text-[11px] text-neutral-500 dark:text-neutral-500 font-medium">Mailient v1.0.1</span>
+                        <span className="text-[11px] text-neutral-500 dark:text-neutral-400 font-medium">Mailient v1.0.1</span>
                         <div className="w-4 h-4 rounded-full bg-neutral-200 dark:bg-white/5 flex items-center justify-center">
-                            <Cloud className="w-2.5 h-2.5 text-neutral-500 dark:text-neutral-500" />
+                            <Cloud className="w-2.5 h-2.5 text-neutral-500 dark:text-neutral-400" />
                         </div>
                     </div>
                 </div>
@@ -588,7 +588,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                         <Button 
                                             onClick={handleSaveAccount}
                                             disabled={isSaving}
-                                            className="bg-neutral-800 dark:bg-white text-black dark:text-black px-10 h-12 rounded-2xl font-bold hover:opacity-90 transition-opacity disabled:opacity-50"
+                                            className="bg-neutral-800 dark:bg-white text-black px-10 h-12 rounded-2xl font-bold hover:opacity-90 transition-opacity disabled:opacity-50"
                                         >
                                             {isSaving ? 'Saving...' : 'Save'}
                                         </Button>

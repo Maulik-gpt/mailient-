@@ -337,7 +337,7 @@ const PromptInput = forwardRef<HTMLDivElement, PromptInputProps>(
             onFocus={onFocus}
             onBlur={onBlur}
             className={cn(
-              "rounded-3xl border border-white/10 bg-white dark:bg-white dark:bg-[#2b2b2b] p-2 shadow-[0_8px_30px_rgba(0,0,0,0.3)] transition-all duration-300",
+              "rounded-3xl border border-white/10 bg-white dark:bg-[#2b2b2b] p-2 shadow-[0_8px_30px_rgba(0,0,0,0.3)] transition-all duration-300",
               isLoading && "border-red-500/70",
               className
             )}
@@ -688,7 +688,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         className={cn(
-          "w-full bg-white dark:bg-white dark:bg-[#2b2b2b] border border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.3)] transition-all duration-300 ease-in-out focus:ring-0 focus:outline-none focus-within:ring-0 focus-within:outline-none",
+          "w-full bg-white dark:bg-[#2b2b2b] border border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.3)] transition-all duration-300 ease-in-out focus:ring-0 focus:outline-none focus-within:ring-0 focus-within:outline-none",
           isRecording && "border-red-500/70",
           className
         )}
@@ -710,7 +710,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                   exit={{ opacity: 0, scale: 0.9 }}
                   className="relative group"
                 >
-                  <div className="bg-neutral-50 dark:bg-white dark:bg-[#1a1a1a] border border-white/10 rounded-xl overflow-hidden p-1 flex items-center gap-2 pr-3 min-w-[120px] max-w-[200px]">
+                  <div className="bg-neutral-50 dark:bg-[#1a1a1a] border border-white/10 rounded-xl overflow-hidden p-1 flex items-center gap-2 pr-3 min-w-[120px] max-w-[200px]">
                     {isImageFile(file) && filePreviews[file.name] ? (
                       <div
                         className="w-10 h-10 rounded-lg overflow-hidden cursor-pointer"
@@ -800,7 +800,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      className="absolute bottom-full left-0 mb-2 w-64 bg-neutral-50 dark:bg-white dark:bg-[#1a1a1a] border border-white/10 rounded-2xl shadow-2xl z-[70] overflow-hidden p-1.5"
+                      className="absolute bottom-full left-0 mb-2 w-64 bg-neutral-50 dark:bg-[#1a1a1a] border border-white/10 rounded-2xl shadow-2xl z-[70] overflow-hidden p-1.5"
                     >
                       {MODES.map((mode) => (
                         <div key={mode.id} className="relative group">
@@ -822,7 +822,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                           </button>
 
                           {/* Tooltip / Description for each mode on hover */}
-                          <div className="absolute left-full ml-2 top-0 invisible group-hover:visible w-48 bg-neutral-50 dark:bg-white dark:bg-[#1a1a1a] border border-white/10 rounded-xl p-3 shadow-xl z-[80]">
+                          <div className="absolute left-full ml-2 top-0 invisible group-hover:visible w-48 bg-neutral-50 dark:bg-[#1a1a1a] border border-white/10 rounded-xl p-3 shadow-xl z-[80]">
                             <p className="text-[11px] text-white/60 leading-relaxed">
                               {mode.description}
                             </p>
