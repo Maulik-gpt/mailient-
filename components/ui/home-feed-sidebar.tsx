@@ -164,7 +164,7 @@ export function HomeFeedSidebar({
                                                 : 'text-[#666666] dark:text-neutral-600 dark:text-neutral-500 hover:text-[#1A1A1A] dark:hover:text-neutral-900 dark:text-neutral-300'
                                             }`}
                                         >
-                                            <Icon size={20} className={`transition-colors duration-300 ${isActive ? 'text-amber-500' : 'text-[#666666] dark:text-neutral-600 dark:text-neutral-500 group-hover:text-[#1A1A1A] dark:group-hover:text-neutral-900 dark:text-neutral-300'}`} strokeWidth={ isActive ? 2 : 1.5} />
+                                            <Icon size={20} className={`transition-colors duration-300 ${isActive ? 'text-amber-500' : 'text-[#666666] dark:text-neutral-500 group-hover:text-black dark:group-hover:text-white'}`} strokeWidth={ isActive ? 2 : 1.5} />
                                             {!isCollapsed && <span className="text-[14px] tracking-tight">{item.label}</span>}
                                             {isActive && !isCollapsed && (
                                                 <div className="absolute right-2 w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]" />
@@ -204,7 +204,7 @@ export function HomeFeedSidebar({
                                             : 'text-[#666666] dark:text-neutral-600 dark:text-neutral-500 hover:text-[#1A1A1A] dark:hover:text-neutral-900 dark:text-neutral-300'
                                         }`}
                                     >
-                                        <Icon size={20} className={`transition-colors duration-300 ${isActive ? 'text-[#1A1A1A] dark:text-white' : 'text-[#666666] dark:text-neutral-600 dark:text-neutral-500 group-hover:text-[#1A1A1A] dark:group-hover:text-neutral-900 dark:text-neutral-300'}`} strokeWidth={1.5} />
+                                        <Icon size={20} className={`transition-colors duration-300 ${isActive ? 'text-[#1A1A1A] dark:text-white' : 'text-[#666666] dark:text-neutral-500 group-hover:text-black dark:group-hover:text-white'}`} strokeWidth={1.5} />
                                         {!isCollapsed && <span className="text-[14px] tracking-tight">{item.label}</span>}
                                     </motion.button>
                                 </TooltipTrigger>

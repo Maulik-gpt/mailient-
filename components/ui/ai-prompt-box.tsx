@@ -785,10 +785,10 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
               <button
                 type="button"
                 onClick={() => setIsModeMenuOpen(!isModeMenuOpen)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-black/[0.05] dark:bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all text-[#F97316]"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-black/[0.05] dark:bg-white/5 border border-black/5 dark:border-white/10 hover:bg-black/10 dark:hover:bg-white/10 hover:border-black/10 dark:hover:border-white/20 transition-all text-[#F97316] font-bold"
               >
                 {React.createElement(MODES.find(m => m.id === activeMode)?.icon || Workflow, { className: "w-3.5 h-3.5" })}
-                <span className="text-[12px] font-bold tracking-tight capitalize">{activeMode}</span>
+                <span className="text-[12px] tracking-tight capitalize">{activeMode}</span>
                 <ChevronDown className={cn("w-3 h-3 transition-transform", isModeMenuOpen && "rotate-180")} />
               </button>
 
@@ -810,8 +810,8 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                             className={cn(
                               "w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl transition-all text-left",
                               activeMode === mode.id 
-                                ? "bg-black/[0.05] dark:bg-white/5 text-white" 
-                                : "hover:bg-white/[0.03] text-white/40 hover:text-black/80 dark:text-white/80"
+                                ? "bg-black/[0.05] dark:bg-white/5 text-black dark:text-white" 
+                                : "hover:bg-black/[0.03] dark:hover:bg-white/[0.03] text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white"
                             )}
                           >
                             <div className="flex items-center gap-3">
@@ -822,8 +822,8 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                           </button>
 
                           {/* Tooltip / Description for each mode on hover */}
-                          <div className="absolute left-full ml-2 top-0 invisible group-hover:visible w-48 bg-neutral-50 dark:bg-[#1a1a1a] border border-white/10 rounded-xl p-3 shadow-xl z-[80]">
-                            <p className="text-[11px] text-white/60 leading-relaxed">
+                          <div className="absolute left-full ml-2 top-0 invisible group-hover:visible w-48 bg-white dark:bg-[#1a1a1a] border border-black/5 dark:border-white/10 rounded-xl p-3 shadow-xl z-[80]">
+                            <p className="text-[11px] text-black/60 dark:text-white/60 leading-relaxed">
                               {mode.description}
                             </p>
                           </div>
@@ -838,15 +838,15 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
             {/* Brand Integration Dock */}
             <div className="flex items-center -space-x-2 ml-1 opacity-40 hover:opacity-100 transition-all cursor-pointer" onClick={() => props.onConnectClick?.()}>
               {/* Google Calendar */}
-              <div className="w-5 h-5 rounded-full bg-black/[0.05] dark:bg-white/5 border border-white/5 flex items-center justify-center backdrop-blur-md overflow-hidden shadow-sm">
+              <div className="w-5 h-5 rounded-full bg-black/[0.05] dark:bg-white/5 border border-black/5 dark:border-white/5 flex items-center justify-center backdrop-blur-md overflow-hidden shadow-sm">
                 <svg className="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 141.7 141.7"><path fill="#fff" d="M95.8,45.9H45.9V95.8H95.8Z"/><path fill="#34a853" d="M95.8,95.8H45.9v22.5H95.8Z"/><path fill="#4285f4" d="M95.8,23.4H30.9a7.55462,7.55462,0,0,0-7.5,7.5V95.8H45.9V45.9H95.8Z"/><path fill="#188038" d="M23.4,95.8v15a7.55462,7.55462,0,0,0,7.5,7.5h15V95.8Z"/><path fill="#fbbc04" d="M118.3,45.9H95.8V95.8h22.5Z"/><path fill="#1967d2" d="M118.3,45.9v-15a7.55462,7.55462,0,0,0-7.5-7.5h-15V45.9Z"/><path fill="#ea4335" d="M95.8,118.3l22.5-22.5H95.8Z"/></svg>
               </div>
               {/* Notion (Light Theme) */}
-              <div className="w-5 h-5 rounded-full bg-white border border-white/10 flex items-center justify-center backdrop-blur-md overflow-hidden shadow-sm">
+              <div className="w-5 h-5 rounded-full bg-white border border-black/10 dark:border-white/10 flex items-center justify-center backdrop-blur-md overflow-hidden shadow-sm">
                 <svg className="w-2.5 h-2.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><path fill="#000" fillRule="evenodd" d="m5.2,47.56s8,10.37,8.48,10.83c1.16,1.11,2.73,1.69,4.33,1.6,8.37-.42,27.54-1.38,35.57-1.78,3.11-.16,5.55-2.72,5.56-5.83l.1-35.5c0-1.99-1.03-3.83-2.72-4.87t0,0c-2.99-1.84-8.91-5.49-10.7-6.68-1.46-.97-3.2-1.43-4.96-1.32-5.96.38-23.45,1.51-30.85,1.98-2.96.19-5.24,2.62-5.24,5.54v34.78c0,.45.15.89.43,1.24h0Zm50.01-28.91v.02l-.1,33.7c0,.97-.77,1.77-1.74,1.82l-35.57,1.78c-.5.03-.99-.16-1.35-.5-.36-.34-.57-.82-.57-1.32V20.71c0-.97.75-1.77,1.72-1.82l35.67-2.06c.5-.03.99.15,1.36.5.36.34.57.82.57,1.32h0Zm-11.98,21.42v-13.72c-.63-.72-1.63-.67-3.07-1.11-.1-.03-.19-.11-.23-.21-.04-.1-.03-.22.03-.31,1.72-2.53,6.63-.95,9.83-1.96.09-.03.2-.02.28.05.08.07.11.17.09.27-.31,1.39-1.4,2.1-2.95,2.4v22.57c0,.75-.45,1.44-1.15,1.72-.64.26-1.31.54-1.31.54-1.54.8-3.43.29-4.37-1.17l-11.46-17.87v16.27c.62.72,1.63.67,3.07,1.11.1.03.19.11.23.21.04.1.03.22-.03.31-1.73,2.53-6.63.95-9.83,1.96-.09.04-.2.02-.28-.05-.08-.06-.11-.17-.09-.27.31-1.39,1.4-2.1,2.95-2.4v-21.31l-3.02-.29s.21-2.45,3.09-2.73c1.42-.14,5.13-.3,6.47-.36.3-.01.59.13.77.38l10.99,15.95h0ZM15.03,14.28c.55.42,1.24.63,1.93.59,5.09-.29,26.82-1.53,32.21-1.84.17-.01.31-.13.35-.29.04-.16-.03-.33-.17-.42-2.39-1.49-4.74-2.95-5.76-3.63-.73-.48-1.6-.71-2.48-.66,0,0-24.7,1.36-29.78,1.91-.64.07-.78.3-.8.39-.09.31.02.54.27.74,1.02.78,3.07,2.33,4.23,3.21h0Z"/></svg>
               </div>
               {/* Slack */}
-              <div className="w-5 h-5 rounded-full bg-black/[0.05] dark:bg-white/5 border border-white/5 flex items-center justify-center backdrop-blur-md overflow-hidden shadow-sm">
+              <div className="w-5 h-5 rounded-full bg-black/[0.05] dark:bg-white/5 border border-black/5 dark:border-white/5 flex items-center justify-center backdrop-blur-md overflow-hidden shadow-sm">
                 <svg className="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><path d="M27.255 80.719c0 7.33-5.978 13.317-13.309 13.317C6.616 94.036.63 88.049.63 80.719s5.987-13.317 13.317-13.317h13.309zm6.709 0c0-7.33 5.987-13.317 13.317-13.317s13.317 5.986 13.317 13.317v33.335c0 7.33-5.986 13.317-13.317 13.317-7.33 0-13.317-5.987-13.317-13.317zm0 0" fill="#de1c59"/><path d="M47.281 27.255c-7.33 0-13.317-5.978-13.317-13.309C33.964 6.616 39.951.63 47.281.63s13.317 5.987 13.317 13.317v13.309zm0 6.709c7.33 0 13.317 5.987 13.317 13.317s-5.986 13.317-13.317 13.317H13.946C6.616 60.598.63 54.612.63 47.281c0-7.33 5.987-13.317 13.317-13.317zm0 0" fill="#35c5f0"/><path d="M100.745 47.281c0-7.33 5.978-13.317 13.309-13.317 7.33 0 13.317 5.987 13.317 13.317s-5.987 13.317-13.317 13.317h-13.309zm-6.709 0c0 7.33-5.987 13.317-13.317 13.317s-13.317-5.986-13.317-13.317V13.946C67.402 6.616 73.388.63 80.719.63c7.33 0 13.317 5.987 13.317 13.317zm0 0" fill="#2eb57d"/><path d="M80.719 100.745c7.33 0 13.317 5.978 13.317 13.309 0 7.33-5.987 13.317-13.317 13.317s-13.317-5.987-13.317-13.317v-13.309zm0-6.709c-7.33 0-13.317-5.987-13.317-13.317s5.986-13.317 13.317-13.317h33.335c7.33 0 13.317 5.986 13.317 13.317 0 7.33-5.987 13.317-13.317 13.317zm0 0" fill="#ebb02e"/></svg>
               </div>
             </div>
@@ -858,7 +858,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                 <button
                   type="button"
                   onClick={() => uploadInputRef.current?.click()}
-                  className="flex h-6 w-6 text-white/40 cursor-pointer items-center justify-center rounded-full transition-all hover:bg-white/10 hover:text-white"
+                  className="flex h-6 w-6 text-black/40 dark:text-white/40 cursor-pointer items-center justify-center rounded-full transition-all hover:bg-black/10 dark:hover:bg-white/10 hover:text-black dark:hover:text-white"
                   disabled={isRecording}
                 >
                   <Plus className="h-3.5 w-3.5" />
@@ -898,10 +898,10 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                 isRecording
                   ? "bg-transparent hover:bg-black/[0.05] dark:bg-white/5 text-red-500 hover:text-red-400"
                   : isLoading
-                    ? "bg-white hover:bg-white/80 text-black"
+                    ? "bg-black dark:bg-white hover:bg-black/80 dark:hover:bg-white/80 text-white dark:text-black"
                     : hasContent
-                      ? "bg-white hover:bg-white/80 text-black"
-                      : "bg-transparent hover:bg-black/[0.05] dark:bg-white/5 text-white/40 hover:text-white/60"
+                      ? "bg-black dark:bg-white hover:bg-black/80 dark:hover:bg-white/80 text-white dark:text-black shadow-lg"
+                      : "bg-transparent hover:bg-black/[0.05] dark:bg-white/5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white"
               )}
               onClick={(e) => {
                 e.stopPropagation();
@@ -936,7 +936,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
             >
               <button 
                 onClick={() => props.onConnectClick?.()}
-                className="flex items-center gap-2.5 text-white/50 hover:text-white/90 transition-all text-[13px] font-medium tracking-tight"
+                className="flex items-center gap-2.5 text-black dark:text-white/50 hover:text-black/80 dark:hover:text-white/90 transition-all text-[13px] font-medium tracking-tight"
               >
                 <div className="w-5 h-5 flex items-center justify-center opacity-70 group-hover:opacity-100 transition-opacity">
                   <Plug className="w-3.5 h-3.5" />

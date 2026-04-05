@@ -2077,17 +2077,17 @@ export function GmailInterfaceFixed() {
                                                 )}
                                                 <div
                                                     onClick={() => handleTraditionalEmailClick(email.id)}
-                                                    className="group flex items-center gap-6 p-5 hover:bg-white/[0.04] active:bg-white/[0.06] transition-all cursor-pointer border-b border-white/[0.02] last:border-0 relative overflow-hidden"
+                                                    className="group flex items-center gap-6 p-5 hover:bg-black/5 active:bg-black/10 dark:hover:bg-white/[0.04] dark:active:bg-white/[0.06] transition-all cursor-pointer border-b border-black/5 dark:border-white/[0.02] last:border-0 relative overflow-hidden"
                                                 >
-                                                    <div className="w-10 h-10 rounded-full bg-neutral-800/50 flex items-center justify-center flex-shrink-0 border border-white/[0.05] text-black group-hover:text-black dark:text-white/80 transition-colors">
+                                                    <div className="w-10 h-10 rounded-full bg-neutral-100 dark:bg-neutral-800/50 flex items-center justify-center flex-shrink-0 border border-neutral-200 dark:border-white/[0.05] text-black dark:text-white/80 transition-colors">
                                                         {email.from?.[0]?.toUpperCase() || 'M'}
                                                     </div>
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex justify-between items-center mb-1">
-                                                            <h4 className="text-sm font-semibold text-black truncate group-hover:text-black dark:text-white transition-colors">
+                                                            <h4 className="text-sm font-semibold text-black dark:text-white truncate transition-colors">
                                                                 {email.from?.split('<')[0]?.trim()}
                                                             </h4>
-                                                            <span className="text-[10px] uppercase tracking-widest text-neutral-600 font-medium">
+                                                            <span className="text-[10px] uppercase tracking-widest text-neutral-500 dark:text-neutral-600 font-medium">
                                                                 {new Date(email.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                                                             </span>
                                                         </div>
@@ -2098,7 +2098,7 @@ export function GmailInterfaceFixed() {
                                                             {email.snippet}
                                                         </p>
                                                     </div>
-                                                    <div className="flex items-center gap-3 pr-2">
+                                                    <div className="flex items-center gap-3 pr-2 border-l border-black/5 dark:border-white/5 pl-4">
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
@@ -2116,14 +2116,14 @@ export function GmailInterfaceFixed() {
                                                                 setIsArcusMinimized(false);
                                                                 setIsEmailArcusOpen(true);
                                                             }}
-                                                            className="w-9 h-9 bg-black/5 dark:bg-white/5 hover:bg-blue-500/20 rounded-xl text-black dark:text-white/30 hover:text-blue-400 transition-all border border-neutral-200 dark:border-white/5 hover:border-blue-500/30 group/ai flex items-center justify-center overflow-hidden"
+                                                            className="w-9 h-9 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-blue-500/20 rounded-xl text-black dark:text-white/30 hover:text-black dark:hover:text-blue-400 transition-all border border-neutral-200 dark:border-white/5 group/ai flex items-center justify-center overflow-hidden"
                                                             title="Ask Arcus AI"
                                                         >
-                                                            <img src="/arcus-ai-icon.jpg" alt="Ask AI" className="w-full h-full object-cover brightness-90 group-hover:brightness-110 transition-all" />
+                                                            <img src="/arcus-ai-icon.jpg" alt="Ask AI" className="w-full h-full object-cover brightness-90 group-hover:brightness-110 transition-all grayscale" />
                                                         </button>
-                                                        <ChevronRight className="w-4 h-4 text-neutral-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                        <ChevronRight className="w-4 h-4 text-neutral-400 group-hover:translate-x-1 transition-transform" />
                                                     </div>
-                                                    <div className="absolute inset-y-0 left-0 w-1 bg-white scale-y-0 group-hover:scale-y-100 transition-transform origin-center" />
+                                                    <div className="absolute inset-y-0 left-0 w-1 bg-black dark:bg-white scale-y-0 group-hover:scale-y-100 transition-transform origin-center" />
                                                 </div>
                                             </React.Fragment>
                                         ))}
@@ -2227,7 +2227,7 @@ export function GmailInterfaceFixed() {
                                 <Button
                                     onClick={refreshInsights}
                                     disabled={loading}
-                                    className="h-11 px-8 bg-black dark:bg-[#fafafa] hover:bg-black/90 dark:hover:bg-neutral-200 text-white dark:text-[#0a0a0a] rounded-lg transition-colors font-medium shadow-md"
+                                    className="h-11 px-8 bg-black dark:bg-[#fafafa] hover:bg-black/90 dark:hover:bg-neutral-200 text-white dark:text-[#0a0a0a] rounded-xl transition-all font-medium shadow-lg hover:scale-105 active:scale-95"
                                 >
                                     {loading ? (
                                         <>

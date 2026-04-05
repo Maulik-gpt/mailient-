@@ -2328,12 +2328,12 @@ export default function ChatInterface({
                     <div className="flex items-center gap-3">
                       {/* Subscription Badge */}
                       {currentPlan !== 'pro' && (
-                        <div className="flex items-center gap-1.5 px-3 py-1 bg-[#111111] border border-neutral-200 rounded-full shadow-sm hover:border-neutral-200 dark:border-white/10 transition-all">
-                          <span className="text-[10px] text-black dark:text-white/40 font-medium tracking-wide whitespace-nowrap">Free plan</span>
-                          <span className="text-[10px] text-black dark:text-white/10">•</span>
+                        <div className="flex items-center gap-1.5 px-3 py-1 bg-white dark:bg-[#111111] border border-neutral-200 dark:border-white/10 rounded-full shadow-sm transition-all group-hover:border-neutral-300 dark:group-hover:border-white/20">
+                          <span className="text-[10px] text-black/60 dark:text-white/40 font-medium tracking-wide whitespace-nowrap group-hover:text-black dark:group-hover:text-white/60 transition-colors">Free plan</span>
+                          <span className="text-[10px] text-black/10 dark:text-white/10">•</span>
                           <button 
                             onClick={() => router.push('/pricing')}
-                            className="text-[10px] text-black hover:text-black dark:text-white/80 transition-colors font-bold uppercase tracking-tight whitespace-nowrap"
+                            className="text-[10px] text-black dark:text-white/80 transition-colors font-bold uppercase tracking-tight whitespace-nowrap hover:text-blue-600 dark:hover:text-white"
                           >
                             Upgrade
                           </button>
@@ -2348,10 +2348,10 @@ export default function ChatInterface({
                               e.stopPropagation();
                               startNewChat();
                             }}
-                            className="p-2 hover:bg-black/5 dark:bg-white/5 rounded-lg transition-all text-black hover:text-black dark:text-white/60 focus:outline-none"
+                            className="p-2 hover:bg-black/5 dark:bg-white/5 rounded-lg transition-all text-black dark:text-white/60 focus:outline-none focus:ring-0"
                           >
-                            <HugeiconsIcon icon={AddSquareIcon} size={16} strokeWidth={1.8} />
-                          </button>
+                             <HugeiconsIcon icon={AddSquareIcon} size={20} />
+                           </button>
                         </TooltipTrigger>
                         <TooltipContent side="bottom">
                           <span className="text-[10px]">New Chat</span>
@@ -2361,11 +2361,14 @@ export default function ChatInterface({
                       <Tooltip delayDuration={100}>
                         <TooltipTrigger asChild>
                           <button
-                            onClick={() => setShowHistory(!showHistory)}
-                            className={`p-2 rounded-lg transition-all hover:bg-black/5 dark:bg-white/5 ${showHistory ? 'text-black dark:text-white bg-black/10 dark:bg-white/10' : 'text-black dark:text-white/20 hover:text-black dark:hover:text-white/60'}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowHistory(!showHistory);
+                            }}
+                            className={`p-2 rounded-lg transition-all focus:outline-none focus:ring-0 ${showHistory ? 'bg-black/10 dark:bg-white/10 text-black dark:text-white' : 'hover:bg-black/5 dark:bg-white/5 text-black dark:text-white/60'}`}
                           >
-                            <History className="w-4 h-4" />
-                          </button>
+                             <HugeiconsIcon icon={WorkHistoryIcon} size={20} />
+                           </button>
                         </TooltipTrigger>
                         <TooltipContent side="bottom">
                           <span className="text-[10px]">History</span>
@@ -2422,56 +2425,25 @@ export default function ChatInterface({
 
                         {/* Pill-style Action Buttons - Now shifted BELOW */}
                         <div className="flex flex-wrap justify-center gap-2.5 mt-10 max-w-2xl mx-auto">
-                          <button
-                            onClick={() => setSuggestionInput({
-                              text: "Please provide me with a comprehensive summary of my recent email correspondence from the last 24 hours. I am particularly interested in any urgent matters, action items directed at me, or important status updates that require my immediate attention.",
-                              id: Date.now()
-                            })}
-                            className="flex items-center gap-2 px-4 py-2 bg-white/[0.03] border border-neutral-200 rounded-full text-black hover:text-black dark:text-white hover:bg-black/10 dark:bg-white/10 hover:border-neutral-200 dark:border-white/10 transition-all text-[13px] font-medium"
-                          >
-                            <Sparkles className="w-3.5 h-3.5" />
-                            Catch up
-                          </button>
-                          <button
-                            onClick={() => setSuggestionInput({
-                              text: "Could you please analyze my current unread emails and synthesize the core information from each thread? I would like a breakdown that highlights the main subject of each conversation and identifies any deadlines or specific requests made by the senders.",
-                              id: Date.now()
-                            })}
-                            className="flex items-center gap-2 px-4 py-2 bg-white/[0.03] border border-neutral-200 rounded-full text-black hover:text-black dark:text-white hover:bg-black/10 dark:bg-white/10 hover:border-neutral-200 dark:border-white/10 transition-all text-[13px] font-medium"
-                          >
-                            <FileText className="w-3.5 h-3.5" />
-                            Summarize
-                          </button>
-                          <button
-                            onClick={() => setSuggestionInput({
-                              text: "I would like some assistance in drafting a professional response to my most recent email. Please ensure the reply is articulate, maintains a collaborative tone, and clearly addresses all the questions or points raised by the sender in their message.",
-                              id: Date.now()
-                            })}
-                            className="flex items-center gap-2 px-4 py-2 bg-white/[0.03] border border-neutral-200 rounded-full text-black hover:text-black dark:text-white hover:bg-black/10 dark:bg-white/10 hover:border-neutral-200 dark:border-white/10 transition-all text-[13px] font-medium"
-                          >
-                            <PenTool className="w-3.5 h-3.5" />
-                            Draft reply
-                          </button>
-                          <button
-                            onClick={() => setSuggestionInput({
-                              text: "I need to facilitate a meeting for tomorrow based on my recent email threads. Could you please review any pending scheduling requests and compare them with my calendar to suggest the most optimal windows for a 30-minute discussion?",
-                              id: Date.now()
-                            })}
-                            className="flex items-center gap-2 px-4 py-2 bg-white/[0.03] border border-neutral-200 rounded-full text-black hover:text-black dark:text-white hover:bg-black/10 dark:bg-white/10 hover:border-neutral-200 dark:border-white/10 transition-all text-[13px] font-medium"
-                          >
-                            <Calendar className="w-3.5 h-3.5" />
-                            Schedule
-                          </button>
-                          <button
-                            onClick={() => setSuggestionInput({
-                              text: "Please perform an audit of my email engagement and activity over the past seven days. I am looking for a detailed overview of my top communication partners, peak activity times, and any trends in my response frequency or inbox growth.",
-                              id: Date.now()
-                            })}
-                            className="flex items-center gap-2 px-4 py-2 bg-white/[0.03] border border-neutral-200 rounded-full text-black hover:text-black dark:text-white hover:bg-black/10 dark:bg-white/10 hover:border-neutral-200 dark:border-white/10 transition-all text-[13px] font-medium"
-                          >
-                            <BarChart3 className="w-3.5 h-3.5" />
-                            Analytics
-                          </button>
+                          {[
+                            { label: 'Catch up', icon: Sparkles, text: "Please provide me with a comprehensive summary of my recent email correspondence from the last 24 hours. I am particularly interested in any urgent matters, action items directed at me, or important status updates that require my immediate attention." },
+                            { label: 'Summarize', icon: FileText, text: "Could you please analyze my current unread emails and synthesize the core information from each thread? I would like a breakdown that highlights the main subject of each conversation and identifies any deadlines or specific requests made by the senders." },
+                            { label: 'Draft reply', icon: PenTool, text: "I would like some assistance in drafting a professional response to my most recent email. Please ensure the reply is articulate, maintains a collaborative tone, and clearly addresses all the questions or points raised by the sender in their message." },
+                            { label: 'Schedule', icon: Calendar, text: "I need to facilitate a meeting for tomorrow based on my recent email threads. Could you please review any pending scheduling requests and compare them with my calendar to suggest the most optimal windows for a 30-minute discussion?" },
+                            { label: 'Analytics', icon: BarChart3, text: "Please perform an audit of my email engagement and activity over the past seven days. I am looking for a detailed overview of my top communication partners, peak activity times, and any trends in my response frequency or inbox growth." }
+                          ].map((btn) => (
+                            <button
+                              key={btn.label}
+                              onClick={() => setSuggestionInput({
+                                text: btn.text,
+                                id: Date.now()
+                              })}
+                              className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-full text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-white/10 transition-all text-[13px] font-medium shadow-sm"
+                            >
+                              <btn.icon className="w-3.5 h-3.5" />
+                              {btn.label}
+                            </button>
+                          ))}
                         </div>
                       </div>
                     ) : (
