@@ -107,7 +107,7 @@ export function RewardsSection({
                         </div>
                         <Button
                             onClick={handleCopyLink}
-                            className="px-6 py-6 rounded-xl bg-white text-black hover:bg-neutral-200 transition-all font-semibold shrink-0 gap-2"
+                            className="px-6 py-6 rounded-xl bg-[#000] dark:bg-white text-white dark:text-[#000] hover:bg-[#000]/90 dark:hover:bg-neutral-200 transition-all font-semibold shrink-0 gap-2 border-none"
                         >
                             {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                             {copied ? "Copied" : "Copy link"}
