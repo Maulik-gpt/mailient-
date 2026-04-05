@@ -156,16 +156,17 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
   };
 
   return (
-    <div className="h-full flex flex-col bg-neutral-50 dark:bg-[#111111] text-black dark:text-white overflow-hidden font-sans selection:bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10" onClick={e => e.stopPropagation()}>
+    <div className="h-full flex flex-col bg-neutral-50 dark:bg-black text-black dark:text-white overflow-hidden font-sans selection:bg-black/10 dark:selection:bg-white/10" onClick={e => e.stopPropagation()}>
       
       {/* Search Header Transition */}
       <AnimatePresence mode="wait">
         {isSearchVisible ? (
           <motion.div 
+            key="search-view"
             initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
             className="p-4 flex items-center gap-3 border-b border-white/[0.05]"
           >
-            <button onClick={() => { setIsSearchVisible(false); setSearchQuery(""); }} className="text-black/40 dark:text-white/40 hover:text-black dark:text-white transition-colors">
+            <button onClick={() => { setIsSearchVisible(false); setSearchQuery(""); }} className="text-neutral-400 dark:text-neutral-500 hover:text-black dark:hover:text-white transition-colors">
               <ArrowLeft className="w-4 h-4" />
             </button>
             <input 
@@ -174,17 +175,20 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
               placeholder="Search missions..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="flex-1 bg-transparent border-none outline-none text-[14px] placeholder:text-black/20 dark:text-white/20"
+              className="flex-1 bg-transparent border-none outline-none text-[14px] text-black dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500"
             />
           </motion.div>
         ) : (
-          <div className="p-4 space-y-1">
+          <motion.div 
+            key="default-view"
+            className="p-4 space-y-1"
+          >
              <button 
                onClick={onNewMission}
                className="w-full flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.08] transition-all group"
              >
                <div className="w-5 h-5 flex items-center justify-center">
-                 <Edit3 className="w-4 h-4 text-black/60 dark:text-white/60 group-hover:text-black dark:text-white" />
+                 <Edit3 className="w-4 h-4 text-neutral-500 dark:text-neutral-400 group-hover:text-black dark:group-hover:text-white" />
                </div>
                <span className="text-[14px] font-medium text-black/90 dark:text-white/90">New mission</span>
              </button>
@@ -195,18 +199,18 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
                   className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/[0.03] transition-all group"
                 >
                   <div className="w-5 h-5 flex items-center justify-center">
-                    <Search className="w-4 h-4 text-black/40 dark:text-white/40 group-hover:text-black/60 dark:text-white/60" />
+                    <Search className="w-4 h-4 text-neutral-400 dark:text-neutral-500 group-hover:text-neutral-600 dark:group-hover:text-neutral-300" />
                   </div>
-                  <span className="text-[14px] font-medium text-black/60 dark:text-white/60 group-hover:text-black/80 dark:text-white/80">Search</span>
+                  <span className="text-[14px] font-medium text-neutral-500 dark:text-neutral-400 group-hover:text-black dark:group-hover:text-white">Search</span>
                 </button>
                 <button className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/[0.03] transition-all group">
                   <div className="w-5 h-5 flex items-center justify-center">
-                    <History className="w-4 h-4 text-black/40 dark:text-white/40 group-hover:text-black/60 dark:text-white/60" />
+                    <History className="w-4 h-4 text-neutral-400 dark:text-neutral-500 group-hover:text-neutral-600 dark:group-hover:text-neutral-300" />
                   </div>
-                  <span className="text-[14px] font-medium text-black/60 dark:text-white/60 group-hover:text-black/80 dark:text-white/80">Yesterday</span>
+                  <span className="text-[14px] font-medium text-neutral-500 dark:text-neutral-400 group-hover:text-black dark:group-hover:text-white">Yesterday</span>
                 </button>
              </div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
@@ -214,7 +218,7 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
         {/* All Missions Section */}
         <div className="mt-6 mb-2 flex items-center justify-between px-2.5">
           <span className="text-[12px] font-semibold text-black/30 dark:text-white/30 tracking-tight">All missions</span>
-          <button className="text-black/20 dark:text-white/20 hover:text-black/40 dark:text-white/40 transition-colors">
+          <button className="text-neutral-400 dark:text-neutral-500 hover:text-black dark:hover:text-white transition-colors">
             <ListFilter className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -226,7 +230,7 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
             </div>
           ) : filteredHistory.length === 0 ? (
             <div className="py-10 text-center px-4">
-              <p className="text-[13px] text-black/20 dark:text-white/20 italic">No missions found</p>
+              <p className="text-[13px] text-neutral-400 dark:text-neutral-500 italic">No missions found</p>
             </div>
           ) : (
             filteredHistory.map((item) => (
@@ -253,7 +257,7 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
                       onClick={e => e.stopPropagation()}
                     />
                   ) : (
-                    <span className="flex-1 text-[14px] font-medium text-black/80 dark:text-white/80 group-hover:text-black dark:text-white transition-colors truncate">
+                    <span className="flex-1 text-[14px] font-medium text-neutral-700 dark:text-neutral-300 group-hover:text-black dark:group-hover:text-white transition-colors truncate">
                       {item.user_message}
                     </span>
                   )}
@@ -262,13 +266,13 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
                     <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
                       <button 
                         onClick={(e) => { e.stopPropagation(); setEditingId(item.conversation_id || item.id); setLocalEditValue(item.user_message); }}
-                        className="p-1 hover:text-black dark:text-white text-black/20 dark:text-white/20"
+                        className="p-1 hover:text-black dark:hover:text-white text-neutral-300 dark:text-neutral-600"
                       >
                         <Edit3 className="w-3.5 h-3.5" />
                       </button>
                       <button 
                         onClick={(e) => { e.stopPropagation(); handleDelete(item.conversation_id || item.id); }}
-                        className="p-1 hover:text-red-400 text-black/20 dark:text-white/20"
+                        className="p-1 hover:text-red-400 text-neutral-300 dark:text-neutral-600"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -286,15 +290,21 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
         <AnimatePresence mode="wait">
           {!isFeedbackOpen ? (
             <motion.button
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              key="feedback-prompt"
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
               onClick={() => setIsFeedbackOpen(true)}
-              className="w-full py-3 px-4 rounded-xl border border-dashed border-neutral-200 dark:border-white/10 hover:border-neutral-300 dark:border-white/20 hover:bg-white/[0.02] transition-all text-left group"
+              className="w-full py-3 px-4 rounded-xl border border-dashed border-neutral-200 dark:border-white/10 hover:border-neutral-300 transition-all text-left group"
             >
-              <span className="text-[12px] font-medium text-neutral-400 dark:text-white/30 group-hover:text-black dark:group-hover:text-white/60">Have Feedback? <span className="text-black/60 dark:text-white/60">Write here!</span></span>
+              <span className="text-[12px] font-medium text-neutral-400 dark:text-neutral-500 group-hover:text-neutral-600 dark:group-hover:text-neutral-300">Have Feedback? <span className="text-black/60 dark:text-white/60">Write here!</span></span>
             </motion.button>
           ) : (
             <motion.div
-              initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              key="feedback-form"
+              initial={{ opacity: 0, y: 10, scale: 0.95 }} 
+              animate={{ opacity: 1, y: 0, scale: 1 }} 
+              exit={{ opacity: 0, y: 10, scale: 0.95 }}
               className="w-full bg-neutral-100 dark:bg-[#161616] border border-neutral-200 dark:border-white/10 rounded-2xl p-4 shadow-2xl relative overflow-hidden"
             >
                <textarea
@@ -306,13 +316,13 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSendFeedback();
                    if (e.key === 'Escape') setIsFeedbackOpen(false);
                  }}
-                 className="w-full bg-white/[0.03] border border-neutral-200 dark:border-white/5 rounded-xl p-3 text-[13px] text-black/90 dark:text-white/90 placeholder:text-black/20 dark:text-white/20 resize-none min-h-[100px] outline-none focus:border-neutral-200 dark:border-white/10 transition-all mb-4"
+                 className="w-full bg-white/[0.03] dark:bg-black/20 border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-[13px] text-black dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 resize-none min-h-[100px] outline-none focus:border-neutral-300 dark:focus:border-white/20 transition-all mb-4"
                />
                
                <div className="flex items-center justify-between">
                   <button 
                     onClick={() => window.open('mailto:mailient.xyz@gmail.com')}
-                    className="text-[12px] text-black/40 dark:text-white/40 hover:text-black/80 dark:text-white/80 transition-colors"
+                    className="text-[12px] text-neutral-500 dark:text-neutral-400 hover:text-black dark:hover:text-white transition-colors"
                   >
                     Need help? <span className="underline decoration-white/20">Contact us</span>
                   </button>
@@ -346,15 +356,27 @@ function getMissionIconMinimal(title: string) {
   const text = title.toLowerCase();
   
   // Specific Icons from User Image
-  if (text.includes('browser') || text.includes('search') || text.includes('web') || text.includes('internet')) return <History className="w-4 h-4 text-black/40 dark:text-white/40 group-hover:text-black/60 dark:text-white/60 transition-colors" opacity={0.6} />;
+  if (text.includes('browser') || text.includes('search') || text.includes('web') || text.includes('internet')) {
+    return <History className="w-4 h-4 text-neutral-400 dark:text-neutral-500 group-hover:text-black dark:group-hover:text-white transition-colors" />;
+  }
   
-  if (text.includes('gather') || text.includes('list') || text.includes('checklist')) return <FileText className="w-4 h-4 text-black/40 dark:text-white/40 group-hover:text-black/60 dark:text-white/60 transition-colors" />;
+  if (text.includes('gather') || text.includes('list') || text.includes('checklist')) {
+    return <FileText className="w-4 h-4 text-neutral-400 dark:text-neutral-500 group-hover:text-black dark:group-hover:text-white transition-colors" />;
+  }
 
   // General Mission Mapping
-  if (text.includes('summary') || text.includes('catch up')) return <FileText className="w-4 h-4 text-black/40 dark:text-white/40 group-hover:text-black/60 dark:text-white/60 transition-colors" />;
-  if (text.includes('analytics') || text.includes('chart')) return <BarChart3 className="w-4 h-4 text-black/40 dark:text-white/40 group-hover:text-black/60 dark:text-white/60 transition-colors" />;
-  if (text.includes('schedule') || text.includes('calendar')) return <Calendar className="w-4 h-4 text-black/40 dark:text-white/40 group-hover:text-black/60 dark:text-white/60 transition-colors" />;
-  if (text.includes('write') || text.includes('reply') || text.includes('draft')) return <PenTool className="w-4 h-4 text-black/40 dark:text-white/40 group-hover:text-black/60 dark:text-white/60 transition-colors" />;
+  if (text.includes('summary') || text.includes('catch up')) {
+    return <FileText className="w-4 h-4 text-neutral-400 dark:text-neutral-500 group-hover:text-black dark:group-hover:text-white transition-colors" />;
+  }
+  if (text.includes('analytics') || text.includes('chart')) {
+    return <BarChart3 className="w-4 h-4 text-neutral-400 dark:text-neutral-500 group-hover:text-black dark:group-hover:text-white transition-colors" />;
+  }
+  if (text.includes('schedule') || text.includes('calendar')) {
+    return <Calendar className="w-4 h-4 text-neutral-400 dark:text-neutral-500 group-hover:text-black dark:group-hover:text-white transition-colors" />;
+  }
+  if (text.includes('write') || text.includes('reply') || text.includes('draft')) {
+    return <PenTool className="w-4 h-4 text-neutral-400 dark:text-neutral-500 group-hover:text-black dark:group-hover:text-white transition-colors" />;
+  }
   
-  return <Sparkles className="w-4 h-4 text-black/30 dark:text-white/30 group-hover:text-black/5 dark:text-black/50 dark:text-white/50 transition-colors" />;
+  return <Sparkles className="w-4 h-4 text-neutral-300 dark:text-neutral-600 group-hover:text-neutral-500 dark:group-hover:text-neutral-400 transition-colors" />;
 }
