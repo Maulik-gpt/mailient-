@@ -115,8 +115,8 @@ export function FloatingNavbar() {
                             isActive 
                               ? "bg-black dark:bg-white text-white dark:text-black shadow-lg" 
                               : isHovered 
-                                ? "bg-white/30 dark:bg-white/10 text-neutral-900 dark:text-neutral-100" 
-                                : "text-neutral-500 dark:text-neutral-400"
+                                ? "bg-white/30 dark:bg-white/10 text-black dark:text-neutral-100" 
+                                : "text-black/60 dark:text-neutral-400"
                           )}
                         >
                           <div 
