@@ -341,7 +341,7 @@ function RollingThinkingStatus({ onToggle, isOpen, isDeepThinking }: { onToggle:
         </div>
       </div>
 
-      <div className={`p-1 rounded-md transition-all duration-300 ${isOpen ? 'bg-black/10 dark:bg-white/10 text-black dark:text-white' : 'text-black dark:text-white/20 group-hover/status:text-black dark:text-white/50'}`}>
+      <div className={`p-1 rounded-md transition-all duration-300 ${isOpen ? 'bg-black/10 dark:bg-white/10 text-black dark:text-white' : 'text-black dark:text-white/20 group-hover/status:text-black dark:group-hover/status:text-white/50'}`}>
         <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-500 cubic-bezier(0.4, 0, 0.2, 1) ${isOpen ? 'rotate-180' : ''}`} />
       </div>
     </div>

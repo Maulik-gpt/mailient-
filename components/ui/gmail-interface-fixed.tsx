@@ -1591,7 +1591,7 @@ export function GmailInterfaceFixed() {
                             {countdown !== null && (
                                 <div className="flex items-center gap-2 px-3 py-1 bg-neutral-200/50 dark:bg-neutral-900/50 rounded-full border border-neutral-200 dark:border-neutral-800/50">
                                     <div className={`w-1.5 h-1.5 rounded-full ${countdown < 0 ? 'bg-red-500 animate-pulse' : 'bg-blue-500 animate-pulse'}`} />
-                                    <span className={`text-xs font-mono tabular-nums ${countdown < 0 ? 'text-red-500' : 'text-neutral-500 dark:text-neutral-600 dark:text-neutral-400'}`}>
+                                    <span className={`text-xs font-mono tabular-nums ${countdown < 0 ? 'text-red-500' : 'text-neutral-500 dark:text-neutral-400'}`}>
                                         {countdown}s
                                     </span>
                                 </div>

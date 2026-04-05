@@ -237,11 +237,11 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
             <button
                 onClick={() => id && setActiveSection(id)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 ${isActive
-                        ? 'bg-black/[0.05] dark:bg-black dark:bg-white/[0.1] text-black dark:text-black dark:text-white font-serif tracking-tight shadow-sm'
-                        : 'text-neutral-500 dark:text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:text-neutral-200 hover:bg-neutral-50 dark:bg-black dark:bg-white/5'
+                        ? 'bg-black/[0.05] dark:bg-white/[0.1] text-black dark:text-white font-serif tracking-tight shadow-sm'
+                        : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:text-neutral-200 hover:bg-neutral-50 dark:bg-white/5'
                     }`}
             >
-                {Icon && <Icon className={`w-4 h-4 transition-colors ${isActive ? 'text-black dark:text-white' : 'text-neutral-500 dark:text-neutral-600 dark:text-neutral-400 group-hover:text-black dark:group-hover:text-white'}`} strokeWidth={isActive ? 2 : 1.5} />}
+                {Icon && <Icon className={`w-4 h-4 transition-colors ${isActive ? 'text-black dark:text-white' : 'text-neutral-500 dark:text-neutral-400 group-hover:text-black dark:group-hover:text-white'}`} strokeWidth={isActive ? 2 : 1.5} />}
                 <span className="text-[14px] leading-tight">{label}</span>
             </button>
         );
@@ -259,7 +259,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
             onClick={onClose}
         >
             <div
-                className="w-full max-w-[1020px] h-[600px] bg-black dark:bg-white dark:bg-white dark:bg-[#1a1a1a] rounded-[16px] overflow-hidden flex shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] border border-neutral-200 dark:border-white/5"
+                className="w-full max-w-[1020px] h-[600px] bg-black dark:bg-white dark:bg-[#1a1a1a] rounded-[16px] overflow-hidden flex shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] border border-neutral-200 dark:border-white/5"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Sidebar */}
@@ -269,7 +269,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                         <MenuButton id="general" icon={Settings2} label="General" />
                         <MenuButton id="system" icon={Monitor} label="System" />
 
-                        <div className="my-2 h-px bg-neutral-200 dark:bg-black dark:bg-white/5" />
+                        <div className="my-2 h-px bg-neutral-200 dark:bg-white/5" />
 
                         <MenuButton label="Account" category />
                         <MenuButton id="account" icon={User} label="Account" />
@@ -278,7 +278,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                         <MenuButton id="usage" icon={Zap} label="Usage" />
                         <MenuButton id="privacy" icon={Shield} label="Data and Privacy" />
 
-                        <div className="my-2 h-px bg-neutral-200 dark:bg-black dark:bg-white/5" />
+                        <div className="my-2 h-px bg-neutral-200 dark:bg-white/5" />
                         
                         <button
                             onClick={() => router.push('/help')}
@@ -292,7 +292,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                     {/* Footer Info */}
                     <div className="px-4 py-4 flex items-center justify-between mt-auto">
                         <span className="text-[11px] text-neutral-500 dark:text-neutral-500 font-medium">Mailient v1.0.1</span>
-                        <div className="w-4 h-4 rounded-full bg-neutral-200 dark:bg-black dark:bg-white/5 flex items-center justify-center">
+                        <div className="w-4 h-4 rounded-full bg-neutral-200 dark:bg-white/5 flex items-center justify-center">
                             <Cloud className="w-2.5 h-2.5 text-neutral-500 dark:text-neutral-500" />
                         </div>
                     </div>
@@ -313,7 +313,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
 
                         <button
                             onClick={onClose}
-                            className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-50 dark:bg-black dark:bg-white/5 transition-colors group absolute top-6 right-6"
+                            className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-50 dark:bg-white/5 transition-colors group absolute top-6 right-6"
                         >
                             <X className="w-5 h-5 text-neutral-600 group-hover:text-black dark:group-hover:text-white" />
                         </button>
@@ -329,7 +329,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                     exit={{ opacity: 0, y: -10 }}
                                     className="space-y-6"
                                 >
-                                    <div className="bg-neutral-50 dark:bg-black dark:bg-white/5 rounded-3xl p-8 border border-neutral-200 dark:border-white/5 space-y-8">
+                                    <div className="bg-neutral-50 dark:bg-white/5 rounded-3xl p-8 border border-neutral-200 dark:border-white/5 space-y-8">
                                         <div className="flex items-center justify-between group">
                                             <div className="space-y-1">
                                                 <div className="flex items-center gap-2">
@@ -342,7 +342,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                             </div>
                                             <ThemeToggle />
                                         </div>
-                                        <div className="h-px bg-neutral-50 dark:bg-black dark:bg-white/5" />
+                                        <div className="h-px bg-neutral-50 dark:bg-white/5" />
                                         <div className="flex items-center justify-between group">
                                             <div className="space-y-1">
                                                 <div className="flex items-center gap-2">
@@ -355,7 +355,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                             </div>
                                             <ToggleSwitch checked={settings.smartNudges} onChange={(v) => updateSetting('smartNudges', v)} />
                                         </div>
-                                        <div className="h-px bg-neutral-50 dark:bg-black dark:bg-white/5" />
+                                        <div className="h-px bg-neutral-50 dark:bg-white/5" />
                                         <div className="flex items-center justify-between group">
                                             <div className="space-y-1">
                                                 <div className="flex items-center gap-2">
@@ -415,7 +415,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                 </p>
                                             </div>
                                         )}
-                                        <div className="h-px bg-neutral-50 dark:bg-black dark:bg-white/5" />
+                                        <div className="h-px bg-neutral-50 dark:bg-white/5" />
                                         <div className="flex items-center justify-between">
                                             <div className="space-y-1">
                                                 <div className="flex items-center gap-2">
@@ -440,7 +440,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                 >
                                     <div className="space-y-4">
                                         <h2 className="text-[13px] font-bold tracking-wider text-neutral-500 dark:text-neutral-400 uppercase px-1">Display & Notifications</h2>
-                                        <div className="bg-neutral-50 dark:bg-black dark:bg-white/5 rounded-3xl p-8 border border-neutral-200 dark:border-white/5 space-y-8">
+                                        <div className="bg-neutral-50 dark:bg-white/5 rounded-3xl p-8 border border-neutral-200 dark:border-white/5 space-y-8">
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-3">
                                                     <Bell className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
@@ -448,7 +448,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                 </div>
                                                 <ToggleSwitch checked={settings.notifications} onChange={(v) => updateSetting('notifications', v)} />
                                             </div>
-                                            <div className="h-px bg-neutral-50 dark:bg-black dark:bg-white/5" />
+                                            <div className="h-px bg-neutral-50 dark:bg-white/5" />
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-3">
                                                     <Volume2 className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
@@ -456,7 +456,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                 </div>
                                                 <ToggleSwitch checked={settings.soundEffects} onChange={(v) => updateSetting('soundEffects', v)} />
                                             </div>
-                                            <div className="h-px bg-neutral-50 dark:bg-black dark:bg-white/5" />
+                                            <div className="h-px bg-neutral-50 dark:bg-white/5" />
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-3">
                                                     <Monitor className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
@@ -469,11 +469,11 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
 
                                     <div className="space-y-4">
                                         <h2 className="text-[13px] font-bold tracking-wider text-neutral-500 dark:text-neutral-400 uppercase px-1">App Maintenance</h2>
-                                        <div className="bg-neutral-50 dark:bg-black dark:bg-white/5 rounded-[24px] p-6 border border-neutral-200 dark:border-white/5 flex items-center justify-center gap-4">
+                                        <div className="bg-neutral-50 dark:bg-white/5 rounded-[24px] p-6 border border-neutral-200 dark:border-white/5 flex items-center justify-center gap-4">
                                             <Button
                                                 variant="outline"
                                                 onClick={resetCache}
-                                                className="border-neutral-200 dark:border-white/10 hover:bg-neutral-50 dark:bg-black dark:bg-white/5 text-neutral-600 hover:text-black dark:text-white px-8 h-12 rounded-2xl flex items-center gap-2"
+                                                className="border-neutral-200 dark:border-white/10 hover:bg-neutral-50 dark:bg-white/5 text-neutral-600 hover:text-black dark:text-white px-8 h-12 rounded-2xl flex items-center gap-2"
                                             >
                                                 <RefreshCw className="w-4 h-4" />
                                                 Reset Local Cache
@@ -481,7 +481,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                             <Button
                                                 variant="outline"
                                                 onClick={relaunchApp}
-                                                className="border-neutral-200 dark:border-white/10 hover:bg-neutral-50 dark:bg-black dark:bg-white/5 text-neutral-600 hover:text-black dark:text-white px-8 h-12 rounded-2xl flex items-center gap-2"
+                                                className="border-neutral-200 dark:border-white/10 hover:bg-neutral-50 dark:bg-white/5 text-neutral-600 hover:text-black dark:text-white px-8 h-12 rounded-2xl flex items-center gap-2"
                                             >
                                                 <Power className="w-4 h-4" />
                                                 Relaunch App
@@ -498,7 +498,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                     animate={{ opacity: 1, scale: 1 }}
                                     className="space-y-10 focus:outline-none"
                                 >
-                                    <div className="bg-neutral-50 dark:bg-black dark:bg-white/5 rounded-[16px] p-1 border border-neutral-200 dark:border-white/5 overflow-hidden">
+                                    <div className="bg-neutral-50 dark:bg-white/5 rounded-[16px] p-1 border border-neutral-200 dark:border-white/5 overflow-hidden">
                                     <div className="p-8 space-y-10">
                                             <div className="flex items-center justify-between">
                                                 <span className="text-[15px] font-medium text-neutral-500 dark:text-neutral-400">First name</span>
@@ -506,25 +506,25 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                     type="text"
                                                     value={accountInfo.firstName}
                                                     onChange={(e) => setAccountInfo(p => ({ ...p, firstName: e.target.value }))}
-                                                    className="bg-neutral-50 dark:bg-black dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-2 text-[15px] text-black dark:text-white w-64 focus:ring-2 focus:ring-white transition-all outline-none"
+                                                    className="bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-2 text-[15px] text-black dark:text-white w-64 focus:ring-2 focus:ring-white transition-all outline-none"
                                                 />
                                             </div>
-                                            <div className="h-px bg-neutral-50 dark:bg-black dark:bg-white/5" />
+                                            <div className="h-px bg-neutral-50 dark:bg-white/5" />
                                             <div className="flex items-center justify-between">
                                                 <span className="text-[15px] font-medium text-neutral-500 dark:text-neutral-400">Last name</span>
                                                 <input
                                                     type="text"
                                                     value={accountInfo.lastName}
                                                     onChange={(e) => setAccountInfo(p => ({ ...p, lastName: e.target.value }))}
-                                                    className="bg-neutral-50 dark:bg-black dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-2 text-[15px] text-black dark:text-white w-64 focus:ring-2 focus:ring-white transition-all outline-none"
+                                                    className="bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-2 text-[15px] text-black dark:text-white w-64 focus:ring-2 focus:ring-white transition-all outline-none"
                                                 />
                                             </div>
-                                            <div className="h-px bg-neutral-50 dark:bg-black dark:bg-white/5" />
+                                            <div className="h-px bg-neutral-50 dark:bg-white/5" />
                                             <div className="flex items-center justify-between">
                                                 <span className="text-[15px] font-medium text-neutral-500 dark:text-neutral-400">Email</span>
                                                 <span className="text-[15px] text-neutral-900 dark:text-neutral-300 font-medium">{accountInfo.email}</span>
                                             </div>
-                                            <div className="h-px bg-neutral-50 dark:bg-black dark:bg-white/5" />
+                                            <div className="h-px bg-neutral-50 dark:bg-white/5" />
                                             <div className="flex items-center justify-between">
                                                 <span className="text-[15px] font-medium text-neutral-500 dark:text-neutral-400">Username</span>
                                                 <div className="relative">
@@ -533,12 +533,12 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                         type="text"
                                                         value={accountInfo.username}
                                                         onChange={(e) => setAccountInfo(p => ({ ...p, username: e.target.value.replace(/[^a-zA-Z0-9_]/g, '') }))}
-                                                        className="bg-neutral-50 dark:bg-black dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl pl-8 pr-4 py-2 text-[15px] text-black dark:text-white w-64 focus:ring-2 focus:ring-white transition-all outline-none"
+                                                        className="bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl pl-8 pr-4 py-2 text-[15px] text-black dark:text-white w-64 focus:ring-2 focus:ring-white transition-all outline-none"
                                                         placeholder="username"
                                                     />
                                                 </div>
                                             </div>
-                                            <div className="h-px bg-neutral-50 dark:bg-black dark:bg-white/5" />
+                                            <div className="h-px bg-neutral-50 dark:bg-white/5" />
                                              <div className="flex items-center justify-between">
                                                 <span className="text-[15px] font-medium text-neutral-500 dark:text-neutral-400">Profile picture</span>
                                                 <div 
@@ -571,7 +571,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                             <Button
                                                 variant="ghost"
                                                 onClick={() => signOut()}
-                                                className="bg-black/5 hover:bg-black/10 dark:bg-black dark:bg-white/10 text-neutral-900 dark:text-neutral-300 px-6 h-12 rounded-2xl flex items-center gap-2 font-medium"
+                                                className="bg-black/5 hover:bg-black/10 dark:bg-white/10 text-neutral-900 dark:text-neutral-300 px-6 h-12 rounded-2xl flex items-center gap-2 font-medium"
                                             >
                                                 <LogOut className="w-4 h-4" />
                                                 Sign out
@@ -588,7 +588,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                         <Button 
                                             onClick={handleSaveAccount}
                                             disabled={isSaving}
-                                            className="bg-neutral-800 dark:bg-black dark:bg-white text-black dark:text-black px-10 h-12 rounded-2xl font-bold hover:opacity-90 transition-opacity disabled:opacity-50"
+                                            className="bg-neutral-800 dark:bg-white text-black dark:text-black px-10 h-12 rounded-2xl font-bold hover:opacity-90 transition-opacity disabled:opacity-50"
                                         >
                                             {isSaving ? 'Saving...' : 'Save'}
                                         </Button>
@@ -608,7 +608,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                             <RefreshCw className="w-8 h-8 text-neutral-600 dark:text-neutral-500 animate-spin" />
                                         </div>
                                     ) : subView === 'summary' ? (
-                                        <div className="bg-neutral-50 dark:bg-black dark:bg-white/5 rounded-[16px] p-8 border border-neutral-200 dark:border-white/5 space-y-10">
+                                        <div className="bg-neutral-50 dark:bg-white/5 rounded-[16px] p-8 border border-neutral-200 dark:border-white/5 space-y-10">
                                             <div className="flex items-start justify-between">
                                                 <div className="space-y-1">
                                                     <p className="text-[11px] text-neutral-600 dark:text-neutral-500 font-bold tracking-wider uppercase">Current Plan</p>
@@ -622,7 +622,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                 </Button>
                                             </div>
 
-                                            <div className="h-px bg-neutral-50 dark:bg-black dark:bg-white/5" />
+                                            <div className="h-px bg-neutral-50 dark:bg-white/5" />
 
                                             <div className="grid grid-cols-2 gap-10">
                                                 <div className="space-y-1">
@@ -656,7 +656,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                 </div>
                                             </div>
 
-                                            <div className="h-px bg-neutral-50 dark:bg-black dark:bg-white/5" />
+                                            <div className="h-px bg-neutral-50 dark:bg-white/5" />
 
                                             <div className="space-y-6">
                                                 <p className="text-[11px] text-neutral-600 dark:text-neutral-500 font-bold tracking-wider uppercase">Active Payment Method</p>
@@ -710,7 +710,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                     <Button 
                                                         variant="outline"
                                                         onClick={() => window.open('https://polar.sh/mailient/portal', '_blank')}
-                                                        className="border-neutral-200 dark:border-white/10 text-black dark:text-white hover:bg-neutral-50 dark:bg-black dark:bg-white/5 rounded-xl h-10 px-4 flex items-center gap-2"
+                                                        className="border-neutral-200 dark:border-white/10 text-black dark:text-white hover:bg-neutral-50 dark:bg-white/5 rounded-xl h-10 px-4 flex items-center gap-2"
                                                     >
                                                         <ExternalLink className="w-4 h-4" />
                                                         Polar Portal
@@ -724,9 +724,9 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
 
                                                 <div className="space-y-6 pt-4">
                                                     <h4 className="text-xl font-serif text-black dark:text-white">Payment History</h4>
-                                                    <div className="bg-neutral-50 dark:bg-black dark:bg-white/5 border border-neutral-200 dark:border-white/5 rounded-3xl overflow-hidden">
+                                                    <div className="bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/5 rounded-3xl overflow-hidden">
                                                         <table className="w-full text-left">
-                                                            <thead className="bg-black/[0.02] dark:bg-black dark:bg-white/[0.02] border-b border-neutral-200 dark:border-white/5">
+                                                            <thead className="bg-black/[0.02] dark:bg-white/[0.02] border-b border-neutral-200 dark:border-white/5">
                                                                 <tr>
                                                                     <th className="px-6 py-4 text-xs font-bold text-neutral-600 dark:text-neutral-500 uppercase tracking-wider">Invoice</th>
                                                                     <th className="px-6 py-4 text-xs font-bold text-neutral-600 dark:text-neutral-500 uppercase tracking-wider">Date</th>
@@ -736,7 +736,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                             </thead>
                                                             <tbody className="divide-y divide-white/5">
                                                                 {(subscriptionData?.invoices || []).map((invoice: any) => (
-                                                                    <tr key={invoice.id} className="hover:bg-black/[0.02] dark:bg-black dark:bg-white/[0.02] transition-colors">
+                                                                    <tr key={invoice.id} className="hover:bg-black/[0.02] dark:bg-white/[0.02] transition-colors">
                                                                         <td className="px-6 py-4 font-mono text-[13px] text-black dark:text-white">{invoice.number}</td>
                                                                         <td className="px-6 py-4 text-[13px] text-neutral-500 dark:text-neutral-400">{new Date(invoice.date).toLocaleDateString()}</td>
                                                                         <td className="px-6 py-4 text-[13px] text-black dark:text-white">${invoice.amount}</td>
@@ -756,7 +756,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                                                     window.URL.revokeObjectURL(url);
                                                                                     toast.success('Invoice downloaded successfully');
                                                                                 }}
-                                                                                className="p-2 hover:bg-neutral-50 dark:bg-black dark:bg-white/5 rounded-lg text-neutral-600 hover:text-black dark:text-white"
+                                                                                className="p-2 hover:bg-neutral-50 dark:bg-white/5 rounded-lg text-neutral-600 hover:text-black dark:text-white"
                                                                             >
                                                                                 <Download className="w-4 h-4" />
                                                                             </button>
@@ -900,7 +900,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                             <span className="text-[11px] text-neutral-600 dark:text-neutral-500 font-sans ml-1.5 uppercase tracking-wider">tokens</span>
                                                         </div>
                                                     </div>
-                                                    <div className="h-1.5 w-full bg-neutral-50 dark:bg-black dark:bg-white/5 rounded-full overflow-hidden">
+                                                    <div className="h-1.5 w-full bg-neutral-50 dark:bg-white/5 rounded-full overflow-hidden">
                                                         <motion.div 
                                                             initial={{ width: 0 }}
                                                             animate={{ width: `${Math.min(100, ((subscriptionData?.features?.openai_tokens?.usage || 0) / (subscriptionData?.features?.openai_tokens?.limit || 50000)) * 100)}%` }}
@@ -925,7 +925,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                     animate={{ opacity: 1 }}
                                     className="space-y-8"
                                 >
-                                    <div className="bg-neutral-50 dark:bg-black dark:bg-white/5 rounded-[16px] p-8 border border-neutral-200 dark:border-white/5 space-y-10">
+                                    <div className="bg-neutral-50 dark:bg-white/5 rounded-[16px] p-8 border border-neutral-200 dark:border-white/5 space-y-10">
                                         <div className="flex items-start justify-between">
                                             <div className="space-y-1 max-w-[480px]">
                                                 <h3 className="text-[17px] font-bold text-black dark:text-white">Enhanced Privacy Mode</h3>
@@ -936,7 +936,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                             <ToggleSwitch checked={settings.privacyMode} onChange={(v) => updateSetting('privacyMode', v)} />
                                         </div>
 
-                                        <div className="h-px bg-neutral-50 dark:bg-black dark:bg-white/5" />
+                                        <div className="h-px bg-neutral-50 dark:bg-white/5" />
 
                                         <div className="flex items-start justify-between">
                                             <div className="space-y-1 max-w-[480px]">
@@ -948,7 +948,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                             <ToggleSwitch checked={settings.aiProtection} onChange={(v) => updateSetting('aiProtection', v)} />
                                         </div>
 
-                                        <div className="h-px bg-neutral-50 dark:bg-black dark:bg-white/5" />
+                                        <div className="h-px bg-neutral-50 dark:bg-white/5" />
 
                                         <div className="flex items-start justify-between">
                                             <div className="space-y-1 max-w-[480px]">
@@ -960,7 +960,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                             <ToggleSwitch checked={settings.aesEncryption} onChange={(v) => updateSetting('aesEncryption', v)} />
                                         </div>
 
-                                        <div className="h-px bg-neutral-50 dark:bg-black dark:bg-white/5" />
+                                        <div className="h-px bg-neutral-50 dark:bg-white/5" />
 
                                         <div className="flex items-start justify-between">
                                             <div className="space-y-1 max-w-[480px]">
