@@ -1613,12 +1613,12 @@ export function GmailInterfaceFixed() {
                             >
                                  {isTraditionalView ? (
                                     <>
-                                        <Sparkles className="h-4 w-4 text-yellow-500 group-hover:scale-110 transition-transform" />
+                                        <Sparkles className="h-4 w-4 text-amber-500 group-hover:scale-110 transition-transform" />
                                         <span className="text-black dark:text-white">Switch to AI Sift</span>
                                     </>
                                 ) : (
                                     <>
-                                        <LayoutList className="h-4 w-4 text-blue-400 group-hover:scale-110 transition-transform" />
+                                        <LayoutList className="h-4 w-4 text-blue-500 group-hover:scale-110 transition-transform" />
                                         <span className="text-black dark:text-white">Switch to Traditional</span>
                                     </>
                                 )}
@@ -1676,29 +1676,29 @@ export function GmailInterfaceFixed() {
                             </div>
 
                             {/* At Risk */}
-                            <div className="bg-white dark:bg-[#0a0a0a] p-6 hover:bg-neutral-200/50 dark:hover:bg-neutral-900/50 transition-colors">
+                            <div className="bg-white dark:bg-[#0a0a0a] p-6 hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors">
                                 <div className="flex items-center gap-3 mb-4">
                                     <AlertCircle className="h-4 w-4 text-neutral-600 dark:text-neutral-500" strokeWidth={1.5} />
                                 </div>
-                                <p className="text-2xl font-medium text-[#fafafa] mb-1">{summary.conversations_at_risk || 0}</p>
+                                <p className="text-2xl font-medium text-black dark:text-[#fafafa] mb-1">{summary.conversations_at_risk || 0}</p>
                                 <p className="text-xs text-neutral-600 dark:text-neutral-500 font-light">At Risk</p>
                             </div>
 
                             {/* Follow-ups */}
-                            <div className="bg-white dark:bg-[#0a0a0a] p-6 hover:bg-neutral-200/50 dark:hover:bg-neutral-900/50 transition-colors">
+                            <div className="bg-white dark:bg-[#0a0a0a] p-6 hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors">
                                 <div className="flex items-center gap-3 mb-4">
                                     <Clock className="h-4 w-4 text-neutral-600 dark:text-neutral-500" strokeWidth={1.5} />
                                 </div>
-                                <p className="text-2xl font-medium text-[#fafafa] mb-1">{summary.missed_follow_ups || 0}</p>
+                                <p className="text-2xl font-medium text-black dark:text-[#fafafa] mb-1">{summary.missed_follow_ups || 0}</p>
                                 <p className="text-xs text-neutral-600 dark:text-neutral-500 font-light">Follow-ups</p>
                             </div>
 
                             {/* Important */}
-                            <div className="bg-white dark:bg-[#0a0a0a] p-6 hover:bg-neutral-200/50 dark:hover:bg-neutral-900/50 transition-colors">
+                            <div className="bg-white dark:bg-[#0a0a0a] p-6 hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors">
                                 <div className="flex items-center gap-3 mb-4">
                                     <Mail className="h-4 w-4 text-neutral-600 dark:text-neutral-500" strokeWidth={1.5} />
                                 </div>
-                                <p className="text-2xl font-medium text-[#fafafa] mb-1">{summary.unread_but_important || 0}</p>
+                                <p className="text-2xl font-medium text-black dark:text-[#fafafa] mb-1">{summary.unread_but_important || 0}</p>
                                 <p className="text-xs text-neutral-600 dark:text-neutral-500 font-light">Important</p>
                             </div>
                         </div>
@@ -2227,7 +2227,7 @@ export function GmailInterfaceFixed() {
                                 <Button
                                     onClick={refreshInsights}
                                     disabled={loading}
-                                    className="h-11 px-8 bg-black dark:bg-[#fafafa] hover:bg-black/90 dark:hover:bg-neutral-200 text-white dark:text-black rounded-xl transition-all font-medium shadow-lg hover:scale-105 active:scale-95"
+                                    className="h-11 px-8 bg-black dark:bg-[#fafafa] text-white dark:text-black hover:bg-black/90 dark:hover:bg-neutral-200 rounded-xl transition-all font-medium shadow-lg hover:scale-105 active:scale-95 border-none"
                                 >
                                     {loading ? (
                                         <>
