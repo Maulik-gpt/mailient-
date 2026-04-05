@@ -2237,7 +2237,7 @@ export default function ChatInterface({
                               onClick={() => setIsTitleMenuOpen(!isTitleMenuOpen)}
                               className="px-3 py-2 hover:bg-black/[0.05] dark:bg-white/[0.05] transition-colors"
                             >
-                              <ChevronDown className={`w-3.5 h-3.5 text-black dark:text-white/40 group-hover:text-black dark:text-white/80 transition-transform duration-300 ease-out ${isTitleMenuOpen ? 'rotate-180' : ''}`} />
+                              <ChevronDown className={`w-3.5 h-3.5 text-black dark:text-white/40 group-hover:text-black dark:group-hover:text-white/80 transition-transform duration-300 ease-out ${isTitleMenuOpen ? 'rotate-180' : ''}`} />
                             </button>
                           </div>
                         </div>
@@ -2359,7 +2359,7 @@ export default function ChatInterface({
                         <TooltipTrigger asChild>
                           <button
                             onClick={() => setShowHistory(!showHistory)}
-                            className={`p-2 rounded-lg transition-all hover:bg-black/5 dark:bg-white/5 ${showHistory ? 'text-black dark:text-white bg-black/10 dark:bg-white/10' : 'text-black dark:text-white/20 hover:text-black dark:text-white/60'}`}
+                            className={`p-2 rounded-lg transition-all hover:bg-black/5 dark:bg-white/5 ${showHistory ? 'text-black dark:text-white bg-black/10 dark:bg-white/10' : 'text-black dark:text-white/20 hover:text-black dark:hover:text-white/60'}`}
                           >
                             <History className="w-4 h-4" />
                           </button>

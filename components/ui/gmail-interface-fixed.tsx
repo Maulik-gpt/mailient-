@@ -1649,7 +1649,7 @@ export function GmailInterfaceFixed() {
                     {summary && (
                         <div className="grid grid-cols-6 gap-px bg-neutral-800/50 rounded-xl overflow-hidden mb-16">
                             {/* Opportunities */}
-                            <div className="bg-white dark:bg-[#0a0a0a] p-6 hover:bg-neutral-200/50 dark:bg-neutral-900/50 transition-colors">
+                            <div className="bg-white dark:bg-[#0a0a0a] p-6 hover:bg-neutral-200/50 dark:hover:bg-neutral-900/50 transition-colors">
                                 <div className="flex items-center gap-3 mb-4">
                                     <Target className="h-4 w-4 text-neutral-600 dark:text-neutral-500" strokeWidth={1.5} />
                                 </div>
@@ -1658,7 +1658,7 @@ export function GmailInterfaceFixed() {
                             </div>
 
                             {/* Urgent */}
-                            <div className="bg-white dark:bg-[#0a0a0a] p-6 hover:bg-neutral-200/50 dark:bg-neutral-900/50 transition-colors">
+                            <div className="bg-white dark:bg-[#0a0a0a] p-6 hover:bg-neutral-200/50 dark:hover:bg-neutral-900/50 transition-colors">
                                 <div className="flex items-center gap-3 mb-4">
                                     <Zap className="h-4 w-4 text-neutral-600 dark:text-neutral-500" strokeWidth={1.5} />
                                 </div>
@@ -1667,7 +1667,7 @@ export function GmailInterfaceFixed() {
                             </div>
 
                             {/* Hot Leads */}
-                            <div className="bg-white dark:bg-[#0a0a0a] p-6 hover:bg-neutral-200/50 dark:bg-neutral-900/50 transition-colors">
+                            <div className="bg-white dark:bg-[#0a0a0a] p-6 hover:bg-neutral-200/50 dark:hover:bg-neutral-900/50 transition-colors">
                                 <div className="flex items-center gap-3 mb-4">
                                     <TrendingUp className="h-4 w-4 text-neutral-600 dark:text-neutral-500" strokeWidth={1.5} />
                                 </div>
@@ -1676,7 +1676,7 @@ export function GmailInterfaceFixed() {
                             </div>
 
                             {/* At Risk */}
-                            <div className="bg-white dark:bg-[#0a0a0a] p-6 hover:bg-neutral-200/50 dark:bg-neutral-900/50 transition-colors">
+                            <div className="bg-white dark:bg-[#0a0a0a] p-6 hover:bg-neutral-200/50 dark:hover:bg-neutral-900/50 transition-colors">
                                 <div className="flex items-center gap-3 mb-4">
                                     <AlertCircle className="h-4 w-4 text-neutral-600 dark:text-neutral-500" strokeWidth={1.5} />
                                 </div>
@@ -1685,7 +1685,7 @@ export function GmailInterfaceFixed() {
                             </div>
 
                             {/* Follow-ups */}
-                            <div className="bg-white dark:bg-[#0a0a0a] p-6 hover:bg-neutral-200/50 dark:bg-neutral-900/50 transition-colors">
+                            <div className="bg-white dark:bg-[#0a0a0a] p-6 hover:bg-neutral-200/50 dark:hover:bg-neutral-900/50 transition-colors">
                                 <div className="flex items-center gap-3 mb-4">
                                     <Clock className="h-4 w-4 text-neutral-600 dark:text-neutral-500" strokeWidth={1.5} />
                                 </div>
@@ -1694,7 +1694,7 @@ export function GmailInterfaceFixed() {
                             </div>
 
                             {/* Important */}
-                            <div className="bg-white dark:bg-[#0a0a0a] p-6 hover:bg-neutral-200/50 dark:bg-neutral-900/50 transition-colors">
+                            <div className="bg-white dark:bg-[#0a0a0a] p-6 hover:bg-neutral-200/50 dark:hover:bg-neutral-900/50 transition-colors">
                                 <div className="flex items-center gap-3 mb-4">
                                     <Mail className="h-4 w-4 text-neutral-600 dark:text-neutral-500" strokeWidth={1.5} />
                                 </div>

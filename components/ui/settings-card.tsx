@@ -238,7 +238,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                 onClick={() => id && setActiveSection(id)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 ${isActive
                         ? 'bg-black/[0.05] dark:bg-white/[0.1] text-black dark:text-white font-serif tracking-tight shadow-sm'
-                        : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:text-neutral-200 hover:bg-neutral-50 dark:bg-white/5'
+                        : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 hover:bg-neutral-50 dark:bg-white/5'
                     }`}
             >
                 {Icon && <Icon className={`w-4 h-4 transition-colors ${isActive ? 'text-black dark:text-white' : 'text-neutral-500 dark:text-neutral-400 group-hover:text-black dark:group-hover:text-white'}`} strokeWidth={isActive ? 2 : 1.5} />}
@@ -259,7 +259,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
             onClick={onClose}
         >
             <div
-                className="w-full max-w-[1020px] h-[600px] bg-black dark:bg-[#1a1a1a] rounded-[16px] overflow-hidden flex shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] border border-neutral-200 dark:border-white/5"
+                className="w-full max-w-[1020px] h-[600px] bg-white dark:bg-[#1a1a1a] rounded-[16px] overflow-hidden flex shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] border border-neutral-200 dark:border-white/5"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Sidebar */}
