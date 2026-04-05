@@ -287,15 +287,15 @@ export function ConnectorsModal({
           }}
           exit={{ opacity: 0, scale: 0.98, y: 30 }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          className="relative w-full max-w-[560px] h-full max-h-[720px] bg-[#121212] rounded-[48px] border border-white/10 shadow-[0_0_100px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden pointer-events-auto"
+          className="relative w-full max-w-[560px] h-full max-h-[720px] bg-white dark:bg-white dark:bg-[#121212] rounded-[48px] border border-white/10 shadow-[0_0_100px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden pointer-events-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
           <div className="flex items-center justify-between px-8 py-6">
-            <h2 className="text-[20px] font-bold text-white tracking-tight">Connectors</h2>
+            <h2 className="text-[20px] font-bold text-black dark:text-white tracking-tight">Connectors</h2>
             <button 
               onClick={onClose}
-              className="p-1.5 hover:bg-white/5 rounded-lg text-white/30 hover:text-white transition-all"
+              className="p-1.5 hover:bg-white/5 rounded-lg text-black/30 dark:text-white/30 hover:text-white transition-all"
             >
               <X className="w-5 h-5" />
             </button>
@@ -322,7 +322,7 @@ export function ConnectorsModal({
                   <button
                     key={app.id}
                     onClick={() => setSelectedApp(app)}
-                    className="flex items-start gap-4 p-4 rounded-[24px] bg-[#222]/40 border border-white/[0.04] hover:bg-white/[0.04] hover:border-white/[0.08] transition-all text-left group"
+                    className="flex items-start gap-4 p-4 rounded-[24px] bg-neutral-50 dark:bg-white dark:bg-white dark:bg-[#222]/40 border border-white/[0.04] hover:bg-white/[0.04] hover:border-white/[0.08] transition-all text-left group"
                   >
                     <div 
                       className={cn(
@@ -334,14 +334,14 @@ export function ConnectorsModal({
                     </div>
                     <div className="flex-1 pr-2">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-[15px] font-bold text-white/90 tracking-tight">{app.name}</span>
+                        <span className="text-[15px] font-bold text-black/90 dark:text-white/90 tracking-tight">{app.name}</span>
                         {isConnected && (
                           <div className="w-4 h-4 rounded-full bg-transparent flex items-center justify-center">
                             <Check className="w-3 h-3 text-emerald-500/80" />
                           </div>
                         )}
                       </div>
-                      <p className="text-[12px] text-white/30 leading-relaxed line-clamp-2">
+                      <p className="text-[12px] text-black/30 dark:text-white/30 leading-relaxed line-clamp-2">
                         {app.description}
                       </p>
                     </div>
@@ -359,7 +359,7 @@ export function ConnectorsModal({
               initial={{ opacity: 0, scale: 0.95, y: 30 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 30 }}
-              className="absolute z-[210] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[480px] bg-[#1a1a1a] rounded-[48px] border border-white/10 shadow-[0_40px_120px_rgba(0,0,0,0.9)] p-8 flex flex-col items-center pointer-events-auto"
+              className="absolute z-[210] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[480px] bg-white dark:bg-white dark:bg-[#1a1a1a] rounded-[48px] border border-white/10 shadow-[0_40px_120px_rgba(0,0,0,0.9)] p-8 flex flex-col items-center pointer-events-auto"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Close Button */}
@@ -399,7 +399,7 @@ export function ConnectorsModal({
                 </motion.div>
               )}
 
-              <h3 className="text-2xl font-bold text-white mb-4 tracking-tight">{selectedApp.name}</h3>
+              <h3 className="text-2xl font-bold text-black dark:text-white mb-4 tracking-tight">{selectedApp.name}</h3>
               
               <p className="text-[14px] text-white/50 leading-relaxed text-center mb-8 px-4">
                 {selectedApp.description}
@@ -426,7 +426,7 @@ export function ConnectorsModal({
                     <div className="relative flex-1">
                       <button
                         onClick={() => setManageDropdownOpen(!manageDropdownOpen)}
-                        className="w-full py-4 bg-[#2a2a2a] text-white rounded-2xl font-bold text-[15px] hover:bg-[#333] active:scale-95 transition-all flex items-center justify-center gap-2"
+                        className="w-full py-4 bg-neutral-100 dark:bg-[#2a2a2a] text-black dark:text-white rounded-2xl font-bold text-[15px] hover:bg-[#333] active:scale-95 transition-all flex items-center justify-center gap-2"
                       >
                         Manage
                         <ChevronDown className={cn("w-4 h-4 transition-transform", manageDropdownOpen && "rotate-180")} />
@@ -439,7 +439,7 @@ export function ConnectorsModal({
                             initial={{ opacity: 0, y: 10, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                            className="absolute bottom-full mb-3 left-0 right-0 bg-[#222] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[220]"
+                            className="absolute bottom-full mb-3 left-0 right-0 bg-white dark:bg-white dark:bg-[#222] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[220]"
                           >
                             <button className="w-full px-4 py-3 text-left text-[14px] font-medium text-white/70 hover:bg-white/5 hover:text-white flex items-center gap-3 transition-all">
                               <Plus className="w-4 h-4" />
@@ -472,7 +472,7 @@ export function ConnectorsModal({
               <div className="w-full border-t border-white/[0.05] pt-4">
                 <button 
                   onClick={() => setShowDetails(!showDetails)}
-                  className="w-full flex items-center justify-center gap-2 py-2 text-white/30 hover:text-white/60 transition-all text-[13px] font-medium mb-4"
+                  className="w-full flex items-center justify-center gap-2 py-2 text-black/30 dark:text-white/30 hover:text-white/60 transition-all text-[13px] font-medium mb-4"
                 >
                   {showDetails ? 'Hide Details' : 'Show Details'}
                   <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", showDetails && "rotate-180")} />
@@ -486,32 +486,32 @@ export function ConnectorsModal({
                       exit={{ opacity: 0, height: 0 }}
                       className="overflow-hidden"
                     >
-                      <div className="bg-black/20 rounded-3xl p-6 border border-white/[0.03] space-y-4 mb-2">
+                      <div className="bg-neutral-50 dark:bg-black/20 rounded-3xl p-6 border border-white/[0.03] space-y-4 mb-2">
                         <div className="flex items-center justify-between">
-                          <span className="text-[13px] text-white/30">Connector Type</span>
+                          <span className="text-[13px] text-black/30 dark:text-white/30">Connector Type</span>
                           <span className="text-[13px] text-white/70 font-medium">{selectedApp.type}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-[13px] text-white/30">Author</span>
+                          <span className="text-[13px] text-black/30 dark:text-white/30">Author</span>
                           <span className="text-[13px] text-white/70 font-medium">{selectedApp.author}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-[13px] text-white/30">UUID</span>
+                          <span className="text-[13px] text-black/30 dark:text-white/30">UUID</span>
                           <div className="flex items-center gap-2">
                             <span className="text-white/40 font-mono text-[11px] truncate max-w-[120px]">{selectedApp.uuid}</span>
                             <button className="text-white/20 hover:text-white transition-all"><Plus className="w-3.5 h-3.5 rotate-45" /></button>
                           </div>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-[13px] text-white/30">Website</span>
+                          <span className="text-[13px] text-black/30 dark:text-white/30">Website</span>
                           <a href={selectedApp.website} target="_blank" className="text-white/20 hover:text-white transition-all"><ExternalLink className="w-3.5 h-3.5" /></a>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-[13px] text-white/30">Documentation</span>
+                          <span className="text-[13px] text-black/30 dark:text-white/30">Documentation</span>
                           <a href={selectedApp.documentation} target="_blank" className="text-white/20 hover:text-white transition-all"><ExternalLink className="w-3.5 h-3.5" /></a>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-[13px] text-white/30">Privacy Policy</span>
+                          <span className="text-[13px] text-black/30 dark:text-white/30">Privacy Policy</span>
                           <a href={selectedApp.privacyPolicy} target="_blank" className="text-white/20 hover:text-white transition-all"><ExternalLink className="w-3.5 h-3.5" /></a>
                         </div>
                       </div>

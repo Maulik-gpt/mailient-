@@ -121,7 +121,7 @@ export function EmailSelectionModal({ isOpen, onClose, onSelectEmails }: EmailSe
       />
 
       {/* Modal */}
-      <div className="relative p-6 w-full max-w-4xl max-h-[80vh] overflow-hidden shadow-2xl bg-[#1a1a1a] rounded-[2rem] border border-[#2a2a2a]">
+      <div className="relative p-6 w-full max-w-4xl max-h-[80vh] overflow-hidden shadow-2xl bg-white dark:bg-[#1a1a1a] rounded-[2rem] border border-[#2a2a2a]">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-white">Select Your Email</h2>

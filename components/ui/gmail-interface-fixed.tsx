@@ -1571,7 +1571,7 @@ export function GmailInterfaceFixed() {
                 )}
 
                 {/* The Curvy Content Area */}
-                <div className="mt-2.5 mr-2.5 mb-2.5 bg-white dark:bg-[#111111] rounded-[2.5rem] min-h-[calc(100vh-20px)] border border-[#EBE9E2] dark:border-white/[0.05] shadow-[0_20px_50px_rgba(0,0,0,0.06)] dark:shadow-none overflow-y-auto custom-scrollbar">
+                <div className="mt-2.5 mr-2.5 mb-2.5 bg-white dark:bg-white dark:bg-[#111111] rounded-[2.5rem] min-h-[calc(100vh-20px)] border border-[#EBE9E2] dark:border-white/[0.05] shadow-[0_20px_50px_rgba(0,0,0,0.06)] dark:shadow-none overflow-y-auto custom-scrollbar">
                     <div className={`${viewMode === 'people' ? 'max-w-[1600px]' : 'max-w-5xl'} mx-auto px-10 py-12 transition-all duration-500`}>
 
                     {/* Header */}
@@ -1649,7 +1649,7 @@ export function GmailInterfaceFixed() {
                     {summary && (
                         <div className="grid grid-cols-6 gap-px bg-neutral-800/50 rounded-xl overflow-hidden mb-16">
                             {/* Opportunities */}
-                            <div className="bg-[#0a0a0a] p-6 hover:bg-neutral-200/50 dark:bg-neutral-900/50 transition-colors">
+                            <div className="bg-white dark:bg-[#0a0a0a] p-6 hover:bg-neutral-200/50 dark:bg-neutral-900/50 transition-colors">
                                 <div className="flex items-center gap-3 mb-4">
                                     <Target className="h-4 w-4 text-neutral-600 dark:text-neutral-500" strokeWidth={1.5} />
                                 </div>
@@ -1658,7 +1658,7 @@ export function GmailInterfaceFixed() {
                             </div>
 
                             {/* Urgent */}
-                            <div className="bg-[#0a0a0a] p-6 hover:bg-neutral-200/50 dark:bg-neutral-900/50 transition-colors">
+                            <div className="bg-white dark:bg-[#0a0a0a] p-6 hover:bg-neutral-200/50 dark:bg-neutral-900/50 transition-colors">
                                 <div className="flex items-center gap-3 mb-4">
                                     <Zap className="h-4 w-4 text-neutral-600 dark:text-neutral-500" strokeWidth={1.5} />
                                 </div>
@@ -1667,7 +1667,7 @@ export function GmailInterfaceFixed() {
                             </div>
 
                             {/* Hot Leads */}
-                            <div className="bg-[#0a0a0a] p-6 hover:bg-neutral-200/50 dark:bg-neutral-900/50 transition-colors">
+                            <div className="bg-white dark:bg-[#0a0a0a] p-6 hover:bg-neutral-200/50 dark:bg-neutral-900/50 transition-colors">
                                 <div className="flex items-center gap-3 mb-4">
                                     <TrendingUp className="h-4 w-4 text-neutral-600 dark:text-neutral-500" strokeWidth={1.5} />
                                 </div>
@@ -1676,7 +1676,7 @@ export function GmailInterfaceFixed() {
                             </div>
 
                             {/* At Risk */}
-                            <div className="bg-[#0a0a0a] p-6 hover:bg-neutral-200/50 dark:bg-neutral-900/50 transition-colors">
+                            <div className="bg-white dark:bg-[#0a0a0a] p-6 hover:bg-neutral-200/50 dark:bg-neutral-900/50 transition-colors">
                                 <div className="flex items-center gap-3 mb-4">
                                     <AlertCircle className="h-4 w-4 text-neutral-600 dark:text-neutral-500" strokeWidth={1.5} />
                                 </div>
@@ -1685,7 +1685,7 @@ export function GmailInterfaceFixed() {
                             </div>
 
                             {/* Follow-ups */}
-                            <div className="bg-[#0a0a0a] p-6 hover:bg-neutral-200/50 dark:bg-neutral-900/50 transition-colors">
+                            <div className="bg-white dark:bg-[#0a0a0a] p-6 hover:bg-neutral-200/50 dark:bg-neutral-900/50 transition-colors">
                                 <div className="flex items-center gap-3 mb-4">
                                     <Clock className="h-4 w-4 text-neutral-600 dark:text-neutral-500" strokeWidth={1.5} />
                                 </div>
@@ -1694,7 +1694,7 @@ export function GmailInterfaceFixed() {
                             </div>
 
                             {/* Important */}
-                            <div className="bg-[#0a0a0a] p-6 hover:bg-neutral-200/50 dark:bg-neutral-900/50 transition-colors">
+                            <div className="bg-white dark:bg-[#0a0a0a] p-6 hover:bg-neutral-200/50 dark:bg-neutral-900/50 transition-colors">
                                 <div className="flex items-center gap-3 mb-4">
                                     <Mail className="h-4 w-4 text-neutral-600 dark:text-neutral-500" strokeWidth={1.5} />
                                 </div>
@@ -1738,7 +1738,7 @@ export function GmailInterfaceFixed() {
                             </div>
 
                             {nudges.length === 0 && !isLoadingNudges ? (
-                                <div className="bg-[#0a0a0a]/50 border border-white/[0.03] rounded-2xl p-8 flex flex-col items-center justify-center text-center">
+                                <div className="bg-white dark:bg-[#0a0a0a]/50 border border-white/[0.03] rounded-2xl p-8 flex flex-col items-center justify-center text-center">
                                     <div className="w-12 h-12 rounded-full bg-neutral-200/50 dark:bg-neutral-900/50 flex items-center justify-center mb-3">
                                         <Mail className="w-5 h-5 text-neutral-700 font-light" />
                                     </div>
@@ -1761,7 +1761,7 @@ export function GmailInterfaceFixed() {
                                             <div 
                                                 key={nudge.id}
                                                 onClick={() => nudge.fullEmail && handleTraditionalEmailClick(nudge.fullEmail.id)}
-                                                className="group relative bg-[#0a0a0a] border border-white/[0.03] rounded-2xl p-5 hover:bg-neutral-900/80 transition-all cursor-pointer overflow-hidden"
+                                                className="group relative bg-white dark:bg-[#0a0a0a] border border-white/[0.03] rounded-2xl p-5 hover:bg-neutral-900/80 transition-all cursor-pointer overflow-hidden"
                                             >
                                                 <div className="flex items-start justify-between mb-3">
                                                     <div className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border ${
@@ -1793,7 +1793,7 @@ export function GmailInterfaceFixed() {
                     {error && (
                         <div className="mb-12">
                             {error === 'limit_reached' ? (
-                                <div className="bg-[#0a0a0a] border border-neutral-200 dark:border-zinc-800/50 rounded-2xl px-6 py-4 flex items-center justify-between shadow-xl backdrop-blur-xl">
+                                <div className="bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-zinc-800/50 rounded-2xl px-6 py-4 flex items-center justify-between shadow-xl backdrop-blur-xl">
                                     <div className="flex items-center gap-4">
                                         <div className="w-10 h-10 bg-zinc-900 border border-neutral-200 dark:border-zinc-800 rounded-full flex items-center justify-center shrink-0">
                                             <Sparkles className="w-5 h-5 text-black dark:text-white" />
@@ -2247,7 +2247,7 @@ export function GmailInterfaceFixed() {
 
             {/* Details Modal */}
             <div
-                className={`fixed top-1/2 left-1/2 bg-white dark:bg-[#1a1a1a] rounded-[2.5rem] shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-50 flex flex-col border border-neutral-200 dark:border-neutral-800`}
+                className={`fixed top-1/2 left-1/2 bg-white dark:bg-white dark:bg-[#1a1a1a] rounded-[2.5rem] shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-50 flex flex-col border border-neutral-200 dark:border-neutral-800`}
                 style={{
                     width: '70%',
                     height: '85vh',

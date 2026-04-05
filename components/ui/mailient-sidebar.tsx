@@ -58,7 +58,7 @@ export const MailientSidebar: React.FC<MailientSidebarProps> = ({
                   window.location.href = '/home-feed';
                   document.title = 'Home / Mailient';
                 }}
-                className={`p-2 hover:bg-[#1a1a1a] rounded-full transition-all duration-300 hover:scale-105 ${activeSection === 'home' ? 'bg-[#1a1a1a]' : ''
+                className={`p-2 hover:bg-white dark:bg-[#1a1a1a] rounded-full transition-all duration-300 hover:scale-105 ${activeSection === 'home' ? 'bg-white dark:bg-[#1a1a1a]' : ''
                   }`}
                 aria-label="Feed"
               >
@@ -82,7 +82,7 @@ export const MailientSidebar: React.FC<MailientSidebarProps> = ({
                   window.location.href = '/dashboard/agent-talk';
                   document.title = 'Arcus / Mailient';
                 }}
-                className={`p-2 hover:bg-[#1a1a1a] rounded-full transition-all duration-300 hover:scale-105 ${activeSection === 'arcus' ? 'bg-[#1a1a1a]' : ''
+                className={`p-2 hover:bg-white dark:bg-[#1a1a1a] rounded-full transition-all duration-300 hover:scale-105 ${activeSection === 'arcus' ? 'bg-white dark:bg-[#1a1a1a]' : ''
                   }`}
                 aria-label="Arcus AI Assistant"
               >
@@ -102,7 +102,7 @@ export const MailientSidebar: React.FC<MailientSidebarProps> = ({
               <TooltipTrigger asChild>
                 <button
                   onClick={() => setIsMoreOptionsOpen(!isMoreOptionsOpen)}
-                  className="p-2 hover:bg-[#1a1a1a] rounded-full transition-all duration-300 hover:scale-105"
+                  className="p-2 hover:bg-white dark:bg-[#1a1a1a] rounded-full transition-all duration-300 hover:scale-105"
                   aria-label="More Options"
                 >
                   <MoreHorizontal className="w-6 h-6 text-[#fafafa]" />
@@ -115,7 +115,7 @@ export const MailientSidebar: React.FC<MailientSidebarProps> = ({
 
             {/* Dialog Box */}
             {isMoreOptionsOpen && (
-              <div className="absolute left-20 top-0 z-50 bg-[#1a1a1a] border border-[#363636] rounded-lg shadow-xl p-2 min-w-48 animate-fadeIn">
+              <div className="absolute left-20 top-0 z-50 bg-white dark:bg-[#1a1a1a] border border-[#363636] rounded-lg shadow-xl p-2 min-w-48 animate-fadeIn">
                 <button
                   onClick={() => {
                     window.location.href = '/settings';

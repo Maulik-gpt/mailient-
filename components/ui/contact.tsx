@@ -140,7 +140,7 @@ export default function Contact() {
                   value={formData.fullName}
                   onChange={handleInputChange}
                   required
-                  className="w-full mt-2 px-3 py-2 text-white bg-[#1F2023] outline-none border border-gray-600 focus:border-gray-500 shadow-sm rounded-lg placeholder-gray-400"
+                  className="w-full mt-2 px-3 py-2 text-white bg-neutral-50 dark:bg-[#1F2023] outline-none border border-gray-600 focus:border-gray-500 shadow-sm rounded-lg placeholder-gray-400"
                   placeholder="Your full name"
                 />
               </div>
@@ -154,7 +154,7 @@ export default function Contact() {
                   value={formData.email}
                   onChange={handleInputChange}
                   required
-                  className="w-full mt-2 px-3 py-2 text-white bg-[#1F2023] outline-none border border-gray-600 focus:border-gray-500 shadow-sm rounded-lg placeholder-gray-400"
+                  className="w-full mt-2 px-3 py-2 text-white bg-neutral-50 dark:bg-[#1F2023] outline-none border border-gray-600 focus:border-gray-500 shadow-sm rounded-lg placeholder-gray-400"
                   placeholder="your.email@company.com"
                 />
               </div>
@@ -168,7 +168,7 @@ export default function Contact() {
                   value={formData.company}
                   onChange={handleInputChange}
                   required
-                  className="w-full mt-2 px-3 py-2 text-white bg-[#1F2023] outline-none border border-gray-600 focus:border-gray-500 shadow-sm rounded-lg placeholder-gray-400"
+                  className="w-full mt-2 px-3 py-2 text-white bg-neutral-50 dark:bg-[#1F2023] outline-none border border-gray-600 focus:border-gray-500 shadow-sm rounded-lg placeholder-gray-400"
                   placeholder="Company name"
                 />
               </div>
@@ -181,7 +181,7 @@ export default function Contact() {
                   value={formData.message}
                   onChange={handleInputChange}
                   required
-                  className="w-full mt-2 h-36 px-3 py-2 resize-none appearance-none text-white bg-[#1F2023] outline-none border border-gray-600 focus:border-gray-500 shadow-sm rounded-lg placeholder-gray-400"
+                  className="w-full mt-2 h-36 px-3 py-2 resize-none appearance-none text-white bg-neutral-50 dark:bg-[#1F2023] outline-none border border-gray-600 focus:border-gray-500 shadow-sm rounded-lg placeholder-gray-400"
                   placeholder="Tell us about your email management needs..."
                 />
               </div>

@@ -28,6 +28,7 @@ import { ShiningText } from '@/components/ui/shining-text';
 import { Note } from '@/components/ui/note';
 import { Button as Button1 } from '@/components/ui/button-1';
 import { MorphingSquare } from '@/components/ui/morphing-square';
+import { useTheme } from 'next-themes';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { cn } from "@/lib/utils";
@@ -429,6 +430,8 @@ export default function ChatInterface({
   const [suggestionInput, setSuggestionInput] = useState<{ text: string; id: number } | undefined>(undefined);
   const [isTitleMenuOpen, setIsTitleMenuOpen] = useState(false);
   const [isStarred, setIsStarred] = useState(false);
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
   const titleMenuRef = useRef<HTMLDivElement>(null);
 
   // Close title menu when clicking outside
@@ -2142,19 +2145,25 @@ export default function ChatInterface({
           currentPlan={usageLimitModalData?.currentPlan || 'starter'}
         />
 
-        <div className="flex h-full w-full text-graphite-text bg-black selection:bg-white selection:text-black overflow-hidden relative tracking-tight" style={{ height: '100vh', overflow: 'hidden' }}>
+        <div className="flex h-full w-full text-black dark:text-graphite-text bg-white dark:bg-black selection:bg-black selection:text-white dark:selection:bg-white dark:selection:text-black overflow-hidden relative tracking-tight" style={{ height: '100vh', overflow: 'hidden' }}>
           {/* Apple-style Premium Grain Overlay */}
           <div className="absolute inset-0 pointer-events-none opacity-[0.03] z-[100] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] brightness-100 contrast-150" />
 
           {/* Subtle Ambient Glows for Depth */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
             <GradientWave
-              colors={["#000000", "#111111", "#080808", "#111111"]}
-              className="opacity-100"
+              colors={isDark ? ["#000000", "#111111", "#080808", "#111111"] : ["#F9FAFB", "#F3F4F6", "#E5E7EB", "#F9FAFB"]}
+              className={isDark ? "opacity-100" : "opacity-40"}
               deform={{ incline: 0.3, noiseAmp: 150, noiseFlow: 2 }}
             />
-            <div className="absolute -top-[10%] -right-[10%] w-[60%] h-[60%] bg-graphite-surface-2/40 rounded-full blur-[140px]" />
-            <div className="absolute -bottom-[10%] -left-[10%] w-[50%] h-[50%] bg-graphite-surface/30 rounded-full blur-[120px]" />
+            <div className={cn(
+              "absolute -top-[10%] -right-[10%] w-[60%] h-[60%] rounded-full blur-[140px]",
+              isDark ? "bg-graphite-surface-2/40" : "bg-neutral-200/50"
+            )} />
+            <div className={cn(
+              "absolute -bottom-[10%] -left-[10%] w-[50%] h-[50%] rounded-full blur-[120px]",
+              isDark ? "bg-graphite-surface/30" : "bg-neutral-100/40"
+            )} />
           </div>
 
           <AnimatePresence>
@@ -2196,18 +2205,18 @@ export default function ChatInterface({
           {/* Main Layout Wrapper - Absolute positioned to fill screen strictly */}
           <div 
             className={cn(
-              "absolute inset-0 transition-all duration-500 ease-in-out bg-black overflow-hidden flex flex-row",
+              "absolute inset-0 transition-all duration-500 ease-in-out bg-white dark:bg-black overflow-hidden flex flex-row",
               isSidebarCollapsed ? "left-20" : "left-64"
             )} 
             style={{ height: '100vh', maxHeight: '100vh' }}
           >
             {/* Chat Column (Order 1 - LEFT) - Premium Refinement */}
             <div
-              className="flex-1 flex flex-col relative h-full min-w-0 transition-all duration-500 order-1 bg-[#111111]/80 backdrop-blur-3xl border-x border-t border-neutral-200 dark:border-white/5 rounded-t-[40px] shadow-[0_-20px_50px_-15px_rgba(0,0,0,0.5)] overflow-hidden"
+              className="flex-1 flex flex-col relative h-full min-w-0 transition-all duration-500 order-1 bg-neutral-50/80 dark:bg-[#111111]/80 backdrop-blur-3xl border-x border-t border-neutral-200 dark:border-white/5 rounded-t-[40px] shadow-[0_-20px_50px_-15px_rgba(0,0,0,0.1)] dark:shadow-[0_-20px_50px_-15px_rgba(0,0,0,0.5)] overflow-hidden"
               style={{ display: 'flex', flexDirection: 'column', height: '100%', maxHeight: '100%' }}
             >
               {/* Header - Glassmorphic fixed height */}
-              <div className="shrink-0 z-40 transition-all duration-300 bg-black/10 dark:bg-black/40 backdrop-blur-md border-b border-white/[0.03]" style={{ flexShrink: 0 }}>
+              <div className="shrink-0 z-40 transition-all duration-300 bg-black/[0.02] dark:bg-black/40 backdrop-blur-md border-b border-neutral-200 dark:border-white/[0.03]" style={{ flexShrink: 0 }}>
                 <div className="relative px-8 py-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">

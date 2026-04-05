@@ -155,15 +155,15 @@ export function UnifiedSidebar({
           nav: "flex-1 px-4 py-2",
           navItem: "w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
           navItemActive: "bg-white text-black shadow-sm",
-          navItemInactive: "text-neutral-900 dark:text-gray-300 hover:text-white hover:bg-[#1a1a1a]",
+          navItemInactive: "text-neutral-900 dark:text-gray-300 hover:text-white hover:bg-white dark:bg-[#1a1a1a]",
           navIcon: "w-4 h-4 mr-3",
           navIconActive: "text-black",
           navIconInactive: "text-neutral-600 dark:text-gray-400",
           badge: "text-xs transition-colors",
           badgeActive: "bg-black/10 text-black border-black/20",
-          badgeInactive: "bg-[#1a1a1a] text-neutral-900 dark:text-gray-300 border-[#525252]",
+          badgeInactive: "bg-white dark:bg-[#1a1a1a] text-neutral-900 dark:text-gray-300 border-[#525252]",
           sectionTitle: "text-sm font-medium text-neutral-600 dark:text-gray-400 mb-3 uppercase tracking-wider",
-          teamMember: "flex items-center space-x-3 p-2 rounded-lg hover:bg-[#1a1a1a] transition-colors",
+          teamMember: "flex items-center space-x-3 p-2 rounded-lg hover:bg-white dark:bg-[#1a1a1a] transition-colors",
           teamMemberAvatar: "w-7 h-7",
           teamMemberName: "text-sm text-neutral-900 dark:text-gray-300 truncate font-medium",
           teamMemberStatus: "text-xs text-neutral-600 dark:text-gray-500 capitalize"
@@ -193,13 +193,13 @@ export function UnifiedSidebar({
         };
       case 'settings':
         return {
-          container: "w-20 bg-[#0a0a0a]/50 backdrop-blur-sm border-r border-[#525252] flex flex-col h-full",
+          container: "w-20 bg-white dark:bg-[#0a0a0a]/50 backdrop-blur-sm border-r border-[#525252] flex flex-col h-full",
           header: "",
           title: "",
           subtitle: "",
           composeButton: "",
           nav: "flex flex-col items-center py-20 gap-6",
-          navItem: "p-2 hover:bg-[#1a1a1a] rounded-full transition-all duration-300 hover:scale-105 flex items-center justify-center w-12 h-12",
+          navItem: "p-2 hover:bg-white dark:bg-[#1a1a1a] rounded-full transition-all duration-300 hover:scale-105 flex items-center justify-center w-12 h-12",
           navItemActive: "bg-[#2a2a2a] rounded-full",
           navItemInactive: "",
           navIcon: "w-6 h-6 text-[#fcfcfc]",
@@ -224,15 +224,15 @@ export function UnifiedSidebar({
           nav: "flex-1 px-4 py-2",
           navItem: "w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
           navItemActive: "bg-white text-black shadow-sm",
-          navItemInactive: "text-neutral-900 dark:text-gray-300 hover:text-white hover:bg-[#1a1a1a]",
+          navItemInactive: "text-neutral-900 dark:text-gray-300 hover:text-white hover:bg-white dark:bg-[#1a1a1a]",
           navIcon: "w-4 h-4 mr-3",
           navIconActive: "text-black",
           navIconInactive: "text-neutral-600 dark:text-gray-400",
           badge: "text-xs transition-colors",
           badgeActive: "bg-black/10 text-black border-black/20",
-          badgeInactive: "bg-[#1a1a1a] text-neutral-900 dark:text-gray-300 border-[#525252]",
+          badgeInactive: "bg-white dark:bg-[#1a1a1a] text-neutral-900 dark:text-gray-300 border-[#525252]",
           sectionTitle: "text-sm font-medium text-neutral-600 dark:text-gray-400 mb-3 uppercase tracking-wider",
-          teamMember: "flex items-center space-x-3 p-2 rounded-lg hover:bg-[#1a1a1a] transition-colors",
+          teamMember: "flex items-center space-x-3 p-2 rounded-lg hover:bg-white dark:bg-[#1a1a1a] transition-colors",
           teamMemberAvatar: "w-7 h-7",
           teamMemberName: "text-sm text-neutral-900 dark:text-gray-300 truncate font-medium",
           teamMemberStatus: "text-xs text-neutral-600 dark:text-gray-500 capitalize"
@@ -318,7 +318,7 @@ export function UnifiedSidebar({
 
             {/* Dropdown Box */}
             {isMoreOptionsOpen && (
-              <div className="absolute left-14 bottom-0 z-50 bg-[#0a0a0a] border border-white/10 rounded-xl shadow-2xl p-2 min-w-[200px] animate-in fade-in zoom-in-95 duration-150">
+              <div className="absolute left-14 bottom-0 z-50 bg-white dark:bg-[#0a0a0a] border border-white/10 rounded-xl shadow-2xl p-2 min-w-[200px] animate-in fade-in zoom-in-95 duration-150">
                 <div className="px-3 py-3 mb-2 border-b border-white/5 flex items-center gap-2.5">
                   <div className="w-7 h-7 rounded-full overflow-hidden bg-white/5">
                     <img

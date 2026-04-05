@@ -412,7 +412,7 @@ export default function ProfileBubble() {
       <button
         id="profile-button"
         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-        className="group relative w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#1A1A1A] border border-[#444444] flex items-center justify-center text-white font-semibold text-sm hover:bg-[#2A2A2A] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#121212] focus-visible:ring-2 focus-visible:ring-blue-500"
+        className="group relative w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white dark:bg-[#1A1A1A] border border-neutral-200 dark:border-[#444444] flex items-center justify-center text-white font-semibold text-sm hover:bg-neutral-50 dark:hover:bg-[#2A2A2A] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-[#121212] focus-visible:ring-2 focus-visible:ring-blue-500"
         style={{ fontFamily: "'Stack Sans Notch', ui-sans-serif, system-ui, sans-serif" }}
         aria-label={`Profile menu for ${user.name || user.email}, status: ${getStatusText(userStatus)}`}
         aria-expanded={isDropdownOpen}
@@ -427,7 +427,7 @@ export default function ProfileBubble() {
             className="w-full h-full rounded-full object-cover"
           />
         ) : (
-          <span className="text-white group-hover:text-neutral-900 dark:text-gray-200 transition-colors">{initials}</span>
+          <span className="text-black dark:text-white group-hover:text-black dark:group-hover:text-white dark:text-gray-200 transition-colors">{initials}</span>
         )}
 
         {/* Status Indicator */}
@@ -450,16 +450,16 @@ export default function ProfileBubble() {
           {/* Desktop Dropdown */}
           <div
             id="profile-dropdown"
-            className="hidden md:block absolute right-0 mt-2 w-80 bg-[#121212] border border-[#333333] rounded-lg shadow-2xl z-50 animate-in fade-in-0 zoom-in-95 duration-200"
+            className="hidden md:block absolute right-0 mt-2 w-80 bg-white dark:bg-white dark:bg-[#121212] border border-neutral-200 dark:border-[#333333] rounded-lg shadow-2xl z-50 animate-in fade-in-0 zoom-in-95 duration-200"
             role="menu"
             aria-label="Profile menu"
             aria-labelledby="profile-button"
           >
             {/* User Info Section */}
-            <div className="p-4 border-b border-[#333333]">
+            <div className="p-4 border-b border-neutral-100 dark:border-[#333333]">
               <div className="flex items-center gap-3">
                 <div className="relative">
-                  <div className="w-12 h-12 rounded-full bg-[#1A1A1A] border border-[#444444] flex items-center justify-center text-white font-semibold text-base">
+                  <div className="w-12 h-12 rounded-full bg-white dark:bg-[#1A1A1A] border border-neutral-200 dark:border-[#444444] flex items-center justify-center text-white font-semibold text-base">
                     {hasProfileImage() ? (
                       <img
                         src={getProfileImage()}
@@ -476,16 +476,16 @@ export default function ProfileBubble() {
                   ></div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-white font-medium truncate">{user.name || "User"}</p>
-                  <p className="text-neutral-600 dark:text-gray-400 text-sm truncate">{user.email}</p>
+                  <p className="text-black dark:text-white font-medium truncate">{user.name || "User"}</p>
+                  <p className="text-neutral-500 dark:text-gray-400 text-sm truncate">{user.email}</p>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs text-neutral-600 dark:text-gray-500 bg-[#1A1A1A] px-2 py-0.5 rounded-full">99+ emails</span>
+                    <span className="text-xs text-neutral-600 dark:text-gray-500 bg-neutral-50 dark:bg-[#1A1A1A] px-2 py-0.5 rounded-full text-neutral-500 dark:text-gray-500">99+ emails</span>
                     <span className="text-xs text-neutral-600 dark:text-gray-500">Admin</span>
                   </div>
                   {/* Personal Information */}
                   <div className="mt-3 relative">
                     <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-sm font-medium text-white">Personal Information</h4>
+                      <h4 className="text-sm font-medium text-black dark:text-white">Personal Information</h4>
                       <button
                         onClick={() => {
                           setEditForm({
@@ -501,7 +501,7 @@ export default function ProfileBubble() {
                           setIsEditModalOpen(true);
                           setIsDropdownOpen(false);
                         }}
-                        className="text-neutral-600 dark:text-gray-400 hover:text-white transition-colors p-1 rounded-md hover:bg-[#2A2A2A]"
+                        className="text-neutral-600 dark:text-gray-400 hover:text-white transition-colors p-1 rounded-md hover:bg-neutral-50 dark:hover:bg-[#2A2A2A]"
                         aria-label="Edit personal information"
                       >
                         <EditProfileDialog
@@ -548,13 +548,13 @@ export default function ProfileBubble() {
             <div className="p-3">
               {/* Status Management */}
               <div className="mb-3">
-                <h3 className="text-xs font-semibold text-neutral-600 dark:text-gray-400 uppercase tracking-wider mb-2">Status</h3>
+                <h3 className="text-xs font-semibold text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-2">Status</h3>
                 <div className="space-y-1">
                   <button
                     onClick={() => updateUserStatus('online')}
                     className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${userStatus === 'online'
                       ? 'bg-green-500/20 text-green-400'
-                      : 'text-white hover:bg-[#2A2A2A]'
+                      : 'text-white hover:bg-neutral-50 dark:hover:bg-[#2A2A2A]'
                       }`}
                     role="menuitem"
                   >
@@ -565,7 +565,7 @@ export default function ProfileBubble() {
                     onClick={() => updateUserStatus('away')}
                     className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${userStatus === 'away'
                       ? 'bg-yellow-500/20 text-yellow-400'
-                      : 'text-white hover:bg-[#2A2A2A]'
+                      : 'text-white hover:bg-neutral-50 dark:hover:bg-[#2A2A2A]'
                       }`}
                     role="menuitem"
                   >
@@ -576,7 +576,7 @@ export default function ProfileBubble() {
                     onClick={() => updateUserStatus('offline')}
                     className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${userStatus === 'offline'
                       ? 'bg-gray-500/20 text-neutral-600 dark:text-gray-400'
-                      : 'text-white hover:bg-[#2A2A2A]'
+                      : 'text-white hover:bg-neutral-50 dark:hover:bg-[#2A2A2A]'
                       }`}
                     role="menuitem"
                   >
@@ -588,23 +588,23 @@ export default function ProfileBubble() {
 
               {/* Account Actions */}
               <div className="mb-3">
-                <h3 className="text-xs font-semibold text-neutral-600 dark:text-gray-400 uppercase tracking-wider mb-2">Account</h3>
+                <h3 className="text-xs font-semibold text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-2">Account</h3>
                 <div className="space-y-1">
                   <button
                     onClick={handleProfileClick}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors"
+                    className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-neutral-50 dark:hover:bg-[#2A2A2A] rounded-md transition-colors"
                     role="menuitem"
                   >
                     <UserCircle className="w-4 h-4" />
                     View Profile
                   </button>
-                  <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
+                  <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-neutral-50 dark:hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
                     <Camera className="w-4 h-4" />
                     Change Avatar
                   </button>
                   <EditProfileDialog
                     trigger={
-                      <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
+                      <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-neutral-50 dark:hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
                         <Edit className="w-4 h-4" />
                         Edit Profile
                       </button>
@@ -623,7 +623,7 @@ export default function ProfileBubble() {
                   />
                   <button
                     onClick={() => { setIsDropdownOpen(false); }}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors"
+                    className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-neutral-50 dark:hover:bg-[#2A2A2A] rounded-md transition-colors"
                     role="menuitem"
                   >
                     <Settings className="w-4 h-4" />
@@ -634,13 +634,13 @@ export default function ProfileBubble() {
 
               {/* Workspace & Collaboration */}
               <div className="mb-3">
-                <h3 className="text-xs font-semibold text-neutral-600 dark:text-gray-400 uppercase tracking-wider mb-2">Workspace</h3>
+                <h3 className="text-xs font-semibold text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-2">Workspace</h3>
                 <div className="space-y-1">
-                  <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
+                  <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-neutral-50 dark:hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
                     <Users className="w-4 h-4" />
                     Team Management
                   </button>
-                  <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
+                  <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-neutral-50 dark:hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
                     <User className="w-4 h-4" />
                     Invite Members
                   </button>
@@ -649,13 +649,13 @@ export default function ProfileBubble() {
 
               {/* Security & Privacy */}
               <div className="mb-3">
-                <h3 className="text-xs font-semibold text-neutral-600 dark:text-gray-400 uppercase tracking-wider mb-2">Security</h3>
+                <h3 className="text-xs font-semibold text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-2">Security</h3>
                 <div className="space-y-1">
-                  <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
+                  <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-neutral-50 dark:hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
                     <Shield className="w-4 h-4" />
                     Two-Factor Auth
                   </button>
-                  <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
+                  <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-neutral-50 dark:hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
                     <Activity className="w-4 h-4" />
                     Active Sessions
                   </button>
@@ -664,13 +664,13 @@ export default function ProfileBubble() {
 
               {/* Billing & Usage */}
               <div className="mb-3">
-                <h3 className="text-xs font-semibold text-neutral-600 dark:text-gray-400 uppercase tracking-wider mb-2">Billing</h3>
+                <h3 className="text-xs font-semibold text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-2">Billing</h3>
                 <div className="space-y-1">
-                  <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
+                  <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-neutral-50 dark:hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
                     <CreditCard className="w-4 h-4" />
                     Billing & Plans
                   </button>
-                  <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
+                  <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-neutral-50 dark:hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
                     <Activity className="w-4 h-4" />
                     Usage Dashboard
                   </button>
@@ -679,17 +679,17 @@ export default function ProfileBubble() {
 
               {/* Help & Support */}
               <div className="mb-3">
-                <h3 className="text-xs font-semibold text-neutral-600 dark:text-gray-400 uppercase tracking-wider mb-2">Support</h3>
+                <h3 className="text-xs font-semibold text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-2">Support</h3>
                 <div className="space-y-1">
-                  <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
+                  <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-neutral-50 dark:hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
                     <HelpCircle className="w-4 h-4" />
                     Help Center
                   </button>
-                  <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
+                  <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-neutral-50 dark:hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
                     <ExternalLink className="w-4 h-4" />
                     Contact Support
                   </button>
-                  <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
+                  <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-neutral-50 dark:hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
                     <Bell className="w-4 h-4" />
                     What's New
                   </button>
@@ -698,13 +698,13 @@ export default function ProfileBubble() {
 
               {/* Legal & Compliance */}
               <div className="mb-3">
-                <h3 className="text-xs font-semibold text-neutral-600 dark:text-gray-400 uppercase tracking-wider mb-2">Legal</h3>
+                <h3 className="text-xs font-semibold text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-2">Legal</h3>
                 <div className="space-y-1">
-                  <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
+                  <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-neutral-50 dark:hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
                     <FileText className="w-4 h-4" />
                     Terms of Service
                   </button>
-                  <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
+                  <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-neutral-50 dark:hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
                     <FileText className="w-4 h-4" />
                     Privacy Policy
                   </button>
@@ -713,13 +713,13 @@ export default function ProfileBubble() {
 
               {/* Theme Switch */}
               <div className="mb-3">
-                <h3 className="text-xs font-semibold text-neutral-600 dark:text-gray-400 uppercase tracking-wider mb-2">Appearance</h3>
+                <h3 className="text-xs font-semibold text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-2">Appearance</h3>
                 <div className="space-y-1">
                   <button
                     onClick={() => handleThemeChange('dark')}
                     className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${theme === 'dark'
-                      ? 'bg-[#2A2A2A] text-white'
-                      : 'text-white hover:bg-[#2A2A2A]'
+                      ? 'bg-black/[0.05] dark:bg-[#2A2A2A] text-black dark:text-white'
+                      : 'text-white hover:bg-neutral-50 dark:hover:bg-[#2A2A2A]'
                       }`}
                     role="menuitem"
                   >
@@ -729,8 +729,8 @@ export default function ProfileBubble() {
                   <button
                     onClick={() => handleThemeChange('light')}
                     className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${theme === 'light'
-                      ? 'bg-[#2A2A2A] text-white'
-                      : 'text-white hover:bg-[#2A2A2A]'
+                      ? 'bg-black/[0.05] dark:bg-[#2A2A2A] text-black dark:text-white'
+                      : 'text-white hover:bg-neutral-50 dark:hover:bg-[#2A2A2A]'
                       }`}
                     role="menuitem"
                   >
@@ -740,8 +740,8 @@ export default function ProfileBubble() {
                   <button
                     onClick={() => handleThemeChange('system')}
                     className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${theme === 'system'
-                      ? 'bg-[#2A2A2A] text-white'
-                      : 'text-white hover:bg-[#2A2A2A]'
+                      ? 'bg-black/[0.05] dark:bg-[#2A2A2A] text-black dark:text-white'
+                      : 'text-white hover:bg-neutral-50 dark:hover:bg-[#2A2A2A]'
                       }`}
                     role="menuitem"
                   >
@@ -758,7 +758,7 @@ export default function ProfileBubble() {
               <div className="mb-3">
                 <h3 className="text-xs font-semibold text-red-400 uppercase tracking-wider mb-2">Danger Zone</h3>
                 <div className="space-y-1">
-                  <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-red-400 hover:bg-red-500/10 rounded-md transition-colors" role="menuitem">
+                  <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded-md transition-colors" role="menuitem">
                     <Trash2 className="w-4 h-4" />
                     Delete Account
                   </button>
@@ -768,7 +768,7 @@ export default function ProfileBubble() {
               {/* Logout Button */}
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center gap-3 px-3 py-2 text-left text-red-400 hover:bg-red-500/10 rounded-md transition-colors border border-red-500/20"
+                className="w-full flex items-center gap-3 px-3 py-2 text-left text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded-md transition-colors border border-red-500/20"
                 role="menuitem"
               >
                 <LogOut className="w-4 h-4" />
@@ -780,14 +780,14 @@ export default function ProfileBubble() {
           {/* Mobile Bottom Sheet */}
           <div
             id="mobile-profile-dropdown"
-            className="md:hidden fixed bottom-0 left-0 right-0 bg-[#121212] border-t border-[#333333] rounded-t-lg shadow-2xl z-50 animate-in slide-in-from-bottom-2 duration-200 max-h-[80vh] overflow-hidden"
+            className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-white dark:bg-[#121212] border-t border-[#333333] rounded-t-lg shadow-2xl z-50 animate-in slide-in-from-bottom-2 duration-200 max-h-[80vh] overflow-hidden"
             role="dialog"
             aria-modal="true"
             aria-labelledby="mobile-profile-title"
             aria-describedby="mobile-profile-description"
           >
             {/* Mobile Header */}
-            <div className="flex items-center justify-between p-4 border-b border-[#333333]">
+            <div className="flex items-center justify-between p-4 border-b border-neutral-100 dark:border-[#333333]">
               <h2 id="mobile-profile-title" className="text-white font-medium">Profile Menu</h2>
               <button
                 onClick={() => setIsDropdownOpen(false)}
@@ -806,7 +806,7 @@ export default function ProfileBubble() {
               <div className="mb-4">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="relative">
-                    <div className="w-12 h-12 rounded-full bg-[#1A1A1A] border border-[#444444] flex items-center justify-center text-white font-semibold text-base">
+                    <div className="w-12 h-12 rounded-full bg-white dark:bg-[#1A1A1A] border border-neutral-200 dark:border-[#444444] flex items-center justify-center text-white font-semibold text-base">
                       {hasProfileImage() ? (
                         <img
                           src={getProfileImage()}
@@ -823,16 +823,16 @@ export default function ProfileBubble() {
                     ></div>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-white font-medium truncate">{user.name || "User"}</p>
-                    <p className="text-neutral-600 dark:text-gray-400 text-sm truncate">{user.email}</p>
+                    <p className="text-black dark:text-white font-medium truncate">{user.name || "User"}</p>
+                    <p className="text-neutral-500 dark:text-gray-400 text-sm truncate">{user.email}</p>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs text-neutral-600 dark:text-gray-500 bg-[#1A1A1A] px-2 py-0.5 rounded-full">99+ emails</span>
+                      <span className="text-xs text-neutral-600 dark:text-gray-500 bg-neutral-50 dark:bg-[#1A1A1A] px-2 py-0.5 rounded-full text-neutral-500 dark:text-gray-500">99+ emails</span>
                       <span className="text-xs text-neutral-600 dark:text-gray-500">Admin</span>
                     </div>
                     {/* Personal Information - Mobile */}
                     <div className="mt-3 relative">
                       <div className="flex items-center justify-between mb-2">
-                        <h4 className="text-sm font-medium text-white">Personal Information</h4>
+                        <h4 className="text-sm font-medium text-black dark:text-white">Personal Information</h4>
                         <button
                           onClick={() => {
                             setEditForm({
@@ -848,7 +848,7 @@ export default function ProfileBubble() {
                             setIsEditModalOpen(true);
                             setIsDropdownOpen(false);
                           }}
-                          className="text-neutral-600 dark:text-gray-400 hover:text-white transition-colors p-1 rounded-md hover:bg-[#2A2A2A]"
+                          className="text-neutral-600 dark:text-gray-400 hover:text-white transition-colors p-1 rounded-md hover:bg-neutral-50 dark:hover:bg-[#2A2A2A]"
                           aria-label="Edit personal information"
                         >
                           <EditProfileDialog
@@ -895,13 +895,13 @@ export default function ProfileBubble() {
               <div className="space-y-4">
                 {/* Status Management - Mobile */}
                 <div>
-                  <h3 className="text-xs font-semibold text-neutral-600 dark:text-gray-400 uppercase tracking-wider mb-2">Status</h3>
+                  <h3 className="text-xs font-semibold text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-2">Status</h3>
                   <div className="grid grid-cols-3 gap-2">
                     <button
                       onClick={() => updateUserStatus('online')}
                       className={`flex flex-col items-center gap-2 p-3 rounded-md transition-colors ${userStatus === 'online'
                         ? 'bg-green-500/20 text-green-400'
-                        : 'text-white hover:bg-[#2A2A2A]'
+                        : 'text-white hover:bg-neutral-50 dark:hover:bg-[#2A2A2A]'
                         }`}
                       role="menuitem"
                     >
@@ -912,7 +912,7 @@ export default function ProfileBubble() {
                       onClick={() => updateUserStatus('away')}
                       className={`flex flex-col items-center gap-2 p-3 rounded-md transition-colors ${userStatus === 'away'
                         ? 'bg-yellow-500/20 text-yellow-400'
-                        : 'text-white hover:bg-[#2A2A2A]'
+                        : 'text-white hover:bg-neutral-50 dark:hover:bg-[#2A2A2A]'
                         }`}
                       role="menuitem"
                     >
@@ -923,7 +923,7 @@ export default function ProfileBubble() {
                       onClick={() => updateUserStatus('offline')}
                       className={`flex flex-col items-center gap-2 p-3 rounded-md transition-colors ${userStatus === 'offline'
                         ? 'bg-gray-500/20 text-neutral-600 dark:text-gray-400'
-                        : 'text-white hover:bg-[#2A2A2A]'
+                        : 'text-white hover:bg-neutral-50 dark:hover:bg-[#2A2A2A]'
                         }`}
                       role="menuitem"
                     >
@@ -935,25 +935,25 @@ export default function ProfileBubble() {
 
                 {/* Quick Actions */}
                 <div>
-                  <h3 className="text-xs font-semibold text-neutral-600 dark:text-gray-400 uppercase tracking-wider mb-2">Quick Actions</h3>
+                  <h3 className="text-xs font-semibold text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-2">Quick Actions</h3>
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       onClick={handleProfileClick}
-                      className="flex flex-col items-center gap-2 p-3 text-white hover:bg-[#2A2A2A] rounded-md transition-colors"
+                      className="flex flex-col items-center gap-2 p-3 text-white hover:bg-neutral-50 dark:hover:bg-[#2A2A2A] rounded-md transition-colors"
                       role="menuitem"
                     >
                       <UserCircle className="w-5 h-5" />
                       <span className="text-xs">Profile</span>
                     </button>
-                    <button className="flex flex-col items-center gap-2 p-3 text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
+                    <button className="flex flex-col items-center gap-2 p-3 text-white hover:bg-neutral-50 dark:hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
                       <Settings className="w-5 h-5" />
                       <span className="text-xs">Settings</span>
                     </button>
-                    <button className="flex flex-col items-center gap-2 p-3 text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
+                    <button className="flex flex-col items-center gap-2 p-3 text-white hover:bg-neutral-50 dark:hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
                       <Users className="w-5 h-5" />
                       <span className="text-xs">Team</span>
                     </button>
-                    <button className="flex flex-col items-center gap-2 p-3 text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
+                    <button className="flex flex-col items-center gap-2 p-3 text-white hover:bg-neutral-50 dark:hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
                       <HelpCircle className="w-5 h-5" />
                       <span className="text-xs">Help</span>
                     </button>
@@ -962,11 +962,11 @@ export default function ProfileBubble() {
 
                 {/* Account & Security */}
                 <div>
-                  <h3 className="text-xs font-semibold text-neutral-600 dark:text-gray-400 uppercase tracking-wider mb-2">Account & Security</h3>
+                  <h3 className="text-xs font-semibold text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-2">Account & Security</h3>
                   <div className="space-y-1">
                     <EditProfileDialog
                       trigger={
-                        <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
+                        <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-neutral-50 dark:hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
                           <Edit className="w-4 h-4" />
                           Edit Profile
                         </button>
@@ -983,11 +983,11 @@ export default function ProfileBubble() {
                       } : undefined}
                       onSave={saveProfileFromDialog}
                     />
-                    <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
+                    <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-neutral-50 dark:hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
                       <Shield className="w-4 h-4" />
                       Two-Factor Auth
                     </button>
-                    <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
+                    <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-neutral-50 dark:hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
                       <CreditCard className="w-4 h-4" />
                       Billing
                     </button>
@@ -996,13 +996,13 @@ export default function ProfileBubble() {
 
                 {/* Theme Selection - Mobile */}
                 <div>
-                  <h3 className="text-xs font-semibold text-neutral-600 dark:text-gray-400 uppercase tracking-wider mb-2">Theme</h3>
+                  <h3 className="text-xs font-semibold text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-2">Theme</h3>
                   <div className="grid grid-cols-3 gap-2">
                     <button
                       onClick={() => handleThemeChange('dark')}
                       className={`flex flex-col items-center gap-2 p-3 rounded-md transition-colors ${theme === 'dark'
-                        ? 'bg-[#2A2A2A] text-white'
-                        : 'text-white hover:bg-[#2A2A2A]'
+                        ? 'bg-black/[0.05] dark:bg-[#2A2A2A] text-black dark:text-white'
+                        : 'text-white hover:bg-neutral-50 dark:hover:bg-[#2A2A2A]'
                         }`}
                       role="menuitem"
                     >
@@ -1012,8 +1012,8 @@ export default function ProfileBubble() {
                     <button
                       onClick={() => handleThemeChange('light')}
                       className={`flex flex-col items-center gap-2 p-3 rounded-md transition-colors ${theme === 'light'
-                        ? 'bg-[#2A2A2A] text-white'
-                        : 'text-white hover:bg-[#2A2A2A]'
+                        ? 'bg-black/[0.05] dark:bg-[#2A2A2A] text-black dark:text-white'
+                        : 'text-white hover:bg-neutral-50 dark:hover:bg-[#2A2A2A]'
                         }`}
                       role="menuitem"
                     >
@@ -1023,8 +1023,8 @@ export default function ProfileBubble() {
                     <button
                       onClick={() => handleThemeChange('system')}
                       className={`flex flex-col items-center gap-2 p-3 rounded-md transition-colors ${theme === 'system'
-                        ? 'bg-[#2A2A2A] text-white'
-                        : 'text-white hover:bg-[#2A2A2A]'
+                        ? 'bg-black/[0.05] dark:bg-[#2A2A2A] text-black dark:text-white'
+                        : 'text-white hover:bg-neutral-50 dark:hover:bg-[#2A2A2A]'
                         }`}
                       role="menuitem"
                     >
@@ -1036,13 +1036,13 @@ export default function ProfileBubble() {
 
                 {/* Legal Links */}
                 <div>
-                  <h3 className="text-xs font-semibold text-neutral-600 dark:text-gray-400 uppercase tracking-wider mb-2">Legal</h3>
+                  <h3 className="text-xs font-semibold text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-2">Legal</h3>
                   <div className="space-y-1">
-                    <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
+                    <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-neutral-50 dark:hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
                       <FileText className="w-4 h-4" />
                       Terms of Service
                     </button>
-                    <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
+                    <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-neutral-50 dark:hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
                       <FileText className="w-4 h-4" />
                       Privacy Policy
                     </button>
@@ -1053,7 +1053,7 @@ export default function ProfileBubble() {
                 <div className="pt-4 border-t border-[#333333]">
                   <button
                     onClick={handleLogout}
-                    className="w-full flex items-center gap-3 px-3 py-3 text-left text-red-400 hover:bg-red-500/10 rounded-md transition-colors border border-red-500/20"
+                    className="w-full flex items-center gap-3 px-3 py-3 text-left text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded-md transition-colors border border-red-500/20"
                     role="menuitem"
                   >
                     <LogOut className="w-4 h-4" />

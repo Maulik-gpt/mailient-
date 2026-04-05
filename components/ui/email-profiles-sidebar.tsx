@@ -155,7 +155,7 @@ export function EmailProfilesSidebar({ isOpen, onClose }: EmailProfilesSidebarPr
                         animate={{ x: 0 }}
                         exit={{ x: '100%' }}
                         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                        className="fixed right-0 top-0 h-full w-full max-w-md bg-[#0a0a0a] border-l border-white/5 z-[70] flex flex-col overflow-hidden"
+                        className="fixed right-0 top-0 h-full w-full max-w-md bg-white dark:bg-[#0a0a0a] border-l border-white/5 z-[70] flex flex-col overflow-hidden"
                     >
                         {/* Minimalist Header */}
                         <div className="flex items-center justify-between p-6 border-b border-white/5">

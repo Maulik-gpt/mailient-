@@ -189,7 +189,7 @@ export function ArcusCommandPalette() {
                         exit={{ opacity: 0, y: -20, scale: 0.96 }}
                         transition={{ type: 'spring', damping: 28, stiffness: 380 }}
                         onClick={(e) => e.stopPropagation()}
-                        className={`relative w-full max-w-[680px] mx-4 bg-[#111111] rounded-2xl border border-white/[0.08] shadow-[0_40px_120px_-20px_rgba(0,0,0,0.9)] overflow-hidden flex flex-col ${hasMessages ? 'max-h-[70vh]' : ''}`}
+                        className={`relative w-full max-w-[680px] mx-4 bg-white dark:bg-[#111111] rounded-2xl border border-white/[0.08] shadow-[0_40px_120px_-20px_rgba(0,0,0,0.9)] overflow-hidden flex flex-col ${hasMessages ? 'max-h-[70vh]' : ''}`}
                     >
                         {/* Ambient glow */}
                         <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-64 h-64 bg-white/[0.02] rounded-full blur-[80px] pointer-events-none" />
