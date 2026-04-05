@@ -149,7 +149,7 @@ export function PersonalitySettingsModal({
           </button>
           <button
             onClick={handleSave}
-            className="px-6 py-2.5 rounded-xl font-medium transition-all duration-200 bg-black dark:bg-[#fafafa] text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200 shadow-lg active:scale-95"
+            className="px-6 py-2.5 rounded-xl font-medium transition-all duration-200 bg-black dark:bg-[#fafafa] text-white dark:text-black hover:bg-black/90 dark:hover:bg-neutral-200 shadow-lg active:scale-95"
           >
             Save
           </button>

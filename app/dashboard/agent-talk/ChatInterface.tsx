@@ -2229,7 +2229,7 @@ export default function ChatInterface({
                           <div className="flex items-center bg-white/[0.03] border border-white/[0.08] rounded-xl overflow-hidden shadow-xl transition-all hover:border-white/15 group">
                             <button
                               onClick={() => setIsTitleMenuOpen(!isTitleMenuOpen)}
-                              className="pl-4 pr-3 py-2 hover:bg-black/[0.05] dark:bg-white/[0.05] transition-colors flex items-center gap-2.5 max-w-[280px]"
+                              className="pl-4 pr-3 py-2 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition-colors flex items-center gap-2.5 max-w-[280px]"
                             >
                               <span className="text-[13px] font-bold text-black dark:text-white/90 truncate tracking-tight lowercase">
                                 {chatTitle || 'new conversation'}
@@ -2329,11 +2329,11 @@ export default function ChatInterface({
                       {/* Subscription Badge */}
                       {currentPlan !== 'pro' && (
                         <div className="flex items-center gap-1.5 px-3 py-1 bg-white dark:bg-[#111111] border border-neutral-200 dark:border-white/10 rounded-full shadow-sm transition-all group-hover:border-neutral-300 dark:group-hover:border-white/20">
-                          <span className="text-[10px] text-black/60 dark:text-white/40 font-medium tracking-wide whitespace-nowrap group-hover:text-black dark:group-hover:text-white/60 transition-colors">Free plan</span>
-                          <span className="text-[10px] text-black/10 dark:text-white/10">•</span>
+                          <span className="text-[10px] text-neutral-500 dark:text-white/40 font-medium tracking-wide whitespace-nowrap group-hover:text-black dark:group-hover:text-white/60 transition-colors">Free plan</span>
+                          <span className="text-[10px] text-neutral-300 dark:text-white/10">•</span>
                           <button 
                             onClick={() => router.push('/pricing')}
-                            className="text-[10px] text-black dark:text-white/80 transition-colors font-bold uppercase tracking-tight whitespace-nowrap hover:text-blue-600 dark:hover:text-white"
+                            className="text-[10px] text-black dark:text-white/80 transition-colors font-bold uppercase tracking-tight whitespace-nowrap hover:text-neutral-600 dark:hover:text-white"
                           >
                             Upgrade
                           </button>
@@ -2348,7 +2348,7 @@ export default function ChatInterface({
                               e.stopPropagation();
                               startNewChat();
                             }}
-                            className="p-2 hover:bg-black/5 dark:bg-white/5 rounded-lg transition-all text-black dark:text-white/60 focus:outline-none focus:ring-0"
+                            className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-all text-black dark:text-white/60 focus:outline-none focus:ring-0"
                           >
                              <HugeiconsIcon icon={AddSquareIcon} size={20} />
                            </button>

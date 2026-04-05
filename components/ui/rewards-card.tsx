@@ -90,8 +90,8 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
                     <div className="absolute inset-0 bg-gradient-to-r from-neutral-50 dark:from-[#0E0E0E] via-neutral-50/80 dark:via-[#0E0E0E]/80 to-transparent z-[5]" />
 
                     <div className="relative z-10 space-y-3">
-                        <div className="inline-flex items-center px-3 py-1 rounded-full bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/10 backdrop-blur-md">
-                            <span className="text-[10px] font-bold text-black dark:text-white tracking-widest uppercase opacity-80">Earn 50+ units</span>
+                        <div className="inline-flex items-center px-3 py-1 rounded-full bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 backdrop-blur-md">
+                            <span className="text-[10px] font-bold text-neutral-600 dark:text-white tracking-widest uppercase opacity-80">Earn 50+ units</span>
                         </div>
                         <h2 className="text-4xl font-bold text-black dark:text-white tracking-tight leading-[1.1]">
                             Expand the<br />Network
@@ -138,9 +138,9 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
                         <p className="text-[13px] font-medium text-neutral-500 dark:text-white/50">
                             <span className="text-black dark:text-white font-bold">{profile?.invite_count || 0}</span> signed up, <span className="text-black dark:text-white font-bold">{profile?.conversion_count || 0}</span> converted
                         </p>
-                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/5">
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/5">
                             <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                            <span className="text-[10px] font-bold text-neutral-400 dark:text-white/40 uppercase tracking-tighter">Live Status</span>
+                            <span className="text-[10px] font-bold text-neutral-500 dark:text-white/40 uppercase tracking-tighter">Live Status</span>
                         </div>
                     </div>
 
@@ -155,7 +155,7 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
                             </div>
                             <button 
                                 onClick={handleCopyLink}
-                                className="px-6 h-full bg-black dark:bg-white text-white dark:text-[#0E0E0E] rounded-[10px] text-xs font-bold hover:scale-[0.98] active:scale-95 transition-all shadow-lg"
+                                className="px-6 h-full bg-black dark:bg-white text-white dark:text-[#0E0E0E] rounded-[10px] text-xs font-bold hover:bg-black/90 dark:hover:bg-neutral-200 transition-all shadow-lg active:scale-95"
                             >
                                 {copied ? 'Copied' : 'Copy link'}
                             </button>

@@ -290,7 +290,7 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
               onClick={() => setIsFeedbackOpen(true)}
               className="w-full py-3 px-4 rounded-xl border border-dashed border-neutral-200 dark:border-white/10 hover:border-neutral-300 dark:border-white/20 hover:bg-white/[0.02] transition-all text-left group"
             >
-              <span className="text-[12px] font-medium text-black/30 dark:text-white/30 group-hover:text-black/5 dark:text-black/50 dark:text-white/50">Have Feedback? <span className="text-black/60 dark:text-white/60">Write here!</span></span>
+              <span className="text-[12px] font-medium text-neutral-400 dark:text-white/30 group-hover:text-black dark:group-hover:text-white/60">Have Feedback? <span className="text-black/60 dark:text-white/60">Write here!</span></span>
             </motion.button>
           ) : (
             <motion.div
@@ -322,7 +322,7 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
                     disabled={!feedbackText.trim() || isSending || isSent}
                     className={cn(
                       "flex items-center gap-2 px-4 py-1.5 rounded-full text-[12px] font-bold transition-all",
-                      isSent ? "bg-emerald-500 text-black dark:text-white" : "bg-white text-black hover:bg-neutral-200"
+                      isSent ? "bg-emerald-500 text-white dark:text-black" : "bg-black dark:bg-white text-white dark:text-black hover:bg-black/90 dark:hover:bg-neutral-200 shadow-xl"
                     )}
                   >
                     {isSent ? "Sent!" : isSending ? "Sending..." : "Send"}
