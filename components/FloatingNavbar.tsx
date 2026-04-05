@@ -113,19 +113,19 @@ export function FloatingNavbar() {
                           className={cn(
                             "relative flex items-center h-11 rounded-full overflow-hidden px-1.5 transition-all duration-500",
                             isActive 
-                              ? "bg-black dark:bg-white text-white dark:text-black shadow-lg" 
+                              ? "bg-white dark:bg-black text-black dark:text-white shadow-lg border border-black/5 dark:border-white/10" 
                               : isHovered 
-                                ? "bg-white/30 dark:bg-white/10 text-black dark:text-neutral-100" 
+                                ? "bg-black/5 dark:bg-white/10 text-black dark:text-neutral-100" 
                                 : "text-black/60 dark:text-neutral-400"
                           )}
                         >
                           <div 
                             className={cn(
                               "flex items-center justify-center w-8 h-8 rounded-full shrink-0 transition-colors duration-300",
-                              isActive ? "bg-white dark:bg-black" : ""
+                              isActive ? "bg-black/5 dark:bg-white/10" : ""
                             )}
                           >
-                            <Icon className={cn("w-[18px] h-[18px]", isActive ? "text-black dark:text-white" : "text-current")} />
+                            <Icon className={cn("w-[18px] h-[18px]", "text-current")} />
                           </div>
                           
                           <AnimatePresence initial={false}>
@@ -151,7 +151,7 @@ export function FloatingNavbar() {
                         {isActive && (
                           <motion.div
                             layoutId="pill"
-                            className="absolute inset-0 z-[-1] bg-black dark:bg-white rounded-full"
+                            className="absolute inset-0 z-[-1] bg-white dark:bg-black rounded-full"
                             transition={{ type: "spring", stiffness: 175, damping: 12 }}
                           />
                         )}

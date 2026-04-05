@@ -94,7 +94,7 @@ export function FeedbackDialog({
               disabled={isSending || !feedback.trim()}
               className={cn(
                 "rounded-[20px] px-8 py-3 transition-all font-bold flex items-center gap-2 group border-none shadow-2xl",
-                "bg-[#000] dark:bg-white text-white dark:text-[#000] hover:bg-[#000]/90 dark:hover:bg-neutral-200"
+                "bg-black dark:bg-white text-white dark:text-black hover:bg-black/90 dark:hover:bg-neutral-200"
               )}
             >
               {isSending ? (
