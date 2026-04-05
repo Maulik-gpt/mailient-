@@ -2333,7 +2333,7 @@ export default function ChatInterface({
                           <span className="text-[10px] text-neutral-300 dark:text-white/10">•</span>
                           <button 
                             onClick={() => router.push('/pricing')}
-                            className="text-[10px] text-black dark:text-white/80 transition-colors font-bold uppercase tracking-tight whitespace-nowrap hover:text-neutral-600 dark:hover:text-white"
+                            className="text-[10px] text-black dark:text-white transition-colors font-bold uppercase tracking-tight whitespace-nowrap hover:text-neutral-600 dark:hover:text-white"
                           >
                             Upgrade
                           </button>

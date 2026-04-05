@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface PersonalitySettingsModalProps {
   isOpen: boolean;
@@ -149,13 +151,15 @@ export function PersonalitySettingsModal({
           </button>
           <button
             onClick={handleSave}
-            className="px-6 py-2.5 rounded-xl font-medium transition-all duration-200 bg-black dark:bg-[#fafafa] text-white dark:text-black hover:bg-black/90 dark:hover:bg-neutral-200 shadow-lg active:scale-95"
+            className={cn(
+              "rounded-xl px-6 py-2.5 transition-all font-medium flex items-center gap-2 border-none shadow-lg active:scale-95",
+              "bg-black dark:bg-[#fafafa] text-white dark:text-black hover:bg-black/90 dark:hover:bg-neutral-200"
+            )}
           >
-            Save
+            Save Changes
           </button>
         </div>
       </div>
     </div>
   );
 }
-

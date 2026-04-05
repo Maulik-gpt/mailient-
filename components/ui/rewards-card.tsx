@@ -155,7 +155,7 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
                             </div>
                             <button 
                                 onClick={handleCopyLink}
-                                className="px-6 h-full bg-black dark:bg-white text-white dark:text-[#0E0E0E] rounded-[10px] text-xs font-bold hover:bg-black/90 dark:hover:bg-neutral-200 transition-all shadow-lg active:scale-95"
+                                className="px-6 h-full bg-black dark:bg-white text-white dark:text-[#0E0E0E] rounded-[10px] text-xs font-bold hover:bg-black/90 dark:hover:bg-neutral-200 transition-all shadow-lg active:scale-95 border-none"
                             >
                                 {copied ? 'Copied' : 'Copy link'}
                             </button>

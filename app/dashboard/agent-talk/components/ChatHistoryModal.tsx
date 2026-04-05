@@ -331,8 +331,8 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
                     onClick={handleSendFeedback}
                     disabled={!feedbackText.trim() || isSending || isSent}
                     className={cn(
-                      "flex items-center gap-2 px-4 py-1.5 rounded-full text-[12px] font-bold transition-all",
-                      isSent ? "bg-emerald-500 text-white dark:text-black" : "bg-black dark:bg-white text-white dark:text-black hover:bg-black/90 dark:hover:bg-neutral-200 shadow-xl"
+                      "flex items-center gap-2 px-4 py-1.5 rounded-full text-[12px] font-bold transition-all border-none shadow-lg",
+                      isSent ? "bg-emerald-500 text-white" : "bg-black dark:bg-white text-white dark:text-black hover:bg-black/90 dark:hover:bg-neutral-100"
                     )}
                   >
                     {isSent ? "Sent!" : isSending ? "Sending..." : "Send"}

@@ -92,16 +92,19 @@ export function FeedbackDialog({
             <Button
               onClick={handleSend}
               disabled={isSending || !feedback.trim()}
-              className="rounded-[20px] px-8 py-3 bg-black dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-all font-bold flex items-center gap-2 group border-none shadow-2xl"
+              className={cn(
+                "rounded-[20px] px-8 py-3 transition-all font-bold flex items-center gap-2 group border-none shadow-2xl",
+                "bg-black dark:bg-white text-white dark:text-black hover:bg-black/90 dark:hover:bg-neutral-200"
+              )}
             >
               {isSending ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <>
                   <span className="text-sm">Send</span>
-                  <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-lg bg-neutral-100 dark:bg-black/10 ml-1">
-                    <span className="text-[10px] text-neutral-400 dark:text-black/40">⌘</span>
-                    <CornerDownLeft className="w-2.5 h-2.5 text-neutral-400 dark:text-black/40" />
+                  <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-lg bg-white/10 dark:bg-black/10 ml-1">
+                    <span className="text-[10px] text-white/40 dark:text-black/40">⌘</span>
+                    <CornerDownLeft className="w-2.5 h-2.5 text-white/40 dark:text-black/40" />
                   </div>
                 </>
               )}
