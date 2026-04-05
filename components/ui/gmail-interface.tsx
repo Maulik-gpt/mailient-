@@ -170,7 +170,7 @@ export function GmailInterface() {
         <div className="text-center">
           <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-500" />
           <p className="text-lg font-medium text-gray-700">Loading Sift AI Intelligence...</p>
-          <p className="text-sm text-gray-500">Analyzing your emails for opportunities and insights</p>
+          <p className="text-sm text-neutral-600 dark:text-gray-500">Analyzing your emails for opportunities and insights</p>
         </div>
       </div>
     );
@@ -188,7 +188,7 @@ export function GmailInterface() {
             </div>
             <div className="flex items-center space-x-4">
               {lastUpdated && (
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-neutral-600 dark:text-gray-500">
                   Last updated: {lastUpdated}
                 </p>
               )}
@@ -318,7 +318,7 @@ export function GmailInterface() {
           </div>
         ) : (
           <div className="text-center py-12">
-            <Mail className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+            <Mail className="h-16 w-16 mx-auto text-neutral-900 dark:text-gray-300 mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No Sift AI Insights Available</h3>
             <p className="text-gray-600 mb-6">
               {error 

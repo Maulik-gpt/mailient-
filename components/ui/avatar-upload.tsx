@@ -164,7 +164,7 @@ export default function AvatarUpload({
             className="w-full h-full object-cover"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-400">
+          <div className="w-full h-full flex items-center justify-center text-neutral-600 dark:text-gray-400">
             {isUploading ? (
               <Loader2 className={`${iconSizes[size]} animate-spin`} />
             ) : (
@@ -222,7 +222,7 @@ export default function AvatarUpload({
       </div>
 
       {/* Instructions */}
-      <div className="text-center text-sm text-gray-400">
+      <div className="text-center text-sm text-neutral-600 dark:text-gray-400">
         <p>Click to upload or drag and drop</p>
         <p>JPEG, PNG, GIF, WebP up to 5MB</p>
       </div>
@@ -234,7 +234,7 @@ export default function AvatarUpload({
           <button
             type="button"
             onClick={() => setError(null)}
-            className="text-xs text-gray-400 hover:text-white mt-1"
+            className="text-xs text-neutral-600 dark:text-gray-400 hover:text-white mt-1"
           >
             Dismiss
           </button>

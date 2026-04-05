@@ -896,13 +896,13 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="absolute -top-9 left-6 px-3 py-1.5 bg-[#0a0a0b]/80 border border-white/10 rounded-xl flex items-center gap-2.5 backdrop-blur-xl z-20"
+                className="absolute -top-9 left-6 px-3 py-1.5 bg-[#0a0a0b]/80 border border-neutral-200 dark:border-white/10 rounded-xl flex items-center gap-2.5 backdrop-blur-xl z-20"
               >
                 <div className="relative flex items-center justify-center w-2 h-2">
-                  <div className={`absolute inset-0 rounded-full blur-[2px] ${recordingState === 'recording' ? 'bg-white/50 animate-pulse' : 'bg-white/20'}`} />
-                  <div className={`w-2 h-2 rounded-full ${recordingState === 'recording' ? 'bg-white animate-pulse' : 'bg-white/40'}`} />
+                  <div className={`absolute inset-0 rounded-full blur-[2px] ${recordingState === 'recording' ? 'bg-black/[0.03] dark:bg-black/[0.025] dark:bg-black/[0.03] dark:bg-white/50 animate-pulse' : 'bg-black/[0.010] dark:bg-white/20'}`} />
+                  <div className={`w-2 h-2 rounded-full ${recordingState === 'recording' ? 'bg-white animate-pulse' : 'bg-black/[0.020] dark:bg-white/40'}`} />
                 </div>
-                <span className="text-[10px] uppercase tracking-widest text-white/60">
+                <span className="text-[10px] uppercase tracking-widest text-black/60 dark:text-white/60">
                   {recordingState === 'recording' ? 'Voice active' : 'Voice paused'}
                 </span>
               </motion.div>
@@ -915,15 +915,15 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
               {selectedEmails.map((email) => (
                 <div
                   key={email.id}
-                  className="flex items-center bg-white/[0.03] rounded-xl px-3 py-2 text-[11px] border border-white/[0.08] hover:border-white/20 transition-all group/item"
+                  className="flex items-center bg-white/[0.03] rounded-xl px-3 py-2 text-[11px] border border-white/[0.08] hover:border-neutral-300 dark:border-white/20 transition-all group/item"
                 >
-                  <Mail className="w-3.5 h-3.5 mr-2 text-white/30" />
-                  <span className="text-white/60 truncate max-w-[150px] font-medium" title={email.subject}>
+                  <Mail className="w-3.5 h-3.5 mr-2 text-black/30 dark:text-white/30" />
+                  <span className="text-black/60 dark:text-white/60 truncate max-w-[150px] font-medium" title={email.subject}>
                     {email.subject}
                   </span>
                   <button
                     onClick={() => removeSelectedEmail(email.id)}
-                    className="ml-2.5 p-1 hover:bg-white/5 rounded-lg text-white/20 hover:text-white transition-all"
+                    className="ml-2.5 p-1 hover:bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 rounded-lg text-black/20 dark:text-white/20 hover:text-black dark:text-white transition-all"
                   >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
@@ -942,13 +942,13 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
                   <TooltipTrigger asChild>
                     <button
                       onClick={() => onModalStateChange?.(true)}
-                      className="w-9 h-9 flex items-center justify-center text-white/20 hover:text-white hover:bg-white/5 rounded-xl transition-all outline-none border-none"
+                      className="w-9 h-9 flex items-center justify-center text-black/20 dark:text-white/20 hover:text-black dark:text-white hover:bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 rounded-xl transition-all outline-none border-none"
                     >
                       <Plus className="w-4.5 h-4.5" />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="top">
-                    <span className="text-[10px] uppercase tracking-widest text-white/40">Integrations</span>
+                    <span className="text-[10px] uppercase tracking-widest text-black/40 dark:text-white/40">Integrations</span>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -958,14 +958,14 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
                   <TooltipTrigger asChild>
                     <button
                       onClick={() => onEmailModalStateChange?.(true)}
-                      className="w-9 h-9 flex items-center justify-center text-white/20 hover:text-white hover:bg-white/5 rounded-xl transition-all relative outline-none border-none"
+                      className="w-9 h-9 flex items-center justify-center text-black/20 dark:text-white/20 hover:text-black dark:text-white hover:bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 rounded-xl transition-all relative outline-none border-none"
                     >
                       <EmailIcon className="w-4 h-4" />
-                      <div className="absolute top-2 right-2 w-1.5 h-1.5 bg-white/40 rounded-full blur-[1px]"></div>
+                      <div className="absolute top-2 right-2 w-1.5 h-1.5 bg-black/[0.020] dark:bg-white/40 rounded-full blur-[1px]"></div>
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="top">
-                    <span className="text-[10px] uppercase tracking-widest text-white/40">Attach email</span>
+                    <span className="text-[10px] uppercase tracking-widest text-black/40 dark:text-white/40">Attach email</span>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -980,7 +980,7 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
                 onKeyDown={handleKeyDown}
                 placeholder={placeholderText}
                 disabled={disabled}
-                className="w-full resize-none bg-transparent text-white placeholder:text-white/20 focus:outline-none border-none p-0 min-h-[24px] max-h-40 text-[14px] leading-relaxed selection:bg-white selection:text-black"
+                className="w-full resize-none bg-transparent text-black dark:text-white placeholder:text-black/20 dark:text-white/20 focus:outline-none border-none p-0 min-h-[24px] max-h-40 text-[14px] leading-relaxed selection:bg-white selection:text-black"
                 rows={1}
               />
             </div>
@@ -988,10 +988,10 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
             {/* Controls (Right) */}
             <div className="flex items-center gap-1.5 mb-1.5 flex-shrink-0">
               {recordingState !== 'idle' ? (
-                <div className="flex items-center gap-1 bg-white/5 rounded-2xl p-1">
+                <div className="flex items-center gap-1 bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 rounded-2xl p-1">
                   <button
                     onClick={cancelRecording}
-                    className="w-8 h-8 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 rounded-xl transition-all"
+                    className="w-8 h-8 flex items-center justify-center text-black/40 dark:text-white/40 hover:text-black dark:text-white hover:bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 rounded-xl transition-all"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
@@ -999,7 +999,7 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
                   </button>
                   <button
                     onClick={() => { setIsTranscribing(true); confirmRecording(); }}
-                    className="w-8 h-8 flex items-center justify-center text-white/80 hover:bg-white/20 rounded-xl transition-all"
+                    className="w-8 h-8 flex items-center justify-center text-black/80 dark:text-white/80 hover:bg-black/[0.010] dark:bg-white/20 rounded-xl transition-all"
                     disabled={isTranscribing}
                   >
                     {isTranscribing ? (
@@ -1018,7 +1018,7 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
                       <button
                         onClick={startRecording}
                         disabled={disabled}
-                        className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all outline-none border-none ${isListening ? 'text-white bg-white/10' : 'text-white/20 hover:text-white hover:bg-white/5'}`}
+                        className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all outline-none border-none ${isListening ? 'text-black dark:text-white bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10' : 'text-black/20 dark:text-white/20 hover:text-black dark:text-white hover:bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5'}`}
                       >
                         {isListening ? (
                           <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
@@ -1028,7 +1028,7 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="top">
-                      <span className="text-[10px] uppercase tracking-widest text-white/40">Voice input</span>
+                      <span className="text-[10px] uppercase tracking-widest text-black/40 dark:text-white/40">Voice input</span>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -1037,7 +1037,7 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
               <button
                 onClick={handleSubmit}
                 disabled={!message.trim() || disabled}
-                className={`w-9 h-9 flex items-center justify-center transition-all duration-500 rounded-xl outline-none border-none ${message.trim() ? 'bg-white text-black hover:scale-105' : 'bg-white/[0.03] text-white/20'}`}
+                className={`w-9 h-9 flex items-center justify-center transition-all duration-500 rounded-xl outline-none border-none ${message.trim() ? 'bg-white text-black hover:scale-105' : 'bg-white/[0.03] text-black/20 dark:text-white/20'}`}
               >
                 <Send className="w-4 h-4" />
               </button>

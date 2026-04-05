@@ -175,7 +175,7 @@ export function EditProfileDialog({
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent
         className={cn(
-          "max-w-2xl w-full p-0 gap-0 overflow-hidden border-none bg-black text-neutral-200",
+          "max-w-2xl w-full p-0 gap-0 overflow-hidden border-none bg-black text-neutral-900 dark:text-neutral-200",
           "shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)]",
           "flex flex-col max-h-[90vh]"
         )}
@@ -185,7 +185,7 @@ export function EditProfileDialog({
             onClick={() => setOpen(false)}
             className="w-10 h-10 rounded-full flex items-center justify-center border border-white/10 hover:bg-white/5 transition-colors"
           >
-            <ArrowLeft className="w-5 h-5 text-neutral-400" />
+            <ArrowLeft className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
           </button>
           <DialogTitle className="text-xl font-bold text-neutral-100">
             Edit Profile
@@ -196,7 +196,7 @@ export function EditProfileDialog({
           {/* Photos section */}
           <div className="space-y-6">
             <div className="flex flex-col gap-4">
-              <Label className="text-neutral-400 text-sm font-medium">Profile & Banner</Label>
+              <Label className="text-neutral-600 dark:text-neutral-400 text-sm font-medium">Profile & Banner</Label>
               <div className="flex items-start gap-8">
                 {/* Profile Photo */}
                 <div className="relative group">
@@ -223,7 +223,7 @@ export function EditProfileDialog({
                     className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-black border border-white/20 flex items-center justify-center hover:bg-neutral-900 transition-colors shadow-lg"
                     aria-label="Change avatar"
                   >
-                    <Camera className="w-4 h-4 text-neutral-300" />
+                    <Camera className="w-4 h-4 text-neutral-900 dark:text-neutral-300" />
                   </button>
                   <input
                     ref={avatarInputRef}
@@ -233,7 +233,7 @@ export function EditProfileDialog({
                     onChange={(e) => handleFileUpload(e, 'avatar')}
                   />
                   <div className="mt-2 text-center">
-                    <p className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold">Photo</p>
+                    <p className="text-[10px] text-neutral-600 dark:text-neutral-500 uppercase tracking-widest font-bold">Photo</p>
                   </div>
                 </div>
 
@@ -254,7 +254,7 @@ export function EditProfileDialog({
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center gap-2 text-neutral-500 group">
+                      <div className="w-full h-full flex items-center justify-center gap-2 text-neutral-600 dark:text-neutral-500 group">
                         <Camera className="w-5 h-5 group-hover:scale-110 transition-transform" />
                         <span className="text-sm font-medium">Add Banner</span>
                       </div>
@@ -267,7 +267,7 @@ export function EditProfileDialog({
                     accept="image/*"
                     onChange={(e) => handleFileUpload(e, 'banner')}
                   />
-                  <p className="mt-2 text-xs text-neutral-500">
+                  <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-500">
                     Recommended size: 1500x500px. JPG, PNG or WebP.
                   </p>
                 </div>
@@ -277,7 +277,7 @@ export function EditProfileDialog({
 
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label className="text-neutral-400 text-sm">Full name <span className="text-red-500">*</span></Label>
+              <Label className="text-neutral-600 dark:text-neutral-400 text-sm">Full name <span className="text-red-500">*</span></Label>
               <Input
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
@@ -286,7 +286,7 @@ export function EditProfileDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-neutral-400 text-sm">Username <span className="text-red-500">*</span></Label>
+              <Label className="text-neutral-600 dark:text-neutral-400 text-sm">Username <span className="text-red-500">*</span></Label>
               <Input
                 value={form.username}
                 onChange={(e) =>
@@ -300,7 +300,7 @@ export function EditProfileDialog({
 
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <Label className="text-neutral-400 text-sm">Brief bio</Label>
+              <Label className="text-neutral-600 dark:text-neutral-400 text-sm">Brief bio</Label>
               <span className="text-[10px] font-mono text-neutral-600">
                 {form.bio.length}/{BIO_MAX}
               </span>
@@ -312,14 +312,14 @@ export function EditProfileDialog({
               }
               maxLength={BIO_MAX}
               rows={3}
-              className="w-full rounded-2xl bg-neutral-950 border border-white/10 p-4 text-sm resize-none focus:outline-none focus:border-white/20 text-neutral-200 placeholder:text-neutral-700"
+              className="w-full rounded-2xl bg-neutral-950 border border-white/10 p-4 text-sm resize-none focus:outline-none focus:border-white/20 text-neutral-900 dark:text-neutral-200 placeholder:text-neutral-700"
               placeholder="Tell us about yourself..."
             />
           </div>
 
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label className="text-neutral-400 text-sm">Location</Label>
+              <Label className="text-neutral-600 dark:text-neutral-400 text-sm">Location</Label>
               <Input
                 value={form.location}
                 onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
@@ -328,7 +328,7 @@ export function EditProfileDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-neutral-400 text-sm">Website</Label>
+              <Label className="text-neutral-600 dark:text-neutral-400 text-sm">Website</Label>
               <Input
                 value={form.website}
                 onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))}
@@ -339,7 +339,7 @@ export function EditProfileDialog({
           </div>
 
           <div className="space-y-4 pt-4 border-t border-white/5">
-            <p className="text-xs text-neutral-500 font-medium tracking-tight">
+            <p className="text-xs text-neutral-600 dark:text-neutral-500 font-medium tracking-tight">
               Social Links <span className="text-neutral-600">(enter usernames only)</span>
             </p>
             <div className="grid grid-cols-2 gap-4">
@@ -350,8 +350,8 @@ export function EditProfileDialog({
                 { key: "social_github", label: "GitHub", prefix: "github.com/", icon: <Github className="w-4 h-4" /> },
               ].map(({ key, label, prefix, icon }) => (
                 <div key={key} className="space-y-2">
-                  <Label className="text-neutral-400 text-xs flex items-center gap-2">
-                    <span className="text-neutral-500">{icon}</span>
+                  <Label className="text-neutral-600 dark:text-neutral-400 text-xs flex items-center gap-2">
+                    <span className="text-neutral-600 dark:text-neutral-500">{icon}</span>
                     {label}
                   </Label>
                   <div className="flex items-center gap-0 rounded-xl overflow-hidden border border-white/10 bg-neutral-950 focus-within:border-white/20">
@@ -363,7 +363,7 @@ export function EditProfileDialog({
                       onChange={(e) =>
                         setForm((f) => ({ ...f, [key]: e.target.value }))
                       }
-                      className="bg-transparent border-0 h-10 focus:ring-0 text-neutral-200 text-sm flex-1 min-w-0"
+                      className="bg-transparent border-0 h-10 focus:ring-0 text-neutral-900 dark:text-neutral-200 text-sm flex-1 min-w-0"
                       placeholder="username"
                     />
                   </div>
@@ -377,7 +377,7 @@ export function EditProfileDialog({
           <Button
             type="button"
             variant="outline"
-            className="rounded-full px-8 h-12 border-white/10 hover:bg-white/5 text-neutral-300"
+            className="rounded-full px-8 h-12 border-white/10 hover:bg-white/5 text-neutral-900 dark:text-neutral-300"
             onClick={() => setOpen(false)}
           >
             Cancel

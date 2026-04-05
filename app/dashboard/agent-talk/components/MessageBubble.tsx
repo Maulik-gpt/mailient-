@@ -12,15 +12,15 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         <div
           className={`rounded-2xl px-4 py-3 ${
             isUser
-              ? 'bg-gray-600 text-white rounded-tr-md'
-              : 'bg-gray-800 text-gray-100 rounded-tl-md'
+              ? 'bg-gray-600 text-black dark:text-white rounded-tr-md'
+              : 'bg-neutral-100 dark:bg-gray-800 text-gray-100 rounded-tl-md'
           }`}
         >
           <div className="whitespace-pre-wrap text-sm leading-relaxed">
             {message.content}
           </div>
         </div>
-        <div className={`text-xs text-gray-500 mt-1 ${
+        <div className={`text-xs text-neutral-600 dark:text-gray-500 mt-1 ${
           isUser ? 'text-right pr-4' : 'pl-4'
         }`}>
           {message.timestamp.toLocaleTimeString([], {

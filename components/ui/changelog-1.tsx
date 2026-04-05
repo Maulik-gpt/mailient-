@@ -122,7 +122,7 @@ export const Changelog1 = ({
                   {entry.description}
                 </p>
                 {entry.items && entry.items.length > 0 && (
-                  <ul className="mt-4 ml-4 space-y-1.5 text-sm text-neutral-500 md:text-base">
+                  <ul className="mt-4 ml-4 space-y-1.5 text-sm text-neutral-600 dark:text-neutral-500 md:text-base">
                     {entry.items.map((item, itemIndex) => (
                       <li key={itemIndex} className="list-disc leading-relaxed">
                         {item}

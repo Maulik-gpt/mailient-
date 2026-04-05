@@ -108,7 +108,7 @@ const DialogContent = forwardRef<
     >
       {children}
       <DialogPrimitive.Close className="absolute right-4 top-4 z-10 rounded-full bg-[#2E3033]/80 p-2 hover:bg-[#2E3033] transition-all">
-        <X className="h-5 w-5 text-gray-200 hover:text-white" />
+        <X className="h-5 w-5 text-neutral-900 dark:text-gray-200 hover:text-white" />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>
     </DialogPrimitive.Content>
@@ -541,7 +541,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
     if (type.includes('pdf')) return <FileText className="w-8 h-8 text-red-400" />;
     if (type.includes('video')) return <Film className="w-8 h-8 text-blue-400" />;
     if (type.includes('audio')) return <Music className="w-8 h-8 text-green-400" />;
-    return <FileText className="w-8 h-8 text-gray-400" />;
+    return <FileText className="w-8 h-8 text-neutral-600 dark:text-gray-400" />;
   };
 
   const processFile = (file: File) => {

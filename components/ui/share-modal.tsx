@@ -117,12 +117,12 @@ export const ShareModal: React.FC<ShareModalProps> = ({
 
         <div className="space-y-6">
           {/* Post Preview */}
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+          <div className="bg-gray-50 dark:bg-neutral-100 dark:bg-gray-800 rounded-lg p-3">
             <div className="flex items-center space-x-2 mb-2">
               <span className="font-semibold text-sm">{postUser.displayName}</span>
-              <span className="text-xs text-gray-500">@{postUser.username}</span>
+              <span className="text-xs text-neutral-600 dark:text-gray-500">@{postUser.username}</span>
             </div>
-            <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">
+            <p className="text-sm text-gray-700 dark:text-neutral-900 dark:text-gray-300 line-clamp-2">
               {postContent}
             </p>
           </div>
@@ -161,7 +161,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
                     key={option.name}
                     onClick={option.action}
                     variant="outline"
-                    className={`flex items-center space-x-2 h-12 ${option.color} border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800`}
+                    className={`flex items-center space-x-2 h-12 ${option.color} border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-neutral-100 dark:bg-gray-800`}
                   >
                     <Icon className="w-4 h-4" />
                     <span className="text-sm">{option.name}</span>

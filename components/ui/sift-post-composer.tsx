@@ -49,18 +49,18 @@ export const SiftPostComposer: React.FC<SiftPostComposerProps> = ({
   };
 
   return (
-    <div className="bg-neutral-900/20 border border-neutral-800/50 rounded-xl p-4 mb-6 backdrop-blur-sm">
+    <div className="bg-neutral-900/20 border border-neutral-200 dark:border-neutral-800/50 rounded-xl p-4 mb-6 backdrop-blur-sm">
       <div className="flex space-x-4">
-        <Avatar className="w-10 h-10 flex-shrink-0 border border-neutral-800">
+        <Avatar className="w-10 h-10 flex-shrink-0 border border-neutral-200 dark:border-neutral-800">
           <AvatarImage src={user?.avatar} alt={user?.displayName} />
-          <AvatarFallback className="bg-neutral-800 text-neutral-400">{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
+          <AvatarFallback className="bg-neutral-800 text-neutral-600 dark:text-neutral-400">{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
         </Avatar>
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-2">
             <div>
               <p className="font-medium text-[#fafafa] text-sm">{user?.displayName || 'You'}</p>
-              <p className="text-xs text-neutral-500">@{user?.username || 'username'}</p>
+              <p className="text-xs text-neutral-600 dark:text-neutral-500">@{user?.username || 'username'}</p>
             </div>
           </div>
 
@@ -76,8 +76,8 @@ export const SiftPostComposer: React.FC<SiftPostComposerProps> = ({
             />
 
             {/* Character counter */}
-            <div className="flex justify-between items-center mt-3 pt-3 border-t border-neutral-800/50">
-              <div className="text-xs text-neutral-500 font-medium">
+            <div className="flex justify-between items-center mt-3 pt-3 border-t border-neutral-200 dark:border-neutral-800/50">
+              <div className="text-xs text-neutral-600 dark:text-neutral-500 font-medium">
                 {remainingCharacters} characters remaining
               </div>
               <div className="flex space-x-2">
@@ -86,7 +86,7 @@ export const SiftPostComposer: React.FC<SiftPostComposerProps> = ({
                     onClick={onCancel}
                     variant="ghost"
                     size="sm"
-                    className="text-neutral-400 hover:text-[#fafafa] hover:bg-neutral-800 px-3 py-1 h-8 rounded-lg transition-colors"
+                    className="text-neutral-600 dark:text-neutral-400 hover:text-[#fafafa] hover:bg-neutral-800 px-3 py-1 h-8 rounded-lg transition-colors"
                   >
                     <X className="w-4 h-4" />
                   </Button>
@@ -96,7 +96,7 @@ export const SiftPostComposer: React.FC<SiftPostComposerProps> = ({
                   disabled={!content.trim() || characterCount > maxCharacters || isSubmitting}
                   className={`px-4 py-1 h-8 text-sm font-medium rounded-lg transition-all ${content.trim() && characterCount <= maxCharacters
                       ? 'bg-[#fafafa] text-black hover:bg-neutral-200 shadow-[0_0_15px_rgba(255,255,255,0.1)]'
-                      : 'bg-neutral-800 text-neutral-500 cursor-not-allowed'
+                      : 'bg-neutral-800 text-neutral-600 dark:text-neutral-500 cursor-not-allowed'
                     }`}
                 >
                   {isSubmitting ? (

@@ -72,7 +72,7 @@ export const SiftCard: React.FC<SiftCardProps> = ({
       case 'weekly-intelligence':
         return {
           icon: <Lightbulb className="w-4 h-4" strokeWidth={1.5} />,
-          accentColor: 'text-neutral-500 dark:text-neutral-400',
+          accentColor: 'text-neutral-500 dark:text-neutral-600 dark:text-neutral-400',
           borderColor: 'border-l-neutral-500/40'
         };
       case 'opportunity':
@@ -102,7 +102,7 @@ export const SiftCard: React.FC<SiftCardProps> = ({
       default:
         return {
           icon: <Mail className="w-4 h-4" strokeWidth={1.5} />,
-          accentColor: 'text-neutral-500 dark:text-neutral-400',
+          accentColor: 'text-neutral-500 dark:text-neutral-600 dark:text-neutral-400',
           borderColor: 'border-l-neutral-500/40'
         };
     }
@@ -112,7 +112,7 @@ export const SiftCard: React.FC<SiftCardProps> = ({
 
   return (
     <div
-      className={`group bg-neutral-900/30 hover:bg-neutral-200/50 dark:bg-neutral-900/50 border border-neutral-800/50 hover:border-neutral-800 ${borderColor} border-l-2 rounded-lg transition-all duration-200`}
+      className={`group bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-900/30 border border-neutral-100 dark:border-neutral-800/50 hover:border-neutral-200 dark:border-neutral-800 ${borderColor} border-l-2 rounded-lg transition-all duration-200`}
       style={{ fontFamily: "'Satoshi', -apple-system, BlinkMacSystemFont, sans-serif" }}
     >
       <div className="p-5">
@@ -126,7 +126,7 @@ export const SiftCard: React.FC<SiftCardProps> = ({
               <h3 className={`text-sm font-medium ${accentColor}`}>
                 {title}
               </h3>
-              <p className="text-sm text-neutral-500 leading-relaxed font-light">
+              <p className="text-sm text-neutral-600 dark:text-neutral-500 leading-relaxed font-light">
                 {content}
               </p>
             </div>
@@ -139,7 +139,7 @@ export const SiftCard: React.FC<SiftCardProps> = ({
             }}
             variant="ghost"
             size="sm"
-            className="flex-shrink-0 h-8 px-3 bg-transparent hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-700 text-neutral-500 hover:text-[#fafafa] rounded-md transition-colors text-xs font-light"
+            className="flex-shrink-0 h-8 px-3 bg-transparent hover:bg-neutral-100 dark:hover:bg-neutral-800 border border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700 text-neutral-600 dark:text-neutral-500 hover:text-black dark:hover:text-[#fafafa] rounded-md transition-colors text-xs font-light"
           >
             Details
             <ArrowRight className="w-3 h-3 ml-1.5" />

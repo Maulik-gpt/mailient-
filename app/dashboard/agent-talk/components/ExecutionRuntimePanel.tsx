@@ -85,52 +85,52 @@ const statusConfig = {
   initializing: {
     label: 'Initializing',
     icon: Loader2,
-    color: 'text-white/60',
-    bgColor: 'bg-white/10',
-    borderColor: 'border-white/20',
+    color: 'text-black/60 dark:text-white/60',
+    bgColor: 'bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10',
+    borderColor: 'border-neutral-300 dark:border-white/20',
     glowColor: 'shadow-white/10',
     animate: true
   },
   thinking: {
     label: 'Thinking',
     icon: Terminal,
-    color: 'text-white/80',
-    bgColor: 'bg-white/10',
-    borderColor: 'border-white/20',
+    color: 'text-black/80 dark:text-white/80',
+    bgColor: 'bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10',
+    borderColor: 'border-neutral-300 dark:border-white/20',
     glowColor: 'shadow-white/10',
     animate: true
   },
   searching: {
     label: 'Searching',
     icon: RefreshCw,
-    color: 'text-white/80',
-    bgColor: 'bg-white/10',
-    borderColor: 'border-white/20',
+    color: 'text-black/80 dark:text-white/80',
+    bgColor: 'bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10',
+    borderColor: 'border-neutral-300 dark:border-white/20',
     glowColor: 'shadow-white/10',
     animate: true
   },
   synthesizing: {
     label: 'Synthesizing',
     icon: Zap,
-    color: 'text-white/80',
-    bgColor: 'bg-white/10',
-    borderColor: 'border-white/20',
+    color: 'text-black/80 dark:text-white/80',
+    bgColor: 'bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10',
+    borderColor: 'border-neutral-300 dark:border-white/20',
     glowColor: 'shadow-white/10',
     animate: true
   },
   approval: {
     label: 'Awaiting Approval',
     icon: Shield,
-    color: 'text-white/70',
-    bgColor: 'bg-white/10',
-    borderColor: 'border-white/20',
+    color: 'text-black/70 dark:text-white/70',
+    bgColor: 'bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10',
+    borderColor: 'border-neutral-300 dark:border-white/20',
     glowColor: 'shadow-white/10',
     animate: false
   },
   executing: {
     label: 'Executing',
     icon: Play,
-    color: 'text-white/90',
+    color: 'text-black/90 dark:text-white/90',
     bgColor: 'bg-white/15',
     borderColor: 'border-white/25',
     glowColor: 'shadow-white/10',
@@ -139,16 +139,16 @@ const statusConfig = {
   post_execution: {
     label: 'Finalizing',
     icon: CheckCircle2,
-    color: 'text-white/70',
-    bgColor: 'bg-white/10',
-    borderColor: 'border-white/20',
+    color: 'text-black/70 dark:text-white/70',
+    bgColor: 'bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10',
+    borderColor: 'border-neutral-300 dark:border-white/20',
     glowColor: 'shadow-white/10',
     animate: true
   },
   completed: {
     label: 'Completed',
     icon: CheckCircle2,
-    color: 'text-white/90',
+    color: 'text-black/90 dark:text-white/90',
     bgColor: 'bg-white/15',
     borderColor: 'border-white/25',
     glowColor: 'shadow-white/10',
@@ -157,39 +157,39 @@ const statusConfig = {
   failed: {
     label: 'Failed',
     icon: AlertCircle,
-    color: 'text-white/60',
-    bgColor: 'bg-white/10',
-    borderColor: 'border-white/20',
+    color: 'text-black/60 dark:text-white/60',
+    bgColor: 'bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10',
+    borderColor: 'border-neutral-300 dark:border-white/20',
     glowColor: 'shadow-white/10',
     animate: false
   },
   cancelled: {
     label: 'Cancelled',
     icon: AlertTriangle,
-    color: 'text-white/50',
-    bgColor: 'bg-white/5',
-    borderColor: 'border-white/10',
+    color: 'text-black/5 dark:text-black/50 dark:text-white/50',
+    bgColor: 'bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5',
+    borderColor: 'border-neutral-200 dark:border-white/10',
     glowColor: 'shadow-white/5',
     animate: false
   }
 };
 
 const stepTypeConfig = {
-  think: { label: 'Analyze', icon: Terminal, color: 'text-white/70' },
-  search: { label: 'Search', icon: RefreshCw, color: 'text-white/70' },
-  read: { label: 'Read', icon: Clock, color: 'text-white/70' },
-  execute: { label: 'Execute', icon: Zap, color: 'text-white/80' },
-  verify: { label: 'Verify', icon: CheckCircle2, color: 'text-white/70' },
-  approve: { label: 'Approve', icon: Shield, color: 'text-white/70' }
+  think: { label: 'Analyze', icon: Terminal, color: 'text-black/70 dark:text-white/70' },
+  search: { label: 'Search', icon: RefreshCw, color: 'text-black/70 dark:text-white/70' },
+  read: { label: 'Read', icon: Clock, color: 'text-black/70 dark:text-white/70' },
+  execute: { label: 'Execute', icon: Zap, color: 'text-black/80 dark:text-white/80' },
+  verify: { label: 'Verify', icon: CheckCircle2, color: 'text-black/70 dark:text-white/70' },
+  approve: { label: 'Approve', icon: Shield, color: 'text-black/70 dark:text-white/70' }
 };
 
 const stepStatusConfig = {
-  pending: { color: 'text-white/40', bgColor: 'bg-white/5', borderColor: 'border-white/10' },
-  running: { color: 'text-white/80', bgColor: 'bg-white/10', borderColor: 'border-white/20', pulse: true },
-  completed: { color: 'text-white/90', bgColor: 'bg-white/15', borderColor: 'border-white/25' },
-  failed: { color: 'text-white/50', bgColor: 'bg-white/10', borderColor: 'border-white/20' },
-  blocked: { color: 'text-white/60', bgColor: 'bg-white/10', borderColor: 'border-white/20' },
-  skipped: { color: 'text-white/40', bgColor: 'bg-white/5', borderColor: 'border-white/10' }
+  pending: { color: 'text-black/40 dark:text-white/40', bgColor: 'bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5', borderColor: 'border-neutral-200 dark:border-white/10' },
+  running: { color: 'text-black/80 dark:text-white/80', bgColor: 'bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10', borderColor: 'border-neutral-300 dark:border-white/20', pulse: true },
+  completed: { color: 'text-black/90 dark:text-white/90', bgColor: 'bg-white/15', borderColor: 'border-white/25' },
+  failed: { color: 'text-black/5 dark:text-black/50 dark:text-white/50', bgColor: 'bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10', borderColor: 'border-neutral-300 dark:border-white/20' },
+  blocked: { color: 'text-black/60 dark:text-white/60', bgColor: 'bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10', borderColor: 'border-neutral-300 dark:border-white/20' },
+  skipped: { color: 'text-black/40 dark:text-white/40', bgColor: 'bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5', borderColor: 'border-neutral-200 dark:border-white/10' }
 };
 
 // ============================================================================
@@ -237,7 +237,7 @@ export function ExecutionRuntimePanel({
 
   return (
     <div className={cn(
-      "bg-[#0a0a0a] border border-white/[0.06] rounded-2xl overflow-hidden",
+      "bg-white dark:bg-[#0a0a0a] border border-white/[0.06] rounded-2xl overflow-hidden",
       "shadow-2xl shadow-black/50",
       className
     )}>
@@ -262,10 +262,10 @@ export function ExecutionRuntimePanel({
             </motion.div>
 
             <div>
-              <h3 className="text-[15px] font-semibold text-white/90 tracking-tight">
+              <h3 className="text-[15px] font-semibold text-black/90 dark:text-white/90 tracking-tight">
                 {status.label}
               </h3>
-              <p className="text-[12px] text-white/40 mt-0.5 font-mono">
+              <p className="text-[12px] text-black/40 dark:text-white/40 mt-0.5 font-mono">
                 Run {runtime.runId.slice(-8)} • {formatDuration(elapsedTime)} elapsed
               </p>
             </div>
@@ -278,7 +278,7 @@ export function ExecutionRuntimePanel({
                 onClick={onPause}
                 className="p-2.5 rounded-lg bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.06] transition-all group"
               >
-                <Pause className="w-4 h-4 text-white/50 group-hover:text-white/80" />
+                <Pause className="w-4 h-4 text-black/5 dark:text-black/50 dark:text-white/50 group-hover:text-black/80 dark:text-white/80" />
               </button>
             )}
             {runtime.canResume && (
@@ -299,7 +299,7 @@ export function ExecutionRuntimePanel({
                 onClick={onCancel}
                 className="p-2.5 rounded-lg bg-white/[0.03] hover:bg-red-500/10 border border-white/[0.06] hover:border-red-500/20 transition-all group"
               >
-                <AlertTriangle className="w-4 h-4 text-white/50 group-hover:text-red-400" />
+                <AlertTriangle className="w-4 h-4 text-black/5 dark:text-black/50 dark:text-white/50 group-hover:text-red-400" />
               </button>
             )}
           </div>
@@ -308,7 +308,7 @@ export function ExecutionRuntimePanel({
         {/* Progress Bar */}
         <div className="mt-4">
           <div className="flex items-center justify-between text-[11px] mb-2">
-            <span className="text-white/40">Execution Progress</span>
+            <span className="text-black/40 dark:text-white/40">Execution Progress</span>
             <span className={cn("font-mono", status.color)}>{runtime.progress}%</span>
           </div>
           <div className="h-1.5 bg-white/[0.03] rounded-full overflow-hidden">
@@ -338,7 +338,7 @@ export function ExecutionRuntimePanel({
             <Shield className="w-5 h-5 text-orange-400 mt-0.5" />
             <div>
               <p className="text-[13px] text-orange-400 font-medium">{runtime.pauseReason.type}</p>
-              <p className="text-[12px] text-white/50 mt-0.5">{runtime.pauseReason.message}</p>
+              <p className="text-[12px] text-black/5 dark:text-black/50 dark:text-white/50 mt-0.5">{runtime.pauseReason.message}</p>
             </div>
           </div>
         </motion.div>
@@ -393,15 +393,15 @@ export function ExecutionRuntimePanel({
                   {/* Step Info */}
                   <div className="flex-1 text-left">
                     <div className="flex items-center gap-2">
-                      <span className="text-[13px] text-white/80 font-medium">{step.label}</span>
+                      <span className="text-[13px] text-black/80 dark:text-white/80 font-medium">{step.label}</span>
                       {step.duration && (
-                        <span className="text-[11px] text-white/30 font-mono">
+                        <span className="text-[11px] text-black/30 dark:text-white/30 font-mono">
                           {formatDuration(step.duration)}
                         </span>
                       )}
                     </div>
                     {step.detail && !isExpanded && (
-                      <p className="text-[12px] text-white/40 mt-0.5 truncate">{step.detail}</p>
+                      <p className="text-[12px] text-black/40 dark:text-white/40 mt-0.5 truncate">{step.detail}</p>
                     )}
                   </div>
 
@@ -418,7 +418,7 @@ export function ExecutionRuntimePanel({
                   {/* Expand Icon */}
                   {step.detail && (
                     <ChevronDown className={cn(
-                      "w-4 h-4 text-white/30 transition-transform",
+                      "w-4 h-4 text-black/30 dark:text-white/30 transition-transform",
                       isExpanded && "rotate-180"
                     )} />
                   )}
@@ -435,7 +435,7 @@ export function ExecutionRuntimePanel({
                     >
                       <div className="pl-[3.25rem] pr-12">
                         <div className="p-3 bg-black/30 rounded-lg border border-white/[0.04]">
-                          <p className="text-[12px] text-white/60 leading-relaxed font-mono">
+                          <p className="text-[12px] text-black/60 dark:text-white/60 leading-relaxed font-mono">
                             {step.detail}
                           </p>
                         </div>
@@ -448,7 +448,7 @@ export function ExecutionRuntimePanel({
                               <div>
                                 <p className="text-[12px] text-red-400">{step.error.recoveryHint.userMessage}</p>
                                 {step.error.recoveryHint.requiresUserAction && (
-                                  <p className="text-[11px] text-white/40 mt-1">
+                                  <p className="text-[11px] text-black/40 dark:text-white/40 mt-1">
                                     Action required: {step.error.recoveryHint.recoveryAction}
                                   </p>
                                 )}
@@ -480,7 +480,7 @@ export function ExecutionRuntimePanel({
 
       {/* Footer Stats */}
       <div className="px-6 py-3 bg-white/[0.02] border-t border-white/[0.06]">
-        <div className="flex items-center justify-between text-[11px] text-white/40">
+        <div className="flex items-center justify-between text-[11px] text-black/40 dark:text-white/40">
           <div className="flex items-center gap-4">
             <span>
               {runtime.steps.filter(s => s.status === 'completed').length} completed
@@ -529,7 +529,7 @@ export function ExecutionRuntimeCompact({ runtime, className }: { runtime: Execu
         <StatusIcon className={cn("w-4 h-4", status.color, status.animate && "animate-spin")} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[13px] text-white/80 font-medium truncate">{status.label}</p>
+        <p className="text-[13px] text-black/80 dark:text-white/80 font-medium truncate">{status.label}</p>
         <div className="flex items-center gap-2">
           <div className="h-1 w-24 bg-white/[0.1] rounded-full overflow-hidden">
             <div
@@ -540,7 +540,7 @@ export function ExecutionRuntimeCompact({ runtime, className }: { runtime: Execu
               style={{ width: `${runtime.progress}%` }}
             />
           </div>
-          <span className="text-[11px] text-white/40 font-mono">{runtime.progress}%</span>
+          <span className="text-[11px] text-black/40 dark:text-white/40 font-mono">{runtime.progress}%</span>
         </div>
       </div>
     </div>

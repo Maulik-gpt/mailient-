@@ -30,7 +30,7 @@ export const SiftSidebar: React.FC<SiftSidebarProps> = ({
 
   return (
     <TooltipProvider>
-      <div className="fixed left-0 top-0 h-screen w-16 bg-black border-r border-gray-800 flex flex-col items-center py-6 z-30">
+      <div className="fixed left-0 top-0 h-screen w-16 bg-black border-r border-neutral-200 dark:border-gray-800 flex flex-col items-center py-6 z-30">
         {/* Logo/Brand */}
         <div className="mb-8 group cursor-pointer" onClick={() => (window.location.href = '/home-feed')}>
           <div className="w-8 h-8 bg-black border border-white/10 rounded-lg flex items-center justify-center overflow-hidden transition-all duration-300 group-hover:scale-110 shadow-lg">
@@ -46,18 +46,18 @@ export const SiftSidebar: React.FC<SiftSidebarProps> = ({
                 <button
                   onClick={() => onNavigate(item.id)}
                   className={`p-3 rounded-lg transition-all duration-200 ${activeSection === item.id
-                    ? 'bg-gray-800 text-white border border-gray-600'
-                    : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                    ? 'bg-neutral-100 dark:bg-gray-800 text-white border border-gray-600'
+                    : 'text-neutral-600 dark:text-gray-400 hover:text-white hover:bg-neutral-100 dark:bg-gray-800'
                     }`}
                   aria-label={item.tooltip}
                 >
                   {React.cloneElement(item.icon, {
-                    className: `w-5 h-5 ${activeSection === item.id ? 'text-white' : 'text-gray-400 group-hover:text-white'
+                    className: `w-5 h-5 ${activeSection === item.id ? 'text-white' : 'text-neutral-600 dark:text-gray-400 group-hover:text-white'
                       }`
                   })}
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="right" className="bg-gray-900 border-gray-700">
+              <TooltipContent side="right" className="bg-neutral-50 dark:bg-gray-900 border-gray-700">
                 <p className="text-white text-sm">{item.tooltip}</p>
               </TooltipContent>
             </Tooltip>
@@ -72,13 +72,13 @@ export const SiftSidebar: React.FC<SiftSidebarProps> = ({
             <TooltipTrigger asChild>
               <button
                 onClick={() => onNavigate('discovery')}
-                className="p-3 rounded-lg transition-all duration-200 text-gray-400 hover:text-white hover:bg-gray-800"
+                className="p-3 rounded-lg transition-all duration-200 text-neutral-600 dark:text-gray-400 hover:text-white hover:bg-neutral-100 dark:bg-gray-800"
                 aria-label="Discovery"
               >
                 <Search className="w-5 h-5" />
               </button>
             </TooltipTrigger>
-            <TooltipContent side="right" className="bg-gray-900 border-gray-700">
+            <TooltipContent side="right" className="bg-neutral-50 dark:bg-gray-900 border-gray-700">
               <p className="text-white text-sm">Discovery</p>
             </TooltipContent>
           </Tooltip>

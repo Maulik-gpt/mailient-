@@ -263,10 +263,10 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
 
                 {/* Modal */}
                 <div
-                    className="relative bg-[#0d0d0d] border border-neutral-800 w-full max-w-xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-10 duration-500"
+                    className="relative bg-[#0d0d0d] border border-neutral-200 dark:border-neutral-800 w-full max-w-xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-10 duration-500"
                 >
                     {/* Header */}
-                    <div className="p-8 border-b border-neutral-800 flex items-center justify-between">
+                    <div className="p-8 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div className="p-2.5 bg-indigo-500/10 rounded-2xl">
                                 <CalendarIcon className="w-5 h-5 text-indigo-400" />
@@ -275,14 +275,14 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                 <h3 className="text-xl font-medium text-black dark:text-white tracking-tight">
                                     {step === 5 ? 'Meeting Details' : step === 1 ? 'Schedule Call' : 'Schedule Call'}
                                 </h3>
-                                <p className="text-sm text-neutral-500 font-light">
+                                <p className="text-sm text-neutral-600 dark:text-neutral-500 font-light">
                                     {step === 1 ? 'Choose your scheduling method' : step === 5 ? 'Complete event metadata' : 'Intelligent Calendar Assist'}
                                 </p>
                             </div>
                         </div>
                         <button
                             onClick={onClose}
-                            className="p-2 hover:bg-neutral-800 rounded-full transition-colors text-neutral-500 hover:text-black dark:text-white"
+                            className="p-2 hover:bg-neutral-800 rounded-full transition-colors text-neutral-600 hover:text-black dark:text-white"
                         >
                             <X className="w-5 h-5" />
                         </button>
@@ -297,7 +297,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                     {/* Cal.com Option */}
                                     <button
                                         onClick={() => handleMethodSelect('calcom')}
-                                        className="w-full p-6 rounded-3xl border border-neutral-800 bg-gradient-to-br from-neutral-900/60 to-[#0a0a0a] hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all duration-500 flex items-center justify-between group relative overflow-hidden"
+                                        className="w-full p-6 rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-gradient-to-br from-neutral-900/60 to-[#0a0a0a] hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all duration-500 flex items-center justify-between group relative overflow-hidden"
                                     >
                                         <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-[50px] rounded-full -mr-16 -mt-16 group-hover:bg-indigo-500/10 transition-colors duration-700" />
                                         <div className="flex items-center gap-4 relative z-10">
@@ -312,7 +312,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                                     <p className="text-black dark:text-white font-medium text-lg">Cal.com</p>
                                                     <span className="text-[10px] font-bold text-green-400 uppercase tracking-widest bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">FREE</span>
                                                 </div>
-                                                <p className="text-sm text-neutral-500 font-light mt-1">Open-source scheduling. Share your Cal.com link.</p>
+                                                <p className="text-sm text-neutral-600 dark:text-neutral-500 font-light mt-1">Open-source scheduling. Share your Cal.com link.</p>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2 relative z-10">
@@ -324,7 +324,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                                     }}
                                                     className="p-2 hover:bg-neutral-800 rounded-xl transition-colors"
                                                 >
-                                                    <Settings className="w-4 h-4 text-neutral-500" />
+                                                    <Settings className="w-4 h-4 text-neutral-600 dark:text-neutral-500" />
                                                 </button>
                                             )}
                                             <ArrowRight className="w-5 h-5 text-indigo-400 group-hover:translate-x-1 transition-transform duration-500" />
@@ -334,7 +334,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                     {/* Google Calendar Direct Option */}
                                     <button
                                         onClick={() => handleMethodSelect('google')}
-                                        className="w-full p-6 rounded-3xl border border-neutral-800 bg-gradient-to-br from-neutral-900/60 to-[#0a0a0a] hover:border-blue-500/50 hover:bg-blue-500/5 transition-all duration-500 flex items-center justify-between group relative overflow-hidden"
+                                        className="w-full p-6 rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-gradient-to-br from-neutral-900/60 to-[#0a0a0a] hover:border-blue-500/50 hover:bg-blue-500/5 transition-all duration-500 flex items-center justify-between group relative overflow-hidden"
                                     >
                                         <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-[50px] rounded-full -mr-16 -mt-16 group-hover:bg-blue-500/10 transition-colors duration-700" />
                                         <div className="flex items-center gap-4 relative z-10">
@@ -346,7 +346,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                                     <p className="text-black dark:text-white font-medium text-lg">Google Calendar</p>
                                                     <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20">DIRECT</span>
                                                 </div>
-                                                <p className="text-sm text-neutral-500 font-light mt-1">Create meeting directly with AI-powered suggestions.</p>
+                                                <p className="text-sm text-neutral-600 dark:text-neutral-500 font-light mt-1">Create meeting directly with AI-powered suggestions.</p>
                                             </div>
                                         </div>
                                         <ArrowRight className="w-5 h-5 text-blue-400 group-hover:translate-x-1 transition-transform duration-500 relative z-10" />
@@ -361,10 +361,10 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
 
                                 {/* Quick share option for Cal.com */}
                                 {calComUsername && (
-                                    <div className="bg-neutral-900/30 rounded-2xl p-4 border border-neutral-800">
+                                    <div className="bg-neutral-900/30 rounded-2xl p-4 border border-neutral-200 dark:border-neutral-800">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
-                                                <ExternalLink className="w-4 h-4 text-neutral-500" />
+                                                <ExternalLink className="w-4 h-4 text-neutral-600 dark:text-neutral-500" />
                                                 <span className="text-sm text-neutral-500 dark:text-neutral-400 font-mono">cal.com/{calComUsername}/{calComEventType}</span>
                                             </div>
                                             <Button
@@ -387,7 +387,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                         {/* Cal.com Settings Panel */}
                         {step === 1 && showCalComSettings && (
                             <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
-                                <div className="bg-gradient-to-br from-neutral-900/60 to-[#0a0a0a] rounded-3xl p-6 border border-neutral-800/50">
+                                <div className="bg-gradient-to-br from-neutral-900/60 to-[#0a0a0a] rounded-3xl p-6 border border-neutral-200 dark:border-neutral-800/50">
                                     <div className="flex items-center gap-2 mb-4">
                                         <Settings className="w-4 h-4 text-indigo-400" />
                                         <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Cal.com Configuration</span>
@@ -395,22 +395,22 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
 
                                     <div className="space-y-4">
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-medium text-neutral-500 uppercase tracking-wider ml-1">Username</label>
+                                            <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-500 uppercase tracking-wider ml-1">Username</label>
                                             <div className="flex items-center gap-2">
-                                                <span className="text-neutral-500 text-sm">cal.com/</span>
+                                                <span className="text-neutral-600 dark:text-neutral-500 text-sm">cal.com/</span>
                                                 <input
                                                     type="text"
                                                     value={calComUsername}
                                                     onChange={(e) => setCalComUsername(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
                                                     placeholder="your-username"
-                                                    className="flex-1 bg-neutral-900/30 border border-neutral-800 rounded-xl px-4 py-3 text-black dark:text-white focus:outline-none focus:border-indigo-500/50 transition-colors placeholder:text-neutral-600"
+                                                    className="flex-1 bg-neutral-900/30 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-3 text-black dark:text-white focus:outline-none focus:border-indigo-500/50 transition-colors placeholder:text-neutral-600"
                                                 />
                                             </div>
                                             <p className="text-[10px] text-neutral-600 ml-1">Your Cal.com username from your profile</p>
                                         </div>
 
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-medium text-neutral-500 uppercase tracking-wider ml-1">Event Type</label>
+                                            <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-500 uppercase tracking-wider ml-1">Event Type</label>
                                             <div className="flex gap-2">
                                                 {['15min', '30min', '60min'].map((type) => (
                                                     <button
@@ -418,7 +418,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                                         onClick={() => setCalComEventType(type)}
                                                         className={`flex-1 py-3 rounded-xl border transition-all duration-300 font-medium text-sm ${calComEventType === type
                                                             ? 'bg-indigo-500 text-black dark:text-white border-indigo-500'
-                                                            : 'bg-neutral-900/30 text-neutral-500 dark:text-neutral-400 border-neutral-800 hover:border-neutral-700'
+                                                            : 'bg-neutral-900/30 text-neutral-500 dark:text-neutral-600 dark:text-neutral-400 border-neutral-200 dark:border-neutral-800 hover:border-neutral-700'
                                                             }`}
                                                     >
                                                         {type}
@@ -443,7 +443,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                     <Button
                                         variant="outline"
                                         onClick={() => setShowCalComSettings(false)}
-                                        className="h-14 flex-1 border-neutral-800 rounded-2xl text-neutral-500 dark:text-neutral-400 hover:bg-neutral-800"
+                                        className="h-14 flex-1 border-neutral-200 dark:border-neutral-800 rounded-2xl text-neutral-500 dark:text-neutral-400 hover:bg-neutral-800"
                                     >
                                         Back
                                     </Button>
@@ -476,7 +476,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                         ) : step === 2 ? (
                             <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
                                 {/* AI Recommendation Card */}
-                                <div className="bg-gradient-to-br from-neutral-900/60 to-[#0a0a0a] rounded-3xl p-6 border border-neutral-800/50 hover:border-neutral-700/50 transition-all duration-500 shadow-2xl relative overflow-hidden group">
+                                <div className="bg-gradient-to-br from-neutral-900/60 to-[#0a0a0a] rounded-3xl p-6 border border-neutral-200 dark:border-neutral-800/50 hover:border-neutral-700/50 transition-all duration-500 shadow-2xl relative overflow-hidden group">
                                     <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-[50px] rounded-full -mr-16 -mt-16 group-hover:bg-indigo-500/10 transition-colors duration-700" />
                                     <div className="flex items-center gap-2 mb-4 relative z-10">
                                         <Sparkles className="w-4 h-4 text-indigo-400" />
@@ -502,23 +502,23 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                 {/* Settings */}
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-medium text-neutral-500 uppercase tracking-wider ml-1">Date</label>
+                                        <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-500 uppercase tracking-wider ml-1">Date</label>
                                         <div className="relative">
                                             <input
                                                 type="date"
                                                 value={selectedDate}
                                                 onChange={(e) => setSelectedDate(e.target.value)}
-                                                className="w-full bg-neutral-900/30 border border-neutral-800 rounded-2xl px-4 py-3 text-black dark:text-white focus:outline-none focus:border-neutral-700 transition-colors"
+                                                className="w-full bg-neutral-900/30 border border-neutral-200 dark:border-neutral-800 rounded-2xl px-4 py-3 text-black dark:text-white focus:outline-none focus:border-neutral-700 transition-colors"
                                             />
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-medium text-neutral-500 uppercase tracking-wider ml-1">Time</label>
+                                        <label className="text-[10px] font-medium text-neutral-600 dark:text-neutral-500 uppercase tracking-wider ml-1">Time</label>
                                         <input
                                             type="time"
                                             value={selectedTime}
                                             onChange={(e) => setSelectedTime(e.target.value)}
-                                            className="w-full bg-neutral-900/30 border border-neutral-800 rounded-2xl px-4 py-3 text-black dark:text-white focus:outline-none focus:border-neutral-700 transition-colors"
+                                            className="w-full bg-neutral-900/30 border border-neutral-200 dark:border-neutral-800 rounded-2xl px-4 py-3 text-black dark:text-white focus:outline-none focus:border-neutral-700 transition-colors"
                                         />
                                     </div>
                                 </div>
@@ -536,7 +536,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                             onClick={() => setRecommendation({ ...recommendation, suggested_duration: dur })}
                                             className={`flex-1 py-3 rounded-2xl border transition-all duration-300 font-medium ${recommendation?.suggested_duration === dur
                                                 ? 'bg-white text-black border-white'
-                                                : 'bg-neutral-900/30 text-neutral-500 dark:text-neutral-400 border-neutral-800 hover:border-neutral-700'
+                                                : 'bg-neutral-900/30 text-neutral-500 dark:text-neutral-600 dark:text-neutral-400 border-neutral-200 dark:border-neutral-800 hover:border-neutral-700'
                                                 }`}
                                         >
                                             {dur} min
@@ -548,7 +548,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                     <Button
                                         variant="outline"
                                         onClick={() => setStep(1)}
-                                        className="h-14 flex-1 border-neutral-800 rounded-2xl text-neutral-500 dark:text-neutral-400 hover:bg-neutral-800"
+                                        className="h-14 flex-1 border-neutral-200 dark:border-neutral-800 rounded-2xl text-neutral-500 dark:text-neutral-400 hover:bg-neutral-800"
                                     >
                                         Back
                                     </Button>
@@ -569,16 +569,16 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                             onClick={() => setProvider('google')}
                                             className={`w-full p-5 rounded-3xl border transition-all duration-300 flex items-center justify-between group ${provider === 'google'
                                                 ? 'bg-blue-500/10 border-blue-500/50'
-                                                : 'bg-neutral-900/30 border-neutral-800 hover:border-neutral-700'
+                                                : 'bg-neutral-900/30 border-neutral-200 dark:border-neutral-800 hover:border-neutral-700'
                                                 }`}
                                         >
                                             <div className="flex items-center gap-4">
-                                                <div className={`p-3 rounded-2xl ${provider === 'google' ? 'bg-blue-500 text-black dark:text-white' : 'bg-neutral-800 text-neutral-500 dark:text-neutral-400 group-hover:bg-neutral-700'}`}>
+                                                <div className={`p-3 rounded-2xl ${provider === 'google' ? 'bg-blue-500 text-black dark:text-white' : 'bg-neutral-800 text-neutral-500 dark:text-neutral-600 dark:text-neutral-400 group-hover:bg-neutral-700'}`}>
                                                     <Video className="w-5 h-5" />
                                                 </div>
                                                 <div className="text-left">
                                                     <p className="text-black dark:text-white font-medium">Google Meet</p>
-                                                    <p className="text-xs text-neutral-500 font-light">Primary connected account</p>
+                                                    <p className="text-xs text-neutral-600 dark:text-neutral-500 font-light">Primary connected account</p>
                                                 </div>
                                             </div>
                                             {provider === 'google' && <CheckCircle className="w-5 h-5 text-blue-500" />}
@@ -588,17 +588,17 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                             onClick={() => setProvider('zoom')}
                                             className={`w-full p-5 rounded-3xl border transition-all duration-300 flex items-center justify-between group ${provider === 'zoom'
                                                 ? 'bg-blue-400/10 border-blue-400/50'
-                                                : 'bg-neutral-900/30 border-neutral-800 hover:border-neutral-700 opacity-60'
+                                                : 'bg-neutral-900/30 border-neutral-200 dark:border-neutral-800 hover:border-neutral-700 opacity-60'
                                                 }`}
                                             disabled={true}
                                         >
                                             <div className="flex items-center gap-4">
-                                                <div className={`p-3 rounded-2xl ${provider === 'zoom' ? 'bg-blue-400 text-black dark:text-white' : 'bg-neutral-800 text-neutral-500 dark:text-neutral-400'}`}>
+                                                <div className={`p-3 rounded-2xl ${provider === 'zoom' ? 'bg-blue-400 text-black dark:text-white' : 'bg-neutral-800 text-neutral-500 dark:text-neutral-600 dark:text-neutral-400'}`}>
                                                     <Video className="w-5 h-5" />
                                                 </div>
                                                 <div className="text-left">
                                                     <p className="text-black dark:text-white font-medium">Zoom Video</p>
-                                                    <p className="text-xs text-neutral-500 font-light italic">Coming Soon</p>
+                                                    <p className="text-xs text-neutral-600 dark:text-neutral-500 font-light italic">Coming Soon</p>
                                                 </div>
                                             </div>
                                             {provider === 'zoom' && <CheckCircle className="w-5 h-5 text-blue-400" />}
@@ -606,14 +606,14 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                     </div>
                                 </div>
 
-                                <div className="p-5 bg-neutral-900/30 rounded-3xl border border-neutral-800 flex items-center justify-between">
+                                <div className="p-5 bg-neutral-900/30 rounded-3xl border border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
                                     <div className="flex items-center gap-3">
                                         <div className="p-2.5 bg-neutral-800 rounded-xl">
                                             <Send className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
                                         </div>
                                         <div>
                                             <p className="text-sm font-medium text-black dark:text-white">Notify Guest</p>
-                                            <p className="text-[10px] text-neutral-500 uppercase tracking-wider font-light">Send email confirmation</p>
+                                            <p className="text-[10px] text-neutral-600 dark:text-neutral-500 uppercase tracking-wider font-light">Send email confirmation</p>
                                         </div>
                                     </div>
                                     <button
@@ -628,7 +628,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                     <Button
                                         variant="outline"
                                         onClick={() => setStep(2)}
-                                        className="h-14 flex-1 border-neutral-800 rounded-2xl text-neutral-500 dark:text-neutral-400 hover:bg-neutral-800"
+                                        className="h-14 flex-1 border-neutral-200 dark:border-neutral-800 rounded-2xl text-neutral-500 dark:text-neutral-400 hover:bg-neutral-800"
                                     >
                                         Back
                                     </Button>
@@ -650,7 +650,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                     <div className="absolute inset-0 bg-green-500/10 blur-3xl rounded-full" />
                                 </div>
                                 <h4 className="text-2xl font-medium text-black dark:text-white mb-2">Meeting Booked!</h4>
-                                <p className="text-neutral-500 font-light max-w-xs mx-auto mb-10 text-sm leading-relaxed">
+                                <p className="text-neutral-600 dark:text-neutral-500 font-light max-w-xs mx-auto mb-10 text-sm leading-relaxed">
                                     Your call is confirmed and synced to your Google Calendar. {notifySender && "We've notified the guest via email."}
                                 </p>
 
@@ -658,7 +658,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                     <Button
                                         variant="outline"
                                         onClick={() => setStep(5)}
-                                        className="h-14 flex-1 border-neutral-800 hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 rounded-2xl font-medium transition-all duration-500"
+                                        className="h-14 flex-1 border-neutral-200 dark:border-neutral-800 hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 rounded-2xl font-medium transition-all duration-500"
                                     >
                                         View Details
                                     </Button>
@@ -673,24 +673,24 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                         ) : step === 5 && (
                             /* Step 5: Details View */
                             <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-700">
-                                <div className="bg-gradient-to-br from-neutral-900/60 to-[#0a0a0a] rounded-[2.5rem] p-8 border border-neutral-800/50 space-y-8 shadow-2xl relative overflow-hidden">
+                                <div className="bg-gradient-to-br from-neutral-900/60 to-[#0a0a0a] rounded-[2.5rem] p-8 border border-neutral-200 dark:border-neutral-800/50 space-y-8 shadow-2xl relative overflow-hidden">
                                     <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 blur-[100px] rounded-full -mr-32 -mt-32" />
 
                                     <div>
-                                        <h4 className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-2 ml-1">Title</h4>
+                                        <h4 className="text-[10px] font-bold text-neutral-600 dark:text-neutral-500 uppercase tracking-widest mb-2 ml-1">Title</h4>
                                         <p className="text-2xl text-black dark:text-white font-medium tracking-tight">{scheduledEvent?.summary}</p>
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-8">
                                         <div className="space-y-2">
-                                            <h4 className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest ml-1">Time</h4>
+                                            <h4 className="text-[10px] font-bold text-neutral-600 dark:text-neutral-500 uppercase tracking-widest ml-1">Time</h4>
                                             <div className="flex items-center gap-3 px-4 py-3 bg-neutral-800/30 rounded-2xl border border-neutral-700/30">
                                                 <Clock className="w-4 h-4 text-indigo-400" />
                                                 <span className="text-black dark:text-white font-medium">{new Date(scheduledEvent?.start?.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                             </div>
                                         </div>
                                         <div className="space-y-2">
-                                            <h4 className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest ml-1">Date</h4>
+                                            <h4 className="text-[10px] font-bold text-neutral-600 dark:text-neutral-500 uppercase tracking-widest ml-1">Date</h4>
                                             <div className="flex items-center gap-3 px-4 py-3 bg-neutral-800/30 rounded-2xl border border-neutral-700/30">
                                                 <CalendarIcon className="w-4 h-4 text-indigo-400" />
                                                 <span className="text-black dark:text-white font-medium">{new Date(scheduledEvent?.start?.dateTime).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}</span>
@@ -699,12 +699,12 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                     </div>
 
                                     <div className="space-y-3">
-                                        <h4 className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest ml-1">Attendees</h4>
+                                        <h4 className="text-[10px] font-bold text-neutral-600 dark:text-neutral-500 uppercase tracking-widest ml-1">Attendees</h4>
                                         <div className="flex flex-wrap gap-2">
                                             {scheduledEvent?.attendees?.map((att: any, i: number) => (
                                                 <div key={i} className="flex items-center gap-2 px-4 py-2 bg-neutral-800/50 rounded-2xl border border-neutral-700/30 hover:border-indigo-500/30 transition-colors duration-500">
                                                     <Users className="w-3.5 h-3.5 text-indigo-400" />
-                                                    <span className="text-sm text-neutral-300 font-light">{att.email}</span>
+                                                    <span className="text-sm text-neutral-900 dark:text-neutral-300 font-light">{att.email}</span>
                                                 </div>
                                             ))}
                                             {!scheduledEvent?.attendees?.length && (

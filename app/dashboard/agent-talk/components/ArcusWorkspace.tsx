@@ -140,37 +140,37 @@ export function ArcusWorkspace({
   const getStatusConfig = () => {
     if (hasError) return {
       icon: AlertCircle,
-      color: 'text-white/50',
-      bgColor: 'bg-white/10',
-      borderColor: 'border-white/20',
+      color: 'text-black/5 dark:text-black/50 dark:text-white/50',
+      bgColor: 'bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10',
+      borderColor: 'border-neutral-300 dark:border-white/20',
       label: 'Error'
     };
     if (needsApproval) return {
       icon: Shield,
-      color: 'text-white/70',
-      bgColor: 'bg-white/10',
-      borderColor: 'border-white/20',
+      color: 'text-black/70 dark:text-white/70',
+      bgColor: 'bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10',
+      borderColor: 'border-neutral-300 dark:border-white/20',
       label: 'Approval Required'
     };
     if (isRunning) return {
       icon: Zap,
-      color: 'text-white/80',
+      color: 'text-black/80 dark:text-white/80',
       bgColor: 'bg-white/15',
       borderColor: 'border-white/25',
       label: 'Running'
     };
     if (plan?.status === 'completed' || runtime?.status === 'completed') return {
       icon: CheckCircle2,
-      color: 'text-white/90',
+      color: 'text-black/90 dark:text-white/90',
       bgColor: 'bg-white/15',
       borderColor: 'border-white/25',
       label: 'Completed'
     };
     return {
       icon: Terminal,
-      color: 'text-white/60',
-      bgColor: 'bg-white/10',
-      borderColor: 'border-white/20',
+      color: 'text-black/60 dark:text-white/60',
+      bgColor: 'bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10',
+      borderColor: 'border-neutral-300 dark:border-white/20',
       label: 'Ready'
     };
   };
@@ -186,7 +186,7 @@ export function ArcusWorkspace({
         animate={{ scale: 1, opacity: 1 }}
         className={cn(
           "fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-xl",
-          "bg-[#0a0a0a] border border-white/[0.08] shadow-2xl shadow-black/50",
+          "bg-white dark:bg-[#0a0a0a] border border-white/[0.08] shadow-2xl shadow-black/50",
           "hover:border-white/[0.12] transition-all group",
           className
         )}
@@ -195,14 +195,14 @@ export function ArcusWorkspace({
           <StatusIcon className={cn("w-4 h-4", statusConfig.color, isRunning && "animate-pulse")} />
         </div>
         <div className="text-left">
-          <p className="text-[12px] font-medium text-white/80">{statusConfig.label}</p>
+          <p className="text-[12px] font-medium text-black/80 dark:text-white/80">{statusConfig.label}</p>
           {runtime && (
-            <p className="text-[11px] text-white/40 font-mono">
+            <p className="text-[11px] text-black/40 dark:text-white/40 font-mono">
               {runtime.progress}% • {runtime.steps.filter(s => s.status === 'completed').length}/{runtime.steps.length}
             </p>
           )}
         </div>
-        <Maximize2 className="w-4 h-4 text-white/30 group-hover:text-white/50 ml-2" />
+        <Maximize2 className="w-4 h-4 text-black/30 dark:text-white/30 group-hover:text-black/5 dark:text-black/50 dark:text-white/50 ml-2" />
       </motion.button>
     );
   }
@@ -212,7 +212,7 @@ export function ArcusWorkspace({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        "bg-[#0a0a0a] border border-white/[0.08] rounded-2xl overflow-hidden",
+        "bg-white dark:bg-[#0a0a0a] border border-white/[0.08] rounded-2xl overflow-hidden",
         "shadow-2xl shadow-black/50",
         compact ? "max-w-md" : "w-full max-w-4xl",
         className
@@ -233,10 +233,10 @@ export function ArcusWorkspace({
               </div>
 
               <div>
-                <h2 className="text-[15px] font-semibold text-white/90">
+                <h2 className="text-[15px] font-semibold text-black/90 dark:text-white/90">
                   Arcus Workspace
                 </h2>
-                <p className="text-[12px] text-white/40">
+                <p className="text-[12px] text-black/40 dark:text-white/40">
                   {plan?.title || runtime?.runId.slice(-8) || 'Ready'}
                 </p>
               </div>
@@ -251,8 +251,8 @@ export function ArcusWorkspace({
                     className={cn(
                       "px-3 py-1.5 rounded-md text-[12px] font-medium transition-all flex items-center gap-1.5",
                       activeView === 'plan'
-                        ? "bg-white/[0.08] text-white"
-                        : "text-white/40 hover:text-white/60"
+                        ? "bg-white/[0.08] text-black dark:text-white"
+                        : "text-black/40 dark:text-white/40 hover:text-black/60 dark:text-white/60"
                     )}
                   >
                     <ListTodo className="w-3.5 h-3.5" />
@@ -264,8 +264,8 @@ export function ArcusWorkspace({
                       className={cn(
                         "px-3 py-1.5 rounded-md text-[12px] font-medium transition-all flex items-center gap-1.5",
                         activeView === 'runtime'
-                          ? "bg-white/[0.08] text-white"
-                          : "text-white/40 hover:text-white/60"
+                          ? "bg-white/[0.08] text-black dark:text-white"
+                          : "text-black/40 dark:text-white/40 hover:text-black/60 dark:text-white/60"
                       )}
                     >
                       <Activity className="w-3.5 h-3.5" />
@@ -282,16 +282,16 @@ export function ArcusWorkspace({
                   className="p-2 rounded-lg hover:bg-white/[0.06] transition-all"
                 >
                   {isExpanded ? (
-                    <Minimize2 className="w-4 h-4 text-white/40" />
+                    <Minimize2 className="w-4 h-4 text-black/40 dark:text-white/40" />
                   ) : (
-                    <Maximize2 className="w-4 h-4 text-white/40" />
+                    <Maximize2 className="w-4 h-4 text-black/40 dark:text-white/40" />
                   )}
                 </button>
                 <button
                   onClick={() => setIsMinimized(true)}
                   className="p-2 rounded-lg hover:bg-white/[0.06] transition-all"
                 >
-                  <ChevronDown className="w-4 h-4 text-white/40" />
+                  <ChevronDown className="w-4 h-4 text-black/40 dark:text-white/40" />
                 </button>
               </div>
             </div>
@@ -299,7 +299,7 @@ export function ArcusWorkspace({
 
           {/* Quick Stats */}
           {runtime && (
-            <div className="flex items-center gap-6 mt-3 text-[11px] text-white/40">
+            <div className="flex items-center gap-6 mt-3 text-[11px] text-black/40 dark:text-white/40">
               <span className="flex items-center gap-1.5">
                 <GitBranch className="w-3.5 h-3.5" />
                 {runtime.steps.length} steps
@@ -383,12 +383,12 @@ export function ArcusWorkspace({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               {runtime?.status && (
-                <span className="text-[12px] text-white/40 font-mono">
+                <span className="text-[12px] text-black/40 dark:text-white/40 font-mono">
                   Run: {runtime.runId.slice(-12)}
                 </span>
               )}
               {plan?.planId && (
-                <span className="text-[12px] text-white/40 font-mono">
+                <span className="text-[12px] text-black/40 dark:text-white/40 font-mono">
                   Plan: {plan.planId.slice(-12)}
                 </span>
               )}
@@ -398,7 +398,7 @@ export function ArcusWorkspace({
               {needsApproval && onApprovePlan && (
                 <button
                   onClick={onApprovePlan}
-                  className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/30 text-white text-[13px] font-medium transition-all flex items-center gap-2"
+                  className="px-4 py-2 rounded-lg bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 hover:bg-black/[0.010] dark:bg-white/20 border border-white/30 text-black dark:text-white text-[13px] font-medium transition-all flex items-center gap-2"
                 >
                   <Shield className="w-4 h-4" />
                   Approve
@@ -408,7 +408,7 @@ export function ArcusWorkspace({
               {isPaused && onResume && (
                 <button
                   onClick={onResume}
-                  className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/30 text-white text-[13px] font-medium transition-all flex items-center gap-2"
+                  className="px-4 py-2 rounded-lg bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 hover:bg-black/[0.010] dark:bg-white/20 border border-white/30 text-black dark:text-white text-[13px] font-medium transition-all flex items-center gap-2"
                 >
                   <RefreshCw className="w-4 h-4" />
                   Resume
@@ -418,7 +418,7 @@ export function ArcusWorkspace({
               {isRunning && onCancel && (
                 <button
                   onClick={onCancel}
-                  className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/30 text-white/70 text-[13px] font-medium transition-all"
+                  className="px-4 py-2 rounded-lg bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 hover:bg-black/[0.010] dark:bg-white/20 border border-white/30 text-black/70 dark:text-white/70 text-[13px] font-medium transition-all"
                 >
                   Cancel
                 </button>
@@ -427,7 +427,7 @@ export function ArcusWorkspace({
               {hasError && onRetry && (
                 <button
                   onClick={onRetry}
-                  className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/30 text-white text-[13px] font-medium transition-all flex items-center gap-2"
+                  className="px-4 py-2 rounded-lg bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 hover:bg-black/[0.010] dark:bg-white/20 border border-white/30 text-black dark:text-white text-[13px] font-medium transition-all flex items-center gap-2"
                 >
                   <RefreshCw className="w-4 h-4" />
                   Retry
@@ -457,11 +457,11 @@ export function ArcusWorkspaceBadge({
   onClick?: () => void;
 }) {
   const getConfig = () => {
-    if (error) return { color: 'text-white/50', bgColor: 'bg-white/10', icon: AlertCircle };
-    if (plan?.status === 'draft') return { color: 'text-white/70', bgColor: 'bg-white/10', icon: Shield };
-    if (runtime?.status === 'executing') return { color: 'text-white/80', bgColor: 'bg-white/15', icon: Zap };
-    if (plan?.status === 'completed' || runtime?.status === 'completed') return { color: 'text-white/90', bgColor: 'bg-white/15', icon: CheckCircle2 };
-    return { color: 'text-white/50', bgColor: 'bg-white/10', icon: Terminal };
+    if (error) return { color: 'text-black/5 dark:text-black/50 dark:text-white/50', bgColor: 'bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10', icon: AlertCircle };
+    if (plan?.status === 'draft') return { color: 'text-black/70 dark:text-white/70', bgColor: 'bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10', icon: Shield };
+    if (runtime?.status === 'executing') return { color: 'text-black/80 dark:text-white/80', bgColor: 'bg-white/15', icon: Zap };
+    if (plan?.status === 'completed' || runtime?.status === 'completed') return { color: 'text-black/90 dark:text-white/90', bgColor: 'bg-white/15', icon: CheckCircle2 };
+    return { color: 'text-black/5 dark:text-black/50 dark:text-white/50', bgColor: 'bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10', icon: Terminal };
   };
 
   const config = getConfig();
@@ -481,11 +481,11 @@ export function ArcusWorkspaceBadge({
         {plan?.title || 'Arcus Workspace'}
       </span>
       {runtime && (
-        <span className="text-[11px] text-white/40 font-mono">
+        <span className="text-[11px] text-black/40 dark:text-white/40 font-mono">
           {runtime.progress}%
         </span>
       )}
-      <ChevronRight className="w-3.5 h-3.5 text-white/30" />
+      <ChevronRight className="w-3.5 h-3.5 text-black/30 dark:text-white/30" />
     </button>
   );
 }

@@ -65,12 +65,12 @@ export function ConnectorBanner({
           {/* Text */}
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-medium text-white text-sm">
+              <span className="font-medium text-black dark:text-white text-sm">
                 Connect your tools to Arcus
               </span>
               <Sparkles className="w-3.5 h-3.5 text-yellow-400" />
             </div>
-            <p className="text-gray-400 text-xs">
+            <p className="text-neutral-600 dark:text-gray-400 text-xs">
               Enable AI-powered workflows across Gmail, Calendar, Notion, and more
             </p>
           </div>
@@ -84,7 +84,7 @@ export function ConnectorBanner({
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
                 className="w-8 h-8 rounded-lg flex items-center justify-center
-                           ring-2 ring-[#1a1a1a] bg-gray-800"
+                           ring-2 ring-[#1a1a1a] bg-neutral-100 dark:bg-gray-800"
                 style={{ zIndex: featuredConnectors.length - index }}
               >
                 <img
@@ -98,7 +98,7 @@ export function ConnectorBanner({
               </motion.div>
             ))}
             <div className="w-8 h-8 rounded-lg flex items-center justify-center
-                           ring-2 ring-[#1a1a1a] bg-gray-800 text-xs text-gray-400">
+                           ring-2 ring-[#1a1a1a] bg-neutral-100 dark:bg-gray-800 text-xs text-neutral-600 dark:text-gray-400">
               +
             </div>
           </div>
@@ -117,7 +117,7 @@ export function ConnectorBanner({
           {onDismiss && (
             <button
               onClick={onDismiss}
-              className="p-2 text-gray-400 hover:text-white hover:bg-gray-800
+              className="p-2 text-neutral-600 dark:text-gray-400 hover:text-black dark:text-white hover:bg-neutral-100 dark:bg-gray-800
                          rounded-lg transition-colors"
             >
               <X className="w-4 h-4" />
@@ -151,7 +151,7 @@ export function ConnectorBannerCompact({
     >
       <div className="flex items-center gap-2">
         <Link2 className="w-4 h-4 text-blue-400" />
-        <span className="text-sm text-gray-300">
+        <span className="text-sm text-neutral-900 dark:text-gray-300">
           Connect your tools for AI workflows
         </span>
       </div>
@@ -167,7 +167,7 @@ export function ConnectorBannerCompact({
         {onDismiss && (
           <button
             onClick={onDismiss}
-            className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-800
+            className="p-1.5 text-neutral-600 dark:text-gray-400 hover:text-black dark:text-white hover:bg-neutral-100 dark:bg-gray-800
                        rounded-lg transition-colors"
           >
             <X className="w-4 h-4" />
@@ -188,12 +188,12 @@ export function ConnectorInlinePrompt({
 
   return (
     <div className="text-center py-8">
-      <div className="inline-flex items-center gap-2 p-1 bg-gray-800/50 rounded-2xl mb-4">
+      <div className="inline-flex items-center gap-2 p-1 bg-neutral-100 dark:bg-gray-800/50 rounded-2xl mb-4">
         {featuredConnectors.map((connector, index) => (
           <div
             key={connector.id}
             className="w-10 h-10 rounded-xl flex items-center justify-center
-                       bg-gray-800 ring-2 ring-[#1a1a1a]"
+                       bg-neutral-100 dark:bg-gray-800 ring-2 ring-[#1a1a1a]"
           >
             <img
               src={connector.icon}
@@ -204,10 +204,10 @@ export function ConnectorInlinePrompt({
         ))}
       </div>
       
-      <h3 className="text-lg font-medium text-white mb-2">
+      <h3 className="text-lg font-medium text-black dark:text-white mb-2">
         Connect your tools
       </h3>
-      <p className="text-gray-400 text-sm mb-4 max-w-sm mx-auto">
+      <p className="text-neutral-600 dark:text-gray-400 text-sm mb-4 max-w-sm mx-auto">
         Link Gmail, Calendar, Notion, GitHub, and more to enable AI-powered workflows
       </p>
       

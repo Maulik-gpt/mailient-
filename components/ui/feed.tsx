@@ -128,7 +128,7 @@ export const Feed: React.FC<FeedProps> = ({
       >
         {posts.length === 0 && !isLoading ? (
           <div className="text-center py-12">
-            <p className="text-gray-500 dark:text-gray-400">No posts yet. Be the first to share something!</p>
+            <p className="text-gray-500 dark:text-neutral-600 dark:text-gray-400">No posts yet. Be the first to share something!</p>
           </div>
         ) : (
           posts.map((post) => (

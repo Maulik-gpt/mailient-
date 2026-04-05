@@ -36,7 +36,7 @@ const UsageBadge = React.forwardRef<HTMLDivElement, UsageBadgeProps>(
             <div
               ref={ref}
               className={cn(
-                "group relative inline-flex cursor-pointer items-center gap-2.5 overflow-hidden rounded-full border border-black/[0.08] dark:border-white/[0.08] bg-white/70 dark:bg-white/[0.03] px-3.5 py-1.5 text-[13px] font-medium text-neutral-800 dark:text-neutral-200 backdrop-blur-md transition-all hover:bg-white/90 dark:hover:bg-white/[0.08] hover:border-black/[0.12] dark:hover:border-white/20 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_20px_-6px_rgba(0,0,0,0.1)]",
+                "group relative inline-flex cursor-pointer items-center gap-2.5 overflow-hidden rounded-full border border-black/[0.08] dark:border-white/[0.08] bg-white/70 dark:bg-white/[0.03] px-3.5 py-1.5 text-[13px] font-medium text-neutral-800 dark:text-neutral-900 dark:text-neutral-200 backdrop-blur-md transition-all hover:bg-white/90 dark:hover:bg-white/[0.08] hover:border-black/[0.12] dark:hover:border-white/20 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_20px_-6px_rgba(0,0,0,0.1)]",
                 className
               )}
             >
@@ -75,7 +75,7 @@ const UsageBadge = React.forwardRef<HTMLDivElement, UsageBadgeProps>(
               </div>
             </div>
           </TooltipTrigger>
-          <TooltipContent className="bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xl border-black/10 dark:border-white/10 text-neutral-800 dark:text-neutral-200 shadow-2xl px-3 py-2 rounded-xl text-xs font-medium">
+          <TooltipContent className="bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xl border-black/10 dark:border-white/10 text-neutral-800 dark:text-neutral-900 dark:text-neutral-200 shadow-2xl px-3 py-2 rounded-xl text-xs font-medium">
             {tooltipContent}
           </TooltipContent>
         </Tooltip>

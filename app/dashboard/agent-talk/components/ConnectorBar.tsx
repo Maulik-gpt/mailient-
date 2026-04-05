@@ -74,12 +74,12 @@ export function ConnectorBar({ connectors, onOpenConnectors, className }: Connec
               className={cn(
                 "relative w-7 h-7 rounded-md flex items-center justify-center shrink-0",
                 "bg-white/[0.06] border border-white/[0.1]",
-                isConnected && "bg-white/15 border-white/20"
+                isConnected && "bg-white/15 border-neutral-300 dark:border-white/20"
               )}
             >
               <Icon className={cn(
                 "w-3.5 h-3.5",
-                isConnected ? "text-white" : "text-white/50"
+                isConnected ? "text-black dark:text-white" : "text-black/5 dark:text-black/50 dark:text-white/50"
               )} />
               
               {/* Connected indicator dot */}
@@ -93,7 +93,7 @@ export function ConnectorBar({ connectors, onOpenConnectors, className }: Connec
         {/* More indicator */}
         {connectors.length > 4 && (
           <div className="w-7 h-7 rounded-md bg-white/[0.03] border border-white/[0.1] flex items-center justify-center shrink-0">
-            <span className="text-[10px] text-white/40 font-medium">
+            <span className="text-[10px] text-black/40 dark:text-white/40 font-medium">
               +{connectors.length - 4}
             </span>
           </div>
@@ -108,14 +108,14 @@ export function ConnectorBar({ connectors, onOpenConnectors, className }: Connec
         onClick={onOpenConnectors}
         className="flex items-center gap-2 group/link"
       >
-        <Link2 className="w-3.5 h-3.5 text-white/40" />
-        <span className="text-[13px] text-white/50 group-hover/link:text-white/70 transition-colors">
+        <Link2 className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
+        <span className="text-[13px] text-black/5 dark:text-black/50 dark:text-white/50 group-hover/link:text-black/70 dark:text-white/70 transition-colors">
           {connectedCount === 0 
             ? "Connect your tools to Arcus" 
             : `${connectedCount}/${totalCount} connected`
           }
         </span>
-        <ChevronRight className="w-3.5 h-3.5 text-white/30 group-hover/link:text-white/50 transition-colors" />
+        <ChevronRight className="w-3.5 h-3.5 text-black/30 dark:text-white/30 group-hover/link:text-black/5 dark:text-black/50 dark:text-white/50 transition-colors" />
       </button>
     </motion.div>
   );

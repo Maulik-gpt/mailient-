@@ -140,14 +140,14 @@ export function PricingCard({ onClose }: PricingCardProps) {
               Select a Plan
             </h1>
             {onClose && (
-                <button onClick={onClose} className="text-neutral-500 hover:text-white transition-colors">
+                <button onClick={onClose} className="text-neutral-600 dark:text-neutral-500 hover:text-white transition-colors">
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                 </button>
             )}
         </div>
-        <p className="text-sm text-neutral-400">Your subscription has expired. Choose a plan to continue with premium features.</p>
+        <p className="text-sm text-neutral-600 dark:text-neutral-400">Your subscription has expired. Choose a plan to continue with premium features.</p>
       </div>
 
       <div className="flex flex-col gap-3">
@@ -199,7 +199,7 @@ export function PricingCard({ onClose }: PricingCardProps) {
                         <h3 className="text-lg font-medium text-white leading-tight">
                           {plan.name}
                         </h3>
-                        <p className="text-sm text-neutral-500 capitalize">
+                        <p className="text-sm text-neutral-600 dark:text-neutral-500 capitalize">
                           {plan.description}
                         </p>
                       </div>
@@ -211,7 +211,7 @@ export function PricingCard({ onClose }: PricingCardProps) {
                           format={{ style: "currency", currency: "USD" }}
                         />
                       </div>
-                      <div className="text-xs text-neutral-500/60 flex items-center justify-end gap-1 ">
+                      <div className="text-xs text-neutral-600 dark:text-neutral-500/60 flex items-center justify-end gap-1 ">
                         per month
                       </div>
                     </div>
@@ -240,7 +240,7 @@ export function PricingCard({ onClose }: PricingCardProps) {
                                   duration: 0.3,
                                 }}
                                 key={idx}
-                                className="flex items-center gap-3 text-sm text-neutral-300 "
+                                className="flex items-center gap-3 text-sm text-neutral-900 dark:text-neutral-300 "
                               >
                                 <HugeiconsIcon
                                   icon={Tick02Icon}

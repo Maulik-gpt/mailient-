@@ -70,86 +70,86 @@ const errorCategoryConfig: Record<string, {
   network: {
     icon: Wifi,
     title: 'Connection Issue',
-    color: 'text-white/70',
-    bgColor: 'bg-white/10',
-    borderColor: 'border-white/20'
+    color: 'text-black/70 dark:text-white/70',
+    bgColor: 'bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10',
+    borderColor: 'border-neutral-300 dark:border-white/20'
   },
   timeout: {
     icon: RefreshCw,
     title: 'Request Timeout',
-    color: 'text-white/70',
-    bgColor: 'bg-white/10',
-    borderColor: 'border-white/20'
+    color: 'text-black/70 dark:text-white/70',
+    bgColor: 'bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10',
+    borderColor: 'border-neutral-300 dark:border-white/20'
   },
   rate_limit: {
     icon: Server,
     title: 'Rate Limited',
-    color: 'text-white/60',
-    bgColor: 'bg-white/10',
-    borderColor: 'border-white/20'
+    color: 'text-black/60 dark:text-white/60',
+    bgColor: 'bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10',
+    borderColor: 'border-neutral-300 dark:border-white/20'
   },
   auth_failed: {
     icon: Key,
     title: 'Authentication Failed',
-    color: 'text-white/50',
-    bgColor: 'bg-white/10',
-    borderColor: 'border-white/20'
+    color: 'text-black/5 dark:text-black/50 dark:text-white/50',
+    bgColor: 'bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10',
+    borderColor: 'border-neutral-300 dark:border-white/20'
   },
   permission_denied: {
     icon: Lock,
     title: 'Permission Denied',
-    color: 'text-white/50',
-    bgColor: 'bg-white/10',
-    borderColor: 'border-white/20'
+    color: 'text-black/5 dark:text-black/50 dark:text-white/50',
+    bgColor: 'bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10',
+    borderColor: 'border-neutral-300 dark:border-white/20'
   },
   invalid_input: {
     icon: FileWarning,
     title: 'Invalid Input',
-    color: 'text-white/60',
-    bgColor: 'bg-white/10',
-    borderColor: 'border-white/20'
+    color: 'text-black/60 dark:text-white/60',
+    bgColor: 'bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10',
+    borderColor: 'border-neutral-300 dark:border-white/20'
   },
   not_found: {
     icon: HelpCircle,
     title: 'Not Found',
-    color: 'text-white/40',
-    bgColor: 'bg-white/10',
-    borderColor: 'border-white/20'
+    color: 'text-black/40 dark:text-white/40',
+    bgColor: 'bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10',
+    borderColor: 'border-neutral-300 dark:border-white/20'
   },
   already_exists: {
     icon: CheckCircle2,
     title: 'Already Exists',
-    color: 'text-white/60',
-    bgColor: 'bg-white/10',
-    borderColor: 'border-white/20'
+    color: 'text-black/60 dark:text-white/60',
+    bgColor: 'bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10',
+    borderColor: 'border-neutral-300 dark:border-white/20'
   },
   already_completed: {
     icon: CheckCircle2,
     title: 'Already Completed',
-    color: 'text-white/80',
+    color: 'text-black/80 dark:text-white/80',
     bgColor: 'bg-white/15',
     borderColor: 'border-white/25'
   },
   conflict: {
     icon: AlertTriangle,
     title: 'Conflict Detected',
-    color: 'text-white/60',
-    bgColor: 'bg-white/10',
-    borderColor: 'border-white/20'
+    color: 'text-black/60 dark:text-white/60',
+    bgColor: 'bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10',
+    borderColor: 'border-neutral-300 dark:border-white/20'
   },
   internal_error: {
     icon: Server,
     title: 'Internal Error',
-    color: 'text-white/50',
-    bgColor: 'bg-white/10',
-    borderColor: 'border-white/20'
+    color: 'text-black/5 dark:text-black/50 dark:text-white/50',
+    bgColor: 'bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10',
+    borderColor: 'border-neutral-300 dark:border-white/20'
   },
   default: {
     icon: AlertTriangle,
     title: 'Error',
-    color: 'text-white/50',
-    bgColor: 'bg-white/10',
-    borderColor: 'border-white/20'
+    color: 'text-black/5 dark:text-black/50 dark:text-white/50',
+    bgColor: 'bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10',
+    borderColor: 'border-neutral-300 dark:border-white/20'
   }
 };
 
@@ -223,8 +223,8 @@ export function RecoveryHintPanel({
         className={cn(
           "flex items-center gap-2 px-4 py-2.5 rounded-lg text-[13px] font-medium transition-all",
           action.variant === 'primary'
-            ? "bg-white text-black hover:bg-white/90"
-            : "bg-white/[0.06] hover:bg-white/[0.1] text-white/80 border border-white/[0.1]"
+            ? "bg-white text-black hover:bg-black/[0.045] dark:bg-white/90"
+            : "bg-white/[0.06] hover:bg-white/[0.1] text-black/80 dark:text-white/80 border border-white/[0.1]"
         )}
       >
         <ActionIcon className="w-4 h-4" />
@@ -247,7 +247,7 @@ export function RecoveryHintPanel({
             {hint?.userMessage || error.message}
           </p>
           {hint?.autoRetry && (
-            <p className="text-[11px] text-white/40 mt-1">
+            <p className="text-[11px] text-black/40 dark:text-white/40 mt-1">
               Retrying automatically...
             </p>
           )}
@@ -257,7 +257,7 @@ export function RecoveryHintPanel({
             onClick={onRetry}
             className="p-2 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] transition-all shrink-0"
           >
-            <RefreshCw className="w-4 h-4 text-white/60" />
+            <RefreshCw className="w-4 h-4 text-black/60 dark:text-white/60" />
           </button>
         )}
       </div>
@@ -270,7 +270,7 @@ export function RecoveryHintPanel({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       className={cn(
-        "bg-[#0a0a0a] border border-white/[0.06] rounded-2xl overflow-hidden",
+        "bg-white dark:bg-[#0a0a0a] border border-white/[0.06] rounded-2xl overflow-hidden",
         "shadow-2xl shadow-black/50",
         className
       )}
@@ -294,9 +294,9 @@ export function RecoveryHintPanel({
               <h3 className={cn("text-[16px] font-semibold", config.color)}>
                 {config.title}
               </h3>
-              <p className="text-[13px] text-white/60 mt-1">
+              <p className="text-[13px] text-black/60 dark:text-white/60 mt-1">
                 {error.code && (
-                  <span className="font-mono text-white/40 mr-2">[{error.code}]</span>
+                  <span className="font-mono text-black/40 dark:text-white/40 mr-2">[{error.code}]</span>
                 )}
                 {hint?.userMessage || error.message}
               </p>
@@ -308,7 +308,7 @@ export function RecoveryHintPanel({
               onClick={onDismiss}
               className="p-2 rounded-lg bg-black/20 hover:bg-black/30 transition-all shrink-0"
             >
-              <X className="w-4 h-4 text-white/40" />
+              <X className="w-4 h-4 text-black/40 dark:text-white/40" />
             </button>
           )}
         </div>
@@ -318,9 +318,9 @@ export function RecoveryHintPanel({
       <div className="px-6 py-5">
         {/* Auto-retry indicator */}
         {hint?.autoRetry && (
-          <div className="flex items-center gap-3 p-3 bg-white/5 rounded-lg border border-white/10 mb-4">
-            <RefreshCw className="w-4 h-4 text-white/70 animate-spin" />
-            <p className="text-[13px] text-white/70">
+          <div className="flex items-center gap-3 p-3 bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 mb-4">
+            <RefreshCw className="w-4 h-4 text-black/70 dark:text-white/70 animate-spin" />
+            <p className="text-[13px] text-black/70 dark:text-white/70">
               Retrying automatically
               {hint.maxRetries && ` (max ${hint.maxRetries} attempts)`}
             </p>
@@ -329,11 +329,11 @@ export function RecoveryHintPanel({
 
         {/* User action required */}
         {hint?.requiresUserAction && (
-          <div className="flex items-start gap-3 p-3 bg-white/5 rounded-lg border border-white/10 mb-4">
-            <ShieldAlert className="w-4 h-4 text-white/60 mt-0.5 shrink-0" />
+          <div className="flex items-start gap-3 p-3 bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 mb-4">
+            <ShieldAlert className="w-4 h-4 text-black/60 dark:text-white/60 mt-0.5 shrink-0" />
             <div>
-              <p className="text-[13px] text-white/60 font-medium">Action Required</p>
-              <p className="text-[12px] text-white/50 mt-1">
+              <p className="text-[13px] text-black/60 dark:text-white/60 font-medium">Action Required</p>
+              <p className="text-[12px] text-black/5 dark:text-black/50 dark:text-white/50 mt-1">
                 This step requires your approval or input to continue.
               </p>
             </div>
@@ -343,8 +343,8 @@ export function RecoveryHintPanel({
         {/* Recovery action */}
         {hint?.recoveryAction && (
           <div className="mb-4">
-            <p className="text-[11px] text-white/40 uppercase tracking-wider mb-2">Recovery Action</p>
-            <p className="text-[13px] text-white/70">{hint.recoveryAction}</p>
+            <p className="text-[11px] text-black/40 dark:text-white/40 uppercase tracking-wider mb-2">Recovery Action</p>
+            <p className="text-[13px] text-black/70 dark:text-white/70">{hint.recoveryAction}</p>
           </div>
         )}
 
@@ -369,7 +369,7 @@ export function RecoveryHintPanel({
           {error.retryable && onRetry && !hint?.autoRetry && (
             <button
               onClick={onRetry}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-[13px] font-medium text-white/60 hover:text-white/80 hover:bg-white/[0.06] transition-all"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-[13px] font-medium text-black/60 dark:text-white/60 hover:text-black/80 dark:text-white/80 hover:bg-white/[0.06] transition-all"
             >
               <RefreshCw className="w-4 h-4" />
               Retry
@@ -379,7 +379,7 @@ export function RecoveryHintPanel({
           {onDismiss && (
             <button
               onClick={onDismiss}
-              className="ml-auto text-[13px] text-white/40 hover:text-white/60 transition-colors"
+              className="ml-auto text-[13px] text-black/40 dark:text-white/40 hover:text-black/60 dark:text-white/60 transition-colors"
             >
               Dismiss
             </button>

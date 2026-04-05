@@ -95,7 +95,7 @@ const statusConfig: Record<PlanStatus, { label: string; color: string; gradient:
   },
   cancelled: { 
     label: 'Cancelled', 
-    color: 'text-neutral-400', 
+    color: 'text-neutral-600 dark:text-neutral-600 dark:text-neutral-400', 
     gradient: 'from-neutral-500/20 to-gray-500/10',
     icon: XCircle,
     bgColor: 'bg-neutral-500/10'
@@ -103,12 +103,12 @@ const statusConfig: Record<PlanStatus, { label: string; color: string; gradient:
 };
 
 const todoStatusConfig: Record<string, { label: string; color: string; bgColor: string; icon: any; pulse?: boolean }> = {
-  pending: { label: 'Pending', color: 'text-white/30', bgColor: 'bg-white/5', icon: Clock },
+  pending: { label: 'Pending', color: 'text-black/30 dark:text-white/30', bgColor: 'bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5', icon: Clock },
   ready: { label: 'Ready', color: 'text-blue-400', bgColor: 'bg-blue-500/10', icon: CheckCircle2 },
   running: { label: 'Running', color: 'text-amber-400', bgColor: 'bg-amber-500/10', icon: Loader2, pulse: true },
   completed: { label: 'Done', color: 'text-emerald-400', bgColor: 'bg-emerald-500/10', icon: CheckCircle2 },
   failed: { label: 'Failed', color: 'text-red-400', bgColor: 'bg-red-500/10', icon: AlertTriangle },
-  skipped: { label: 'Skipped', color: 'text-neutral-400', bgColor: 'bg-neutral-500/10', icon: CheckCircle2 },
+  skipped: { label: 'Skipped', color: 'text-neutral-600 dark:text-neutral-600 dark:text-neutral-400', bgColor: 'bg-neutral-500/10', icon: CheckCircle2 },
   blocked_approval: { label: 'Needs Approval', color: 'text-orange-400', bgColor: 'bg-orange-500/10', icon: Shield }
 };
 
@@ -177,7 +177,7 @@ export function PlanArtifactCard({ plan, onApprove, onReject, isProcessing, comp
         plan.status === 'draft' ? 'border-amber-500/30 shadow-lg shadow-amber-500/10' :
         plan.status === 'executing' ? 'border-blue-500/30 shadow-lg shadow-blue-500/10' :
         plan.status === 'completed' ? 'border-emerald-500/30 shadow-lg shadow-emerald-500/10' :
-        'border-white/10'
+        'border-neutral-200 dark:border-white/10'
       )}>
         {/* Animated Gradient Background */}
         <div className={cn(
@@ -187,7 +187,7 @@ export function PlanArtifactCard({ plan, onApprove, onReject, isProcessing, comp
         
         {/* Progress Bar for Executing State */}
         {isExecuting && (
-          <div className="absolute top-0 left-0 right-0 h-1 bg-white/5">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}
@@ -198,7 +198,7 @@ export function PlanArtifactCard({ plan, onApprove, onReject, isProcessing, comp
         )}
 
         {/* Header */}
-        <div className="relative px-6 py-5 border-b border-white/5">
+        <div className="relative px-6 py-5 border-b border-neutral-200 dark:border-white/5">
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-4">
               <motion.div 
@@ -210,7 +210,7 @@ export function PlanArtifactCard({ plan, onApprove, onReject, isProcessing, comp
                   plan.status === 'draft' ? 'bg-amber-500/10 border-amber-500/20' :
                   plan.status === 'executing' ? 'bg-blue-500/10 border-blue-500/20' :
                   plan.status === 'completed' ? 'bg-emerald-500/10 border-emerald-500/20' :
-                  'bg-white/5 border-white/10'
+                  'bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 border-neutral-200 dark:border-white/10'
                 )}
               >
                 {isExecuting ? (
@@ -222,22 +222,22 @@ export function PlanArtifactCard({ plan, onApprove, onReject, isProcessing, comp
               
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-3 mb-1">
-                  <h3 className="text-[16px] font-bold text-white/95 tracking-tight">
+                  <h3 className="text-[16px] font-bold text-black/95 dark:text-white/95 tracking-tight">
                     {plan.title}
                   </h3>
                   <span className={cn(
                     "text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border",
-                    statusInfo.bgColor || 'bg-white/5',
+                    statusInfo.bgColor || 'bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5',
                     statusInfo.color,
                     plan.status === 'draft' ? 'border-amber-500/30' :
                     plan.status === 'executing' ? 'border-blue-500/30' :
                     plan.status === 'completed' ? 'border-emerald-500/30' :
-                    'border-white/10'
+                    'border-neutral-200 dark:border-white/10'
                   )}>
                     {statusInfo.label}
                   </span>
                 </div>
-                <p className="text-[13px] text-white/50 leading-relaxed">
+                <p className="text-[13px] text-black/5 dark:text-black/50 dark:text-white/50 leading-relaxed">
                   {plan.objective}
                 </p>
               </div>
@@ -245,7 +245,7 @@ export function PlanArtifactCard({ plan, onApprove, onReject, isProcessing, comp
 
             <button
               onClick={() => setExpanded(!expanded)}
-              className="p-2 hover:bg-white/5 rounded-lg transition-colors text-white/40 hover:text-white/70"
+              className="p-2 hover:bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 rounded-lg transition-colors text-black/40 dark:text-white/40 hover:text-black/70 dark:text-white/70"
             >
               <motion.div
                 animate={{ rotate: expanded ? 180 : 0 }}
@@ -259,7 +259,7 @@ export function PlanArtifactCard({ plan, onApprove, onReject, isProcessing, comp
           {/* Progress Bar */}
           {totalTodos > 0 && (
             <div className="mt-4 flex items-center gap-3">
-              <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden">
+              <div className="flex-1 h-2 bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 rounded-full overflow-hidden">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${progress}%` }}
@@ -270,11 +270,11 @@ export function PlanArtifactCard({ plan, onApprove, onReject, isProcessing, comp
                       ? 'bg-gradient-to-r from-blue-500 via-amber-500 to-emerald-500' 
                       : plan.status === 'completed'
                       ? 'bg-emerald-500'
-                      : 'bg-white/30'
+                      : 'bg-black/[0.015] dark:bg-white/30'
                   )}
                 />
               </div>
-              <span className="text-[11px] text-white/40 font-medium">
+              <span className="text-[11px] text-black/40 dark:text-white/40 font-medium">
                 {completedTodos}/{totalTodos}
               </span>
             </div>
@@ -299,8 +299,8 @@ export function PlanArtifactCard({ plan, onApprove, onReject, isProcessing, comp
                     className={cn(
                       "px-4 py-2 text-[12px] font-bold rounded-lg transition-all",
                       activeTab === tab 
-                        ? "bg-white/10 text-white" 
-                        : "text-white/40 hover:text-white/60 hover:bg-white/5"
+                        ? "bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 text-black dark:text-white" 
+                        : "text-black/40 dark:text-white/40 hover:text-black/60 dark:text-white/60 hover:bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5"
                     )}
                   >
                     {tab === 'overview' ? 'Overview' : `Steps (${totalTodos})`}
@@ -322,7 +322,7 @@ export function PlanArtifactCard({ plan, onApprove, onReject, isProcessing, comp
                 <motion.div 
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="px-6 py-4 border-t border-white/5 bg-white/[0.02]"
+                  className="px-6 py-4 border-t border-neutral-200 dark:border-white/5 bg-white/[0.02]"
                 >
                   <div className="flex items-center gap-3">
                     <motion.button
@@ -347,13 +347,13 @@ export function PlanArtifactCard({ plan, onApprove, onReject, isProcessing, comp
                     {onReject && (
                       <button
                         onClick={() => onReject(plan.planId)}
-                        className="px-5 py-3 bg-white/5 border border-white/10 text-white/60 text-[13px] font-bold rounded-xl hover:bg-white/10 hover:text-white transition-all"
+                        className="px-5 py-3 bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 border border-neutral-200 dark:border-white/10 text-black/60 dark:text-white/60 text-[13px] font-bold rounded-xl hover:bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 hover:text-black dark:text-white transition-all"
                       >
                         Cancel
                       </button>
                     )}
                   </div>
-                  <p className="text-[11px] text-white/30 mt-3 text-center">
+                  <p className="text-[11px] text-black/30 dark:text-white/30 mt-3 text-center">
                     Once approved, Arcus will execute all {totalTodos} steps automatically
                   </p>
                 </motion.div>
@@ -393,10 +393,10 @@ function CompactPlanCard({ plan, onApprove, isApproving, isProcessing }: {
       className="w-full max-w-xl mx-auto my-3"
     >
       <div className={cn(
-        "relative overflow-hidden rounded-xl border bg-[#111111] p-4",
+        "relative overflow-hidden rounded-xl border bg-neutral-50 dark:bg-[#111111] p-4",
         plan.status === 'draft' ? 'border-amber-500/30' :
         plan.status === 'executing' ? 'border-blue-500/30' :
-        'border-white/10'
+        'border-neutral-200 dark:border-white/10'
       )}>
         {/* Gradient Background */}
         <div className={cn(
@@ -409,7 +409,7 @@ function CompactPlanCard({ plan, onApprove, isApproving, isProcessing }: {
             "w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border",
             plan.status === 'draft' ? 'bg-amber-500/10 border-amber-500/20' :
             plan.status === 'executing' ? 'bg-blue-500/10 border-blue-500/20' :
-            'bg-white/5 border-white/10'
+            'bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 border-neutral-200 dark:border-white/10'
           )}>
             {plan.status === 'executing' ? (
               <Loader2 className={cn("w-5 h-5 animate-spin", statusInfo.color)} />
@@ -420,21 +420,21 @@ function CompactPlanCard({ plan, onApprove, isApproving, isProcessing }: {
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <h4 className="text-[14px] font-bold text-white/90">{plan.title}</h4>
+              <h4 className="text-[14px] font-bold text-black/90 dark:text-white/90">{plan.title}</h4>
               <span className={cn(
                 "text-[9px] font-bold uppercase px-2 py-0.5 rounded-full",
-                statusInfo.bgColor || 'bg-white/5',
+                statusInfo.bgColor || 'bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5',
                 statusInfo.color
               )}>
                 {statusInfo.label}
               </span>
             </div>
-            <p className="text-[12px] text-white/50 line-clamp-1">{plan.objective}</p>
+            <p className="text-[12px] text-black/5 dark:text-black/50 dark:text-white/50 line-clamp-1">{plan.objective}</p>
 
             {/* Mini Progress */}
             {totalTodos > 0 && (
               <div className="mt-3 flex items-center gap-3">
-                <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                <div className="flex-1 h-1.5 bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 rounded-full overflow-hidden">
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${progress}%` }}
@@ -442,11 +442,11 @@ function CompactPlanCard({ plan, onApprove, isApproving, isProcessing }: {
                       "h-full rounded-full",
                       plan.status === 'executing' 
                         ? 'bg-gradient-to-r from-blue-500 to-emerald-500' 
-                        : 'bg-white/30'
+                        : 'bg-black/[0.015] dark:bg-white/30'
                     )}
                   />
                 </div>
-                <span className="text-[10px] text-white/40">
+                <span className="text-[10px] text-black/40 dark:text-white/40">
                   {completedTodos}/{totalTodos}
                 </span>
               </div>
@@ -465,19 +465,19 @@ function CompactPlanCard({ plan, onApprove, isApproving, isProcessing }: {
                     ) : todo.status === 'running' ? (
                       <Loader2 className="w-2.5 h-2.5 text-amber-400 animate-spin" />
                     ) : (
-                      <Circle className="w-2.5 h-2.5 text-white/20" />
+                      <Circle className="w-2.5 h-2.5 text-black/20 dark:text-white/20" />
                     )}
                   </div>
                   <span className={cn(
                     "text-[11px] truncate",
-                    todo.status === 'completed' ? 'text-white/40 line-through' : 'text-white/60'
+                    todo.status === 'completed' ? 'text-black/40 dark:text-white/40 line-through' : 'text-black/60 dark:text-white/60'
                   )}>
                     {todo.title}
                   </span>
                 </div>
               ))}
               {plan.todos.length > 3 && (
-                <p className="text-[10px] text-white/30 pl-6">
+                <p className="text-[10px] text-black/30 dark:text-white/30 pl-6">
                   +{plan.todos.length - 3} more steps
                 </p>
               )}
@@ -523,7 +523,7 @@ function OverviewTab({ plan }: { plan: PlanArtifact }) {
           transition={{ delay: 0.1 }}
           className="space-y-2"
         >
-          <div className="flex items-center gap-2 text-white/40">
+          <div className="flex items-center gap-2 text-black/40 dark:text-white/40">
             <Target className="w-3.5 h-3.5" />
             <span className="text-[11px] font-bold uppercase tracking-wider">Assumptions</span>
           </div>
@@ -534,9 +534,9 @@ function OverviewTab({ plan }: { plan: PlanArtifact }) {
                 initial={{ opacity: 0, x: -5 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.1 + i * 0.05 }}
-                className="flex items-start gap-2 text-[13px] text-white/60"
+                className="flex items-start gap-2 text-[13px] text-black/60 dark:text-white/60"
               >
-                <span className="text-white/30 mt-1">•</span>
+                <span className="text-black/30 dark:text-white/30 mt-1">•</span>
                 {assumption}
               </motion.li>
             ))}
@@ -552,7 +552,7 @@ function OverviewTab({ plan }: { plan: PlanArtifact }) {
           transition={{ delay: 0.2 }}
           className="space-y-2"
         >
-          <div className="flex items-center gap-2 text-white/40">
+          <div className="flex items-center gap-2 text-black/40 dark:text-white/40">
             <HelpCircle className="w-3.5 h-3.5" />
             <span className="text-[11px] font-bold uppercase tracking-wider">Questions Answered</span>
           </div>
@@ -563,7 +563,7 @@ function OverviewTab({ plan }: { plan: PlanArtifact }) {
                 initial={{ opacity: 0, x: -5 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2 + i * 0.05 }}
-                className="flex items-start gap-2 text-[13px] text-white/60"
+                className="flex items-start gap-2 text-[13px] text-black/60 dark:text-white/60"
               >
                 <span className="text-emerald-400/60 mt-1">✓</span>
                 {q}
@@ -581,7 +581,7 @@ function OverviewTab({ plan }: { plan: PlanArtifact }) {
           transition={{ delay: 0.3 }}
           className="space-y-2"
         >
-          <div className="flex items-center gap-2 text-white/40">
+          <div className="flex items-center gap-2 text-black/40 dark:text-white/40">
             <CheckCircle2 className="w-3.5 h-3.5" />
             <span className="text-[11px] font-bold uppercase tracking-wider">Success Criteria</span>
           </div>
@@ -592,9 +592,9 @@ function OverviewTab({ plan }: { plan: PlanArtifact }) {
                 initial={{ opacity: 0, x: -5 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.3 + i * 0.05 }}
-                className="flex items-start gap-2 text-[13px] text-white/60"
+                className="flex items-start gap-2 text-[13px] text-black/60 dark:text-white/60"
               >
-                <span className="text-white/30 mt-1">{i + 1}.</span>
+                <span className="text-black/30 dark:text-white/30 mt-1">{i + 1}.</span>
                 {criteria}
               </motion.li>
             ))}
@@ -627,7 +627,7 @@ function TodosTab({ todos, status: planStatus }: { todos: TodoItem[]; status: Pl
               isCompleted ? "bg-emerald-500/5 border-emerald-500/10" :
               todo.status === 'failed' ? "bg-red-500/5 border-red-500/20" :
               todo.status === 'blocked_approval' ? "bg-orange-500/5 border-orange-500/20" :
-              "bg-white/[0.02] border-white/5 hover:border-white/10"
+              "bg-white/[0.02] border-neutral-200 dark:border-white/5 hover:border-neutral-200 dark:border-white/10"
             )}
           >
             {/* Status Icon */}
@@ -646,10 +646,10 @@ function TodosTab({ todos, status: planStatus }: { todos: TodoItem[]; status: Pl
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <ActionIcon className="w-3.5 h-3.5 text-white/30" />
+                  <ActionIcon className="w-3.5 h-3.5 text-black/30 dark:text-white/30" />
                   <h4 className={cn(
                     "text-[13px] font-semibold leading-tight",
-                    isCompleted ? 'text-white/40 line-through' : 'text-white/80'
+                    isCompleted ? 'text-black/40 dark:text-white/40 line-through' : 'text-black/80 dark:text-white/80'
                   )}>
                     {todo.title}
                   </h4>
@@ -663,7 +663,7 @@ function TodosTab({ todos, status: planStatus }: { todos: TodoItem[]; status: Pl
               </div>
               
               {todo.description && !isCompleted && (
-                <p className="text-[12px] text-white/40 mt-1 pl-5.5">{todo.description}</p>
+                <p className="text-[12px] text-black/40 dark:text-white/40 mt-1 pl-5.5">{todo.description}</p>
               )}
 
               {/* Error Message */}
@@ -683,7 +683,7 @@ function TodosTab({ todos, status: planStatus }: { todos: TodoItem[]; status: Pl
 
               {/* Attempt Count */}
               {todo.attemptCount > 1 && (
-                <p className="text-[10px] text-white/30 mt-2">
+                <p className="text-[10px] text-black/30 dark:text-white/30 mt-2">
                   Attempt {todo.attemptCount}
                 </p>
               )}

@@ -150,23 +150,23 @@ export function UnifiedSidebar({
           container: "w-80 bg-black border-r border-[#525252] flex flex-col",
           header: "p-6 border-b border-[#525252]",
           title: "text-xl font-semibold text-white satoshi",
-          subtitle: "text-sm text-gray-400 mt-1",
+          subtitle: "text-sm text-neutral-600 dark:text-gray-400 mt-1",
           composeButton: "w-full bg-white hover:bg-gray-200 text-black font-medium py-3 px-4 rounded-lg transition-colors",
           nav: "flex-1 px-4 py-2",
           navItem: "w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
           navItemActive: "bg-white text-black shadow-sm",
-          navItemInactive: "text-gray-300 hover:text-white hover:bg-[#1a1a1a]",
+          navItemInactive: "text-neutral-900 dark:text-gray-300 hover:text-white hover:bg-[#1a1a1a]",
           navIcon: "w-4 h-4 mr-3",
           navIconActive: "text-black",
-          navIconInactive: "text-gray-400",
+          navIconInactive: "text-neutral-600 dark:text-gray-400",
           badge: "text-xs transition-colors",
           badgeActive: "bg-black/10 text-black border-black/20",
-          badgeInactive: "bg-[#1a1a1a] text-gray-300 border-[#525252]",
-          sectionTitle: "text-sm font-medium text-gray-400 mb-3 uppercase tracking-wider",
+          badgeInactive: "bg-[#1a1a1a] text-neutral-900 dark:text-gray-300 border-[#525252]",
+          sectionTitle: "text-sm font-medium text-neutral-600 dark:text-gray-400 mb-3 uppercase tracking-wider",
           teamMember: "flex items-center space-x-3 p-2 rounded-lg hover:bg-[#1a1a1a] transition-colors",
           teamMemberAvatar: "w-7 h-7",
-          teamMemberName: "text-sm text-gray-300 truncate font-medium",
-          teamMemberStatus: "text-xs text-gray-500 capitalize"
+          teamMemberName: "text-sm text-neutral-900 dark:text-gray-300 truncate font-medium",
+          teamMemberStatus: "text-xs text-neutral-600 dark:text-gray-500 capitalize"
         };
       case 'dashboard':
         return {
@@ -178,14 +178,14 @@ export function UnifiedSidebar({
           nav: "flex-1 overflow-y-auto py-2",
           navItem: "flex items-center justify-between w-full p-2 text-sm rounded-lg transition-colors",
           navItemActive: "bg-white text-black",
-          navItemInactive: "text-gray-300 hover:text-white hover:bg-gray-800",
+          navItemInactive: "text-neutral-900 dark:text-gray-300 hover:text-white hover:bg-neutral-100 dark:bg-gray-800",
           navIcon: "w-4 h-4 mr-3",
           navIconActive: "",
           navIconInactive: "",
-          badge: "text-xs bg-gray-700 text-gray-200 hover:bg-gray-600",
+          badge: "text-xs bg-gray-700 text-neutral-900 dark:text-gray-200 hover:bg-gray-600",
           badgeActive: "",
           badgeInactive: "",
-          sectionTitle: "flex items-center justify-between w-full p-2 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider hover:text-white transition-colors",
+          sectionTitle: "flex items-center justify-between w-full p-2 text-left text-xs font-semibold text-neutral-600 dark:text-gray-400 uppercase tracking-wider hover:text-white transition-colors",
           teamMember: "",
           teamMemberAvatar: "",
           teamMemberName: "",
@@ -219,23 +219,23 @@ export function UnifiedSidebar({
           container: "w-80 bg-black border-r border-[#525252] flex flex-col",
           header: "p-6 border-b border-[#525252]",
           title: "text-xl font-semibold text-white",
-          subtitle: "text-sm text-gray-400 mt-1",
+          subtitle: "text-sm text-neutral-600 dark:text-gray-400 mt-1",
           composeButton: "w-full bg-white hover:bg-gray-200 text-black font-medium py-3 px-4 rounded-lg transition-colors",
           nav: "flex-1 px-4 py-2",
           navItem: "w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
           navItemActive: "bg-white text-black shadow-sm",
-          navItemInactive: "text-gray-300 hover:text-white hover:bg-[#1a1a1a]",
+          navItemInactive: "text-neutral-900 dark:text-gray-300 hover:text-white hover:bg-[#1a1a1a]",
           navIcon: "w-4 h-4 mr-3",
           navIconActive: "text-black",
-          navIconInactive: "text-gray-400",
+          navIconInactive: "text-neutral-600 dark:text-gray-400",
           badge: "text-xs transition-colors",
           badgeActive: "bg-black/10 text-black border-black/20",
-          badgeInactive: "bg-[#1a1a1a] text-gray-300 border-[#525252]",
-          sectionTitle: "text-sm font-medium text-gray-400 mb-3 uppercase tracking-wider",
+          badgeInactive: "bg-[#1a1a1a] text-neutral-900 dark:text-gray-300 border-[#525252]",
+          sectionTitle: "text-sm font-medium text-neutral-600 dark:text-gray-400 mb-3 uppercase tracking-wider",
           teamMember: "flex items-center space-x-3 p-2 rounded-lg hover:bg-[#1a1a1a] transition-colors",
           teamMemberAvatar: "w-7 h-7",
-          teamMemberName: "text-sm text-gray-300 truncate font-medium",
-          teamMemberStatus: "text-xs text-gray-500 capitalize"
+          teamMemberName: "text-sm text-neutral-900 dark:text-gray-300 truncate font-medium",
+          teamMemberStatus: "text-xs text-neutral-600 dark:text-gray-500 capitalize"
         };
     }
   };
@@ -328,10 +328,10 @@ export function UnifiedSidebar({
                     />
                   </div>
                   <div className="flex flex-col overflow-hidden text-left">
-                    <span className="text-xs font-normal text-neutral-300 truncate">
+                    <span className="text-xs font-normal text-neutral-900 dark:text-neutral-300 truncate">
                       {session?.user?.name || 'User'}
                     </span>
-                    <span className="text-[10px] text-neutral-500 truncate">
+                    <span className="text-[10px] text-neutral-600 dark:text-neutral-500 truncate">
                       {session?.user?.email || ''}
                     </span>
                   </div>
@@ -478,7 +478,7 @@ export function UnifiedSidebar({
                       <button
                         key={feature.id}
                         onClick={() => handleItemClick(feature)}
-                        className={`flex items-center w-full p-2 text-sm rounded-lg transition-colors ${isActive ? styles.navItemActive : 'text-gray-300 hover:text-white hover:bg-gray-800'
+                        className={`flex items-center w-full p-2 text-sm rounded-lg transition-colors ${isActive ? styles.navItemActive : 'text-neutral-900 dark:text-gray-300 hover:text-white hover:bg-neutral-100 dark:bg-gray-800'
                           }`}
                       >
                         <Icon className="w-4 h-4 mr-3" />
@@ -525,7 +525,7 @@ export function UnifiedSidebar({
           <div className="p-3 border-t border-gray-700 space-y-1">
             <button
               onClick={() => router.push('/settings')}
-              className="flex items-center w-full p-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+              className="flex items-center w-full p-2 text-sm text-neutral-600 dark:text-gray-400 hover:text-white hover:bg-neutral-100 dark:bg-gray-800 rounded-lg transition-colors"
             >
               <Settings className="w-4 h-4 mr-3" />
               <span>Settings</span>
@@ -533,7 +533,7 @@ export function UnifiedSidebar({
             {onIntegrationsClick && (
               <button
                 onClick={onIntegrationsClick}
-                className="flex items-center w-full p-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+                className="flex items-center w-full p-2 text-sm text-neutral-600 dark:text-gray-400 hover:text-white hover:bg-neutral-100 dark:bg-gray-800 rounded-lg transition-colors"
               >
                 <Plug className="w-4 h-4 mr-3" />
                 <span>Integrations</span>

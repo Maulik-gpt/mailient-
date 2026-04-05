@@ -107,16 +107,16 @@ const statusConfig: Record<string, { label: string; icon: any; color: string; bg
   draft: {
     label: 'Draft',
     icon: Edit3,
-    color: 'text-white/70',
-    bgColor: 'bg-white/10',
-    borderColor: 'border-white/20',
+    color: 'text-black/70 dark:text-white/70',
+    bgColor: 'bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10',
+    borderColor: 'border-neutral-300 dark:border-white/20',
     animate: false,
     description: 'Review and approve to execute'
   },
   approved: {
     label: 'Approved',
     icon: Shield,
-    color: 'text-white/80',
+    color: 'text-black/80 dark:text-white/80',
     bgColor: 'bg-white/15',
     borderColor: 'border-white/25',
     animate: false,
@@ -125,7 +125,7 @@ const statusConfig: Record<string, { label: string; icon: any; color: string; bg
   executing: {
     label: 'Executing',
     icon: Play,
-    color: 'text-white/90',
+    color: 'text-black/90 dark:text-white/90',
     bgColor: 'bg-white/15',
     borderColor: 'border-white/25',
     animate: true,
@@ -134,7 +134,7 @@ const statusConfig: Record<string, { label: string; icon: any; color: string; bg
   completed: {
     label: 'Completed',
     icon: CheckCircle2,
-    color: 'text-white/90',
+    color: 'text-black/90 dark:text-white/90',
     bgColor: 'bg-white/15',
     borderColor: 'border-white/25',
     animate: false,
@@ -143,18 +143,18 @@ const statusConfig: Record<string, { label: string; icon: any; color: string; bg
   failed: {
     label: 'Failed',
     icon: AlertTriangle,
-    color: 'text-white/50',
-    bgColor: 'bg-white/10',
-    borderColor: 'border-white/20',
+    color: 'text-black/5 dark:text-black/50 dark:text-white/50',
+    bgColor: 'bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10',
+    borderColor: 'border-neutral-300 dark:border-white/20',
     animate: false,
     description: 'Execution failed'
   },
   cancelled: {
     label: 'Cancelled',
     icon: X,
-    color: 'text-white/40',
-    bgColor: 'bg-white/5',
-    borderColor: 'border-white/10',
+    color: 'text-black/40 dark:text-white/40',
+    bgColor: 'bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5',
+    borderColor: 'border-neutral-200 dark:border-white/10',
     animate: false,
     description: 'Plan was cancelled'
   }
@@ -164,31 +164,31 @@ const todoStatusConfig = {
   pending: {
     label: 'Pending',
     icon: Circle,
-    color: 'text-white/40',
-    bgColor: 'bg-white/5',
-    borderColor: 'border-white/10',
+    color: 'text-black/40 dark:text-white/40',
+    bgColor: 'bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5',
+    borderColor: 'border-neutral-200 dark:border-white/10',
     animate: false
   },
   ready: {
     label: 'Ready',
     icon: Clock,
-    color: 'text-white/60',
-    bgColor: 'bg-white/10',
-    borderColor: 'border-white/20',
+    color: 'text-black/60 dark:text-white/60',
+    bgColor: 'bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10',
+    borderColor: 'border-neutral-300 dark:border-white/20',
     animate: false
   },
   running: {
     label: 'Running',
     icon: RefreshCw,
-    color: 'text-white/80',
-    bgColor: 'bg-white/10',
-    borderColor: 'border-white/20',
+    color: 'text-black/80 dark:text-white/80',
+    bgColor: 'bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10',
+    borderColor: 'border-neutral-300 dark:border-white/20',
     animate: true
   },
   completed: {
     label: 'Done',
     icon: CheckCircle2,
-    color: 'text-white/90',
+    color: 'text-black/90 dark:text-white/90',
     bgColor: 'bg-white/15',
     borderColor: 'border-white/25',
     animate: false
@@ -196,25 +196,25 @@ const todoStatusConfig = {
   failed: {
     label: 'Failed',
     icon: AlertTriangle,
-    color: 'text-white/50',
-    bgColor: 'bg-white/10',
-    borderColor: 'border-white/20',
+    color: 'text-black/5 dark:text-black/50 dark:text-white/50',
+    bgColor: 'bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10',
+    borderColor: 'border-neutral-300 dark:border-white/20',
     animate: false
   },
   skipped: {
     label: 'Skipped',
     icon: X,
-    color: 'text-white/40',
-    bgColor: 'bg-white/5',
-    borderColor: 'border-white/10',
+    color: 'text-black/40 dark:text-white/40',
+    bgColor: 'bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5',
+    borderColor: 'border-neutral-200 dark:border-white/10',
     animate: false
   },
   blocked_approval: {
     label: 'Blocked',
     icon: Shield,
-    color: 'text-white/60',
-    bgColor: 'bg-white/10',
-    borderColor: 'border-white/20',
+    color: 'text-black/60 dark:text-white/60',
+    bgColor: 'bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10',
+    borderColor: 'border-neutral-300 dark:border-white/20',
     animate: false
   }
 };
@@ -260,7 +260,7 @@ export function PlanVisualization({
 
   return (
     <div className={cn(
-      "bg-[#0a0a0a] border border-white/[0.06] rounded-2xl overflow-hidden",
+      "bg-white dark:bg-[#0a0a0a] border border-white/[0.06] rounded-2xl overflow-hidden",
       "shadow-2xl shadow-black/50",
       className
     )}>
@@ -279,10 +279,10 @@ export function PlanVisualization({
             </div>
 
             <div className="min-w-0 flex-1">
-              <h2 className="text-[18px] font-semibold text-white/95 tracking-tight">
+              <h2 className="text-[18px] font-semibold text-black/95 dark:text-white/95 tracking-tight">
                 {plan.title}
               </h2>
-              <p className="text-[13px] text-white/50 mt-1 leading-relaxed">
+              <p className="text-[13px] text-black/5 dark:text-black/50 dark:text-white/50 mt-1 leading-relaxed">
                 {plan.objective}
               </p>
 
@@ -298,20 +298,20 @@ export function PlanVisualization({
                 </span>
 
                 {plan.locked && (
-                  <span className="flex items-center gap-1.5 text-[11px] text-white/30">
+                  <span className="flex items-center gap-1.5 text-[11px] text-black/30 dark:text-white/30">
                     <Lock className="w-3 h-3" />
                     v{plan.version}
                   </span>
                 )}
 
                 {plan.approvedAt && (
-                  <span className="text-[11px] text-white/30">
+                  <span className="text-[11px] text-black/30 dark:text-white/30">
                     Approved {new Date(plan.approvedAt).toLocaleDateString()}
                   </span>
                 )}
 
                 {plan.runId && (
-                  <span className="text-[11px] text-white/30 font-mono">
+                  <span className="text-[11px] text-black/30 dark:text-white/30 font-mono">
                     Run: {plan.runId.slice(-8)}
                   </span>
                 )}
@@ -325,7 +325,7 @@ export function PlanVisualization({
               <>
                 <button
                   onClick={onDecline}
-                  className="px-4 py-2 rounded-lg text-[13px] font-medium text-white/60 hover:text-white/80 hover:bg-white/[0.05] transition-all"
+                  className="px-4 py-2 rounded-lg text-[13px] font-medium text-black/60 dark:text-white/60 hover:text-black/80 dark:text-white/80 hover:bg-white/[0.05] transition-all"
                 >
                   Decline
                 </button>
@@ -333,8 +333,8 @@ export function PlanVisualization({
                   onClick={onApprove}
                   className={cn(
                     "px-4 py-2 rounded-lg text-[13px] font-medium transition-all",
-                    "bg-white/10 hover:bg-white/20 border border-white/30",
-                    "text-white flex items-center gap-2"
+                    "bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 hover:bg-black/[0.010] dark:bg-white/20 border border-white/30",
+                    "text-black dark:text-white flex items-center gap-2"
                   )}
                 >
                   <Shield className="w-4 h-4" />
@@ -348,8 +348,8 @@ export function PlanVisualization({
                 onClick={onExecute}
                 className={cn(
                   "px-4 py-2 rounded-lg text-[13px] font-medium transition-all",
-                  "bg-white/10 hover:bg-white/20 border border-white/30",
-                  "text-white flex items-center gap-2"
+                  "bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 hover:bg-black/[0.010] dark:bg-white/20 border border-white/30",
+                  "text-black dark:text-white flex items-center gap-2"
                 )}
               >
                 <Play className="w-4 h-4" />
@@ -362,8 +362,8 @@ export function PlanVisualization({
                 onClick={onResume}
                 className={cn(
                   "px-4 py-2 rounded-lg text-[13px] font-medium transition-all",
-                  "bg-white/10 hover:bg-white/20 border border-white/30",
-                  "text-white flex items-center gap-2"
+                  "bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 hover:bg-black/[0.010] dark:bg-white/20 border border-white/30",
+                  "text-black dark:text-white flex items-center gap-2"
                 )}
               >
                 <RefreshCw className="w-4 h-4" />
@@ -376,7 +376,7 @@ export function PlanVisualization({
                 onClick={onRevise}
                 className="p-2 rounded-lg bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.06] transition-all"
               >
-                <Edit3 className="w-4 h-4 text-white/50" />
+                <Edit3 className="w-4 h-4 text-black/5 dark:text-black/50 dark:text-white/50" />
               </button>
             )}
           </div>
@@ -386,8 +386,8 @@ export function PlanVisualization({
         {totalTodos > 0 && (
           <div className="mt-5">
             <div className="flex items-center justify-between text-[11px] mb-2">
-              <span className="text-white/40">Execution Progress</span>
-              <span className="text-white/60 font-mono">{completedTodos}/{totalTodos}</span>
+              <span className="text-black/40 dark:text-white/40">Execution Progress</span>
+              <span className="text-black/60 dark:text-white/60 font-mono">{completedTodos}/{totalTodos}</span>
             </div>
             <div className="h-2 bg-white/[0.05] rounded-full overflow-hidden">
               <motion.div
@@ -396,7 +396,7 @@ export function PlanVisualization({
                 transition={{ duration: 0.8, ease: "easeOut" }}
                 className={cn(
                   "h-full rounded-full",
-                  plan.status === 'failed' ? 'bg-white/40' :
+                  plan.status === 'failed' ? 'bg-black/[0.020] dark:bg-white/40' :
                   plan.status === 'completed' ? 'bg-white' :
                   'bg-gradient-to-r from-white/60 via-white/80 to-white'
                 )}
@@ -404,13 +404,13 @@ export function PlanVisualization({
             </div>
             <div className="flex items-center gap-4 mt-2 text-[11px]">
               {plan.todos.some(t => t.status === 'running') && (
-                <span className="text-white/70 flex items-center gap-1">
+                <span className="text-black/70 dark:text-white/70 flex items-center gap-1">
                   <RefreshCw className="w-3 h-3 animate-spin" />
                   {plan.todos.filter(t => t.status === 'running').length} running
                 </span>
               )}
               {plan.todos.some(t => t.status === 'failed') && (
-                <span className="text-white/50 flex items-center gap-1">
+                <span className="text-black/5 dark:text-black/50 dark:text-white/50 flex items-center gap-1">
                   <AlertTriangle className="w-3 h-3" />
                   {plan.todos.filter(t => t.status === 'failed').length} failed
                 </span>
@@ -430,8 +430,8 @@ export function PlanVisualization({
               className={cn(
                 "flex-1 py-2.5 text-[13px] font-medium rounded-lg transition-all capitalize",
                 activeTab === tab
-                  ? "bg-white/[0.08] text-white"
-                  : "text-white/40 hover:text-white/60 hover:bg-white/[0.04]"
+                  ? "bg-white/[0.08] text-black dark:text-white"
+                  : "text-black/40 dark:text-white/40 hover:text-black/60 dark:text-white/60 hover:bg-white/[0.04]"
               )}
             >
               {tab}
@@ -456,8 +456,8 @@ export function PlanVisualization({
               {plan.assumptions.length > 0 && (
                 <section>
                   <div className="flex items-center gap-2 mb-3">
-                    <Target className="w-4 h-4 text-white/40" />
-                    <h3 className="text-[13px] font-semibold text-white/70 uppercase tracking-wider">
+                    <Target className="w-4 h-4 text-black/40 dark:text-white/40" />
+                    <h3 className="text-[13px] font-semibold text-black/70 dark:text-white/70 uppercase tracking-wider">
                       Assumptions
                     </h3>
                   </div>
@@ -465,9 +465,9 @@ export function PlanVisualization({
                     {plan.assumptions.map((assumption, i) => (
                       <li
                         key={i}
-                        className="flex items-start gap-3 text-[13px] text-white/60 pl-1"
+                        className="flex items-start gap-3 text-[13px] text-black/60 dark:text-white/60 pl-1"
                       >
-                        <span className="text-white/50 mt-0.5">•</span>
+                        <span className="text-black/5 dark:text-black/50 dark:text-white/50 mt-0.5">•</span>
                         {assumption}
                       </li>
                     ))}
@@ -479,8 +479,8 @@ export function PlanVisualization({
               {plan.questionsAnswered.length > 0 && (
                 <section>
                   <div className="flex items-center gap-2 mb-3">
-                    <HelpCircle className="w-4 h-4 text-white/40" />
-                    <h3 className="text-[13px] font-semibold text-white/70 uppercase tracking-wider">
+                    <HelpCircle className="w-4 h-4 text-black/40 dark:text-white/40" />
+                    <h3 className="text-[13px] font-semibold text-black/70 dark:text-white/70 uppercase tracking-wider">
                       Questions Answered
                     </h3>
                   </div>
@@ -488,9 +488,9 @@ export function PlanVisualization({
                     {plan.questionsAnswered.map((q, i) => (
                       <li
                         key={i}
-                        className="flex items-start gap-3 text-[13px] text-white/60 pl-1"
+                        className="flex items-start gap-3 text-[13px] text-black/60 dark:text-white/60 pl-1"
                       >
-                        <span className="text-white/60 mt-0.5">✓</span>
+                        <span className="text-black/60 dark:text-white/60 mt-0.5">✓</span>
                         {q}
                       </li>
                     ))}
@@ -502,8 +502,8 @@ export function PlanVisualization({
               {plan.acceptanceCriteria.length > 0 && (
                 <section>
                   <div className="flex items-center gap-2 mb-3">
-                    <CheckCircle2 className="w-4 h-4 text-white/40" />
-                    <h3 className="text-[13px] font-semibold text-white/70 uppercase tracking-wider">
+                    <CheckCircle2 className="w-4 h-4 text-black/40 dark:text-white/40" />
+                    <h3 className="text-[13px] font-semibold text-black/70 dark:text-white/70 uppercase tracking-wider">
                       Acceptance Criteria
                     </h3>
                   </div>
@@ -511,9 +511,9 @@ export function PlanVisualization({
                     {plan.acceptanceCriteria.map((criteria, i) => (
                       <li
                         key={i}
-                        className="flex items-start gap-3 text-[13px] text-white/60 pl-1"
+                        className="flex items-start gap-3 text-[13px] text-black/60 dark:text-white/60 pl-1"
                       >
-                        <span className="text-white/30 mt-0.5">{i + 1}.</span>
+                        <span className="text-black/30 dark:text-white/30 mt-0.5">{i + 1}.</span>
                         {criteria}
                       </li>
                     ))}
@@ -524,8 +524,8 @@ export function PlanVisualization({
               {/* Todo Summary */}
               <section>
                 <div className="flex items-center gap-2 mb-3">
-                  <ListTodo className="w-4 h-4 text-white/40" />
-                  <h3 className="text-[13px] font-semibold text-white/70 uppercase tracking-wider">
+                  <ListTodo className="w-4 h-4 text-black/40 dark:text-white/40" />
+                  <h3 className="text-[13px] font-semibold text-black/70 dark:text-white/70 uppercase tracking-wider">
                     Task Summary
                   </h3>
                 </div>
@@ -549,7 +549,7 @@ export function PlanVisualization({
                             {count}
                           </span>
                         </div>
-                        <span className="text-[11px] text-white/40 mt-1 block">
+                        <span className="text-[11px] text-black/40 dark:text-white/40 mt-1 block">
                           {config.label}
                         </span>
                       </div>
@@ -586,10 +586,10 @@ export function PlanVisualization({
                       onClick={() => toggleTodo(todo.todoId)}
                       className={cn(
                         "w-full p-4 rounded-xl border transition-all",
-                        todo.status === 'running' ? "bg-white/5 border-white/20" :
-                        todo.status === 'completed' ? "bg-white/5 border-white/10" :
-                        todo.status === 'failed' ? "bg-white/5 border-white/20" :
-                        todo.status === 'blocked_approval' ? "bg-white/5 border-white/20" :
+                        todo.status === 'running' ? "bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 border-neutral-300 dark:border-white/20" :
+                        todo.status === 'completed' ? "bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 border-neutral-200 dark:border-white/10" :
+                        todo.status === 'failed' ? "bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 border-neutral-300 dark:border-white/20" :
+                        todo.status === 'blocked_approval' ? "bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 border-neutral-300 dark:border-white/20" :
                         "bg-white/[0.02] border-white/[0.06] hover:border-white/[0.1]"
                       )}
                     >
@@ -612,7 +612,7 @@ export function PlanVisualization({
                           <div className="flex items-start justify-between gap-2">
                             <h4 className={cn(
                               "text-[14px] font-medium",
-                              todo.status === 'completed' ? 'text-white/40 line-through' : 'text-white/80'
+                              todo.status === 'completed' ? 'text-black/40 dark:text-white/40 line-through' : 'text-black/80 dark:text-white/80'
                             )}>
                               {index + 1}. {todo.title}
                             </h4>
@@ -626,14 +626,14 @@ export function PlanVisualization({
                           </div>
 
                           {todo.description && (
-                            <p className="text-[12px] text-white/40 mt-1">
+                            <p className="text-[12px] text-black/40 dark:text-white/40 mt-1">
                               {todo.description}
                             </p>
                           )}
 
                           {/* Dependencies */}
                           {hasDependencies && (
-                            <div className="flex items-center gap-2 mt-2 text-[11px] text-white/30">
+                            <div className="flex items-center gap-2 mt-2 text-[11px] text-black/30 dark:text-white/30">
                               <GitBranch className="w-3 h-3" />
                               <span>Depends on: {todo.dependsOn.length} task(s)</span>
                             </div>
@@ -641,15 +641,15 @@ export function PlanVisualization({
 
                           {/* Error Message */}
                           {todo.errorMessage && (
-                            <div className="mt-2 p-2 bg-white/5 rounded border border-white/10">
-                              <p className="text-[11px] text-white/50">{todo.errorMessage}</p>
+                            <div className="mt-2 p-2 bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 rounded border border-neutral-200 dark:border-white/10">
+                              <p className="text-[11px] text-black/5 dark:text-black/50 dark:text-white/50">{todo.errorMessage}</p>
                             </div>
                           )}
 
                           {/* Recovery Hint */}
                           {todo.recoveryHint && (
-                            <div className="mt-2 p-2 bg-white/5 rounded border border-white/10">
-                              <p className="text-[11px] text-white/60">
+                            <div className="mt-2 p-2 bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 rounded border border-neutral-200 dark:border-white/10">
+                              <p className="text-[11px] text-black/60 dark:text-white/60">
                                 {todo.recoveryHint.userMessage}
                               </p>
                             </div>
@@ -657,7 +657,7 @@ export function PlanVisualization({
 
                           {/* Attempt Counter */}
                           {todo.attemptCount > 1 && (
-                            <p className="text-[10px] text-white/30 mt-2">
+                            <p className="text-[10px] text-black/30 dark:text-white/30 mt-2">
                               Attempt {todo.attemptCount} of {todo.maxAttempts}
                             </p>
                           )}
@@ -666,7 +666,7 @@ export function PlanVisualization({
                         {/* Expand Icon */}
                         {todo.actionResult && (
                           <ChevronDown className={cn(
-                            "w-4 h-4 text-white/30 transition-transform shrink-0",
+                            "w-4 h-4 text-black/30 dark:text-white/30 transition-transform shrink-0",
                             isExpanded && "rotate-180"
                           )} />
                         )}
@@ -684,7 +684,7 @@ export function PlanVisualization({
                             <div className="pl-11">
                               <p className={cn(
                                 "text-[12px] font-medium",
-                                todo.actionResult.success ? 'text-white/80' : 'text-white/50'
+                                todo.actionResult.success ? 'text-black/80 dark:text-white/80' : 'text-black/5 dark:text-black/50 dark:text-white/50'
                               )}>
                                 {todo.actionResult.message}
                               </p>
@@ -693,9 +693,9 @@ export function PlanVisualization({
                                   {Object.entries(todo.actionResult.externalRefs).map(([key, value]) => (
                                     <div
                                       key={key}
-                                      className="flex items-center gap-2 text-[11px] text-white/40 font-mono"
+                                      className="flex items-center gap-2 text-[11px] text-black/40 dark:text-white/40 font-mono"
                                     >
-                                      <span className="text-white/30">{key}:</span>
+                                      <span className="text-black/30 dark:text-white/30">{key}:</span>
                                       <span className="truncate">{value}</span>
                                     </div>
                                   ))}
@@ -723,7 +723,7 @@ export function PlanVisualization({
             >
               <div className="relative pl-4">
                 {/* Timeline Line */}
-                <div className="absolute left-0 top-0 bottom-0 w-px bg-white/10" />
+                <div className="absolute left-0 top-0 bottom-0 w-px bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10" />
 
                 <div className="space-y-6">
                   {/* Plan Created */}
@@ -760,7 +760,7 @@ export function PlanVisualization({
                         timestamp={todo.completedAt || todo.startedAt}
                         description={
                           todo.errorMessage ?
-                            <span className="text-white/50">{todo.errorMessage}</span> :
+                            <span className="text-black/5 dark:text-black/50 dark:text-white/50">{todo.errorMessage}</span> :
                             todo.status === 'completed' ? 'Task completed successfully' :
                             'Task started'
                         }
@@ -816,9 +816,9 @@ interface TimelineItemProps {
 function TimelineItem({ status, title, timestamp, description }: TimelineItemProps) {
   const statusColors = {
     completed: 'bg-white',
-    failed: 'bg-white/40',
-    running: 'bg-white/70 animate-pulse',
-    pending: 'bg-white/30'
+    failed: 'bg-black/[0.020] dark:bg-white/40',
+    running: 'bg-black/[0.035] dark:bg-white/70 animate-pulse',
+    pending: 'bg-black/[0.015] dark:bg-white/30'
   };
 
   return (
@@ -828,12 +828,12 @@ function TimelineItem({ status, title, timestamp, description }: TimelineItemPro
         statusColors[status as keyof typeof statusColors] || 'bg-slate-500'
       )} />
       <div className="space-y-1">
-        <h4 className="text-[13px] font-medium text-white/80">{title}</h4>
+        <h4 className="text-[13px] font-medium text-black/80 dark:text-white/80">{title}</h4>
         {description && (
-          <p className="text-[12px] text-white/50">{description}</p>
+          <p className="text-[12px] text-black/5 dark:text-black/50 dark:text-white/50">{description}</p>
         )}
         {timestamp && (
-          <p className="text-[11px] text-white/30 font-mono">
+          <p className="text-[11px] text-black/30 dark:text-white/30 font-mono">
             {new Date(timestamp).toLocaleString()}
           </p>
         )}

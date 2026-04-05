@@ -153,7 +153,7 @@ export default function NotesPage() {
     const stripMarkdown = (text: string) => {
         return text
             .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-bold">$1</strong>')
-            .replace(/\*(.*?)\*/g, '<em class="text-neutral-300 italic">$1</em>')
+            .replace(/\*(.*?)\*/g, '<em class="text-neutral-900 dark:text-neutral-300 italic">$1</em>')
             .replace(/\n/g, '<br />');
     };
 
@@ -464,7 +464,7 @@ export default function NotesPage() {
                                             <h1 className="text-3xl md:text-4xl font-semibold text-[#1A1A1A] dark:text-white tracking-tight">
                                                 For quick thoughts you want to come back to
                                             </h1>
-                                            <p className="text-neutral-500 text-lg">
+                                            <p className="text-neutral-600 dark:text-neutral-500 text-lg">
                                                 Your personal AI-powered scratchpad.
                                             </p>
                                         </div>
@@ -479,7 +479,7 @@ export default function NotesPage() {
                                                             value={newNoteContent}
                                                             onChange={(e) => setNewNoteContent(e.target.value)}
                                                             placeholder="Take a quick note with your voice"
-                                                            className="w-full bg-transparent text-2xl md:text-3xl text-neutral-800 dark:text-neutral-200 placeholder:text-neutral-300 dark:placeholder:text-neutral-700 resize-none min-h-[80px] font-medium leading-tight"
+                                                            className="w-full bg-transparent text-2xl md:text-3xl text-neutral-800 dark:text-neutral-900 dark:text-neutral-200 placeholder:text-neutral-300 dark:placeholder:text-neutral-700 resize-none min-h-[80px] font-medium leading-tight"
                                                             style={{ outline: 'none', border: 'none', boxShadow: 'none' }}
                                                             onKeyDown={(e) => {
                                                                 if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
@@ -513,7 +513,7 @@ export default function NotesPage() {
                                                             "w-16 h-16 rounded-full flex items-center justify-center transition-all duration-500 shadow-2xl group",
                                                             isListening
                                                                 ? "bg-red-500 text-white animate-pulse"
-                                                                : "bg-white dark:bg-[#1A1C20] text-neutral-400 border border-neutral-200 dark:border-neutral-800 hover:scale-110 active:scale-95"
+                                                                : "bg-white dark:bg-[#1A1C20] text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-200 dark:border-neutral-800 hover:scale-110 active:scale-95"
                                                         )}
                                                     >
                                                         <Mic className={cn("w-7 h-7 transition-all", isListening ? "scale-110" : "group-hover:scale-110")} />
@@ -524,9 +524,9 @@ export default function NotesPage() {
 
                                         {/* Recents Section */}
                                         <div className="space-y-8 pb-24">
-                                            <div className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-800 pb-4">
+                                            <div className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-200 dark:border-neutral-800 pb-4">
                                                 <div className="flex items-center gap-4 flex-1">
-                                                    <h2 className="text-xs font-bold tracking-[0.2em] text-neutral-400 uppercase whitespace-nowrap">
+                                                    <h2 className="text-xs font-bold tracking-[0.2em] text-neutral-600 dark:text-neutral-400 uppercase whitespace-nowrap">
                                                         Recents
                                                     </h2>
                                                     {showSearchInput && (
@@ -537,12 +537,12 @@ export default function NotesPage() {
                                                                 value={searchQuery}
                                                                 onChange={(e) => setSearchQuery(e.target.value)}
                                                                 placeholder="Search your thoughts..."
-                                                                className="w-full bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-full py-1.5 px-4 text-sm text-neutral-800 dark:text-neutral-200 placeholder:text-neutral-400 outline-none focus:border-neutral-300 dark:focus:border-neutral-700 transition-all"
+                                                                className="w-full bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-200 dark:border-neutral-800 rounded-full py-1.5 px-4 text-sm text-neutral-800 dark:text-neutral-900 dark:text-neutral-200 placeholder:text-neutral-600 dark:text-neutral-400 outline-none focus:border-neutral-300 dark:focus:border-neutral-700 transition-all"
                                                             />
                                                             {searchQuery && (
                                                                 <button
                                                                     onClick={() => setSearchQuery('')}
-                                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400"
+                                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-600 dark:text-neutral-400"
                                                                 >
                                                                     <X className="w-3 h-3" />
                                                                 </button>
@@ -550,7 +550,7 @@ export default function NotesPage() {
                                                         </div>
                                                     )}
                                                 </div>
-                                                <div className="flex items-center gap-6 text-neutral-400">
+                                                <div className="flex items-center gap-6 text-neutral-600 dark:text-neutral-400">
                                                     <button
                                                         onClick={() => setShowSearchInput(!showSearchInput)}
                                                         className={cn("hover:text-black dark:hover:text-white transition-colors", showSearchInput && "text-black dark:text-white")}
@@ -576,7 +576,7 @@ export default function NotesPage() {
                                             {loading ? (
                                                 <div className="flex flex-col items-center justify-center py-12">
                                                     <Loader2 className="w-8 h-8 text-amber-500 animate-spin mb-4" />
-                                                    <p className="text-neutral-500 font-medium">Loading notes...</p>
+                                                    <p className="text-neutral-600 dark:text-neutral-500 font-medium">Loading notes...</p>
                                                 </div>
                                             ) : filteredNotes.length > 0 ? (
                                                 <div className={cn(
@@ -589,7 +589,7 @@ export default function NotesPage() {
                                                             className="group relative transition-all duration-300 hover:scale-[1.01]"
                                                         >
                                                             <div className={cn(
-                                                                "bg-white dark:bg-[#0A0A0A] border border-neutral-100 dark:border-neutral-800 rounded-3xl p-6 relative overflow-hidden transition-all hover:bg-neutral-50/50 dark:hover:bg-neutral-900/50 hover:border-neutral-200 dark:hover:border-neutral-700 h-full flex flex-col justify-between shadow-sm hover:shadow-md",
+                                                                "bg-white dark:bg-[#0A0A0A] border border-neutral-100 dark:border-neutral-200 dark:border-neutral-800 rounded-3xl p-6 relative overflow-hidden transition-all hover:bg-neutral-50/50 dark:hover:bg-neutral-900/50 hover:border-neutral-200 dark:hover:border-neutral-700 h-full flex flex-col justify-between shadow-sm hover:shadow-md",
                                                                 viewMode === 'list' && "flex-row items-center p-4"
                                                             )}>
                                                                 <div
@@ -607,20 +607,20 @@ export default function NotesPage() {
                                                                         )}>
                                                                             {note.subject || 'Untitled Note'}
                                                                         </h3>
-                                                                        <span className="text-[10px] text-neutral-400 font-mono">
+                                                                        <span className="text-[10px] text-neutral-600 dark:text-neutral-400 font-mono">
                                                                             {new Date(note.createdAt).toLocaleDateString()}
                                                                         </span>
                                                                     </div>
                                                                     <p
                                                                         className={cn(
-                                                                            "text-neutral-500 dark:text-neutral-400 text-sm leading-relaxed line-clamp-3 overflow-hidden",
+                                                                            "text-neutral-500 dark:text-neutral-600 dark:text-neutral-400 text-sm leading-relaxed line-clamp-3 overflow-hidden",
                                                                             viewMode === 'list' && "line-clamp-1 text-xs opacity-60"
                                                                         )}
                                                                         dangerouslySetInnerHTML={{ __html: renderMarkdown(note.content) }}
                                                                     />
                                                                 </div>
                                                                 <div className={cn(
-                                                                    "relative z-10 flex items-center justify-end gap-2 pt-4 mt-4 border-t border-neutral-100 dark:border-neutral-800/50",
+                                                                    "relative z-10 flex items-center justify-end gap-2 pt-4 mt-4 border-t border-neutral-100 dark:border-neutral-200 dark:border-neutral-800/50",
                                                                     viewMode === 'list' && "pt-0 mt-0 border-t-0 pl-4"
                                                                 )}>
                                                                     <button
@@ -629,7 +629,7 @@ export default function NotesPage() {
                                                                             setNoteToShare(note);
                                                                             setIsShareDialogOpen(true);
                                                                         }}
-                                                                        className="p-2 text-neutral-400 hover:text-black dark:hover:text-white transition-colors"
+                                                                        className="p-2 text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white transition-colors"
                                                                     >
                                                                         <Share2 className="w-3.5 h-3.5" />
                                                                     </button>
@@ -639,7 +639,7 @@ export default function NotesPage() {
                                                                             setNoteToDelete(note.id);
                                                                             setIsDeleteDialogOpen(true);
                                                                         }}
-                                                                        className="p-2 text-neutral-400 hover:text-red-500 transition-colors"
+                                                                        className="p-2 text-neutral-600 dark:text-neutral-400 hover:text-red-500 transition-colors"
                                                                     >
                                                                         <Trash className="w-3.5 h-3.5" />
                                                                     </button>
@@ -649,8 +649,8 @@ export default function NotesPage() {
                                                     ))}
                                                 </div>
                                             ) : (
-                                                <div className="text-center py-24 bg-neutral-50/50 dark:bg-neutral-900/20 rounded-[2rem] border border-dashed border-neutral-200 dark:border-neutral-800">
-                                                    <p className="text-neutral-400 text-lg font-light italic">No notes found yet</p>
+                                                <div className="text-center py-24 bg-neutral-50/50 dark:bg-neutral-900/20 rounded-[2rem] border border-dashed border-neutral-200 dark:border-neutral-200 dark:border-neutral-800">
+                                                    <p className="text-neutral-600 dark:text-neutral-400 text-lg font-light italic">No notes found yet</p>
                                                 </div>
                                             )}
                                         </div>
@@ -663,10 +663,10 @@ export default function NotesPage() {
 
                 {/* Share Type Selection Dialog */}
                 <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
-                    <DialogContent className="bg-white dark:bg-neutral-900/90 backdrop-blur-2xl border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-white rounded-[2.5rem] sm:max-w-lg p-0 overflow-hidden shadow-2xl">
+                    <DialogContent className="bg-white dark:bg-neutral-900/90 backdrop-blur-2xl border-neutral-200 dark:border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-white rounded-[2.5rem] sm:max-w-lg p-0 overflow-hidden shadow-2xl">
                         <DialogHeader className="p-6 pb-2">
                             <DialogTitle className="text-xl font-medium text-center">Share Note</DialogTitle>
-                            <DialogDescription className="text-neutral-500 dark:text-neutral-400 text-center">
+                            <DialogDescription className="text-neutral-500 dark:text-neutral-600 dark:text-neutral-400 text-center">
                                 Choose how you want to share this note
                             </DialogDescription>
                         </DialogHeader>
@@ -677,7 +677,7 @@ export default function NotesPage() {
                                     setIsShareDialogOpen(false);
                                     setIsShareOptionsOpen(true);
                                 }}
-                                className="w-full h-14 flex items-center gap-4 px-4 bg-neutral-50 dark:bg-neutral-800/50 hover:bg-amber-500/10 text-neutral-700 dark:text-neutral-200 hover:text-amber-600 rounded-2xl transition-all border border-transparent hover:border-amber-500/20 group/opt"
+                                className="w-full h-14 flex items-center gap-4 px-4 bg-neutral-50 dark:bg-neutral-800/50 hover:bg-amber-500/10 text-neutral-700 dark:text-neutral-900 dark:text-neutral-200 hover:text-amber-600 rounded-2xl transition-all border border-transparent hover:border-amber-500/20 group/opt"
                             >
                                 <div className="w-10 h-10 bg-amber-500/10 rounded-xl flex items-center justify-center transition-colors group-hover/opt:bg-amber-500/20">
                                     <Copy className="w-5 h-5 text-amber-600" />
@@ -690,7 +690,7 @@ export default function NotesPage() {
                                     setIsShareDialogOpen(false);
                                     setIsImageShareOpen(true);
                                 }}
-                                className="w-full h-14 flex items-center gap-4 px-4 bg-neutral-50 dark:bg-neutral-800/50 hover:bg-blue-500/10 text-neutral-700 dark:text-neutral-200 hover:text-blue-600 rounded-2xl transition-all border border-transparent hover:border-blue-500/20 group/opt"
+                                className="w-full h-14 flex items-center gap-4 px-4 bg-neutral-50 dark:bg-neutral-800/50 hover:bg-blue-500/10 text-neutral-700 dark:text-neutral-900 dark:text-neutral-200 hover:text-blue-600 rounded-2xl transition-all border border-transparent hover:border-blue-500/20 group/opt"
                             >
                                 <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center transition-colors group-hover/opt:bg-blue-500/20">
                                     <Image className="w-5 h-5 text-blue-600" />
@@ -699,11 +699,11 @@ export default function NotesPage() {
                             </button>
                         </div>
 
-                        <div className="mt-2 border-t border-neutral-100 dark:border-neutral-800 p-4">
+                        <div className="mt-2 border-t border-neutral-100 dark:border-neutral-200 dark:border-neutral-800 p-4">
                             <Button
                                 variant="ghost"
                                 onClick={() => setIsShareDialogOpen(false)}
-                                className="w-full h-12 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-600 dark:text-neutral-300 rounded-xl transition-all border-none font-medium"
+                                className="w-full h-12 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-600 dark:text-neutral-900 dark:text-neutral-300 rounded-xl transition-all border-none font-medium"
                             >
                                 Cancel
                             </Button>
@@ -713,10 +713,10 @@ export default function NotesPage() {
 
                 {/* Share as Image Preview Dialog */}
                 <Dialog open={isImageShareOpen} onOpenChange={setIsImageShareOpen}>
-                    <DialogContent className="bg-white dark:bg-neutral-900/95 backdrop-blur-3xl border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-white rounded-[2.5rem] sm:max-w-2xl p-0 overflow-hidden shadow-2xl">
+                    <DialogContent className="bg-white dark:bg-neutral-900/95 backdrop-blur-3xl border-neutral-200 dark:border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-white rounded-[2.5rem] sm:max-w-2xl p-0 overflow-hidden shadow-2xl">
                         <DialogHeader className="p-8 pb-4">
                             <DialogTitle className="text-2xl font-semibold text-center">Image Preview</DialogTitle>
-                            <DialogDescription className="text-neutral-500 dark:text-neutral-400 text-center text-sm mt-1">
+                            <DialogDescription className="text-neutral-500 dark:text-neutral-600 dark:text-neutral-400 text-center text-sm mt-1">
                                 This is how your note will look when shared as an image.
                             </DialogDescription>
                         </DialogHeader>
@@ -724,18 +724,18 @@ export default function NotesPage() {
                         <div className="px-8 pb-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
                             <div
                                 ref={imagePreviewRef}
-                                className="w-full bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 rounded-3xl p-10 shadow-2xl"
+                                className="w-full bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-200 dark:border-neutral-800 rounded-3xl p-10 shadow-2xl"
                             >
                                 <div className="flex justify-between items-start mb-8">
                                     <div className="space-y-1">
-                                        <div className="flex items-center gap-2 text-neutral-400 mb-4">
+                                        <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400 mb-4">
                                             <Sparkles className="w-4 h-4 text-amber-500" />
                                             <span className="text-[10px] font-bold tracking-[0.2em] uppercase">Mailient Sift</span>
                                         </div>
                                         <h2 className="text-3xl font-bold tracking-tight text-neutral-800 dark:text-white leading-tight">
                                             {noteToShare?.subject || 'Untitled Note'}
                                         </h2>
-                                        <p className="text-xs text-neutral-400 font-medium">
+                                        <p className="text-xs text-neutral-600 dark:text-neutral-400 font-medium">
                                             {noteToShare && new Date(noteToShare.createdAt).toLocaleDateString(undefined, {
                                                 year: 'numeric',
                                                 month: 'long',
@@ -753,14 +753,14 @@ export default function NotesPage() {
                                 <div className="h-px w-full bg-gradient-to-r from-transparent via-neutral-100 dark:via-neutral-800 to-transparent mb-8" />
 
                                 <div
-                                    className="text-lg leading-[1.6] text-neutral-600 dark:text-neutral-400 whitespace-pre-wrap"
+                                    className="text-lg leading-[1.6] text-neutral-600 dark:text-neutral-600 dark:text-neutral-400 whitespace-pre-wrap"
                                     dangerouslySetInnerHTML={{
                                         __html: noteToShare ? stripMarkdown(noteToShare.content) : ''
                                     }}
                                 />
 
                                 <div className="mt-12 flex items-center justify-between opacity-50">
-                                    <span className="text-[10px] font-medium text-neutral-400">Created via Mailient</span>
+                                    <span className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400">Created via Mailient</span>
                                     <div className="flex gap-1">
                                         {[1, 2, 3].map(i => (
                                             <div key={i} className="w-1.5 h-1.5 rounded-full bg-neutral-200 dark:bg-neutral-800" />
@@ -774,7 +774,7 @@ export default function NotesPage() {
                             <Button
                                 variant="ghost"
                                 onClick={() => setIsImageShareOpen(false)}
-                                className="flex-1 h-12 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-600 dark:text-neutral-400 border-none transition-all"
+                                className="flex-1 h-12 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-600 dark:text-neutral-600 dark:text-neutral-400 border-none transition-all"
                             >
                                 Cancel
                             </Button>
@@ -791,11 +791,11 @@ export default function NotesPage() {
 
                 {/* Share as Text - Platform Options Dialog */}
                 <Dialog open={isShareOptionsOpen} onOpenChange={setIsShareOptionsOpen}>
-                    <DialogContent className="bg-white dark:bg-neutral-900/95 backdrop-blur-3xl border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-white rounded-[2.5rem] sm:max-w-3xl p-0 overflow-y-auto shadow-2xl max-h-[85vh]">
+                    <DialogContent className="bg-white dark:bg-neutral-900/95 backdrop-blur-3xl border-neutral-200 dark:border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-white rounded-[2.5rem] sm:max-w-3xl p-0 overflow-y-auto shadow-2xl max-h-[85vh]">
                         <DialogHeader className="p-8 pb-3">
                             <DialogTitle className="text-2xl font-semibold text-center">Share Note Content</DialogTitle>
-                            <div className="mt-5 p-4 bg-neutral-50 dark:bg-black/40 rounded-[1.2rem] border border-neutral-200 dark:border-neutral-800 flex items-center justify-between group/link shadow-inner">
-                                <div className="flex-1 truncate text-sm text-neutral-500 dark:text-neutral-400 font-mono tracking-tight">
+                            <div className="mt-5 p-4 bg-neutral-50 dark:bg-black/40 rounded-[1.2rem] border border-neutral-200 dark:border-neutral-200 dark:border-neutral-800 flex items-center justify-between group/link shadow-inner">
+                                <div className="flex-1 truncate text-sm text-neutral-500 dark:text-neutral-600 dark:text-neutral-400 font-mono tracking-tight">
                                     {noteToShare ? getNoteLink(noteToShare.id) : 'Loading link...'}
                                 </div>
                                 <button
@@ -805,7 +805,7 @@ export default function NotesPage() {
                                             toast.success('Link copied!');
                                         }
                                     }}
-                                    className="ml-4 p-2 text-neutral-400 hover:text-black dark:hover:text-amber-500 transition-colors"
+                                    className="ml-4 p-2 text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-amber-500 transition-colors"
                                 >
                                     <Copy className="w-4 h-4" />
                                 </button>
@@ -829,10 +829,10 @@ export default function NotesPage() {
                                             platform.borderColor
                                         )}
                                     >
-                                        <div className="p-4 bg-white dark:bg-neutral-900 rounded-2xl shadow-sm text-neutral-400 group-hover/platform:text-inherit transition-colors">
+                                        <div className="p-4 bg-white dark:bg-neutral-900 rounded-2xl shadow-sm text-neutral-600 dark:text-neutral-400 group-hover/platform:text-inherit transition-colors">
                                             {platform.icon}
                                         </div>
-                                        <span className="text-xs font-bold tracking-wider uppercase text-neutral-500 group-hover/platform:text-inherit">
+                                        <span className="text-xs font-bold tracking-wider uppercase text-neutral-600 dark:text-neutral-500 group-hover/platform:text-inherit">
                                             {platform.name}
                                         </span>
                                     </button>
@@ -844,7 +844,7 @@ export default function NotesPage() {
                             <Button
                                 variant="ghost"
                                 onClick={() => setIsShareOptionsOpen(false)}
-                                className="w-full h-12 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-600 dark:text-neutral-400 rounded-xl transition-all border-none font-medium"
+                                className="w-full h-12 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-600 dark:text-neutral-600 dark:text-neutral-400 rounded-xl transition-all border-none font-medium"
                             >
                                 Close
                             </Button>
@@ -854,7 +854,7 @@ export default function NotesPage() {
 
                 {/* Delete Confirmation Dialog */}
                 <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                    <DialogContent className="bg-white dark:bg-neutral-900/90 backdrop-blur-2xl border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-white rounded-[2.5rem] max-w-md shadow-2xl">
+                    <DialogContent className="bg-white dark:bg-neutral-900/90 backdrop-blur-2xl border-neutral-200 dark:border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-white rounded-[2.5rem] max-w-md shadow-2xl">
                         <DialogHeader className="space-y-4">
                             <div className="flex items-center gap-4 text-red-500">
                                 <div className="p-2 bg-red-500/10 rounded-lg">
@@ -862,7 +862,7 @@ export default function NotesPage() {
                                 </div>
                                 <DialogTitle className="text-xl font-medium">Are you sure?</DialogTitle>
                             </div>
-                            <DialogDescription className="text-neutral-500 dark:text-neutral-400 text-base leading-relaxed">
+                            <DialogDescription className="text-neutral-500 dark:text-neutral-600 dark:text-neutral-400 text-base leading-relaxed">
                                 This action cannot be undone. This will permanently delete your note from your account.
                             </DialogDescription>
                         </DialogHeader>
@@ -870,7 +870,7 @@ export default function NotesPage() {
                             <Button
                                 variant="ghost"
                                 onClick={() => setIsDeleteDialogOpen(false)}
-                                className="flex-1 h-11 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-600 dark:text-neutral-300 border-none transition-all"
+                                className="flex-1 h-11 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-600 dark:text-neutral-900 dark:text-neutral-300 border-none transition-all"
                             >
                                 Cancel
                             </Button>

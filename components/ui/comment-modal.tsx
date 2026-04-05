@@ -134,7 +134,7 @@ export const CommentModal: React.FC<CommentModalProps> = ({
             <span className="font-semibold text-sm text-gray-900 dark:text-white">
               {comment.user.displayName}
             </span>
-            <span className="text-xs text-gray-500 dark:text-gray-400">
+            <span className="text-xs text-gray-500 dark:text-neutral-600 dark:text-gray-400">
               @{comment.user.username} · {comment.timestamp}
             </span>
           </div>
@@ -145,7 +145,7 @@ export const CommentModal: React.FC<CommentModalProps> = ({
               size="sm"
               onClick={() => handleLikeComment(comment.id)}
               className={`flex items-center space-x-1 text-xs ${
-                comment.isLiked ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'
+                comment.isLiked ? 'text-red-500' : 'text-gray-500 dark:text-neutral-600 dark:text-gray-400'
               }`}
             >
               <Heart className={`w-3 h-3 ${comment.isLiked ? 'fill-current' : ''}`} />
@@ -156,7 +156,7 @@ export const CommentModal: React.FC<CommentModalProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
-                className="flex items-center space-x-1 text-xs text-gray-500 dark:text-gray-400"
+                className="flex items-center space-x-1 text-xs text-gray-500 dark:text-neutral-600 dark:text-gray-400"
               >
                 <MessageCircle className="w-3 h-3" />
                 <span>Reply</span>
@@ -226,7 +226,7 @@ export const CommentModal: React.FC<CommentModalProps> = ({
                 <span className="font-semibold text-gray-900 dark:text-white">
                   {postUser.displayName}
                 </span>
-                <span className="text-sm text-gray-500 dark:text-gray-400">
+                <span className="text-sm text-gray-500 dark:text-neutral-600 dark:text-gray-400">
                   @{postUser.username} · {postTimestamp}
                 </span>
               </div>
@@ -238,7 +238,7 @@ export const CommentModal: React.FC<CommentModalProps> = ({
         {/* Comments List */}
         <div ref={scrollAreaRef} className="flex-1 overflow-y-auto pr-4 max-h-96">
           {comments.length === 0 ? (
-            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+            <div className="text-center py-8 text-gray-500 dark:text-neutral-600 dark:text-gray-400">
               No comments yet. Be the first to comment!
             </div>
           ) : (

@@ -68,7 +68,7 @@ export function NotesFetchingDisplay({ searchQuery, isVisible }: NotesFetchingDi
 
                 {/* Footer with estimated time */}
                 <div className="mt-6 pt-4 border-t border-blue-200">
-                    <div className="flex items-center justify-center gap-2 text-xs text-gray-500">
+                    <div className="flex items-center justify-center gap-2 text-xs text-neutral-600 dark:text-gray-500">
                         <Clock className="w-3 h-3" />
                         <span>Usually takes 1-2 seconds</span>
                     </div>

@@ -86,11 +86,11 @@ export function PromptBoxConnectorIcons({
           <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 
                           opacity-0 group-hover:opacity-100 transition-opacity
                           pointer-events-none z-50">
-            <div className="bg-gray-800 text-white text-xs px-2 py-1 rounded-lg
+            <div className="bg-neutral-100 dark:bg-gray-800 text-black dark:text-white text-xs px-2 py-1 rounded-lg
                             whitespace-nowrap shadow-lg border border-gray-700">
               {connector.name}
               {connector.email && (
-                <span className="block text-gray-400">{connector.email}</span>
+                <span className="block text-neutral-600 dark:text-gray-400">{connector.email}</span>
               )}
             </div>
             <div className="absolute top-full left-1/2 -translate-x-1/2 
@@ -105,8 +105,8 @@ export function PromptBoxConnectorIcons({
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           onClick={onOpenConnectors}
-          className="w-8 h-8 rounded-lg bg-gray-800 flex items-center justify-center
-                     text-xs font-medium text-gray-400 hover:bg-gray-700
+          className="w-8 h-8 rounded-lg bg-neutral-100 dark:bg-gray-800 flex items-center justify-center
+                     text-xs font-medium text-neutral-600 dark:text-gray-400 hover:bg-gray-700
                      transition-colors"
         >
           +{remaining}
@@ -118,8 +118,8 @@ export function PromptBoxConnectorIcons({
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         onClick={onOpenConnectors}
-        className="w-8 h-8 rounded-lg bg-gray-800 flex items-center justify-center
-                   text-gray-400 hover:bg-gray-700 hover:text-white
+        className="w-8 h-8 rounded-lg bg-neutral-100 dark:bg-gray-800 flex items-center justify-center
+                   text-neutral-600 dark:text-gray-400 hover:bg-gray-700 hover:text-black dark:text-white
                    transition-all ml-1"
         title="Manage connections"
       >
@@ -143,7 +143,7 @@ export function PromptBoxConnectorIconsCompact({
       <button
         onClick={onOpenConnectors}
         className="flex items-center gap-2 px-3 py-1.5 rounded-lg
-                   bg-gray-800/50 text-gray-400 hover:bg-gray-800 hover:text-white
+                   bg-neutral-100 dark:bg-gray-800/50 text-neutral-600 dark:text-gray-400 hover:bg-neutral-100 dark:bg-gray-800 hover:text-black dark:text-white
                    transition-colors text-sm"
       >
         <Plus className="w-4 h-4" />
@@ -160,7 +160,7 @@ export function PromptBoxConnectorIconsCompact({
     <button
       onClick={onOpenConnectors}
       className="flex items-center gap-1.5 px-2 py-1 rounded-lg
-                 bg-gray-800/50 hover:bg-gray-800 transition-colors"
+                 bg-neutral-100 dark:bg-gray-800/50 hover:bg-neutral-100 dark:bg-gray-800 transition-colors"
     >
       {firstTwo.map((connector: { id: string; icon: string; name: string; color: string }) => (
         <div
@@ -176,7 +176,7 @@ export function PromptBoxConnectorIconsCompact({
         </div>
       ))}
       {remaining > 0 && (
-        <span className="text-xs text-gray-400 font-medium">
+        <span className="text-xs text-neutral-600 dark:text-gray-400 font-medium">
           +{remaining}
         </span>
       )}

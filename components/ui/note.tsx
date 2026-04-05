@@ -112,14 +112,14 @@ export const Note = ({
                 className={clsx(
                     "flex grow items-center justify-between gap-3 rounded-md font-sans leading-6 selection:text-selection-text-color box-border border",
                     sizes[size],
-                    (type === "default" || type === "tertiary" || type === "lite" || type === "ghost" || type === "rotate-ccw") && "text-gray-900 fill-gray-900 bg-transparent selection:bg-gray-900 border-gray-400",
+                    (type === "default" || type === "tertiary" || type === "lite" || type === "ghost" || type === "rotate-ccw") && "text-gray-900 fill-gray-900 bg-transparent selection:bg-neutral-50 dark:bg-gray-900 border-gray-400",
                     type === "success" && `text-blue-900 fill-blue-900 selection:bg-blue-700 ${fill ? "border-blue-100 bg-blue-200" : "border-blue-400 bg-transparent"}`,
                     type === "warning" && `text-amber-900 fill-amber-900 selection:bg-amber-900 ${fill ? "border-amber-100 bg-amber-200" : "border-amber-400 bg-transparent"}`,
                     (type === "error" || type === "alert") && `text-red-900 fill-red-900 selection:bg-red-800 ${fill ? "border-red-100 bg-red-200" : "border-red-400 bg-transparent"}`,
-                    type === "secondary" && `text-gray-900 fill-gray-900 selection:bg-gray-900 ${fill ? "border-transparent bg-gray-alpha-200" : "border-gray-alpha-400 bg-transparent"}`,
+                    type === "secondary" && `text-gray-900 fill-gray-900 selection:bg-neutral-50 dark:bg-gray-900 ${fill ? "border-transparent bg-gray-alpha-200" : "border-gray-alpha-400 bg-transparent"}`,
                     type === "violet" && `text-purple-900 fill-purple-900 selection:bg-purple-900 ${fill ? "border-purple-100 bg-purple-200" : "border-purple-400 bg-transparent"}`,
                     type === "cyan" && `text-teal-900 fill-teal-900 selection:bg-teal-900 ${fill ? "border-teal-100 bg-teal-200" : "border-teal-400 bg-transparent"}`,
-                    disabled ? "note-disabled text-gray-700 fill-gray-700 border-gray-alpha-200 bg-transparent selection:bg-gray-900" : "note-link"
+                    disabled ? "note-disabled text-gray-700 fill-gray-700 border-gray-alpha-200 bg-transparent selection:bg-neutral-50 dark:bg-gray-900" : "note-link"
                 )}
             >
                 <div className={clsx(

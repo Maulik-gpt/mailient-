@@ -25,7 +25,7 @@ export function WebsiteLink({
 
   if (!url || url.trim() === '') {
     return (
-      <span className={`text-gray-500 ${className}`}>
+      <span className={`text-neutral-600 dark:text-gray-500 ${className}`}>
         {variant === 'minimal' ? '—' : 'Not set'}
       </span>
     );
@@ -75,7 +75,7 @@ export function WebsiteLink({
   const baseClasses = {
     default: 'text-blue-400 hover:text-blue-300 transition-colors underline decoration-blue-400/50 hover:decoration-blue-300',
     compact: 'text-blue-400 hover:text-blue-300 transition-colors underline decoration-blue-400/50 hover:decoration-blue-300',
-    minimal: 'text-gray-400 hover:text-blue-400 transition-colors hover:underline'
+    minimal: 'text-neutral-600 dark:text-gray-400 hover:text-blue-400 transition-colors hover:underline'
   };
 
   const iconSizes = {

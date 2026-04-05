@@ -427,7 +427,7 @@ export default function ProfileBubble() {
             className="w-full h-full rounded-full object-cover"
           />
         ) : (
-          <span className="text-white group-hover:text-gray-200 transition-colors">{initials}</span>
+          <span className="text-white group-hover:text-neutral-900 dark:text-gray-200 transition-colors">{initials}</span>
         )}
 
         {/* Status Indicator */}
@@ -438,7 +438,7 @@ export default function ProfileBubble() {
         ></div>
 
         {/* Dropdown Arrow Indicator */}
-        <ChevronDown className={`absolute -top-1 -right-1 w-3 h-3 text-gray-400 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`absolute -top-1 -right-1 w-3 h-3 text-neutral-600 dark:text-gray-400 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {/* Enhanced Dropdown */}
@@ -477,10 +477,10 @@ export default function ProfileBubble() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-white font-medium truncate">{user.name || "User"}</p>
-                  <p className="text-gray-400 text-sm truncate">{user.email}</p>
+                  <p className="text-neutral-600 dark:text-gray-400 text-sm truncate">{user.email}</p>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs text-gray-500 bg-[#1A1A1A] px-2 py-0.5 rounded-full">99+ emails</span>
-                    <span className="text-xs text-gray-500">Admin</span>
+                    <span className="text-xs text-neutral-600 dark:text-gray-500 bg-[#1A1A1A] px-2 py-0.5 rounded-full">99+ emails</span>
+                    <span className="text-xs text-neutral-600 dark:text-gray-500">Admin</span>
                   </div>
                   {/* Personal Information */}
                   <div className="mt-3 relative">
@@ -501,7 +501,7 @@ export default function ProfileBubble() {
                           setIsEditModalOpen(true);
                           setIsDropdownOpen(false);
                         }}
-                        className="text-gray-400 hover:text-white transition-colors p-1 rounded-md hover:bg-[#2A2A2A]"
+                        className="text-neutral-600 dark:text-gray-400 hover:text-white transition-colors p-1 rounded-md hover:bg-[#2A2A2A]"
                         aria-label="Edit personal information"
                       >
                         <EditProfileDialog
@@ -520,7 +520,7 @@ export default function ProfileBubble() {
                         />
                       </button>
                     </div>
-                    <div className="space-y-1 text-xs text-gray-500">
+                    <div className="space-y-1 text-xs text-neutral-600 dark:text-gray-500">
                       <p>Email: {user.email}</p>
                       <p>Bio: {userProfile?.bio || 'Not set'}</p>
                       <p>Location: {userProfile?.location || 'Not set'}</p>
@@ -548,7 +548,7 @@ export default function ProfileBubble() {
             <div className="p-3">
               {/* Status Management */}
               <div className="mb-3">
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Status</h3>
+                <h3 className="text-xs font-semibold text-neutral-600 dark:text-gray-400 uppercase tracking-wider mb-2">Status</h3>
                 <div className="space-y-1">
                   <button
                     onClick={() => updateUserStatus('online')}
@@ -575,7 +575,7 @@ export default function ProfileBubble() {
                   <button
                     onClick={() => updateUserStatus('offline')}
                     className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${userStatus === 'offline'
-                      ? 'bg-gray-500/20 text-gray-400'
+                      ? 'bg-gray-500/20 text-neutral-600 dark:text-gray-400'
                       : 'text-white hover:bg-[#2A2A2A]'
                       }`}
                     role="menuitem"
@@ -588,7 +588,7 @@ export default function ProfileBubble() {
 
               {/* Account Actions */}
               <div className="mb-3">
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Account</h3>
+                <h3 className="text-xs font-semibold text-neutral-600 dark:text-gray-400 uppercase tracking-wider mb-2">Account</h3>
                 <div className="space-y-1">
                   <button
                     onClick={handleProfileClick}
@@ -634,7 +634,7 @@ export default function ProfileBubble() {
 
               {/* Workspace & Collaboration */}
               <div className="mb-3">
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Workspace</h3>
+                <h3 className="text-xs font-semibold text-neutral-600 dark:text-gray-400 uppercase tracking-wider mb-2">Workspace</h3>
                 <div className="space-y-1">
                   <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
                     <Users className="w-4 h-4" />
@@ -649,7 +649,7 @@ export default function ProfileBubble() {
 
               {/* Security & Privacy */}
               <div className="mb-3">
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Security</h3>
+                <h3 className="text-xs font-semibold text-neutral-600 dark:text-gray-400 uppercase tracking-wider mb-2">Security</h3>
                 <div className="space-y-1">
                   <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
                     <Shield className="w-4 h-4" />
@@ -664,7 +664,7 @@ export default function ProfileBubble() {
 
               {/* Billing & Usage */}
               <div className="mb-3">
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Billing</h3>
+                <h3 className="text-xs font-semibold text-neutral-600 dark:text-gray-400 uppercase tracking-wider mb-2">Billing</h3>
                 <div className="space-y-1">
                   <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
                     <CreditCard className="w-4 h-4" />
@@ -679,7 +679,7 @@ export default function ProfileBubble() {
 
               {/* Help & Support */}
               <div className="mb-3">
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Support</h3>
+                <h3 className="text-xs font-semibold text-neutral-600 dark:text-gray-400 uppercase tracking-wider mb-2">Support</h3>
                 <div className="space-y-1">
                   <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
                     <HelpCircle className="w-4 h-4" />
@@ -698,7 +698,7 @@ export default function ProfileBubble() {
 
               {/* Legal & Compliance */}
               <div className="mb-3">
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Legal</h3>
+                <h3 className="text-xs font-semibold text-neutral-600 dark:text-gray-400 uppercase tracking-wider mb-2">Legal</h3>
                 <div className="space-y-1">
                   <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
                     <FileText className="w-4 h-4" />
@@ -713,7 +713,7 @@ export default function ProfileBubble() {
 
               {/* Theme Switch */}
               <div className="mb-3">
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Appearance</h3>
+                <h3 className="text-xs font-semibold text-neutral-600 dark:text-gray-400 uppercase tracking-wider mb-2">Appearance</h3>
                 <div className="space-y-1">
                   <button
                     onClick={() => handleThemeChange('dark')}
@@ -791,7 +791,7 @@ export default function ProfileBubble() {
               <h2 id="mobile-profile-title" className="text-white font-medium">Profile Menu</h2>
               <button
                 onClick={() => setIsDropdownOpen(false)}
-                className="text-gray-400 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-md p-1"
+                className="text-neutral-600 dark:text-gray-400 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-md p-1"
                 aria-label="Close profile menu"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -824,10 +824,10 @@ export default function ProfileBubble() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-white font-medium truncate">{user.name || "User"}</p>
-                    <p className="text-gray-400 text-sm truncate">{user.email}</p>
+                    <p className="text-neutral-600 dark:text-gray-400 text-sm truncate">{user.email}</p>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs text-gray-500 bg-[#1A1A1A] px-2 py-0.5 rounded-full">99+ emails</span>
-                      <span className="text-xs text-gray-500">Admin</span>
+                      <span className="text-xs text-neutral-600 dark:text-gray-500 bg-[#1A1A1A] px-2 py-0.5 rounded-full">99+ emails</span>
+                      <span className="text-xs text-neutral-600 dark:text-gray-500">Admin</span>
                     </div>
                     {/* Personal Information - Mobile */}
                     <div className="mt-3 relative">
@@ -848,7 +848,7 @@ export default function ProfileBubble() {
                             setIsEditModalOpen(true);
                             setIsDropdownOpen(false);
                           }}
-                          className="text-gray-400 hover:text-white transition-colors p-1 rounded-md hover:bg-[#2A2A2A]"
+                          className="text-neutral-600 dark:text-gray-400 hover:text-white transition-colors p-1 rounded-md hover:bg-[#2A2A2A]"
                           aria-label="Edit personal information"
                         >
                           <EditProfileDialog
@@ -867,7 +867,7 @@ export default function ProfileBubble() {
                           />
                         </button>
                       </div>
-                      <div className="space-y-1 text-xs text-gray-500">
+                      <div className="space-y-1 text-xs text-neutral-600 dark:text-gray-500">
                         <p>Email: {user.email}</p>
                         <p>Bio: {userProfile?.bio || 'Not set'}</p>
                         <p>Location: {userProfile?.location || 'Not set'}</p>
@@ -895,7 +895,7 @@ export default function ProfileBubble() {
               <div className="space-y-4">
                 {/* Status Management - Mobile */}
                 <div>
-                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Status</h3>
+                  <h3 className="text-xs font-semibold text-neutral-600 dark:text-gray-400 uppercase tracking-wider mb-2">Status</h3>
                   <div className="grid grid-cols-3 gap-2">
                     <button
                       onClick={() => updateUserStatus('online')}
@@ -922,7 +922,7 @@ export default function ProfileBubble() {
                     <button
                       onClick={() => updateUserStatus('offline')}
                       className={`flex flex-col items-center gap-2 p-3 rounded-md transition-colors ${userStatus === 'offline'
-                        ? 'bg-gray-500/20 text-gray-400'
+                        ? 'bg-gray-500/20 text-neutral-600 dark:text-gray-400'
                         : 'text-white hover:bg-[#2A2A2A]'
                         }`}
                       role="menuitem"
@@ -935,7 +935,7 @@ export default function ProfileBubble() {
 
                 {/* Quick Actions */}
                 <div>
-                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Quick Actions</h3>
+                  <h3 className="text-xs font-semibold text-neutral-600 dark:text-gray-400 uppercase tracking-wider mb-2">Quick Actions</h3>
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       onClick={handleProfileClick}
@@ -962,7 +962,7 @@ export default function ProfileBubble() {
 
                 {/* Account & Security */}
                 <div>
-                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Account & Security</h3>
+                  <h3 className="text-xs font-semibold text-neutral-600 dark:text-gray-400 uppercase tracking-wider mb-2">Account & Security</h3>
                   <div className="space-y-1">
                     <EditProfileDialog
                       trigger={
@@ -996,7 +996,7 @@ export default function ProfileBubble() {
 
                 {/* Theme Selection - Mobile */}
                 <div>
-                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Theme</h3>
+                  <h3 className="text-xs font-semibold text-neutral-600 dark:text-gray-400 uppercase tracking-wider mb-2">Theme</h3>
                   <div className="grid grid-cols-3 gap-2">
                     <button
                       onClick={() => handleThemeChange('dark')}
@@ -1036,7 +1036,7 @@ export default function ProfileBubble() {
 
                 {/* Legal Links */}
                 <div>
-                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Legal</h3>
+                  <h3 className="text-xs font-semibold text-neutral-600 dark:text-gray-400 uppercase tracking-wider mb-2">Legal</h3>
                   <div className="space-y-1">
                     <button className="w-full flex items-center gap-3 px-3 py-2 text-left text-white hover:bg-[#2A2A2A] rounded-md transition-colors" role="menuitem">
                       <FileText className="w-4 h-4" />

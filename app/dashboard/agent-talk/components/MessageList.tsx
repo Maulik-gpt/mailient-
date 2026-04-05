@@ -127,9 +127,9 @@ export default function EmailAgentUI() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-black text-white">
+    <div className="flex flex-col h-screen bg-white dark:bg-black text-black dark:text-white">
       {/* Header */}
-      <div className="border-b border-gray-800 p-6">
+      <div className="border-b border-neutral-200 dark:border-gray-800 p-6">
         <div className="flex items-center gap-3">
           <div className="bg-white rounded-lg p-2">
             <Mail className="w-6 h-6 text-black" />
@@ -166,12 +166,12 @@ export default function EmailAgentUI() {
                         ))}
                       </ul>
                       <p className="text-gray-100 mb-3">{msg.content.footer}</p>
-                      <p className="text-gray-500 text-sm">{msg.time}</p>
+                      <p className="text-neutral-600 dark:text-gray-500 text-sm">{msg.time}</p>
                     </>
                   ) : (
                     <>
                       <p className="text-gray-100">{msg.content}</p>
-                      <p className="text-gray-500 text-sm mt-2">{msg.time}</p>
+                      <p className="text-neutral-600 dark:text-gray-500 text-sm mt-2">{msg.time}</p>
                     </>
                   )}
                 </div>
@@ -188,7 +188,7 @@ export default function EmailAgentUI() {
               <div className="flex-1">
                 <div className="rounded-2xl p-6 bg-zinc-900 max-w-3xl flex items-center gap-3">
                   <Loader className="w-5 h-5 animate-spin" />
-                  <p className="text-gray-400">Thinking...</p>
+                  <p className="text-neutral-600 dark:text-gray-400">Thinking...</p>
                 </div>
               </div>
             </div>
@@ -197,7 +197,7 @@ export default function EmailAgentUI() {
       </div>
 
       {/* Input Area */}
-      <div className="border-t border-gray-800 p-6">
+      <div className="border-t border-neutral-200 dark:border-gray-800 p-6">
         <div className="max-w-4xl mx-auto relative">
           <div className="flex items-end gap-3">
             <div className="flex-1 relative">
@@ -207,7 +207,7 @@ export default function EmailAgentUI() {
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Ask me anything about your emails..."
-                className="w-full bg-zinc-900 border border-gray-800 rounded-xl px-5 py-4 pr-12 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-gray-700"
+                className="w-full bg-zinc-900 border border-neutral-200 dark:border-gray-800 rounded-xl px-5 py-4 pr-12 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-gray-700"
               />
             </div>
             <button
@@ -218,8 +218,8 @@ export default function EmailAgentUI() {
               <Send className="w-5 h-5" />
             </button>
           </div>
-          <button className="absolute -bottom-12 right-0 bg-transparent border border-gray-800 rounded-lg p-2 hover:bg-zinc-900 transition-colors">
-            <Upload className="w-4 h-4 text-gray-500" />
+          <button className="absolute -bottom-12 right-0 bg-transparent border border-neutral-200 dark:border-gray-800 rounded-lg p-2 hover:bg-zinc-900 transition-colors">
+            <Upload className="w-4 h-4 text-neutral-600 dark:text-gray-500" />
           </button>
         </div>
       </div>

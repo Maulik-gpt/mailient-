@@ -80,7 +80,7 @@ export const ComposePostDialog: React.FC<ComposePostDialogProps> = ({
             </Avatar>
             <div>
               <p className="font-semibold text-gray-900 dark:text-white">{user?.displayName || 'User'}</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">@{user?.username || 'username'}</p>
+              <p className="text-sm text-gray-500 dark:text-neutral-600 dark:text-gray-400">@{user?.username || 'username'}</p>
             </div>
           </div>
 
@@ -158,7 +158,7 @@ export const ComposePostDialog: React.FC<ComposePostDialogProps> = ({
             </div>
 
             <div className="flex items-center space-x-4">
-              <span className={`text-sm ${characterCount > maxCharacters * 0.9 ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'}`}>
+              <span className={`text-sm ${characterCount > maxCharacters * 0.9 ? 'text-red-500' : 'text-gray-500 dark:text-neutral-600 dark:text-gray-400'}`}>
                 {characterCount}/{maxCharacters}
               </span>
               <Button

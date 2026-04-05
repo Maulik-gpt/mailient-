@@ -238,10 +238,10 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                 onClick={() => id && setActiveSection(id)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 ${isActive
                         ? 'bg-black/[0.08] dark:bg-white/[0.08] text-black dark:text-white font-medium shadow-sm'
-                        : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-200 hover:bg-black/5 dark:bg-white/5'
+                        : 'text-neutral-500 dark:text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:text-neutral-200 hover:bg-black/5 dark:bg-white/5'
                     }`}
             >
-                {Icon && <Icon className={`w-4 h-4 transition-colors ${isActive ? 'text-black dark:text-white' : 'text-neutral-500 dark:text-neutral-400 group-hover:text-black dark:group-hover:text-white'}`} strokeWidth={isActive ? 2 : 1.5} />}
+                {Icon && <Icon className={`w-4 h-4 transition-colors ${isActive ? 'text-black dark:text-white' : 'text-neutral-500 dark:text-neutral-600 dark:text-neutral-400 group-hover:text-black dark:group-hover:text-white'}`} strokeWidth={isActive ? 2 : 1.5} />}
                 <span className="text-[14px] leading-tight">{label}</span>
             </button>
         );
@@ -282,7 +282,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                         
                         <button
                             onClick={() => router.push('/help')}
-                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 text-neutral-500 dark:text-neutral-400 hover:text-neutral-200 hover:bg-black/5 dark:bg-white/5"
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 text-neutral-500 hover:text-neutral-900 dark:text-neutral-200 hover:bg-black/5 dark:bg-white/5"
                         >
                             <HelpCircle className="w-4 h-4 text-neutral-500 dark:text-neutral-400" strokeWidth={1.5} />
                             <span className="text-[14px] leading-tight">Help Center</span>
@@ -315,7 +315,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                             onClick={onClose}
                             className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-black/5 dark:bg-white/5 transition-colors group absolute top-6 right-6"
                         >
-                            <X className="w-5 h-5 text-neutral-500 group-hover:text-black dark:group-hover:text-black dark:text-white" />
+                            <X className="w-5 h-5 text-neutral-600 group-hover:text-black dark:group-hover:text-black dark:text-white" />
                         </button>
                     </div>
 
@@ -362,7 +362,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                     <Keyboard className="w-4 h-4 text-blue-500" />
                                                     <h3 className="text-[15px] font-semibold text-black dark:text-white">Default Draft Tone</h3>
                                                 </div>
-                                                <p className="text-sm text-neutral-500">Current: <span className="text-black dark:text-white capitalize">{settings.aiTone}</span></p>
+                                                <p className="text-sm text-neutral-600 dark:text-neutral-500">Current: <span className="text-black dark:text-white capitalize">{settings.aiTone}</span></p>
                                             </div>
                                             <DropdownMenu
                                                 options={[
@@ -411,7 +411,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                 <p className="text-[13px] text-black dark:text-white/90 leading-relaxed">
                                                     <Sparkles className="w-3.5 h-3.5 inline mr-1.5 mb-0.5 text-amber-400" />
                                                     <strong className="text-black dark:text-white font-semibold">AI Voice Cloning:</strong>{' '}
-                                                    <span className="text-neutral-300">Mailient will analyze your sent emails to perfectly replicate your writing style. This process happens automatically when drafting.</span>
+                                                    <span className="text-neutral-900 dark:text-neutral-300">Mailient will analyze your sent emails to perfectly replicate your writing style. This process happens automatically when drafting.</span>
                                                 </p>
                                             </div>
                                         )}
@@ -473,7 +473,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                             <Button
                                                 variant="outline"
                                                 onClick={resetCache}
-                                                className="border-neutral-200 dark:border-white/10 hover:bg-black/5 dark:bg-white/5 text-neutral-500 hover:text-black dark:text-white px-8 h-12 rounded-2xl flex items-center gap-2"
+                                                className="border-neutral-200 dark:border-white/10 hover:bg-black/5 dark:bg-white/5 text-neutral-600 hover:text-black dark:text-white px-8 h-12 rounded-2xl flex items-center gap-2"
                                             >
                                                 <RefreshCw className="w-4 h-4" />
                                                 Reset Local Cache
@@ -481,7 +481,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                             <Button
                                                 variant="outline"
                                                 onClick={relaunchApp}
-                                                className="border-neutral-200 dark:border-white/10 hover:bg-black/5 dark:bg-white/5 text-neutral-500 hover:text-black dark:text-white px-8 h-12 rounded-2xl flex items-center gap-2"
+                                                className="border-neutral-200 dark:border-white/10 hover:bg-black/5 dark:bg-white/5 text-neutral-600 hover:text-black dark:text-white px-8 h-12 rounded-2xl flex items-center gap-2"
                                             >
                                                 <Power className="w-4 h-4" />
                                                 Relaunch App
@@ -522,13 +522,13 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                             <div className="h-px bg-black/5 dark:bg-white/5" />
                                             <div className="flex items-center justify-between">
                                                 <span className="text-[15px] font-medium text-neutral-500 dark:text-neutral-400">Email</span>
-                                                <span className="text-[15px] text-neutral-300 font-medium">{accountInfo.email}</span>
+                                                <span className="text-[15px] text-neutral-900 dark:text-neutral-300 font-medium">{accountInfo.email}</span>
                                             </div>
                                             <div className="h-px bg-black/5 dark:bg-white/5" />
                                             <div className="flex items-center justify-between">
                                                 <span className="text-[15px] font-medium text-neutral-500 dark:text-neutral-400">Username</span>
                                                 <div className="relative">
-                                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500">@</span>
+                                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-600 dark:text-neutral-500">@</span>
                                                     <input
                                                         type="text"
                                                         value={accountInfo.username}
@@ -571,7 +571,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                             <Button
                                                 variant="ghost"
                                                 onClick={() => signOut()}
-                                                className="bg-black/5 hover:bg-black/10 dark:bg-white/10 text-neutral-300 px-6 h-12 rounded-2xl flex items-center gap-2 font-medium"
+                                                className="bg-black/5 hover:bg-black/10 dark:bg-white/10 text-neutral-900 dark:text-neutral-300 px-6 h-12 rounded-2xl flex items-center gap-2 font-medium"
                                             >
                                                 <LogOut className="w-4 h-4" />
                                                 Sign out
@@ -605,13 +605,13 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                 >
                                     {isLoadingSubscription ? (
                                         <div className="flex items-center justify-center py-20">
-                                            <RefreshCw className="w-8 h-8 text-neutral-500 animate-spin" />
+                                            <RefreshCw className="w-8 h-8 text-neutral-600 dark:text-neutral-500 animate-spin" />
                                         </div>
                                     ) : subView === 'summary' ? (
                                         <div className="bg-black/5 dark:bg-white/5 rounded-[16px] p-8 border border-neutral-200 dark:border-white/5 space-y-10">
                                             <div className="flex items-start justify-between">
                                                 <div className="space-y-1">
-                                                    <p className="text-[11px] text-neutral-500 font-bold tracking-wider uppercase">Current Plan</p>
+                                                    <p className="text-[11px] text-neutral-600 dark:text-neutral-500 font-bold tracking-wider uppercase">Current Plan</p>
                                                     <h3 className="text-4xl font-serif text-black dark:text-white capitalize">{subscriptionData?.planType || 'Free'}</h3>
                                                 </div>
                                                 <Button 
@@ -626,7 +626,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
 
                                             <div className="grid grid-cols-2 gap-10">
                                                 <div className="space-y-1">
-                                                    <p className="text-[11px] text-neutral-500 font-bold tracking-wider uppercase">Status</p>
+                                                    <p className="text-[11px] text-neutral-600 dark:text-neutral-500 font-bold tracking-wider uppercase">Status</p>
                                                     <div className="flex items-center gap-2">
                                                         <div className={`w-2 h-2 rounded-full ${
                                                             subscriptionData?.hasActiveSubscription || subscriptionData?.planType === 'free' 
@@ -645,7 +645,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                     </div>
                                                 </div>
                                                 <div className="space-y-1">
-                                                    <p className="text-[11px] text-neutral-500 font-bold tracking-wider uppercase">
+                                                    <p className="text-[11px] text-neutral-600 dark:text-neutral-500 font-bold tracking-wider uppercase">
                                                         {subscriptionData?.subscriptionEndsAt && new Date(subscriptionData.subscriptionEndsAt) < new Date() ? 'Expiraton date' : 'Billing cycle'}
                                                     </p>
                                                     <p className="text-[15px] font-medium text-black dark:text-white">
@@ -659,7 +659,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                             <div className="h-px bg-black/5 dark:bg-white/5" />
 
                                             <div className="space-y-6">
-                                                <p className="text-[11px] text-neutral-500 font-bold tracking-wider uppercase">Active Payment Method</p>
+                                                <p className="text-[11px] text-neutral-600 dark:text-neutral-500 font-bold tracking-wider uppercase">Active Payment Method</p>
                                                 <div className="flex justify-center">
                                                     <VerificationCard 
                                                         idNumber={(() => {
@@ -702,7 +702,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                     <Button 
                                                         variant="ghost" 
                                                         onClick={() => setSubView('summary')}
-                                                        className="text-neutral-500 hover:text-black dark:text-white flex items-center gap-2 group"
+                                                        className="text-neutral-600 hover:text-black dark:text-white flex items-center gap-2 group"
                                                     >
                                                         <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
                                                         Back to overview
@@ -728,10 +728,10 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                         <table className="w-full text-left">
                                                             <thead className="bg-black/[0.02] dark:bg-white/[0.02] border-b border-neutral-200 dark:border-white/5">
                                                                 <tr>
-                                                                    <th className="px-6 py-4 text-xs font-bold text-neutral-500 uppercase tracking-wider">Invoice</th>
-                                                                    <th className="px-6 py-4 text-xs font-bold text-neutral-500 uppercase tracking-wider">Date</th>
-                                                                    <th className="px-6 py-4 text-xs font-bold text-neutral-500 uppercase tracking-wider">Amount</th>
-                                                                    <th className="px-6 py-4 text-xs font-bold text-neutral-500 uppercase tracking-wider"></th>
+                                                                    <th className="px-6 py-4 text-xs font-bold text-neutral-600 dark:text-neutral-500 uppercase tracking-wider">Invoice</th>
+                                                                    <th className="px-6 py-4 text-xs font-bold text-neutral-600 dark:text-neutral-500 uppercase tracking-wider">Date</th>
+                                                                    <th className="px-6 py-4 text-xs font-bold text-neutral-600 dark:text-neutral-500 uppercase tracking-wider">Amount</th>
+                                                                    <th className="px-6 py-4 text-xs font-bold text-neutral-600 dark:text-neutral-500 uppercase tracking-wider"></th>
                                                                 </tr>
                                                             </thead>
                                                             <tbody className="divide-y divide-white/5">
@@ -756,7 +756,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                                                     window.URL.revokeObjectURL(url);
                                                                                     toast.success('Invoice downloaded successfully');
                                                                                 }}
-                                                                                className="p-2 hover:bg-black/5 dark:bg-white/5 rounded-lg text-neutral-500 hover:text-black dark:text-white"
+                                                                                className="p-2 hover:bg-black/5 dark:bg-white/5 rounded-lg text-neutral-600 hover:text-black dark:text-white"
                                                                             >
                                                                                 <Download className="w-4 h-4" />
                                                                             </button>
@@ -829,13 +829,13 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                 >
                                     {isLoadingSubscription ? (
                                         <div className="flex items-center justify-center py-20">
-                                            <RefreshCw className="w-8 h-8 text-neutral-500 animate-spin" />
+                                            <RefreshCw className="w-8 h-8 text-neutral-600 dark:text-neutral-500 animate-spin" />
                                         </div>
                                     ) : (
                                         <div className="bg-neutral-50 dark:bg-[#141414] rounded-[16px] p-8 border border-neutral-200 dark:border-white/5">
                                             <div className="flex items-center justify-between mb-8">
                                                 <div className="space-y-1">
-                                                    <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">Active Tier</p>
+                                                    <p className="text-[10px] text-neutral-600 dark:text-neutral-500 font-bold uppercase tracking-widest">Active Tier</p>
                                                     <h3 className="text-2xl font-serif text-black dark:text-white capitalize">{subscriptionData?.planType || 'Free'}</h3>
                                                 </div>
                                                 <Button 
@@ -880,11 +880,11 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                 
                                                 <div className="pt-6 border-t border-neutral-200 dark:border-white/5 grid grid-cols-2 gap-4">
                                                     <div className="space-y-1">
-                                                        <span className="text-[11px] text-neutral-500 uppercase font-bold tracking-wider">Sift AI</span>
+                                                        <span className="text-[11px] text-neutral-600 dark:text-neutral-500 uppercase font-bold tracking-wider">Sift AI</span>
                                                         <p className="text-black dark:text-white text-[14px]">{subscriptionData?.features?.sift_analysis?.remaining} / {subscriptionData?.features?.sift_analysis?.limit}</p>
                                                     </div>
                                                     <div className="space-y-1">
-                                                        <span className="text-[11px] text-neutral-500 uppercase font-bold tracking-wider">Summaries</span>
+                                                        <span className="text-[11px] text-neutral-600 dark:text-neutral-500 uppercase font-bold tracking-wider">Summaries</span>
                                                         <p className="text-black dark:text-white text-[14px]">{subscriptionData?.features?.email_summary?.remaining} / {subscriptionData?.features?.email_summary?.limit}</p>
                                                     </div>
                                                 </div>
@@ -897,7 +897,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                         </div>
                                                         <div className="text-right">
                                                             <span className="text-[17px] font-serif text-black dark:text-white">{(subscriptionData?.features?.openai_tokens?.usage || 0).toLocaleString()}</span>
-                                                            <span className="text-[11px] text-neutral-500 font-sans ml-1.5 uppercase tracking-wider">tokens</span>
+                                                            <span className="text-[11px] text-neutral-600 dark:text-neutral-500 font-sans ml-1.5 uppercase tracking-wider">tokens</span>
                                                         </div>
                                                     </div>
                                                     <div className="h-1.5 w-full bg-black/5 dark:bg-white/5 rounded-full overflow-hidden">
@@ -907,7 +907,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                             className="h-full bg-white" 
                                                         />
                                                     </div>
-                                                    <div className="flex justify-between items-center text-[10px] text-neutral-500 font-bold uppercase tracking-widest pl-1">
+                                                    <div className="flex justify-between items-center text-[10px] text-neutral-600 dark:text-neutral-500 font-bold uppercase tracking-widest pl-1">
                                                         <span>OpenRouter Cluster Usage</span>
                                                         <span>{isPro ? 'Unlimited' : `${Math.round(((subscriptionData?.features?.openai_tokens?.usage || 0) / (subscriptionData?.features?.openai_tokens?.limit || 50000)) * 100)}% of quota`}</span>
                                                     </div>
@@ -980,7 +980,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                         </div>
                                         <div className="text-center relative z-10">
                                             <h4 className="text-black dark:text-white text-lg font-bold mb-1 tracking-tight">Mailient Shield Active</h4>
-                                            <p className="text-neutral-500 text-sm max-w-[320px] mx-auto">Your identity and inbox are protected by state-of-the-art encryption.</p>
+                                            <p className="text-neutral-600 dark:text-neutral-500 text-sm max-w-[320px] mx-auto">Your identity and inbox are protected by state-of-the-art encryption.</p>
                                         </div>
                                     </div>
                                 </motion.div>

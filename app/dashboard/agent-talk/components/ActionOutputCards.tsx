@@ -54,14 +54,14 @@ interface ActionOutputCardsProps {
 }
 
 const actionConfig: Record<string, { icon: any; label: string; color: string }> = {
-  'notion_create_page': { icon: FileText, label: 'Notion Page Created', color: 'text-white' },
-  'notion_append': { icon: FileText, label: 'Notion Updated', color: 'text-white' },
+  'notion_create_page': { icon: FileText, label: 'Notion Page Created', color: 'text-black dark:text-white' },
+  'notion_append': { icon: FileText, label: 'Notion Updated', color: 'text-black dark:text-white' },
   'create_event': { icon: Calendar, label: 'Event Scheduled', color: 'text-blue-400' },
   'create_meeting_space': { icon: Calendar, label: 'Meet Space Created', color: 'text-purple-400' },
   'create_task': { icon: ListTodo, label: 'Task Created', color: 'text-green-400' },
   'create_task_list': { icon: ListTodo, label: 'Task List Created', color: 'text-green-400' },
   'send_email': { icon: Mail, label: 'Email Sent', color: 'text-red-400' },
-  'save_draft': { icon: Mail, label: 'Draft Saved', color: 'text-gray-400' },
+  'save_draft': { icon: Mail, label: 'Draft Saved', color: 'text-neutral-600 dark:text-gray-400' },
   'query_database': { icon: Database, label: 'Database Queried', color: 'text-blue-400' }
 };
 
@@ -70,7 +70,7 @@ export function ActionOutputCards({ outputs, onViewDetails }: ActionOutputCardsP
 
   return (
     <div className="space-y-3">
-      <h4 className="text-sm font-semibold text-white/60 uppercase tracking-wider">
+      <h4 className="text-sm font-semibold text-black/60 dark:text-white/60 uppercase tracking-wider">
         Action Results
       </h4>
       
@@ -100,7 +100,7 @@ function ActionCard({
   const config = actionConfig[output.actionType] || { 
     icon: CheckCircle2, 
     label: output.actionType, 
-    color: 'text-white' 
+    color: 'text-black dark:text-white' 
   };
   const Icon = config.icon;
 
@@ -109,24 +109,24 @@ function ActionCard({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
-      className="bg-[#1a1a1a] border border-gray-800 rounded-xl p-4 hover:border-gray-700 transition-colors"
+      className="bg-[#1a1a1a] border border-neutral-200 dark:border-gray-800 rounded-xl p-4 hover:border-gray-700 transition-colors"
     >
       <div className="flex items-start gap-3">
         {/* Icon */}
-        <div className={`w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center flex-shrink-0`}>
+        <div className={`w-10 h-10 rounded-lg bg-neutral-100 dark:bg-gray-800 flex items-center justify-center flex-shrink-0`}>
           <Icon className={`w-5 h-5 ${config.color}`} />
         </div>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
-            <h5 className="font-medium text-white">{config.label}</h5>
+            <h5 className="font-medium text-black dark:text-white">{config.label}</h5>
             {output.success && (
               <CheckCircle2 className="w-4 h-4 text-green-500" />
             )}
           </div>
           
-          <p className="text-sm text-gray-400 mt-1">{output.message}</p>
+          <p className="text-sm text-neutral-600 dark:text-gray-400 mt-1">{output.message}</p>
 
           {/* External Links */}
           {output.externalRefs && (
@@ -136,8 +136,8 @@ function ActionCard({
                   href={output.externalRefs.notionPageUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 
-                           rounded-lg text-sm text-white transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 hover:bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 
+                           rounded-lg text-sm text-black dark:text-white transition-colors"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
                   Open in Notion
@@ -179,8 +179,8 @@ function ActionCard({
               )}
               
               {output.externalRefs.emailMessageId && (
-                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-800 
-                               rounded-lg text-sm text-gray-400">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-neutral-100 dark:bg-gray-800 
+                               rounded-lg text-sm text-neutral-600 dark:text-gray-400">
                   <Mail className="w-3.5 h-3.5" />
                   Message ID: {output.externalRefs.emailMessageId.slice(-8)}
                 </div>
@@ -190,7 +190,7 @@ function ActionCard({
 
           {/* Metadata */}
           {output.metadata?.durationMs && (
-            <p className="text-xs text-gray-500 mt-2">
+            <p className="text-xs text-neutral-600 dark:text-gray-500 mt-2">
               Completed in {Math.round(output.metadata.durationMs / 1000)}s
               {output.metadata.createdAt && (
                 <span className="ml-2">
@@ -205,9 +205,9 @@ function ActionCard({
         {onViewDetails && (
           <button
             onClick={() => onViewDetails(output)}
-            className="p-2 hover:bg-gray-800 rounded-lg transition-colors flex-shrink-0"
+            className="p-2 hover:bg-neutral-100 dark:bg-gray-800 rounded-lg transition-colors flex-shrink-0"
           >
-            <ArrowRight className="w-4 h-4 text-gray-400" />
+            <ArrowRight className="w-4 h-4 text-neutral-600 dark:text-gray-400" />
           </button>
         )}
       </div>

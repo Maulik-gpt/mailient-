@@ -89,22 +89,22 @@ function Calendar({
         table: "w-full border-collapse",
         head_row: "flex w-full",
         head_cell:
-          "text-gray-400 font-normal text-[0.8rem] text-center flex-1 flex items-center justify-center p-0 h-8 min-w-0",
+          "text-neutral-600 dark:text-gray-400 font-normal text-[0.8rem] text-center flex-1 flex items-center justify-center p-0 h-8 min-w-0",
         row: "flex w-full mt-1",
-        cell: "flex-1 text-center text-sm p-0 relative flex items-center justify-center h-9 min-w-0 [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-gray-800/50 [&:has([aria-selected])]:bg-gray-800 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+        cell: "flex-1 text-center text-sm p-0 relative flex items-center justify-center h-9 min-w-0 [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-neutral-100 dark:bg-gray-800/50 [&:has([aria-selected])]:bg-neutral-100 dark:bg-gray-800 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
         day: cn(
           buttonVariants({ variant: "ghost" }),
-          "h-9 w-9 p-0 font-normal aria-selected:opacity-100 text-gray-300 hover:text-white mx-auto"
+          "h-9 w-9 p-0 font-normal aria-selected:opacity-100 text-neutral-900 dark:text-gray-300 hover:text-white mx-auto"
         ),
         day_range_end: "day-range-end",
         day_selected:
           "bg-white text-black hover:bg-white hover:text-black focus:bg-white focus:text-black",
-        day_today: "bg-gray-800 text-white border border-gray-600",
+        day_today: "bg-neutral-100 dark:bg-gray-800 text-white border border-gray-600",
         day_outside:
-          "day-outside text-gray-500 opacity-50 aria-selected:bg-gray-800/50 aria-selected:text-gray-400 aria-selected:opacity-30",
+          "day-outside text-neutral-600 dark:text-gray-500 opacity-50 aria-selected:bg-neutral-100 dark:bg-gray-800/50 aria-selected:text-neutral-600 dark:text-gray-400 aria-selected:opacity-30",
         day_disabled: "text-gray-600 opacity-50",
         day_range_middle:
-          "aria-selected:bg-gray-800 aria-selected:text-white",
+          "aria-selected:bg-neutral-100 dark:bg-gray-800 aria-selected:text-white",
         day_hidden: "invisible",
         ...classNames,
       }}

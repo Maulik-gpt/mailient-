@@ -86,7 +86,7 @@ export default function Contact() {
             <p className="text-white text-3xl font-semibold sm:text-4xl">
               Let us know how we can help
             </p>
-            <p className="text-gray-300">
+            <p className="text-neutral-900 dark:text-gray-300">
               We're here to help and answer any question you might have about Mailient's email management platform. We look forward to hearing from you! Please fill out the form, or use the contact information below.
             </p>
             <div>
@@ -94,10 +94,10 @@ export default function Contact() {
                 {
                   contactMethods.map((item, idx) => (
                     <li key={idx} className="flex items-center gap-x-3">
-                      <div className="flex-none text-gray-400">
+                      <div className="flex-none text-neutral-600 dark:text-gray-400">
                         {item.icon}
                       </div>
-                      <p className="text-gray-300">{item.contact}</p>
+                      <p className="text-neutral-900 dark:text-gray-300">{item.contact}</p>
                     </li>
                   ))
                 }
@@ -115,7 +115,7 @@ export default function Contact() {
                         href={item.link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-none text-gray-400 hover:text-white transition-colors duration-200"
+                        className="flex-none text-neutral-600 dark:text-gray-400 hover:text-white transition-colors duration-200"
                       >
                         {item.icon}
                       </a>
@@ -200,14 +200,14 @@ export default function Contact() {
       {/* Success Overlay */}
       {submitted && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-gray-900/90 border border-green-500/50 rounded-2xl p-8 text-center max-w-md mx-4 shadow-2xl">
+          <div className="bg-neutral-50 dark:bg-gray-900/90 border border-green-500/50 rounded-2xl p-8 text-center max-w-md mx-4 shadow-2xl">
             <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
             <h3 className="text-2xl font-bold text-white mb-2">Message Sent!</h3>
-            <p className="text-gray-300">Thank you for reaching out. Our team will contact you within 24 hours.</p>
+            <p className="text-neutral-900 dark:text-gray-300">Thank you for reaching out. Our team will contact you within 24 hours.</p>
           </div>
         </div>
       )}

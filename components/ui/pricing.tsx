@@ -68,7 +68,7 @@ export function PricingSection({
 					{heading}
 				</h2>
 				{description && (
-					<p className="text-zinc-500 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
+					<p className="text-neutral-600 dark:text-zinc-500 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
 						{description}
 					</p>
 				)}
@@ -149,7 +149,7 @@ export function PricingCard({
 							</span>
 							<span className={cn(
 								'text-lg font-normal tracking-tight opacity-70',
-								isHighlighted ? 'text-black/60' : 'text-zinc-500'
+								isHighlighted ? 'text-black/60' : 'text-neutral-600 dark:text-zinc-500'
 							)}>
 								forever
 							</span>
@@ -164,7 +164,7 @@ export function PricingCard({
 							</span>
 							<span className={cn(
 								'text-lg font-medium',
-								isHighlighted ? 'text-black/50' : 'text-zinc-500'
+								isHighlighted ? 'text-black/50' : 'text-neutral-600 dark:text-zinc-500'
 							)}>
 								/month
 							</span>
@@ -174,7 +174,7 @@ export function PricingCard({
 
 				<p className={cn(
 					'text-base leading-relaxed max-w-[280px]',
-					isHighlighted ? 'text-black/60' : 'text-zinc-500'
+					isHighlighted ? 'text-black/60' : 'text-neutral-600 dark:text-zinc-500'
 				)}>
 					{plan.info}
 				</p>

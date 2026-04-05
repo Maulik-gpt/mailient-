@@ -81,7 +81,7 @@ export function HelpCard({ onClose }: HelpCardProps) {
                                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
                                     activeSection === section.id 
                                     ? 'bg-black dark:bg-white text-white dark:text-black shadow-lg font-bold' 
-                                    : 'text-neutral-500 hover:text-black dark:text-neutral-400 dark:hover:text-white hover:bg-black/5 dark:bg-white/5'
+                                    : 'text-neutral-600 dark:text-neutral-500 hover:text-black dark:text-neutral-400 dark:hover:text-white hover:bg-black/5 dark:bg-white/5'
                                 }`}
                             >
                                 <section.icon className="w-4 h-4" />
@@ -101,7 +101,7 @@ export function HelpCard({ onClose }: HelpCardProps) {
                             onClick={onClose}
                             className="p-2 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-full transition-colors"
                         >
-                            <X className="w-5 h-5 text-neutral-500 hover:text-black dark:text-neutral-400 dark:hover:text-white" />
+                            <X className="w-5 h-5 text-neutral-600 hover:text-black dark:text-neutral-400 dark:hover:text-white" />
                         </button>
                     </header>
 
@@ -129,7 +129,7 @@ export function HelpCard({ onClose }: HelpCardProps) {
                                 >
                                     <div>
                                         <h4 className="text-3xl font-bold text-black dark:text-white tracking-tighter mb-3">Power User Playbook.</h4>
-                                        <p className="text-neutral-500 text-base leading-relaxed max-w-xl">Advanced strategies and hidden shortcuts to maximize your daily output with Mailient.</p>
+                                        <p className="text-neutral-600 dark:text-neutral-500 text-base leading-relaxed max-w-xl">Advanced strategies and hidden shortcuts to maximize your daily output with Mailient.</p>
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-12 pb-12">
@@ -156,7 +156,7 @@ export function HelpCard({ onClose }: HelpCardProps) {
                                                     <div className="h-[1px] flex-1 bg-neutral-100 dark:bg-white/5" />
                                                 </div>
                                                 <h5 className="font-bold text-base text-black dark:text-white mb-2 tracking-tight transition-colors">{tip.title}</h5>
-                                                <p className="text-[14px] text-neutral-500 leading-relaxed font-medium">{tip.desc}</p>
+                                                <p className="text-[14px] text-neutral-600 dark:text-neutral-500 leading-relaxed font-medium">{tip.desc}</p>
                                             </div>
                                         ))}
                                     </div>
@@ -196,7 +196,7 @@ export function HelpCard({ onClose }: HelpCardProps) {
                                             </div>
                                             <div>
                                                 <div className="text-2xl font-bold dark:text-white tracking-tight">Maulik Barsaiyan</div>
-                                                <div className="text-sm text-neutral-500 font-mono tracking-widest uppercase mt-1">Founding Engineer & CEO</div>
+                                                <div className="text-sm text-neutral-600 dark:text-neutral-500 font-mono tracking-widest uppercase mt-1">Founding Engineer & CEO</div>
                                             </div>
                                         </div>
                                     </div>

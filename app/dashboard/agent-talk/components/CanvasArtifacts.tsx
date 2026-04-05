@@ -46,10 +46,10 @@ export function CanvasArtifacts({ artifacts, onDownload }: CanvasArtifactsProps)
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-white/60 uppercase tracking-wider">
+        <h4 className="text-sm font-semibold text-black/60 dark:text-white/60 uppercase tracking-wider">
           Generated Artifacts
         </h4>
-        <span className="text-xs text-gray-500">{artifacts.length} items</span>
+        <span className="text-xs text-neutral-600 dark:text-gray-500">{artifacts.length} items</span>
       </div>
       
       <div className="grid gap-3">
@@ -98,11 +98,11 @@ function ArtifactCard({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
-      className="bg-[#1a1a1a] border border-gray-800 rounded-xl overflow-hidden"
+      className="bg-[#1a1a1a] border border-neutral-200 dark:border-gray-800 rounded-xl overflow-hidden"
     >
       {/* Header */}
       <div 
-        className="flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-800/50 transition-colors"
+        className="flex items-center gap-3 p-4 cursor-pointer hover:bg-neutral-100 dark:bg-gray-800/50 transition-colors"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${config.color}`}>
@@ -111,13 +111,13 @@ function ArtifactCard({
         
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h5 className="font-medium text-white truncate">{artifact.title}</h5>
+            <h5 className="font-medium text-black dark:text-white truncate">{artifact.title}</h5>
             <span className={`text-xs px-2 py-0.5 rounded-full ${config.color}`}>
               {config.label}
             </span>
           </div>
           {artifact.description && (
-            <p className="text-sm text-gray-400 truncate">{artifact.description}</p>
+            <p className="text-sm text-neutral-600 dark:text-gray-400 truncate">{artifact.description}</p>
           )}
         </div>
 
@@ -127,13 +127,13 @@ function ArtifactCard({
               e.stopPropagation();
               handleCopy();
             }}
-            className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+            className="p-2 hover:bg-neutral-100 dark:bg-gray-800 rounded-lg transition-colors"
             title="Copy content"
           >
             {copied ? (
               <CheckCircle2 className="w-4 h-4 text-green-500" />
             ) : (
-              <Copy className="w-4 h-4 text-gray-400" />
+              <Copy className="w-4 h-4 text-neutral-600 dark:text-gray-400" />
             )}
           </button>
           
@@ -143,17 +143,17 @@ function ArtifactCard({
                 e.stopPropagation();
                 onDownload(artifact);
               }}
-              className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+              className="p-2 hover:bg-neutral-100 dark:bg-gray-800 rounded-lg transition-colors"
               title="Download"
             >
-              <Download className="w-4 h-4 text-gray-400" />
+              <Download className="w-4 h-4 text-neutral-600 dark:text-gray-400" />
             </button>
           )}
           
           {isExpanded ? (
-            <ChevronDown className="w-5 h-5 text-gray-400" />
+            <ChevronDown className="w-5 h-5 text-neutral-600 dark:text-gray-400" />
           ) : (
-            <ChevronRight className="w-5 h-5 text-gray-400" />
+            <ChevronRight className="w-5 h-5 text-neutral-600 dark:text-gray-400" />
           )}
         </div>
       </div>
@@ -165,7 +165,7 @@ function ArtifactCard({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="border-t border-gray-800"
+            className="border-t border-neutral-200 dark:border-gray-800"
           >
             <div className="p-4">
               {artifact.type === 'table' && <TableView data={artifact.content} />}
@@ -190,7 +190,7 @@ function TableView({ data }: { data: { headers: string[]; rows: any[] } }) {
         <thead>
           <tr className="border-b border-gray-700">
             {data.headers.map((header, i) => (
-              <th key={i} className="text-left py-2 px-3 text-gray-400 font-medium">
+              <th key={i} className="text-left py-2 px-3 text-neutral-600 dark:text-gray-400 font-medium">
                 {header}
               </th>
             ))}
@@ -198,9 +198,9 @@ function TableView({ data }: { data: { headers: string[]; rows: any[] } }) {
         </thead>
         <tbody>
           {data.rows.map((row, i) => (
-            <tr key={i} className="border-b border-gray-800/50 last:border-0">
+            <tr key={i} className="border-b border-neutral-200 dark:border-gray-800/50 last:border-0">
               {data.headers.map((header, j) => (
-                <td key={j} className="py-2 px-3 text-white">
+                <td key={j} className="py-2 px-3 text-black dark:text-white">
                   {row[header] || row[j] || '-'}
                 </td>
               ))}
@@ -218,10 +218,10 @@ function SummaryView({ content }: { content: { sections: Array<{ title: string; 
     <div className="space-y-4">
       {content.sections?.map((section, i) => (
         <div key={i}>
-          <h6 className="text-sm font-medium text-white/80 mb-2">{section.title}</h6>
+          <h6 className="text-sm font-medium text-black/80 dark:text-white/80 mb-2">{section.title}</h6>
           <ul className="space-y-1">
             {section.points?.map((point, j) => (
-              <li key={j} className="text-sm text-gray-400 flex items-start gap-2">
+              <li key={j} className="text-sm text-neutral-600 dark:text-gray-400 flex items-start gap-2">
                 <span className="text-gray-600 mt-1">•</span>
                 {point}
               </li>
@@ -238,21 +238,21 @@ function PresentationView({ content }: { content: { slides: Array<{ title: strin
   return (
     <div className="space-y-4">
       {content.slides?.map((slide, i) => (
-        <div key={i} className="bg-gray-900/50 rounded-lg p-4">
+        <div key={i} className="bg-neutral-50 dark:bg-gray-900/50 rounded-lg p-4">
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-xs text-gray-500 font-mono">Slide {i + 1}</span>
-            <h6 className="text-sm font-medium text-white">{slide.title}</h6>
+            <span className="text-xs text-neutral-600 dark:text-gray-500 font-mono">Slide {i + 1}</span>
+            <h6 className="text-sm font-medium text-black dark:text-white">{slide.title}</h6>
           </div>
           <ul className="space-y-1">
             {slide.bullets?.map((bullet, j) => (
-              <li key={j} className="text-sm text-gray-400 flex items-start gap-2">
+              <li key={j} className="text-sm text-neutral-600 dark:text-gray-400 flex items-start gap-2">
                 <span className="text-gray-600">→</span>
                 {bullet}
               </li>
             ))}
           </ul>
           {slide.notes && (
-            <p className="text-xs text-gray-500 mt-3 italic">{slide.notes}</p>
+            <p className="text-xs text-neutral-600 dark:text-gray-500 mt-3 italic">{slide.notes}</p>
           )}
         </div>
       ))}
@@ -268,9 +268,9 @@ function AnalysisView({ content }: { content: { metrics: Array<{ label: string; 
       {content.metrics && (
         <div className="grid grid-cols-3 gap-3">
           {content.metrics.map((metric, i) => (
-            <div key={i} className="bg-gray-900/50 rounded-lg p-3">
-              <p className="text-xs text-gray-500">{metric.label}</p>
-              <p className="text-lg font-semibold text-white">{metric.value}</p>
+            <div key={i} className="bg-neutral-50 dark:bg-gray-900/50 rounded-lg p-3">
+              <p className="text-xs text-neutral-600 dark:text-gray-500">{metric.label}</p>
+              <p className="text-lg font-semibold text-black dark:text-white">{metric.value}</p>
               {metric.change && (
                 <p className={`text-xs ${metric.change.startsWith('+') ? 'text-green-400' : 'text-red-400'}`}>
                   {metric.change}
@@ -284,10 +284,10 @@ function AnalysisView({ content }: { content: { metrics: Array<{ label: string; 
       {/* Insights */}
       {content.insights && (
         <div>
-          <h6 className="text-sm font-medium text-white/80 mb-2">Key Insights</h6>
+          <h6 className="text-sm font-medium text-black/80 dark:text-white/80 mb-2">Key Insights</h6>
           <ul className="space-y-1">
             {content.insights.map((insight, i) => (
-              <li key={i} className="text-sm text-gray-400 flex items-start gap-2">
+              <li key={i} className="text-sm text-neutral-600 dark:text-gray-400 flex items-start gap-2">
                 <span className="text-amber-400">💡</span>
                 {insight}
               </li>

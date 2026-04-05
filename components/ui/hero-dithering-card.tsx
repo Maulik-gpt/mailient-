@@ -53,7 +53,7 @@ export function CTASection() {
                 </h2>
 
                 {/* Description */}
-                <p className="text-zinc-400 text-lg md:text-xl max-w-2xl mb-12 leading-relaxed">
+                <p className="text-neutral-600 dark:text-zinc-400 text-lg md:text-xl max-w-2xl mb-12 leading-relaxed">
                     Stop triaging. Mailient identifies revenue opportunities, surfaces urgent threads, and drafts replies in your voice—automatically.
                 </p>
 

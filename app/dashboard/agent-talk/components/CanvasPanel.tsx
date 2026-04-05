@@ -141,20 +141,20 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
 
     return (
         <div
-            className="h-full flex flex-col overflow-hidden relative flex-shrink-0 bg-[#161616] border-l border-white/[0.05] z-50 group/canvas selection:bg-blue-500/30"
+            className="h-full flex flex-col overflow-hidden relative flex-shrink-0 bg-neutral-100 dark:bg-[#161616] border-l border-white/[0.05] z-50 group/canvas selection:bg-blue-500/30"
             style={{ width: `${width}px` }}
         >
             {/* Resize Handle */}
             <div 
                 onMouseDown={startResizing}
-                className="absolute left-0 top-0 bottom-0 w-1.5 cursor-ew-resize hover:bg-white/10 transition-colors z-[100]"
+                className="absolute left-0 top-0 bottom-0 w-1.5 cursor-ew-resize hover:bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 transition-colors z-[100]"
             />
 
             {/* Premium Header - Reusing Chat Interface Design Language */}
             <div className="shrink-0 pt-6 px-6 pb-2">
                 <div className="flex items-center justify-between">
                     <div className="flex flex-col">
-                        <h2 className="text-[15px] font-bold text-white/95 tracking-tight flex items-center gap-2">
+                        <h2 className="text-[15px] font-bold text-black/95 dark:text-white/95 tracking-tight flex items-center gap-2">
                            Arcus's Computer
                         </h2>
                     </div>
@@ -170,7 +170,7 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                         )}
                         <button 
                             onClick={onClose}
-                            className="p-2 hover:bg-white/5 rounded-lg transition-all text-white/40 hover:text-white"
+                            className="p-2 hover:bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 rounded-lg transition-all text-black/40 dark:text-white/40 hover:text-black dark:text-white"
                         >
                             <X className="w-4 h-4" />
                         </button>
@@ -180,7 +180,7 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
 
             {/* Inner Content Window (The "Arcus Computer" bit) */}
             <div className="flex-1 px-4 py-4 overflow-hidden flex flex-col">
-                <div className="flex-1 bg-black border border-white/5 rounded-2xl flex flex-col overflow-hidden shadow-2xl relative">
+                <div className="flex-1 bg-white dark:bg-black border border-neutral-200 dark:border-white/5 rounded-2xl flex flex-col overflow-hidden shadow-2xl relative">
                     {/* Content Scroll Area */}
                     <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar p-6">
                         <AnimatePresence mode="wait">
@@ -200,16 +200,16 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                                                 ) : (
                                                     <div className={cn(
                                                         "w-5 h-5 rounded-full border flex items-center justify-center",
-                                                        step.status === 'active' ? "border-white/40 animate-pulse" : "border-white/10"
+                                                        step.status === 'active' ? "border-white/40 animate-pulse" : "border-neutral-200 dark:border-white/10"
                                                     )}>
-                                                        <div className="w-1.5 h-1.5 rounded-full bg-white/40" />
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-black/[0.020] dark:bg-white/40" />
                                                     </div>
                                                 )}
                                             </div>
                                             <div className="flex flex-col min-w-0">
-                                                <span className="text-[14px] font-bold text-white/90 truncate">{step.title}</span>
+                                                <span className="text-[14px] font-bold text-black/90 dark:text-white/90 truncate">{step.title}</span>
                                                 {step.description && step.status === 'active' && (
-                                                    <span className="text-[11px] text-white/30 mt-1 leading-relaxed">{step.description}</span>
+                                                    <span className="text-[11px] text-black/30 dark:text-white/30 mt-1 leading-relaxed">{step.description}</span>
                                                 )}
                                             </div>
                                         </div>
@@ -220,23 +220,23 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                                     <div className="shrink-0 flex items-center justify-between mb-8">
                                         <div className="flex items-center gap-2">
                                             <Presentation className="w-4 h-4 text-blue-400" />
-                                            <span className="text-[11px] font-bold uppercase tracking-widest text-white/40">Email Summary Deck</span>
+                                            <span className="text-[11px] font-bold uppercase tracking-widest text-black/40 dark:text-white/40">Email Summary Deck</span>
                                         </div>
                                         <div className="flex items-center gap-2">
                                           <button 
                                             disabled={deckIndex === 0}
                                             onClick={() => setDeckIndex(p => Math.max(0, p - 1))}
-                                            className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 disabled:opacity-20 transition-all"
+                                            className="w-8 h-8 rounded-lg bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 flex items-center justify-center hover:bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 disabled:opacity-20 transition-all"
                                           >
-                                            <ChevronLeft className="w-4 h-4 text-white" />
+                                            <ChevronLeft className="w-4 h-4 text-black dark:text-white" />
                                           </button>
-                                          <span className="text-[12px] font-mono text-white/60">{deckIndex + 1} / {canvasData.content?.items?.length || 1}</span>
+                                          <span className="text-[12px] font-mono text-black/60 dark:text-white/60">{deckIndex + 1} / {canvasData.content?.items?.length || 1}</span>
                                           <button 
                                             disabled={deckIndex >= (canvasData.content?.items?.length || 1) - 1}
                                             onClick={() => setDeckIndex(p => Math.min((canvasData.content?.items?.length || 1) - 1, p + 1))}
-                                            className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 disabled:opacity-20 transition-all"
+                                            className="w-8 h-8 rounded-lg bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 flex items-center justify-center hover:bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 disabled:opacity-20 transition-all"
                                           >
-                                            <ChevronRight className="w-4 h-4 text-white" />
+                                            <ChevronRight className="w-4 h-4 text-black dark:text-white" />
                                           </button>
                                         </div>
                                     </div>
@@ -252,15 +252,15 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                                           <div className="w-16 h-16 rounded-3xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-6">
                                             <Sparkles className="w-8 h-8 text-blue-400" />
                                           </div>
-                                          <h3 className="text-[20px] font-bold text-white mb-2 leading-tight">
+                                          <h3 className="text-[20px] font-bold text-black dark:text-white mb-2 leading-tight">
                                             {canvasData.content?.items?.[deckIndex]?.subject || 'Email Summary'}
                                           </h3>
-                                          <p className="text-[14px] text-white/50 leading-relaxed font-mono">
+                                          <p className="text-[14px] text-black/5 dark:text-black/50 dark:text-white/50 leading-relaxed font-mono">
                                             {canvasData.content?.items?.[deckIndex]?.summary || 'No summary available for this item.'}
                                           </p>
                                           {canvasData.content?.items?.[deckIndex]?.sender && (
                                             <div className="mt-8 flex items-center gap-3">
-                                              <div className="px-4 py-2 bg-white/5 rounded-full border border-white/5 text-[11px] text-white/40 font-mono">
+                                              <div className="px-4 py-2 bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 rounded-full border border-neutral-200 dark:border-white/5 text-[11px] text-black/40 dark:text-white/40 font-mono">
                                                 From: {canvasData.content.items[deckIndex].sender}
                                               </div>
                                               {canvasData.content?.items?.[deckIndex]?.priority && (
@@ -289,12 +289,12 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                                   {/* Dynamic Stats Row */}
                                   <div className="grid grid-cols-2 gap-4">
                                     {(canvasData.content?.stats || []).map((stat: any, i: number) => (
-                                      <div key={i} className="p-5 bg-white/[0.03] border border-white/5 rounded-2xl">
-                                        <div className="flex items-center gap-2 mb-2 text-white/30">
+                                      <div key={i} className="p-5 bg-white/[0.03] border border-neutral-200 dark:border-white/5 rounded-2xl">
+                                        <div className="flex items-center gap-2 mb-2 text-black/30 dark:text-white/30">
                                           {stat.changeDirection === 'up' ? <TrendingUp className="w-3.5 h-3.5" /> : <Users className="w-3.5 h-3.5" />}
                                           <span className="text-[10px] font-bold uppercase tracking-widest">{stat.label}</span>
                                         </div>
-                                        <div className="text-[24px] font-bold text-white">{stat.value}</div>
+                                        <div className="text-[24px] font-bold text-black dark:text-white">{stat.value}</div>
                                         {stat.change && (
                                           <div className={cn("text-[10px] mt-1 font-mono", stat.changeDirection === 'up' ? 'text-emerald-400' : stat.changeDirection === 'down' ? 'text-red-400' : 'text-blue-400')}>
                                             {stat.change}
@@ -306,9 +306,9 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
 
                                   {/* Dynamic Area Chart */}
                                   {canvasData.content?.areaChart && (
-                                    <div className="p-6 bg-black border border-white/5 rounded-2xl h-[280px]">
+                                    <div className="p-6 bg-white dark:bg-black border border-neutral-200 dark:border-white/5 rounded-2xl h-[280px]">
                                       <div className="flex items-center justify-between mb-6">
-                                        <div className="text-[12px] font-bold text-white flex items-center gap-2">
+                                        <div className="text-[12px] font-bold text-black dark:text-white flex items-center gap-2">
                                           <LineChart className="w-4 h-4 text-emerald-400" />
                                           {canvasData.content.areaChart.label || 'Trend Overview'}
                                         </div>
@@ -338,8 +338,8 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
 
                                   {/* Dynamic Pie Chart */}
                                   {canvasData.content?.pieChart && (
-                                    <div className="p-6 bg-white/[0.02] rounded-2xl border border-white/5">
-                                      <div className="text-[12px] font-bold text-white mb-4 flex items-center gap-2">
+                                    <div className="p-6 bg-white/[0.02] rounded-2xl border border-neutral-200 dark:border-white/5">
+                                      <div className="text-[12px] font-bold text-black dark:text-white mb-4 flex items-center gap-2">
                                         <PieChart className="w-4 h-4 text-blue-400" />
                                         {canvasData.content.pieChart.label || 'Distribution'}
                                       </div>
@@ -372,9 +372,9 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                                               <div key={i} className="flex items-center justify-between">
                                                 <div className="flex items-center gap-2">
                                                   <div className={cn("w-2 h-2 rounded-full", colors[i % colors.length])} />
-                                                  <span className="text-[11px] text-white/70">{seg.name}</span>
+                                                  <span className="text-[11px] text-black/70 dark:text-white/70">{seg.name}</span>
                                                 </div>
-                                                <span className="text-[11px] font-mono text-white/40">{pct}%</span>
+                                                <span className="text-[11px] font-mono text-black/40 dark:text-white/40">{pct}%</span>
                                               </div>
                                             );
                                           })}
@@ -387,15 +387,15 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                                 <motion.div key="content" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-full flex flex-col font-mono">
                                     {canvasData.type === 'email_draft' || canvasData.type === 'reply' ? (
                                         <div className="space-y-4 text-[13px] leading-relaxed">
-                                            <div className="flex gap-4 border-b border-white/5 pb-2">
-                                                <span className="text-white/20 uppercase tracking-tighter">To</span>
-                                                <span className="text-white/60">{canvasData.content.to}</span>
+                                            <div className="flex gap-4 border-b border-neutral-200 dark:border-white/5 pb-2">
+                                                <span className="text-black/20 dark:text-white/20 uppercase tracking-tighter">To</span>
+                                                <span className="text-black/60 dark:text-white/60">{canvasData.content.to}</span>
                                             </div>
-                                            <div className="flex gap-4 border-b border-white/5 pb-2">
-                                                <span className="text-white/20 uppercase tracking-tighter">Sub</span>
-                                                <span className="text-white/90">{canvasData.content.subject}</span>
+                                            <div className="flex gap-4 border-b border-neutral-200 dark:border-white/5 pb-2">
+                                                <span className="text-black/20 dark:text-white/20 uppercase tracking-tighter">Sub</span>
+                                                <span className="text-black/90 dark:text-white/90">{canvasData.content.subject}</span>
                                             </div>
-                                            <div className="pt-4 text-white/80 whitespace-pre-wrap">
+                                            <div className="pt-4 text-black/80 dark:text-white/80 whitespace-pre-wrap">
                                                 {editMode ? (
                                                     <textarea
                                                         value={editedBody}
@@ -437,11 +437,11 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                                         />
                                     ) : (
                                         <div className="h-full flex flex-col items-center justify-center opacity-30 px-12 text-center">
-                                            <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-4">
-                                                <Sparkles className="w-6 h-6 text-white/40" />
+                                            <div className="w-12 h-12 rounded-2xl bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 border border-neutral-200 dark:border-white/10 flex items-center justify-center mb-4">
+                                                <Sparkles className="w-6 h-6 text-black/40 dark:text-white/40" />
                                             </div>
-                                            <p className="text-[13px] font-bold text-white tracking-tight">Mission Active</p>
-                                            <p className="text-[11px] text-white/40 mt-1 leading-relaxed">Arcus is analyzing the objective and preparing context for the workspace...</p>
+                                            <p className="text-[13px] font-bold text-black dark:text-white tracking-tight">Mission Active</p>
+                                            <p className="text-[11px] text-black/40 dark:text-white/40 mt-1 leading-relaxed">Arcus is analyzing the objective and preparing context for the workspace...</p>
                                         </div>
                                     )}
                                 </motion.div>
@@ -454,7 +454,7 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
             </div>
 
             {/* Bottom Status Bar */}
-            <div className="shrink-0 h-14 px-6 border-t border-white/5 flex items-center justify-between text-white/30">
+            <div className="shrink-0 h-14 px-6 border-t border-neutral-200 dark:border-white/5 flex items-center justify-between text-black/30 dark:text-white/30">
                 <div className="flex items-center gap-3">
                     <span className="text-[11px] font-medium truncate max-w-[300px]">
                         Automating mission workflows and data synthesis for {canvasData.title || 'the objective'}...
@@ -475,14 +475,14 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                     {!editMode ? (
                         <button 
                             onClick={() => setEditMode(true)}
-                            className="w-10 h-10 bg-[#2a2a2a] border border-white/10 text-white/60 hover:text-white rounded-full flex items-center justify-center transition-all shadow-xl"
+                            className="w-10 h-10 bg-[#2a2a2a] border border-neutral-200 dark:border-white/10 text-black/60 dark:text-white/60 hover:text-black dark:text-white rounded-full flex items-center justify-center transition-all shadow-xl"
                         >
                             <Edit3 className="w-4 h-4" />
                         </button>
                     ) : (
                         <button 
                             onClick={() => setEditMode(false)}
-                            className="h-10 px-6 bg-[#2a2a2a] border border-white/10 text-white font-bold rounded-full flex items-center justify-center text-[12px] shadow-xl"
+                            className="h-10 px-6 bg-[#2a2a2a] border border-neutral-200 dark:border-white/10 text-black dark:text-white font-bold rounded-full flex items-center justify-center text-[12px] shadow-xl"
                         >
                             Done
                         </button>
@@ -539,12 +539,12 @@ interface PlanArtifactViewProps {
 }
 
 const todoStatusConfig: Record<string, { label: string; color: string; bgColor: string; icon: any }> = {
-    pending: { label: 'Pending', color: 'text-white/30', bgColor: 'bg-white/5', icon: Clock },
+    pending: { label: 'Pending', color: 'text-black/30 dark:text-white/30', bgColor: 'bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5', icon: Clock },
     ready: { label: 'Ready', color: 'text-blue-400', bgColor: 'bg-blue-500/10', icon: CheckCircle2 },
     running: { label: 'Running', color: 'text-amber-400', bgColor: 'bg-amber-500/10', icon: Loader2 },
     completed: { label: 'Done', color: 'text-emerald-400', bgColor: 'bg-emerald-500/10', icon: CheckCircle2 },
     failed: { label: 'Failed', color: 'text-red-400', bgColor: 'bg-red-500/10', icon: AlertTriangle },
-    skipped: { label: 'Skipped', color: 'text-neutral-400', bgColor: 'bg-neutral-500/10', icon: CheckCircle2 },
+    skipped: { label: 'Skipped', color: 'text-neutral-600 dark:text-neutral-600 dark:text-neutral-400', bgColor: 'bg-neutral-500/10', icon: CheckCircle2 },
     blocked_approval: { label: 'Blocked', color: 'text-orange-400', bgColor: 'bg-orange-500/10', icon: AlertTriangle }
 };
 
@@ -554,7 +554,7 @@ const planStatusConfig: Record<string, { label: string; color: string; bgColor: 
     executing: { label: 'Executing', color: 'text-blue-400', bgColor: 'bg-blue-500/10' },
     completed: { label: 'Completed', color: 'text-emerald-400', bgColor: 'bg-emerald-500/10' },
     failed: { label: 'Failed', color: 'text-red-400', bgColor: 'bg-red-500/10' },
-    cancelled: { label: 'Cancelled', color: 'text-neutral-400', bgColor: 'bg-neutral-500/10' }
+    cancelled: { label: 'Cancelled', color: 'text-neutral-600 dark:text-neutral-600 dark:text-neutral-400', bgColor: 'bg-neutral-500/10' }
 };
 
 function PlanArtifactView({ content, onExecute, isExecuting: isExecutingProp }: PlanArtifactViewProps) {
@@ -589,8 +589,8 @@ function PlanArtifactView({ content, onExecute, isExecuting: isExecutingProp }: 
                             <ListTodo className="w-6 h-6" />
                         </div>
                         <div>
-                            <h2 className="text-[18px] font-bold text-white/95">{content.title || 'Execution Plan'}</h2>
-                            <p className="text-[13px] text-white/50 mt-0.5">{content.objective}</p>
+                            <h2 className="text-[18px] font-bold text-black/95 dark:text-white/95">{content.title || 'Execution Plan'}</h2>
+                            <p className="text-[13px] text-black/5 dark:text-black/50 dark:text-white/50 mt-0.5">{content.objective}</p>
                         </div>
                     </div>
                     <span className={cn(
@@ -604,11 +604,11 @@ function PlanArtifactView({ content, onExecute, isExecuting: isExecutingProp }: 
                 {/* Progress Bar */}
                 {progress.total > 0 && (
                     <div className="space-y-2">
-                        <div className="flex items-center justify-between text-[11px] text-white/40">
+                        <div className="flex items-center justify-between text-[11px] text-black/40 dark:text-white/40">
                             <span>Progress</span>
                             <span>{progress.completed}/{progress.total} completed</span>
                         </div>
-                        <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                        <div className="h-2 bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 rounded-full overflow-hidden">
                             <motion.div
                                 initial={{ width: 0 }}
                                 animate={{ width: `${progressPercent}%` }}
@@ -650,7 +650,7 @@ function PlanArtifactView({ content, onExecute, isExecuting: isExecutingProp }: 
             )}
 
             {/* Tabs */}
-            <div className="flex items-center gap-1 p-1 bg-white/5 rounded-lg">
+            <div className="flex items-center gap-1 p-1 bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 rounded-lg">
                 {(['overview', 'todos', 'timeline'] as const).map((tab) => (
                     <button
                         key={tab}
@@ -658,8 +658,8 @@ function PlanArtifactView({ content, onExecute, isExecuting: isExecutingProp }: 
                         className={cn(
                             "flex-1 py-2 text-[12px] font-bold rounded-md transition-all",
                             activeTab === tab 
-                                ? "bg-white/10 text-white" 
-                                : "text-white/40 hover:text-white/60"
+                                ? "bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 text-black dark:text-white" 
+                                : "text-black/40 dark:text-white/40 hover:text-black/60 dark:text-white/60"
                         )}
                     >
                         {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -680,14 +680,14 @@ function PlanArtifactView({ content, onExecute, isExecuting: isExecutingProp }: 
                         {/* Assumptions */}
                         {content.assumptions && content.assumptions.length > 0 && (
                             <div className="space-y-3">
-                                <div className="flex items-center gap-2 text-white/40">
+                                <div className="flex items-center gap-2 text-black/40 dark:text-white/40">
                                     <Target className="w-4 h-4" />
                                     <span className="text-[12px] font-bold uppercase tracking-wider">Assumptions</span>
                                 </div>
                                 <ul className="space-y-2">
                                     {content.assumptions.map((assumption, i) => (
-                                        <li key={i} className="flex items-start gap-2 text-[13px] text-white/60">
-                                            <span className="text-white/30 mt-1">•</span>
+                                        <li key={i} className="flex items-start gap-2 text-[13px] text-black/60 dark:text-white/60">
+                                            <span className="text-black/30 dark:text-white/30 mt-1">•</span>
                                             {assumption}
                                         </li>
                                     ))}
@@ -698,13 +698,13 @@ function PlanArtifactView({ content, onExecute, isExecuting: isExecutingProp }: 
                         {/* Questions Answered */}
                         {content.questionsAnswered && content.questionsAnswered.length > 0 && (
                             <div className="space-y-3">
-                                <div className="flex items-center gap-2 text-white/40">
+                                <div className="flex items-center gap-2 text-black/40 dark:text-white/40">
                                     <HelpCircle className="w-4 h-4" />
                                     <span className="text-[12px] font-bold uppercase tracking-wider">Questions Answered</span>
                                 </div>
                                 <ul className="space-y-2">
                                     {content.questionsAnswered.map((q, i) => (
-                                        <li key={i} className="flex items-start gap-2 text-[13px] text-white/60">
+                                        <li key={i} className="flex items-start gap-2 text-[13px] text-black/60 dark:text-white/60">
                                             <span className="text-emerald-400/60 mt-1">✓</span>
                                             {q}
                                         </li>
@@ -716,14 +716,14 @@ function PlanArtifactView({ content, onExecute, isExecuting: isExecutingProp }: 
                         {/* Acceptance Criteria */}
                         {content.acceptanceCriteria && content.acceptanceCriteria.length > 0 && (
                             <div className="space-y-3">
-                                <div className="flex items-center gap-2 text-white/40">
+                                <div className="flex items-center gap-2 text-black/40 dark:text-white/40">
                                     <CheckCircle2 className="w-4 h-4" />
                                     <span className="text-[12px] font-bold uppercase tracking-wider">Acceptance Criteria</span>
                                 </div>
                                 <ul className="space-y-2">
                                     {content.acceptanceCriteria.map((criteria, i) => (
-                                        <li key={i} className="flex items-start gap-2 text-[13px] text-white/60">
-                                            <span className="text-white/30 mt-1">{i + 1}.</span>
+                                        <li key={i} className="flex items-start gap-2 text-[13px] text-black/60 dark:text-white/60">
+                                            <span className="text-black/30 dark:text-white/30 mt-1">{i + 1}.</span>
                                             {criteria}
                                         </li>
                                     ))}
@@ -755,7 +755,7 @@ function PlanArtifactView({ content, onExecute, isExecuting: isExecutingProp }: 
                         exit={{ opacity: 0, y: -10 }}
                         className="space-y-4"
                     >
-                        <div className="relative pl-4 border-l border-white/10 space-y-6">
+                        <div className="relative pl-4 border-l border-neutral-200 dark:border-white/10 space-y-6">
                             {content.approvedAt && (
                                 <TimelineItem 
                                     status="completed"
@@ -806,7 +806,7 @@ function TodoItemCard({ todo, index }: { todo: NonNullable<PlanArtifactViewProps
                 isCompleted ? "bg-emerald-500/5 border-emerald-500/10" :
                 todo.status === 'failed' ? "bg-red-500/5 border-red-500/20" :
                 todo.status === 'blocked_approval' ? "bg-orange-500/5 border-orange-500/20" :
-                "bg-white/[0.02] border-white/5"
+                "bg-white/[0.02] border-neutral-200 dark:border-white/5"
             )}
         >
             <div className={cn("w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mt-0.5", status.bgColor)}>
@@ -814,7 +814,7 @@ function TodoItemCard({ todo, index }: { todo: NonNullable<PlanArtifactViewProps
             </div>
             <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2">
-                    <h4 className={cn("text-[13px] font-semibold leading-tight", isCompleted ? 'text-white/40 line-through' : 'text-white/80')}>
+                    <h4 className={cn("text-[13px] font-semibold leading-tight", isCompleted ? 'text-black/40 dark:text-white/40 line-through' : 'text-black/80 dark:text-white/80')}>
                         {todo.title}
                     </h4>
                     <span className={cn("text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0", status.bgColor, status.color)}>
@@ -822,13 +822,13 @@ function TodoItemCard({ todo, index }: { todo: NonNullable<PlanArtifactViewProps
                     </span>
                 </div>
                 {todo.description && !isCompleted && (
-                    <p className="text-[12px] text-white/40 mt-1">{todo.description}</p>
+                    <p className="text-[12px] text-black/40 dark:text-white/40 mt-1">{todo.description}</p>
                 )}
                 {todo.errorMessage && (
                     <p className="text-[11px] text-red-400/80 mt-1">{todo.errorMessage}</p>
                 )}
                 {todo.attemptCount > 1 && (
-                    <p className="text-[10px] text-white/30 mt-2">Attempt {todo.attemptCount}</p>
+                    <p className="text-[10px] text-black/30 dark:text-white/30 mt-2">Attempt {todo.attemptCount}</p>
                 )}
             </div>
         </motion.div>
@@ -853,21 +853,21 @@ function TimelineItem({
         failed: 'bg-red-500',
         running: 'bg-amber-500',
         ready: 'bg-blue-500',
-        pending: 'bg-white/20'
+        pending: 'bg-black/[0.010] dark:bg-white/20'
     };
 
     return (
         <div className="relative">
-            <div className={cn("absolute -left-[21px] w-3 h-3 rounded-full", statusColors[status] || 'bg-white/20')} />
+            <div className={cn("absolute -left-[21px] w-3 h-3 rounded-full", statusColors[status] || 'bg-black/[0.010] dark:bg-white/20')} />
             <div className="space-y-1">
-                <h4 className="text-[13px] font-semibold text-white/80">{title}</h4>
+                <h4 className="text-[13px] font-semibold text-black/80 dark:text-white/80">{title}</h4>
                 {description && (
-                    <p className={cn("text-[12px]", isError ? 'text-red-400/80' : 'text-white/50')}>
+                    <p className={cn("text-[12px]", isError ? 'text-red-400/80' : 'text-black/5 dark:text-black/50 dark:text-white/50')}>
                         {description}
                     </p>
                 )}
                 {timestamp && (
-                    <p className="text-[11px] text-white/30">
+                    <p className="text-[11px] text-black/30 dark:text-white/30">
                         {new Date(timestamp).toLocaleString()}
                     </p>
                 )}

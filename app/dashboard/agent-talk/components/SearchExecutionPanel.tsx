@@ -97,9 +97,9 @@ export function SearchExecutionPanel({
   const hiddenCount = sources.length - maxVisibleSources;
 
   return (
-    <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 overflow-hidden">
+    <div className="bg-[#1a1a1a] rounded-xl border border-neutral-200 dark:border-gray-800 overflow-hidden">
       {/* Header - Completed Steps */}
-      <div className="px-4 py-3 border-b border-gray-800">
+      <div className="px-4 py-3 border-b border-neutral-200 dark:border-gray-800">
         <div className="flex items-center gap-2 text-sm">
           <motion.div
             initial={false}
@@ -112,12 +112,12 @@ export function SearchExecutionPanel({
               <CheckCircle2 className="w-4 h-4 text-green-400" />
             )}
           </motion.div>
-          <span className="text-gray-400">
+          <span className="text-neutral-600 dark:text-gray-400">
             Completed {completedSteps} step{completedSteps !== 1 ? 's' : ''}
           </span>
           <button 
             onClick={() => setExpanded(!expanded)}
-            className="ml-auto text-gray-500 hover:text-gray-300 transition-colors"
+            className="ml-auto text-neutral-600 dark:text-gray-500 hover:text-neutral-900 dark:text-gray-300 transition-colors"
           >
             {expanded ? (
               <ChevronUp className="w-4 h-4" />
@@ -129,11 +129,11 @@ export function SearchExecutionPanel({
       </div>
 
       {/* Main Query */}
-      <div className="px-4 py-3 border-b border-gray-800">
+      <div className="px-4 py-3 border-b border-neutral-200 dark:border-gray-800">
         <div className="flex items-start gap-3">
           <Globe className="w-4 h-4 text-blue-400 mt-0.5" />
           <div>
-            <p className="text-sm text-gray-300">{mainQuery}</p>
+            <p className="text-sm text-neutral-900 dark:text-gray-300">{mainQuery}</p>
             <div className="mt-2 flex items-center gap-2">
               {isSearching && (
                 <span className="text-xs text-blue-400 animate-pulse">Searching...</span>
@@ -150,7 +150,7 @@ export function SearchExecutionPanel({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="border-b border-gray-800 overflow-hidden"
+            className="border-b border-neutral-200 dark:border-gray-800 overflow-hidden"
           >
             <div className="px-4 py-3 space-y-2">
               {subQueries.map((query, index) => (
@@ -177,8 +177,8 @@ export function SearchExecutionPanel({
           <button
             onClick={() => setExpanded(true)}
             className="w-full py-2 px-3 flex items-center justify-center gap-2 
-                       text-sm text-gray-500 hover:text-gray-300 
-                       hover:bg-gray-800/50 rounded-lg transition-all"
+                       text-sm text-neutral-600 dark:text-gray-500 hover:text-neutral-900 dark:text-gray-300 
+                       hover:bg-neutral-100 dark:bg-gray-800/50 rounded-lg transition-all"
           >
             <span>+{hiddenCount} more</span>
             <ChevronDown className="w-4 h-4" />
@@ -191,12 +191,12 @@ export function SearchExecutionPanel({
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="px-4 py-4 border-t border-gray-800"
+          className="px-4 py-4 border-t border-neutral-200 dark:border-gray-800"
         >
           <div className="flex items-start gap-3">
             <Sparkles className="w-4 h-4 text-purple-400 mt-1" />
             <div className="flex-1">
-              <p className="text-sm text-gray-200 leading-relaxed whitespace-pre-wrap">
+              <p className="text-sm text-neutral-900 dark:text-gray-200 leading-relaxed whitespace-pre-wrap">
                 {answer}
               </p>
             </div>
@@ -229,15 +229,15 @@ function SearchQueryItem({ query, index }: { query: SearchQuery; index: number }
       />
       <div className="flex-1 min-w-0">
         <p className={`text-sm truncate ${
-          query.status === 'completed' ? 'text-gray-400 line-through' :
-          query.status === 'running' ? 'text-gray-300' :
-          'text-gray-500'
+          query.status === 'completed' ? 'text-neutral-600 dark:text-gray-400 line-through' :
+          query.status === 'running' ? 'text-neutral-900 dark:text-gray-300' :
+          'text-neutral-600 dark:text-gray-500'
         }`}>
           {query.query}
         </p>
       </div>
       {query.results !== undefined && (
-        <span className="text-xs text-gray-500">
+        <span className="text-xs text-neutral-600 dark:text-gray-500">
           {query.results} results
         </span>
       )}
@@ -264,8 +264,8 @@ function SourceCard({
       transition={{ delay: index * 0.05 }}
       onClick={onClick}
       className={`flex items-start gap-3 p-3 rounded-lg 
-                  bg-gray-900/50 border border-gray-800/50
-                  ${onClick ? 'cursor-pointer hover:bg-gray-800/50 hover:border-gray-700 transition-all' : ''}`}
+                  bg-neutral-50 dark:bg-gray-900/50 border border-neutral-200 dark:border-gray-800/50
+                  ${onClick ? 'cursor-pointer hover:bg-neutral-100 dark:bg-gray-800/50 hover:border-gray-700 transition-all' : ''}`}
     >
       {/* Icon or Favicon */}
       <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${colorClass}`}>
@@ -286,7 +286,7 @@ function SourceCard({
       {/* Content */}
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
-          <h4 className="text-sm font-medium text-gray-300 line-clamp-1">
+          <h4 className="text-sm font-medium text-neutral-900 dark:text-gray-300 line-clamp-1">
             {source.title}
           </h4>
           {source.url && (
@@ -294,7 +294,7 @@ function SourceCard({
           )}
         </div>
         {source.snippet && (
-          <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+          <p className="text-xs text-neutral-600 dark:text-gray-500 mt-1 line-clamp-2">
             {source.snippet}
           </p>
         )}

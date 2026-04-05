@@ -128,7 +128,7 @@ export function HomeFeedSidebar({
                     {!isCollapsed && (
                         <button 
                             onClick={() => setIsCollapsed(!isCollapsed)}
-                            className="p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors text-neutral-400 hover:text-neutral-900 dark:hover:text-white border border-transparent hover:border-[#EBE9E2] dark:hover:border-white/10"
+                            className="p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white border border-transparent hover:border-[#EBE9E2] dark:hover:border-white/10"
                         >
                             <PanelLeft className={`w-5 h-5 transition-transform duration-500 ${isCollapsed ? 'rotate-180' : ''}`} />
                         </button>
@@ -136,7 +136,7 @@ export function HomeFeedSidebar({
                     {isCollapsed && (
                          <button 
                             onClick={() => setIsCollapsed(!isCollapsed)}
-                            className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white dark:bg-[#0c0c0c] border border-[#EBE9E2] dark:border-white/10 rounded-full flex items-center justify-center text-neutral-400 hover:text-neutral-900 dark:hover:text-white shadow-sm z-50 hover:scale-110 transition-all"
+                            className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white dark:bg-[#0c0c0c] border border-[#EBE9E2] dark:border-white/10 rounded-full flex items-center justify-center text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white shadow-sm z-50 hover:scale-110 transition-all"
                          >
                             <PanelLeft className="w-3.5 h-3.5 rotate-180" />
                          </button>
@@ -161,10 +161,10 @@ export function HomeFeedSidebar({
                                             className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3 px-3'} py-2.5 rounded-xl transition-all duration-300 group relative ${
                                                 isActive 
                                                 ? 'bg-white dark:bg-white/[0.05] text-[#1A1A1A] dark:text-white font-semibold shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] border border-[#EBE9E2] dark:border-white/10' 
-                                                : 'text-[#666666] dark:text-neutral-500 hover:text-[#1A1A1A] dark:hover:text-neutral-300'
+                                                : 'text-[#666666] dark:text-neutral-600 dark:text-neutral-500 hover:text-[#1A1A1A] dark:hover:text-neutral-900 dark:text-neutral-300'
                                             }`}
                                         >
-                                            <Icon size={20} className={`transition-colors duration-300 ${isActive ? 'text-amber-500' : 'text-[#666666] dark:text-neutral-500 group-hover:text-[#1A1A1A] dark:group-hover:text-neutral-300'}`} strokeWidth={ isActive ? 2 : 1.5} />
+                                            <Icon size={20} className={`transition-colors duration-300 ${isActive ? 'text-amber-500' : 'text-[#666666] dark:text-neutral-600 dark:text-neutral-500 group-hover:text-[#1A1A1A] dark:group-hover:text-neutral-900 dark:text-neutral-300'}`} strokeWidth={ isActive ? 2 : 1.5} />
                                             {!isCollapsed && <span className="text-[14px] tracking-tight">{item.label}</span>}
                                             {isActive && !isCollapsed && (
                                                 <div className="absolute right-2 w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]" />
@@ -201,10 +201,10 @@ export function HomeFeedSidebar({
                                         className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3 px-3'} py-2.5 rounded-xl transition-all duration-300 group ${
                                             isActive 
                                             ? 'bg-white dark:bg-white/[0.05] text-[#1A1A1A] dark:text-white font-semibold shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] border border-[#EBE9E2] dark:border-white/10' 
-                                            : 'text-[#666666] dark:text-neutral-500 hover:text-[#1A1A1A] dark:hover:text-neutral-300'
+                                            : 'text-[#666666] dark:text-neutral-600 dark:text-neutral-500 hover:text-[#1A1A1A] dark:hover:text-neutral-900 dark:text-neutral-300'
                                         }`}
                                     >
-                                        <Icon size={20} className={`transition-colors duration-300 ${isActive ? 'text-[#1A1A1A] dark:text-white' : 'text-[#666666] dark:text-neutral-500 group-hover:text-[#1A1A1A] dark:group-hover:text-neutral-300'}`} strokeWidth={1.5} />
+                                        <Icon size={20} className={`transition-colors duration-300 ${isActive ? 'text-[#1A1A1A] dark:text-white' : 'text-[#666666] dark:text-neutral-600 dark:text-neutral-500 group-hover:text-[#1A1A1A] dark:group-hover:text-neutral-900 dark:text-neutral-300'}`} strokeWidth={1.5} />
                                         {!isCollapsed && <span className="text-[14px] tracking-tight">{item.label}</span>}
                                     </motion.button>
                                 </TooltipTrigger>
@@ -260,7 +260,7 @@ export function HomeFeedSidebar({
                                             }}
                                             className="w-full flex items-center gap-3 px-3 py-2 text-white/60 hover:text-white hover:bg-white/[0.05] rounded-lg transition-all text-sm group"
                                         >
-                                            <MessageCircle size={16} className="text-neutral-500 group-hover:text-white transition-colors" />
+                                            <MessageCircle size={16} className="text-neutral-600 dark:text-neutral-500 group-hover:text-white transition-colors" />
                                             <span>Feedback</span>
                                         </button>
                                         <div className="h-px w-full bg-white/[0.05] my-1" />

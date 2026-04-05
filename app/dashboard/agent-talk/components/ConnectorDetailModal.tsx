@@ -136,13 +136,13 @@ export function ConnectorDetailModal({
             className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 
                        w-full max-w-md mx-auto z-50"
           >
-            <div className="bg-[#1f1f1f] rounded-3xl shadow-2xl border border-gray-800/50 
+            <div className="bg-[#1f1f1f] rounded-3xl shadow-2xl border border-neutral-200 dark:border-gray-800/50 
                           overflow-hidden mx-4">
               {/* Close button */}
               <button
                 onClick={onClose}
-                className="absolute top-4 right-4 p-2 text-gray-400 hover:text-white 
-                         hover:bg-gray-800/50 rounded-full transition-all z-10"
+                className="absolute top-4 right-4 p-2 text-neutral-600 dark:text-gray-400 hover:text-black dark:text-white 
+                         hover:bg-neutral-100 dark:bg-gray-800/50 rounded-full transition-all z-10"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -165,12 +165,12 @@ export function ConnectorDetailModal({
                 </div>
 
                 {/* Connector Name */}
-                <h2 className="text-2xl font-semibold text-white mb-3">
+                <h2 className="text-2xl font-semibold text-black dark:text-white mb-3">
                   {connector.name}
                 </h2>
 
                 {/* Description */}
-                <p className="text-gray-400 text-base leading-relaxed mb-8 max-w-xs">
+                <p className="text-neutral-600 dark:text-gray-400 text-base leading-relaxed mb-8 max-w-xs">
                   {connector.description}
                 </p>
 
@@ -217,7 +217,7 @@ export function ConnectorDetailModal({
                       <button
                         onClick={onManage}
                         className="inline-flex items-center justify-center gap-2 
-                                 bg-gray-800 text-white px-5 py-2.5 rounded-xl 
+                                 bg-neutral-100 dark:bg-gray-800 text-black dark:text-white px-5 py-2.5 rounded-xl 
                                  font-medium text-sm border border-gray-700
                                  hover:bg-gray-700 active:bg-gray-600
                                  transition-all"
@@ -242,8 +242,8 @@ export function ConnectorDetailModal({
                 {/* Show Details Dropdown */}
                 <button
                   onClick={() => setShowDetails(!showDetails)}
-                  className="mt-6 flex items-center gap-1 text-gray-500 
-                           hover:text-gray-300 transition-colors text-sm"
+                  className="mt-6 flex items-center gap-1 text-neutral-600 dark:text-gray-500 
+                           hover:text-neutral-900 dark:text-gray-300 transition-colors text-sm"
                 >
                   <span>Show Details</span>
                   {showDetails ? (
@@ -263,18 +263,18 @@ export function ConnectorDetailModal({
                       className="w-full overflow-hidden"
                     >
                       <div className="pt-6 pb-2 text-left">
-                        <p className="text-gray-300 text-sm leading-relaxed mb-4">
+                        <p className="text-neutral-900 dark:text-gray-300 text-sm leading-relaxed mb-4">
                           {connector.longDescription || `${connector.name} lets you connect your workspace to Mailent, enabling AI-powered workflows, automated content creation, and seamless data synchronization.`}
                         </p>
 
-                        <h4 className="text-white font-medium text-sm mb-3">
+                        <h4 className="text-black dark:text-white font-medium text-sm mb-3">
                           Capabilities:
                         </h4>
                         <ul className="space-y-2">
                           {getFeatures().map((feature, index) => (
                             <li 
                               key={index}
-                              className="flex items-start gap-2 text-gray-400 text-sm"
+                              className="flex items-start gap-2 text-neutral-600 dark:text-gray-400 text-sm"
                             >
                               <span className="text-green-500 mt-0.5">✓</span>
                               <span>{feature}</span>

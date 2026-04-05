@@ -88,7 +88,7 @@ export function CancellationFlow({
         <div className="px-8 pt-8 pb-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-              currentStep === 2 ? 'bg-red-500/20 text-red-500' : 'bg-black/5 dark:bg-white/5 text-neutral-500 dark:text-neutral-400'
+              currentStep === 2 ? 'bg-red-500/20 text-red-500' : 'bg-black/5 dark:bg-white/5 text-neutral-500 dark:text-neutral-600 dark:text-neutral-400'
             }`}>
               {currentStep + 1}
             </div>
@@ -96,7 +96,7 @@ export function CancellationFlow({
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-black/5 dark:bg-white/5 text-neutral-500 transition-colors"
+            className="p-2 rounded-full hover:bg-black/5 dark:bg-white/5 text-neutral-600 dark:text-neutral-500 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -124,7 +124,7 @@ export function CancellationFlow({
                       className={`flex flex-col items-center justify-center p-4 rounded-2xl border transition-all duration-300 gap-2 ${
                         selectedReasons.includes(reason.id)
                           ? "bg-black/10 dark:bg-white/10 border-white/20 text-black dark:text-white shadow-lg scale-[1.02]"
-                          : "bg-black/5 dark:bg-white/5 border-transparent text-neutral-500 hover:bg-black/[0.08] dark:bg-white/[0.08]"
+                          : "bg-black/5 dark:bg-white/5 border-transparent text-neutral-600 dark:text-neutral-500 hover:bg-black/[0.08] dark:bg-white/[0.08]"
                       }`}
                     >
                       <span className="text-2xl">{reason.icon}</span>
@@ -158,7 +158,7 @@ export function CancellationFlow({
                   </p>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-neutral-300">
+                  <label className="text-sm font-medium text-neutral-900 dark:text-neutral-300">
                     Tell us more (Optional)
                   </label>
                   <textarea
@@ -172,7 +172,7 @@ export function CancellationFlow({
                   <Button
                     variant="ghost"
                     onClick={handleBack}
-                    className="flex-1 text-neutral-500 hover:text-black dark:text-white hover:bg-black/5 dark:bg-white/5 h-12 rounded-2xl"
+                    className="flex-1 text-neutral-600 hover:text-black dark:text-white hover:bg-black/5 dark:bg-white/5 h-12 rounded-2xl"
                   >
                     <ChevronLeft className="w-4 h-4 mr-2" />
                     Back
@@ -230,7 +230,7 @@ export function CancellationFlow({
                   <Button
                     variant="ghost"
                     onClick={onClose}
-                    className="w-full text-neutral-500 hover:text-black dark:text-white h-10"
+                    className="w-full text-neutral-600 hover:text-black dark:text-white h-10"
                   >
                     I changed my mind
                   </Button>

@@ -304,12 +304,12 @@ export function EmailThreadView({ threadId, emailId, onClose, onAction }: Thread
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center space-x-2">
                       <span className="font-medium text-gray-900">{message.fromName}</span>
-                      <span className="text-sm text-gray-500">{`<${message.from}>`}</span>
+                      <span className="text-sm text-neutral-600 dark:text-gray-500">{`<${message.from}>`}</span>
                       {message.isImportant && (
                         <Star className="w-4 h-4 text-yellow-500 fill-current" />
                       )}
                     </div>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-neutral-600 dark:text-gray-500">
                       {formatDate(message.date)}
                     </span>
                   </div>
@@ -489,7 +489,7 @@ export function EmailThreadView({ threadId, emailId, onClose, onAction }: Thread
                 </Avatar>
                 <div className="flex-1 text-left">
                   <div className="text-sm font-medium text-gray-900">{member.name}</div>
-                  <div className="text-xs text-gray-500 capitalize">{member.status}</div>
+                  <div className="text-xs text-neutral-600 dark:text-gray-500 capitalize">{member.status}</div>
                 </div>
               </button>
             ))}

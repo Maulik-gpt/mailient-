@@ -214,7 +214,7 @@ export function EmailSelectionModal({ isOpen, onClose, onSelectEmails }: EmailSe
                     disabled={loadingMore || loading}
                     className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
                       loadingMore || loading
-                        ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                        ? 'bg-gray-600 text-neutral-600 dark:text-gray-400 cursor-not-allowed'
                         : 'bg-blue-500 text-white hover:bg-blue-600'
                     }`}
                   >
@@ -244,7 +244,7 @@ export function EmailSelectionModal({ isOpen, onClose, onSelectEmails }: EmailSe
             className={`px-8 py-3 rounded-lg font-medium transition-all duration-200 ${
               selectedEmails.length > 0
                 ? 'bg-white text-black hover:bg-gray-100'
-                : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                : 'bg-gray-600 text-neutral-600 dark:text-gray-400 cursor-not-allowed'
             }`}
           >
             Select Emails ({selectedEmails.length})

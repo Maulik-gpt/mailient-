@@ -222,7 +222,7 @@ export const Post: React.FC<PostProps> = ({
           </Avatar>
           <div className="min-w-0 flex-1">
             <p className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base truncate">{user.displayName}</p>
-            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">@{user.username} · {timestamp}</p>
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-neutral-600 dark:text-gray-400 truncate">@{user.username} · {timestamp}</p>
           </div>
         </div>
         <Button variant="ghost" size="sm" onClick={onMore} aria-label="More options">
@@ -266,7 +266,7 @@ export const Post: React.FC<PostProps> = ({
             size="sm"
             onClick={handleLike}
             className={`flex items-center space-x-1 text-xs sm:text-sm transition-colors ${
-              selectedReaction ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'
+              selectedReaction ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-neutral-600 dark:text-gray-400'
             }`}
             aria-label="React to post"
           >
@@ -280,7 +280,7 @@ export const Post: React.FC<PostProps> = ({
             variant="ghost"
             size="sm"
             onClick={handleComment}
-            className="flex items-center space-x-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400 hover:text-blue-500 transition-colors"
+            className="flex items-center space-x-1 text-xs sm:text-sm text-gray-500 dark:text-neutral-600 dark:text-gray-400 hover:text-blue-500 transition-colors"
             aria-label="Comment on post"
           >
             <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -289,7 +289,7 @@ export const Post: React.FC<PostProps> = ({
             variant="ghost"
             size="sm"
             onClick={handleShare}
-            className="flex items-center space-x-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400 hover:text-green-500 transition-colors"
+            className="flex items-center space-x-1 text-xs sm:text-sm text-gray-500 dark:text-neutral-600 dark:text-gray-400 hover:text-green-500 transition-colors"
             aria-label="Share post"
           >
             <Share className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -299,7 +299,7 @@ export const Post: React.FC<PostProps> = ({
           variant="ghost"
           size="sm"
           onClick={handleBookmark}
-          className={`flex items-center space-x-1 text-xs sm:text-sm ${localIsBookmarked ? 'text-blue-500' : 'text-gray-500 dark:text-gray-400'} transition-colors`}
+          className={`flex items-center space-x-1 text-xs sm:text-sm ${localIsBookmarked ? 'text-blue-500' : 'text-gray-500 dark:text-neutral-600 dark:text-gray-400'} transition-colors`}
           aria-label={`${localIsBookmarked ? 'Remove bookmark' : 'Bookmark'} post`}
         >
           <Bookmark className={`w-3 h-3 sm:w-4 sm:h-4 ${localIsBookmarked ? 'fill-current' : ''}`} />

@@ -89,7 +89,7 @@ export function ConnectorConnectModal({
               onClick={onClose}
               className="p-2 rounded-lg hover:bg-white/[0.06] transition-colors"
             >
-              <X className="w-5 h-5 text-white/40" />
+              <X className="w-5 h-5 text-black/40 dark:text-white/40" />
             </button>
           </div>
 
@@ -106,7 +106,7 @@ export function ConnectorConnectModal({
                 "shadow-lg shadow-black/20"
               )}
             >
-              <Icon className="w-10 h-10 text-white" />
+              <Icon className="w-10 h-10 text-black dark:text-white" />
             </motion.div>
 
             {/* Provider Name */}
@@ -114,7 +114,7 @@ export function ConnectorConnectModal({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15 }}
-              className="text-[24px] font-semibold text-white/95 mb-3"
+              className="text-[24px] font-semibold text-black/95 dark:text-white/95 mb-3"
             >
               {provider.name}
             </motion.h2>
@@ -124,7 +124,7 @@ export function ConnectorConnectModal({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="text-[15px] text-white/50 leading-relaxed mb-8 max-w-sm mx-auto"
+              className="text-[15px] text-black/5 dark:text-black/50 dark:text-white/50 leading-relaxed mb-8 max-w-sm mx-auto"
             >
               {provider.description}
             </motion.p>
@@ -172,7 +172,7 @@ export function ConnectorConnectModal({
                 "flex items-center justify-center gap-2",
                 isConnected
                   ? "bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400"
-                  : "bg-white hover:bg-white/90 text-black"
+                  : "bg-white hover:bg-black/[0.045] dark:bg-white/90 text-black"
               )}
             >
               {isConnecting ? (
@@ -199,7 +199,7 @@ export function ConnectorConnectModal({
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
               onClick={() => setShowDetails(!showDetails)}
-              className="mt-6 flex items-center justify-center gap-1 text-[14px] text-white/40 hover:text-white/60 transition-colors mx-auto"
+              className="mt-6 flex items-center justify-center gap-1 text-[14px] text-black/40 dark:text-white/40 hover:text-black/60 dark:text-white/60 transition-colors mx-auto"
             >
               <span>Show Details</span>
               {showDetails ? (
@@ -219,20 +219,20 @@ export function ConnectorConnectModal({
                   className="overflow-hidden"
                 >
                   <div className="mt-4 pt-4 border-t border-white/[0.06] text-left">
-                    <h4 className="text-[13px] font-medium text-white/70 mb-3">
+                    <h4 className="text-[13px] font-medium text-black/70 dark:text-white/70 mb-3">
                       Required Permissions
                     </h4>
                     <ul className="space-y-2">
                       {provider.scopes.map((scope, index) => (
                         <li key={index} className="flex items-start gap-2">
-                          <Check className="w-4 h-4 text-white/40 mt-0.5 shrink-0" />
-                          <span className="text-[13px] text-white/50">{scope}</span>
+                          <Check className="w-4 h-4 text-black/40 dark:text-white/40 mt-0.5 shrink-0" />
+                          <span className="text-[13px] text-black/5 dark:text-black/50 dark:text-white/50">{scope}</span>
                         </li>
                       ))}
                     </ul>
 
                     <div className="mt-4 p-3 rounded-lg bg-white/[0.03]">
-                      <p className="text-[12px] text-white/40 leading-relaxed">
+                      <p className="text-[12px] text-black/40 dark:text-white/40 leading-relaxed">
                         Your data is secure. We only access the permissions you grant 
                         and never store your passwords. You can revoke access at any time 
                         from your Google Account settings.

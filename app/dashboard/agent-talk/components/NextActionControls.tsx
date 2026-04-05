@@ -65,7 +65,7 @@ export function NextActionControls({ actions, onExecute, disabled }: NextActionC
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <Sparkles className="w-4 h-4 text-yellow-400" />
-        <h4 className="text-sm font-semibold text-white/80">Suggested Next Actions</h4>
+        <h4 className="text-sm font-semibold text-black/80 dark:text-white/80">Suggested Next Actions</h4>
       </div>
 
       {/* High Priority Actions */}
@@ -129,18 +129,18 @@ function HighPriorityCard({
         
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
-            <h5 className="font-medium text-white">{action.label}</h5>
+            <h5 className="font-medium text-black dark:text-white">{action.label}</h5>
             <span className="text-xs text-blue-400 bg-blue-500/20 px-2 py-0.5 rounded-full">
               Recommended
             </span>
           </div>
           
           {action.description && (
-            <p className="text-sm text-gray-400 mt-1">{action.description}</p>
+            <p className="text-sm text-neutral-600 dark:text-gray-400 mt-1">{action.description}</p>
           )}
           
           {action.metadata && (
-            <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
+            <div className="flex items-center gap-3 mt-2 text-xs text-neutral-600 dark:text-gray-500">
               {action.metadata.estimatedTime && (
                 <span>~{action.metadata.estimatedTime}</span>
               )}
@@ -155,7 +155,7 @@ function HighPriorityCard({
           onClick={() => onExecute(action.id)}
           disabled={disabled}
           className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 
-                     disabled:bg-gray-800 disabled:text-gray-600 text-white rounded-lg 
+                     disabled:bg-neutral-100 dark:bg-gray-800 disabled:text-gray-600 text-black dark:text-white rounded-lg 
                      text-sm font-medium transition-colors"
         >
           Execute
@@ -186,21 +186,21 @@ function ActionButton({
       transition={{ delay: index * 0.05 }}
       onClick={() => onExecute(action.id)}
       disabled={disabled}
-      className="flex items-center gap-2 p-3 bg-white/5 hover:bg-white/10 
-                 disabled:bg-gray-800/50 disabled:text-gray-600
-                 border border-white/10 hover:border-white/20
+      className="flex items-center gap-2 p-3 bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 hover:bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 
+                 disabled:bg-neutral-100 dark:bg-gray-800/50 disabled:text-gray-600
+                 border border-neutral-200 dark:border-white/10 hover:border-neutral-300 dark:border-white/20
                  rounded-lg text-left transition-all group"
     >
-      <div className="w-8 h-8 rounded-lg bg-gray-800 flex items-center justify-center">
-        <Icon className="w-4 h-4 text-gray-400" />
+      <div className="w-8 h-8 rounded-lg bg-neutral-100 dark:bg-gray-800 flex items-center justify-center">
+        <Icon className="w-4 h-4 text-neutral-600 dark:text-gray-400" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-white truncate">{action.label}</p>
+        <p className="text-sm font-medium text-black dark:text-white truncate">{action.label}</p>
         {action.description && (
-          <p className="text-xs text-gray-500 truncate">{action.description}</p>
+          <p className="text-xs text-neutral-600 dark:text-gray-500 truncate">{action.description}</p>
         )}
       </div>
-      <ArrowRight className="w-4 h-4 text-gray-600 group-hover:text-white transition-colors" />
+      <ArrowRight className="w-4 h-4 text-gray-600 group-hover:text-black dark:text-white transition-colors" />
     </motion.button>
   );
 }

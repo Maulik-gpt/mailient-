@@ -229,17 +229,17 @@ export function DraftReplyBox({
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-5 border-b border-white/[0.05] bg-white/[0.01]">
                 <div className="flex items-center gap-5">
-                    <div className="w-10 h-10 rounded-2xl bg-white/[0.03] flex items-center justify-center border border-white/10 shadow-inner">
-                        <Mail className="w-5 h-5 text-white/50" />
+                    <div className="w-10 h-10 rounded-2xl bg-white/[0.03] flex items-center justify-center border border-neutral-200 dark:border-white/10 shadow-inner">
+                        <Mail className="w-5 h-5 text-black/5 dark:text-black/50 dark:text-white/50" />
                     </div>
                     <div>
-                        <h3 className="text-white font-bold text-[13px] tracking-wide uppercase mb-1">Email Draft</h3>
+                        <h3 className="text-black dark:text-white font-bold text-[13px] tracking-wide uppercase mb-1">Email Draft</h3>
                         <div className="flex flex-col gap-1">
                             <div className="flex items-center gap-3 text-[11px] tracking-wide">
-                                <span className="text-white/30 uppercase font-bold">To</span>
-                                <span className="text-white/80 font-medium">{draftData.recipientName}</span>
+                                <span className="text-black/30 dark:text-white/30 uppercase font-bold">To</span>
+                                <span className="text-black/80 dark:text-white/80 font-medium">{draftData.recipientName}</span>
                                 {draftData.recipientEmail && (
-                                    <span className="text-white/20 font-medium truncate">[{draftData.recipientEmail}]</span>
+                                    <span className="text-black/20 dark:text-white/20 font-medium truncate">[{draftData.recipientEmail}]</span>
                                 )}
                             </div>
                         </div>
@@ -248,14 +248,14 @@ export function DraftReplyBox({
                 <div className="flex items-center gap-2">
                     <button
                         onClick={() => setIsEditing(!isEditing)}
-                        className={`p-2.5 rounded-xl transition-all duration-300 ${isEditing ? 'bg-white text-black' : 'hover:bg-white/5 text-white/40 hover:text-white'}`}
+                        className={`p-2.5 rounded-xl transition-all duration-300 ${isEditing ? 'bg-white text-black' : 'hover:bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 text-black/40 dark:text-white/40 hover:text-black dark:text-white'}`}
                         title={isEditing ? 'Save changes' : 'Edit message'}
                     >
                         <Edit2 className="w-4 h-4" />
                     </button>
                     <button
                         onClick={onDismiss}
-                        className="p-2.5 hover:bg-white/5 rounded-xl transition-all duration-300 text-white/40 hover:text-white"
+                        className="p-2.5 hover:bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 rounded-xl transition-all duration-300 text-black/40 dark:text-white/40 hover:text-black dark:text-white"
                         title="Cancel"
                     >
                         <X className="w-4 h-4" />
@@ -265,8 +265,8 @@ export function DraftReplyBox({
 
             {/* Protocol Metadata (Subject) */}
             <div className="px-6 py-4 bg-white/[0.005] border-b border-white/[0.03] flex items-center gap-4">
-                <span className="text-[10px] font-bold text-white/20 uppercase tracking-[0.1em] shrink-0">Subject</span>
-                <span className="text-[12px] text-white/60 font-medium truncate tracking-tight">{draftData.subject}</span>
+                <span className="text-[10px] font-bold text-black/20 dark:text-white/20 uppercase tracking-[0.1em] shrink-0">Subject</span>
+                <span className="text-[12px] text-black/60 dark:text-white/60 font-medium truncate tracking-tight">{draftData.subject}</span>
             </div>
 
             <div className="p-7 relative" onMouseUp={handleMouseUp}>
@@ -274,18 +274,18 @@ export function DraftReplyBox({
                     <textarea
                         value={editedContent}
                         onChange={(e) => setEditedContent(e.target.value)}
-                        className="w-full min-h-[180px] bg-white/[0.01] border border-white/[0.08] rounded-2xl p-6 text-white text-[15px] leading-[1.6] resize-none focus:outline-none focus:border-white/20 transition-all duration-500 placeholder:text-white/10 font-sans selection:bg-white selection:text-black"
+                        className="w-full min-h-[180px] bg-white/[0.01] border border-white/[0.08] rounded-2xl p-6 text-black dark:text-white text-[15px] leading-[1.6] resize-none focus:outline-none focus:border-neutral-300 dark:border-white/20 transition-all duration-500 placeholder:text-black/10 dark:text-white/10 font-sans selection:bg-white selection:text-black"
                         placeholder="Type your message here..."
                     />
                 ) : (
-                    <div className="min-h-[120px] text-white/90 text-[15px] whitespace-pre-wrap leading-[1.6] selection:bg-white/20 tracking-tight">
+                    <div className="min-h-[120px] text-black/90 dark:text-white/90 text-[15px] whitespace-pre-wrap leading-[1.6] selection:bg-black/[0.010] dark:bg-white/20 tracking-tight">
                         {proposedRefinement && selection ? (
                             <>
                                 {editedContent.slice(0, selection.start)}
-                                <span className="text-white/20 line-through decoration-red-500/30 decoration-1 bg-red-500/5">
+                                <span className="text-black/20 dark:text-white/20 line-through decoration-red-500/30 decoration-1 bg-red-500/5">
                                     {selection.text}
                                 </span>
-                                <span className="text-white bg-blue-500/30 px-1 rounded-md border-b-2 border-blue-500/50 shadow-[0_0_20px_rgba(59,130,246,0.1)]">
+                                <span className="text-black dark:text-white bg-blue-500/30 px-1 rounded-md border-b-2 border-blue-500/50 shadow-[0_0_20px_rgba(59,130,246,0.1)]">
                                     {proposedRefinement}
                                 </span>
                                 {editedContent.slice(selection.end)}
@@ -316,19 +316,19 @@ export function DraftReplyBox({
                             {!isRefinementActive && !proposedRefinement && (
                                 <button
                                     onClick={() => setIsRefinementActive(true)}
-                                    className="bg-black/80 border border-white/20 rounded-full px-5 py-2.5 flex items-center gap-4 shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_20px_rgba(255,255,255,0.05)] backdrop-blur-2xl hover:bg-black hover:border-white/30 transition-all group active:scale-95"
+                                    className="bg-black/80 border border-neutral-300 dark:border-white/20 rounded-full px-5 py-2.5 flex items-center gap-4 shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_20px_rgba(255,255,255,0.05)] backdrop-blur-2xl hover:bg-white dark:bg-black hover:border-white/30 transition-all group active:scale-95"
                                 >
                                     <Sparkles className="w-3.5 h-3.5 text-blue-400 group-hover:animate-pulse" />
-                                    <span className="text-white font-bold text-xs tracking-tight">Ask for changes</span>
+                                    <span className="text-black dark:text-white font-bold text-xs tracking-tight">Ask for changes</span>
                                     <div className="flex items-center gap-1 opacity-40">
-                                        <div className="px-1.5 py-0.5 rounded border border-white/20 bg-white/5 text-[9px] font-bold">Ctrl</div>
-                                        <div className="px-1.5 py-0.5 rounded border border-white/20 bg-white/5 text-[9px] font-bold">M</div>
+                                        <div className="px-1.5 py-0.5 rounded border border-neutral-300 dark:border-white/20 bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 text-[9px] font-bold">Ctrl</div>
+                                        <div className="px-1.5 py-0.5 rounded border border-neutral-300 dark:border-white/20 bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 text-[9px] font-bold">M</div>
                                     </div>
                                 </button>
                             )}
 
                             {isRefinementActive && (
-                                <div className="bg-black/90 border border-white/10 rounded-[1.5rem] p-1.5 shadow-[0_30px_70px_rgba(0,0,0,0.9),0_0_30px_rgba(255,255,255,0.03)] w-[360px] backdrop-blur-3xl overflow-hidden ring-1 ring-white/10">
+                                <div className="bg-black/90 border border-neutral-200 dark:border-white/10 rounded-[1.5rem] p-1.5 shadow-[0_30px_70px_rgba(0,0,0,0.9),0_0_30px_rgba(255,255,255,0.03)] w-[360px] backdrop-blur-3xl overflow-hidden ring-1 ring-white/10">
                                     <div className="relative group/input">
                                         <input
                                             autoFocus
@@ -339,13 +339,13 @@ export function DraftReplyBox({
                                                 if (e.key === 'Escape') setIsRefinementActive(false);
                                             }}
                                             placeholder="Describe your changes"
-                                            className="w-full bg-white/[0.04] text-white text-[14px] py-3.5 px-5 pr-14 rounded-2xl border border-white/[0.08] focus:outline-none focus:border-white/20 transition-all placeholder:text-white/20 font-medium tracking-tight"
+                                            className="w-full bg-white/[0.04] text-black dark:text-white text-[14px] py-3.5 px-5 pr-14 rounded-2xl border border-white/[0.08] focus:outline-none focus:border-neutral-300 dark:border-white/20 transition-all placeholder:text-black/20 dark:text-white/20 font-medium tracking-tight"
                                         />
                                         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
                                             {refinementInstruction && !isProcessingRefinement && (
                                                 <button 
                                                     onClick={() => setRefinementInstruction('')}
-                                                    className="w-6 h-6 rounded-lg flex items-center justify-center text-white/30 hover:text-white transition-colors"
+                                                    className="w-6 h-6 rounded-lg flex items-center justify-center text-black/30 dark:text-white/30 hover:text-black dark:text-white transition-colors"
                                                 >
                                                     <X className="w-3.5 h-3.5" />
                                                 </button>
@@ -353,10 +353,10 @@ export function DraftReplyBox({
                                             <button 
                                                 onClick={handleRefinementSubmit}
                                                 disabled={isProcessingRefinement || !refinementInstruction.trim()}
-                                                className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white hover:bg-blue-500 transition-all disabled:opacity-30 disabled:grayscale shadow-lg shadow-blue-500/20 active:scale-90"
+                                                className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-black dark:text-white hover:bg-blue-500 transition-all disabled:opacity-30 disabled:grayscale shadow-lg shadow-blue-500/20 active:scale-90"
                                             >
                                                 {isProcessingRefinement ? (
-                                                    <div className="w-4 h-4 border-[2.5px] border-white/20 border-t-white rounded-full animate-spin" />
+                                                    <div className="w-4 h-4 border-[2.5px] border-neutral-300 dark:border-white/20 border-t-white rounded-full animate-spin" />
                                                 ) : (
                                                     <ArrowUp className="w-4 h-4 stroke-[3]" />
                                                 )}
@@ -367,22 +367,22 @@ export function DraftReplyBox({
                             )}
 
                             {proposedRefinement && (
-                                <div className="bg-black/90 border border-white/20 rounded-2xl p-2 flex items-center gap-2 shadow-[0_30px_70px_rgba(0,0,0,0.9)] backdrop-blur-3xl ring-1 ring-white/10">
+                                <div className="bg-black/90 border border-neutral-300 dark:border-white/20 rounded-2xl p-2 flex items-center gap-2 shadow-[0_30px_70px_rgba(0,0,0,0.9)] backdrop-blur-3xl ring-1 ring-white/10">
                                     <button 
                                         onClick={() => setProposedRefinement(null)}
-                                        className="h-10 px-5 rounded-xl text-white/70 hover:text-white hover:bg-white/5 text-[13px] font-bold transition-all flex items-center gap-3 active:scale-95"
+                                        className="h-10 px-5 rounded-xl text-black/70 dark:text-white/70 hover:text-black dark:text-white hover:bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 text-[13px] font-bold transition-all flex items-center gap-3 active:scale-95"
                                     >
                                         Undo
-                                        <div className="px-1.5 py-0.5 rounded border border-white/10 bg-white/5 text-[9px] font-bold opacity-40 uppercase">Esc</div>
+                                        <div className="px-1.5 py-0.5 rounded border border-neutral-200 dark:border-white/10 bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 text-[9px] font-bold opacity-40 uppercase">Esc</div>
                                     </button>
-                                    <div className="w-px h-6 bg-white/10 mx-1" />
+                                    <div className="w-px h-6 bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 mx-1" />
                                     <button 
                                         onClick={handleAcceptRefinement}
-                                        className="h-10 px-5 bg-blue-600 hover:bg-blue-500 rounded-xl text-white text-[13px] font-bold transition-all flex items-center gap-4 shadow-xl shadow-blue-500/25 active:scale-95 active:translate-y-0.5"
+                                        className="h-10 px-5 bg-blue-600 hover:bg-blue-500 rounded-xl text-black dark:text-white text-[13px] font-bold transition-all flex items-center gap-4 shadow-xl shadow-blue-500/25 active:scale-95 active:translate-y-0.5"
                                     >
                                         Accept
                                         <div className="flex items-center gap-1 opacity-70">
-                                            <div className="px-1.5 py-0.5 rounded border border-white/30 bg-white/10 text-[9px] font-bold uppercase tracking-tighter">Ctrl</div>
+                                            <div className="px-1.5 py-0.5 rounded border border-white/30 bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 text-[9px] font-bold uppercase tracking-tighter">Ctrl</div>
                                             <CornerDownLeft className="w-3 h-3" />
                                         </div>
                                     </button>
@@ -402,12 +402,12 @@ export function DraftReplyBox({
                             {sendError}
                         </div>
                     ) : sendSuccess ? (
-                        <div className="flex items-center gap-2 text-white text-[10px] tracking-widest bg-white/5 px-4 py-2 rounded-xl border border-white/10 uppercase">
+                        <div className="flex items-center gap-2 text-black dark:text-white text-[10px] tracking-widest bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 px-4 py-2 rounded-xl border border-neutral-200 dark:border-white/10 uppercase">
                             <Check className="w-3 h-3" />
                             Sent successfully
                         </div>
                     ) : (
-                        <span className="text-white/10 text-[9px] tracking-tight uppercase">
+                        <span className="text-black/10 dark:text-white/10 text-[9px] tracking-tight uppercase">
                             Review and send
                         </span>
                     )}
@@ -417,7 +417,7 @@ export function DraftReplyBox({
                     onClick={handleSend}
                     disabled={isSending || sendSuccess || !draftData.recipientEmail}
                     className={`group relative flex items-center gap-2.5 px-6 py-2 rounded-lg font-bold text-[10px] tracking-widest uppercase transition-all duration-500 transform active:scale-95 ${isSending || sendSuccess
-                        ? 'bg-white/5 text-white/20 cursor-not-allowed border border-white/5'
+                        ? 'bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 text-black/20 dark:text-white/20 cursor-not-allowed border border-neutral-200 dark:border-white/5'
                         : 'bg-white text-black hover:bg-neutral-200'
                         }`}
                 >

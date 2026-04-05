@@ -73,7 +73,7 @@ export function FeedbackDialog({
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent
         className={cn(
-          "max-w-md w-full p-9 gap-6 overflow-hidden border border-neutral-200 dark:border-white/10 bg-white dark:bg-[#0c0c0c] text-neutral-200",
+          "max-w-md w-full p-9 gap-6 overflow-hidden border border-neutral-200 dark:border-white/10 bg-white dark:bg-[#0c0c0c] text-neutral-900 dark:text-neutral-200",
           "shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] rounded-[50px]",
           "!animate-none !duration-0 transition-none"
         )}
@@ -84,7 +84,7 @@ export function FeedbackDialog({
             onChange={(e) => setFeedback(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Share your feedback..."
-            className="w-full min-h-[180px] rounded-[28px] bg-neutral-200/50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-white/5 p-7 text-base resize-none outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 text-neutral-200 placeholder:text-neutral-500 transition-all font-medium"
+            className="w-full min-h-[180px] rounded-[28px] bg-neutral-200/50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-white/5 p-7 text-base resize-none outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 text-neutral-900 placeholder:text-neutral-600 dark:text-neutral-500 transition-all font-medium"
             autoFocus
           />
           
