@@ -66,16 +66,16 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
                 initial={{ scale: 0.95, y: 20, opacity: 0 }}
                 animate={{ scale: 1, y: 0, opacity: 1 }}
                 exit={{ scale: 0.95, y: 20, opacity: 0 }}
-                className="w-full max-w-[480px] bg-[#0E0E0E] rounded-[24px] shadow-[0_32px_128px_-12px_rgba(0,0,0,0.8)] overflow-hidden border border-neutral-200 dark:border-white/10 flex flex-col"
+                className="w-full max-w-[480px] bg-white dark:bg-[#0E0E0E] rounded-[24px] shadow-[0_32px_128px_-12px_rgba(0,0,0,0.8)] overflow-hidden border border-neutral-200 dark:border-white/10 flex flex-col"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Hero Section */}
-                <div className="relative h-56 bg-[#0E0E0E] p-8 flex flex-col justify-end overflow-hidden group">
+                <div className="relative h-56 bg-neutral-50 dark:bg-[#0E0E0E] p-8 flex flex-col justify-end overflow-hidden group">
                     {/* Visual Element (Premium Glassy Cube) */}
-                    <div className="absolute top-0 right-0 w-80 h-full pointer-events-none opacity-80 mix-blend-screen transition-transform duration-700 group-hover:scale-105">
+                    <div className="absolute top-0 right-0 w-80 h-full pointer-events-none opacity-80 transition-transform duration-700 group-hover:scale-105">
                         <img 
                             src="/mailient_cube.png" 
-                            className="w-full h-full object-cover scale-[1.7] translate-x-12 translate-y-2 rotate-[-12deg]"
+                            className="w-full h-full object-cover scale-[1.7] translate-x-12 translate-y-2 rotate-[-12deg] brightness-110 dark:brightness-100"
                             style={{ 
                                 maskImage: 'radial-gradient(circle at 65% 50%, black 10%, transparent 80%), linear-gradient(to right, transparent, black 40%)',
                                 WebkitMaskImage: 'radial-gradient(circle at 65% 50%, black 10%, transparent 80%), linear-gradient(to right, transparent, black 40%)',
@@ -86,8 +86,8 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
                         />
                     </div>
                     
-                    {/* Dark overlay for text clarity */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-[#0E0E0E] via-[#0E0E0E]/80 to-transparent z-[5]" />
+                    {/* Theme-aware overlay for text clarity */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-neutral-50 dark:from-[#0E0E0E] via-neutral-50/80 dark:via-[#0E0E0E]/80 to-transparent z-[5]" />
 
                     <div className="relative z-10 space-y-3">
                         <div className="inline-flex items-center px-3 py-1 rounded-full bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/10 backdrop-blur-md">
@@ -96,12 +96,12 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
                         <h2 className="text-4xl font-bold text-black dark:text-white tracking-tight leading-[1.1]">
                             Expand the<br />Network
                         </h2>
-                        <p className="text-black dark:text-white/40 text-sm font-medium">and earn free AI intelligence</p>
+                        <p className="text-black/60 dark:text-white/40 text-sm font-medium">and earn free AI intelligence</p>
                     </div>
 
                     <button 
                         onClick={onClose}
-                        className="absolute top-6 right-6 p-2 rounded-full bg-black/20 hover:bg-black/10 dark:bg-white/10 border border-neutral-200 dark:border-white/10 transition-all z-20"
+                        className="absolute top-6 right-6 p-2 rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 border border-neutral-200 dark:border-white/10 transition-all z-20"
                     >
                         <X className="w-4 h-4 text-black dark:text-white/60" />
                     </button>
@@ -110,7 +110,7 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
                 {/* Content Section */}
                 <div className="p-8 space-y-8">
                     <div className="space-y-6">
-                        <h4 className="text-[11px] font-bold text-black dark:text-white/30 tracking-[0.2em] uppercase">How it works:</h4>
+                        <h4 className="text-[11px] font-bold text-black/40 dark:text-white/30 tracking-[0.2em] uppercase">How it works:</h4>
                         
                         <div className="space-y-6">
                             {steps.map((step, i) => (
@@ -122,12 +122,12 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
                                     className="flex items-start gap-4"
                                 >
                                     <div className="mt-0.5 p-1 rounded-md bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/10">
-                                        <step.icon className="w-3.5 h-3.5 text-black dark:text-white/70" />
+                                        <step.icon className="w-3.5 h-3.5 text-black/70 dark:text-white/70" />
                                     </div>
-                                    <p className="text-sm text-black dark:text-white/60 leading-tight flex-1">
+                                    <p className="text-sm text-black/70 dark:text-white/60 leading-tight flex-1">
                                         {step.text}
-                                        <span className="text-black dark:text-white font-bold">{step.bold}</span>
-                                        {step.extra && <span className="opacity-80">{step.extra}</span>}
+                                        <span className="text-black dark:text-white font-bold ml-1">{step.bold}</span>
+                                        {step.extra && <span className="opacity-80 ml-1">{step.extra}</span>}
                                     </p>
                                 </motion.div>
                             ))}
@@ -135,27 +135,27 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
                     </div>
 
                     <div className="pt-2 border-t border-neutral-200 dark:border-white/5 flex items-center justify-between">
-                        <p className="text-[13px] font-medium text-black dark:text-white/50">
+                        <p className="text-[13px] font-medium text-black/50 dark:text-white/50">
                             <span className="text-black dark:text-white font-bold">{profile?.invite_count || 0}</span> signed up, <span className="text-black dark:text-white font-bold">{profile?.conversion_count || 0}</span> converted
                         </p>
                         <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/5">
                             <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                            <span className="text-[10px] font-bold text-black dark:text-white/40 uppercase tracking-tighter">Live Status</span>
+                            <span className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-tighter">Live Status</span>
                         </div>
                     </div>
 
                     {/* Copy Box */}
                     <div className="relative group">
-                        <div className="flex h-12 bg-black/5 dark:bg-white/5 rounded-xl border border-neutral-200 dark:border-white/10 focus-within:border-white/20 transition-all p-1">
+                        <div className="flex h-12 bg-black/5 dark:bg-white/5 rounded-xl border border-neutral-200 dark:border-white/10 focus-within:border-black/20 dark:focus-within:border-white/20 transition-all p-1 shadow-inner">
                             <div className="flex-1 flex items-center px-4 gap-3 overflow-hidden">
-                                <Link2 className="w-4 h-4 text-black dark:text-white/30" />
-                                <span className="text-xs text-black dark:text-white/50 truncate font-mono tracking-tight">
+                                <Link2 className="w-4 h-4 text-black/30 dark:text-white/30" />
+                                <span className="text-xs text-black/60 dark:text-white/50 truncate font-mono tracking-tight">
                                     https://{referralUrl}
                                 </span>
                             </div>
                             <button 
                                 onClick={handleCopyLink}
-                                className="px-6 h-full bg-white text-[#0E0E0E] rounded-[10px] text-xs font-bold hover:scale-[0.98] active:scale-95 transition-all shadow-[0_4px_12px_rgba(255,255,255,0.1)]"
+                                className="px-6 h-full bg-black dark:bg-white text-white dark:text-[#0E0E0E] rounded-[10px] text-xs font-bold hover:scale-[0.98] active:scale-95 transition-all shadow-lg"
                             >
                                 {copied ? 'Copied' : 'Copy link'}
                             </button>

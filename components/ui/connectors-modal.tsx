@@ -302,10 +302,10 @@ export function ConnectorsModal({
           </div>
 
           {/* Navigation - Apps Only (Tabs removed) */}
-          <div className="px-8 flex items-center border-b border-white/[0.03]">
-            <button className="pb-4 text-[14px] font-bold text-white relative">
+          <div className="px-8 flex items-center border-b border-neutral-100 dark:border-white/[0.03]">
+            <button className="pb-4 text-[14px] font-bold text-black dark:text-white relative">
               Apps
-              <motion.div layoutId="tab-underline" className="absolute bottom-0 left-0 right-0 h-[3px] bg-white rounded-full" />
+              <motion.div layoutId="tab-underline" className="absolute bottom-0 left-0 right-0 h-[3px] bg-black dark:bg-white rounded-full" />
             </button>
           </div>
 
@@ -322,7 +322,7 @@ export function ConnectorsModal({
                   <button
                     key={app.id}
                     onClick={() => setSelectedApp(app)}
-                    className="flex items-start gap-4 p-4 rounded-[24px] bg-neutral-50 dark:bg-white dark:bg-[#222]/40 border border-white/[0.04] hover:bg-white/[0.04] hover:border-white/[0.08] transition-all text-left group"
+                    className="flex items-start gap-4 p-4 rounded-[24px] bg-neutral-50 dark:bg-[#222]/40 border border-neutral-200 dark:border-white/04 hover:bg-neutral-100 dark:hover:bg-white/[0.04] hover:border-neutral-300 dark:hover:border-white/[0.08] transition-all text-left group shadow-sm"
                   >
                     <div 
                       className={cn(
@@ -370,7 +370,7 @@ export function ConnectorsModal({
                   setShowDetails(false);
                   setManageDropdownOpen(false);
                 }}
-                className="absolute top-6 right-6 p-2 hover:bg-white/5 rounded-full text-white/20 hover:text-white transition-all"
+                className="absolute top-6 right-6 p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-full text-black/40 dark:text-white/20 hover:text-black dark:hover:text-white transition-all shadow-sm"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -401,7 +401,7 @@ export function ConnectorsModal({
 
               <h3 className="text-2xl font-bold text-black dark:text-white mb-4 tracking-tight">{selectedApp.name}</h3>
               
-              <p className="text-[14px] text-white/50 leading-relaxed text-center mb-8 px-4">
+              <p className="text-[14px] text-black/50 dark:text-white/50 leading-relaxed text-center mb-8 px-4">
                 {selectedApp.description}
               </p>
 
@@ -441,7 +441,7 @@ export function ConnectorsModal({
                             exit={{ opacity: 0, y: 10, scale: 0.95 }}
                             className="absolute bottom-full mb-3 left-0 right-0 bg-white dark:bg-[#222] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[220]"
                           >
-                            <button className="w-full px-4 py-3 text-left text-[14px] font-medium text-white/70 hover:bg-white/5 hover:text-white flex items-center gap-3 transition-all">
+                            <button className="w-full px-4 py-3 text-left text-[14px] font-medium text-black/70 dark:text-white/70 hover:bg-black/5 dark:hover:bg-white/5 hover:text-black dark:hover:text-white flex items-center gap-3 transition-all">
                               <Plus className="w-4 h-4" />
                               Configure
                             </button>
@@ -489,11 +489,11 @@ export function ConnectorsModal({
                       <div className="bg-neutral-50 dark:bg-black/20 rounded-3xl p-6 border border-white/[0.03] space-y-4 mb-2">
                         <div className="flex items-center justify-between">
                           <span className="text-[13px] text-black/30 dark:text-white/30">Connector Type</span>
-                          <span className="text-[13px] text-white/70 font-medium">{selectedApp.type}</span>
+                          <span className="text-[13px] text-black/70 dark:text-white/70 font-medium">{selectedApp.type}</span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-[13px] text-black/30 dark:text-white/30">Author</span>
-                          <span className="text-[13px] text-white/70 font-medium">{selectedApp.author}</span>
+                          <span className="text-[13px] text-black/70 dark:text-white/70 font-medium">{selectedApp.author}</span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-[13px] text-black/30 dark:text-white/30">UUID</span>

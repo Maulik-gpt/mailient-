@@ -115,15 +115,14 @@ export function PersonalitySettingsModal({
 
       {/* Modal */}
       <div 
-        className="relative p-6 w-full max-w-2xl max-h-[80vh] overflow-hidden shadow-2xl rounded-[2rem] border border-neutral-200 dark:border-[#2a2a2a]"
-        className="bg-white dark:bg-black"
+        className="relative p-6 w-full max-w-2xl max-h-[80vh] overflow-hidden shadow-2xl rounded-[2rem] border border-neutral-200 dark:border-[#2a2a2a] bg-white dark:bg-black"
       >
         {/* Header with Close Icon */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-black dark:text-white">Set Arcus's Personality</h2>
           <button
             onClick={onClose}
-            className="w-10 h-10 flex items-center justify-center text-black dark:text-white/70 hover:text-black dark:text-white hover:bg-white/10 rounded-full transition-all duration-200"
+            className="w-10 h-10 flex items-center justify-center text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-all duration-200 shadow-sm"
             aria-label="Close"
           >
             <X className="w-5 h-5" />
@@ -136,8 +135,7 @@ export function PersonalitySettingsModal({
             value={personality}
             onChange={(e) => setPersonality(e.target.value)}
             placeholder={placeholderText || placeholderVariations[0]}
-            className="w-full min-h-[200px] p-4 bg-neutral-50 dark:bg-neutral-50 dark:bg-[#1F2023] border border-neutral-200 dark:border-[#3a3a3a] rounded-lg text-black dark:text-white placeholder:text-black dark:text-white/40 focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/30 resize-none font-sans"
-            
+            className="w-full min-h-[200px] p-4 bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-[#3a3a3a] rounded-xl text-black dark:text-white placeholder:text-black/30 dark:placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-black/5 dark:focus:ring-white/5 resize-none font-sans"
           />
         </div>
 
@@ -145,15 +143,13 @@ export function PersonalitySettingsModal({
         <div className="flex items-center justify-end gap-3">
           <button
             onClick={handleCancel}
-            className="px-6 py-2.5 rounded-lg font-medium transition-all duration-200 text-black dark:text-white hover:bg-white/10"
-            className="bg-neutral-100 dark:bg-[#2a2a2a] text-black dark:text-white"
+            className="px-6 py-2.5 rounded-xl font-medium transition-all duration-200 bg-neutral-100 dark:bg-[#2a2a2a] text-black dark:text-white hover:bg-neutral-200 dark:hover:bg-[#333]"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
-            className="px-6 py-2.5 rounded-lg font-medium transition-all duration-200 text-black hover:bg-gray-100"
-            className="bg-black dark:bg-[#fafafa] text-white dark:text-black"
+            className="px-6 py-2.5 rounded-xl font-medium transition-all duration-200 bg-black dark:bg-[#fafafa] text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200 shadow-lg active:scale-95"
           >
             Save
           </button>

@@ -24,6 +24,9 @@ import { HomeFeedSidebar } from "@/components/ui/home-feed-sidebar";
 import { TextShimmer } from '@/components/ui/text-shimmer';
 import NotesFetchingDisplay from '@/components/ui/notes-fetching-display';
 import { UsageLimitModal } from '@/components/ui/usage-limit-modal';
+import { SettingsCard } from '@/components/ui/settings-card';
+import { HelpCard } from '@/components/ui/help-card';
+import { RewardsCard } from '@/components/ui/rewards-card';
 import { ShiningText } from '@/components/ui/shining-text';
 import { Note } from '@/components/ui/note';
 import { Button as Button1 } from '@/components/ui/button-1';
@@ -413,13 +416,10 @@ export default function ChatInterface({
   const [showHistory, setShowHistory] = useState<boolean>(false);
   const [historyRefreshKey, setHistoryRefreshKey] = useState<number>(0);
   const [isUsageLimitModalOpen, setIsUsageLimitModalOpen] = useState(false);
-  const [usageLimitModalData, setUsageLimitModalData] = useState<{
-    featureName: string;
-    currentUsage: number;
-    limit: number;
-    period: 'daily' | 'monthly';
-    currentPlan: 'free' | 'starter' | 'pro' | 'none';
-  } | null>(null);
+  const [usageLimitModalData, setUsageLimitModalData] = useState<any>(null);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [isRewardsOpen, setIsRewardsOpen] = useState(false);
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(initialConversationId || null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -2200,6 +2200,9 @@ export default function ChatInterface({
           <HomeFeedSidebar 
             className="z-30" 
             onCollapse={(collapsed) => setIsSidebarCollapsed(collapsed)}
+            onOpenSettings={() => setIsSettingsOpen(true)}
+            onOpenHelp={() => setIsHelpOpen(true)}
+            onOpenRewards={() => setIsRewardsOpen(true)}
           />
 
           {/* Main Layout Wrapper - Absolute positioned to fill screen strictly */}
@@ -2847,6 +2850,30 @@ export default function ChatInterface({
           }}
         />
         <PersonalitySettingsModal isOpen={isPersonalityModalOpen} onClose={() => setIsPersonalityModalOpen(false)} onSave={handleSavePersonality} initialPersonality={savedPersonality} />
+        
+        {/* Global Modals for Sidebar Actions */}
+        <AnimatePresence>
+            {isSettingsOpen && <SettingsCard onClose={() => setIsSettingsOpen(false)} />}
+            {isHelpOpen && <HelpCard onClose={() => setIsHelpOpen(false)} />}
+            {isRewardsOpen && (
+                <RewardsCard 
+                    onClose={() => setIsRewardsOpen(false)} 
+                    usageData={{
+                        planType: (arcusCredits?.isUnlimited ? 'pro' : 'starter'),
+                        features: {
+                            arcus_ai: {
+                                usage: arcusCredits?.usage ?? 0,
+                                limit: arcusCredits?.limit ?? 10,
+                                remaining: arcusCredits?.remaining ?? 10,
+                                period: arcusCredits?.period ?? 'daily',
+                                isUnlimited: !!arcusCredits?.isUnlimited
+                            },
+                            sift_ai: { usage: 0, limit: 5, remaining: 5, isUnlimited: false, period: 'daily' }
+                        }
+                    }} 
+                />
+            )}
+        </AnimatePresence>
       </>
     </TooltipProvider>
   );

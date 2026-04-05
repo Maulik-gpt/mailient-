@@ -1602,14 +1602,14 @@ export function GmailInterfaceFixed() {
                                 </span>
                             )}
                             <button
-                                onClick={() => {
+                            onClick={() => {
                                     const nextState = !isTraditionalView;
                                     setIsTraditionalView(nextState);
                                     if (nextState && traditionalEmails.length === 0) {
                                         fetchTraditionalEmails();
                                     }
                                 }}
-                                className="h-10 px-6 metallic-glowing-button text-black dark:text-white rounded-xl text-sm font-medium flex items-center gap-3 group border border-white/20"
+                                className="h-10 px-6 bg-white dark:bg-white/[0.05] text-black dark:text-white rounded-xl text-sm font-medium flex items-center gap-3 group border border-neutral-200 dark:border-white/20 transition-all hover:bg-neutral-50 dark:hover:bg-white/[0.1] shadow-sm"
                             >
                                 {isTraditionalView ? (
                                     <>
@@ -2220,14 +2220,14 @@ export function GmailInterfaceFixed() {
                                 <div className="w-12 h-12 mx-auto mb-8 rounded-full border border-neutral-200 dark:border-neutral-800 flex items-center justify-center">
                                     <Mail className="h-5 w-5 text-neutral-600 dark:text-neutral-500" strokeWidth={1.5} />
                                 </div>
-                                <h3 className="text-xl font-light text-[#fafafa] mb-3">Welcome</h3>
+                                <h3 className="text-xl font-light text-black dark:text-[#fafafa] mb-3">Welcome</h3>
                                 <p className="text-sm text-neutral-600 dark:text-neutral-500 mb-10 font-light max-w-sm mx-auto">
                                     Analyze your inbox to surface opportunities, urgent items, and important conversations.
                                 </p>
                                 <Button
                                     onClick={refreshInsights}
                                     disabled={loading}
-                                    className="h-11 px-8 bg-[#fafafa] hover:bg-neutral-200 text-[#0a0a0a] rounded-lg transition-colors font-medium"
+                                    className="h-11 px-8 bg-black dark:bg-[#fafafa] hover:bg-black/90 dark:hover:bg-neutral-200 text-white dark:text-[#0a0a0a] rounded-lg transition-colors font-medium shadow-md"
                                 >
                                     {loading ? (
                                         <>
