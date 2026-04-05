@@ -295,7 +295,7 @@ export function ConnectorsModal({
             <h2 className="text-[20px] font-bold text-black dark:text-white tracking-tight">Connectors</h2>
             <button 
               onClick={onClose}
-              className="p-1.5 hover:bg-white/5 rounded-lg text-black/30 dark:text-white/30 hover:text-white transition-all"
+              className="p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg text-neutral-400 dark:text-white/30 hover:text-black dark:hover:text-white transition-all"
             >
               <X className="w-5 h-5" />
             </button>
@@ -370,7 +370,7 @@ export function ConnectorsModal({
                   setShowDetails(false);
                   setManageDropdownOpen(false);
                 }}
-                className="absolute top-6 right-6 p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-full text-black/40 dark:text-white/20 hover:text-black dark:hover:text-white transition-all shadow-sm"
+                className="absolute top-6 right-6 p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-full text-neutral-400 dark:text-white/20 hover:text-black dark:hover:text-white transition-all shadow-sm"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -417,7 +417,7 @@ export function ConnectorsModal({
                           setSelectedApp(null);
                         }
                       }}
-                      className="flex-1 py-4 bg-white text-black rounded-2xl font-bold text-[15px] hover:bg-white/90 active:scale-95 transition-all flex items-center justify-center gap-2"
+                      className="flex-1 py-4 bg-black dark:bg-white text-white dark:text-black rounded-2xl font-bold text-[15px] hover:bg-black/90 dark:hover:bg-white/90 active:scale-95 transition-all flex items-center justify-center gap-2"
                     >
                       <Zap className="w-4 h-4 fill-black" />
                       Try it out
@@ -426,7 +426,7 @@ export function ConnectorsModal({
                     <div className="relative flex-1">
                       <button
                         onClick={() => setManageDropdownOpen(!manageDropdownOpen)}
-                        className="w-full py-4 bg-neutral-100 dark:bg-[#2a2a2a] text-black dark:text-white rounded-2xl font-bold text-[15px] hover:bg-[#333] active:scale-95 transition-all flex items-center justify-center gap-2"
+                        className="w-full py-4 bg-neutral-100 dark:bg-[#2a2a2a] text-black dark:text-white rounded-2xl font-bold text-[15px] hover:bg-neutral-200 dark:hover:bg-[#333] active:scale-95 transition-all flex items-center justify-center gap-2"
                       >
                         Manage
                         <ChevronDown className={cn("w-4 h-4 transition-transform", manageDropdownOpen && "rotate-180")} />
@@ -460,7 +460,7 @@ export function ConnectorsModal({
                 ) : (
                   <button
                     onClick={() => handleConnectAction(selectedApp.id)}
-                    className="w-full py-4 bg-white text-black rounded-2xl font-bold text-[15px] hover:bg-white/90 active:scale-95 transition-all flex items-center justify-center gap-2"
+                    className="w-full py-4 bg-black dark:bg-white text-white dark:text-black rounded-2xl font-bold text-[15px] hover:bg-black/90 dark:hover:bg-white/90 active:scale-95 transition-all flex items-center justify-center gap-2"
                   >
                     <Zap className="w-4 h-4 fill-black" />
                     Connect
@@ -472,7 +472,7 @@ export function ConnectorsModal({
               <div className="w-full border-t border-white/[0.05] pt-4">
                 <button 
                   onClick={() => setShowDetails(!showDetails)}
-                  className="w-full flex items-center justify-center gap-2 py-2 text-black/30 dark:text-white/30 hover:text-white/60 transition-all text-[13px] font-medium mb-4"
+                  className="w-full flex items-center justify-center gap-2 py-2 text-neutral-400 dark:text-white/30 hover:text-neutral-600 dark:hover:text-white/60 transition-all text-[13px] font-medium mb-4"
                 >
                   {showDetails ? 'Hide Details' : 'Show Details'}
                   <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", showDetails && "rotate-180")} />
@@ -488,31 +488,31 @@ export function ConnectorsModal({
                     >
                       <div className="bg-neutral-50 dark:bg-black/20 rounded-3xl p-6 border border-white/[0.03] space-y-4 mb-2">
                         <div className="flex items-center justify-between">
-                          <span className="text-[13px] text-black/30 dark:text-white/30">Connector Type</span>
+                          <span className="text-[13px] text-neutral-400 dark:text-white/30">Connector Type</span>
                           <span className="text-[13px] text-black/70 dark:text-white/70 font-medium">{selectedApp.type}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-[13px] text-black/30 dark:text-white/30">Author</span>
+                          <span className="text-[13px] text-neutral-400 dark:text-white/30">Author</span>
                           <span className="text-[13px] text-black/70 dark:text-white/70 font-medium">{selectedApp.author}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-[13px] text-black/30 dark:text-white/30">UUID</span>
+                          <span className="text-[13px] text-neutral-400 dark:text-white/30">UUID</span>
                           <div className="flex items-center gap-2">
-                            <span className="text-white/40 font-mono text-[11px] truncate max-w-[120px]">{selectedApp.uuid}</span>
-                            <button className="text-white/20 hover:text-white transition-all"><Plus className="w-3.5 h-3.5 rotate-45" /></button>
+                            <span className="text-neutral-400 dark:text-white/40 font-mono text-[11px] truncate max-w-[120px]">{selectedApp.uuid}</span>
+                            <button className="text-neutral-300 dark:text-white/20 hover:text-black dark:hover:text-white transition-all"><Plus className="w-3.5 h-3.5 rotate-45" /></button>
                           </div>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-[13px] text-black/30 dark:text-white/30">Website</span>
-                          <a href={selectedApp.website} target="_blank" className="text-white/20 hover:text-white transition-all"><ExternalLink className="w-3.5 h-3.5" /></a>
+                          <span className="text-[13px] text-neutral-400 dark:text-white/30">Website</span>
+                          <a href={selectedApp.website} target="_blank" className="text-neutral-300 dark:text-white/20 hover:text-black dark:hover:text-white transition-all"><ExternalLink className="w-3.5 h-3.5" /></a>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-[13px] text-black/30 dark:text-white/30">Documentation</span>
-                          <a href={selectedApp.documentation} target="_blank" className="text-white/20 hover:text-white transition-all"><ExternalLink className="w-3.5 h-3.5" /></a>
+                          <span className="text-[13px] text-neutral-400 dark:text-white/30">Documentation</span>
+                          <a href={selectedApp.documentation} target="_blank" className="text-neutral-300 dark:text-white/20 hover:text-black dark:hover:text-white transition-all"><ExternalLink className="w-3.5 h-3.5" /></a>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-[13px] text-black/30 dark:text-white/30">Privacy Policy</span>
-                          <a href={selectedApp.privacyPolicy} target="_blank" className="text-white/20 hover:text-white transition-all"><ExternalLink className="w-3.5 h-3.5" /></a>
+                          <span className="text-[13px] text-neutral-400 dark:text-white/30">Privacy Policy</span>
+                          <a href={selectedApp.privacyPolicy} target="_blank" className="text-neutral-300 dark:text-white/20 hover:text-black dark:hover:text-white transition-all"><ExternalLink className="w-3.5 h-3.5" /></a>
                         </div>
                       </div>
                     </motion.div>
@@ -520,7 +520,7 @@ export function ConnectorsModal({
                 </AnimatePresence>
                 
                 <div className="flex justify-center mt-6">
-                  <button className="text-[13px] text-white/20 hover:text-white/40 transition-all underline underline-offset-4">Provide feedback</button>
+                  <button className="text-[13px] text-neutral-400 dark:text-white/20 hover:text-neutral-600 dark:hover:text-white/40 transition-all underline underline-offset-4">Provide feedback</button>
                 </div>
               </div>
             </motion.div>

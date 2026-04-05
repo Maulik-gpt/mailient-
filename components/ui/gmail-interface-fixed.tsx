@@ -1611,15 +1611,15 @@ export function GmailInterfaceFixed() {
                                 }}
                                 className="h-10 px-6 bg-white dark:bg-white/[0.05] text-black dark:text-white rounded-xl text-sm font-medium flex items-center gap-3 group border border-neutral-200 dark:border-white/20 transition-all hover:bg-neutral-50 dark:hover:bg-white/[0.1] shadow-sm"
                             >
-                                {isTraditionalView ? (
+                                 {isTraditionalView ? (
                                     <>
                                         <Sparkles className="h-4 w-4 text-yellow-500 group-hover:scale-110 transition-transform" />
-                                        <span>Switch to AI Sift</span>
+                                        <span className="text-black dark:text-white">Switch to AI Sift</span>
                                     </>
                                 ) : (
                                     <>
                                         <LayoutList className="h-4 w-4 text-blue-400 group-hover:scale-110 transition-transform" />
-                                        <span>Switch to Traditional</span>
+                                        <span className="text-black dark:text-white">Switch to Traditional</span>
                                     </>
                                 )}
                             </button>
@@ -2227,7 +2227,7 @@ export function GmailInterfaceFixed() {
                                 <Button
                                     onClick={refreshInsights}
                                     disabled={loading}
-                                    className="h-11 px-8 bg-black dark:bg-[#fafafa] hover:bg-black/90 dark:hover:bg-neutral-200 text-white dark:text-[#0a0a0a] rounded-xl transition-all font-medium shadow-lg hover:scale-105 active:scale-95"
+                                    className="h-11 px-8 bg-black dark:bg-[#fafafa] hover:bg-black/90 dark:hover:bg-neutral-200 text-white dark:text-black rounded-xl transition-all font-medium shadow-lg hover:scale-105 active:scale-95"
                                 >
                                     {loading ? (
                                         <>

@@ -96,7 +96,7 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
                         <h2 className="text-4xl font-bold text-black dark:text-white tracking-tight leading-[1.1]">
                             Expand the<br />Network
                         </h2>
-                        <p className="text-black/60 dark:text-white/40 text-sm font-medium">and earn free AI intelligence</p>
+                        <p className="text-neutral-600 dark:text-white/40 text-sm font-medium">and earn free AI intelligence</p>
                     </div>
 
                     <button 
@@ -110,7 +110,7 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
                 {/* Content Section */}
                 <div className="p-8 space-y-8">
                     <div className="space-y-6">
-                        <h4 className="text-[11px] font-bold text-black/40 dark:text-white/30 tracking-[0.2em] uppercase">How it works:</h4>
+                        <h4 className="text-[11px] font-bold text-neutral-400 dark:text-white/30 tracking-[0.2em] uppercase">How it works:</h4>
                         
                         <div className="space-y-6">
                             {steps.map((step, i) => (
@@ -124,10 +124,10 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
                                     <div className="mt-0.5 p-1 rounded-md bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/10">
                                         <step.icon className="w-3.5 h-3.5 text-black/70 dark:text-white/70" />
                                     </div>
-                                    <p className="text-sm text-black/70 dark:text-white/60 leading-tight flex-1">
+                                    <p className="text-sm text-neutral-600 dark:text-white/60 leading-tight flex-1">
                                         {step.text}
                                         <span className="text-black dark:text-white font-bold ml-1">{step.bold}</span>
-                                        {step.extra && <span className="opacity-80 ml-1">{step.extra}</span>}
+                                        {step.extra && <span className="text-neutral-400 dark:text-white/40 ml-1">{step.extra}</span>}
                                     </p>
                                 </motion.div>
                             ))}
@@ -135,12 +135,12 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
                     </div>
 
                     <div className="pt-2 border-t border-neutral-200 dark:border-white/5 flex items-center justify-between">
-                        <p className="text-[13px] font-medium text-black/50 dark:text-white/50">
+                        <p className="text-[13px] font-medium text-neutral-500 dark:text-white/50">
                             <span className="text-black dark:text-white font-bold">{profile?.invite_count || 0}</span> signed up, <span className="text-black dark:text-white font-bold">{profile?.conversion_count || 0}</span> converted
                         </p>
                         <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/5">
                             <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                            <span className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-tighter">Live Status</span>
+                            <span className="text-[10px] font-bold text-neutral-400 dark:text-white/40 uppercase tracking-tighter">Live Status</span>
                         </div>
                     </div>
 
@@ -149,7 +149,7 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
                         <div className="flex h-12 bg-black/5 dark:bg-white/5 rounded-xl border border-neutral-200 dark:border-white/10 focus-within:border-black/20 dark:focus-within:border-white/20 transition-all p-1 shadow-inner">
                             <div className="flex-1 flex items-center px-4 gap-3 overflow-hidden">
                                 <Link2 className="w-4 h-4 text-black/30 dark:text-white/30" />
-                                <span className="text-xs text-black/60 dark:text-white/50 truncate font-mono tracking-tight">
+                                <span className="text-xs text-neutral-500 dark:text-white/50 truncate font-mono tracking-tight">
                                     https://{referralUrl}
                                 </span>
                             </div>

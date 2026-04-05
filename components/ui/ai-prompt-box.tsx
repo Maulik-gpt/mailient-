@@ -936,7 +936,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
             >
               <button 
                 onClick={() => props.onConnectClick?.()}
-                className="flex items-center gap-2.5 text-black dark:text-white/50 hover:text-black/80 dark:hover:text-white/90 transition-all text-[13px] font-medium tracking-tight"
+                className="flex items-center gap-2.5 text-black dark:text-white/50 hover:text-neutral-700 dark:hover:text-white/90 transition-all text-[13px] font-medium tracking-tight"
               >
                 <div className="w-5 h-5 flex items-center justify-center opacity-70 group-hover:opacity-100 transition-opacity">
                   <Plug className="w-3.5 h-3.5" />
