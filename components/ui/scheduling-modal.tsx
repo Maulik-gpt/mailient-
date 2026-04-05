@@ -272,7 +272,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                 <CalendarIcon className="w-5 h-5 text-indigo-400" />
                             </div>
                             <div>
-                                <h3 className="text-xl font-medium text-white tracking-tight">
+                                <h3 className="text-xl font-medium text-black dark:text-white tracking-tight">
                                     {step === 5 ? 'Meeting Details' : step === 1 ? 'Schedule Call' : 'Schedule Call'}
                                 </h3>
                                 <p className="text-sm text-neutral-500 font-light">
@@ -282,7 +282,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                         </div>
                         <button
                             onClick={onClose}
-                            className="p-2 hover:bg-neutral-800 rounded-full transition-colors text-neutral-500 hover:text-white"
+                            className="p-2 hover:bg-neutral-800 rounded-full transition-colors text-neutral-500 hover:text-black dark:text-white"
                         >
                             <X className="w-5 h-5" />
                         </button>
@@ -309,7 +309,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                             </div>
                                             <div className="text-left">
                                                 <div className="flex items-center gap-2">
-                                                    <p className="text-white font-medium text-lg">Cal.com</p>
+                                                    <p className="text-black dark:text-white font-medium text-lg">Cal.com</p>
                                                     <span className="text-[10px] font-bold text-green-400 uppercase tracking-widest bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">FREE</span>
                                                 </div>
                                                 <p className="text-sm text-neutral-500 font-light mt-1">Open-source scheduling. Share your Cal.com link.</p>
@@ -343,7 +343,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                             </div>
                                             <div className="text-left">
                                                 <div className="flex items-center gap-2">
-                                                    <p className="text-white font-medium text-lg">Google Calendar</p>
+                                                    <p className="text-black dark:text-white font-medium text-lg">Google Calendar</p>
                                                     <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20">DIRECT</span>
                                                 </div>
                                                 <p className="text-sm text-neutral-500 font-light mt-1">Create meeting directly with AI-powered suggestions.</p>
@@ -365,7 +365,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
                                                 <ExternalLink className="w-4 h-4 text-neutral-500" />
-                                                <span className="text-sm text-neutral-400 font-mono">cal.com/{calComUsername}/{calComEventType}</span>
+                                                <span className="text-sm text-neutral-500 dark:text-neutral-400 font-mono">cal.com/{calComUsername}/{calComEventType}</span>
                                             </div>
                                             <Button
                                                 variant="outline"
@@ -374,7 +374,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                                     navigator.clipboard.writeText(`https://cal.com/${calComUsername}/${calComEventType}`);
                                                     toast.success('Cal.com link copied!');
                                                 }}
-                                                className="border-neutral-700 text-neutral-400 hover:bg-neutral-800"
+                                                className="border-neutral-700 text-neutral-500 dark:text-neutral-400 hover:bg-neutral-800"
                                             >
                                                 Copy Link
                                             </Button>
@@ -403,7 +403,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                                     value={calComUsername}
                                                     onChange={(e) => setCalComUsername(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
                                                     placeholder="your-username"
-                                                    className="flex-1 bg-neutral-900/30 border border-neutral-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500/50 transition-colors placeholder:text-neutral-600"
+                                                    className="flex-1 bg-neutral-900/30 border border-neutral-800 rounded-xl px-4 py-3 text-black dark:text-white focus:outline-none focus:border-indigo-500/50 transition-colors placeholder:text-neutral-600"
                                                 />
                                             </div>
                                             <p className="text-[10px] text-neutral-600 ml-1">Your Cal.com username from your profile</p>
@@ -417,8 +417,8 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                                         key={type}
                                                         onClick={() => setCalComEventType(type)}
                                                         className={`flex-1 py-3 rounded-xl border transition-all duration-300 font-medium text-sm ${calComEventType === type
-                                                            ? 'bg-indigo-500 text-white border-indigo-500'
-                                                            : 'bg-neutral-900/30 text-neutral-400 border-neutral-800 hover:border-neutral-700'
+                                                            ? 'bg-indigo-500 text-black dark:text-white border-indigo-500'
+                                                            : 'bg-neutral-900/30 text-neutral-500 dark:text-neutral-400 border-neutral-800 hover:border-neutral-700'
                                                             }`}
                                                     >
                                                         {type}
@@ -443,7 +443,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                     <Button
                                         variant="outline"
                                         onClick={() => setShowCalComSettings(false)}
-                                        className="h-14 flex-1 border-neutral-800 rounded-2xl text-neutral-400 hover:bg-neutral-800"
+                                        className="h-14 flex-1 border-neutral-800 rounded-2xl text-neutral-500 dark:text-neutral-400 hover:bg-neutral-800"
                                     >
                                         Back
                                     </Button>
@@ -456,7 +456,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                             saveCalComSettings();
                                             handleCalComSchedule();
                                         }}
-                                        className="h-14 flex-[2] bg-indigo-500 hover:bg-indigo-600 text-white rounded-2xl font-medium text-lg leading-none shadow-xl shadow-indigo-500/10"
+                                        className="h-14 flex-[2] bg-indigo-500 hover:bg-indigo-600 text-black dark:text-white rounded-2xl font-medium text-lg leading-none shadow-xl shadow-indigo-500/10"
                                     >
                                         Open Cal.com Scheduler
                                     </Button>
@@ -471,7 +471,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                     <Sparkles className="w-12 h-12 text-indigo-400 animate-pulse" />
                                     <div className="absolute inset-0 bg-indigo-400/20 blur-2xl rounded-full" />
                                 </div>
-                                <p className="text-neutral-400 font-light text-lg">AI is analyzing context...</p>
+                                <p className="text-neutral-500 dark:text-neutral-400 font-light text-lg">AI is analyzing context...</p>
                             </div>
                         ) : step === 2 ? (
                             <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
@@ -487,13 +487,13 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                             type="text"
                                             value={recommendation?.suggested_title}
                                             onChange={(e) => setRecommendation({ ...recommendation, suggested_title: e.target.value })}
-                                            className="w-full bg-transparent text-white text-xl font-medium focus:outline-none placeholder:text-neutral-600"
+                                            className="w-full bg-transparent text-black dark:text-white text-xl font-medium focus:outline-none placeholder:text-neutral-600"
                                             placeholder="Meeting Title"
                                         />
                                         <textarea
                                             value={recommendation?.suggested_description}
                                             onChange={(e) => setRecommendation({ ...recommendation, suggested_description: e.target.value })}
-                                            className="w-full bg-transparent text-neutral-400 font-light focus:outline-none resize-none h-20 text-sm leading-relaxed"
+                                            className="w-full bg-transparent text-neutral-500 dark:text-neutral-400 font-light focus:outline-none resize-none h-20 text-sm leading-relaxed"
                                             placeholder="Call objective..."
                                         />
                                     </div>
@@ -508,7 +508,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                                 type="date"
                                                 value={selectedDate}
                                                 onChange={(e) => setSelectedDate(e.target.value)}
-                                                className="w-full bg-neutral-900/30 border border-neutral-800 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-neutral-700 transition-colors"
+                                                className="w-full bg-neutral-900/30 border border-neutral-800 rounded-2xl px-4 py-3 text-black dark:text-white focus:outline-none focus:border-neutral-700 transition-colors"
                                             />
                                         </div>
                                     </div>
@@ -518,7 +518,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                             type="time"
                                             value={selectedTime}
                                             onChange={(e) => setSelectedTime(e.target.value)}
-                                            className="w-full bg-neutral-900/30 border border-neutral-800 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-neutral-700 transition-colors"
+                                            className="w-full bg-neutral-900/30 border border-neutral-800 rounded-2xl px-4 py-3 text-black dark:text-white focus:outline-none focus:border-neutral-700 transition-colors"
                                         />
                                     </div>
                                 </div>
@@ -536,7 +536,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                             onClick={() => setRecommendation({ ...recommendation, suggested_duration: dur })}
                                             className={`flex-1 py-3 rounded-2xl border transition-all duration-300 font-medium ${recommendation?.suggested_duration === dur
                                                 ? 'bg-white text-black border-white'
-                                                : 'bg-neutral-900/30 text-neutral-400 border-neutral-800 hover:border-neutral-700'
+                                                : 'bg-neutral-900/30 text-neutral-500 dark:text-neutral-400 border-neutral-800 hover:border-neutral-700'
                                                 }`}
                                         >
                                             {dur} min
@@ -548,7 +548,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                     <Button
                                         variant="outline"
                                         onClick={() => setStep(1)}
-                                        className="h-14 flex-1 border-neutral-800 rounded-2xl text-neutral-400 hover:bg-neutral-800"
+                                        className="h-14 flex-1 border-neutral-800 rounded-2xl text-neutral-500 dark:text-neutral-400 hover:bg-neutral-800"
                                     >
                                         Back
                                     </Button>
@@ -563,7 +563,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                         ) : step === 3 ? (
                             <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
                                 <div className="space-y-4">
-                                    <h4 className="text-sm font-medium text-neutral-400 ml-1">Select Video Provider</h4>
+                                    <h4 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 ml-1">Select Video Provider</h4>
                                     <div className="space-y-3">
                                         <button
                                             onClick={() => setProvider('google')}
@@ -573,11 +573,11 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                                 }`}
                                         >
                                             <div className="flex items-center gap-4">
-                                                <div className={`p-3 rounded-2xl ${provider === 'google' ? 'bg-blue-500 text-white' : 'bg-neutral-800 text-neutral-400 group-hover:bg-neutral-700'}`}>
+                                                <div className={`p-3 rounded-2xl ${provider === 'google' ? 'bg-blue-500 text-black dark:text-white' : 'bg-neutral-800 text-neutral-500 dark:text-neutral-400 group-hover:bg-neutral-700'}`}>
                                                     <Video className="w-5 h-5" />
                                                 </div>
                                                 <div className="text-left">
-                                                    <p className="text-white font-medium">Google Meet</p>
+                                                    <p className="text-black dark:text-white font-medium">Google Meet</p>
                                                     <p className="text-xs text-neutral-500 font-light">Primary connected account</p>
                                                 </div>
                                             </div>
@@ -593,11 +593,11 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                             disabled={true}
                                         >
                                             <div className="flex items-center gap-4">
-                                                <div className={`p-3 rounded-2xl ${provider === 'zoom' ? 'bg-blue-400 text-white' : 'bg-neutral-800 text-neutral-400'}`}>
+                                                <div className={`p-3 rounded-2xl ${provider === 'zoom' ? 'bg-blue-400 text-black dark:text-white' : 'bg-neutral-800 text-neutral-500 dark:text-neutral-400'}`}>
                                                     <Video className="w-5 h-5" />
                                                 </div>
                                                 <div className="text-left">
-                                                    <p className="text-white font-medium">Zoom Video</p>
+                                                    <p className="text-black dark:text-white font-medium">Zoom Video</p>
                                                     <p className="text-xs text-neutral-500 font-light italic">Coming Soon</p>
                                                 </div>
                                             </div>
@@ -609,10 +609,10 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                 <div className="p-5 bg-neutral-900/30 rounded-3xl border border-neutral-800 flex items-center justify-between">
                                     <div className="flex items-center gap-3">
                                         <div className="p-2.5 bg-neutral-800 rounded-xl">
-                                            <Send className="w-4 h-4 text-neutral-400" />
+                                            <Send className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
                                         </div>
                                         <div>
-                                            <p className="text-sm font-medium text-white">Notify Guest</p>
+                                            <p className="text-sm font-medium text-black dark:text-white">Notify Guest</p>
                                             <p className="text-[10px] text-neutral-500 uppercase tracking-wider font-light">Send email confirmation</p>
                                         </div>
                                     </div>
@@ -628,14 +628,14 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                     <Button
                                         variant="outline"
                                         onClick={() => setStep(2)}
-                                        className="h-14 flex-1 border-neutral-800 rounded-2xl text-neutral-400 hover:bg-neutral-800"
+                                        className="h-14 flex-1 border-neutral-800 rounded-2xl text-neutral-500 dark:text-neutral-400 hover:bg-neutral-800"
                                     >
                                         Back
                                     </Button>
                                     <Button
                                         onClick={handleScheduleGoogle}
                                         disabled={isScheduling}
-                                        className="h-14 flex-[2] bg-indigo-500 hover:bg-indigo-600 text-white rounded-2xl font-medium text-lg leading-none shadow-xl shadow-indigo-500/10"
+                                        className="h-14 flex-[2] bg-indigo-500 hover:bg-indigo-600 text-black dark:text-white rounded-2xl font-medium text-lg leading-none shadow-xl shadow-indigo-500/10"
                                     >
                                         {isScheduling ? 'Scheduling...' : 'Confirm Call'}
                                     </Button>
@@ -649,7 +649,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                     </div>
                                     <div className="absolute inset-0 bg-green-500/10 blur-3xl rounded-full" />
                                 </div>
-                                <h4 className="text-2xl font-medium text-white mb-2">Meeting Booked!</h4>
+                                <h4 className="text-2xl font-medium text-black dark:text-white mb-2">Meeting Booked!</h4>
                                 <p className="text-neutral-500 font-light max-w-xs mx-auto mb-10 text-sm leading-relaxed">
                                     Your call is confirmed and synced to your Google Calendar. {notifySender && "We've notified the guest via email."}
                                 </p>
@@ -658,13 +658,13 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                     <Button
                                         variant="outline"
                                         onClick={() => setStep(5)}
-                                        className="h-14 flex-1 border-neutral-800 hover:bg-neutral-800 text-neutral-400 rounded-2xl font-medium transition-all duration-500"
+                                        className="h-14 flex-1 border-neutral-800 hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 rounded-2xl font-medium transition-all duration-500"
                                     >
                                         View Details
                                     </Button>
                                     <Button
                                         onClick={onClose}
-                                        className="h-14 flex-[1.5] bg-neutral-800 hover:bg-neutral-700 text-white border border-neutral-700 rounded-2xl font-medium transition-all duration-500"
+                                        className="h-14 flex-[1.5] bg-neutral-800 hover:bg-neutral-700 text-black dark:text-white border border-neutral-700 rounded-2xl font-medium transition-all duration-500"
                                     >
                                         Done
                                     </Button>
@@ -678,7 +678,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
 
                                     <div>
                                         <h4 className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-2 ml-1">Title</h4>
-                                        <p className="text-2xl text-white font-medium tracking-tight">{scheduledEvent?.summary}</p>
+                                        <p className="text-2xl text-black dark:text-white font-medium tracking-tight">{scheduledEvent?.summary}</p>
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-8">
@@ -686,14 +686,14 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                             <h4 className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest ml-1">Time</h4>
                                             <div className="flex items-center gap-3 px-4 py-3 bg-neutral-800/30 rounded-2xl border border-neutral-700/30">
                                                 <Clock className="w-4 h-4 text-indigo-400" />
-                                                <span className="text-white font-medium">{new Date(scheduledEvent?.start?.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                <span className="text-black dark:text-white font-medium">{new Date(scheduledEvent?.start?.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                             </div>
                                         </div>
                                         <div className="space-y-2">
                                             <h4 className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest ml-1">Date</h4>
                                             <div className="flex items-center gap-3 px-4 py-3 bg-neutral-800/30 rounded-2xl border border-neutral-700/30">
                                                 <CalendarIcon className="w-4 h-4 text-indigo-400" />
-                                                <span className="text-white font-medium">{new Date(scheduledEvent?.start?.dateTime).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                                <span className="text-black dark:text-white font-medium">{new Date(scheduledEvent?.start?.dateTime).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -737,7 +737,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                 <div className="flex gap-4">
                                     <Button
                                         onClick={() => setStep(4)}
-                                        className="h-14 flex-1 bg-neutral-800 hover:bg-neutral-700 text-white border border-neutral-700 rounded-2xl font-medium transition-all duration-500"
+                                        className="h-14 flex-1 bg-neutral-800 hover:bg-neutral-700 text-black dark:text-white border border-neutral-700 rounded-2xl font-medium transition-all duration-500"
                                     >
                                         Back
                                     </Button>

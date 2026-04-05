@@ -82,21 +82,21 @@ export function CancellationFlow({
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="w-full max-w-[500px] bg-[#1a1a1a] border border-white/10 rounded-[32px] overflow-hidden shadow-2xl"
+        className="w-full max-w-[500px] bg-white dark:bg-[#1a1a1a] border border-neutral-200 dark:border-white/10 rounded-[32px] overflow-hidden shadow-2xl"
       >
         {/* Header */}
         <div className="px-8 pt-8 pb-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-              currentStep === 2 ? 'bg-red-500/20 text-red-500' : 'bg-white/5 text-neutral-400'
+              currentStep === 2 ? 'bg-red-500/20 text-red-500' : 'bg-black/5 dark:bg-white/5 text-neutral-500 dark:text-neutral-400'
             }`}>
               {currentStep + 1}
             </div>
-            <h2 className="text-xl font-serif text-white">{STEPS[currentStep].title}</h2>
+            <h2 className="text-xl font-serif text-black dark:text-white">{STEPS[currentStep].title}</h2>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-white/5 text-neutral-500 transition-colors"
+            className="p-2 rounded-full hover:bg-black/5 dark:bg-white/5 text-neutral-500 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -113,7 +113,7 @@ export function CancellationFlow({
                 exit={{ opacity: 0, x: -20 }}
                 className="space-y-6 pt-4"
               >
-                <p className="text-neutral-400 text-[15px]">
+                <p className="text-neutral-500 dark:text-neutral-400 text-[15px]">
                   Select the reasons that influenced your decision to cancel.
                 </p>
                 <div className="grid grid-cols-2 gap-3">
@@ -123,8 +123,8 @@ export function CancellationFlow({
                       onClick={() => handleReasonToggle(reason.id)}
                       className={`flex flex-col items-center justify-center p-4 rounded-2xl border transition-all duration-300 gap-2 ${
                         selectedReasons.includes(reason.id)
-                          ? "bg-white/10 border-white/20 text-white shadow-lg scale-[1.02]"
-                          : "bg-white/5 border-transparent text-neutral-500 hover:bg-white/[0.08]"
+                          ? "bg-black/10 dark:bg-white/10 border-white/20 text-black dark:text-white shadow-lg scale-[1.02]"
+                          : "bg-black/5 dark:bg-white/5 border-transparent text-neutral-500 hover:bg-black/[0.08] dark:bg-white/[0.08]"
                       }`}
                     >
                       <span className="text-2xl">{reason.icon}</span>
@@ -165,14 +165,14 @@ export function CancellationFlow({
                     value={feedback}
                     onChange={(e) => setFeedback(e.target.value)}
                     placeholder="What could we have done better?"
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white min-h-[150px] focus:ring-2 focus:ring-white/20 transition-all outline-none resize-none"
+                    className="w-full bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-2xl p-4 text-black dark:text-white min-h-[150px] focus:ring-2 focus:ring-white/20 transition-all outline-none resize-none"
                   />
                 </div>
                 <div className="flex gap-3">
                   <Button
                     variant="ghost"
                     onClick={handleBack}
-                    className="flex-1 text-neutral-400 hover:text-white hover:bg-white/5 h-12 rounded-2xl"
+                    className="flex-1 text-neutral-500 hover:text-black dark:text-white hover:bg-black/5 dark:bg-white/5 h-12 rounded-2xl"
                   >
                     <ChevronLeft className="w-4 h-4 mr-2" />
                     Back
@@ -202,20 +202,20 @@ export function CancellationFlow({
                     <h4 className="font-bold">Subscription Revocation</h4>
                   </div>
                   <p className="text-[13px] text-red-100/70 leading-relaxed">
-                    By proceeding, your access to <span className="font-bold text-white">Unlimited AI Compute</span>, <span className="font-bold text-white">Priority Processing</span>, and <span className="font-bold text-white">Style Mimicking</span> will be scheduled for revocation.
+                    By proceeding, your access to <span className="font-bold text-black dark:text-white">Unlimited AI Compute</span>, <span className="font-bold text-black dark:text-white">Priority Processing</span>, and <span className="font-bold text-black dark:text-white">Style Mimicking</span> will be scheduled for revocation.
                   </p>
                 </div>
 
                 <div className="space-y-4">
-                  <p className="text-sm text-neutral-400 text-center">
-                    Type <span className="text-white font-mono font-bold">Revoke plan</span> below to confirm.
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400 text-center">
+                    Type <span className="text-black dark:text-white font-mono font-bold">Revoke plan</span> below to confirm.
                   </p>
                   <input
                     type="text"
                     value={revocationText}
                     onChange={(e) => setRevocationText(e.target.value)}
                     placeholder="Revoke plan"
-                    className="w-full bg-red-500/5 border border-red-500/20 rounded-2xl px-4 py-3 text-center text-white placeholder:text-neutral-700 focus:ring-2 focus:ring-red-500/50 transition-all outline-none font-mono"
+                    className="w-full bg-red-500/5 border border-red-500/20 rounded-2xl px-4 py-3 text-center text-black dark:text-white placeholder:text-neutral-700 focus:ring-2 focus:ring-red-500/50 transition-all outline-none font-mono"
                   />
                 </div>
 
@@ -223,14 +223,14 @@ export function CancellationFlow({
                   <Button
                     onClick={handleFinalConfirm}
                     disabled={revocationText !== "Revoke plan" || isSubmitting}
-                    className="w-full bg-red-500 hover:bg-red-600 text-white font-bold h-12 rounded-2xl shadow-lg shadow-red-500/20 disabled:opacity-50"
+                    className="w-full bg-red-500 hover:bg-red-600 text-black dark:text-white font-bold h-12 rounded-2xl shadow-lg shadow-red-500/20 disabled:opacity-50"
                   >
                     {isSubmitting ? "Processing..." : "Confirm & Revoke"}
                   </Button>
                   <Button
                     variant="ghost"
                     onClick={onClose}
-                    className="w-full text-neutral-400 hover:text-white h-10"
+                    className="w-full text-neutral-500 hover:text-black dark:text-white h-10"
                   >
                     I changed my mind
                   </Button>

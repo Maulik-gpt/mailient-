@@ -49,25 +49,25 @@ const linkify = (text: string, isUser: boolean = false): string => {
 
     if (isAction && url.length > 50) {
       // Simplified Security Action
-      return `<div class="my-4 p-5 bg-white/[0.03] border border-white/10 rounded-2xl relative group overflow-hidden">
+      return `<div class="my-4 p-5 bg-white/[0.03] border border-neutral-200 dark:border-white/10 rounded-2xl relative group overflow-hidden">
         <div class="flex items-center gap-4">
-          <div class="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center border border-white/10">
-            <svg class="w-5 h-5 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="w-10 h-10 bg-black/5 dark:bg-white/5 rounded-xl flex items-center justify-center border border-neutral-200 dark:border-white/10">
+            <svg class="w-5 h-5 text-black dark:text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
           </div>
           <div class="flex-1 text-left">
-            <h4 class="text-white font-bold text-[11px] tracking-tight uppercase">Security required</h4>
-            <p class="text-white/30 text-[9px] tracking-tight uppercase">Verify link to proceed</p>
+            <h4 class="text-black dark:text-white font-bold text-[11px] tracking-tight uppercase">Security required</h4>
+            <p class="text-black dark:text-white/30 text-[9px] tracking-tight uppercase">Verify link to proceed</p>
           </div>
           <a href="${url}" target="_blank" rel="noopener noreferrer" class="px-5 py-2 bg-white hover:bg-neutral-200 text-black font-bold text-[10px] tracking-tight uppercase rounded-lg transition-all no-underline">Verify</a>
         </div>
-        <div class="mt-4 text-[9px] text-white/10 break-all opacity-40 select-all cursor-text py-2 px-3 bg-white/[0.02] rounded-lg border border-white/[0.05]">${url}</div>
+        <div class="mt-4 text-[9px] text-black dark:text-white/10 break-all opacity-40 select-all cursor-text py-2 px-3 bg-black/[0.02] dark:bg-white/[0.02] rounded-lg border border-white/[0.05]">${url}</div>
       </div>`;
     }
 
     const displayUrl = url.length > 55 ? url.substring(0, 52) + '...' : url;
-    const linkColorClass = isUser ? "text-blue-600 hover:text-blue-800" : "text-white/60 hover:text-white";
+    const linkColorClass = isUser ? "text-blue-600 hover:text-blue-800" : "text-black dark:text-white/60 hover:text-black dark:text-white";
     const decorationClass = isUser ? "decoration-blue-200 hover:decoration-blue-600" : "decoration-white/20 hover:decoration-white/100";
 
     return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="${linkColorClass} underline underline-offset-4 ${decorationClass} transition-all text-[13px] tracking-tight break-all" title="${url}">${displayUrl}</a>`;
@@ -80,7 +80,7 @@ const renderMarkdown = (text: string, isUser: boolean = false): string => {
   const paragraphs = text.split(/\n\n+/);
 
   const renderedParagraphs = paragraphs.map(para => {
-    let processedPara = para.replace(/\*\*(.*?)\*\*/g, `<strong class="font-bold text-white tracking-tight">$1</strong>`);
+    let processedPara = para.replace(/\*\*(.*?)\*\*/g, `<strong class="font-bold text-black dark:text-white tracking-tight">$1</strong>`);
 
     if (processedPara.includes('\n- ') || processedPara.startsWith('- ') || processedPara.includes('\n* ') || processedPara.startsWith('* ')) {
       const lines = processedPara.split('\n');
@@ -93,7 +93,7 @@ const renderMarkdown = (text: string, isUser: boolean = false): string => {
       });
 
       let joinedList = listItems.join('\n');
-      const listBg = isUser ? 'bg-black/[0.03]' : 'bg-white/[0.02]';
+      const listBg = isUser ? 'bg-black/[0.03]' : 'bg-black/[0.02] dark:bg-white/[0.02]';
       const listBorder = isUser ? 'border-black/[0.05]' : 'border-white/[0.05]';
       joinedList = joinedList.replace(/(<li[\s\S]*?<\/li>(?:\n<li[\s\S]*?<\/li>)*)/g, `<ul class="space-y-1 my-6 list-none ${listBg} p-6 rounded-2xl border ${listBorder} relative shadow-inner overflow-hidden"><div class="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none"></div>$1</ul>`);
       return joinedList;
@@ -102,7 +102,7 @@ const renderMarkdown = (text: string, isUser: boolean = false): string => {
     processedPara = linkify(processedPara, isUser);
     processedPara = processedPara.replace(/\n/g, '<br/>');
 
-    const textColorClass = isUser ? "text-white" : "text-white/70";
+    const textColorClass = isUser ? "text-black dark:text-white" : "text-black dark:text-white/70";
     return `<p class="mb-3 last:mb-0 leading-relaxed ${textColorClass} text-[14px]">${processedPara}</p>`;
   });
 
@@ -145,13 +145,13 @@ const MissionStatusHeader = ({ mission }: { mission: any }) => {
   };
 
   return (
-    <div className="flex items-center gap-3 px-4 py-2 bg-[#111111] border border-white/5 rounded-xl w-fit mb-8 shadow-sm">
+    <div className="flex items-center gap-3 px-4 py-2 bg-[#111111] border border-neutral-200 dark:border-white/5 rounded-xl w-fit mb-8 shadow-sm">
       <div className="flex items-center gap-2">
         <div className="w-1.5 h-1.5 rounded-full bg-white/40 animate-pulse shrink-0" />
-        <span className="text-white/95 text-[13px] font-bold tracking-tight">{mission.goal}</span>
+        <span className="text-black dark:text-white/95 text-[13px] font-bold tracking-tight">{mission.goal}</span>
       </div>
-      <div className="h-3 w-[1px] bg-white/10" />
-      <span className="text-[10px] font-black uppercase tracking-widest text-white/20">
+      <div className="h-3 w-[1px] bg-black/10 dark:bg-white/10" />
+      <span className="text-[10px] font-black uppercase tracking-widest text-black dark:text-white/20">
         {statusLabels[mission.status] || mission.status}
       </span>
     </div>
@@ -334,13 +334,13 @@ function RollingThinkingStatus({ onToggle, isOpen, isDeepThinking }: { onToggle:
     <div className="flex items-center justify-between w-full group/status cursor-pointer select-none" onClick={onToggle}>
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-2 px-1">
-          <TextShimmer className="text-[14px] font-medium tracking-tight text-white/90" duration={1.5}>
+          <TextShimmer className="text-[14px] font-medium tracking-tight text-black dark:text-white/90" duration={1.5}>
             {`Thinking for ${elapsed}s`}
           </TextShimmer>
         </div>
       </div>
 
-      <div className={`p-1 rounded-md transition-all duration-300 ${isOpen ? 'bg-white/10 text-white' : 'text-white/20 group-hover/status:text-white/50'}`}>
+      <div className={`p-1 rounded-md transition-all duration-300 ${isOpen ? 'bg-black/10 dark:bg-white/10 text-black dark:text-white' : 'text-black dark:text-white/20 group-hover/status:text-black dark:text-white/50'}`}>
         <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-500 cubic-bezier(0.4, 0, 0.2, 1) ${isOpen ? 'rotate-180' : ''}`} />
       </div>
     </div>
@@ -2169,7 +2169,7 @@ export default function ChatInterface({
                 <div className="absolute top-6 right-6 z-[110]">
                   <button 
                     onClick={() => setShowHistory(false)}
-                    className="p-2 hover:bg-white/5 rounded-full transition-all text-white/20 hover:text-white/60"
+                    className="p-2 hover:bg-black/5 dark:bg-white/5 rounded-full transition-all text-black hover:text-black dark:text-white/60"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -2203,11 +2203,11 @@ export default function ChatInterface({
           >
             {/* Chat Column (Order 1 - LEFT) - Premium Refinement */}
             <div
-              className="flex-1 flex flex-col relative h-full min-w-0 transition-all duration-500 order-1 bg-[#111111]/80 backdrop-blur-3xl border-x border-t border-white/5 rounded-t-[40px] shadow-[0_-20px_50px_-15px_rgba(0,0,0,0.5)] overflow-hidden"
+              className="flex-1 flex flex-col relative h-full min-w-0 transition-all duration-500 order-1 bg-[#111111]/80 backdrop-blur-3xl border-x border-t border-neutral-200 dark:border-white/5 rounded-t-[40px] shadow-[0_-20px_50px_-15px_rgba(0,0,0,0.5)] overflow-hidden"
               style={{ display: 'flex', flexDirection: 'column', height: '100%', maxHeight: '100%' }}
             >
               {/* Header - Glassmorphic fixed height */}
-              <div className="shrink-0 z-40 transition-all duration-300 bg-black/40 backdrop-blur-md border-b border-white/[0.03]" style={{ flexShrink: 0 }}>
+              <div className="shrink-0 z-40 transition-all duration-300 bg-black/10 dark:bg-black/40 backdrop-blur-md border-b border-white/[0.03]" style={{ flexShrink: 0 }}>
                 <div className="relative px-8 py-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -2217,18 +2217,18 @@ export default function ChatInterface({
                           <div className="flex items-center bg-white/[0.03] border border-white/[0.08] rounded-xl overflow-hidden shadow-xl transition-all hover:border-white/15 group">
                             <button
                               onClick={() => setIsTitleMenuOpen(!isTitleMenuOpen)}
-                              className="pl-4 pr-3 py-2 hover:bg-white/[0.05] transition-colors flex items-center gap-2.5 max-w-[280px]"
+                              className="pl-4 pr-3 py-2 hover:bg-black/[0.05] dark:bg-white/[0.05] transition-colors flex items-center gap-2.5 max-w-[280px]"
                             >
-                              <span className="text-[13px] font-bold text-white/90 truncate tracking-tight lowercase">
+                              <span className="text-[13px] font-bold text-black dark:text-white/90 truncate tracking-tight lowercase">
                                 {chatTitle || 'new conversation'}
                               </span>
                             </button>
                             <div className="w-[1px] h-4 bg-white/[0.12]" />
                             <button
                               onClick={() => setIsTitleMenuOpen(!isTitleMenuOpen)}
-                              className="px-3 py-2 hover:bg-white/[0.05] transition-colors"
+                              className="px-3 py-2 hover:bg-black/[0.05] dark:bg-white/[0.05] transition-colors"
                             >
-                              <ChevronDown className={`w-3.5 h-3.5 text-white/40 group-hover:text-white/80 transition-transform duration-300 ease-out ${isTitleMenuOpen ? 'rotate-180' : ''}`} />
+                              <ChevronDown className={`w-3.5 h-3.5 text-black dark:text-white/40 group-hover:text-black dark:text-white/80 transition-transform duration-300 ease-out ${isTitleMenuOpen ? 'rotate-180' : ''}`} />
                             </button>
                           </div>
                         </div>
@@ -2236,14 +2236,14 @@ export default function ChatInterface({
 
                           {/* Dropdown Menu */}
                           {isTitleMenuOpen && (
-                            <div className="absolute top-full left-0 mt-2 w-48 bg-[#1a1a1a] border border-white/[0.08] rounded-xl shadow-2xl py-1.5 z-[100] animate-in fade-in zoom-in-95 duration-200">
+                            <div className="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-[#1a1a1a] border border-white/[0.08] rounded-xl shadow-2xl py-1.5 z-[100] animate-in fade-in zoom-in-95 duration-200">
                               <button
                                 onClick={() => {
                                   setIsStarred(!isStarred);
                                   setIsTitleMenuOpen(false);
                                   toast.success(isStarred ? 'Removed from favorites' : 'Added to favorites');
                                 }}
-                                className="w-full px-3 py-2 text-left text-sm text-white/70 hover:text-white hover:bg-white/[0.05] transition-colors flex items-center gap-2.5"
+                                className="w-full px-3 py-2 text-left text-sm text-black hover:text-black dark:text-white hover:bg-black/[0.05] dark:bg-white/[0.05] transition-colors flex items-center gap-2.5"
                               >
                                 <Sparkles className={`w-4 h-4 ${isStarred ? 'text-yellow-400 fill-yellow-400' : ''}`} />
                                 <span>{isStarred ? 'Unstar' : 'Star'}</span>
@@ -2265,7 +2265,7 @@ export default function ChatInterface({
                                   }
                                   setIsTitleMenuOpen(false);
                                 }}
-                                className="w-full px-3 py-2 text-left text-sm text-white/70 hover:text-white hover:bg-white/[0.05] transition-colors flex items-center gap-2.5"
+                                className="w-full px-3 py-2 text-left text-sm text-black hover:text-black dark:text-white hover:bg-black/[0.05] dark:bg-white/[0.05] transition-colors flex items-center gap-2.5"
                               >
                                 <PenTool className="w-4 h-4" />
                                 <span>Rename</span>
@@ -2275,12 +2275,12 @@ export default function ChatInterface({
                                   setIsTitleMenuOpen(false);
                                   toast.info('Projects integration coming soon');
                                 }}
-                                className="w-full px-3 py-2 text-left text-sm text-white/70 hover:text-white hover:bg-white/[0.05] transition-colors flex items-center gap-2.5"
+                                className="w-full px-3 py-2 text-left text-sm text-black hover:text-black dark:text-white hover:bg-black/[0.05] dark:bg-white/[0.05] transition-colors flex items-center gap-2.5"
                               >
                                 <LayoutGrid className="w-4 h-4" />
                                 <span>Add to project</span>
                               </button>
-                              <div className="h-[1px] bg-white/[0.05] my-1" />
+                              <div className="h-[1px] bg-black/[0.05] dark:bg-white/[0.05] my-1" />
                               <button
                                 onClick={() => {
                                   if (currentConversationId && confirm('Delete this conversation?')) {
@@ -2301,7 +2301,7 @@ export default function ChatInterface({
                         <TooltipTrigger asChild>
                           <button
                             onClick={() => setIsPersonalityModalOpen(true)}
-                            className="p-2 hover:bg-white/5 rounded-lg transition-all text-white/20 hover:text-white/60 focus:outline-none"
+                            className="p-2 hover:bg-black/5 dark:bg-white/5 rounded-lg transition-all text-black hover:text-black dark:text-white/60 focus:outline-none"
                           >
                             <Settings className="w-4 h-4" />
                           </button>
@@ -2316,12 +2316,12 @@ export default function ChatInterface({
                     <div className="flex items-center gap-3">
                       {/* Subscription Badge */}
                       {currentPlan !== 'pro' && (
-                        <div className="flex items-center gap-1.5 px-3 py-1 bg-[#111111] border border-white/5 rounded-full shadow-sm hover:border-white/10 transition-all">
-                          <span className="text-[10px] text-white/40 font-medium tracking-wide whitespace-nowrap">Free plan</span>
-                          <span className="text-[10px] text-white/10">•</span>
+                        <div className="flex items-center gap-1.5 px-3 py-1 bg-[#111111] border border-neutral-200 rounded-full shadow-sm hover:border-neutral-200 dark:border-white/10 transition-all">
+                          <span className="text-[10px] text-black dark:text-white/40 font-medium tracking-wide whitespace-nowrap">Free plan</span>
+                          <span className="text-[10px] text-black dark:text-white/10">•</span>
                           <button 
                             onClick={() => router.push('/pricing')}
-                            className="text-[10px] text-white hover:text-white/80 transition-colors font-bold uppercase tracking-tight whitespace-nowrap"
+                            className="text-[10px] text-black hover:text-black dark:text-white/80 transition-colors font-bold uppercase tracking-tight whitespace-nowrap"
                           >
                             Upgrade
                           </button>
@@ -2336,7 +2336,7 @@ export default function ChatInterface({
                               e.stopPropagation();
                               startNewChat();
                             }}
-                            className="p-2 hover:bg-white/5 rounded-lg transition-all text-white/20 hover:text-white/60 focus:outline-none"
+                            className="p-2 hover:bg-black/5 dark:bg-white/5 rounded-lg transition-all text-black hover:text-black dark:text-white/60 focus:outline-none"
                           >
                             <HugeiconsIcon icon={AddSquareIcon} size={16} strokeWidth={1.8} />
                           </button>
@@ -2350,7 +2350,7 @@ export default function ChatInterface({
                         <TooltipTrigger asChild>
                           <button
                             onClick={() => setShowHistory(!showHistory)}
-                            className={`p-2 rounded-lg transition-all hover:bg-white/5 ${showHistory ? 'text-white bg-white/10' : 'text-white/20 hover:text-white/60'}`}
+                            className={`p-2 rounded-lg transition-all hover:bg-black/5 dark:bg-white/5 ${showHistory ? 'text-black dark:text-white bg-black/10 dark:bg-white/10' : 'text-black dark:text-white/20 hover:text-black dark:text-white/60'}`}
                           >
                             <History className="w-4 h-4" />
                           </button>
@@ -2386,7 +2386,7 @@ export default function ChatInterface({
                               alt="Arcus AI"
                             />
                           </div>
-                          <h1 className="text-4xl md:text-6xl font-medium text-white tracking-tighter" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                          <h1 className="text-4xl md:text-6xl font-medium text-black dark:text-white tracking-tighter" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                             Ask anything about your emails
                           </h1>
                         </div>
@@ -2415,7 +2415,7 @@ export default function ChatInterface({
                               text: "Please provide me with a comprehensive summary of my recent email correspondence from the last 24 hours. I am particularly interested in any urgent matters, action items directed at me, or important status updates that require my immediate attention.",
                               id: Date.now()
                             })}
-                            className="flex items-center gap-2 px-4 py-2 bg-white/[0.03] border border-white/5 rounded-full text-white/40 hover:text-white hover:bg-white/10 hover:border-white/10 transition-all text-[13px] font-medium"
+                            className="flex items-center gap-2 px-4 py-2 bg-white/[0.03] border border-neutral-200 rounded-full text-black hover:text-black dark:text-white hover:bg-black/10 dark:bg-white/10 hover:border-neutral-200 dark:border-white/10 transition-all text-[13px] font-medium"
                           >
                             <Sparkles className="w-3.5 h-3.5" />
                             Catch up
@@ -2425,7 +2425,7 @@ export default function ChatInterface({
                               text: "Could you please analyze my current unread emails and synthesize the core information from each thread? I would like a breakdown that highlights the main subject of each conversation and identifies any deadlines or specific requests made by the senders.",
                               id: Date.now()
                             })}
-                            className="flex items-center gap-2 px-4 py-2 bg-white/[0.03] border border-white/5 rounded-full text-white/40 hover:text-white hover:bg-white/10 hover:border-white/10 transition-all text-[13px] font-medium"
+                            className="flex items-center gap-2 px-4 py-2 bg-white/[0.03] border border-neutral-200 rounded-full text-black hover:text-black dark:text-white hover:bg-black/10 dark:bg-white/10 hover:border-neutral-200 dark:border-white/10 transition-all text-[13px] font-medium"
                           >
                             <FileText className="w-3.5 h-3.5" />
                             Summarize
@@ -2435,7 +2435,7 @@ export default function ChatInterface({
                               text: "I would like some assistance in drafting a professional response to my most recent email. Please ensure the reply is articulate, maintains a collaborative tone, and clearly addresses all the questions or points raised by the sender in their message.",
                               id: Date.now()
                             })}
-                            className="flex items-center gap-2 px-4 py-2 bg-white/[0.03] border border-white/5 rounded-full text-white/40 hover:text-white hover:bg-white/10 hover:border-white/10 transition-all text-[13px] font-medium"
+                            className="flex items-center gap-2 px-4 py-2 bg-white/[0.03] border border-neutral-200 rounded-full text-black hover:text-black dark:text-white hover:bg-black/10 dark:bg-white/10 hover:border-neutral-200 dark:border-white/10 transition-all text-[13px] font-medium"
                           >
                             <PenTool className="w-3.5 h-3.5" />
                             Draft reply
@@ -2445,7 +2445,7 @@ export default function ChatInterface({
                               text: "I need to facilitate a meeting for tomorrow based on my recent email threads. Could you please review any pending scheduling requests and compare them with my calendar to suggest the most optimal windows for a 30-minute discussion?",
                               id: Date.now()
                             })}
-                            className="flex items-center gap-2 px-4 py-2 bg-white/[0.03] border border-white/5 rounded-full text-white/40 hover:text-white hover:bg-white/10 hover:border-white/10 transition-all text-[13px] font-medium"
+                            className="flex items-center gap-2 px-4 py-2 bg-white/[0.03] border border-neutral-200 rounded-full text-black hover:text-black dark:text-white hover:bg-black/10 dark:bg-white/10 hover:border-neutral-200 dark:border-white/10 transition-all text-[13px] font-medium"
                           >
                             <Calendar className="w-3.5 h-3.5" />
                             Schedule
@@ -2455,7 +2455,7 @@ export default function ChatInterface({
                               text: "Please perform an audit of my email engagement and activity over the past seven days. I am looking for a detailed overview of my top communication partners, peak activity times, and any trends in my response frequency or inbox growth.",
                               id: Date.now()
                             })}
-                            className="flex items-center gap-2 px-4 py-2 bg-white/[0.03] border border-white/5 rounded-full text-white/40 hover:text-white hover:bg-white/10 hover:border-white/10 transition-all text-[13px] font-medium"
+                            className="flex items-center gap-2 px-4 py-2 bg-white/[0.03] border border-neutral-200 rounded-full text-black hover:text-black dark:text-white hover:bg-black/10 dark:bg-white/10 hover:border-neutral-200 dark:border-white/10 transition-all text-[13px] font-medium"
                           >
                             <BarChart3 className="w-3.5 h-3.5" />
                             Analytics
@@ -2468,16 +2468,16 @@ export default function ChatInterface({
                         {messages.map((msg) => (
                           <div key={msg.id} className={`flex flex-col animate-fade-in ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                             <div className={`flex gap-2.5 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'} max-w-full items-start`}>
-                              <div className={`w-7 h-7 rounded-lg flex-shrink-0 flex items-center justify-center border ${msg.role === 'user' ? 'bg-[#2b2b2b] border-white/10' : 'bg-graphite-surface border-graphite-border'}`}>
-                                {msg.role === 'user' ? <User2 className="w-3.5 h-3.5 text-white/50" /> : <img src="/arcus-ai-icon.jpg" className="w-full h-full object-cover grayscale" />}
+                              <div className={`w-7 h-7 rounded-lg flex-shrink-0 flex items-center justify-center border ${msg.role === 'user' ? 'bg-[#2b2b2b] border-neutral-200 dark:border-white/10' : 'bg-graphite-surface border-graphite-border'}`}>
+                                {msg.role === 'user' ? <User2 className="w-3.5 h-3.5 text-black dark:text-white/50" /> : <img src="/arcus-ai-icon.jpg" className="w-full h-full object-cover grayscale" />}
                               </div>
                               <div className="flex flex-col max-w-[85%] group/msg">
-                                <div className={`transition-all relative ${msg.role === 'user' ? 'px-4 py-2.5 rounded-xl bg-[#2b2b2b] text-white border border-white/5 shadow-sm' : 'text-graphite-text px-0 py-1'}`}>
+                                <div className={`transition-all relative ${msg.role === 'user' ? 'px-4 py-2.5 rounded-xl bg-[#2b2b2b] text-black dark:text-white border border-neutral-200 dark:border-white/5 shadow-sm' : 'text-graphite-text px-0 py-1'}`}>
                                   {msg.role === 'assistant' && msg.meta?.limitReached && (
                                     <div className="flex items-center gap-2 mb-3 opacity-60">
                                       <img src="/arcus-ai-icon.jpg" className="w-4 h-4 rounded-md grayscale" />
-                                      <span className="text-[12px] text-white/90 font-medium tracking-tight">Arcus AI</span>
-                                      <span className="px-1.5 py-0.5 bg-white/10 text-white/40 text-[9px] font-bold rounded uppercase tracking-widest leading-none">Lite</span>
+                                      <span className="text-[12px] text-black dark:text-white/90 font-medium tracking-tight">Arcus AI</span>
+                                      <span className="px-1.5 py-0.5 bg-black/10 dark:bg-white/10 text-black dark:text-white/40 text-[9px] font-bold rounded uppercase tracking-widest leading-none">Lite</span>
                                     </div>
                                   )}
 
@@ -2493,16 +2493,16 @@ export default function ChatInterface({
                                           window.speechSynthesis.speak(utterance);
                                         }
                                       }}
-                                      className="absolute -right-8 top-1 opacity-0 group-hover/msg:opacity-100 transition-opacity p-1.5 hover:bg-white/5 rounded-full text-white/40 hover:text-white"
+                                      className="absolute -right-8 top-1 opacity-0 group-hover/msg:opacity-100 transition-opacity p-1.5 hover:bg-black/5 dark:bg-white/5 rounded-full text-black hover:text-black dark:text-white"
                                       title="Speak"
                                     >
                                       <Volume2 className="w-3.5 h-3.5" />
                                     </button>
                                   )}
                                   {msg.role === 'user' && (msg as UserMessage).attachments && (msg as UserMessage).attachments!.length > 0 && (
-                                    <div className="mt-3 flex flex-wrap gap-2 pt-3 border-t border-white/10">
+                                    <div className="mt-3 flex flex-wrap gap-2 pt-3 border-t border-neutral-200 dark:border-white/10">
                                       {(msg as UserMessage).attachments!.map((file, idx) => (
-                                        <div key={idx} className="flex items-center gap-2 p-2 bg-white/5 rounded-lg border border-white/10 max-w-[200px]">
+                                        <div key={idx} className="flex items-center gap-2 p-2 bg-black/5 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 max-w-[200px]">
                                           {file.type.startsWith('image/') ? (
                                             <div className="w-8 h-8 rounded-md overflow-hidden flex-shrink-0">
                                               <img src={file.url} alt={file.name} className="w-full h-full object-cover" />
@@ -2534,14 +2534,14 @@ export default function ChatInterface({
                                   )}
 
                                   {msg.role === 'assistant' && msg.meta?.internalThought && (
-                                    <details className="mt-4 border-t border-white/5 pt-3 group/thought">
-                                      <summary className="flex items-center gap-2 cursor-pointer text-white/30 hover:text-white/60 transition-colors list-none">
+                                    <details className="mt-4 border-t border-neutral-200 dark:border-white/5 pt-3 group/thought">
+                                      <summary className="flex items-center gap-2 cursor-pointer text-black hover:text-black dark:text-white/60 transition-colors list-none">
                                         <BrainCircuit className="w-3.5 h-3.5" />
                                         <span className="text-[11px] font-bold tracking-wide uppercase">Internal Reasoning</span>
                                         <ChevronDown className="w-3 h-3 transition-transform group-open/thought:rotate-180" />
                                       </summary>
-                                      <div className="mt-2 pl-4 border-l border-white/10 py-2">
-                                        <p className="text-white/40 text-[12px] leading-relaxed whitespace-pre-wrap italic">
+                                      <div className="mt-2 pl-4 border-l border-neutral-200 dark:border-white/10 py-2">
+                                        <p className="text-black dark:text-white/40 text-[12px] leading-relaxed whitespace-pre-wrap italic">
                                           {msg.meta.internalThought}
                                         </p>
                                       </div>
@@ -2549,7 +2549,7 @@ export default function ChatInterface({
                                   )}
 
                                   {msg.role === 'assistant' && msg.meta?.thinkingBlocks && (
-                                    <div className="mt-4 border-t border-white/5 pt-3 px-1">
+                                    <div className="mt-4 border-t border-neutral-200 dark:border-white/5 pt-3 px-1">
                                       <ThinkingLayer
                                         blocks={msg.meta.thinkingBlocks}
                                         isVisible={true}
@@ -2594,22 +2594,22 @@ export default function ChatInterface({
 
                                   {msg.role === 'assistant' && msg.meta?.limitReached && (
                                     <div className="flex flex-col gap-4 mt-2">
-                                      <a href="/pricing" className="text-white/40 hover:text-white underline underline-offset-4 decoration-white/10 hover:decoration-white transition-all text-[13px] tracking-tight truncate w-fit">
+                                      <a href="/pricing" className="text-black hover:text-black dark:text-white underline underline-offset-4 decoration-white/10 hover:decoration-white transition-all text-[13px] tracking-tight truncate w-fit">
                                         https://mailient.com/pricing
                                       </a>
 
-                                      <div className="group relative flex items-center justify-between gap-4 p-4 mt-2 w-full max-w-[500px] bg-white/[0.03] border border-white/[0.08] rounded-2xl transition-all duration-300 hover:bg-white/[0.05] hover:border-white/12 shadow-2xl overflow-hidden">
+                                      <div className="group relative flex items-center justify-between gap-4 p-4 mt-2 w-full max-w-[500px] bg-white/[0.03] border border-white/[0.08] rounded-2xl transition-all duration-300 hover:bg-black/[0.05] dark:bg-white/[0.05] hover:border-white/12 shadow-2xl overflow-hidden">
                                         <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent pointer-events-none opacity-50" />
 
                                         <div className="flex items-center gap-3.5 z-10">
-                                          <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center relative shadow-inner shrink-0 transition-transform group-hover:scale-105">
-                                            <Sparkles className="w-5 h-5 text-white/50 group-hover:text-white transition-colors" />
+                                          <div className="w-10 h-10 rounded-full bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/10 flex items-center justify-center relative shadow-inner shrink-0 transition-transform group-hover:scale-105">
+                                            <Sparkles className="w-5 h-5 text-black group-hover:text-black dark:text-white transition-colors" />
                                           </div>
                                           <div className="flex flex-col gap-0.5">
-                                            <p className="text-white/90 text-[13px] font-bold tracking-tight leading-relaxed">
+                                            <p className="text-black dark:text-white/90 text-[13px] font-bold tracking-tight leading-relaxed">
                                               Your credits have been used up.
                                             </p>
-                                            <p className="text-white/40 text-[11px] font-medium">Please upgrade your plan for more credits.</p>
+                                            <p className="text-black dark:text-white/40 text-[11px] font-medium">Please upgrade your plan for more credits.</p>
                                           </div>
                                         </div>
 
@@ -2626,18 +2626,18 @@ export default function ChatInterface({
                                   {msg.role === 'assistant' && (msg as AgentMessage).meta?.canvasApproval && (
                                     <div className="mt-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
                                       <div className={cn(
-                                        "relative group overflow-hidden bg-[#1a1a1a] border border-white/5 rounded-2xl p-5 shadow-2xl transition-all",
+                                        "relative group overflow-hidden bg-white dark:bg-[#1a1a1a] border border-neutral-200 dark:border-white/5 rounded-2xl p-5 shadow-2xl transition-all",
                                         (msg as AgentMessage).meta!.canvasApproval!.status !== 'pending' && "opacity-60"
                                       )}>
                                         <div className="flex items-start gap-3.5 relative z-10">
-                                          <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
-                                            <Sparkles className={cn("w-5 h-5", (msg as AgentMessage).meta!.canvasApproval!.status === 'accepted' ? "text-blue-400" : "text-white/40")} />
+                                          <div className="w-10 h-10 rounded-xl bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/10 flex items-center justify-center shrink-0">
+                                            <Sparkles className={cn("w-5 h-5", (msg as AgentMessage).meta!.canvasApproval!.status === 'accepted' ? "text-blue-400" : "text-black dark:text-white/40")} />
                                           </div>
                                           <div className="flex-1 min-w-0">
-                                            <h4 className="text-white font-bold text-[14px] tracking-tight mb-1">
+                                            <h4 className="text-black dark:text-white font-bold text-[14px] tracking-tight mb-1">
                                               {(msg as AgentMessage).meta!.canvasApproval!.title || 'Launch Arcus Mission?'}
                                             </h4>
-                                            <p className="text-white/40 text-[12px] leading-relaxed line-clamp-2">
+                                            <p className="text-black dark:text-white/40 text-[12px] leading-relaxed line-clamp-2">
                                               {(msg as AgentMessage).meta!.canvasApproval!.description || 'This request would be best handled in the specialized Arcus Workspace. Would you like to open it?'}
                                             </p>
                                           </div>
@@ -2654,21 +2654,21 @@ export default function ChatInterface({
                                             </button>
                                             <button
                                               onClick={() => handleDeclineCanvas(msg.id as number)}
-                                              className="px-5 py-2 bg-white/5 hover:bg-white/10 text-white/60 font-medium text-[12px] rounded-full transition-all active:scale-95"
+                                              className="px-5 py-2 bg-black/5 hover:bg-black/10 dark:bg-white/10 text-black dark:text-white/60 font-medium text-[12px] rounded-full transition-all active:scale-95"
                                             >
                                               <span>No, stay here</span>
                                             </button>
                                           </div>
                                         ) : (
                                           <div className="flex items-center gap-2 mt-5 pt-4 border-t border-white/[0.03]">
-                                            <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-full border border-white/5">
+                                            <div className="flex items-center gap-2 px-3 py-1.5 bg-black/5 dark:bg-white/5 rounded-full border border-neutral-200 dark:border-white/5">
                                               {(msg as AgentMessage).meta!.canvasApproval!.status === 'accepted' ? (
                                                 <div className="flex items-center gap-2 text-blue-400 text-[12px] font-bold">
                                                   <Check className="w-4 h-4" />
                                                   <span>Mission Accepted</span>
                                                 </div>
                                               ) : (
-                                                <div className="flex items-center gap-2 text-white/30 text-[12px] font-bold">
+                                                <div className="flex items-center gap-2 text-black dark:text-white/30 text-[12px] font-bold">
                                                   <X className="w-4 h-4" />
                                                   <span>Stayed in chat</span>
                                                 </div>
@@ -2715,7 +2715,7 @@ export default function ChatInterface({
                                   scale: { duration: 3, repeat: Infinity, ease: "easeInOut" }
                                 }}
                               />
-                              <div className="absolute inset-0 bg-white/5 animate-pulse" />
+                              <div className="absolute inset-0 bg-black/5 dark:bg-white/5 animate-pulse" />
                             </div>
 
                             <div className="flex flex-col gap-2.5 max-w-full">
@@ -2812,7 +2812,7 @@ export default function ChatInterface({
                     animate={{ width: 'auto', opacity: 1 }}
                     exit={{ width: 0, opacity: 0 }}
                     transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                    className="h-full flex-shrink-0 bg-[#161616] border border-white/5 rounded-[32px] z-50 overflow-hidden order-2 relative shadow-2xl"
+                    className="h-full flex-shrink-0 bg-[#161616] border border-neutral-200 dark:border-white/5 rounded-[32px] z-50 overflow-hidden order-2 relative shadow-2xl"
                   >
                     <CanvasPanel
                       isOpen={isCanvasOpen}

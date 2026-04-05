@@ -45,7 +45,7 @@ export function VerificationCard({
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
       className={cn(
-        "relative h-[240px] w-[400px] rounded-[32px] p-8 shadow-2xl text-white flex flex-col justify-between overflow-hidden select-none group border border-white/10"
+        "relative h-[240px] w-[400px] rounded-[32px] p-8 shadow-2xl text-black dark:text-white flex flex-col justify-between overflow-hidden select-none group border border-neutral-200 dark:border-white/10"
       )}
       style={{
         background: isFree 
@@ -69,39 +69,39 @@ export function VerificationCard({
       {/* ... top section ... */}
       <div className="relative z-10 flex justify-between items-start">
         <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center overflow-hidden">
+            <div className="w-10 h-10 rounded-xl bg-black/10 dark:bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center overflow-hidden">
                 <img src="/mailient-logo-premium.png" alt="" className="w-7 h-7 dark:invert pr-0.5" />
             </div>
             <div className="flex flex-col">
                 <span className="text-lg font-bold tracking-tight leading-none">Mailient</span>
-                <span className="text-[10px] text-white/40 font-medium tracking-widest uppercase mt-1">
+                <span className="text-[10px] text-black dark:text-white/40 font-medium tracking-widest uppercase mt-1">
                     {isFree ? "Free Tier" : "Pro Pass"}
                 </span>
             </div>
         </div>
-        <div className="px-3 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm">
-            <span className="text-[10px] font-bold tracking-[0.1em] text-white/60 uppercase">
+        <div className="px-3 py-1 rounded-full bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/10 backdrop-blur-sm">
+            <span className="text-[10px] font-bold tracking-[0.1em] text-black dark:text-white/60 uppercase">
                 {isFree ? "MEMBER" : "PRO"}
             </span>
         </div>
       </div>
 
       <div className="relative z-10 my-4">
-        <h2 className="text-[28px] font-mono font-medium tracking-[0.15em] text-white/90 drop-shadow-lg">
+        <h2 className="text-[28px] font-mono font-medium tracking-[0.15em] text-black dark:text-white/90 drop-shadow-lg">
           {displayId}
         </h2>
       </div>
 
       <div className="relative z-10 flex justify-between items-end">
         <div className="flex flex-col gap-1">
-            <span className="text-[10px] text-white/40 font-bold tracking-widest uppercase">Cardholder</span>
-            <span className="text-[15px] font-bold tracking-wide text-white/95 uppercase truncate max-w-[240px]">
+            <span className="text-[10px] text-black dark:text-white/40 font-bold tracking-widest uppercase">Cardholder</span>
+            <span className="text-[15px] font-bold tracking-wide text-black dark:text-white/95 uppercase truncate max-w-[240px]">
                 {name}
             </span>
         </div>
         <div className="flex flex-col items-end gap-1">
-            <span className="text-[10px] text-white/40 font-bold tracking-widest uppercase">Valid Thru</span>
-            <span className="text-[16px] font-mono font-bold text-white/90">
+            <span className="text-[10px] text-black dark:text-white/40 font-bold tracking-widest uppercase">Valid Thru</span>
+            <span className="text-[16px] font-mono font-bold text-black dark:text-white/90">
                 {validThru}
             </span>
         </div>

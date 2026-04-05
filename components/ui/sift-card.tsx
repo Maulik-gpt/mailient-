@@ -72,7 +72,7 @@ export const SiftCard: React.FC<SiftCardProps> = ({
       case 'weekly-intelligence':
         return {
           icon: <Lightbulb className="w-4 h-4" strokeWidth={1.5} />,
-          accentColor: 'text-neutral-400',
+          accentColor: 'text-neutral-500 dark:text-neutral-400',
           borderColor: 'border-l-neutral-500/40'
         };
       case 'opportunity':
@@ -102,7 +102,7 @@ export const SiftCard: React.FC<SiftCardProps> = ({
       default:
         return {
           icon: <Mail className="w-4 h-4" strokeWidth={1.5} />,
-          accentColor: 'text-neutral-400',
+          accentColor: 'text-neutral-500 dark:text-neutral-400',
           borderColor: 'border-l-neutral-500/40'
         };
     }
@@ -112,7 +112,7 @@ export const SiftCard: React.FC<SiftCardProps> = ({
 
   return (
     <div
-      className={`group bg-neutral-900/30 hover:bg-neutral-900/50 border border-neutral-800/50 hover:border-neutral-800 ${borderColor} border-l-2 rounded-lg transition-all duration-200`}
+      className={`group bg-neutral-900/30 hover:bg-neutral-200/50 dark:bg-neutral-900/50 border border-neutral-800/50 hover:border-neutral-800 ${borderColor} border-l-2 rounded-lg transition-all duration-200`}
       style={{ fontFamily: "'Satoshi', -apple-system, BlinkMacSystemFont, sans-serif" }}
     >
       <div className="p-5">

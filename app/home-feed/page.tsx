@@ -212,7 +212,7 @@ function HomeFeedContent() {
   };
 
   return (
-    <div className="satoshi-home-feed w-full h-screen bg-black dark:bg-black relative">
+    <div className="satoshi-home-feed w-full h-screen bg-white dark:bg-black relative">
       <GmailInterfaceFixed />
       <FloatingNavbar />
       
@@ -221,7 +221,7 @@ function HomeFeedContent() {
               {!paymentVerified ? (
                   <>
                       <div className="relative">
-                          <div className="w-16 h-16 border-2 border-white/5 rounded-full" />
+                          <div className="w-16 h-16 border-2 border-neutral-200 dark:border-white/5 rounded-full" />
                           <div className="absolute inset-0 w-16 h-16 border-t-2 border-white rounded-full animate-spin" />
                       </div>
                       <div className="space-y-2 text-center">

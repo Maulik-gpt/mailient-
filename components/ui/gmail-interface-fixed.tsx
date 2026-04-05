@@ -28,7 +28,7 @@ const renderMarkdown = (text: string): string => {
 
     const renderedParagraphs = paragraphs.map(para => {
         // Handle bold: **text** -> <strong>text</strong>
-        let processedPara = para.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-white brightness-125">$1</strong>');
+        let processedPara = para.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-black dark:text-white brightness-125">$1</strong>');
 
         // Handle bullet points: Start with - or *
         if (processedPara.includes('\n- ') || processedPara.startsWith('- ') || processedPara.includes('\n* ') || processedPara.startsWith('* ')) {
@@ -1561,7 +1561,7 @@ export function GmailInterfaceFixed() {
                                 <p className="text-[10px] font-medium uppercase tracking-wider">
                                     {(usageData.planType as string) === 'starter' ? 'Starter' : (usageData.planType as string) === 'pro' ? 'Pro' : 'Free'} Plan
                                     <br />
-                                    <span className="text-white/40 font-light lowercase">
+                                    <span className="text-black dark:text-white/40 font-light lowercase">
                                         {usageData.features?.arcus_ai?.remaining ?? 5} credits left
                                     </span>
                                 </p>
@@ -1589,9 +1589,9 @@ export function GmailInterfaceFixed() {
 
                         <div className="flex items-center gap-6">
                             {countdown !== null && (
-                                <div className="flex items-center gap-2 px-3 py-1 bg-neutral-900/50 rounded-full border border-neutral-800/50">
+                                <div className="flex items-center gap-2 px-3 py-1 bg-neutral-200/50 dark:bg-neutral-900/50 rounded-full border border-neutral-800/50">
                                     <div className={`w-1.5 h-1.5 rounded-full ${countdown < 0 ? 'bg-red-500 animate-pulse' : 'bg-blue-500 animate-pulse'}`} />
-                                    <span className={`text-xs font-mono tabular-nums ${countdown < 0 ? 'text-red-500' : 'text-neutral-400'}`}>
+                                    <span className={`text-xs font-mono tabular-nums ${countdown < 0 ? 'text-red-500' : 'text-neutral-500 dark:text-neutral-400'}`}>
                                         {countdown}s
                                     </span>
                                 </div>
@@ -1609,7 +1609,7 @@ export function GmailInterfaceFixed() {
                                         fetchTraditionalEmails();
                                     }
                                 }}
-                                className="h-10 px-6 metallic-glowing-button text-white rounded-xl text-sm font-medium flex items-center gap-3 group border border-white/20"
+                                className="h-10 px-6 metallic-glowing-button text-black dark:text-white rounded-xl text-sm font-medium flex items-center gap-3 group border border-white/20"
                             >
                                 {isTraditionalView ? (
                                     <>
@@ -1627,7 +1627,7 @@ export function GmailInterfaceFixed() {
                             <Button
                                 onClick={() => isTraditionalView ? fetchTraditionalEmails() : fetchSiftInsights(true)}
                                 disabled={loading || isLoadingTraditional || (!isTraditionalView && !nextPageToken)}
-                                className="h-9 px-4 bg-transparent hover:bg-neutral-900 border border-neutral-800 hover:border-neutral-700 text-neutral-400 hover:text-[#fafafa] rounded-lg transition-colors flex items-center gap-2"
+                                className="h-9 px-4 bg-transparent hover:bg-neutral-900 border border-neutral-800 hover:border-neutral-700 text-neutral-500 dark:text-neutral-400 hover:text-[#fafafa] rounded-lg transition-colors flex items-center gap-2"
                                 size="sm"
                             >
                                 <Sparkles className={`h-3.5 w-3.5 ${loading || isLoadingTraditional ? 'animate-pulse' : ''}`} />
@@ -1636,7 +1636,7 @@ export function GmailInterfaceFixed() {
                             <Button
                                 onClick={() => isTraditionalView ? fetchTraditionalEmails() : fetchSiftInsights(false)}
                                 disabled={loading || isLoadingTraditional}
-                                className="h-9 px-4 bg-transparent hover:bg-neutral-900 border border-neutral-800 hover:border-neutral-700 text-neutral-400 hover:text-[#fafafa] rounded-lg transition-colors flex items-center gap-2"
+                                className="h-9 px-4 bg-transparent hover:bg-neutral-900 border border-neutral-800 hover:border-neutral-700 text-neutral-500 dark:text-neutral-400 hover:text-[#fafafa] rounded-lg transition-colors flex items-center gap-2"
                                 size="sm"
                             >
                                 <RefreshCw className={`h-3.5 w-3.5 ${loading || isLoadingTraditional ? 'animate-spin' : ''}`} />
@@ -1649,7 +1649,7 @@ export function GmailInterfaceFixed() {
                     {summary && (
                         <div className="grid grid-cols-6 gap-px bg-neutral-800/50 rounded-xl overflow-hidden mb-16">
                             {/* Opportunities */}
-                            <div className="bg-[#0a0a0a] p-6 hover:bg-neutral-900/50 transition-colors">
+                            <div className="bg-[#0a0a0a] p-6 hover:bg-neutral-200/50 dark:bg-neutral-900/50 transition-colors">
                                 <div className="flex items-center gap-3 mb-4">
                                     <Target className="h-4 w-4 text-neutral-500" strokeWidth={1.5} />
                                 </div>
@@ -1658,7 +1658,7 @@ export function GmailInterfaceFixed() {
                             </div>
 
                             {/* Urgent */}
-                            <div className="bg-[#0a0a0a] p-6 hover:bg-neutral-900/50 transition-colors">
+                            <div className="bg-[#0a0a0a] p-6 hover:bg-neutral-200/50 dark:bg-neutral-900/50 transition-colors">
                                 <div className="flex items-center gap-3 mb-4">
                                     <Zap className="h-4 w-4 text-neutral-500" strokeWidth={1.5} />
                                 </div>
@@ -1667,7 +1667,7 @@ export function GmailInterfaceFixed() {
                             </div>
 
                             {/* Hot Leads */}
-                            <div className="bg-[#0a0a0a] p-6 hover:bg-neutral-900/50 transition-colors">
+                            <div className="bg-[#0a0a0a] p-6 hover:bg-neutral-200/50 dark:bg-neutral-900/50 transition-colors">
                                 <div className="flex items-center gap-3 mb-4">
                                     <TrendingUp className="h-4 w-4 text-neutral-500" strokeWidth={1.5} />
                                 </div>
@@ -1676,7 +1676,7 @@ export function GmailInterfaceFixed() {
                             </div>
 
                             {/* At Risk */}
-                            <div className="bg-[#0a0a0a] p-6 hover:bg-neutral-900/50 transition-colors">
+                            <div className="bg-[#0a0a0a] p-6 hover:bg-neutral-200/50 dark:bg-neutral-900/50 transition-colors">
                                 <div className="flex items-center gap-3 mb-4">
                                     <AlertCircle className="h-4 w-4 text-neutral-500" strokeWidth={1.5} />
                                 </div>
@@ -1685,7 +1685,7 @@ export function GmailInterfaceFixed() {
                             </div>
 
                             {/* Follow-ups */}
-                            <div className="bg-[#0a0a0a] p-6 hover:bg-neutral-900/50 transition-colors">
+                            <div className="bg-[#0a0a0a] p-6 hover:bg-neutral-200/50 dark:bg-neutral-900/50 transition-colors">
                                 <div className="flex items-center gap-3 mb-4">
                                     <Clock className="h-4 w-4 text-neutral-500" strokeWidth={1.5} />
                                 </div>
@@ -1694,7 +1694,7 @@ export function GmailInterfaceFixed() {
                             </div>
 
                             {/* Important */}
-                            <div className="bg-[#0a0a0a] p-6 hover:bg-neutral-900/50 transition-colors">
+                            <div className="bg-[#0a0a0a] p-6 hover:bg-neutral-200/50 dark:bg-neutral-900/50 transition-colors">
                                 <div className="flex items-center gap-3 mb-4">
                                     <Mail className="h-4 w-4 text-neutral-500" strokeWidth={1.5} />
                                 </div>
@@ -1710,7 +1710,7 @@ export function GmailInterfaceFixed() {
                             <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center gap-2">
                                     <Sparkles className="w-4 h-4 text-amber-500" />
-                                    <h2 className="text-sm font-semibold text-white uppercase tracking-wider">Smart Nudges</h2>
+                                    <h2 className="text-sm font-semibold text-black dark:text-white uppercase tracking-wider">Smart Nudges</h2>
                                     <span className="text-[10px] bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded-full font-bold uppercase tracking-widest border border-amber-500/20 ml-2">AI Agent Active</span>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -1718,7 +1718,7 @@ export function GmailInterfaceFixed() {
                                         <Button 
                                             variant="ghost" 
                                             size="sm" 
-                                            className="text-[10px] uppercase font-bold tracking-widest text-neutral-600 hover:text-white"
+                                            className="text-[10px] uppercase font-bold tracking-widest text-neutral-600 hover:text-black dark:text-white"
                                             onClick={() => setNudges([])}
                                         >
                                             Dismiss All
@@ -1727,7 +1727,7 @@ export function GmailInterfaceFixed() {
                                     <Button 
                                         variant="ghost" 
                                         size="sm" 
-                                        className="text-[10px] uppercase font-bold tracking-widest text-neutral-600 hover:text-white flex items-center gap-1.5"
+                                        className="text-[10px] uppercase font-bold tracking-widest text-neutral-600 hover:text-black dark:text-white flex items-center gap-1.5"
                                         onClick={fetchNudges}
                                         disabled={isLoadingNudges}
                                     >
@@ -1739,7 +1739,7 @@ export function GmailInterfaceFixed() {
 
                             {nudges.length === 0 && !isLoadingNudges ? (
                                 <div className="bg-[#0a0a0a]/50 border border-white/[0.03] rounded-2xl p-8 flex flex-col items-center justify-center text-center">
-                                    <div className="w-12 h-12 rounded-full bg-neutral-900/50 flex items-center justify-center mb-3">
+                                    <div className="w-12 h-12 rounded-full bg-neutral-200/50 dark:bg-neutral-900/50 flex items-center justify-center mb-3">
                                         <Mail className="w-5 h-5 text-neutral-700 font-light" />
                                     </div>
                                     <h3 className="text-sm font-medium text-neutral-300 mb-1">You're all caught up!</h3>
@@ -1770,7 +1770,7 @@ export function GmailInterfaceFixed() {
                                                         {nudge.urgency} Priority
                                                     </div>
                                                 </div>
-                                                <h4 className="text-sm font-semibold text-white/90 mb-1 truncate group-hover:text-white transition-colors">
+                                                <h4 className="text-sm font-semibold text-black mb-1 truncate group-hover:text-black dark:text-white transition-colors">
                                                     {nudge.subject}
                                                 </h4>
                                                 <p className="text-xs text-neutral-500 line-clamp-2 leading-relaxed font-light mb-4">
@@ -1796,7 +1796,7 @@ export function GmailInterfaceFixed() {
                                 <div className="bg-[#0a0a0a] border border-zinc-800/50 rounded-2xl px-6 py-4 flex items-center justify-between shadow-xl backdrop-blur-xl">
                                     <div className="flex items-center gap-4">
                                         <div className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center shrink-0">
-                                            <Sparkles className="w-5 h-5 text-white" />
+                                            <Sparkles className="w-5 h-5 text-black dark:text-white" />
                                         </div>
                                         <p className="text-zinc-200 text-[14px] font-medium tracking-tight">
                                             Your credits have been used up. Please upgrade your plan for more credits.
@@ -1838,7 +1838,7 @@ export function GmailInterfaceFixed() {
                                             <h4 className="text-[10px] uppercase tracking-[0.2em] font-bold text-neutral-600">Filters</h4>
                                             <div className="space-y-1">
                                                 {['All Activity', 'Sent', 'Received', 'Attachments', 'Reminders'].map((filter) => (
-                                                    <button key={filter} className="w-full text-left px-3 py-2 text-xs text-neutral-500 hover:text-white hover:bg-white/5 rounded-lg transition-all font-normal">
+                                                    <button key={filter} className="w-full text-left px-3 py-2 text-xs text-neutral-500 hover:text-black dark:text-white hover:bg-black/5 dark:bg-white/5 rounded-lg transition-all font-normal">
                                                         {filter}
                                                     </button>
                                                 ))}
@@ -1852,9 +1852,9 @@ export function GmailInterfaceFixed() {
                                                     { date: '30d+', desc: 'Stable period' },
                                                     { date: 'Initial', desc: 'First contact' }
                                                 ].map((t) => (
-                                                    <div key={t.date} className="relative pl-4 border-l border-white/5">
-                                                        <div className="absolute -left-[4.5px] top-1 w-2 h-2 rounded-full bg-white/10" />
-                                                        <p className="text-[10px] text-white/60 font-medium">{t.date}</p>
+                                                    <div key={t.date} className="relative pl-4 border-l border-neutral-200 dark:border-white/5">
+                                                        <div className="absolute -left-[4.5px] top-1 w-2 h-2 rounded-full bg-black/10 dark:bg-white/10" />
+                                                        <p className="text-[10px] text-black dark:text-white/60 font-medium">{t.date}</p>
                                                         <p className="text-[9px] text-neutral-600 font-light">{t.desc}</p>
                                                     </div>
                                                 ))}
@@ -1874,7 +1874,7 @@ export function GmailInterfaceFixed() {
                                             placeholder="Search people..."
                                             value={peopleSearchQuery}
                                             onChange={(e) => setPeopleSearchQuery(e.target.value)}
-                                            className="bg-white/5 border border-white/5 rounded-full px-4 py-1.5 text-xs text-white placeholder-white/20 focus:outline-none focus:border-white/10 transition-all w-48 font-normal"
+                                            className="bg-black/5 dark:bg-white/5 border border-neutral-200 rounded-full px-4 py-1.5 text-xs text-black dark:text-white placeholder-white/20 focus:outline-none focus:border-neutral-200 dark:border-white/10 transition-all w-48 font-normal"
                                         />
                                     </div>
                                 </div>
@@ -1889,16 +1889,16 @@ export function GmailInterfaceFixed() {
                                             <div
                                                 key={contact.email}
                                                 onClick={() => fetchContactDetail(contact.email)}
-                                                className={`group flex items-center gap-6 p-5 hover:bg-white/[0.04] active:bg-white/[0.06] transition-all cursor-pointer border-b border-white/[0.02] last:border-0 relative ${selectedContactEmail === contact.email ? 'bg-white/[0.05]' : ''}`}
+                                                className={`group flex items-center gap-6 p-5 hover:bg-white/[0.04] active:bg-white/[0.06] transition-all cursor-pointer border-b border-white/[0.02] last:border-0 relative ${selectedContactEmail === contact.email ? 'bg-black/[0.05] dark:bg-white/[0.05]' : ''}`}
                                             >
                                                 <Avatar className="w-12 h-12 border border-white/[0.05]">
-                                                    <AvatarFallback className="bg-neutral-800 text-white/50 text-sm font-normal">
+                                                    <AvatarFallback className="bg-neutral-800 text-black dark:text-white/50 text-sm font-normal">
                                                         {contact.name?.[0]?.toUpperCase() || contact.email?.[0]?.toUpperCase() || 'U'}
                                                     </AvatarFallback>
                                                 </Avatar>
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex justify-between items-center mb-1">
-                                                        <h4 className="text-sm font-semibold text-white/90 truncate group-hover:text-white transition-colors">
+                                                        <h4 className="text-sm font-semibold text-black truncate group-hover:text-black dark:text-white transition-colors">
                                                             {contact.name || contact.email.split('@')[0]}
                                                         </h4>
                                                         <span className="text-[10px] uppercase tracking-widest text-neutral-600 font-medium">
@@ -1910,10 +1910,10 @@ export function GmailInterfaceFixed() {
                                                     </p>
                                                 </div>
                                                 <div className="flex items-center gap-3 pr-2">
-                                                    <div className="text-[10px] text-white/20 font-mono">
+                                                    <div className="text-[10px] text-black dark:text-white/20 font-mono">
                                                         {contact.totalEmails} emails
                                                     </div>
-                                                    <ChevronRight className={`w-4 h-4 text-neutral-600 transition-all ${selectedContactEmail === contact.email ? 'translate-x-1 text-white' : 'opacity-0 group-hover:opacity-100'}`} />
+                                                    <ChevronRight className={`w-4 h-4 text-neutral-600 transition-all ${selectedContactEmail === contact.email ? 'translate-x-1 text-black dark:text-white' : 'opacity-0 group-hover:opacity-100'}`} />
                                                 </div>
                                                 {selectedContactEmail === contact.email && (
                                                     <div className="absolute inset-y-0 left-0 w-1 bg-white" />
@@ -1934,36 +1934,36 @@ export function GmailInterfaceFixed() {
                             <div className="w-[400px] flex flex-col bg-neutral-900/40 border border-neutral-800/50 rounded-3xl overflow-hidden shadow-2xl transition-all">
                                 {!selectedContactEmail ? (
                                     <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
-                                        <div className="w-20 h-20 bg-white/[0.02] border border-white/[0.05] rounded-full flex items-center justify-center mb-6">
-                                            <User className="w-8 h-8 text-white/10" strokeWidth={1} />
+                                        <div className="w-20 h-20 bg-black/[0.02] dark:bg-white/[0.02] border border-white/[0.05] rounded-full flex items-center justify-center mb-6">
+                                            <User className="w-8 h-8 text-black dark:text-white/10" strokeWidth={1} />
                                         </div>
-                                        <h3 className="text-lg font-light text-white/30 mb-2">Select a profile</h3>
-                                        <p className="text-sm text-white/10 font-light max-w-[200px]">Choose someone from the list to view their relationship history.</p>
+                                        <h3 className="text-lg font-light text-black dark:text-white/30 mb-2">Select a profile</h3>
+                                        <p className="text-sm text-black dark:text-white/10 font-light max-w-[200px]">Choose someone from the list to view their relationship history.</p>
                                     </div>
                                 ) : isLoadingContactDetail ? (
                                     <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
-                                        <Loader2 className="w-8 h-8 text-white/20 animate-spin mb-4" />
-                                        <p className="text-white/20 font-light">Fetching details...</p>
+                                        <Loader2 className="w-8 h-8 text-black dark:text-white/20 animate-spin mb-4" />
+                                        <p className="text-black dark:text-white/20 font-light">Fetching details...</p>
                                     </div>
                                 ) : contactDetail ? (
                                     <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
                                         {/* Profile Header */}
                                         <div className="flex flex-col items-center text-center mb-10">
-                                            <Avatar className="w-24 h-24 border border-white/10 mb-6">
-                                                <AvatarFallback className="bg-neutral-800 text-white/80 text-3xl font-normal">
+                                            <Avatar className="w-24 h-24 border border-neutral-200 dark:border-white/10 mb-6">
+                                                <AvatarFallback className="bg-neutral-800 text-black dark:text-white/80 text-3xl font-normal">
                                                     {(contactDetail.name || contactDetail.email)?.[0]?.toUpperCase()}
                                                 </AvatarFallback>
                                             </Avatar>
-                                            <h2 className="text-2xl font-normal text-white mb-1">
+                                            <h2 className="text-2xl font-normal text-black dark:text-white mb-1">
                                                 {contactDetail.name || contactDetail.email.split('@')[0]}
                                             </h2>
-                                            <p className="text-white/40 text-sm font-normal truncate max-w-full">{contactDetail.email}</p>
+                                            <p className="text-black dark:text-white/40 text-sm font-normal truncate max-w-full">{contactDetail.email}</p>
 
                                             <div className="flex gap-3 mt-8">
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
-                                                    className="border-white/10 text-white/80 hover:bg-white/5 rounded-full px-6 font-normal"
+                                                    className="border-neutral-200 dark:border-white/10 text-black dark:text-white/80 hover:bg-black/5 dark:bg-white/5 rounded-full px-6 font-normal"
                                                     onClick={() => window.open(`mailto:${contactDetail.email}`, '_blank')}
                                                 >
                                                     Email
@@ -1971,7 +1971,7 @@ export function GmailInterfaceFixed() {
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
-                                                    className="border-white/10 text-white/80 hover:bg-white/5 rounded-full px-6 font-normal"
+                                                    className="border-neutral-200 dark:border-white/10 text-black dark:text-white/80 hover:bg-black/5 dark:bg-white/5 rounded-full px-6 font-normal"
                                                     onClick={() => window.open(`tel:${contactDetail.phone || ''}`, '_blank')}
                                                 >
                                                     Call
@@ -1981,12 +1981,12 @@ export function GmailInterfaceFixed() {
 
                                         {/* AI Insight */}
                                         {contactDetail.aiSuggestion && (
-                                            <div className="mb-10 bg-white/5 border border-white/5 rounded-2xl p-6 relative overflow-hidden group">
-                                                <div className="flex items-center gap-2 mb-3 text-white/30">
+                                            <div className="mb-10 bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/5 rounded-2xl p-6 relative overflow-hidden group">
+                                                <div className="flex items-center gap-2 mb-3 text-black dark:text-white/30">
                                                     <Sparkles className="w-3.5 h-3.5" />
                                                     <span className="text-[10px] font-bold uppercase tracking-widest">AI Intelligence</span>
                                                 </div>
-                                                <p className="text-sm text-white/90 leading-relaxed font-normal italic">
+                                                <p className="text-sm text-black dark:text-white/90 leading-relaxed font-normal italic">
                                                     "{contactDetail.aiSuggestion}"
                                                 </p>
                                                 <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-3xl rounded-full -mr-16 -mt-16 group-hover:bg-blue-500/10 transition-colors" />
@@ -2001,9 +2001,9 @@ export function GmailInterfaceFixed() {
                                                 { label: 'Sent', value: contactDetail.sentEmails },
                                                 { label: 'Received', value: contactDetail.receivedEmails }
                                             ].map((item, i) => (
-                                                <div key={i} className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 hover:bg-white/[0.04] transition-colors">
-                                                    <span className="text-[10px] text-white/20 block mb-1 font-bold uppercase tracking-wider">{item.label}</span>
-                                                    <span className="text-xl text-white font-normal">{item.value}</span>
+                                                <div key={i} className="bg-black/[0.02] dark:bg-white/[0.02] border border-neutral-200 dark:border-white/5 rounded-2xl p-4 hover:bg-white/[0.04] transition-colors">
+                                                    <span className="text-[10px] text-black dark:text-white/20 block mb-1 font-bold uppercase tracking-wider">{item.label}</span>
+                                                    <span className="text-xl text-black dark:text-white font-normal">{item.value}</span>
                                                 </div>
                                             ))}
                                         </div>
@@ -2011,12 +2011,12 @@ export function GmailInterfaceFixed() {
                                         {/* Sentiment History */}
                                         {contactDetail.sentimentHistory?.length > 0 && (
                                             <div className="mb-10">
-                                                <h3 className="text-[10px] text-white/20 mb-4 font-bold uppercase tracking-widest">Sentiment Drift</h3>
+                                                <h3 className="text-[10px] text-black dark:text-white/20 mb-4 font-bold uppercase tracking-widest">Sentiment Drift</h3>
                                                 <div className="h-16 flex items-end gap-1 px-1">
                                                     {contactDetail.sentimentHistory.map((item: any, index: number) => (
                                                         <div
                                                             key={index}
-                                                            className="flex-1 bg-white/10 hover:bg-white/40 transition-all rounded-t-sm"
+                                                            className="flex-1 bg-black/10 dark:bg-white/10 hover:bg-white/40 transition-all rounded-t-sm"
                                                             style={{ height: `${item.score}%` }}
                                                             title={`Score: ${item.score}`}
                                                         />
@@ -2028,10 +2028,10 @@ export function GmailInterfaceFixed() {
                                         {/* Subjects */}
                                         {contactDetail.recentSubjects?.length > 0 && (
                                             <div className="space-y-4">
-                                                <h3 className="text-[10px] text-white/20 font-bold uppercase tracking-widest">Recent Topics</h3>
+                                                <h3 className="text-[10px] text-black dark:text-white/20 font-bold uppercase tracking-widest">Recent Topics</h3>
                                                 <div className="space-y-2">
                                                     {contactDetail.recentSubjects.map((subject: string, index: number) => (
-                                                        <div key={index} className="text-xs text-white/60 bg-white/[0.02] border border-white/5 rounded-xl px-4 py-3 truncate font-normal hover:bg-white/[0.04] transition-colors">
+                                                        <div key={index} className="text-xs text-black dark:text-white/60 bg-black/[0.02] dark:bg-white/[0.02] border border-neutral-200 dark:border-white/5 rounded-xl px-4 py-3 truncate font-normal hover:bg-white/[0.04] transition-colors">
                                                             {subject || '(No subject)'}
                                                         </div>
                                                     ))}
@@ -2049,7 +2049,7 @@ export function GmailInterfaceFixed() {
                             <div className="animate-in fade-in duration-500">
                                 {/* ... rest of traditional view ... */}
                                 <div className="flex items-center justify-between mb-8">
-                                    <h2 className="text-sm font-medium text-neutral-400 uppercase tracking-wider">
+                                    <h2 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                                         Traditional Inbox
                                     </h2>
                                     <div className="flex items-center gap-3 text-xs text-neutral-600">
@@ -2079,19 +2079,19 @@ export function GmailInterfaceFixed() {
                                                     onClick={() => handleTraditionalEmailClick(email.id)}
                                                     className="group flex items-center gap-6 p-5 hover:bg-white/[0.04] active:bg-white/[0.06] transition-all cursor-pointer border-b border-white/[0.02] last:border-0 relative overflow-hidden"
                                                 >
-                                                    <div className="w-10 h-10 rounded-full bg-neutral-800/50 flex items-center justify-center flex-shrink-0 border border-white/[0.05] text-white/40 group-hover:text-white/80 transition-colors">
+                                                    <div className="w-10 h-10 rounded-full bg-neutral-800/50 flex items-center justify-center flex-shrink-0 border border-white/[0.05] text-black group-hover:text-black dark:text-white/80 transition-colors">
                                                         {email.from?.[0]?.toUpperCase() || 'M'}
                                                     </div>
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex justify-between items-center mb-1">
-                                                            <h4 className="text-sm font-semibold text-white/90 truncate group-hover:text-white transition-colors">
+                                                            <h4 className="text-sm font-semibold text-black truncate group-hover:text-black dark:text-white transition-colors">
                                                                 {email.from?.split('<')[0]?.trim()}
                                                             </h4>
                                                             <span className="text-[10px] uppercase tracking-widest text-neutral-600 font-medium">
                                                                 {new Date(email.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                                                             </span>
                                                         </div>
-                                                        <p className="text-sm text-white/60 font-medium truncate mb-1">
+                                                        <p className="text-sm text-black dark:text-white/60 font-medium truncate mb-1">
                                                             {email.subject}
                                                         </p>
                                                         <p className="text-xs text-neutral-500 truncate font-light leading-relaxed">
@@ -2116,7 +2116,7 @@ export function GmailInterfaceFixed() {
                                                                 setIsArcusMinimized(false);
                                                                 setIsEmailArcusOpen(true);
                                                             }}
-                                                            className="w-9 h-9 bg-white/5 hover:bg-blue-500/20 rounded-xl text-white/30 hover:text-blue-400 transition-all border border-white/5 hover:border-blue-500/30 group/ai flex items-center justify-center overflow-hidden"
+                                                            className="w-9 h-9 bg-black/5 dark:bg-white/5 hover:bg-blue-500/20 rounded-xl text-black dark:text-white/30 hover:text-blue-400 transition-all border border-neutral-200 dark:border-white/5 hover:border-blue-500/30 group/ai flex items-center justify-center overflow-hidden"
                                                             title="Ask Arcus AI"
                                                         >
                                                             <img src="/arcus-ai-icon.jpg" alt="Ask AI" className="w-full h-full object-cover brightness-90 group-hover:brightness-110 transition-all" />
@@ -2134,7 +2134,7 @@ export function GmailInterfaceFixed() {
                                                 <Button
                                                     onClick={handleLoadMoreTraditional}
                                                     disabled={isLoadingMoreTraditional}
-                                                    className="h-12 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-2xl px-12 transition-all transform hover:scale-105 active:scale-95 group shadow-lg"
+                                                    className="h-12 bg-black/5 hover:bg-black/10 dark:bg-white/10 text-black dark:text-white border border-neutral-200 dark:border-white/10 rounded-2xl px-12 transition-all transform hover:scale-105 active:scale-95 group shadow-lg"
                                                 >
                                                     {isLoadingMoreTraditional ? (
                                                         <RefreshCw className="w-4 h-4 animate-spin mr-3" />
@@ -2153,7 +2153,7 @@ export function GmailInterfaceFixed() {
                                         <p className="text-sm text-neutral-600 mt-2 mb-8 font-light italic">There was an error connecting to Gmail.</p>
                                         <Button
                                             onClick={fetchTraditionalEmails}
-                                            className="h-10 px-6 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl"
+                                            className="h-10 px-6 bg-black/5 hover:bg-black/10 dark:bg-white/10 text-black dark:text-white border border-neutral-200 dark:border-white/10 rounded-xl"
                                         >
                                             Try again
                                         </Button>
@@ -2170,7 +2170,7 @@ export function GmailInterfaceFixed() {
                             insights.length > 0 ? (
                                 <div>
                                     <div className="flex items-center justify-between mb-8">
-                                        <h2 className="text-sm font-medium text-neutral-400 uppercase tracking-wider">
+                                        <h2 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                                             Insights
                                         </h2>
                                         <div className="flex items-center gap-3">
@@ -2247,7 +2247,7 @@ export function GmailInterfaceFixed() {
 
             {/* Details Modal */}
             <div
-                className={`fixed top-1/2 left-1/2 bg-[#1a1a1a] rounded-[2.5rem] shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-50 flex flex-col border border-neutral-800`}
+                className={`fixed top-1/2 left-1/2 bg-white dark:bg-[#1a1a1a] rounded-[2.5rem] shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-50 flex flex-col border border-neutral-800`}
                 style={{
                     width: '70%',
                     height: '85vh',
@@ -2265,18 +2265,18 @@ export function GmailInterfaceFixed() {
                                     {selectedEmailId && (
                                         <button
                                             onClick={() => setSelectedEmailId(null)}
-                                            className="p-2 -ml-2 hover:bg-neutral-800 rounded-full transition-colors text-neutral-400 hover:text-white"
+                                            className="p-2 -ml-2 hover:bg-neutral-800 rounded-full transition-colors text-neutral-500 hover:text-black dark:text-white"
                                         >
                                             <ArrowLeft className="w-6 h-6" />
                                         </button>
                                     )}
                                     <div>
                                         {!selectedEmailId && (
-                                            <Badge variant="outline" className="mb-4 border-neutral-700 text-neutral-400 px-3 py-1 rounded-full text-xs uppercase tracking-wider">
+                                            <Badge variant="outline" className="mb-4 border-neutral-700 text-neutral-500 dark:text-neutral-400 px-3 py-1 rounded-full text-xs uppercase tracking-wider">
                                                 {selectedInsight.type.replace('-', ' ')}
                                             </Badge>
                                         )}
-                                        <h2 className={`font-medium text-white mb-2 ${selectedEmailId ? 'text-2xl' : 'text-3xl'}`}>
+                                        <h2 className={`font-medium text-black dark:text-white mb-2 ${selectedEmailId ? 'text-2xl' : 'text-3xl'}`}>
                                             {selectedEmailId
                                                 ? selectedInsight.source_emails?.find(e => e.id === selectedEmailId)?.subject
                                                 : selectedInsight.title}
@@ -2290,7 +2290,7 @@ export function GmailInterfaceFixed() {
                                 </div>
                                 <button
                                     onClick={() => setSelectedInsight(null)}
-                                    className="p-3 hover:bg-neutral-800 rounded-full transition-colors text-neutral-400 hover:text-white"
+                                    className="p-3 hover:bg-neutral-800 rounded-full transition-colors text-neutral-500 hover:text-black dark:text-white"
                                 >
                                     <X className="w-6 h-6" />
                                 </button>
@@ -2317,7 +2317,7 @@ export function GmailInterfaceFixed() {
                                                     <div
                                                         key={email.id}
                                                         onClick={() => handleEmailClick(email.id)}
-                                                        className="bg-neutral-900/50 rounded-2xl p-6 hover:bg-neutral-800/50 transition-all cursor-pointer border border-neutral-800/50 group hover:border-neutral-700"
+                                                        className="bg-neutral-200/50 dark:bg-neutral-900/50 rounded-2xl p-6 hover:bg-neutral-800/50 transition-all cursor-pointer border border-neutral-800/50 group hover:border-neutral-700"
                                                     >
                                                         <div className="flex items-start gap-5">
                                                             {email.sender.avatar ? (
@@ -2360,8 +2360,8 @@ export function GmailInterfaceFixed() {
                                     {isSummarizing ? (
                                         <div className="flex flex-col items-center justify-center py-32">
                                             <div className="relative">
-                                                <Sparkles className="w-16 h-16 text-white animate-pulse" strokeWidth={1} />
-                                                <div className="absolute inset-0 bg-white/10 blur-3xl rounded-full animate-pulse" />
+                                                <Sparkles className="w-16 h-16 text-black dark:text-white animate-pulse" strokeWidth={1} />
+                                                <div className="absolute inset-0 bg-black/10 dark:bg-white/10 blur-3xl rounded-full animate-pulse" />
                                             </div>
                                             <p className="mt-8 text-neutral-500 font-light text-xl animate-pulse">
                                                 Sift AI is analyzing the conversation...
@@ -2372,7 +2372,7 @@ export function GmailInterfaceFixed() {
                                             {/* AI Summary Card */}
                                             <div className="bg-gradient-to-br from-neutral-800/40 to-neutral-900/40 rounded-[2rem] p-8 border border-neutral-800/50 shadow-2xl relative overflow-hidden">
                                                 <div className="absolute top-0 right-0 p-8 opacity-5">
-                                                    <Sparkles className="w-32 h-32 text-white" />
+                                                    <Sparkles className="w-32 h-32 text-black dark:text-white" />
                                                 </div>
 
                                                 <div className="flex items-center gap-3 mb-6">
@@ -2442,7 +2442,7 @@ export function GmailInterfaceFixed() {
                                             {/* Original Email Content (Optional context) */}
                                             <div className="pt-10 border-t border-neutral-800/50">
                                                 <h4 className="text-xs font-medium text-neutral-600 uppercase tracking-widest mb-6">Original Message Snippet</h4>
-                                                <div className="bg-neutral-900/30 rounded-2xl p-8 text-neutral-400 text-base leading-relaxed font-light border border-neutral-800/30">
+                                                <div className="bg-neutral-900/30 rounded-2xl p-8 text-neutral-500 dark:text-neutral-400 text-base leading-relaxed font-light border border-neutral-800/30">
                                                     {selectedInsight.source_emails?.find(e => e.id === selectedEmailId)?.snippet}
                                                     ...
                                                 </div>
@@ -2478,13 +2478,13 @@ export function GmailInterfaceFixed() {
                                 <Sparkles className="w-6 h-6 text-blue-400" />
                             </div>
                             <div>
-                                <h3 className="text-2xl font-medium text-white">AI Draft Reply</h3>
+                                <h3 className="text-2xl font-medium text-black dark:text-white">AI Draft Reply</h3>
                                 <p className="text-sm text-neutral-500 font-light">Sift AI generated response</p>
                             </div>
                         </div>
                         <button
                             onClick={() => setShowDraftEditor(false)}
-                            className="p-3 hover:bg-neutral-800 rounded-full transition-colors text-neutral-400 hover:text-white"
+                            className="p-3 hover:bg-neutral-800 rounded-full transition-colors text-neutral-500 hover:text-black dark:text-white"
                         >
                             <X className="w-6 h-6" />
                         </button>
@@ -2497,7 +2497,7 @@ export function GmailInterfaceFixed() {
                                     <Sparkles className="w-12 h-12 text-blue-400 animate-pulse" />
                                     <div className="absolute inset-0 bg-blue-400/20 blur-2xl rounded-full animate-pulse" />
                                 </div>
-                                <p className="text-neutral-400 text-lg font-light animate-pulse">Sift AI is drafting your response...</p>
+                                <p className="text-neutral-500 dark:text-neutral-400 text-lg font-light animate-pulse">Sift AI is drafting your response...</p>
                             </div>
                         ) : (
                             <>
@@ -2506,7 +2506,7 @@ export function GmailInterfaceFixed() {
                                         type="text"
                                         value={draftSubject}
                                         onChange={(e) => setDraftSubject(e.target.value)}
-                                        className="w-full bg-neutral-900/30 text-white text-lg font-medium px-4 py-3 rounded-xl border border-neutral-800 focus:outline-none focus:border-neutral-700 transition-colors"
+                                        className="w-full bg-neutral-900/30 text-black dark:text-white text-lg font-medium px-4 py-3 rounded-xl border border-neutral-800 focus:outline-none focus:border-neutral-700 transition-colors"
                                         placeholder="Subject"
                                     />
                                 </div>
@@ -2514,7 +2514,7 @@ export function GmailInterfaceFixed() {
                                     {proposedRefinement && selection ? (
                                         <div className="text-neutral-200 font-light leading-relaxed text-xl whitespace-pre-wrap">
                                             {draftContent.slice(0, selection.start)}
-                                            <span className="text-white/20 line-through decoration-white/30 decoration-1 bg-white/[0.03]">
+                                            <span className="text-black dark:text-white/20 line-through decoration-white/30 decoration-1 bg-white/[0.03]">
                                                 {selection.text}
                                             </span>
                                             <span className="text-black bg-white px-1.5 py-0.5 rounded-md shadow-[0_0_25px_rgba(255,255,255,0.1)] border border-white/20 font-medium">
@@ -2556,18 +2556,18 @@ export function GmailInterfaceFixed() {
                                     {!isRefinementActive && !proposedRefinement && (
                                         <button
                                             onClick={(e) => { e.stopPropagation(); setIsRefinementActive(true); }}
-                                            className="bg-zinc-900 border border-white/10 rounded-full px-5 py-2.5 flex items-center gap-4 shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_20px_rgba(255,255,255,0.05)] backdrop-blur-2xl hover:bg-zinc-800 hover:border-white/20 transition-all group active:scale-95"
+                                            className="bg-zinc-900 border border-neutral-200 dark:border-white/10 rounded-full px-5 py-2.5 flex items-center gap-4 shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_20px_rgba(255,255,255,0.05)] backdrop-blur-2xl hover:bg-zinc-800 hover:border-white/20 transition-all group active:scale-95"
                                         >
-                                            <Sparkles className="w-3.5 h-3.5 text-zinc-400 group-hover:text-white transition-colors" />
-                                            <span className="text-white font-bold text-xs tracking-tight">Ask for changes</span>
+                                            <Sparkles className="w-3.5 h-3.5 text-zinc-400 group-hover:text-black dark:text-white transition-colors" />
+                                            <span className="text-black dark:text-white font-bold text-xs tracking-tight">Ask for changes</span>
                                             <div className="flex items-center gap-1 opacity-40">
-                                                <div className="px-1.5 py-0.5 rounded border border-white/20 bg-white/5 text-[9px] font-bold uppercase tracking-tighter">M</div>
+                                                <div className="px-1.5 py-0.5 rounded border border-white/20 bg-black/5 dark:bg-white/5 text-[9px] font-bold uppercase tracking-tighter">M</div>
                                             </div>
                                         </button>
                                     )}
 
                                     {isRefinementActive && (
-                                        <div className="bg-zinc-950/90 border border-white/10 rounded-[1.5rem] p-1.5 shadow-[0_30px_70px_rgba(0,0,0,0.9)] w-[360px] backdrop-blur-3xl overflow-hidden ring-1 ring-white/10" onClick={(e) => e.stopPropagation()}>
+                                        <div className="bg-zinc-950/90 border border-neutral-200 dark:border-white/10 rounded-[1.5rem] p-1.5 shadow-[0_30px_70px_rgba(0,0,0,0.9)] w-[360px] backdrop-blur-3xl overflow-hidden ring-1 ring-white/10" onClick={(e) => e.stopPropagation()}>
                                             <div className="relative group/input">
                                                 <input
                                                     autoFocus
@@ -2578,7 +2578,7 @@ export function GmailInterfaceFixed() {
                                                         if (e.key === 'Escape') setIsRefinementActive(false);
                                                     }}
                                                     placeholder="Describe your changes"
-                                                    className="w-full bg-white/[0.04] text-white text-[14px] py-3.5 px-5 pr-14 rounded-2xl border border-white/[0.08] focus:outline-none focus:border-white/20 transition-all placeholder:text-zinc-600 font-medium tracking-tight"
+                                                    className="w-full bg-white/[0.04] text-black dark:text-white text-[14px] py-3.5 px-5 pr-14 rounded-2xl border border-white/[0.08] focus:outline-none focus:border-white/20 transition-all placeholder:text-zinc-600 font-medium tracking-tight"
                                                 />
                                                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
                                                     <button 
@@ -2601,12 +2601,12 @@ export function GmailInterfaceFixed() {
                                         <div className="bg-zinc-950/90 border border-white/20 rounded-2xl p-2 flex items-center gap-2 shadow-[0_30px_70px_rgba(0,0,0,0.9)] backdrop-blur-3xl ring-1 ring-white/10" onClick={(e) => e.stopPropagation()}>
                                             <button 
                                                 onClick={(e) => { e.stopPropagation(); setProposedRefinement(null); }}
-                                                className="h-10 px-5 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 text-[13px] font-bold transition-all flex items-center gap-3 active:scale-95"
+                                                className="h-10 px-5 rounded-xl text-zinc-400 hover:text-black dark:text-white hover:bg-black/5 dark:bg-white/5 text-[13px] font-bold transition-all flex items-center gap-3 active:scale-95"
                                             >
                                                 Undo
-                                                <div className="px-1.5 py-0.5 rounded border border-white/10 bg-white/5 text-[9px] font-bold opacity-40 uppercase">Esc</div>
+                                                <div className="px-1.5 py-0.5 rounded border border-neutral-200 dark:border-white/10 bg-black/5 dark:bg-white/5 text-[9px] font-bold opacity-40 uppercase">Esc</div>
                                             </button>
-                                            <div className="w-px h-6 bg-white/10 mx-1" />
+                                            <div className="w-px h-6 bg-black/10 dark:bg-white/10 mx-1" />
                                             <button 
                                                 onClick={(e) => { e.stopPropagation(); handleAcceptSiftRefinement(); }}
                                                 className="h-10 px-5 bg-white hover:bg-zinc-200 rounded-xl text-black text-[13px] font-bold transition-all flex items-center gap-4 shadow-xl shadow-white/5 active:scale-95"
@@ -2628,7 +2628,7 @@ export function GmailInterfaceFixed() {
                         <Button
                             variant="outline"
                             onClick={() => setShowDraftEditor(false)}
-                            className="h-14 px-8 border-neutral-800 text-neutral-400 hover:bg-neutral-800 rounded-2xl"
+                            className="h-14 px-8 border-neutral-800 text-neutral-500 dark:text-neutral-400 hover:bg-neutral-800 rounded-2xl"
                         >
                             Cancel
                         </Button>
@@ -2669,13 +2669,13 @@ export function GmailInterfaceFixed() {
                                 <Sparkles className="w-5 h-5 text-yellow-400" />
                             </div>
                             <div>
-                                <h3 className="text-lg font-medium text-white">AI Note</h3>
-                                <p className="text-xs text-neutral-400 font-light">Intelligent insights</p>
+                                <h3 className="text-lg font-medium text-black dark:text-white">AI Note</h3>
+                                <p className="text-xs text-neutral-500 dark:text-neutral-400 font-light">Intelligent insights</p>
                             </div>
                         </div>
                         <button
                             onClick={() => setShowNoteEditor(false)}
-                            className="p-2 hover:bg-neutral-700/50 rounded-full transition-colors text-neutral-400 hover:text-white"
+                            className="p-2 hover:bg-neutral-700/50 rounded-full transition-colors text-neutral-500 hover:text-black dark:text-white"
                         >
                             <X className="w-5 h-5" />
                         </button>
@@ -2687,7 +2687,7 @@ export function GmailInterfaceFixed() {
                             type="text"
                             value={noteSubject}
                             onChange={(e) => setNoteSubject(e.target.value)}
-                            className="w-full bg-transparent text-white text-base font-medium px-3 py-2 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-yellow-500/20 transition-colors mb-3"
+                            className="w-full bg-transparent text-black dark:text-white text-base font-medium px-3 py-2 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-yellow-500/20 transition-colors mb-3"
                             placeholder="Note heading..."
                         />
                         <div className="flex-1 bg-transparent text-neutral-200 resize-none focus:outline-none font-light leading-relaxed text-sm custom-scrollbar overflow-y-auto">
@@ -2728,7 +2728,7 @@ export function GmailInterfaceFixed() {
 
             {/* Traditional Email Detailed View Modal */}
             <div
-                className={`fixed top-1/2 left-1/2 bg-black rounded-[2.5rem] shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-[70] flex flex-col border border-white/10`}
+                className={`fixed top-1/2 left-1/2 bg-black rounded-[2.5rem] shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-[70] flex flex-col border border-neutral-200 dark:border-white/10`}
                 style={{
                     width: '75%',
                     height: '90vh',
@@ -2738,25 +2738,25 @@ export function GmailInterfaceFixed() {
                 }}
             >
                 {/* Header */}
-                <div className="p-10 border-b border-white/5 flex items-start justify-between">
+                <div className="p-10 border-b border-neutral-200 dark:border-white/5 flex items-start justify-between">
                     <div className="flex-1 min-w-0 pr-10">
                         {isSummarizing ? (
                             <div className="space-y-3">
-                                <div className="h-7 w-2/3 bg-white/5 rounded-lg animate-pulse" />
-                                <div className="h-4 w-1/3 bg-white/5 rounded-lg animate-pulse" />
+                                <div className="h-7 w-2/3 bg-black/5 dark:bg-white/5 rounded-lg animate-pulse" />
+                                <div className="h-4 w-1/3 bg-black/5 dark:bg-white/5 rounded-lg animate-pulse" />
                             </div>
                         ) : selectedTraditionalEmail ? (
                             <div className="space-y-4">
-                                <h2 className="text-3xl font-semibold text-white tracking-tight leading-tight">
+                                <h2 className="text-3xl font-semibold text-black dark:text-white tracking-tight leading-tight">
                                     {selectedTraditionalEmail.subject}
                                 </h2>
                                 <div className="flex flex-wrap items-center gap-5">
-                                    <div className="flex items-center gap-3 px-4 py-2 bg-white/5 border border-white/10 rounded-full">
-                                        <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-white/40 text-sm font-bold">
+                                    <div className="flex items-center gap-3 px-4 py-2 bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-full">
+                                        <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-black dark:text-white/40 text-sm font-bold">
                                             {selectedTraditionalEmail.from?.[0]?.toUpperCase() || 'U'}
                                         </div>
                                         <div className="flex flex-col">
-                                            <span className="text-sm text-white font-medium">
+                                            <span className="text-sm text-black dark:text-white font-medium">
                                                 {selectedTraditionalEmail.from?.split('<')[0]?.trim() || 'Sender'}
                                             </span>
                                             <span className="text-[10px] text-neutral-500 font-light truncate max-w-[200px]">
@@ -2776,7 +2776,7 @@ export function GmailInterfaceFixed() {
                     </div>
                     <button
                         onClick={() => setIsTraditionalModalOpen(false)}
-                        className="p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-white/40 hover:text-white transition-all shadow-lg"
+                        className="p-3 bg-black/5 hover:bg-black/10 dark:bg-white/10 border border-neutral-200 dark:border-white/10 rounded-full text-black hover:text-black dark:text-white transition-all shadow-lg"
                     >
                         <X className="w-7 h-7" />
                     </button>
@@ -2786,8 +2786,8 @@ export function GmailInterfaceFixed() {
                 <div className="flex-1 overflow-y-auto p-12 custom-scrollbar">
                     {isSummarizing ? (
                         <div className="flex flex-col items-center justify-center h-full">
-                            <RefreshCw className="w-10 h-10 text-white/20 animate-spin mb-6" />
-                            <p className="text-white/40 font-light text-xl">Opening message...</p>
+                            <RefreshCw className="w-10 h-10 text-black dark:text-white/20 animate-spin mb-6" />
+                            <p className="text-black dark:text-white/40 font-light text-xl">Opening message...</p>
                         </div>
                     ) : selectedTraditionalEmail ? (
                         <div className="max-w-4xl mx-auto space-y-12 pb-20">
@@ -2807,19 +2807,19 @@ export function GmailInterfaceFixed() {
 
                             {/* Attachments Section */}
                             {selectedTraditionalEmail.attachments?.length > 0 && (
-                                <div className="space-y-6 pt-12 border-t border-white/5">
-                                    <div className="flex items-center gap-2 text-white/40 text-[10px] uppercase tracking-[0.2em] font-bold">
+                                <div className="space-y-6 pt-12 border-t border-neutral-200 dark:border-white/5">
+                                    <div className="flex items-center gap-2 text-black dark:text-white/40 text-[10px] uppercase tracking-[0.2em] font-bold">
                                         <Download className="w-3.5 h-3.5" />
                                         Attachments
                                     </div>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         {selectedTraditionalEmail.attachments.map((att: any, i: number) => (
-                                            <div key={i} className="flex items-center gap-4 p-4 bg-white/5 border border-white/10 rounded-2xl group hover:border-white/20 transition-all">
-                                                <div className="p-3 bg-white/5 rounded-xl text-white/40">
+                                            <div key={i} className="flex items-center gap-4 p-4 bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-2xl group hover:border-white/20 transition-all">
+                                                <div className="p-3 bg-black/5 dark:bg-white/5 rounded-xl text-black dark:text-white/40">
                                                     {att.mimeType?.startsWith('image/') ? <Sparkles className="w-5 h-5" /> : <Inbox className="w-5 h-5" />}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-medium text-white truncate">{att.filename}</p>
+                                                    <p className="text-sm font-medium text-black dark:text-white truncate">{att.filename}</p>
                                                     <p className="text-xs text-neutral-500 font-light mt-0.5">{(att.size / 1024).toFixed(0)} KB</p>
                                                 </div>
                                                 <button
@@ -2827,13 +2827,13 @@ export function GmailInterfaceFixed() {
                                                         window.open(`/api/attachments/download?messageId=${selectedTraditionalEmail.id}&attachmentId=${att.attachmentId}&filename=${encodeURIComponent(att.filename)}`, '_blank');
                                                         toast.success('Downloading...', { description: att.filename });
                                                     }}
-                                                    className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-white/40 hover:text-white transition-all shadow-sm"
+                                                    className="p-2.5 bg-black/5 hover:bg-black/10 dark:bg-white/10 rounded-xl text-black hover:text-black dark:text-white transition-all shadow-sm"
                                                 >
                                                     <Download className="w-4 h-4" />
                                                 </button>
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); setNoteEmailId(selectedTraditionalEmail.id); setNoteSubject(`Note: ${att.filename}`); setNoteContent(`Reference to document "${att.filename}" in email "${selectedTraditionalEmail.subject}"`); setShowNoteEditor(true); }}
-                                                    className="p-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white/30 hover:text-white transition-all"
+                                                    className="p-2.5 bg-black/5 hover:bg-black/10 dark:bg-white/10 border border-neutral-200 dark:border-white/10 rounded-xl text-black hover:text-black dark:text-white transition-all"
                                                 >
                                                     <FilePlus className="w-4 h-4" />
                                                 </button>
@@ -2848,17 +2848,17 @@ export function GmailInterfaceFixed() {
 
                 {/* Footer Controls */}
                 {!isSummarizing && selectedTraditionalEmail && (
-                    <div className="p-10 border-t border-white/5 bg-white/[0.01] flex items-center justify-between">
+                    <div className="p-10 border-t border-neutral-200 dark:border-white/5 bg-white/[0.01] flex items-center justify-between">
                         <button
                             onClick={() => setIsTraditionalModalOpen(false)}
-                            className="px-10 py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-base font-medium text-white/60 transition-all hover:text-white"
+                            className="px-10 py-4 bg-black/5 hover:bg-black/10 dark:bg-white/10 border border-neutral-200 dark:border-white/10 rounded-2xl text-base font-medium text-black transition-all hover:text-black dark:text-white"
                         >
                             Close Viewer
                         </button>
                         <div className="flex items-center gap-4">
                             <button
                                 onClick={() => { setDraftTo(selectedTraditionalEmail.from?.match(/<(.+)>/)?.[1] || selectedTraditionalEmail.from); setDraftSubject(`Re: ${selectedTraditionalEmail.subject}`); setDraftContent(''); setShowDraftEditor(true); }}
-                                className="px-10 py-4 bg-white/5 border border-white/10 hover:border-white/20 rounded-2xl text-base font-medium text-white/80 hover:text-white transition-all"
+                                className="px-10 py-4 bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/10 hover:border-white/20 rounded-2xl text-base font-medium text-black hover:text-black dark:text-white transition-all"
                             >
                                 Reply
                             </button>
@@ -2906,22 +2906,22 @@ export function GmailInterfaceFixed() {
                         >
                             <div className="w-full">
                                 <div className="flex justify-center">
-                                    <div className="h-1 w-12 rounded-full bg-white/10" />
+                                    <div className="h-1 w-12 rounded-full bg-black/10 dark:bg-white/10" />
                                 </div>
                                 <div className="mt-4 flex items-center justify-between">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-neutral-800 flex items-center justify-center border border-white/10 transition-all flex-shrink-0 overflow-hidden">
+                                        <div className="w-10 h-10 rounded-full bg-neutral-800 flex items-center justify-center border border-neutral-200 dark:border-white/10 transition-all flex-shrink-0 overflow-hidden">
                                             <img src="/arcus-ai-icon.jpg" alt="Arcus" className="w-full h-full object-cover" />
                                         </div>
                                         <div>
-                                            <h4 className="text-xs font-bold text-white uppercase tracking-widest leading-none mb-1 font-sans">Arcus Intelligence</h4>
+                                            <h4 className="text-xs font-bold text-black dark:text-white uppercase tracking-widest leading-none mb-1 font-sans">Arcus Intelligence</h4>
                                             <p className="text-[10px] text-neutral-500 truncate max-w-[250px] font-medium font-sans">{arcusEmailSubject}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-1">
                                         <button
                                             onClick={(e) => { e.stopPropagation(); minimizeArcus(); }}
-                                            className="p-2 hover:bg-white/5 rounded-full text-white/40 hover:text-white transition-all"
+                                            className="p-2 hover:bg-black/5 dark:bg-white/5 rounded-full text-black hover:text-black dark:text-white transition-all"
                                             aria-label="Minimize Arcus"
                                             type="button"
                                         >
@@ -2929,7 +2929,7 @@ export function GmailInterfaceFixed() {
                                         </button>
                                         <button
                                             onClick={(e) => { e.stopPropagation(); closeArcus(); }}
-                                            className="p-2 hover:bg-white/5 rounded-full text-white/40 hover:text-white transition-all"
+                                            className="p-2 hover:bg-black/5 dark:bg-white/5 rounded-full text-black hover:text-black dark:text-white transition-all"
                                             aria-label="Close Arcus"
                                             type="button"
                                         >
@@ -2946,7 +2946,7 @@ export function GmailInterfaceFixed() {
                                     <div className="prose prose-invert prose-sm">
                                         <div dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }} />
                                     </div>
-                                    <div className={`text-[10px] mt-2 font-medium ${msg.role === 'user' ? 'text-black/40' : 'text-white/20'}`}>
+                                    <div className={`text-[10px] mt-2 font-medium ${msg.role === 'user' ? 'text-black/40' : 'text-black dark:text-white/20'}`}>
                                         {msg.timestamp}
                                     </div>
                                 </div>
@@ -2955,7 +2955,7 @@ export function GmailInterfaceFixed() {
                             {isArcusLoading && (
                                 <div className="arcus-message-agent flex items-center gap-3">
                                     <div className="w-2.5 h-2.5 rounded-full bg-white animate-[arcus-dot-pulse_1s_ease-in-out_infinite]" />
-                                    <span className="text-sm text-white/70 font-medium">Thinking...</span>
+                                    <span className="text-sm text-black dark:text-white/70 font-medium">Thinking...</span>
                                 </div>
                             )}
                             <div ref={messagesEndRef} />

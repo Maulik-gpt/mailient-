@@ -70,7 +70,7 @@ export function HelpCard({ onClose }: HelpCardProps) {
                         <div className="w-8 h-8 bg-black dark:bg-white rounded flex items-center justify-center">
                             <HelpCircle className="w-4 h-4 text-white dark:text-black" />
                         </div>
-                        <h2 className="text-lg font-bold dark:text-white uppercase tracking-tighter">Help Center</h2>
+                        <h2 className="text-lg font-bold text-black dark:text-white uppercase tracking-tighter">Help Center</h2>
                     </div>
 
                     <nav className="flex-1 space-y-1">
@@ -81,7 +81,7 @@ export function HelpCard({ onClose }: HelpCardProps) {
                                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
                                     activeSection === section.id 
                                     ? 'bg-black dark:bg-white text-white dark:text-black shadow-lg font-bold' 
-                                    : 'text-neutral-500 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
+                                    : 'text-neutral-500 hover:text-black dark:text-neutral-400 dark:hover:text-white hover:bg-black/5 dark:bg-white/5'
                                 }`}
                             >
                                 <section.icon className="w-4 h-4" />
@@ -94,14 +94,14 @@ export function HelpCard({ onClose }: HelpCardProps) {
                 {/* Content Area */}
                 <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-[#0A0A0A]">
                     <header className="h-20 border-b border-neutral-100 dark:border-white/5 flex items-center justify-between px-10">
-                        <h3 className="text-sm font-bold uppercase tracking-widest text-neutral-400">
+                        <h3 className="text-sm font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-400">
                             {sections.find(s => s.id === activeSection)?.label}
                         </h3>
                         <button 
                             onClick={onClose}
                             className="p-2 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-full transition-colors"
                         >
-                            <X className="w-5 h-5 text-neutral-400 hover:text-black dark:hover:text-white" />
+                            <X className="w-5 h-5 text-neutral-500 hover:text-black dark:text-neutral-400 dark:hover:text-white" />
                         </button>
                     </header>
 
@@ -128,7 +128,7 @@ export function HelpCard({ onClose }: HelpCardProps) {
                                     className="space-y-12"
                                 >
                                     <div>
-                                        <h4 className="text-3xl font-bold dark:text-white tracking-tighter mb-3">Power User Playbook.</h4>
+                                        <h4 className="text-3xl font-bold text-black dark:text-white tracking-tighter mb-3">Power User Playbook.</h4>
                                         <p className="text-neutral-500 text-base leading-relaxed max-w-xl">Advanced strategies and hidden shortcuts to maximize your daily output with Mailient.</p>
                                     </div>
 
@@ -155,7 +155,7 @@ export function HelpCard({ onClose }: HelpCardProps) {
                                                     <span className="text-[11px] font-mono text-neutral-300 dark:text-neutral-700 font-bold tracking-widest uppercase">Tip {i + 1}</span>
                                                     <div className="h-[1px] flex-1 bg-neutral-100 dark:bg-white/5" />
                                                 </div>
-                                                <h5 className="font-bold text-base dark:text-white mb-2 tracking-tight transition-colors">{tip.title}</h5>
+                                                <h5 className="font-bold text-base text-black dark:text-white mb-2 tracking-tight transition-colors">{tip.title}</h5>
                                                 <p className="text-[14px] text-neutral-500 leading-relaxed font-medium">{tip.desc}</p>
                                             </div>
                                         ))}
@@ -172,7 +172,7 @@ export function HelpCard({ onClose }: HelpCardProps) {
                                     className="max-w-2xl py-4"
                                 >
                                     <div className="space-y-10 text-neutral-800 dark:text-neutral-300">
-                                        <h4 className="text-5xl font-bold dark:text-white tracking-tighter leading-none mb-12">The vision for Mailient.</h4>
+                                        <h4 className="text-5xl font-bold text-black dark:text-white tracking-tighter leading-none mb-12">The vision for Mailient.</h4>
                                         
                                         <p className="text-xl leading-relaxed font-semibold dark:text-neutral-100 border-l-2 border-black dark:border-white pl-8 italic">
                                             &quot;I built Mailient because I was tired of fighting my own inbox. It felt like every morning I was drowning in noise, missing opportunities that actually mattered.&quot;
@@ -212,7 +212,7 @@ export function HelpCard({ onClose }: HelpCardProps) {
                                     className="space-y-16 max-w-3xl"
                                 >
                                     <div className="space-y-6">
-                                        <h4 className="text-5xl font-bold dark:text-white tracking-tighter leading-none">Help us build the future of intelligence.</h4>
+                                        <h4 className="text-5xl font-bold text-black dark:text-white tracking-tighter leading-none">Help us build the future of intelligence.</h4>
                                         <p className="text-neutral-500 dark:text-neutral-400 text-xl leading-relaxed max-w-xl">
                                             Your feedback matters the most for us. Please input your valuable feedback on this. We&apos;ll try our whole heart to reach out to you as soon as possible.
                                         </p>
@@ -223,7 +223,7 @@ export function HelpCard({ onClose }: HelpCardProps) {
                                             value={feedback}
                                             onChange={(e) => setFeedback(e.target.value)}
                                             placeholder="Tell us what's on your mind... be brutally honest."
-                                            className="w-full h-80 bg-transparent border-b border-neutral-100 dark:border-white/5 p-0 text-2xl dark:text-white focus:outline-none focus:border-black dark:focus:border-white transition-all placeholder:text-neutral-200 dark:placeholder:text-neutral-900 font-bold resize-none leading-tight"
+                                            className="w-full h-80 bg-transparent border-b border-neutral-100 dark:border-white/5 p-0 text-2xl text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-white transition-all placeholder:text-neutral-200 dark:placeholder:text-neutral-800 font-bold resize-none leading-tight"
                                         />
                                         <button 
                                             onClick={handleSendFeedback}
@@ -231,7 +231,7 @@ export function HelpCard({ onClose }: HelpCardProps) {
                                             className="w-full h-20 bg-black dark:bg-white text-white dark:text-black rounded-lg font-bold flex items-center justify-center gap-4 hover:opacity-90 active:scale-[0.99] transition-all disabled:opacity-50 disabled:cursor-not-allowed group shadow-2xl"
                                         >
                                             {isSubmitting ? (
-                                                <div className="w-8 h-8 border-3 border-white/30 dark:border-black/30 border-t-white dark:border-t-black rounded-full animate-spin" />
+                                                <div className="w-8 h-8 border-3 border-white/30 border-t-white dark:border-t-black rounded-full animate-spin" />
                                             ) : (
                                                 <>
                                                     <span className="text-2xl tracking-tighter">Submit Feedback</span>
