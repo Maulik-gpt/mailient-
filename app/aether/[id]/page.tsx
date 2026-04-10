@@ -147,7 +147,7 @@ export default function AetherProfilePage() {
         background: '#000000'
       }}>
         {/* Universal Sidebar */}
-        <div className="fixed left-0 top-0 h-screen w-20 bg-[#0a0a0a]/50 backdrop-blur-sm border-r border-[#525252] flex flex-col z-20">
+        <div className="fixed left-0 top-0 h-screen w-20 bg-[#0a0a0a]/50 backdrop-blur-sm border-r border-[#525252] hidden sm:flex flex-col z-20">
           <div className="flex flex-col items-end py-24 gap-6 pr-4">
             <Tooltip delayDuration={100}>
               <TooltipTrigger asChild>
@@ -169,7 +169,7 @@ export default function AetherProfilePage() {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col ml-20 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <div className="flex-1 flex flex-col ml-0 sm:ml-20 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {/* Header */}
           <div className="w-full bg-black border-b border-gray-800 flex-shrink-0 sticky top-0 z-10">
             <div className="flex items-center gap-4 px-4 py-3">

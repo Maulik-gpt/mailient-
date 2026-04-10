@@ -424,11 +424,11 @@ export default function SiftOnboardingPage() {
         return (
           <motion.div key="step-0" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-12 text-center max-w-3xl mx-auto px-6">
             <div className="space-y-6">
-              <h1 className="text-5xl md:text-7xl font-medium tracking-tight text-white leading-[1.1] font-sans">
+              <h1 className="text-4xl sm:text-5xl md:text-7xl font-medium tracking-tight text-white leading-[1.2] sm:leading-[1.1] font-sans">
                 Your inbox is not your job.<br />
                 <span className="text-zinc-500 italic">It’s your leverage.</span>
               </h1>
-              <p className="text-xl md:text-2xl text-zinc-400 font-light leading-relaxed max-w-2xl mx-auto">
+              <p className="text-lg md:text-2xl text-zinc-400 font-light leading-relaxed max-w-2xl mx-auto px-4 sm:px-0">
                 Mailient learns how you think and handles your email like you would - but faster.
               </p>
             </div>
@@ -453,8 +453,8 @@ export default function SiftOnboardingPage() {
               {identityStep === 0 && (
                 <motion.div key="q1" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-10">
                   <div className="space-y-2">
-                    <span className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Question 1 of 7</span>
-                    <h2 className="text-4xl font-medium text-white">What are you?</h2>
+                    <span className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Question 1 of 7</span>
+                    <h2 className="text-2xl sm:text-4xl font-medium text-white">What are you?</h2>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {ROLES.map((r) => (
@@ -804,8 +804,8 @@ export default function SiftOnboardingPage() {
         return (
           <motion.div key="step-5" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="max-w-3xl mx-auto px-6 text-center space-y-12">
             <div className="space-y-6">
-              <h2 className="text-5xl font-medium text-white">Control & Trust</h2>
-              <p className="text-xl text-zinc-500">Built for high-stakes workflows where privacy is default.</p>
+              <h2 className="text-3xl sm:text-5xl font-medium text-white">Control & Trust</h2>
+              <p className="text-lg sm:text-xl text-zinc-500">Built for high-stakes workflows where privacy is default.</p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 text-left">
               <TrustItem icon={Shield} title="Approval First" desc="Mailient never sends without your explicit signal." />
