@@ -1581,7 +1581,7 @@ export function GmailInterfaceFixed() {
                             <Shield className="h-3.5 w-3.5 text-green-500" />
                             <div className="absolute inset-0 bg-green-500/20 blur-sm rounded-full animate-pulse" />
                         </div>
-                        <span className="text-[10px] font-bold text-green-600 dark:text-green-500 uppercase tracking-widest opacity-80 group-hover:opacity-100 transition-opacity">Cloud Shield Active</span>
+                        <span className="text-[10px] font-bold text-green-600 dark:text-green-500 uppercase tracking-widest opacity-80 group-hover:opacity-100 transition-opacity">Zero-Knowledge Mode Active</span>
                     </div>
 
                     {usageData && usageData.planType !== 'pro' && (

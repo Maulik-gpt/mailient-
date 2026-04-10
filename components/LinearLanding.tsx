@@ -985,27 +985,27 @@ export function LinearLanding() {
             {/* Security Section */}
             <section id="integration" className="py-32 px-6 bg-zinc-950/30 z-10 relative">
                 <div className="max-w-4xl mx-auto text-center mb-24">
-                    <Badge variant="outline" className="rounded-full mb-6 border-white/10 text-zinc-400">Data Integrity</Badge>
-                    <h2 className="text-5xl md:text-7xl font-bold mb-8 tracking-tighter">Gmail Native Security.</h2>
+                    <Badge variant="outline" className="rounded-full mb-6 border-white/10 text-zinc-400">Security & Privacy</Badge>
+                    <h2 className="text-5xl md:text-7xl font-bold mb-8 tracking-tighter">Zero-Knowledge Security.</h2>
                     <p className="text-xl text-zinc-400 leading-relaxed italic">
-                        Mailient respects your privacy perimeter. We use enterprise Google OAuth 2.0 to process data in real-time without storing a single byte of your private content.
+                        Your privacy is hardcoded. Mailient uses decentralised AES-256 encryption combined with enterprise Google OAuth 2.0 to ensure your communications remain untraceable to outsiders—and even to us.
                     </p>
                 </div>
                 <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
                     <SecurityCard
                         icon={<ShieldCheck className="w-10 h-10" />}
                         title="OAuth 2.0 Verified"
-                        desc="Authenticated directly through Google. We never see your password."
+                        desc="Authenticated directly through Google. We never see, touch, or store your passwords."
                     />
                     <SecurityCard
                         icon={<Lock className="w-10 h-10" />}
-                        title="Volatile Processing"
-                        desc="Drafts are generated in isolated memory and purged after 24 hours."
+                        title="Zero-Knowledge Storage"
+                        desc="Sensitive metadata is encrypted on your device. We store only encrypted blobs we cannot read."
                     />
                     <SecurityCard
                         icon={<Globe className="w-10 h-10" />}
-                        title="AES-256"
-                        desc="All data is encrypted using AES-256 encryption. You are able to on it in Settings. "
+                        title="End-to-End AES-256"
+                        desc="Military-grade encryption. Your decryption keys stay in your browser, never reaching our servers."
                     />
                 </div>
             </section>
@@ -1122,7 +1122,7 @@ export function LinearLanding() {
                         />
                         <FAQItem
                             question="Is my email data secure?"
-                            answer="Yes, security is our top priority. We use end-to-end encryption, are SOC 2 compliant, and never share your data with third parties. Your emails are processed securely and never stored longer than necessary."
+                            answer="Yes, security is our top priority. We use Zero-Knowledge End-to-End Encryption, ensuring that your decryption keys never leave your browser. We are built on high-level security protocols that protect your identity and data from any outside interference."
                         />
                         <FAQItem
                             question="How does AI drafting match my unique voice?"
