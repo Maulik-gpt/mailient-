@@ -448,16 +448,18 @@ export default function NotesPage() {
             />
             <div className={cn("min-h-screen bg-[#F9F8F6] dark:bg-[#0c0c0c] transition-all duration-500", (isDeleteDialogOpen || isShareDialogOpen || isShareOptionsOpen || isImageShareOpen) && "pause-animations")}>
                 <div className="flex">
-                    {/* Mailient Sidebar */}
-                    <HomeFeedSidebar />
+                    {/* Mailient Sidebar - Responsive */}
+                    <div className="hidden lg:block">
+                        <HomeFeedSidebar />
+                    </div>
 
                     {/* Main Content Wrapper */}
-                    <div className="flex-1 ml-64 min-h-screen relative overflow-hidden">
+                    <div className="flex-1 lg:ml-64 min-h-screen relative overflow-hidden">
                         {/* Curvy Content Area */}
-                        <div className="mt-2.5 mr-2.5 mb-2.5 bg-white dark:bg-[#111111] rounded-[2.5rem] min-h-[calc(100vh-20px)] border border-[#EBE9E2] dark:border-white/[0.05] shadow-[0_20px_50px_rgba(0,0,0,0.06)] dark:shadow-none overflow-y-auto custom-scrollbar">
+                        <div className="lg:mt-2.5 lg:mr-2.5 lg:mb-2.5 bg-white dark:bg-[#111111] rounded-none lg:rounded-[2.5rem] min-h-screen lg:min-h-[calc(100vh-20px)] border-none lg:border border-[#EBE9E2] dark:border-white/[0.05] shadow-none lg:shadow-[0_20px_50px_rgba(0,0,0,0.06)] dark:shadow-none overflow-y-auto custom-scrollbar">
                             <div className="flex flex-col pb-24">
                                 {/* Header/Title Section */}
-                                <div className="px-6 py-12 md:px-12 lg:px-24">
+                                <div className="px-5 py-8 md:px-12 lg:px-24">
                                     <div className="max-w-4xl mx-auto space-y-12">
                                         {/* Hero Text */}
                                         <div className="text-center space-y-4">
@@ -472,14 +474,14 @@ export default function NotesPage() {
                                         {/* Main Input Card */}
                                         <div className="relative group">
                                             <div className="absolute -inset-1 bg-gradient-to-r from-yellow-500/20 via-blue-500/20 to-yellow-500/20 rounded-[2.5rem] blur-xl opacity-50 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
-                                            <div className="relative bg-[#FAFAFA] dark:bg-[#161616] border border-[#EBE9E2] dark:border-white/5 rounded-[2.5rem] p-10 shadow-sm transition-all duration-300 hover:border-neutral-300">
+                                            <div className="relative bg-[#FAFAFA] dark:bg-[#161616] border border-[#EBE9E2] dark:border-white/5 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-10 shadow-sm transition-all duration-300 hover:border-neutral-300">
                                                 <div className="flex gap-8 items-center">
                                                     <div className="flex-1 flex flex-col gap-2">
-                                                        <textarea
-                                                            value={newNoteContent}
-                                                            onChange={(e) => setNewNoteContent(e.target.value)}
-                                                            placeholder="Take a quick note with your voice"
-                                                            className="w-full bg-transparent text-2xl md:text-3xl text-neutral-800 dark:text-neutral-900 dark:text-neutral-200 placeholder:text-neutral-300 dark:placeholder:text-neutral-700 resize-none min-h-[80px] font-medium leading-tight"
+                                                            <textarea
+                                                                value={newNoteContent}
+                                                                onChange={(e) => setNewNoteContent(e.target.value)}
+                                                                placeholder="Take a quick note..."
+                                                                className="w-full bg-transparent text-xl md:text-3xl text-neutral-800 dark:text-neutral-200 placeholder:text-neutral-300 dark:placeholder:text-neutral-700 resize-none min-h-[60px] md:min-h-[80px] font-medium leading-tight"
                                                             style={{ outline: 'none', border: 'none', boxShadow: 'none' }}
                                                             onKeyDown={(e) => {
                                                                 if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
@@ -510,13 +512,13 @@ export default function NotesPage() {
                                                     <button
                                                         onClick={toggleListening}
                                                         className={cn(
-                                                            "w-16 h-16 rounded-full flex items-center justify-center transition-all duration-500 shadow-2xl group",
+                                                            "w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center transition-all duration-500 shadow-2xl group shrink-0",
                                                             isListening
                                                                 ? "bg-red-500 text-white animate-pulse"
-                                                                : "bg-white dark:bg-[#1A1C20] text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-200 dark:border-neutral-800 hover:scale-110 active:scale-95"
+                                                                : "bg-white dark:bg-[#1A1C20] text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-800 hover:scale-110 active:scale-95"
                                                         )}
                                                     >
-                                                        <Mic className={cn("w-7 h-7 transition-all", isListening ? "scale-110" : "group-hover:scale-110")} />
+                                                        <Mic className={cn("w-5 h-5 md:w-7 md:h-7 transition-all", isListening ? "scale-110" : "group-hover:scale-110")} />
                                                     </button>
                                                 </div>
                                             </div>
@@ -589,7 +591,7 @@ export default function NotesPage() {
                                                             className="group relative transition-all duration-300 hover:scale-[1.01]"
                                                         >
                                                             <div className={cn(
-                                                                "bg-white dark:bg-[#0A0A0A] border border-neutral-100 dark:border-neutral-200 dark:border-neutral-800 rounded-3xl p-6 relative overflow-hidden transition-all hover:bg-neutral-50/50 dark:hover:bg-neutral-900/50 hover:border-neutral-200 dark:hover:border-neutral-700 h-full flex flex-col justify-between shadow-sm hover:shadow-md",
+                                                                "bg-white dark:bg-[#0A0A0A] border border-neutral-100 dark:border-neutral-800 rounded-[2rem] p-5 md:p-6 relative overflow-hidden transition-all hover:bg-neutral-50/50 dark:hover:bg-neutral-900/50 hover:border-neutral-200 dark:hover:border-neutral-700 h-full flex flex-col justify-between shadow-sm hover:shadow-md",
                                                                 viewMode === 'list' && "flex-row items-center p-4"
                                                             )}>
                                                                 <div

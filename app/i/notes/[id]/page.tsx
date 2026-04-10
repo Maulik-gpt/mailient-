@@ -381,11 +381,13 @@ export default function NoteDetailPage() {
                 currentPlan={usageLimitModalData?.currentPlan || 'starter'}
             />
             <div className={cn("min-h-screen bg-[#000000] text-white transition-all duration-500", (isDeleteDialogOpen || isShareDialogOpen || isShareOptionsOpen || isImageShareOpen) && "pause-animations")}>
-                {/* Mailient Sidebar */}
-                <HomeFeedSidebar />
+                {/* Mailient Sidebar - Responsive */}
+                <div className="hidden lg:block">
+                    <HomeFeedSidebar />
+                </div>
 
                 {/* Main Content Area - Full Width */}
-                <div className="flex-1 flex flex-col ml-64">
+                <div className="flex-1 flex flex-col lg:ml-64">
                     <div className="border-b border-neutral-200 dark:border-neutral-800 px-6 py-3 flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <button
@@ -403,7 +405,7 @@ export default function NoteDetailPage() {
                         </span>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-8">
+                    <div className="flex-1 overflow-y-auto p-4 md:p-8">
                         {loading ? (
                             <div className="flex items-center justify-center h-full">
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500"></div>
@@ -423,7 +425,7 @@ export default function NoteDetailPage() {
                                     ) : (
                                         <h1 className="text-3xl font-medium text-white mb-2">{selectedNote.subject || 'Untitled Note'}</h1>
                                     )}
-                                    <div className="text-sm text-neutral-600 dark:text-neutral-500">
+                                    <div className="text-xs md:text-sm text-neutral-600 dark:text-neutral-500">
                                         Created {new Date(selectedNote.createdAt).toLocaleDateString()}
                                         {selectedNote.updatedAt && selectedNote.updatedAt !== selectedNote.createdAt &&
                                             ` • Updated ${new Date(selectedNote.updatedAt).toLocaleDateString()}`}
@@ -460,24 +462,24 @@ export default function NoteDetailPage() {
                                         </Button>
                                     </div>
                                 ) : (
-                                    <div className="flex gap-3 mt-8">
+                                    <div className="flex flex-wrap gap-3 mt-8">
                                         <Button
                                             onClick={handleEditNote}
-                                            className="h-10 px-6 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition-colors"
+                                            className="h-12 px-6 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-2xl transition-colors"
                                         >
                                             <Edit className="w-4 h-4 mr-2" />
                                             Edit Note
                                         </Button>
                                         <Button
                                             onClick={() => setIsShareDialogOpen(true)}
-                                            className="h-10 px-6 bg-blue-500/10 hover:bg-blue-500 text-blue-500 hover:text-white font-medium rounded-lg transition-all border border-blue-500/20 hover:border-blue-500"
+                                            className="h-12 px-6 bg-blue-500/10 hover:bg-blue-500 text-blue-500 hover:text-white font-medium rounded-2xl transition-all border border-blue-500/20 hover:border-blue-500"
                                         >
                                             <Share2 className="w-4 h-4 mr-2" />
                                             Share Note
                                         </Button>
                                         <Button
                                             onClick={() => setIsDeleteDialogOpen(true)}
-                                            className="h-10 px-6 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white font-medium rounded-lg transition-all border border-red-500/20 hover:border-red-500"
+                                            className="h-12 px-6 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white font-medium rounded-2xl transition-all border border-red-500/20 hover:border-red-500"
                                         >
                                             <Trash className="w-4 h-4 mr-2" />
                                             Delete Note

@@ -287,7 +287,7 @@ export function ConnectorsModal({
           }}
           exit={{ opacity: 0, scale: 0.98, y: 30 }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          className="relative w-full max-w-[560px] h-full max-h-[720px] bg-white dark:bg-[#121212] rounded-[48px] border border-white/10 shadow-[0_0_100px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden pointer-events-auto"
+          className="relative w-full max-w-[560px] h-full max-h-[820px] bg-white dark:bg-[#121212] rounded-[3rem] border border-white/10 shadow-[0_0_100px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden pointer-events-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -322,7 +322,7 @@ export function ConnectorsModal({
                   <button
                     key={app.id}
                     onClick={() => setSelectedApp(app)}
-                    className="flex items-start gap-4 p-4 rounded-[24px] bg-neutral-50 dark:bg-[#222]/40 border border-neutral-200 dark:border-white/04 hover:bg-neutral-100 dark:hover:bg-white/[0.04] hover:border-neutral-300 dark:hover:border-white/[0.08] transition-all text-left group shadow-sm"
+                    className="flex items-start gap-4 p-5 rounded-[2.5rem] bg-neutral-50 dark:bg-[#222]/40 border border-neutral-200 dark:border-white/04 hover:bg-neutral-100 dark:hover:bg-white/[0.04] hover:border-neutral-300 dark:hover:border-white/[0.08] transition-all text-left group shadow-sm"
                   >
                     <div 
                       className={cn(
@@ -359,7 +359,7 @@ export function ConnectorsModal({
               initial={{ opacity: 0, scale: 0.95, y: 30 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 30 }}
-              className="absolute z-[210] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[480px] bg-white dark:bg-[#1a1a1a] rounded-[48px] border border-white/10 shadow-[0_40px_120px_rgba(0,0,0,0.9)] p-8 flex flex-col items-center pointer-events-auto"
+              className="absolute z-[210] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(95vw,480px)] bg-white dark:bg-[#1a1a1a] rounded-[3rem] border border-white/10 shadow-[0_40px_120px_rgba(0,0,0,0.9)] p-8 md:p-10 flex flex-col items-center pointer-events-auto"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Close Button */}

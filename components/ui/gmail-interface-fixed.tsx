@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { AnimatePresence, motion, type PanInfo, useAnimation, useDragControls } from 'framer-motion';
-import { useSession } from 'next-auth/react';
+import { useSession, signIn } from 'next-auth/react';
 import { SiftCard } from './sift-card';
 import { Button } from './button';
 import { SettingsCard } from './settings-card';
@@ -198,6 +198,7 @@ export function GmailInterfaceFixed() {
     const [noteSubject, setNoteSubject] = useState<string>('');
     const [noteContent, setNoteContent] = useState<string>('');
     const [isSavingNote, setIsSavingNote] = useState(false);
+    const [isGmailConnected, setIsGmailConnected] = useState(true);
 
     const [isUsageLimitModalOpen, setIsUsageLimitModalOpen] = useState(false);
     const [usageLimitModalData, setUsageLimitModalData] = useState<{
@@ -1310,6 +1311,13 @@ export function GmailInterfaceFixed() {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
+                if (errorData.error === 'Gmail not connected') {
+                    setIsGmailConnected(false);
+                    setLoading(false);
+                    setCountdown(null);
+                    if (timerInterval) clearInterval(timerInterval);
+                    return;
+                }
                 throw new Error(errorData.error || `Failed to fetch insights: ${response.statusText}`);
             }
 
@@ -1448,7 +1456,10 @@ export function GmailInterfaceFixed() {
 
     useEffect(() => {
         console.log('🔐 Session status:', session?.user?.email ? 'Authenticated' : 'Not authenticated');
-    }, [session]);
+        if (session?.user?.email && !hasInitialLoad && !loading) {
+            fetchSiftInsights();
+        }
+    }, [session, hasInitialLoad, loading]);
 
     const refreshInsights = () => {
         fetchSiftInsights();
@@ -2237,6 +2248,38 @@ export function GmailInterfaceFixed() {
                                     </Button>
                                 </div>
                             )
+                        ) : !isGmailConnected ? (
+                            <div className="text-center py-20 px-6 max-w-lg mx-auto bg-white/50 dark:bg-white/[0.02] border border-neutral-200 dark:border-white/5 rounded-[3rem] backdrop-blur-3xl shadow-2xl relative overflow-hidden group">
+                                <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-transparent opacity-50 pointer-events-none" />
+                                
+                                <div className="relative z-10">
+                                    <div className="w-24 h-24 mx-auto mb-10 rounded-full border border-blue-500/20 bg-blue-500/5 flex items-center justify-center relative shadow-[0_0_40px_rgba(59,130,246,0.1)] group-hover:scale-110 transition-transform duration-700">
+                                        <div className="absolute inset-0 bg-blue-400/10 blur-2xl rounded-full" />
+                                        <Mail className="h-10 w-10 text-blue-500 relative z-10" strokeWidth={1.5} />
+                                    </div>
+                                    
+                                    <h3 className="text-3xl font-medium text-black dark:text-white mb-4 tracking-tight">Connect your Workspace</h3>
+                                    <p className="text-neutral-600 dark:text-neutral-400 mb-12 font-light leading-relaxed">
+                                        Mailient needs access to your Gmail to detect opportunities, summarize threads, and help you handle your inbox like a pro.
+                                    </p>
+                                    
+                                    <div className="flex flex-col gap-5 items-center">
+                                        <Button
+                                            onClick={() => signIn("google", { callbackUrl: window.location.href, redirect: true })}
+                                            className="h-14 px-12 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl transition-all font-bold shadow-[0_15px_30px_rgba(37,99,235,0.3)] hover:scale-[1.03] active:scale-[0.98] border-none group flex items-center gap-3 overflow-hidden relative"
+                                        >
+                                            <div className="absolute inset-x-0 bottom-0 h-1 bg-white/20 -translate-x-full group-hover:translate-x-0 transition-transform duration-700" />
+                                            <Mail className="w-5 h-5" />
+                                            <span>Connect Google Workspace</span>
+                                        </Button>
+                                        
+                                        <div className="flex items-center gap-2.5 text-[10px] uppercase tracking-widest text-neutral-500 dark:text-neutral-600 font-black">
+                                            <Shield className="w-3.5 h-3.5" />
+                                            <span>Cloud Shield Active • AES-256 Encrypted</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         ) : (
                             <div className="text-center py-24">
                                 <div className="w-12 h-12 mx-auto mb-8 rounded-full border border-neutral-200 dark:border-neutral-800 flex items-center justify-center">
@@ -2477,7 +2520,7 @@ export function GmailInterfaceFixed() {
                     )}
                 </div>
                 {/* Progressive Blur Bottom */}
-                <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#1a1a1a] to-transparent pointer-events-none rounded-b-[2.5rem] z-10" />
+                <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#1a1a1a] to-transparent pointer-events-none rounded-b-none lg:rounded-b-[2.5rem] z-10" />
             </div>
 
             {/* Draft Editor Modal */}
@@ -2677,7 +2720,7 @@ export function GmailInterfaceFixed() {
 
             {/* Note Editor - Premium UI in bottom-right */}
             <div
-                className={`fixed bottom-6 right-6 w-96 bg-gradient-to-br from-neutral-800/90 to-neutral-900/90 backdrop-blur-2xl rounded-[2rem] shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-[60] border border-neutral-700/50`}
+                className={`fixed bottom-0 right-0 lg:bottom-6 lg:right-6 w-full lg:w-96 h-[85vh] lg:h-[32rem] bg-gradient-to-br from-neutral-800/90 to-neutral-900/90 backdrop-blur-2xl rounded-t-[2rem] lg:rounded-[2rem] shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-[60] border border-neutral-700/50`}
                 style={{
                     transform: showNoteEditor ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.95)',
                     opacity: showNoteEditor ? 1 : 0,
