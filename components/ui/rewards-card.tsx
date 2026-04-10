@@ -66,7 +66,7 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
                 initial={{ scale: 0.95, y: 20, opacity: 0 }}
                 animate={{ scale: 1, y: 0, opacity: 1 }}
                 exit={{ scale: 0.95, y: 20, opacity: 0 }}
-                className="w-full max-w-[480px] bg-white dark:bg-[#0E0E0E] rounded-[24px] shadow-[0_32px_128px_-12px_rgba(0,0,0,0.8)] overflow-hidden border border-neutral-200 dark:border-white/10 flex flex-col"
+                className="w-full max-w-[480px] bg-white dark:bg-[#0E0E0E] md:rounded-[24px] rounded-t-[24px] shadow-[0_32px_128px_-12px_rgba(0,0,0,0.8)] overflow-hidden border border-neutral-200 dark:border-white/10 flex flex-col max-h-[90vh] md:max-h-none overflow-y-auto md:overflow-y-visible"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Hero Section */}

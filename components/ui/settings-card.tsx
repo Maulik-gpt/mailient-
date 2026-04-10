@@ -259,38 +259,43 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
             onClick={onClose}
         >
             <div
-                className="w-full max-w-[1020px] h-[600px] bg-white dark:bg-[#1a1a1a] rounded-[16px] overflow-hidden flex shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] border border-neutral-200 dark:border-white/5"
+                className="w-full md:max-w-[1020px] h-full md:h-[600px] bg-white dark:bg-[#1a1a1a] md:rounded-[16px] overflow-hidden flex flex-col md:flex-row shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] md:border border-neutral-200 dark:border-white/5"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Sidebar */}
-                <div className="w-[240px] bg-neutral-50 dark:bg-[#141414] border-r border-neutral-200 dark:border-white/5 p-3 flex flex-col">
-                    <div className="flex-1 overflow-y-auto custom-scrollbar pr-1">
-                        <MenuButton label="Settings" category />
+                {/* Sidebar - Horizontal scroll on mobile, vertical on desktop */}
+                <div className="w-full md:w-[240px] bg-neutral-50 dark:bg-[#141414] border-b md:border-b-0 md:border-r border-neutral-200 dark:border-white/5 p-3 flex flex-row md:flex-col overflow-x-auto md:overflow-y-hidden shrink-0">
+                    <div className="flex flex-row md:flex-col items-center md:items-stretch gap-1 md:gap-0 md:flex-1 md:overflow-y-auto custom-scrollbar pr-1">
+                        <div className="hidden md:block">
+                             <MenuButton label="Settings" category />
+                        </div>
                         <MenuButton id="general" icon={Settings2} label="General" />
                         <MenuButton id="system" icon={Monitor} label="System" />
 
-                        <div className="my-2 h-px bg-neutral-200 dark:bg-white/5" />
+                        <div className="hidden md:block my-2 h-px bg-neutral-200 dark:bg-white/5" />
 
-                        <MenuButton label="Account" category />
+                        <div className="hidden md:block">
+                            <MenuButton label="Account" category />
+                        </div>
                         <MenuButton id="account" icon={User} label="Account" />
                         <MenuButton id="team" icon={Users} label="Team" />
                         <MenuButton id="subscription" icon={CreditCard} label="Subscription" />
                         <MenuButton id="usage" icon={Zap} label="Usage" />
-                        <MenuButton id="privacy" icon={Shield} label="Data and Privacy" />
+                        <MenuButton id="privacy" icon={Shield} label="Privacy" />
 
-                        <div className="my-2 h-px bg-neutral-200 dark:bg-white/5" />
+                        <div className="hidden md:block my-2 h-px bg-neutral-200 dark:bg-white/5" />
                         
                         <button
                             onClick={() => router.push('/help')}
-                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 text-neutral-500 dark:text-neutral-400 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-black dark:bg-white/5"
+                            className="hidden md:flex w-full items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 text-neutral-500 dark:text-neutral-400 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-black dark:bg-white/5"
                         >
                             <HelpCircle className="w-4 h-4 text-neutral-500 dark:text-neutral-400" strokeWidth={1.5} />
-                            <span className="text-[14px] leading-tight">Help Center</span>
+                            <span className="text-[14px] leading-tight">Help</span>
                         </button>
                     </div>
 
-                    {/* Footer Info */}
-                    <div className="px-4 py-4 flex items-center justify-between mt-auto">
+                    {/* Footer Info - Hidden on mobile */}
+                    <div className="hidden md:flex px-4 py-4 items-center justify-between mt-auto">
                         <span className="text-[11px] text-neutral-500 dark:text-neutral-400 font-medium">Mailient v1.0.1</span>
                         <div className="w-4 h-4 rounded-full bg-neutral-200 dark:bg-white/5 flex items-center justify-center">
                             <Cloud className="w-2.5 h-2.5 text-neutral-500 dark:text-neutral-400" />
@@ -301,25 +306,25 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                 {/* Main Content */}
                 <div className="flex-1 flex flex-col h-full relative">
                     {/* Header Title */}
-                    <div className="px-10 pt-12 pb-8 flex items-center justify-between">
+                    <div className="px-6 md:px-10 pt-8 md:pt-12 pb-6 md:pb-8 flex items-center justify-between">
                         <motion.h1
                             key={activeSection}
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
-                            className="text-4xl font-serif text-black dark:text-white capitalize tracking-tight"
+                            className="text-2xl md:text-4xl font-serif text-black dark:text-white capitalize tracking-tight"
                         >
-                            {activeSection === 'subscription' ? 'Subscription' : activeSection === 'usage' ? 'Usage' : activeSection === 'privacy' ? 'Data and Privacy' : activeSection.replace('-', ' ')}
+                            {activeSection === 'subscription' ? 'Subscription' : activeSection === 'usage' ? 'Usage' : activeSection === 'privacy' ? 'Privacy' : activeSection.replace('-', ' ')}
                         </motion.h1>
 
                         <button
                             onClick={onClose}
-                            className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-50 dark:bg-white/5 transition-colors group absolute top-6 right-6"
+                            className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-50 dark:bg-white/5 transition-colors group absolute top-4 md:top-6 right-4 md:right-6"
                         >
                             <X className="w-5 h-5 text-neutral-600 group-hover:text-black dark:group-hover:text-white" />
                         </button>
                     </div>
 
-                    <div className="px-10 pb-12 overflow-y-auto flex-1 custom-scrollbar">
+                    <div className="px-6 md:px-10 pb-8 md:pb-12 overflow-y-auto flex-1 custom-scrollbar">
                         <AnimatePresence mode="wait">
                             {activeSection === 'general' && (
                                 <motion.div

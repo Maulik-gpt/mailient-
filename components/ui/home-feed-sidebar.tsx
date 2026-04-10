@@ -27,6 +27,8 @@ interface HomeFeedSidebarProps {
     onOpenRewards?: () => void;
     activeView?: 'home' | 'people';
     onCollapse?: (collapsed: boolean) => void;
+    isOpen?: boolean;
+    onClose?: () => void;
 }
 
 export function HomeFeedSidebar({ 
@@ -36,7 +38,9 @@ export function HomeFeedSidebar({
     onOpenHelp,
     onOpenRewards,
     activeView = 'home', 
-    onCollapse 
+    onCollapse,
+    isOpen = false,
+    onClose
 }: HomeFeedSidebarProps) {
     const { data: session } = useSession();
     const router = useRouter();
@@ -102,10 +106,24 @@ export function HomeFeedSidebar({
         <TooltipProvider>
             <motion.div 
                 initial={false}
-                animate={{ width: isCollapsed ? 80 : 256 }}
+                animate={{ 
+                    width: isCollapsed ? 80 : 256,
+                    x: typeof window !== 'undefined' && window.innerWidth < 768 
+                        ? (isOpen ? 0 : -256) 
+                        : 0
+                }}
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                className={`fixed left-0 top-0 h-screen bg-[#F9F8F6] dark:bg-[#0c0c0c] border-r border-[#EBE9E2] dark:border-white/5 flex flex-col z-50 ${className}`}
+                className={`fixed left-0 top-0 h-screen bg-[#F9F8F6] dark:bg-[#0c0c0c] border-r border-[#EBE9E2] dark:border-white/5 flex flex-col z-[100] md:z-50 ${className} ${!isOpen ? 'pointer-events-none md:pointer-events-auto' : 'pointer-events-auto'}`}
             >
+                {/* Mobile Close Button */}
+                <div className="md:hidden absolute top-6 right-4">
+                    <button 
+                        onClick={onClose}
+                        className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors text-neutral-600 dark:text-neutral-400"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
                 
                 <div className="pt-6" />
 
@@ -290,6 +308,19 @@ export function HomeFeedSidebar({
                 </div>
                 <FeedbackDialog open={isFeedbackOpen} onOpenChange={setIsFeedbackOpen} />
             </motion.div>
+            
+            {/* Mobile Backdrop */}
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={onClose}
+                        className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[90] md:hidden"
+                    />
+                )}
+            </AnimatePresence>
         </TooltipProvider>
     );
 }

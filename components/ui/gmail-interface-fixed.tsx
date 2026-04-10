@@ -8,7 +8,7 @@ import { Button } from './button';
 import { SettingsCard } from './settings-card';
 import { Badge } from './badge';
 import { HomeFeedSidebar } from './home-feed-sidebar';
-import { RefreshCw, AlertCircle, TrendingUp, Clock, Target, Zap, Mail, Home, X, User, Sparkles, ArrowLeft, LayoutList, Inbox, ExternalLink, Download, FilePlus, ChevronDown, ChevronRight, Plus, Users, Building, Phone, Loader2, MessageCircle, Send, ArrowUp, CornerDownLeft } from 'lucide-react';
+import { RefreshCw, AlertCircle, TrendingUp, Clock, Target, Zap, Mail, Home, X, User, Sparkles, ArrowLeft, LayoutList, Inbox, ExternalLink, Download, FilePlus, ChevronDown, ChevronRight, Plus, Users, Building, Phone, Loader2, MessageCircle, Send, ArrowUp, CornerDownLeft, Menu, Shield } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './avatar';
 import { toast } from 'sonner';
 import { HelpCard } from './help-card';
@@ -1505,6 +1505,7 @@ export function GmailInterfaceFixed() {
     const totalItems = summary ? Object.values(summary as Record<string, number>).reduce((a: number, b: number) => a + b, 0) : 0;
 
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     return (
         <div className="min-h-screen bg-[#F9F8F6] dark:bg-[#0c0c0c] flex overflow-hidden" style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif" }}>
@@ -1524,6 +1525,8 @@ export function GmailInterfaceFixed() {
                 onOpenRewards={() => setShowRewards(true)}
                 activeView={viewMode}
                 onCollapse={(collapsed) => setSidebarCollapsed(collapsed)}
+                isOpen={isMobileMenuOpen}
+                onClose={() => setIsMobileMenuOpen(false)}
             />
 
             <AnimatePresence>
@@ -1545,13 +1548,26 @@ export function GmailInterfaceFixed() {
 
             {/* Main Content Wrapper */}
             <motion.div 
-                animate={{ marginLeft: sidebarCollapsed ? 80 : 256 }}
+                animate={{ 
+                    marginLeft: typeof window !== 'undefined' && window.innerWidth < 768 
+                        ? 0 
+                        : (sidebarCollapsed ? 80 : 256) 
+                }}
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 className="flex-1 min-h-screen relative overflow-hidden bg-[#F9F8F6] dark:bg-[#0c0c0c]"
             >
-                {/* Credits Badge - Now more subtle and professional */}
-                {usageData && usageData.planType !== 'pro' && (
-                    <div className="absolute top-6 right-10 z-50">
+                {/* Security & Credits Section */}
+                <div className="absolute top-6 right-10 z-50 flex items-center gap-4">
+                    {/* Security Shield Indicator */}
+                    <div className="hidden md:flex items-center gap-2.5 px-3.5 py-2 rounded-full bg-white/50 dark:bg-white/[0.03] border border-green-500/20 backdrop-blur-md shadow-sm group cursor-help" title="End-to-End Encryption & RLS Active">
+                        <div className="relative">
+                            <Shield className="h-3.5 w-3.5 text-green-500" />
+                            <div className="absolute inset-0 bg-green-500/20 blur-sm rounded-full animate-pulse" />
+                        </div>
+                        <span className="text-[10px] font-bold text-green-600 dark:text-green-500 uppercase tracking-widest opacity-80 group-hover:opacity-100 transition-opacity">Cloud Shield Active</span>
+                    </div>
+
+                    {usageData && usageData.planType !== 'pro' && (
                         <UsageBadge
                             icon={<Sparkles className="h-3.5 w-3.5 text-amber-500" />}
                             planName={(usageData.planType as string) === 'starter' ? 'Starter' : (usageData.planType as string) === 'pro' ? 'Pro' : 'Free'}
@@ -1567,16 +1583,22 @@ export function GmailInterfaceFixed() {
                                 </p>
                             }
                         />
-                    </div>
-                )}
+                    )}
+                </div>
 
                 {/* The Curvy Content Area */}
-                <div className="mt-2.5 mr-2.5 mb-2.5 bg-white dark:bg-[#111111] rounded-[2.5rem] min-h-[calc(100vh-20px)] border border-[#EBE9E2] dark:border-white/[0.05] shadow-[0_20px_50px_rgba(0,0,0,0.06)] dark:shadow-none overflow-y-auto custom-scrollbar">
-                    <div className={`${viewMode === 'people' ? 'max-w-[1600px]' : 'max-w-5xl'} mx-auto px-10 py-12 transition-all duration-500`}>
+                <div className="mt-0 md:mt-2.5 mr-0 md:mr-2.5 mb-0 md:mb-2.5 bg-white dark:bg-[#111111] rounded-none md:rounded-[2.5rem] min-h-screen md:min-h-[calc(100vh-20px)] border-none md:border border-[#EBE9E2] dark:border-white/[0.05] shadow-none md:shadow-[0_20px_50px_rgba(0,0,0,0.06)] dark:shadow-none overflow-y-auto custom-scrollbar">
+                    <div className={`${viewMode === 'people' ? 'max-w-[1600px]' : 'max-w-5xl'} mx-auto px-4 md:px-10 py-8 md:py-12 transition-all duration-500`}>
 
                     {/* Header */}
-                    <div className="flex items-center justify-between mb-16">
-                        <div className="flex items-center gap-4">
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-12 md:mb-16">
+                        <div className="flex items-center gap-4 w-full md:w-auto">
+                            <button 
+                                onClick={() => setIsMobileMenuOpen(true)}
+                                className="md:hidden p-2 -ml-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors text-neutral-600 dark:text-neutral-400"
+                            >
+                                <Menu className="w-6 h-6" />
+                            </button>
                             {viewMode === 'people' ? (
                                 <Users className="w-6 h-6 text-[#fafafa]" strokeWidth={1.5} />
                             ) : (
@@ -1587,7 +1609,7 @@ export function GmailInterfaceFixed() {
                             </h1>
                         </div>
 
-                        <div className="flex items-center gap-6">
+                        <div className="flex flex-wrap items-center gap-3 md:gap-6 w-full md:w-auto">
                             {countdown !== null && (
                                 <div className="flex items-center gap-2 px-3 py-1 bg-neutral-200/50 dark:bg-neutral-900/50 rounded-full border border-neutral-200 dark:border-neutral-800/50">
                                     <div className={`w-1.5 h-1.5 rounded-full ${countdown < 0 ? 'bg-red-500 animate-pulse' : 'bg-blue-500 animate-pulse'}`} />
@@ -1647,7 +1669,7 @@ export function GmailInterfaceFixed() {
 
                     {/* Stats Grid */}
                     {summary && (
-                        <div className="grid grid-cols-6 gap-px bg-neutral-800/50 rounded-xl overflow-hidden mb-16">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-px bg-neutral-800/50 rounded-xl overflow-hidden mb-12 md:mb-16">
                             {/* Opportunities */}
                             <div className="bg-white dark:bg-[#0a0a0a] p-6 hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors">
                                 <div className="flex items-center gap-3 mb-4">
@@ -1826,8 +1848,8 @@ export function GmailInterfaceFixed() {
                     {viewMode === 'people' ? (
                         <div className="flex gap-6 min-h-[700px] animate-in fade-in slide-in-from-bottom-2 duration-500">
 
-                            {/* Left Column: Context Sidebar (Blank until click) */}
-                            <div className="w-64 bg-neutral-50 dark:bg-neutral-900/10 border border-neutral-200 dark:border-neutral-800/30 rounded-3xl overflow-hidden flex flex-col transition-all duration-500 border-dashed">
+                            {/* Left Column: Contact Sidebar (Hidden on Mobile/Tablet) */}
+                            <div className="hidden xl:flex w-64 bg-neutral-50 dark:bg-neutral-900/10 border border-neutral-200 dark:border-neutral-800/30 rounded-3xl overflow-hidden flex-col transition-all duration-500 border-dashed">
                                 {!selectedContactEmail ? (
                                     <div className="flex-1 flex items-center justify-center p-8 opacity-20">
                                         <div className="w-px h-12 bg-white/20" />
@@ -1864,8 +1886,8 @@ export function GmailInterfaceFixed() {
                                 )}
                             </div>
 
-                            {/* Middle Column: People List (Max Space) */}
-                            <div className="flex-1 space-y-px bg-neutral-900/20 border border-neutral-200 dark:border-neutral-800/50 rounded-3xl overflow-hidden shadow-2xl transition-all">
+                            {/* Middle Column: Conversation List */}
+                            <div className={`${selectedContactEmail ? 'hidden lg:flex' : 'flex'} flex-1 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800/50 rounded-3xl overflow-hidden flex-col shadow-sm transition-all duration-300`}>
                                 <div className="p-6 border-b border-white/[0.03] flex items-center justify-between bg-white/[0.01]">
                                     <h3 className="text-[10px] uppercase tracking-[0.2em] font-bold text-neutral-600 dark:text-neutral-500">Recently Contacted</h3>
                                     <div className="relative">
@@ -2247,16 +2269,16 @@ export function GmailInterfaceFixed() {
 
             {/* Details Modal */}
             <div
-                className={`fixed top-1/2 left-1/2 bg-white dark:bg-[#1a1a1a] rounded-[2.5rem] shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-50 flex flex-col border border-neutral-200 dark:border-neutral-800`}
+                className={`fixed top-1/2 left-1/2 bg-white dark:bg-[#1a1a1a] rounded-none md:rounded-[2.5rem] shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-50 flex flex-col border border-neutral-200 dark:border-neutral-800 overflow-hidden`}
                 style={{
-                    width: '70%',
-                    height: '85vh',
+                    width: typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : '70%',
+                    height: typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : '85vh',
                     transform: selectedInsight ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -45%) scale(0.95)',
                     opacity: selectedInsight ? 1 : 0,
                     pointerEvents: selectedInsight ? 'auto' : 'none'
                 }}
             >
-                <div className="p-10 flex-1 overflow-y-auto relative custom-scrollbar">
+                <div className="p-6 md:p-10 flex-1 overflow-y-auto relative custom-scrollbar">
                     {selectedInsight && (
                         <div className="space-y-8 pb-20">
                             {/* Header with Back Button if Email Selected */}
@@ -2276,7 +2298,7 @@ export function GmailInterfaceFixed() {
                                                 {selectedInsight.type.replace('-', ' ')}
                                             </Badge>
                                         )}
-                                        <h2 className={`font-medium text-black dark:text-white mb-2 ${selectedEmailId ? 'text-2xl' : 'text-3xl'}`}>
+                                        <h2 className={`font-medium text-black dark:text-white mb-2 ${selectedEmailId ? 'text-xl md:text-2xl' : 'text-2xl md:text-3xl'}`}>
                                             {selectedEmailId
                                                 ? selectedInsight.source_emails?.find(e => e.id === selectedEmailId)?.subject
                                                 : selectedInsight.title}
@@ -2423,16 +2445,16 @@ export function GmailInterfaceFixed() {
                                                                 handleUnsubscribe(selectedEmailId);
                                                             } else if (label === 'Coming Soon') {
                                                                 // Premium inline message instead of toast
-                                                                const comingSoonElement = document.getElementById('coming-soon-message');
-                                                                if (comingSoonElement) {
-                                                                    comingSoonElement.style.display = 'block';
-                                                                    setTimeout(() => {
-                                                                        comingSoonElement.style.display = 'none';
-                                                                    }, 3000);
-                                                                }
+                                                                 const comingSoonElement = document.getElementById('coming-soon-message');
+                                                                 if (comingSoonElement) {
+                                                                     comingSoonElement.style.display = 'block';
+                                                                     setTimeout(() => {
+                                                                         comingSoonElement.style.display = 'none';
+                                                                     }, 3000);
+                                                                 }
                                                             }
                                                         }}
-                                                        className="h-16 bg-gradient-to-r from-neutral-900 to-neutral-700 hover:from-neutral-800 hover:to-neutral-600 text-[#fafafa] border border-neutral-600 rounded-2xl transition-all duration-300 font-medium text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                                                        className="h-14 md:h-16 bg-gradient-to-r from-neutral-900 to-neutral-700 hover:from-neutral-800 hover:to-neutral-600 text-[#fafafa] border border-neutral-600 rounded-2xl transition-all duration-300 font-medium text-base md:text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                                                     >
                                                         {label}
                                                     </Button>
@@ -2462,13 +2484,14 @@ export function GmailInterfaceFixed() {
             <div
                 className={`fixed top-1/2 left-1/2 bg-[#0d0d0d]/95 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_0_120px_rgba(0,0,0,0.6),0_0_60px_rgba(255,255,255,0.02)] transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-[60] flex flex-col border border-white/[0.06] overflow-hidden`}
                 style={{
-                    width: '55%',
-                    minWidth: '600px',
-                    maxWidth: '900px',
-                    height: '88vh',
+                    width: typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : '55%',
+                    minWidth: typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : '600px',
+                    maxWidth: typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : '900px',
+                    height: typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : '88vh',
                     transform: showDraftEditor ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -45%) scale(0.95)',
                     opacity: showDraftEditor ? 1 : 0,
-                    pointerEvents: showDraftEditor ? 'auto' : 'none'
+                    pointerEvents: showDraftEditor ? 'auto' : 'none',
+                    borderRadius: typeof window !== 'undefined' && window.innerWidth < 768 ? '0' : '2.5rem'
                 }}
             >
                 <div className="p-10 flex flex-col h-full relative">

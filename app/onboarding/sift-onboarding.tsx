@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useSession, signOut } from "next-auth/react";
+import { useSession, signOut, signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import {
   Zap,
@@ -652,8 +652,71 @@ export default function SiftOnboardingPage() {
         );
 
       case 2: // SCANNING
+        if (scanNeedsReauth) {
+          return (
+            <motion.div key="step-2-reauth" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="max-w-2xl mx-auto text-center space-y-12">
+              <div className="bg-zinc-950/40 border border-amber-500/20 p-10 sm:p-14 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-b from-amber-500/5 to-transparent pointer-events-none" />
+                <div className="relative z-10 space-y-8">
+                  <div className="w-20 h-20 bg-amber-500/10 rounded-full mx-auto flex items-center justify-center border border-amber-500/20 shadow-[0_0_30px_rgba(245,158,11,0.15)]">
+                    <ShieldCheck className="w-10 h-10 text-amber-500" />
+                  </div>
+                  <div className="space-y-4">
+                    <h2 className="text-3xl font-medium text-white tracking-tight">Connect Gmail to Begin</h2>
+                    <p className="text-zinc-400 text-lg leading-relaxed max-w-md mx-auto">
+                      Mailient needs to scan your inbox to map your relationships and find immediate wins. We never send anything without your approval.
+                    </p>
+                  </div>
+                  <div className="pt-4 flex flex-col items-center gap-4">
+                    <LiquidButton onClick={() => signIn("google", { callbackUrl: window.location.href })} className="h-14 px-10 text-white font-bold w-full sm:w-auto">
+                      <div className="flex items-center gap-2">
+                        <Mail className="w-5 h-5" />
+                        <span>Securely Connect Inbox</span>
+                      </div>
+                    </LiquidButton>
+                    <p className="text-xs text-zinc-600 flex items-center gap-2 mt-2 font-medium">
+                      <Lock className="w-3.5 h-3.5 text-zinc-500" />
+                      Google Workspace Verified OAuth
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          );
+        }
+
+        if (scanError && !scanNeedsReauth) {
+          return (
+            <motion.div key="step-2-error" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="max-w-2xl mx-auto text-center space-y-12">
+              <div className="bg-zinc-950/40 border border-red-500/20 p-10 sm:p-14 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-b from-red-500/5 to-transparent pointer-events-none" />
+                <div className="relative z-10 space-y-8">
+                  <div className="w-20 h-20 bg-red-500/10 rounded-full mx-auto flex items-center justify-center border border-red-500/20">
+                    <AlertCircle className="w-10 h-10 text-red-500" />
+                  </div>
+                  <div className="space-y-4">
+                    <h2 className="text-3xl font-medium text-white tracking-tight">Scan Interrupted</h2>
+                    <p className="text-zinc-400 text-lg">{scanError}</p>
+                  </div>
+                  <div className="pt-4 flex flex-col items-center gap-4">
+                    <LiquidButton onClick={() => startScan()} className="h-14 px-10 text-white font-bold w-full sm:w-auto bg-white/10 hover:bg-white/20">
+                      <div className="flex items-center gap-2">
+                        <RefreshCw className="w-5 h-5" />
+                        <span>Try Again</span>
+                      </div>
+                    </LiquidButton>
+                    <button onClick={handleNext} className="text-zinc-500 hover:text-white transition-colors underline mt-4 text-sm">
+                      Skip for now
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          );
+        }
+
         return (
-          <motion.div key="step-2" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="max-w-2xl mx-auto text-center space-y-12">
+          <motion.div key="step-2-scanning" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="max-w-2xl mx-auto text-center space-y-12">
             <div className="relative w-40 h-40 mx-auto">
               <motion.div
                 animate={{ rotate: 360 }}

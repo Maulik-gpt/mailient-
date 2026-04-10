@@ -263,7 +263,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
 
                 {/* Modal */}
                 <div
-                    className="relative bg-[#0d0d0d] border border-neutral-200 dark:border-neutral-800 w-full max-w-xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-10 duration-500"
+                    className="relative bg-[#0d0d0d] border border-neutral-200 dark:border-neutral-800 w-full max-w-xl md:rounded-[2.5rem] rounded-t-[2rem] shadow-2xl overflow-y-auto max-h-[95vh] md:max-h-[90vh] animate-in zoom-in-95 slide-in-from-bottom-10 duration-500"
                 >
                     {/* Header */}
                     <div className="p-8 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
