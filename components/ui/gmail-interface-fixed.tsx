@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { AnimatePresence, motion, type PanInfo, useAnimation, useDragControls } from 'framer-motion';
+import { AnimatePresence, motion, type PanInfo, useAnimation, useDragControls, LayoutGroup } from 'framer-motion';
 import { useSession, signIn } from 'next-auth/react';
 import { SiftCard } from './sift-card';
 import { Button } from './button';
@@ -484,7 +484,7 @@ export function GmailInterfaceFixed() {
     }, [selectedInsight]);
 
     // AI Text Formatting Utility
-    const decodeEntities = (text: string | null) => {
+    const decodeEntities = useCallback((text: string | null) => {
         if (!text) return '';
         return text
             .replace(/&quot;/g, '"')
@@ -500,9 +500,9 @@ export function GmailInterfaceFixed() {
             .replace(/&ldquo;/g, '"')
             .replace(/&ndash;/g, '-')
             .replace(/&mdash;/g, '--');
-    };
+    }, []);
 
-    const formatAIText = (text: string | null) => {
+    const formatAIText = useCallback((text: string | null) => {
         if (!text) return null;
         let decoded = decodeEntities(text);
 
@@ -547,7 +547,7 @@ export function GmailInterfaceFixed() {
                 })}
             </>
         );
-    };
+    }, [decodeEntities]);
 
     const handleEmailClick = async (emailId: string) => {
         setSelectedEmailId(emailId);
@@ -1519,6 +1519,7 @@ export function GmailInterfaceFixed() {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     return (
+        <LayoutGroup>
         <div className="min-h-screen bg-[#F9F8F6] dark:bg-[#0c0c0c] flex overflow-hidden" style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif" }}>
             <UsageLimitModal
                 isOpen={isUsageLimitModalOpen}
@@ -1560,11 +1561,16 @@ export function GmailInterfaceFixed() {
             {/* Main Content Wrapper */}
             <motion.div 
                 animate={{ 
-                    marginLeft: typeof window !== 'undefined' && window.innerWidth < 768 
+                    x: typeof window !== 'undefined' && window.innerWidth < 768 
                         ? 0 
-                        : (sidebarCollapsed ? 80 : 256) 
+                        : (sidebarCollapsed ? -176 : 0) // Shift based on the delta from expanded to collapsed (256-80=176)
                 }}
-                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                initial={false}
+                transition={{ type: "spring", stiffness: 260, damping: 32, mass: 0.8 }}
+                style={{ 
+                    marginLeft: typeof window !== 'undefined' && window.innerWidth < 768 ? 0 : 256,
+                    width: typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : 'calc(100% - 256px)'
+                }}
                 className="flex-1 min-h-screen relative overflow-hidden bg-[#F9F8F6] dark:bg-[#0c0c0c]"
             >
                 {/* Security & Credits Section */}
@@ -2213,17 +2219,32 @@ export function GmailInterfaceFixed() {
                                         </div>
                                     </div>
 
-                                    <div className="space-y-3">
-                                        {insights.map((insight) => (
-                                            <SiftCard
+                                    <motion.div 
+                                        layout
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, scale: 0.95 }}
+                                        transition={{ type: "spring", stiffness: 260, damping: 25 }}
+                                        className="space-y-3"
+                                    >
+                                        {insights.map((insight, index) => (
+                                            <motion.div
                                                 key={insight.id}
-                                                type={getCardType(insight)}
-                                                title={insight.title}
-                                                content={insight.content}
-                                                onClick={() => setSelectedInsight(insight)}
-                                            />
+                                                initial={{ opacity: 0, x: -10 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                transition={{ delay: index * 0.05 }}
+                                                whileHover={{ y: -2, scale: 1.005 }}
+                                                whileTap={{ scale: 0.995 }}
+                                            >
+                                                <SiftCard
+                                                    type={getCardType(insight)}
+                                                    title={insight.title}
+                                                    content={insight.content}
+                                                    onClick={() => setSelectedInsight(insight)}
+                                                />
+                                            </motion.div>
                                         ))}
-                                    </div>
+                                    </motion.div>
                                 </div>
                             ) : (
                                 <div className="text-center py-24">
@@ -3150,5 +3171,6 @@ export function GmailInterfaceFixed() {
                 }
             ` }} />
         </div>
+        </LayoutGroup>
     );
 }

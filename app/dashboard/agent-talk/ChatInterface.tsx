@@ -32,7 +32,7 @@ import { Note } from '@/components/ui/note';
 import { Button as Button1 } from '@/components/ui/button-1';
 import { MorphingSquare } from '@/components/ui/morphing-square';
 import { useTheme } from 'next-themes';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { toast } from 'sonner';
 import { cn } from "@/lib/utils";
 import { GradientWave } from "@/components/ui/gradient-wave";
@@ -505,7 +505,7 @@ export default function ChatInterface({
     isUnlimited?: boolean;
   } | null>(null);
 
-  const handleAcceptCanvas = (msgId: number) => {
+  const handleAcceptCanvas = useCallback((msgId: number) => {
     setMessages(prev => prev.map(m => {
       if (m.id === msgId && m.type === 'agent') {
         const agentMsg = m as AgentMessage;
@@ -527,9 +527,9 @@ export default function ChatInterface({
       return m;
     }));
     toast.success('Mission accepted', { description: 'Opening Arcus Workspace...' });
-  };
+  }, []);
 
-  const handleDeclineCanvas = (msgId: number) => {
+  const handleDeclineCanvas = useCallback((msgId: number) => {
     setMessages(prev => prev.map(m => {
       if (m.id === msgId && m.type === 'agent') {
         const agentMsg = m as AgentMessage;
@@ -546,9 +546,9 @@ export default function ChatInterface({
       return m;
     }));
     toast.info('Mission declined', { description: 'Continuing in chat mode.' });
-  };
+  }, []);
 
-  const refreshArcusCredits = async (showToast = false) => {
+  const refreshArcusCredits = useCallback(async (showToast = false) => {
     try {
       const res = await fetch('/api/subscription/usage', {
         method: 'POST',
@@ -584,7 +584,7 @@ export default function ChatInterface({
     } catch {
       // ignore
     }
-  };
+  }, []);
 
   // Fetch subscription status on mount and activate pending plans
   useEffect(() => {
@@ -2381,6 +2381,7 @@ export default function ChatInterface({
             </div>
 
             {/* Chat Body - Absolute Layout Rebuild to avoid displacement */}
+            <LayoutGroup>
             <div
               className="flex-1 relative z-20 min-h-0 min-w-0"
               style={{ flex: '1 1 0%', minHeight: 0, overflow: 'hidden' }}
@@ -2450,7 +2451,14 @@ export default function ChatInterface({
                       <div className="space-y-4 pt-4">
                         {activeMission && <MissionStatusHeader mission={activeMission} />}
                         {messages.map((msg) => (
-                          <div key={msg.id} className={`flex flex-col animate-fade-in ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                          <motion.div 
+                            layout
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                            key={msg.id} 
+                            className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
+                          >
                             <div className={`flex gap-2.5 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'} max-w-full items-start`}>
                               <div className={`w-7 h-7 rounded-lg flex-shrink-0 flex items-center justify-center border ${msg.role === 'user' ? 'bg-[#2b2b2b] border-neutral-200 dark:border-white/10' : 'bg-graphite-surface border-graphite-border'}`}>
                                 {msg.role === 'user' ? <User2 className="w-3.5 h-3.5 text-black dark:text-white/50" /> : <img src="/arcus-ai-icon.jpg" className="w-full h-full object-cover grayscale" />}
@@ -2682,7 +2690,7 @@ export default function ChatInterface({
                                 </div>
                               </div>
                             </div>
-                          </div>
+                          </motion.div>
                         ))}
                         {isLoading && (
                           <div className="flex items-start gap-2.5 animate-fade-in group">
@@ -2810,6 +2818,7 @@ export default function ChatInterface({
                 )}
               </AnimatePresence>
           </div>
+          </LayoutGroup>
         </div>
         <NoScrollbarStyles />
         <ConnectorsModal isOpen={isIntegrationsModalOpen} onClose={() => setIsIntegrationsModalOpen(false)} onTryOut={handleTryOut} />
