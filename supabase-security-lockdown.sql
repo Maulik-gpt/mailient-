@@ -156,15 +156,6 @@ DO $$ BEGIN
   END IF;
 END $$;
 
--- Pending Connections
-DO $$ BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'pending_connections') THEN
-    DROP POLICY IF EXISTS "Users can access own pending" ON pending_connections;
-    CREATE POLICY "Users can access own pending" ON pending_connections FOR ALL
-      USING (auth.uid()::text = inviter_user_id OR auth.uid()::text = invitee_user_id)
-      WITH CHECK (auth.uid()::text = inviter_user_id);
-  END IF;
-END $$;
 
 -- Arcus Runs
 DO $$ BEGIN
