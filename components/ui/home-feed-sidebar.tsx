@@ -13,7 +13,8 @@ import {
     Gift,
     HelpCircle,
     PanelLeft,
-    MessageCircle
+    MessageCircle,
+    X
 } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { motion, AnimatePresence } from 'framer-motion';
