@@ -8,7 +8,7 @@ import { Button } from './button';
 import { SettingsCard } from './settings-card';
 import { Badge } from './badge';
 import { HomeFeedSidebar } from './home-feed-sidebar';
-import { RefreshCw, AlertCircle, TrendingUp, Clock, Target, Zap, Mail, Home, X, User, Sparkles, ArrowLeft, LayoutList, Inbox, ExternalLink, Download, FilePlus, ChevronDown, ChevronRight, Plus, Users, Building, Phone, Loader2, MessageCircle, Send, ArrowUp, CornerDownLeft, Menu, Shield, Activity } from 'lucide-react';
+import { RefreshCw, AlertCircle, TrendingUp, Clock, Target, Zap, Mail, Home, X, User, Sparkles, ArrowLeft, LayoutList, Inbox, ExternalLink, Download, FilePlus, ChevronDown, ChevronRight, Plus, Users, Building, Phone, Loader2, MessageCircle, Send, ArrowUp, CornerDownLeft, Menu, Shield, Activity, PanelLeft } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './avatar';
 import { toast } from 'sonner';
 import { HelpCard } from './help-card';
@@ -252,8 +252,8 @@ export function GmailInterfaceFixed() {
     const [isLoadingContactDetail, setIsLoadingContactDetail] = useState(false);
     const [peopleSearchQuery, setPeopleSearchQuery] = useState('');
 
-    const { 
-        settings, 
+    const {
+        settings,
         playSystemSound,
         showNotification
     } = useDashboardSettings();
@@ -267,10 +267,10 @@ export function GmailInterfaceFixed() {
     const [isArcusLoading, setIsArcusLoading] = useState(false);
     const [arcusConversationId, setArcusConversationId] = useState<string | null>(null);
     const [arcusPanelHeight, setArcusPanelHeight] = useState(800);
-     const [showSettings, setShowSettings] = useState(false);
+    const [showSettings, setShowSettings] = useState(false);
     const [showHelp, setShowHelp] = useState(false);
     const [showRewards, setShowRewards] = useState(false);
-    
+
     // Smart Nudges state
     const [nudges, setNudges] = useState<any[]>([]);
     const [isLoadingNudges, setIsLoadingNudges] = useState(false);
@@ -437,17 +437,17 @@ export function GmailInterfaceFixed() {
 
     const fetchNudges = useCallback(async () => {
         if (!settings.smartNudges || isLoadingNudges) return;
-        
+
         setIsLoadingNudges(true);
         console.log('📡 Fetching smart nudges...');
-        
+
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
 
         try {
             const res = await fetch('/api/nudges', { signal: controller.signal });
             clearTimeout(timeoutId);
-            
+
             if (res.status === 401) {
                 setIsTokenExpired(true);
                 return;
@@ -819,8 +819,8 @@ export function GmailInterfaceFixed() {
             const response = await fetch('/api/email/draft-reply', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    emailId, 
+                body: JSON.stringify({
+                    emailId,
                     category,
                     tone: settings.aiTone,
                     aiProtection: settings.aiProtection,
@@ -956,7 +956,7 @@ export function GmailInterfaceFixed() {
     const handleSiftMouseUp = (e: React.MouseEvent) => {
         // Prevent clearing if we are clicking inside the toolkit or actively refining
         if (!showDraftEditor || isDrafting || isRefinementActive || isProcessingRefinement || proposedRefinement) return;
-        
+
         // Target the draft textarea specifically for reliable selection tracking
         const textarea = document.querySelector('textarea[placeholder="AI generated draft will appear here..."]') as HTMLTextAreaElement;
         if (!textarea) return;
@@ -1002,7 +1002,7 @@ export function GmailInterfaceFixed() {
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (!showDraftEditor) return;
-            
+
             if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'm') {
                 if (selection && !isRefinementActive) {
                     setIsRefinementActive(true);
@@ -1029,10 +1029,10 @@ export function GmailInterfaceFixed() {
 
     const handleSiftRefinementSubmit = async () => {
         if (!selection || !refinementInstruction.trim()) return;
-        
+
         setIsProcessingRefinement(true);
         console.log("🚀 Sift Refinement Initiated:", { text: selection.text, instruction: refinementInstruction });
-        
+
         try {
             const res = await fetch('/api/email/refine-reply', {
                 method: 'POST',
@@ -1043,7 +1043,7 @@ export function GmailInterfaceFixed() {
                     instruction: refinementInstruction
                 })
             });
-            
+
             // Parse response ONCE
             const data = await res.json().catch(() => ({}));
 
@@ -1074,8 +1074,8 @@ export function GmailInterfaceFixed() {
             }
         } catch (error) {
             console.error('❌ Refinement failed:', error);
-            toast.error('AI refinement failed', { 
-                description: error instanceof Error ? error.message : 'Please try again' 
+            toast.error('AI refinement failed', {
+                description: error instanceof Error ? error.message : 'Please try again'
             });
             setIsRefinementActive(false);
             setSelection(null);
@@ -1088,9 +1088,9 @@ export function GmailInterfaceFixed() {
 
     const handleAcceptSiftRefinement = () => {
         if (!selection || !proposedRefinement) return;
-        const newContent = 
-            draftContent.slice(0, selection.start) + 
-            proposedRefinement + 
+        const newContent =
+            draftContent.slice(0, selection.start) +
+            proposedRefinement +
             draftContent.slice(selection.end);
         setDraftContent(newContent);
         setProposedRefinement(null);
@@ -1469,1637 +1469,1665 @@ export function GmailInterfaceFixed() {
 
     const totalItems = summary ? Object.values(summary as Record<string, number>).reduce((a: number, b: number) => a + b, 0) : 0;
 
+    const [isMobile, setIsMobile] = useState(false);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+    // Initial width check and resize listener
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    function setIsArcusOpen(arg0: boolean): void {
+        throw new Error('Function not implemented.');
+    }
+
     return (
         <LayoutGroup>
-        <div className="min-h-screen bg-[#F9F8F6] dark:bg-[#0c0c0c] flex overflow-hidden" style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif" }}>
-            <UsageLimitModal
-                isOpen={isUsageLimitModalOpen}
-                onClose={() => setIsUsageLimitModalOpen(false)}
-                featureName={usageLimitModalData?.featureName || 'AI'}
-                currentUsage={usageLimitModalData?.currentUsage || 0}
-                limit={usageLimitModalData?.limit || 0}
-                period={usageLimitModalData?.period || 'monthly'}
-                currentPlan={usageLimitModalData?.currentPlan || 'starter'}
-            />
-            {/* Sidebar */}
-            <HomeFeedSidebar
-                onOpenSettings={() => setShowSettings(true)}
-                onOpenHelp={() => setShowHelp(true)}
-                onOpenRewards={() => setShowRewards(true)}
-                activeView={viewMode}
-                onCollapse={(collapsed) => setSidebarCollapsed(collapsed)}
-                isOpen={isMobileMenuOpen}
-                onClose={() => setIsMobileMenuOpen(false)}
-            />
+            <div className="min-h-screen bg-[#F9F8F6] dark:bg-[#0c0c0c] flex overflow-hidden satoshi-dashboard" style={{ fontFamily: "Satoshi, sans-serif" }}>
+                <UsageLimitModal
+                    isOpen={isUsageLimitModalOpen}
+                    onClose={() => setIsUsageLimitModalOpen(false)}
+                    featureName={usageLimitModalData?.featureName || 'AI'}
+                    currentUsage={usageLimitModalData?.currentUsage || 0}
+                    limit={usageLimitModalData?.limit || 0}
+                    period={usageLimitModalData?.period || 'monthly'}
+                    currentPlan={usageLimitModalData?.currentPlan || 'starter'}
+                />
+                {/* Sidebar */}
+                <HomeFeedSidebar
+                    onOpenSettings={() => setShowSettings(true)}
+                    onOpenHelp={() => setShowHelp(true)}
+                    onOpenRewards={() => setShowRewards(true)}
+                    activeView={viewMode}
+                    onCollapse={(collapsed) => setSidebarCollapsed(collapsed)}
+                    isOpen={isMobileMenuOpen}
+                    onClose={() => setIsMobileMenuOpen(false)}
+                />
 
-            <AnimatePresence>
-                {showSettings && <SettingsCard onClose={() => setShowSettings(false)} />}
-                {showHelp && <HelpCard onClose={() => setShowHelp(false)} />}
-                {showRewards && (
-                    <RewardsCard 
-                        onClose={() => setShowRewards(false)} 
-                        usageData={usageData || {
-                            planType: 'free',
-                            features: {
-                                arcus_ai: { usage: 0, limit: 10, remaining: 10, isUnlimited: false, period: 'daily' },
-                                sift_ai: { usage: 0, limit: 5, remaining: 5, isUnlimited: false, period: 'daily' }
-                            }
-                        }} 
-                    />
-                )}
-            </AnimatePresence>
-
-            {/* Main Content Wrapper */}
-            <motion.div 
-                animate={{ 
-                    marginLeft: typeof window !== 'undefined' && window.innerWidth < 768 
-                        ? 0 
-                        : (sidebarCollapsed ? 80 : 256),
-                    width: typeof window !== 'undefined' && window.innerWidth < 768 
-                        ? '100%' 
-                        : `calc(100% - ${sidebarCollapsed ? 80 : 256}px)`
-                }}
-                initial={false}
-                transition={{ type: "spring", stiffness: 260, damping: 32, mass: 0.8 }}
-                className="flex-1 min-h-screen relative overflow-hidden bg-transparent"
-            >
-                <TokenExpiryAlert isVisible={isTokenExpired} />
-                
-                {/* Security & Credits Section */}
-                <div className="absolute top-6 right-10 z-50 flex items-center gap-4">
-                    {/* Security Shield Indicator */}
-                    <div className="hidden md:flex items-center gap-2.5 px-3.5 py-2 rounded-full bg-white/50 dark:bg-white/[0.03] border border-green-500/20 backdrop-blur-md shadow-sm group cursor-help" title="End-to-End Encryption & RLS Active">
-                        <div className="relative">
-                            <Shield className="h-3.5 w-3.5 text-green-500" />
-                            <div className="absolute inset-0 bg-green-500/20 blur-sm rounded-full animate-pulse" />
-                        </div>
-                        <span className="text-[10px] font-bold text-green-600 dark:text-green-500 uppercase tracking-widest opacity-80 group-hover:opacity-100 transition-opacity">Zero-Knowledge Mode Active</span>
-                    </div>
-
-                    {usageData && usageData.planType !== 'pro' && (
-                        <UsageBadge
-                            icon={<Sparkles className="h-3.5 w-3.5 text-amber-500" />}
-                            planName={(usageData.planType as string) === 'starter' ? 'Starter' : (usageData.planType as string) === 'pro' ? 'Pro' : 'Free'}
-                            usage={usageData.features?.arcus_ai?.usage || 0}
-                            limit={usageData.features?.arcus_ai?.limit || 5}
-                            tooltipContent={
-                                <p className="text-[10px] font-medium uppercase tracking-wider">
-                                    {(usageData.planType as string) === 'starter' ? 'Starter' : (usageData.planType as string) === 'pro' ? 'Pro' : 'Free'} Plan
-                                    <br />
-                                    <span className="text-black dark:text-white/40 font-light lowercase">
-                                        {usageData.features?.arcus_ai?.remaining ?? 5} credits left
-                                    </span>
-                                </p>
-                            }
+                <AnimatePresence>
+                    {showSettings && <SettingsCard onClose={() => setShowSettings(false)} />}
+                    {showHelp && <HelpCard onClose={() => setShowHelp(false)} />}
+                    {showRewards && (
+                        <RewardsCard
+                            onClose={() => setShowRewards(false)}
+                            usageData={usageData || {
+                                planType: 'free',
+                                features: {
+                                    arcus_ai: { usage: 0, limit: 10, remaining: 10, isUnlimited: false, period: 'daily' },
+                                    sift_ai: { usage: 0, limit: 5, remaining: 5, isUnlimited: false, period: 'daily' }
+                                }
+                            }}
                         />
                     )}
-                </div>
+                </AnimatePresence>
 
-                {/* The Curvy Content Area */}
-                <div className="mt-0 md:mt-2.5 mr-0 md:mr-2.5 mb-0 md:mb-2.5 bg-white dark:bg-[#111111] rounded-none md:rounded-[2.5rem] min-h-screen md:min-h-[calc(100vh-20px)] border-none md:border border-[#EBE9E2] dark:border-white/[0.05] shadow-none md:shadow-[0_20px_50px_rgba(0,0,0,0.06)] dark:shadow-none overflow-y-auto custom-scrollbar">
-                    <div className={`${viewMode === 'people' ? 'max-w-[1600px]' : 'max-w-5xl'} mx-auto px-4 md:px-10 py-8 md:py-12 transition-all duration-500`}>
-
-                    {/* Header */}
-                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-12 md:mb-16">
-                        <div className="flex items-center gap-4 w-full md:w-auto">
-                            <button 
-                                onClick={() => setIsMobileMenuOpen(true)}
-                                className="md:hidden p-2 -ml-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors text-neutral-600 dark:text-neutral-400"
-                            >
-                                <Menu className="w-6 h-6" />
-                            </button>
-                            {viewMode === 'people' ? (
-                                <Users className="w-6 h-6 text-[#fafafa]" strokeWidth={1.5} />
-                            ) : (
-                                <Home className="w-5 h-5 text-[#666666] dark:text-neutral-400" strokeWidth={1.5} />
-                            )}
-                            <h1 className="text-2xl font-semibold text-[#1A1A1A] dark:text-white tracking-tight">
-                                {viewMode === 'people' ? 'People' : 'Home'}
-                            </h1>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-3 md:gap-6 w-full md:w-auto">
-                            {countdown !== null && (
-                                <div className="flex items-center gap-2 px-3 py-1 bg-neutral-200/50 dark:bg-neutral-900/50 rounded-full border border-neutral-200 dark:border-neutral-800/50">
-                                    <div className={`w-1.5 h-1.5 rounded-full ${countdown < 0 ? 'bg-red-500 animate-pulse' : 'bg-blue-500 animate-pulse'}`} />
-                                    <span className={`text-xs font-mono tabular-nums ${countdown < 0 ? 'text-red-500' : 'text-neutral-500 dark:text-neutral-400'}`}>
-                                        {countdown}s
-                                    </span>
-                                </div>
-                            )}
-                            {lastUpdated && (
-                                <span className="text-xs text-neutral-600 dark:text-neutral-500 font-light">
-                                    Updated {lastUpdated}
-                                </span>
-                            )}
+                {/* Main Content Wrapper */}
+                <motion.div
+                    animate={{
+                        marginLeft: isMobile ? 0 : (sidebarCollapsed ? 80 : 256),
+                        width: isMobile ? '100%' : `calc(100% - ${sidebarCollapsed ? 80 : 256}px)`
+                    }}
+                    initial={false}
+                    transition={{ type: "spring", stiffness: 260, damping: 32, mass: 0.8 }}
+                    className="flex-1 min-h-screen relative overflow-hidden bg-transparent flex flex-col"
+                >
+                    {/* Mobile Header */}
+                    {isMobile && (
+                        <div className="flex items-center justify-between px-6 py-4 bg-white dark:bg-[#111111] border-b border-neutral-200 dark:border-white/5 sticky top-0 z-40">
                             <button
-                            onClick={() => {
-                                    const nextState = !isTraditionalView;
-                                    setIsTraditionalView(nextState);
-                                    if (nextState && traditionalEmails.length === 0) {
-                                        fetchTraditionalEmails();
-                                    }
-                                }}
-                                className="h-10 px-6 bg-white dark:bg-white/[0.05] text-black dark:text-white rounded-xl text-sm font-medium flex items-center gap-3 group border border-neutral-200 dark:border-white/20 transition-all hover:bg-neutral-50 dark:hover:bg-white/[0.1] shadow-sm"
+                                onClick={() => setIsMobileMenuOpen(true)}
+                                className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors text-neutral-600 dark:text-neutral-400"
                             >
-                                 {isTraditionalView ? (
-                                    <>
-                                        <Sparkles className="h-4 w-4 text-amber-500 group-hover:scale-110 transition-transform" />
-                                        <span className="text-black dark:text-white">Switch to AI Sift</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <LayoutList className="h-4 w-4 text-blue-500 group-hover:scale-110 transition-transform" />
-                                        <span className="text-black dark:text-white">Switch to Traditional</span>
-                                    </>
-                                )}
+                                <PanelLeft className="w-5 h-5" />
                             </button>
-
-                            <Button
-                                onClick={() => isTraditionalView ? fetchTraditionalEmails() : fetchSiftInsights(true)}
-                                disabled={loading || isLoadingTraditional || (!isTraditionalView && !nextPageToken)}
-                                className="h-9 px-4 bg-transparent hover:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:border-neutral-700 text-neutral-500 dark:text-neutral-400 hover:text-[#fafafa] rounded-lg transition-colors flex items-center gap-2"
-                                size="sm"
+                            <span className="font-bold text-sm tracking-tight text-neutral-900 dark:text-white uppercase whitespace-nowrap">Home Feed</span>
+                            <button
+                                onClick={() => setIsArcusOpen(true)}
+                                className="p-2 bg-black dark:bg-white text-white dark:text-black rounded-lg"
                             >
-                                <Sparkles className={`h-3.5 w-3.5 ${loading || isLoadingTraditional ? 'animate-pulse' : ''}`} />
-                                <span>{loading || isLoadingTraditional ? 'Sifting...' : 'Load More'}</span>
-                            </Button>
-                            <Button
-                                onClick={() => isTraditionalView ? fetchTraditionalEmails() : fetchSiftInsights(false)}
-                                disabled={loading || isLoadingTraditional}
-                                className="h-9 px-4 bg-transparent hover:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:border-neutral-700 text-neutral-500 dark:text-neutral-400 hover:text-[#fafafa] rounded-lg transition-colors flex items-center gap-2"
-                                size="sm"
-                            >
-                                <RefreshCw className={`h-3.5 w-3.5 ${loading || isLoadingTraditional ? 'animate-spin' : ''}`} />
-                                <span>{loading || isLoadingTraditional ? 'Syncing' : 'Refresh'}</span>
-                            </Button>
+                                <Sparkles className="w-4 h-4" />
+                            </button>
                         </div>
+                    )}
+                    <TokenExpiryAlert isVisible={isTokenExpired} />
+
+                    {/* Security & Credits Section */}
+                    <div className="absolute top-6 right-10 z-50 flex items-center gap-4">
+                        {/* Security Shield Indicator */}
+                        <div className="hidden md:flex items-center gap-2.5 px-3.5 py-2 rounded-full bg-white/50 dark:bg-white/[0.03] border border-green-500/20 backdrop-blur-md shadow-sm group cursor-help" title="End-to-End Encryption & RLS Active">
+                            <div className="relative">
+                                <Shield className="h-3.5 w-3.5 text-green-500" />
+                                <div className="absolute inset-0 bg-green-500/20 blur-sm rounded-full animate-pulse" />
+                            </div>
+                            <span className="text-[10px] font-bold text-green-600 dark:text-green-500 uppercase tracking-widest opacity-80 group-hover:opacity-100 transition-opacity">Zero-Knowledge Mode Active</span>
+                        </div>
+
+                        {usageData && usageData.planType !== 'pro' && (
+                            <UsageBadge
+                                icon={<Sparkles className="h-3.5 w-3.5 text-amber-500" />}
+                                planName={(usageData.planType as string) === 'starter' ? 'Starter' : (usageData.planType as string) === 'pro' ? 'Pro' : 'Free'}
+                                usage={usageData.features?.arcus_ai?.usage || 0}
+                                limit={usageData.features?.arcus_ai?.limit || 5}
+                                tooltipContent={
+                                    <p className="text-[10px] font-medium uppercase tracking-wider">
+                                        {(usageData.planType as string) === 'starter' ? 'Starter' : (usageData.planType as string) === 'pro' ? 'Pro' : 'Free'} Plan
+                                        <br />
+                                        <span className="text-black dark:text-white/40 font-light lowercase">
+                                            {usageData.features?.arcus_ai?.remaining ?? 5} credits left
+                                        </span>
+                                    </p>
+                                }
+                            />
+                        )}
                     </div>
 
-                    {/* Stats Grid */}
-                    {summary && (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-12 md:mb-16">
-                            {/* Opportunities */}
-                            <div className="glass-morphism rounded-2xl p-6 transition-all hover:scale-[1.02] active:scale-[0.98]">
-                                <div className="flex items-center gap-3 mb-4">
-                                    <Target className="h-4 w-4 text-neutral-600 dark:text-neutral-500" strokeWidth={1.5} />
-                                </div>
-                                <p className="text-2xl font-medium text-black dark:text-[#fafafa] mb-1">{summary.opportunities_detected || 0}</p>
-                                <p className="text-xs text-neutral-600 dark:text-neutral-500 font-light">Opportunities</p>
-                            </div>
+                    {/* The Curvy Content Area */}
+                    <div className="mt-0 md:mt-2.5 mr-0 md:mr-2.5 mb-0 md:mb-2.5 bg-white dark:bg-[#111111] rounded-none md:rounded-[2.5rem] min-h-screen md:min-h-[calc(100vh-20px)] border-none md:border border-[#EBE9E2] dark:border-white/[0.05] shadow-none md:shadow-[0_20px_50px_rgba(0,0,0,0.06)] dark:shadow-none overflow-y-auto custom-scrollbar">
+                        <div className={`${viewMode === 'people' ? 'max-w-[1600px]' : 'max-w-5xl'} mx-auto px-4 md:px-10 py-8 md:py-12 transition-all duration-500`}>
 
-                            {/* Urgent */}
-                            <div className="glass-morphism rounded-2xl p-6 transition-all hover:scale-[1.02] active:scale-[0.98] liquid-border">
-                                <div className="flex items-center gap-3 mb-4">
-                                    <Zap className="h-4 w-4 text-neutral-600 dark:text-neutral-500" strokeWidth={1.5} />
-                                </div>
-                                <p className="text-2xl font-medium text-black dark:text-[#fafafa] mb-1">{summary.urgent_action_required || 0}</p>
-                                <p className="text-xs text-neutral-600 dark:text-neutral-500 font-light">Urgent</p>
-                            </div>
-
-                            {/* Hot Leads */}
-                            <div className="glass-morphism rounded-2xl p-6 transition-all hover:scale-[1.02] active:scale-[0.98] liquid-border">
-                                <div className="flex items-center gap-3 mb-4">
-                                    <TrendingUp className="h-4 w-4 text-neutral-600 dark:text-neutral-500" strokeWidth={1.5} />
-                                </div>
-                                <p className="text-2xl font-medium text-black dark:text-[#fafafa] mb-1">{summary.hot_leads_heating_up || 0}</p>
-                                <p className="text-xs text-neutral-600 dark:text-neutral-500 font-light">Hot Leads</p>
-                            </div>
-
-                            {/* At Risk */}
-                            <div className="glass-morphism rounded-2xl p-6 transition-all hover:scale-[1.02] active:scale-[0.98] liquid-border">
-                                <div className="flex items-center gap-3 mb-4">
-                                    <AlertCircle className="h-4 w-4 text-neutral-600 dark:text-neutral-500" strokeWidth={1.5} />
-                                </div>
-                                <p className="text-2xl font-medium text-black dark:text-[#fafafa] mb-1">{summary.conversations_at_risk || 0}</p>
-                                <p className="text-xs text-neutral-600 dark:text-neutral-500 font-light">At Risk</p>
-                            </div>
-
-                            {/* Follow-ups */}
-                            <div className="glass-morphism rounded-2xl p-6 transition-all hover:scale-[1.02] active:scale-[0.98] liquid-border">
-                                <div className="flex items-center gap-3 mb-4">
-                                    <Clock className="h-4 w-4 text-neutral-600 dark:text-neutral-500" strokeWidth={1.5} />
-                                </div>
-                                <p className="text-2xl font-medium text-black dark:text-[#fafafa] mb-1">{summary.missed_follow_ups || 0}</p>
-                                <p className="text-xs text-neutral-600 dark:text-neutral-500 font-light">Follow-ups</p>
-                            </div>
-
-                            {/* Important */}
-                            <div className="glass-morphism rounded-2xl p-6 transition-all hover:scale-[1.02] active:scale-[0.98] liquid-border">
-                                <div className="flex items-center gap-3 mb-4">
-                                    <Mail className="h-4 w-4 text-neutral-600 dark:text-neutral-500" strokeWidth={1.5} />
-                                </div>
-                                <p className="text-2xl font-medium text-black dark:text-[#fafafa] mb-1">{summary.unread_but_important || 0}</p>
-                                <p className="text-xs text-neutral-600 dark:text-neutral-500 font-light">Important</p>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Smart Nudges */}
-                    {settings.smartNudges && (
-                        <div className="mb-12 animate-in fade-in slide-in-from-top-4 duration-700">
-                            <div className="flex items-center justify-between mb-4">
-                                <div className="flex items-center gap-2">
-                                    <Sparkles className="w-4 h-4 text-amber-500" />
-                                    <h2 className="text-sm font-semibold text-black dark:text-white uppercase tracking-wider">Smart Nudges</h2>
-                                    <span className="text-[10px] bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded-full font-bold uppercase tracking-widest border border-amber-500/20 ml-2">AI Agent Active</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    {nudges.length > 0 && (
-                                        <Button 
-                                            variant="ghost" 
-                                            size="sm" 
-                                            className="text-[10px] uppercase font-bold tracking-widest text-neutral-600 hover:text-black dark:text-white"
-                                            onClick={() => setNudges([])}
-                                        >
-                                            Dismiss All
-                                        </Button>
-                                    )}
-                                    <Button 
-                                        variant="ghost" 
-                                        size="sm" 
-                                        className="text-[10px] uppercase font-bold tracking-widest text-neutral-600 hover:text-black dark:text-white flex items-center gap-1.5"
-                                        onClick={fetchNudges}
-                                        disabled={isLoadingNudges}
+                            {/* Header */}
+                            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-12 md:mb-16">
+                                <div className="flex items-center gap-4 w-full md:w-auto">
+                                    <button
+                                        onClick={() => setIsMobileMenuOpen(true)}
+                                        className="md:hidden p-2 -ml-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors text-neutral-600 dark:text-neutral-400"
                                     >
-                                        <RefreshCw className={`w-3 h-3 ${isLoadingNudges ? 'animate-spin' : ''}`} />
-                                        <span>{isLoadingNudges ? 'Scanning...' : 'Scan Now'}</span>
-                                    </Button>
-                                </div>
-                            </div>
-
-                            {nudges.length === 0 && !isLoadingNudges ? (
-                                <div className="bg-white dark:bg-[#0a0a0a]/50 border border-white/[0.03] rounded-2xl p-8 flex flex-col items-center justify-center text-center">
-                                    <div className="w-12 h-12 rounded-full bg-neutral-200/50 dark:bg-neutral-900/50 flex items-center justify-center mb-3">
-                                        <Mail className="w-5 h-5 text-neutral-700 font-light" />
-                                    </div>
-                                    <h3 className="text-sm font-medium text-neutral-900 dark:text-neutral-300 mb-1">You're all caught up!</h3>
-                                    <p className="text-xs text-neutral-600 dark:text-neutral-500 max-w-[280px]">Arcus didn't find any urgent unreplied emails from the last 30 days.</p>
-                                </div>
-                            ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {isLoadingNudges ? (
-                                        Array(3).fill(0).map((_, i) => (
-                                            <div key={i} className="bg-neutral-800/20 border border-neutral-200 dark:border-neutral-800/50 rounded-2xl p-5 animate-pulse h-[140px] flex flex-col gap-3">
-                                                <div className="w-20 h-3 bg-neutral-800 rounded-full" />
-                                                <div className="w-full h-4 bg-neutral-800 rounded-full" />
-                                                <div className="w-3/4 h-3 bg-neutral-800/60 rounded-full" />
-                                                <div className="mt-auto w-24 h-3 bg-neutral-800/40 rounded-full" />
-                                            </div>
-                                        ))
+                                        <Menu className="w-6 h-6" />
+                                    </button>
+                                    {viewMode === 'people' ? (
+                                        <Users className="w-6 h-6 text-[#fafafa]" strokeWidth={1.5} />
                                     ) : (
-                                        nudges.map((nudge) => (
-                                            <div 
-                                                key={nudge.id}
-                                                onClick={() => nudge.fullEmail && handleTraditionalEmailClick(nudge.fullEmail.id)}
-                                                className="group relative bg-white dark:bg-[#0a0a0a] border border-white/[0.03] rounded-2xl p-5 hover:bg-neutral-900/80 transition-all cursor-pointer overflow-hidden"
-                                            >
-                                                <div className="flex items-start justify-between mb-3">
-                                                    <div className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border ${
-                                                        nudge.urgency === 'high' ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
-                                                    }`}>
-                                                        {nudge.urgency} Priority
-                                                    </div>
-                                                </div>
-                                                <h4 className="text-sm font-semibold text-black mb-1 truncate group-hover:text-black dark:text-white transition-colors">
-                                                    {nudge.subject}
-                                                </h4>
-                                                <p className="text-xs text-neutral-600 dark:text-neutral-500 line-clamp-2 leading-relaxed font-light mb-4">
-                                                    {nudge.reason}
-                                                </p>
-                                                <div className="flex items-center gap-2 text-[10px] text-amber-500/80 font-medium">
-                                                    <Zap className="w-3 h-3" />
-                                                    <span>{nudge.suggestedAction}</span>
-                                                </div>
-                                                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-500/5 to-transparent blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
-                                            </div>
-                                        ))
+                                        <Home className="w-5 h-5 text-[#666666] dark:text-neutral-400" strokeWidth={1.5} />
                                     )}
+                                    <h1 className="text-2xl font-semibold text-[#1A1A1A] dark:text-white tracking-tight">
+                                        {viewMode === 'people' ? 'People' : 'Home'}
+                                    </h1>
                                 </div>
-                            )}
-                        </div>
-                    )}
 
-                    {/* Error & Limit Reached States */}
-                    {error && (
-                        <div className="mb-12">
-                            {error === 'limit_reached' ? (
-                                <div className="bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-zinc-800/50 rounded-2xl px-6 py-4 flex items-center justify-between shadow-xl backdrop-blur-xl">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 bg-zinc-900 border border-neutral-200 dark:border-zinc-800 rounded-full flex items-center justify-center shrink-0">
-                                            <Sparkles className="w-5 h-5 text-black dark:text-white" />
-                                        </div>
-                                        <p className="text-neutral-900 dark:text-zinc-200 text-[14px] font-medium tracking-tight">
-                                            Your credits have been used up. Please upgrade your plan for more credits.
-                                        </p>
-                                    </div>
-                                    <a 
-                                        href="https://buy.polar.sh/polar_cl_ojXGgACq5GNMsUInVP3HX5vpXepohT5P8m7SL2RcCej"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="h-10 px-6 bg-white hover:bg-zinc-200 text-black rounded-full text-[13px] font-bold transition-all shadow-lg shadow-white/5 flex items-center justify-center shrink-0 active:scale-95"
-                                    >
-                                        Upgrade
-                                    </a>
-                                </div>
-                            ) : (
-                                <div className="p-4 border border-neutral-200 dark:border-zinc-800 rounded-xl bg-zinc-900/30">
-                                    <div className="flex items-center gap-3">
-                                        <AlertCircle className="h-4 w-4 text-neutral-600 dark:text-zinc-500" />
-                                        <p className="text-sm text-neutral-600 dark:text-zinc-400 font-light">{error}</p>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* People View */}
-                    {viewMode === 'people' ? (
-                        <div className="flex gap-6 min-h-[700px] animate-in fade-in slide-in-from-bottom-2 duration-500">
-
-                            {/* Left Column: Contact Sidebar (Hidden on Mobile/Tablet) */}
-                            <div className="hidden xl:flex w-64 bg-neutral-50 dark:bg-neutral-900/10 border border-neutral-200 dark:border-neutral-800/30 rounded-3xl overflow-hidden flex-col transition-all duration-500 border-dashed">
-                                {!selectedContactEmail ? (
-                                    <div className="flex-1 flex items-center justify-center p-8 opacity-20">
-                                        <div className="w-px h-12 bg-white/20" />
-                                    </div>
-                                ) : (
-                                    <div className="p-6 space-y-8 animate-in fade-in slide-in-from-left-4 duration-500">
-                                        <div className="space-y-4">
-                                            <h4 className="text-[10px] uppercase tracking-[0.2em] font-bold text-neutral-600">Filters</h4>
-                                            <div className="space-y-1">
-                                                {['All Activity', 'Sent', 'Received', 'Attachments', 'Reminders'].map((filter) => (
-                                                    <button key={filter} className="w-full text-left px-3 py-2 text-xs text-neutral-600 hover:text-black dark:text-white hover:bg-black/5 dark:bg-white/5 rounded-lg transition-all font-normal">
-                                                        {filter}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <div className="space-y-4">
-                                            <h4 className="text-[10px] uppercase tracking-[0.2em] font-bold text-neutral-600">Timeline</h4>
-                                            <div className="space-y-4 pl-2">
-                                                {[
-                                                    { date: 'Recent', desc: 'Latest interaction' },
-                                                    { date: '30d+', desc: 'Stable period' },
-                                                    { date: 'Initial', desc: 'First contact' }
-                                                ].map((t) => (
-                                                    <div key={t.date} className="relative pl-4 border-l border-neutral-200 dark:border-white/5">
-                                                        <div className="absolute -left-[4.5px] top-1 w-2 h-2 rounded-full bg-black/10 dark:bg-white/10" />
-                                                        <p className="text-[10px] text-black dark:text-white/60 font-medium">{t.date}</p>
-                                                        <p className="text-[9px] text-neutral-600 font-light">{t.desc}</p>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Middle Column: Conversation List */}
-                            <div className={`${selectedContactEmail ? 'hidden lg:flex' : 'flex'} flex-1 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800/50 rounded-3xl overflow-hidden flex-col shadow-sm transition-all duration-300`}>
-                                <div className="p-6 border-b border-white/[0.03] flex items-center justify-between bg-white/[0.01]">
-                                    <h3 className="text-[10px] uppercase tracking-[0.2em] font-bold text-neutral-600 dark:text-neutral-500">Recently Contacted</h3>
-                                    <div className="relative">
-                                        <input
-                                            type="text"
-                                            placeholder="Search people..."
-                                            value={peopleSearchQuery}
-                                            onChange={(e) => setPeopleSearchQuery(e.target.value)}
-                                            className="bg-black/5 dark:bg-white/5 border border-neutral-200 rounded-full px-4 py-1.5 text-xs text-black dark:text-white placeholder-white/20 focus:outline-none focus:border-neutral-200 dark:border-white/10 transition-all w-48 font-normal"
-                                        />
-                                    </div>
-                                </div>
-                                <div className="max-h-[700px] overflow-y-auto custom-scrollbar">
-                                    {isLoadingContacts && contacts.length === 0 ? (
-                                        <div className="py-12 md:py-20 animate-in fade-in duration-700">
-                                            <ArcusTerminalLoader />
-                                        </div>
-                                    ) : contacts.length > 0 ? (
-                                        contacts.map((contact) => (
-                                            <div
-                                                key={contact.email}
-                                                onClick={() => fetchContactDetail(contact.email)}
-                                                className={`group flex items-center gap-6 p-5 hover:bg-white/[0.04] active:bg-white/[0.06] transition-all cursor-pointer border-b border-white/[0.02] last:border-0 relative ${selectedContactEmail === contact.email ? 'bg-black/[0.05] dark:bg-white/[0.05]' : ''}`}
-                                            >
-                                                <Avatar className="w-12 h-12 border border-white/[0.05]">
-                                                    <AvatarFallback className="bg-neutral-800 text-black dark:text-white/50 text-sm font-normal">
-                                                        {contact.name?.[0]?.toUpperCase() || contact.email?.[0]?.toUpperCase() || 'U'}
-                                                    </AvatarFallback>
-                                                </Avatar>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex justify-between items-center mb-1">
-                                                        <h4 className="text-sm font-semibold text-black truncate group-hover:text-black dark:text-white transition-colors">
-                                                            {contact.name || contact.email.split('@')[0]}
-                                                        </h4>
-                                                        <span className="text-[10px] uppercase tracking-widest text-neutral-600 font-medium">
-                                                            {contact.frequency}
-                                                        </span>
-                                                    </div>
-                                                    <p className="text-xs text-neutral-600 dark:text-neutral-500 truncate font-light leading-relaxed">
-                                                        {contact.email}
-                                                    </p>
-                                                </div>
-                                                <div className="flex items-center gap-3 pr-2">
-                                                    <div className="text-[10px] text-black dark:text-white/20 font-mono">
-                                                        {contact.totalEmails} emails
-                                                    </div>
-                                                    <ChevronRight className={`w-4 h-4 text-neutral-600 transition-all ${selectedContactEmail === contact.email ? 'translate-x-1 text-black dark:text-white' : 'opacity-0 group-hover:opacity-100'}`} />
-                                                </div>
-                                                {selectedContactEmail === contact.email && (
-                                                    <div className="absolute inset-y-0 left-0 w-1 bg-white" />
-                                                )}
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <div className="py-32 text-center">
-                                            <Users className="w-8 h-8 mx-auto text-neutral-700 mb-4" strokeWidth={1} />
-                                            <h3 className="text-lg font-light text-neutral-900 dark:text-neutral-300">No contacts found</h3>
-                                            <p className="text-sm text-neutral-600 mt-2 font-light">Try searching for someone else.</p>
+                                <div className="flex flex-wrap items-center gap-3 md:gap-6 w-full md:w-auto">
+                                    {countdown !== null && (
+                                        <div className="flex items-center gap-2 px-3 py-1 bg-neutral-200/50 dark:bg-neutral-900/50 rounded-full border border-neutral-200 dark:border-neutral-800/50">
+                                            <div className={`w-1.5 h-1.5 rounded-full ${countdown < 0 ? 'bg-red-500 animate-pulse' : 'bg-blue-500 animate-pulse'}`} />
+                                            <span className={`text-xs font-mono tabular-nums ${countdown < 0 ? 'text-red-500' : 'text-neutral-500 dark:text-neutral-400'}`}>
+                                                {countdown}s
+                                            </span>
                                         </div>
                                     )}
-                                </div>
-                            </div>
-
-                            {/* Right Column: Profile Details */}
-                            <div className="w-[400px] flex flex-col bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800/50 rounded-3xl overflow-hidden shadow-2xl transition-all">
-                                {!selectedContactEmail ? (
-                                    <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
-                                        <div className="w-20 h-20 bg-black/[0.02] dark:bg-white/[0.02] border border-white/[0.05] rounded-full flex items-center justify-center mb-6">
-                                            <User className="w-8 h-8 text-black dark:text-white/10" strokeWidth={1} />
-                                        </div>
-                                        <h3 className="text-lg font-light text-black dark:text-white/30 mb-2">Select a profile</h3>
-                                        <p className="text-sm text-black dark:text-white/10 font-light max-w-[200px]">Choose someone from the list to view their relationship history.</p>
-                                    </div>
-                                ) : isLoadingContactDetail ? (
-                                    <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
-                                        <Loader2 className="w-8 h-8 text-black dark:text-white/20 animate-spin mb-4" />
-                                        <p className="text-black dark:text-white/20 font-light">Fetching details...</p>
-                                    </div>
-                                ) : contactDetail ? (
-                                    <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
-                                        {/* Profile Header */}
-                                        <div className="flex flex-col items-center text-center mb-10">
-                                            <Avatar className="w-24 h-24 border border-neutral-200 dark:border-white/10 mb-6">
-                                                <AvatarFallback className="bg-neutral-800 text-black dark:text-white/80 text-3xl font-normal">
-                                                    {(contactDetail.name || contactDetail.email)?.[0]?.toUpperCase()}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                            <h2 className="text-2xl font-normal text-black dark:text-white mb-1">
-                                                {contactDetail.name || contactDetail.email.split('@')[0]}
-                                            </h2>
-                                            <p className="text-black dark:text-white/40 text-sm font-normal truncate max-w-full">{contactDetail.email}</p>
-
-                                            <div className="flex gap-3 mt-8">
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className="border-neutral-200 dark:border-white/10 text-black dark:text-white/80 hover:bg-black/5 dark:bg-white/5 rounded-full px-6 font-normal"
-                                                    onClick={() => window.open(`mailto:${contactDetail.email}`, '_blank')}
-                                                >
-                                                    Email
-                                                </Button>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className="border-neutral-200 dark:border-white/10 text-black dark:text-white/80 hover:bg-black/5 dark:bg-white/5 rounded-full px-6 font-normal"
-                                                    onClick={() => window.open(`tel:${contactDetail.phone || ''}`, '_blank')}
-                                                >
-                                                    Call
-                                                </Button>
-                                            </div>
-                                        </div>
-
-                                        {/* AI Insight */}
-                                        {contactDetail.aiSuggestion && (
-                                            <div className="mb-10 bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/5 rounded-2xl p-6 relative overflow-hidden group">
-                                                <div className="flex items-center gap-2 mb-3 text-black dark:text-white/30">
-                                                    <Sparkles className="w-3.5 h-3.5" />
-                                                    <span className="text-[10px] font-bold uppercase tracking-widest">AI Intelligence</span>
-                                                </div>
-                                                <p className="text-sm text-black dark:text-white/90 leading-relaxed font-normal italic">
-                                                    "{contactDetail.aiSuggestion}"
-                                                </p>
-                                                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-3xl rounded-full -mr-16 -mt-16 group-hover:bg-blue-500/10 transition-colors" />
-                                            </div>
-                                        )}
-
-                                        {/* Stats Grid */}
-                                        <div className="grid grid-cols-2 gap-3 mb-10">
-                                            {[
-                                                { label: 'Total Emails', value: contactDetail.totalEmails },
-                                                { label: 'Score', value: `${contactDetail.relationshipScore}%` },
-                                                { label: 'Sent', value: contactDetail.sentEmails },
-                                                { label: 'Received', value: contactDetail.receivedEmails }
-                                            ].map((item, i) => (
-                                                <div key={i} className="bg-black/[0.02] dark:bg-white/[0.02] border border-neutral-200 dark:border-white/5 rounded-2xl p-4 hover:bg-white/[0.04] transition-colors">
-                                                    <span className="text-[10px] text-black dark:text-white/20 block mb-1 font-bold uppercase tracking-wider">{item.label}</span>
-                                                    <span className="text-xl text-black dark:text-white font-normal">{item.value}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-
-                                        {/* Sentiment History */}
-                                        {contactDetail.sentimentHistory?.length > 0 && (
-                                            <div className="mb-10">
-                                                <h3 className="text-[10px] text-black dark:text-white/20 mb-4 font-bold uppercase tracking-widest">Sentiment Drift</h3>
-                                                <div className="h-16 flex items-end gap-1 px-1">
-                                                    {contactDetail.sentimentHistory.map((item: any, index: number) => (
-                                                        <div
-                                                            key={index}
-                                                            className="flex-1 bg-black/10 dark:bg-white/10 hover:bg-white/40 transition-all rounded-t-sm"
-                                                            style={{ height: `${item.score}%` }}
-                                                            title={`Score: ${item.score}`}
-                                                        />
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Subjects */}
-                                        {contactDetail.recentSubjects?.length > 0 && (
-                                            <div className="space-y-4">
-                                                <h3 className="text-[10px] text-black dark:text-white/20 font-bold uppercase tracking-widest">Recent Topics</h3>
-                                                <div className="space-y-2">
-                                                    {contactDetail.recentSubjects.map((subject: string, index: number) => (
-                                                        <div key={index} className="text-xs text-black dark:text-white/60 bg-black/[0.02] dark:bg-white/[0.02] border border-neutral-200 dark:border-white/5 rounded-xl px-4 py-3 truncate font-normal hover:bg-white/[0.04] transition-colors">
-                                                            {subject || '(No subject)'}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                ) : null}
-                            </div>
-                        </div>
-                    ) : (
-                        /* Insights or Traditional View */
-                        isTraditionalView ? (
-                            /* ... existing traditional view code ... */
-                            <div className="animate-in fade-in duration-500">
-                                {/* ... rest of traditional view ... */}
-                                <div className="flex items-center justify-between mb-8">
-                                    <h2 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                                        Traditional Inbox
-                                    </h2>
-                                    <div className="flex items-center gap-3 text-xs text-neutral-600">
-                                        <Inbox className="w-3.5 h-3.5" />
-                                        <span>Latest 50 emails</span>
-                                    </div>
-                                </div>
-
-                                {isLoadingTraditional ? (
-                                    <div className="py-12 md:py-20 animate-in fade-in duration-700">
-                                        <ArcusTerminalLoader />
-                                    </div>
-                                ) : traditionalEmails.length > 0 ? (
-                                    <div className="space-y-px bg-neutral-900/20 border border-neutral-200 dark:border-neutral-800/50 rounded-2xl overflow-hidden shadow-2xl">
-                                        {traditionalEmails.map((email, index) => (
-                                            <React.Fragment key={email.id}>
-                                                {/* Separation line after 50 emails */}
-                                                {index === 50 && (
-                                                    <div className="py-8 flex items-center justify-center gap-4 bg-white/[0.01] border-y border-white/[0.03]">
-                                                        <div className="h-[1px] w-24 bg-gradient-to-r from-transparent to-neutral-800" />
-                                                        <span className="text-[10px] uppercase font-bold tracking-[0.3em] text-neutral-600">Previous Messages</span>
-                                                        <div className="h-[1px] w-24 bg-gradient-to-l from-transparent to-neutral-800" />
-                                                    </div>
-                                                )}
-                                                <div
-                                                    onClick={() => handleTraditionalEmailClick(email.id)}
-                                                    className="group flex items-center gap-6 p-5 hover:bg-black/5 active:bg-black/10 dark:hover:bg-white/[0.04] dark:active:bg-white/[0.06] transition-all cursor-pointer border-b border-black/5 dark:border-white/[0.02] last:border-0 relative overflow-hidden"
-                                                >
-                                                    <div className="w-10 h-10 rounded-full bg-neutral-100 dark:bg-neutral-800/50 flex items-center justify-center flex-shrink-0 border border-neutral-200 dark:border-white/[0.05] text-black dark:text-white/80 transition-colors">
-                                                        {email.from?.[0]?.toUpperCase() || 'M'}
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="flex justify-between items-center mb-1">
-                                                            <h4 className="text-sm font-semibold text-black dark:text-white truncate transition-colors">
-                                                                {email.from?.split('<')[0]?.trim()}
-                                                            </h4>
-                                                            <span className="text-[10px] uppercase tracking-widest text-neutral-500 dark:text-neutral-600 font-medium">
-                                                                {new Date(email.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                                                            </span>
-                                                        </div>
-                                                        <p className="text-sm text-black dark:text-white/60 font-medium truncate mb-1">
-                                                            {email.subject}
-                                                        </p>
-                                                        <p className="text-xs text-neutral-600 dark:text-neutral-500 truncate font-light leading-relaxed">
-                                                            {email.snippet}
-                                                        </p>
-                                                    </div>
-                                                    <div className="flex items-center gap-3 pr-2 border-l border-black/5 dark:border-white/5 pl-4">
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setArcusEmailId(email.id);
-                                                                setArcusEmailSubject(email.subject);
-                                                                setArcusQuery('What is this email about?');
-                                                                setArcusConversationId(null);
-                                                                const initMsg = {
-                                                                    id: 'init',
-                                                                    role: 'assistant',
-                                                                    content: `I've connected to the email: **${email.subject}**. Ask me anything about it.`,
-                                                                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                                                                };
-                                                                setArcusMessages([initMsg]);
-                                                                setIsArcusMinimized(false);
-                                                                setIsEmailArcusOpen(true);
-                                                            }}
-                                                            className="w-9 h-9 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-blue-500/20 rounded-xl text-black dark:text-white/30 hover:text-black dark:hover:text-blue-400 transition-all border border-neutral-200 dark:border-white/5 group/ai flex items-center justify-center overflow-hidden"
-                                                            title="Ask Arcus AI"
-                                                        >
-                                                            <img src="/arcus-ai-icon.jpg" alt="Ask AI" className="w-full h-full object-cover brightness-90 group-hover:brightness-110 transition-all grayscale" />
-                                                        </button>
-                                                        <ChevronRight className="w-4 h-4 text-neutral-400 group-hover:translate-x-1 transition-transform" />
-                                                    </div>
-                                                    <div className="absolute inset-y-0 left-0 w-1 bg-black dark:bg-white scale-y-0 group-hover:scale-y-100 transition-transform origin-center" />
-                                                </div>
-                                            </React.Fragment>
-                                        ))}
-
-                                        {/* Load More Button */}
-                                        {traditionalNextPageToken && (
-                                            <div className="p-8 text-center border-t border-white/[0.02] bg-white/[0.01]">
-                                                <Button
-                                                    onClick={handleLoadMoreTraditional}
-                                                    disabled={isLoadingMoreTraditional}
-                                                    className="h-12 bg-black/5 hover:bg-black/10 dark:bg-white/10 text-black dark:text-white border border-neutral-200 dark:border-white/10 rounded-2xl px-12 transition-all transform hover:scale-105 active:scale-95 group shadow-lg"
-                                                >
-                                                    {isLoadingMoreTraditional ? (
-                                                        <RefreshCw className="w-4 h-4 animate-spin mr-3" />
-                                                    ) : (
-                                                        <Plus className="w-4 h-4 mr-3 group-hover:rotate-90 transition-transform duration-300" />
-                                                    )}
-                                                    Load More Emails
-                                                </Button>
-                                            </div>
-                                        )}
-                                    </div>
-                                ) : isTraditionalLoadingError ? (
-                                    <div className="py-32 text-center">
-                                        <AlertCircle className="w-8 h-8 mx-auto text-red-900/50 mb-4" />
-                                        <h3 className="text-lg font-light text-neutral-900 dark:text-neutral-300">Failed to load Inbox</h3>
-                                        <p className="text-sm text-neutral-600 mt-2 mb-8 font-light italic">There was an error connecting to Gmail.</p>
-                                        <Button
-                                            onClick={fetchTraditionalEmails}
-                                            className="h-10 px-6 bg-black/5 hover:bg-black/10 dark:bg-white/10 text-black dark:text-white border border-neutral-200 dark:border-white/10 rounded-xl"
-                                        >
-                                            Try again
-                                        </Button>
-                                    </div>
-                                ) : (
-                                    <div className="py-32 text-center">
-                                        <Inbox className="w-8 h-8 mx-auto text-neutral-700 mb-4" strokeWidth={1} />
-                                        <h3 className="text-lg font-light text-neutral-900 dark:text-neutral-300">Your inbox is empty</h3>
-                                        <p className="text-sm text-neutral-600 mt-2 font-light">All caught up!</p>
-                                    </div>
-                                )}
-                            </div>
-                        ) : !isGmailConnected ? (
-                            <div className="text-center py-20 px-6 max-w-lg mx-auto bg-white/50 dark:bg-white/[0.02] border border-neutral-200 dark:border-white/5 rounded-[3rem] backdrop-blur-3xl shadow-2xl relative overflow-hidden group">
-                                <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-transparent opacity-50 pointer-events-none" />
-                                
-                                <div className="relative z-10">
-                                    <div className="w-24 h-24 mx-auto mb-10 rounded-full border border-blue-500/20 bg-blue-500/5 flex items-center justify-center relative shadow-[0_0_40px_rgba(59,130,246,0.1)] group-hover:scale-110 transition-transform duration-700">
-                                        <div className="absolute inset-0 bg-blue-400/10 blur-2xl rounded-full" />
-                                        <Mail className="h-10 w-10 text-blue-500 relative z-10" strokeWidth={1.5} />
-                                    </div>
-                                    
-                                    <h3 className="text-3xl font-medium text-black dark:text-white mb-4 tracking-tight">Connect your Workspace</h3>
-                                    <p className="text-neutral-600 dark:text-neutral-400 mb-12 font-light leading-relaxed">
-                                        Mailient needs access to your Gmail to detect opportunities, summarize threads, and help you handle your inbox like a pro.
-                                    </p>
-                                    
-                                    <div className="flex flex-col gap-5 items-center">
-                                        <Button
-                                            onClick={() => signIn("google", { callbackUrl: window.location.href, redirect: true })}
-                                            className="h-14 px-12 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl transition-all font-bold shadow-[0_15px_30px_rgba(37,99,235,0.3)] hover:scale-[1.03] active:scale-[0.98] border-none group flex items-center gap-3 overflow-hidden relative"
-                                        >
-                                            <div className="absolute inset-x-0 bottom-0 h-1 bg-white/20 -translate-x-full group-hover:translate-x-0 transition-transform duration-700" />
-                                            <Mail className="w-5 h-5" />
-                                            <span>Connect Google Workspace</span>
-                                        </Button>
-                                        
-                                        <div className="flex items-center gap-2.5 text-[10px] uppercase tracking-widest text-neutral-500 dark:text-neutral-600 font-black">
-                                            <Shield className="w-3.5 h-3.5" />
-                                            <span>Cloud Shield Active • AES-256 Encrypted</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        ) : loading && insights.length === 0 ? (
-                            <div className="py-12 md:py-20 animate-in fade-in duration-1000">
-                                <ArcusTerminalLoader />
-                            </div>
-                        ) : hasInitialLoad ? (
-                            insights.length > 0 ? (
-                                <div>
-                                    <div className="flex items-center justify-between mb-8">
-                                        <h2 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                                            Insights
-                                        </h2>
-                                        <div className="flex items-center gap-3">
-                                            <span className="text-xs text-neutral-600">{insights.length} insights</span>
-                                            <span className="text-neutral-800">·</span>
-                                            <span className="text-xs text-neutral-600">{(summary as any)?.opportunities_detected || 0} items</span>
-                                        </div>
-                                    </div>
-
-                                    <motion.div 
-                                        layout
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, scale: 0.95 }}
-                                        transition={{ type: "spring", stiffness: 260, damping: 25 }}
-                                        className="space-y-3"
+                                    {lastUpdated && (
+                                        <span className="text-xs text-neutral-600 dark:text-neutral-500 font-light">
+                                            Updated {lastUpdated}
+                                        </span>
+                                    )}
+                                    <button
+                                        onClick={() => {
+                                            const nextState = !isTraditionalView;
+                                            setIsTraditionalView(nextState);
+                                            if (nextState && traditionalEmails.length === 0) {
+                                                fetchTraditionalEmails();
+                                            }
+                                        }}
+                                        className="h-10 px-6 bg-white dark:bg-white/[0.05] text-black dark:text-white rounded-xl text-sm font-medium flex items-center gap-3 group border border-neutral-200 dark:border-white/20 transition-all hover:bg-neutral-50 dark:hover:bg-white/[0.1] shadow-sm"
                                     >
-                                        {insights.map((insight, index) => (
-                                            <motion.div
-                                                key={insight.id}
-                                                initial={{ opacity: 0, x: -10 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                transition={{ delay: index * 0.05 }}
-                                                whileHover={{ y: -2, scale: 1.005 }}
-                                                whileTap={{ scale: 0.995 }}
-                                            >
-                                                <SiftCard
-                                                    type={getCardType(insight)}
-                                                    title={insight.title}
-                                                    content={insight.content}
-                                                    onClick={() => setSelectedInsight(insight)}
-                                                />
-                                            </motion.div>
-                                        ))}
-                                    </motion.div>
-                                </div>
-                            ) : (
-                                <div className="text-center py-24">
-                                    <Mail className="h-8 w-8 mx-auto text-neutral-700 mb-6" strokeWidth={1} />
-                                    <h3 className="text-lg font-light text-neutral-900 dark:text-neutral-300 mb-2">No insights yet</h3>
-                                    <p className="text-sm text-neutral-600 mb-8 font-light">
-                                        {error ? "Unable to load insights" : "Click refresh to load insights"}
-                                    </p>
-                                    <Button
-                                        onClick={refreshInsights}
-                                        disabled={loading}
-                                        className="h-10 px-6 bg-[#fafafa] hover:bg-neutral-200 text-[#0a0a0a] rounded-lg transition-colors font-medium"
-                                    >
-                                        {loading ? (
+                                        {isTraditionalView ? (
                                             <>
-                                                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                                                Loading
+                                                <Sparkles className="h-4 w-4 text-amber-500 group-hover:scale-110 transition-transform" />
+                                                <span className="text-black dark:text-white">Switch to AI Sift</span>
                                             </>
                                         ) : (
-                                            'Load Insights'
+                                            <>
+                                                <LayoutList className="h-4 w-4 text-blue-500 group-hover:scale-110 transition-transform" />
+                                                <span className="text-black dark:text-white">Switch to Traditional</span>
+                                            </>
                                         )}
+                                    </button>
+
+                                    <Button
+                                        onClick={() => isTraditionalView ? fetchTraditionalEmails() : fetchSiftInsights(true)}
+                                        disabled={loading || isLoadingTraditional || (!isTraditionalView && !nextPageToken)}
+                                        className="h-9 px-4 bg-transparent hover:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:border-neutral-700 text-neutral-500 dark:text-neutral-400 hover:text-[#fafafa] rounded-lg transition-colors flex items-center gap-2"
+                                        size="sm"
+                                    >
+                                        <Sparkles className={`h-3.5 w-3.5 ${loading || isLoadingTraditional ? 'animate-pulse' : ''}`} />
+                                        <span>{loading || isLoadingTraditional ? 'Sifting...' : 'Load More'}</span>
+                                    </Button>
+                                    <Button
+                                        onClick={() => isTraditionalView ? fetchTraditionalEmails() : fetchSiftInsights(false)}
+                                        disabled={loading || isLoadingTraditional}
+                                        className="h-9 px-4 bg-transparent hover:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:border-neutral-700 text-neutral-500 dark:text-neutral-400 hover:text-[#fafafa] rounded-lg transition-colors flex items-center gap-2"
+                                        size="sm"
+                                    >
+                                        <RefreshCw className={`h-3.5 w-3.5 ${loading || isLoadingTraditional ? 'animate-spin' : ''}`} />
+                                        <span>{loading || isLoadingTraditional ? 'Syncing' : 'Refresh'}</span>
                                     </Button>
                                 </div>
-                            )
-                        ) : (
-                            <div className="text-center py-24">
-                                <div className="w-12 h-12 mx-auto mb-8 rounded-full border border-neutral-200 dark:border-neutral-800 flex items-center justify-center">
-                                    <Mail className="h-5 w-5 text-neutral-600 dark:text-neutral-500" strokeWidth={1.5} />
+                            </div>
+
+                            {/* Stats Grid */}
+                            {summary && (
+                                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-12 md:mb-16">
+                                    {/* Opportunities */}
+                                    <div className="glass-morphism rounded-2xl p-6 transition-all hover:scale-[1.02] active:scale-[0.98]">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <Target className="h-4 w-4 text-neutral-600 dark:text-neutral-500" strokeWidth={1.5} />
+                                        </div>
+                                        <p className="text-2xl font-medium text-black dark:text-[#fafafa] mb-1">{summary.opportunities_detected || 0}</p>
+                                        <p className="text-xs text-neutral-600 dark:text-neutral-500 font-light">Opportunities</p>
+                                    </div>
+
+                                    {/* Urgent */}
+                                    <div className="glass-morphism rounded-2xl p-6 transition-all hover:scale-[1.02] active:scale-[0.98] liquid-border">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <Zap className="h-4 w-4 text-neutral-600 dark:text-neutral-500" strokeWidth={1.5} />
+                                        </div>
+                                        <p className="text-2xl font-medium text-black dark:text-[#fafafa] mb-1">{summary.urgent_action_required || 0}</p>
+                                        <p className="text-xs text-neutral-600 dark:text-neutral-500 font-light">Urgent</p>
+                                    </div>
+
+                                    {/* Hot Leads */}
+                                    <div className="glass-morphism rounded-2xl p-6 transition-all hover:scale-[1.02] active:scale-[0.98] liquid-border">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <TrendingUp className="h-4 w-4 text-neutral-600 dark:text-neutral-500" strokeWidth={1.5} />
+                                        </div>
+                                        <p className="text-2xl font-medium text-black dark:text-[#fafafa] mb-1">{summary.hot_leads_heating_up || 0}</p>
+                                        <p className="text-xs text-neutral-600 dark:text-neutral-500 font-light">Hot Leads</p>
+                                    </div>
+
+                                    {/* At Risk */}
+                                    <div className="glass-morphism rounded-2xl p-6 transition-all hover:scale-[1.02] active:scale-[0.98] liquid-border">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <AlertCircle className="h-4 w-4 text-neutral-600 dark:text-neutral-500" strokeWidth={1.5} />
+                                        </div>
+                                        <p className="text-2xl font-medium text-black dark:text-[#fafafa] mb-1">{summary.conversations_at_risk || 0}</p>
+                                        <p className="text-xs text-neutral-600 dark:text-neutral-500 font-light">At Risk</p>
+                                    </div>
+
+                                    {/* Follow-ups */}
+                                    <div className="glass-morphism rounded-2xl p-6 transition-all hover:scale-[1.02] active:scale-[0.98] liquid-border">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <Clock className="h-4 w-4 text-neutral-600 dark:text-neutral-500" strokeWidth={1.5} />
+                                        </div>
+                                        <p className="text-2xl font-medium text-black dark:text-[#fafafa] mb-1">{summary.missed_follow_ups || 0}</p>
+                                        <p className="text-xs text-neutral-600 dark:text-neutral-500 font-light">Follow-ups</p>
+                                    </div>
+
+                                    {/* Important */}
+                                    <div className="glass-morphism rounded-2xl p-6 transition-all hover:scale-[1.02] active:scale-[0.98] liquid-border">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <Mail className="h-4 w-4 text-neutral-600 dark:text-neutral-500" strokeWidth={1.5} />
+                                        </div>
+                                        <p className="text-2xl font-medium text-black dark:text-[#fafafa] mb-1">{summary.unread_but_important || 0}</p>
+                                        <p className="text-xs text-neutral-600 dark:text-neutral-500 font-light">Important</p>
+                                    </div>
                                 </div>
-                                <h3 className="text-xl font-light text-black dark:text-[#fafafa] mb-3">Welcome</h3>
-                                <p className="text-sm text-neutral-600 dark:text-neutral-500 mb-10 font-light max-w-sm mx-auto">
-                                    Analyze your inbox to surface opportunities, urgent items, and important conversations.
-                                </p>
-                                <Button
-                                    onClick={refreshInsights}
-                                    disabled={loading}
-                                    className="h-11 px-8 bg-black dark:bg-[#fafafa] text-white dark:text-black hover:bg-black/90 dark:hover:bg-neutral-200 rounded-xl transition-all font-medium shadow-lg hover:scale-105 active:scale-95 border-none"
-                                >
-                                    {loading ? (
-                                        <>
-                                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                                            Analyzing
-                                        </>
+                            )}
+
+                            {/* Smart Nudges */}
+                            {settings.smartNudges && (
+                                <div className="mb-12 animate-in fade-in slide-in-from-top-4 duration-700">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div className="flex items-center gap-2">
+                                            <Sparkles className="w-4 h-4 text-amber-500" />
+                                            <h2 className="text-sm font-semibold text-black dark:text-white uppercase tracking-wider">Smart Nudges</h2>
+                                            <span className="text-[10px] bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded-full font-bold uppercase tracking-widest border border-amber-500/20 ml-2">AI Agent Active</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            {nudges.length > 0 && (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-[10px] uppercase font-bold tracking-widest text-neutral-600 hover:text-black dark:text-white"
+                                                    onClick={() => setNudges([])}
+                                                >
+                                                    Dismiss All
+                                                </Button>
+                                            )}
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="text-[10px] uppercase font-bold tracking-widest text-neutral-600 hover:text-black dark:text-white flex items-center gap-1.5"
+                                                onClick={fetchNudges}
+                                                disabled={isLoadingNudges}
+                                            >
+                                                <RefreshCw className={`w-3 h-3 ${isLoadingNudges ? 'animate-spin' : ''}`} />
+                                                <span>{isLoadingNudges ? 'Scanning...' : 'Scan Now'}</span>
+                                            </Button>
+                                        </div>
+                                    </div>
+
+                                    {nudges.length === 0 && !isLoadingNudges ? (
+                                        <div className="bg-white dark:bg-[#0a0a0a]/50 border border-white/[0.03] rounded-2xl p-8 flex flex-col items-center justify-center text-center">
+                                            <div className="w-12 h-12 rounded-full bg-neutral-200/50 dark:bg-neutral-900/50 flex items-center justify-center mb-3">
+                                                <Mail className="w-5 h-5 text-neutral-700 font-light" />
+                                            </div>
+                                            <h3 className="text-sm font-medium text-neutral-900 dark:text-neutral-300 mb-1">You're all caught up!</h3>
+                                            <p className="text-xs text-neutral-600 dark:text-neutral-500 max-w-[280px]">Arcus didn't find any urgent unreplied emails from the last 30 days.</p>
+                                        </div>
                                     ) : (
-                                        'Start Analysis'
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            {isLoadingNudges ? (
+                                                Array(3).fill(0).map((_, i) => (
+                                                    <div key={i} className="bg-neutral-800/20 border border-neutral-200 dark:border-neutral-800/50 rounded-2xl p-5 animate-pulse h-[140px] flex flex-col gap-3">
+                                                        <div className="w-20 h-3 bg-neutral-800 rounded-full" />
+                                                        <div className="w-full h-4 bg-neutral-800 rounded-full" />
+                                                        <div className="w-3/4 h-3 bg-neutral-800/60 rounded-full" />
+                                                        <div className="mt-auto w-24 h-3 bg-neutral-800/40 rounded-full" />
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                nudges.map((nudge) => (
+                                                    <div
+                                                        key={nudge.id}
+                                                        onClick={() => nudge.fullEmail && handleTraditionalEmailClick(nudge.fullEmail.id)}
+                                                        className="group relative bg-white dark:bg-[#0a0a0a] border border-white/[0.03] rounded-2xl p-5 hover:bg-neutral-900/80 transition-all cursor-pointer overflow-hidden"
+                                                    >
+                                                        <div className="flex items-start justify-between mb-3">
+                                                            <div className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border ${nudge.urgency === 'high' ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                                                                }`}>
+                                                                {nudge.urgency} Priority
+                                                            </div>
+                                                        </div>
+                                                        <h4 className="text-sm font-semibold text-black mb-1 truncate group-hover:text-black dark:text-white transition-colors">
+                                                            {nudge.subject}
+                                                        </h4>
+                                                        <p className="text-xs text-neutral-600 dark:text-neutral-500 line-clamp-2 leading-relaxed font-light mb-4">
+                                                            {nudge.reason}
+                                                        </p>
+                                                        <div className="flex items-center gap-2 text-[10px] text-amber-500/80 font-medium">
+                                                            <Zap className="w-3 h-3" />
+                                                            <span>{nudge.suggestedAction}</span>
+                                                        </div>
+                                                        <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-500/5 to-transparent blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
                                     )}
-                                </Button>
-                            </div>
-                        )
-                    )
-                }
-                </div>
-            </div>
-        </motion.div>
+                                </div>
+                            )}
 
-            {/* Details Modal */}
-            <div
-                className={`fixed top-1/2 left-1/2 bg-white dark:bg-[#1a1a1a] rounded-none md:rounded-[2.5rem] shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-50 flex flex-col border border-neutral-200 dark:border-neutral-800 overflow-hidden`}
-                style={{
-                    width: typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : '70%',
-                    height: typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : '85vh',
-                    transform: selectedInsight ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -45%) scale(0.95)',
-                    opacity: selectedInsight ? 1 : 0,
-                    pointerEvents: selectedInsight ? 'auto' : 'none'
-                }}
-            >
-                <div className="p-6 md:p-10 flex-1 overflow-y-auto relative custom-scrollbar">
-                    {selectedInsight && (
-                        <div className="space-y-8 pb-20">
-                            {/* Header with Back Button if Email Selected */}
-                            <div className="flex justify-between items-start">
-                                <div className="flex items-center gap-4">
-                                    {selectedEmailId && (
-                                        <button
-                                            onClick={() => setSelectedEmailId(null)}
-                                            className="p-2 -ml-2 hover:bg-neutral-800 rounded-full transition-colors text-neutral-600 hover:text-black dark:text-white"
-                                        >
-                                            <ArrowLeft className="w-6 h-6" />
-                                        </button>
+                            {/* Error & Limit Reached States */}
+                            {error && (
+                                <div className="mb-12">
+                                    {error === 'limit_reached' ? (
+                                        <div className="bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-zinc-800/50 rounded-2xl px-6 py-4 flex items-center justify-between shadow-xl backdrop-blur-xl">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-10 h-10 bg-zinc-900 border border-neutral-200 dark:border-zinc-800 rounded-full flex items-center justify-center shrink-0">
+                                                    <Sparkles className="w-5 h-5 text-black dark:text-white" />
+                                                </div>
+                                                <p className="text-neutral-900 dark:text-zinc-200 text-[14px] font-medium tracking-tight">
+                                                    Your credits have been used up. Please upgrade your plan for more credits.
+                                                </p>
+                                            </div>
+                                            <a
+                                                href="https://buy.polar.sh/polar_cl_ojXGgACq5GNMsUInVP3HX5vpXepohT5P8m7SL2RcCej"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="h-10 px-6 bg-white hover:bg-zinc-200 text-black rounded-full text-[13px] font-bold transition-all shadow-lg shadow-white/5 flex items-center justify-center shrink-0 active:scale-95"
+                                            >
+                                                Upgrade
+                                            </a>
+                                        </div>
+                                    ) : (
+                                        <div className="p-4 border border-neutral-200 dark:border-zinc-800 rounded-xl bg-zinc-900/30">
+                                            <div className="flex items-center gap-3">
+                                                <AlertCircle className="h-4 w-4 text-neutral-600 dark:text-zinc-500" />
+                                                <p className="text-sm text-neutral-600 dark:text-zinc-400 font-light">{error}</p>
+                                            </div>
+                                        </div>
                                     )}
-                                    <div>
-                                        {!selectedEmailId && (
-                                            <Badge variant="outline" className="mb-4 border-neutral-700 text-neutral-500 dark:text-neutral-400 px-3 py-1 rounded-full text-xs uppercase tracking-wider">
-                                                {selectedInsight.type.replace('-', ' ')}
-                                            </Badge>
+                                </div>
+                            )}
+
+                            {/* People View */}
+                            {viewMode === 'people' ? (
+                                <div className="flex gap-6 min-h-[700px] animate-in fade-in slide-in-from-bottom-2 duration-500">
+
+                                    {/* Left Column: Contact Sidebar (Hidden on Mobile/Tablet) */}
+                                    <div className="hidden xl:flex w-64 bg-neutral-50 dark:bg-neutral-900/10 border border-neutral-200 dark:border-neutral-800/30 rounded-3xl overflow-hidden flex-col transition-all duration-500 border-dashed">
+                                        {!selectedContactEmail ? (
+                                            <div className="flex-1 flex items-center justify-center p-8 opacity-20">
+                                                <div className="w-px h-12 bg-white/20" />
+                                            </div>
+                                        ) : (
+                                            <div className="p-6 space-y-8 animate-in fade-in slide-in-from-left-4 duration-500">
+                                                <div className="space-y-4">
+                                                    <h4 className="text-[10px] uppercase tracking-[0.2em] font-bold text-neutral-600">Filters</h4>
+                                                    <div className="space-y-1">
+                                                        {['All Activity', 'Sent', 'Received', 'Attachments', 'Reminders'].map((filter) => (
+                                                            <button key={filter} className="w-full text-left px-3 py-2 text-xs text-neutral-600 hover:text-black dark:text-white hover:bg-black/5 dark:bg-white/5 rounded-lg transition-all font-normal">
+                                                                {filter}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-4">
+                                                    <h4 className="text-[10px] uppercase tracking-[0.2em] font-bold text-neutral-600">Timeline</h4>
+                                                    <div className="space-y-4 pl-2">
+                                                        {[
+                                                            { date: 'Recent', desc: 'Latest interaction' },
+                                                            { date: '30d+', desc: 'Stable period' },
+                                                            { date: 'Initial', desc: 'First contact' }
+                                                        ].map((t) => (
+                                                            <div key={t.date} className="relative pl-4 border-l border-neutral-200 dark:border-white/5">
+                                                                <div className="absolute -left-[4.5px] top-1 w-2 h-2 rounded-full bg-black/10 dark:bg-white/10" />
+                                                                <p className="text-[10px] text-black dark:text-white/60 font-medium">{t.date}</p>
+                                                                <p className="text-[9px] text-neutral-600 font-light">{t.desc}</p>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
                                         )}
-                                        <h2 className={`font-medium text-black dark:text-white mb-2 ${selectedEmailId ? 'text-xl md:text-2xl' : 'text-2xl md:text-3xl'}`}>
-                                            {selectedEmailId
-                                                ? selectedInsight.source_emails?.find(e => e.id === selectedEmailId)?.subject
-                                                : selectedInsight.title}
-                                        </h2>
-                                        {!selectedEmailId && (
-                                            <p className="text-neutral-600 dark:text-neutral-500 text-sm font-light">
-                                                {new Date(selectedInsight.timestamp).toLocaleString()}
-                                            </p>
-                                        )}
+                                    </div>
+
+                                    {/* Middle Column: Conversation List */}
+                                    <div className={`${selectedContactEmail ? 'hidden lg:flex' : 'flex'} flex-1 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800/50 rounded-3xl overflow-hidden flex-col shadow-sm transition-all duration-300`}>
+                                        <div className="p-6 border-b border-white/[0.03] flex items-center justify-between bg-white/[0.01]">
+                                            <h3 className="text-[10px] uppercase tracking-[0.2em] font-bold text-neutral-600 dark:text-neutral-500">Recently Contacted</h3>
+                                            <div className="relative">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Search people..."
+                                                    value={peopleSearchQuery}
+                                                    onChange={(e) => setPeopleSearchQuery(e.target.value)}
+                                                    className="bg-black/5 dark:bg-white/5 border border-neutral-200 rounded-full px-4 py-1.5 text-xs text-black dark:text-white placeholder-white/20 focus:outline-none focus:border-neutral-200 dark:border-white/10 transition-all w-48 font-normal"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="max-h-[700px] overflow-y-auto custom-scrollbar">
+                                            {isLoadingContacts && contacts.length === 0 ? (
+                                                <div className="py-12 md:py-20 animate-in fade-in duration-700">
+                                                    <ArcusTerminalLoader />
+                                                </div>
+                                            ) : contacts.length > 0 ? (
+                                                contacts.map((contact) => (
+                                                    <div
+                                                        key={contact.email}
+                                                        onClick={() => fetchContactDetail(contact.email)}
+                                                        className={`group flex items-center gap-6 p-5 hover:bg-white/[0.04] active:bg-white/[0.06] transition-all cursor-pointer border-b border-white/[0.02] last:border-0 relative ${selectedContactEmail === contact.email ? 'bg-black/[0.05] dark:bg-white/[0.05]' : ''}`}
+                                                    >
+                                                        <Avatar className="w-12 h-12 border border-white/[0.05]">
+                                                            <AvatarFallback className="bg-neutral-800 text-black dark:text-white/50 text-sm font-normal">
+                                                                {contact.name?.[0]?.toUpperCase() || contact.email?.[0]?.toUpperCase() || 'U'}
+                                                            </AvatarFallback>
+                                                        </Avatar>
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex justify-between items-center mb-1">
+                                                                <h4 className="text-sm font-semibold text-black truncate group-hover:text-black dark:text-white transition-colors">
+                                                                    {contact.name || contact.email.split('@')[0]}
+                                                                </h4>
+                                                                <span className="text-[10px] uppercase tracking-widest text-neutral-600 font-medium">
+                                                                    {contact.frequency}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-xs text-neutral-600 dark:text-neutral-500 truncate font-light leading-relaxed">
+                                                                {contact.email}
+                                                            </p>
+                                                        </div>
+                                                        <div className="flex items-center gap-3 pr-2">
+                                                            <div className="text-[10px] text-black dark:text-white/20 font-mono">
+                                                                {contact.totalEmails} emails
+                                                            </div>
+                                                            <ChevronRight className={`w-4 h-4 text-neutral-600 transition-all ${selectedContactEmail === contact.email ? 'translate-x-1 text-black dark:text-white' : 'opacity-0 group-hover:opacity-100'}`} />
+                                                        </div>
+                                                        {selectedContactEmail === contact.email && (
+                                                            <div className="absolute inset-y-0 left-0 w-1 bg-white" />
+                                                        )}
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="py-32 text-center">
+                                                    <Users className="w-8 h-8 mx-auto text-neutral-700 mb-4" strokeWidth={1} />
+                                                    <h3 className="text-lg font-light text-neutral-900 dark:text-neutral-300">No contacts found</h3>
+                                                    <p className="text-sm text-neutral-600 mt-2 font-light">Try searching for someone else.</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Right Column: Profile Details */}
+                                    <div className="w-[400px] flex flex-col bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800/50 rounded-3xl overflow-hidden shadow-2xl transition-all">
+                                        {!selectedContactEmail ? (
+                                            <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
+                                                <div className="w-20 h-20 bg-black/[0.02] dark:bg-white/[0.02] border border-white/[0.05] rounded-full flex items-center justify-center mb-6">
+                                                    <User className="w-8 h-8 text-black dark:text-white/10" strokeWidth={1} />
+                                                </div>
+                                                <h3 className="text-lg font-light text-black dark:text-white/30 mb-2">Select a profile</h3>
+                                                <p className="text-sm text-black dark:text-white/10 font-light max-w-[200px]">Choose someone from the list to view their relationship history.</p>
+                                            </div>
+                                        ) : isLoadingContactDetail ? (
+                                            <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
+                                                <Loader2 className="w-8 h-8 text-black dark:text-white/20 animate-spin mb-4" />
+                                                <p className="text-black dark:text-white/20 font-light">Fetching details...</p>
+                                            </div>
+                                        ) : contactDetail ? (
+                                            <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
+                                                {/* Profile Header */}
+                                                <div className="flex flex-col items-center text-center mb-10">
+                                                    <Avatar className="w-24 h-24 border border-neutral-200 dark:border-white/10 mb-6">
+                                                        <AvatarFallback className="bg-neutral-800 text-black dark:text-white/80 text-3xl font-normal">
+                                                            {(contactDetail.name || contactDetail.email)?.[0]?.toUpperCase()}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <h2 className="text-2xl font-normal text-black dark:text-white mb-1">
+                                                        {contactDetail.name || contactDetail.email.split('@')[0]}
+                                                    </h2>
+                                                    <p className="text-black dark:text-white/40 text-sm font-normal truncate max-w-full">{contactDetail.email}</p>
+
+                                                    <div className="flex gap-3 mt-8">
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="border-neutral-200 dark:border-white/10 text-black dark:text-white/80 hover:bg-black/5 dark:bg-white/5 rounded-full px-6 font-normal"
+                                                            onClick={() => window.open(`mailto:${contactDetail.email}`, '_blank')}
+                                                        >
+                                                            Email
+                                                        </Button>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="border-neutral-200 dark:border-white/10 text-black dark:text-white/80 hover:bg-black/5 dark:bg-white/5 rounded-full px-6 font-normal"
+                                                            onClick={() => window.open(`tel:${contactDetail.phone || ''}`, '_blank')}
+                                                        >
+                                                            Call
+                                                        </Button>
+                                                    </div>
+                                                </div>
+
+                                                {/* AI Insight */}
+                                                {contactDetail.aiSuggestion && (
+                                                    <div className="mb-10 bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/5 rounded-2xl p-6 relative overflow-hidden group">
+                                                        <div className="flex items-center gap-2 mb-3 text-black dark:text-white/30">
+                                                            <Sparkles className="w-3.5 h-3.5" />
+                                                            <span className="text-[10px] font-bold uppercase tracking-widest">AI Intelligence</span>
+                                                        </div>
+                                                        <p className="text-sm text-black dark:text-white/90 leading-relaxed font-normal italic">
+                                                            "{contactDetail.aiSuggestion}"
+                                                        </p>
+                                                        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-3xl rounded-full -mr-16 -mt-16 group-hover:bg-blue-500/10 transition-colors" />
+                                                    </div>
+                                                )}
+
+                                                {/* Stats Grid */}
+                                                <div className="grid grid-cols-2 gap-3 mb-10">
+                                                    {[
+                                                        { label: 'Total Emails', value: contactDetail.totalEmails },
+                                                        { label: 'Score', value: `${contactDetail.relationshipScore}%` },
+                                                        { label: 'Sent', value: contactDetail.sentEmails },
+                                                        { label: 'Received', value: contactDetail.receivedEmails }
+                                                    ].map((item, i) => (
+                                                        <div key={i} className="bg-black/[0.02] dark:bg-white/[0.02] border border-neutral-200 dark:border-white/5 rounded-2xl p-4 hover:bg-white/[0.04] transition-colors">
+                                                            <span className="text-[10px] text-black dark:text-white/20 block mb-1 font-bold uppercase tracking-wider">{item.label}</span>
+                                                            <span className="text-xl text-black dark:text-white font-normal">{item.value}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+
+                                                {/* Sentiment History */}
+                                                {contactDetail.sentimentHistory?.length > 0 && (
+                                                    <div className="mb-10">
+                                                        <h3 className="text-[10px] text-black dark:text-white/20 mb-4 font-bold uppercase tracking-widest">Sentiment Drift</h3>
+                                                        <div className="h-16 flex items-end gap-1 px-1">
+                                                            {contactDetail.sentimentHistory.map((item: any, index: number) => (
+                                                                <div
+                                                                    key={index}
+                                                                    className="flex-1 bg-black/10 dark:bg-white/10 hover:bg-white/40 transition-all rounded-t-sm"
+                                                                    style={{ height: `${item.score}%` }}
+                                                                    title={`Score: ${item.score}`}
+                                                                />
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Subjects */}
+                                                {contactDetail.recentSubjects?.length > 0 && (
+                                                    <div className="space-y-4">
+                                                        <h3 className="text-[10px] text-black dark:text-white/20 font-bold uppercase tracking-widest">Recent Topics</h3>
+                                                        <div className="space-y-2">
+                                                            {contactDetail.recentSubjects.map((subject: string, index: number) => (
+                                                                <div key={index} className="text-xs text-black dark:text-white/60 bg-black/[0.02] dark:bg-white/[0.02] border border-neutral-200 dark:border-white/5 rounded-xl px-4 py-3 truncate font-normal hover:bg-white/[0.04] transition-colors">
+                                                                    {subject || '(No subject)'}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ) : null}
                                     </div>
                                 </div>
-                                <button
-                                    onClick={() => setSelectedInsight(null)}
-                                    className="p-3 hover:bg-neutral-800 rounded-full transition-colors text-neutral-600 hover:text-black dark:text-white"
-                                >
-                                    <X className="w-6 h-6" />
-                                </button>
-                            </div>
+                            ) : (
+                                /* Insights or Traditional View */
+                                isTraditionalView ? (
+                                    /* ... existing traditional view code ... */
+                                    <div className="animate-in fade-in duration-500">
+                                        {/* ... rest of traditional view ... */}
+                                        <div className="flex items-center justify-between mb-8">
+                                            <h2 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                                                Traditional Inbox
+                                            </h2>
+                                            <div className="flex items-center gap-3 text-xs text-neutral-600">
+                                                <Inbox className="w-3.5 h-3.5" />
+                                                <span>Latest 50 emails</span>
+                                            </div>
+                                        </div>
 
-                            {/* Main Content Area */}
-                            {!selectedEmailId ? (
-                                /* Insight Overview View */
-                                <>
-                                    <div className="prose prose-invert max-w-none">
-                                        <p className="text-neutral-900 dark:text-neutral-300 leading-relaxed whitespace-pre-wrap text-lg font-light">
-                                            {formatAIText(selectedInsight.content)}
-                                        </p>
-                                    </div>
-
-                                    {/* Source Emails List */}
-                                    {selectedInsight.source_emails && selectedInsight.source_emails.length > 0 && (
-                                        <div className="mt-12">
-                                            <h3 className="text-xs font-medium text-neutral-600 dark:text-neutral-500 uppercase tracking-widest mb-6">
-                                                Source Emails
-                                            </h3>
-                                            <div className="grid grid-cols-1 gap-4">
-                                                {selectedInsight.source_emails.map((email) => (
-                                                    <div
-                                                        key={email.id}
-                                                        onClick={() => handleEmailClick(email.id)}
-                                                        className="bg-neutral-200/50 dark:bg-neutral-900/50 rounded-2xl p-6 hover:bg-neutral-800/50 transition-all cursor-pointer border border-neutral-200 dark:border-neutral-800/50 group hover:border-neutral-700"
-                                                    >
-                                                        <div className="flex items-start gap-5">
-                                                            {email.sender.avatar ? (
-                                                                <img
-                                                                    src={email.sender.avatar}
-                                                                    alt={email.sender.name}
-                                                                    className="w-12 h-12 rounded-full object-cover flex-shrink-0 border border-neutral-200 dark:border-neutral-800"
-                                                                />
-                                                            ) : (
-                                                                <div className="w-12 h-12 rounded-full bg-neutral-800 flex items-center justify-center flex-shrink-0 border border-neutral-700">
-                                                                    <User className="w-6 h-6 text-neutral-600 dark:text-neutral-500" />
-                                                                </div>
-                                                            )}
+                                        {isLoadingTraditional ? (
+                                            <div className="py-12 md:py-20 animate-in fade-in duration-700">
+                                                <ArcusTerminalLoader />
+                                            </div>
+                                        ) : traditionalEmails.length > 0 ? (
+                                            <div className="space-y-px bg-neutral-900/20 border border-neutral-200 dark:border-neutral-800/50 rounded-2xl overflow-hidden shadow-2xl">
+                                                {traditionalEmails.map((email, index) => (
+                                                    <React.Fragment key={email.id}>
+                                                        {/* Separation line after 50 emails */}
+                                                        {index === 50 && (
+                                                            <div className="py-8 flex items-center justify-center gap-4 bg-white/[0.01] border-y border-white/[0.03]">
+                                                                <div className="h-[1px] w-24 bg-gradient-to-r from-transparent to-neutral-800" />
+                                                                <span className="text-[10px] uppercase font-bold tracking-[0.3em] text-neutral-600">Previous Messages</span>
+                                                                <div className="h-[1px] w-24 bg-gradient-to-l from-transparent to-neutral-800" />
+                                                            </div>
+                                                        )}
+                                                        <div
+                                                            onClick={() => handleTraditionalEmailClick(email.id)}
+                                                            className="group flex items-center gap-6 p-5 hover:bg-black/5 active:bg-black/10 dark:hover:bg-white/[0.04] dark:active:bg-white/[0.06] transition-all cursor-pointer border-b border-black/5 dark:border-white/[0.02] last:border-0 relative overflow-hidden"
+                                                        >
+                                                            <div className="w-10 h-10 rounded-full bg-neutral-100 dark:bg-neutral-800/50 flex items-center justify-center flex-shrink-0 border border-neutral-200 dark:border-white/[0.05] text-black dark:text-white/80 transition-colors">
+                                                                {email.from?.[0]?.toUpperCase() || 'M'}
+                                                            </div>
                                                             <div className="flex-1 min-w-0">
-                                                                <div className="flex justify-between items-start mb-2">
-                                                                    <p className="text-base font-medium text-[#fafafa] truncate pr-2 group-hover:text-blue-400 transition-colors">
-                                                                        {email.sender.name}
-                                                                    </p>
-                                                                    <span className="text-xs text-neutral-600 dark:text-neutral-500 whitespace-nowrap font-light">
-                                                                        {new Date(email.receivedAt).toLocaleDateString()}
+                                                                <div className="flex justify-between items-center mb-1">
+                                                                    <h4 className="text-sm font-semibold text-black dark:text-white truncate transition-colors">
+                                                                        {email.from?.split('<')[0]?.trim()}
+                                                                    </h4>
+                                                                    <span className="text-[10px] uppercase tracking-widest text-neutral-500 dark:text-neutral-600 font-medium">
+                                                                        {new Date(email.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                                                                     </span>
                                                                 </div>
-                                                                <p className="text-sm text-neutral-900 dark:text-neutral-300 font-medium truncate mb-2">
+                                                                <p className="text-sm text-black dark:text-white/60 font-medium truncate mb-1">
                                                                     {email.subject}
                                                                 </p>
-                                                                <p className="text-sm text-neutral-600 dark:text-neutral-500 line-clamp-2 font-light leading-relaxed">
+                                                                <p className="text-xs text-neutral-600 dark:text-neutral-500 truncate font-light leading-relaxed">
                                                                     {email.snippet}
                                                                 </p>
                                                             </div>
+                                                            <div className="flex items-center gap-3 pr-2 border-l border-black/5 dark:border-white/5 pl-4">
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setArcusEmailId(email.id);
+                                                                        setArcusEmailSubject(email.subject);
+                                                                        setArcusQuery('What is this email about?');
+                                                                        setArcusConversationId(null);
+                                                                        const initMsg = {
+                                                                            id: 'init',
+                                                                            role: 'assistant',
+                                                                            content: `I've connected to the email: **${email.subject}**. Ask me anything about it.`,
+                                                                            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                                                        };
+                                                                        setArcusMessages([initMsg]);
+                                                                        setIsArcusMinimized(false);
+                                                                        setIsEmailArcusOpen(true);
+                                                                    }}
+                                                                    className="w-9 h-9 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-blue-500/20 rounded-xl text-black dark:text-white/30 hover:text-black dark:hover:text-blue-400 transition-all border border-neutral-200 dark:border-white/5 group/ai flex items-center justify-center overflow-hidden"
+                                                                    title="Ask Arcus AI"
+                                                                >
+                                                                    <img src="/arcus-ai-icon.jpg" alt="Ask AI" className="w-full h-full object-cover brightness-90 group-hover:brightness-110 transition-all grayscale" />
+                                                                </button>
+                                                                <ChevronRight className="w-4 h-4 text-neutral-400 group-hover:translate-x-1 transition-transform" />
+                                                            </div>
+                                                            <div className="absolute inset-y-0 left-0 w-1 bg-black dark:bg-white scale-y-0 group-hover:scale-y-100 transition-transform origin-center" />
                                                         </div>
-                                                    </div>
+                                                    </React.Fragment>
                                                 ))}
+
+                                                {/* Load More Button */}
+                                                {traditionalNextPageToken && (
+                                                    <div className="p-8 text-center border-t border-white/[0.02] bg-white/[0.01]">
+                                                        <Button
+                                                            onClick={handleLoadMoreTraditional}
+                                                            disabled={isLoadingMoreTraditional}
+                                                            className="h-12 bg-black/5 hover:bg-black/10 dark:bg-white/10 text-black dark:text-white border border-neutral-200 dark:border-white/10 rounded-2xl px-12 transition-all transform hover:scale-105 active:scale-95 group shadow-lg"
+                                                        >
+                                                            {isLoadingMoreTraditional ? (
+                                                                <RefreshCw className="w-4 h-4 animate-spin mr-3" />
+                                                            ) : (
+                                                                <Plus className="w-4 h-4 mr-3 group-hover:rotate-90 transition-transform duration-300" />
+                                                            )}
+                                                            Load More Emails
+                                                        </Button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ) : isTraditionalLoadingError ? (
+                                            <div className="py-32 text-center">
+                                                <AlertCircle className="w-8 h-8 mx-auto text-red-900/50 mb-4" />
+                                                <h3 className="text-lg font-light text-neutral-900 dark:text-neutral-300">Failed to load Inbox</h3>
+                                                <p className="text-sm text-neutral-600 mt-2 mb-8 font-light italic">There was an error connecting to Gmail.</p>
+                                                <Button
+                                                    onClick={fetchTraditionalEmails}
+                                                    className="h-10 px-6 bg-black/5 hover:bg-black/10 dark:bg-white/10 text-black dark:text-white border border-neutral-200 dark:border-white/10 rounded-xl"
+                                                >
+                                                    Try again
+                                                </Button>
+                                            </div>
+                                        ) : (
+                                            <div className="py-32 text-center">
+                                                <Inbox className="w-8 h-8 mx-auto text-neutral-700 mb-4" strokeWidth={1} />
+                                                <h3 className="text-lg font-light text-neutral-900 dark:text-neutral-300">Your inbox is empty</h3>
+                                                <p className="text-sm text-neutral-600 mt-2 font-light">All caught up!</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : !isGmailConnected ? (
+                                    <div className="text-center py-20 px-6 max-w-lg mx-auto bg-white/50 dark:bg-white/[0.02] border border-neutral-200 dark:border-white/5 rounded-[3rem] backdrop-blur-3xl shadow-2xl relative overflow-hidden group">
+                                        <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-transparent opacity-50 pointer-events-none" />
+
+                                        <div className="relative z-10">
+                                            <div className="w-24 h-24 mx-auto mb-10 rounded-full border border-blue-500/20 bg-blue-500/5 flex items-center justify-center relative shadow-[0_0_40px_rgba(59,130,246,0.1)] group-hover:scale-110 transition-transform duration-700">
+                                                <div className="absolute inset-0 bg-blue-400/10 blur-2xl rounded-full" />
+                                                <Mail className="h-10 w-10 text-blue-500 relative z-10" strokeWidth={1.5} />
+                                            </div>
+
+                                            <h3 className="text-3xl font-medium text-black dark:text-white mb-4 tracking-tight">Connect your Workspace</h3>
+                                            <p className="text-neutral-600 dark:text-neutral-400 mb-12 font-light leading-relaxed">
+                                                Mailient needs access to your Gmail to detect opportunities, summarize threads, and help you handle your inbox like a pro.
+                                            </p>
+
+                                            <div className="flex flex-col gap-5 items-center">
+                                                <Button
+                                                    onClick={() => signIn("google", { callbackUrl: window.location.href, redirect: true })}
+                                                    className="h-14 px-12 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl transition-all font-bold shadow-[0_15px_30px_rgba(37,99,235,0.3)] hover:scale-[1.03] active:scale-[0.98] border-none group flex items-center gap-3 overflow-hidden relative"
+                                                >
+                                                    <div className="absolute inset-x-0 bottom-0 h-1 bg-white/20 -translate-x-full group-hover:translate-x-0 transition-transform duration-700" />
+                                                    <Mail className="w-5 h-5" />
+                                                    <span>Connect Google Workspace</span>
+                                                </Button>
+
+                                                <div className="flex items-center gap-2.5 text-[10px] uppercase tracking-widest text-neutral-500 dark:text-neutral-600 font-black">
+                                                    <Shield className="w-3.5 h-3.5" />
+                                                    <span>Cloud Shield Active • AES-256 Encrypted</span>
+                                                </div>
                                             </div>
                                         </div>
-                                    )}
-                                </>
-                            ) : (
-                                /* Email Detail & AI Summary View */
-                                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                    {isSummarizing ? (
-                                        <div className="flex flex-col items-center justify-center py-32">
-                                            <div className="relative">
-                                                <Sparkles className="w-16 h-16 text-black dark:text-white animate-pulse" strokeWidth={1} />
-                                                <div className="absolute inset-0 bg-black/10 dark:bg-white/10 blur-3xl rounded-full animate-pulse" />
+                                    </div>
+                                ) : loading && insights.length === 0 ? (
+                                    <div className="py-12 md:py-20 animate-in fade-in duration-1000">
+                                        <ArcusTerminalLoader />
+                                    </div>
+                                ) : hasInitialLoad ? (
+                                    insights.length > 0 ? (
+                                        <div>
+                                            <div className="flex items-center justify-between mb-8">
+                                                <h2 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                                                    Insights
+                                                </h2>
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-xs text-neutral-600">{insights.length} insights</span>
+                                                    <span className="text-neutral-800">·</span>
+                                                    <span className="text-xs text-neutral-600">{(summary as any)?.opportunities_detected || 0} items</span>
+                                                </div>
                                             </div>
-                                            <p className="mt-8 text-neutral-600 dark:text-neutral-500 font-light text-xl animate-pulse">
-                                                Sift AI is analyzing the conversation...
+
+                                            <motion.div
+                                                layout
+                                                initial={{ opacity: 0, y: 20 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, scale: 0.95 }}
+                                                transition={{ type: "spring", stiffness: 260, damping: 25 }}
+                                                className="space-y-3"
+                                            >
+                                                {insights.map((insight, index) => (
+                                                    <motion.div
+                                                        key={insight.id}
+                                                        initial={{ opacity: 0, x: -10 }}
+                                                        animate={{ opacity: 1, x: 0 }}
+                                                        transition={{ delay: index * 0.05 }}
+                                                        whileHover={{ y: -2, scale: 1.005 }}
+                                                        whileTap={{ scale: 0.995 }}
+                                                    >
+                                                        <SiftCard
+                                                            type={getCardType(insight)}
+                                                            title={insight.title}
+                                                            content={insight.content}
+                                                            onClick={() => setSelectedInsight(insight)}
+                                                        />
+                                                    </motion.div>
+                                                ))}
+                                            </motion.div>
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-24">
+                                            <Mail className="h-8 w-8 mx-auto text-neutral-700 mb-6" strokeWidth={1} />
+                                            <h3 className="text-lg font-light text-neutral-900 dark:text-neutral-300 mb-2">No insights yet</h3>
+                                            <p className="text-sm text-neutral-600 mb-8 font-light">
+                                                {error ? "Unable to load insights" : "Click refresh to load insights"}
+                                            </p>
+                                            <Button
+                                                onClick={refreshInsights}
+                                                disabled={loading}
+                                                className="h-10 px-6 bg-[#fafafa] hover:bg-neutral-200 text-[#0a0a0a] rounded-lg transition-colors font-medium"
+                                            >
+                                                {loading ? (
+                                                    <>
+                                                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                                        Loading
+                                                    </>
+                                                ) : (
+                                                    'Load Insights'
+                                                )}
+                                            </Button>
+                                        </div>
+                                    )
+                                ) : (
+                                    <div className="text-center py-24">
+                                        <div className="w-12 h-12 mx-auto mb-8 rounded-full border border-neutral-200 dark:border-neutral-800 flex items-center justify-center">
+                                            <Mail className="h-5 w-5 text-neutral-600 dark:text-neutral-500" strokeWidth={1.5} />
+                                        </div>
+                                        <h3 className="text-xl font-light text-black dark:text-[#fafafa] mb-3">Welcome</h3>
+                                        <p className="text-sm text-neutral-600 dark:text-neutral-500 mb-10 font-light max-w-sm mx-auto">
+                                            Analyze your inbox to surface opportunities, urgent items, and important conversations.
+                                        </p>
+                                        <Button
+                                            onClick={refreshInsights}
+                                            disabled={loading}
+                                            className="h-11 px-8 bg-black dark:bg-[#fafafa] text-white dark:text-black hover:bg-black/90 dark:hover:bg-neutral-200 rounded-xl transition-all font-medium shadow-lg hover:scale-105 active:scale-95 border-none"
+                                        >
+                                            {loading ? (
+                                                <>
+                                                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                                    Analyzing
+                                                </>
+                                            ) : (
+                                                'Start Analysis'
+                                            )}
+                                        </Button>
+                                    </div>
+                                )
+                            )
+                            }
+                        </div>
+                    </div>
+                </motion.div>
+
+                {/* Details Modal */}
+                <div
+                    className={`fixed top-1/2 left-1/2 bg-white dark:bg-[#1a1a1a] rounded-none md:rounded-[2.5rem] shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-50 flex flex-col border border-neutral-200 dark:border-neutral-800 overflow-hidden`}
+                    style={{
+                        width: typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : '70%',
+                        height: typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : '85vh',
+                        transform: selectedInsight ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -45%) scale(0.95)',
+                        opacity: selectedInsight ? 1 : 0,
+                        pointerEvents: selectedInsight ? 'auto' : 'none'
+                    }}
+                >
+                    <div className="p-6 md:p-10 flex-1 overflow-y-auto relative custom-scrollbar">
+                        {selectedInsight && (
+                            <div className="space-y-8 pb-20">
+                                {/* Header with Back Button if Email Selected */}
+                                <div className="flex justify-between items-start">
+                                    <div className="flex items-center gap-4">
+                                        {selectedEmailId && (
+                                            <button
+                                                onClick={() => setSelectedEmailId(null)}
+                                                className="p-2 -ml-2 hover:bg-neutral-800 rounded-full transition-colors text-neutral-600 hover:text-black dark:text-white"
+                                            >
+                                                <ArrowLeft className="w-6 h-6" />
+                                            </button>
+                                        )}
+                                        <div>
+                                            {!selectedEmailId && (
+                                                <Badge variant="outline" className="mb-4 border-neutral-700 text-neutral-500 dark:text-neutral-400 px-3 py-1 rounded-full text-xs uppercase tracking-wider">
+                                                    {selectedInsight.type.replace('-', ' ')}
+                                                </Badge>
+                                            )}
+                                            <h2 className={`font-medium text-black dark:text-white mb-2 ${selectedEmailId ? 'text-xl md:text-2xl' : 'text-2xl md:text-3xl'}`}>
+                                                {selectedEmailId
+                                                    ? selectedInsight.source_emails?.find(e => e.id === selectedEmailId)?.subject
+                                                    : selectedInsight.title}
+                                            </h2>
+                                            {!selectedEmailId && (
+                                                <p className="text-neutral-600 dark:text-neutral-500 text-sm font-light">
+                                                    {new Date(selectedInsight.timestamp).toLocaleString()}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => setSelectedInsight(null)}
+                                        className="p-3 hover:bg-neutral-800 rounded-full transition-colors text-neutral-600 hover:text-black dark:text-white"
+                                    >
+                                        <X className="w-6 h-6" />
+                                    </button>
+                                </div>
+
+                                {/* Main Content Area */}
+                                {!selectedEmailId ? (
+                                    /* Insight Overview View */
+                                    <>
+                                        <div className="prose prose-invert max-w-none">
+                                            <p className="text-neutral-900 dark:text-neutral-300 leading-relaxed whitespace-pre-wrap text-lg font-light">
+                                                {formatAIText(selectedInsight.content)}
                                             </p>
                                         </div>
-                                    ) : (
-                                        <div className="space-y-10">
-                                            {/* AI Summary Card */}
-                                            <div className="bg-gradient-to-br from-neutral-800/40 to-neutral-900/40 rounded-[2rem] p-8 border border-neutral-200 dark:border-neutral-800/50 shadow-2xl relative overflow-hidden">
-                                                <div className="absolute top-0 right-0 p-8 opacity-5">
-                                                    <Sparkles className="w-32 h-32 text-black dark:text-white" />
-                                                </div>
 
-                                                <div className="flex items-center gap-3 mb-6">
-                                                    <Sparkles className="w-5 h-5 text-yellow-500" />
-                                                    <h3 className="text-xs font-medium text-yellow-600 uppercase tracking-widest">
-                                                        AI Intelligence Summary
-                                                    </h3>
-                                                </div>
-
-                                                <p className="text-neutral-900 dark:text-neutral-200 leading-relaxed text-xl font-light whitespace-pre-wrap">
-                                                    {formatAIText(emailSummary)}
-                                                </p>
-                                            </div>
-
-                                            {/* Premium Coming Soon Message (inline) */}
-                                            <div id="coming-soon-message" className="mb-6 p-4 bg-gradient-to-r from-neutral-800 to-neutral-900 rounded-2xl border border-neutral-700 text-center hidden">
-                                                <p className="text-neutral-900 dark:text-neutral-300 font-medium">
-                                                    🚀 <span className="font-light">Coming Soon...</span>
-                                                </p>
-                                                <p className="text-neutral-600 dark:text-neutral-500 text-sm font-light mt-1">
-                                                    This premium feature will be available soon!
-                                                </p>
-                                            </div>
-
-                                            {/* Action Buttons */}
-                                            <div className="grid grid-cols-2 gap-6">
-                                                {getActionButtons(selectedInsight).map((label, index) => (
-                                                    <Button
-                                                        key={index}
-                                                        onClick={() => {
-                                                            if (label === 'Draft Reply' && selectedEmailId) {
-                                                                handleDraftReply(selectedEmailId, selectedInsight.type);
-                                                            } else if (label === 'Reply Now' && selectedEmailId) {
-                                                                handleDraftReply(selectedEmailId, selectedInsight.type);
-                                                            } else if (label === 'Repair Reply' && selectedEmailId) {
-                                                                handleRepairReply(selectedEmailId, selectedInsight.type);
-                                                            } else if (label.toLowerCase().includes('call') && selectedEmailId) {
-                                                                handleScheduleCall(selectedEmailId);
-                                                            } else if (label === 'Schedule Meeting' && selectedEmailId) {
-                                                                handleScheduleCall(selectedEmailId);
-                                                            } else if (label === 'Escalate' && selectedEmailId) {
-                                                                handleEscalate(selectedEmailId);
-                                                            } else if (label === 'Add Note' && selectedEmailId) {
-                                                                handleAddNote(selectedEmailId);
-                                                            } else if (label === 'Send follow-up' && selectedEmailId) {
-                                                                handleDraftReply(selectedEmailId, 'follow-up');
-                                                            } else if (label === 'Unsubscribe' && selectedEmailId) {
-                                                                handleUnsubscribe(selectedEmailId);
-                                                            } else if (label === 'Coming Soon') {
-                                                                // Premium inline message instead of toast
-                                                                 const comingSoonElement = document.getElementById('coming-soon-message');
-                                                                 if (comingSoonElement) {
-                                                                     comingSoonElement.style.display = 'block';
-                                                                     setTimeout(() => {
-                                                                         comingSoonElement.style.display = 'none';
-                                                                     }, 3000);
-                                                                 }
-                                                            }
-                                                        }}
-                                                        className="h-14 md:h-16 bg-gradient-to-r from-neutral-900 to-neutral-700 hover:from-neutral-800 hover:to-neutral-600 text-[#fafafa] border border-neutral-600 rounded-2xl transition-all duration-300 font-medium text-base md:text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                                                    >
-                                                        {label}
-                                                    </Button>
-                                                ))}
-                                            </div>
-
-                                            {/* Original Email Content (Optional context) */}
-                                            <div className="pt-10 border-t border-neutral-200 dark:border-neutral-800/50">
-                                                <h4 className="text-xs font-medium text-neutral-600 uppercase tracking-widest mb-6">Original Message Snippet</h4>
-                                                <div className="bg-neutral-900/30 rounded-2xl p-8 text-neutral-500 dark:text-neutral-400 text-base leading-relaxed font-light border border-neutral-200 dark:border-neutral-800/30">
-                                                    {selectedInsight.source_emails?.find(e => e.id === selectedEmailId)?.snippet}
-                                                    ...
+                                        {/* Source Emails List */}
+                                        {selectedInsight.source_emails && selectedInsight.source_emails.length > 0 && (
+                                            <div className="mt-12">
+                                                <h3 className="text-xs font-medium text-neutral-600 dark:text-neutral-500 uppercase tracking-widest mb-6">
+                                                    Source Emails
+                                                </h3>
+                                                <div className="grid grid-cols-1 gap-4">
+                                                    {selectedInsight.source_emails.map((email) => (
+                                                        <div
+                                                            key={email.id}
+                                                            onClick={() => handleEmailClick(email.id)}
+                                                            className="bg-neutral-200/50 dark:bg-neutral-900/50 rounded-2xl p-6 hover:bg-neutral-800/50 transition-all cursor-pointer border border-neutral-200 dark:border-neutral-800/50 group hover:border-neutral-700"
+                                                        >
+                                                            <div className="flex items-start gap-5">
+                                                                {email.sender.avatar ? (
+                                                                    <img
+                                                                        src={email.sender.avatar}
+                                                                        alt={email.sender.name}
+                                                                        className="w-12 h-12 rounded-full object-cover flex-shrink-0 border border-neutral-200 dark:border-neutral-800"
+                                                                    />
+                                                                ) : (
+                                                                    <div className="w-12 h-12 rounded-full bg-neutral-800 flex items-center justify-center flex-shrink-0 border border-neutral-700">
+                                                                        <User className="w-6 h-6 text-neutral-600 dark:text-neutral-500" />
+                                                                    </div>
+                                                                )}
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className="flex justify-between items-start mb-2">
+                                                                        <p className="text-base font-medium text-[#fafafa] truncate pr-2 group-hover:text-blue-400 transition-colors">
+                                                                            {email.sender.name}
+                                                                        </p>
+                                                                        <span className="text-xs text-neutral-600 dark:text-neutral-500 whitespace-nowrap font-light">
+                                                                            {new Date(email.receivedAt).toLocaleDateString()}
+                                                                        </span>
+                                                                    </div>
+                                                                    <p className="text-sm text-neutral-900 dark:text-neutral-300 font-medium truncate mb-2">
+                                                                        {email.subject}
+                                                                    </p>
+                                                                    <p className="text-sm text-neutral-600 dark:text-neutral-500 line-clamp-2 font-light leading-relaxed">
+                                                                        {email.snippet}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    )}
+                                        )}
+                                    </>
+                                ) : (
+                                    /* Email Detail & AI Summary View */
+                                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                        {isSummarizing ? (
+                                            <div className="flex flex-col items-center justify-center py-32">
+                                                <div className="relative">
+                                                    <Sparkles className="w-16 h-16 text-black dark:text-white animate-pulse" strokeWidth={1} />
+                                                    <div className="absolute inset-0 bg-black/10 dark:bg-white/10 blur-3xl rounded-full animate-pulse" />
+                                                </div>
+                                                <p className="mt-8 text-neutral-600 dark:text-neutral-500 font-light text-xl animate-pulse">
+                                                    Sift AI is analyzing the conversation...
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-10">
+                                                {/* AI Summary Card */}
+                                                <div className="bg-gradient-to-br from-neutral-800/40 to-neutral-900/40 rounded-[2rem] p-8 border border-neutral-200 dark:border-neutral-800/50 shadow-2xl relative overflow-hidden">
+                                                    <div className="absolute top-0 right-0 p-8 opacity-5">
+                                                        <Sparkles className="w-32 h-32 text-black dark:text-white" />
+                                                    </div>
+
+                                                    <div className="flex items-center gap-3 mb-6">
+                                                        <Sparkles className="w-5 h-5 text-yellow-500" />
+                                                        <h3 className="text-xs font-medium text-yellow-600 uppercase tracking-widest">
+                                                            AI Intelligence Summary
+                                                        </h3>
+                                                    </div>
+
+                                                    <p className="text-neutral-900 dark:text-neutral-200 leading-relaxed text-xl font-light whitespace-pre-wrap">
+                                                        {formatAIText(emailSummary)}
+                                                    </p>
+                                                </div>
+
+                                                {/* Premium Coming Soon Message (inline) */}
+                                                <div id="coming-soon-message" className="mb-6 p-4 bg-gradient-to-r from-neutral-800 to-neutral-900 rounded-2xl border border-neutral-700 text-center hidden">
+                                                    <p className="text-neutral-900 dark:text-neutral-300 font-medium">
+                                                        🚀 <span className="font-light">Coming Soon...</span>
+                                                    </p>
+                                                    <p className="text-neutral-600 dark:text-neutral-500 text-sm font-light mt-1">
+                                                        This premium feature will be available soon!
+                                                    </p>
+                                                </div>
+
+                                                {/* Action Buttons */}
+                                                <div className="grid grid-cols-2 gap-6">
+                                                    {getActionButtons(selectedInsight).map((label, index) => (
+                                                        <Button
+                                                            key={index}
+                                                            onClick={() => {
+                                                                if (label === 'Draft Reply' && selectedEmailId) {
+                                                                    handleDraftReply(selectedEmailId, selectedInsight.type);
+                                                                } else if (label === 'Reply Now' && selectedEmailId) {
+                                                                    handleDraftReply(selectedEmailId, selectedInsight.type);
+                                                                } else if (label === 'Repair Reply' && selectedEmailId) {
+                                                                    handleRepairReply(selectedEmailId, selectedInsight.type);
+                                                                } else if (label.toLowerCase().includes('call') && selectedEmailId) {
+                                                                    handleScheduleCall(selectedEmailId);
+                                                                } else if (label === 'Schedule Meeting' && selectedEmailId) {
+                                                                    handleScheduleCall(selectedEmailId);
+                                                                } else if (label === 'Escalate' && selectedEmailId) {
+                                                                    handleEscalate(selectedEmailId);
+                                                                } else if (label === 'Add Note' && selectedEmailId) {
+                                                                    handleAddNote(selectedEmailId);
+                                                                } else if (label === 'Send follow-up' && selectedEmailId) {
+                                                                    handleDraftReply(selectedEmailId, 'follow-up');
+                                                                } else if (label === 'Unsubscribe' && selectedEmailId) {
+                                                                    handleUnsubscribe(selectedEmailId);
+                                                                } else if (label === 'Coming Soon') {
+                                                                    // Premium inline message instead of toast
+                                                                    const comingSoonElement = document.getElementById('coming-soon-message');
+                                                                    if (comingSoonElement) {
+                                                                        comingSoonElement.style.display = 'block';
+                                                                        setTimeout(() => {
+                                                                            comingSoonElement.style.display = 'none';
+                                                                        }, 3000);
+                                                                    }
+                                                                }
+                                                            }}
+                                                            className="h-14 md:h-16 bg-gradient-to-r from-neutral-900 to-neutral-700 hover:from-neutral-800 hover:to-neutral-600 text-[#fafafa] border border-neutral-600 rounded-2xl transition-all duration-300 font-medium text-base md:text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                                                        >
+                                                            {label}
+                                                        </Button>
+                                                    ))}
+                                                </div>
+
+                                                {/* Original Email Content (Optional context) */}
+                                                <div className="pt-10 border-t border-neutral-200 dark:border-neutral-800/50">
+                                                    <h4 className="text-xs font-medium text-neutral-600 uppercase tracking-widest mb-6">Original Message Snippet</h4>
+                                                    <div className="bg-neutral-900/30 rounded-2xl p-8 text-neutral-500 dark:text-neutral-400 text-base leading-relaxed font-light border border-neutral-200 dark:border-neutral-800/30">
+                                                        {selectedInsight.source_emails?.find(e => e.id === selectedEmailId)?.snippet}
+                                                        ...
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                    {/* Progressive Blur Bottom */}
+                    <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#1a1a1a] to-transparent pointer-events-none rounded-b-none lg:rounded-b-[2.5rem] z-10" />
                 </div>
-                {/* Progressive Blur Bottom */}
-                <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#1a1a1a] to-transparent pointer-events-none rounded-b-none lg:rounded-b-[2.5rem] z-10" />
-            </div>
 
-            {/* Draft Editor Modal */}
-            <div
-                className={`fixed top-1/2 left-1/2 bg-[#0d0d0d]/95 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_0_120px_rgba(0,0,0,0.6),0_0_60px_rgba(255,255,255,0.02)] transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-[60] flex flex-col border border-white/[0.06] overflow-hidden`}
-                style={{
-                    width: typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : '55%',
-                    minWidth: typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : '600px',
-                    maxWidth: typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : '900px',
-                    height: typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : '88vh',
-                    transform: showDraftEditor ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -45%) scale(0.95)',
-                    opacity: showDraftEditor ? 1 : 0,
-                    pointerEvents: showDraftEditor ? 'auto' : 'none',
-                    borderRadius: typeof window !== 'undefined' && window.innerWidth < 768 ? '0' : '2.5rem'
-                }}
-            >
-                <div className="p-10 flex flex-col h-full relative">
-                    <div className="flex justify-between items-center mb-8">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-blue-500/10 rounded-2xl">
-                                <Sparkles className="w-6 h-6 text-blue-400" />
+                {/* Draft Editor Modal */}
+                <div
+                    className={`fixed top-1/2 left-1/2 bg-[#0d0d0d]/95 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_0_120px_rgba(0,0,0,0.6),0_0_60px_rgba(255,255,255,0.02)] transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-[60] flex flex-col border border-white/[0.06] overflow-hidden`}
+                    style={{
+                        width: typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : '55%',
+                        minWidth: typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : '600px',
+                        maxWidth: typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : '900px',
+                        height: typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : '88vh',
+                        transform: showDraftEditor ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -45%) scale(0.95)',
+                        opacity: showDraftEditor ? 1 : 0,
+                        pointerEvents: showDraftEditor ? 'auto' : 'none',
+                        borderRadius: typeof window !== 'undefined' && window.innerWidth < 768 ? '0' : '2.5rem'
+                    }}
+                >
+                    <div className="p-10 flex flex-col h-full relative">
+                        <div className="flex justify-between items-center mb-8">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-blue-500/10 rounded-2xl">
+                                    <Sparkles className="w-6 h-6 text-blue-400" />
+                                </div>
+                                <div>
+                                    <h3 className="text-2xl font-medium text-black dark:text-white">AI Draft Reply</h3>
+                                    <p className="text-sm text-neutral-600 dark:text-neutral-500 font-light">Sift AI generated response</p>
+                                </div>
                             </div>
-                            <div>
-                                <h3 className="text-2xl font-medium text-black dark:text-white">AI Draft Reply</h3>
-                                <p className="text-sm text-neutral-600 dark:text-neutral-500 font-light">Sift AI generated response</p>
+                            <button
+                                onClick={() => setShowDraftEditor(false)}
+                                className="p-3 hover:bg-neutral-800 rounded-full transition-colors text-neutral-600 hover:text-black dark:text-white"
+                            >
+                                <X className="w-6 h-6" />
+                            </button>
+                        </div>
+
+                        {/* Voice Profile Quick Access */}
+                        <div className="mb-6">
+                            <button
+                                onClick={() => setIsVoiceProfileModalOpen(true)}
+                                className="flex items-center gap-3 px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl transition-all group"
+                            >
+                                <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
+                                <span className="text-xs font-medium text-white/50 group-hover:text-white/80">Mimic My Style Active</span>
+                                <Activity className="w-3.5 h-3.5 text-white/20 group-hover:text-white/40 ml-2" />
+                            </button>
+                        </div>
+
+                        <div ref={draftContainerRef} className="flex-1 bg-neutral-900/30 rounded-[2rem] border border-neutral-200 dark:border-neutral-800/50 p-8 overflow-hidden flex flex-col shadow-inner relative" onMouseUp={handleSiftMouseUp}>
+                            {isDrafting ? (
+                                <div className="flex-1 flex flex-col items-center justify-center">
+                                    <div className="relative mb-6">
+                                        <Sparkles className="w-12 h-12 text-blue-400 animate-pulse" />
+                                        <div className="absolute inset-0 bg-blue-400/20 blur-2xl rounded-full animate-pulse" />
+                                    </div>
+                                    <p className="text-neutral-500 dark:text-neutral-400 text-lg font-light animate-pulse">Sift AI is drafting your response...</p>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="mb-4">
+                                        <input
+                                            type="text"
+                                            value={draftSubject}
+                                            onChange={(e) => setDraftSubject(e.target.value)}
+                                            className="w-full bg-neutral-900/30 text-black dark:text-white text-lg font-medium px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-800 focus:outline-none focus:border-neutral-700 transition-colors"
+                                            placeholder="Subject"
+                                        />
+                                    </div>
+                                    <div className="flex-1 overflow-y-auto custom-scrollbar relative">
+                                        {proposedRefinement && selection ? (
+                                            <div className="text-neutral-900 dark:text-neutral-200 font-light leading-relaxed text-xl whitespace-pre-wrap">
+                                                {draftContent.slice(0, selection.start)}
+                                                <span className="text-black dark:text-white/20 line-through decoration-white/30 decoration-1 bg-white/[0.03]">
+                                                    {selection.text}
+                                                </span>
+                                                <span className="text-black bg-white px-1.5 py-0.5 rounded-md shadow-[0_0_25px_rgba(255,255,255,0.1)] border border-white/20 font-medium">
+                                                    {proposedRefinement}
+                                                </span>
+                                                {draftContent.slice(selection.end)}
+                                            </div>
+                                        ) : (
+                                            <textarea
+                                                value={draftContent}
+                                                onChange={(e) => setDraftContent(e.target.value)}
+                                                className="w-full h-full bg-transparent text-neutral-900 dark:text-neutral-200 resize-none focus:outline-none font-light leading-relaxed text-xl selection:bg-white selection:text-black"
+                                                placeholder="AI generated draft will appear here..."
+                                            />
+                                        )}
+                                    </div>
+                                    {/* Progressive Blur for Textarea */}
+                                    <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-neutral-900/80 to-transparent pointer-events-none z-10" />
+                                </>
+                            )}
+
+                            {/* World-Class AI Refinement Tooltip for Sift */}
+                            <AnimatePresence mode="wait">
+                                {(showTooltip || isRefinementActive || proposedRefinement) && selection && (
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.96, y: 8, filter: 'blur(6px)' }}
+                                        animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
+                                        exit={{ opacity: 0, scale: 0.96, y: 8, filter: 'blur(6px)' }}
+                                        transition={{ type: 'spring', damping: 22, stiffness: 320 }}
+                                        style={{
+                                            position: 'absolute',
+                                            left: '50%',
+                                            top: `${Math.max(8, selection.rect.y - 56)}px`,
+                                            transform: 'translateX(-50%)',
+                                            zIndex: 100
+                                        }}
+                                        className="pointer-events-auto refinement-toolkit"
+                                    >
+                                        {!isRefinementActive && !proposedRefinement && (
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); setIsRefinementActive(true); }}
+                                                className="bg-zinc-900 border border-neutral-200 dark:border-white/10 rounded-full px-5 py-2.5 flex items-center gap-4 shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_20px_rgba(255,255,255,0.05)] backdrop-blur-2xl hover:bg-zinc-800 hover:border-white/20 transition-all group active:scale-95"
+                                            >
+                                                <Sparkles className="w-3.5 h-3.5 text-neutral-600 group-hover:text-black dark:text-white transition-colors" />
+                                                <span className="text-black dark:text-white font-bold text-xs tracking-tight">Ask for changes</span>
+                                                <div className="flex items-center gap-1 opacity-40">
+                                                    <div className="px-1.5 py-0.5 rounded border border-white/20 bg-black/5 dark:bg-white/5 text-[9px] font-bold uppercase tracking-tighter">M</div>
+                                                </div>
+                                            </button>
+                                        )}
+
+                                        {isRefinementActive && (
+                                            <div className="bg-white dark:bg-zinc-950/90 border border-neutral-200 dark:border-white/10 rounded-[1.5rem] p-1.5 shadow-[0_30px_70px_rgba(0,0,0,0.9)] w-[360px] backdrop-blur-3xl overflow-hidden ring-1 ring-white/10" onClick={(e) => e.stopPropagation()}>
+                                                <div className="relative group/input">
+                                                    <input
+                                                        autoFocus
+                                                        value={refinementInstruction}
+                                                        onChange={(e) => setRefinementInstruction(e.target.value)}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') handleSiftRefinementSubmit();
+                                                            if (e.key === 'Escape') setIsRefinementActive(false);
+                                                        }}
+                                                        placeholder="Describe your changes"
+                                                        className="w-full bg-white/[0.04] text-black dark:text-white text-[14px] py-3.5 px-5 pr-14 rounded-2xl border border-white/[0.08] focus:outline-none focus:border-white/20 transition-all placeholder:text-zinc-600 font-medium tracking-tight"
+                                                    />
+                                                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); handleSiftRefinementSubmit(); }}
+                                                            disabled={isProcessingRefinement || !refinementInstruction.trim()}
+                                                            className="w-9 h-9 bg-white rounded-xl flex items-center justify-center text-black hover:bg-zinc-200 transition-all disabled:opacity-30 disabled:grayscale shadow-lg shadow-white/5 active:scale-90"
+                                                        >
+                                                            {isProcessingRefinement ? (
+                                                                <div className="w-4 h-4 border-[2px] border-black/20 border-t-black rounded-full animate-spin" />
+                                                            ) : (
+                                                                <ArrowUp className="w-4 h-4 stroke-[3]" />
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {proposedRefinement && (
+                                            <div className="bg-white dark:bg-zinc-950/90 border border-white/20 rounded-2xl p-2 flex items-center gap-2 shadow-[0_30px_70px_rgba(0,0,0,0.9)] backdrop-blur-3xl ring-1 ring-white/10" onClick={(e) => e.stopPropagation()}>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); setProposedRefinement(null); }}
+                                                    className="h-10 px-5 rounded-xl text-neutral-600 hover:text-black dark:text-white hover:bg-black/5 dark:bg-white/5 text-[13px] font-bold transition-all flex items-center gap-3 active:scale-95"
+                                                >
+                                                    Undo
+                                                    <div className="px-1.5 py-0.5 rounded border border-neutral-200 dark:border-white/10 bg-black/5 dark:bg-white/5 text-[9px] font-bold opacity-40 uppercase">Esc</div>
+                                                </button>
+                                                <div className="w-px h-6 bg-black/10 dark:bg-white/10 mx-1" />
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleAcceptSiftRefinement(); }}
+                                                    className="h-10 px-5 bg-white hover:bg-zinc-200 rounded-xl text-black text-[13px] font-bold transition-all flex items-center gap-4 shadow-xl shadow-white/5 active:scale-95"
+                                                >
+                                                    Accept
+                                                    <div className="flex items-center gap-1 opacity-70">
+                                                        <div className="px-1.5 py-0.5 rounded border border-black/30 bg-black/10 text-[9px] font-bold uppercase tracking-tighter">Ctrl</div>
+                                                        <CornerDownLeft className="w-3 h-3" />
+                                                    </div>
+                                                </button>
+                                            </div>
+                                        )}
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+
+                        <div className="mt-8 flex justify-end gap-4">
+                            <Button
+                                variant="outline"
+                                onClick={() => setShowDraftEditor(false)}
+                                className="h-14 px-8 border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-400 hover:bg-neutral-800 rounded-2xl"
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                className="h-14 bg-[#fafafa] hover:bg-neutral-200 text-[#0a0a0a] px-10 rounded-2xl text-lg font-medium shadow-lg shadow-white/5"
+                                onClick={handleSendReply}
+                            >
+                                Send Reply
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Draft Backdrop */}
+                {showDraftEditor && (
+                    <div
+                        className="fixed inset-0 bg-black/30 backdrop-blur-[60px] z-[55] transition-opacity duration-700"
+                        onClick={() => setShowDraftEditor(false)}
+                    >
+                        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.01] via-transparent to-black/20 pointer-events-none" />
+                    </div>
+                )}
+
+                {/* Note Editor - Premium UI in bottom-right */}
+                <div
+                    className={`fixed bottom-0 right-0 lg:bottom-6 lg:right-6 w-full lg:w-96 h-[85vh] lg:h-[32rem] bg-gradient-to-br from-neutral-800/90 to-neutral-900/90 backdrop-blur-2xl rounded-t-[2rem] lg:rounded-[2rem] shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-[60] border border-neutral-700/50`}
+                    style={{
+                        transform: showNoteEditor ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.95)',
+                        opacity: showNoteEditor ? 1 : 0,
+                        pointerEvents: showNoteEditor ? 'auto' : 'none'
+                    }}
+                >
+                    <div className="p-6 h-[32rem] flex flex-col">
+                        {/* Header with close button */}
+                        <div className="flex justify-between items-center mb-4">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-yellow-500/10 rounded-xl">
+                                    <Sparkles className="w-5 h-5 text-yellow-400" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-medium text-black dark:text-white">AI Note</h3>
+                                    <p className="text-xs text-neutral-500 dark:text-neutral-400 font-light">Intelligent insights</p>
+                                </div>
                             </div>
+                            <button
+                                onClick={() => setShowNoteEditor(false)}
+                                className="p-2 hover:bg-neutral-700/50 rounded-full transition-colors text-neutral-600 hover:text-black dark:text-white"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Note Content Area */}
+                        <div className="flex-1 bg-neutral-900/30 rounded-[1.5rem] border border-neutral-200 dark:border-neutral-800/50 p-4 mb-4 overflow-hidden flex flex-col">
+                            <input
+                                type="text"
+                                value={noteSubject}
+                                onChange={(e) => setNoteSubject(e.target.value)}
+                                className="w-full bg-transparent text-black dark:text-white text-base font-medium px-3 py-2 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-yellow-500/20 transition-colors mb-3"
+                                placeholder="Note heading..."
+                            />
+                            <div className="flex-1 bg-transparent text-neutral-900 dark:text-neutral-200 resize-none focus:outline-none font-light leading-relaxed text-sm custom-scrollbar overflow-y-auto">
+                                {/* Render markdown formatting */}
+                                <div className="prose prose-invert max-w-none whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: renderMarkdown(noteContent) }} />
+                            </div>
+                            {/* Progressive Blur for Textarea */}
+                            <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-neutral-900/80 to-transparent pointer-events-none z-10" />
+                        </div>
+
+                        {/* Save Button */}
+                        <button
+                            onClick={handleSaveNote}
+                            disabled={isSavingNote || !noteContent.trim()}
+                            className={`h-12 bg-gradient-to-r ${isSavingNote || !noteContent.trim() ? 'from-neutral-700 to-neutral-800' : 'from-yellow-500 to-yellow-600'} text-black font-medium rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center`}
+                        >
+                            {isSavingNote ? (
+                                <>
+                                    <Sparkles className="w-4 h-4 mr-2 animate-pulse" />
+                                    Saving...
+                                </>
+                            ) : (
+                                <>
+                                    <Sparkles className="w-4 h-4 mr-2" />
+                                    Save Note
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
+
+                {/* Scheduling Modal */}
+                <SchedulingModal
+                    isOpen={showSchedulingModal}
+                    onClose={() => setShowSchedulingModal(false)}
+                    emailId={schedulingEmailId || ''}
+                />
+
+                {/* Traditional Email Detailed View Modal */}
+                <div
+                    className={`fixed top-1/2 left-1/2 bg-black rounded-[2.5rem] shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-[70] flex flex-col border border-neutral-200 dark:border-white/10`}
+                    style={{
+                        width: '75%',
+                        height: '90vh',
+                        transform: isTraditionalModalOpen ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -45%) scale(0.95)',
+                        opacity: isTraditionalModalOpen ? 1 : 0,
+                        pointerEvents: isTraditionalModalOpen ? 'auto' : 'none'
+                    }}
+                >
+                    {/* Header */}
+                    <div className="p-10 border-b border-neutral-200 dark:border-white/5 flex items-start justify-between">
+                        <div className="flex-1 min-w-0 pr-10">
+                            {isSummarizing ? (
+                                <div className="space-y-3">
+                                    <div className="h-7 w-2/3 bg-black/5 dark:bg-white/5 rounded-lg animate-pulse" />
+                                    <div className="h-4 w-1/3 bg-black/5 dark:bg-white/5 rounded-lg animate-pulse" />
+                                </div>
+                            ) : selectedTraditionalEmail ? (
+                                <div className="space-y-4">
+                                    <h2 className="text-3xl font-semibold text-black dark:text-white tracking-tight leading-tight">
+                                        {selectedTraditionalEmail.subject}
+                                    </h2>
+                                    <div className="flex flex-wrap items-center gap-5">
+                                        <div className="flex items-center gap-3 px-4 py-2 bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-full">
+                                            <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-black dark:text-white/40 text-sm font-bold">
+                                                {selectedTraditionalEmail.from?.[0]?.toUpperCase() || 'U'}
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-sm text-black dark:text-white font-medium">
+                                                    {selectedTraditionalEmail.from?.split('<')[0]?.trim() || 'Sender'}
+                                                </span>
+                                                <span className="text-[10px] text-neutral-600 dark:text-neutral-500 font-light truncate max-w-[200px]">
+                                                    {selectedTraditionalEmail.from?.match(/<(.+)>/)?.[1] || selectedTraditionalEmail.from}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-500">
+                                            <Clock className="w-4 h-4" />
+                                            <span className="text-sm font-light">
+                                                {new Date(selectedTraditionalEmail.date).toLocaleString([], { dateStyle: 'long', timeStyle: 'short' })}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : null}
                         </div>
                         <button
-                            onClick={() => setShowDraftEditor(false)}
-                            className="p-3 hover:bg-neutral-800 rounded-full transition-colors text-neutral-600 hover:text-black dark:text-white"
+                            onClick={() => setIsTraditionalModalOpen(false)}
+                            className="p-3 bg-black/5 hover:bg-black/10 dark:bg-white/10 border border-neutral-200 dark:border-white/10 rounded-full text-black hover:text-black dark:text-white transition-all shadow-lg"
                         >
-                            <X className="w-6 h-6" />
+                            <X className="w-7 h-7" />
                         </button>
                     </div>
 
-                    {/* Voice Profile Quick Access */}
-                    <div className="mb-6">
-                        <button
-                            onClick={() => setIsVoiceProfileModalOpen(true)}
-                            className="flex items-center gap-3 px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl transition-all group"
-                        >
-                            <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
-                            <span className="text-xs font-medium text-white/50 group-hover:text-white/80">Mimic My Style Active</span>
-                            <Activity className="w-3.5 h-3.5 text-white/20 group-hover:text-white/40 ml-2" />
-                        </button>
-                    </div>
-
-                    <div ref={draftContainerRef} className="flex-1 bg-neutral-900/30 rounded-[2rem] border border-neutral-200 dark:border-neutral-800/50 p-8 overflow-hidden flex flex-col shadow-inner relative" onMouseUp={handleSiftMouseUp}>
-                        {isDrafting ? (
-                            <div className="flex-1 flex flex-col items-center justify-center">
-                                <div className="relative mb-6">
-                                    <Sparkles className="w-12 h-12 text-blue-400 animate-pulse" />
-                                    <div className="absolute inset-0 bg-blue-400/20 blur-2xl rounded-full animate-pulse" />
-                                </div>
-                                <p className="text-neutral-500 dark:text-neutral-400 text-lg font-light animate-pulse">Sift AI is drafting your response...</p>
+                    {/* Body Content */}
+                    <div className="flex-1 overflow-y-auto p-12 custom-scrollbar">
+                        {isSummarizing ? (
+                            <div className="flex flex-col items-center justify-center h-full">
+                                <RefreshCw className="w-10 h-10 text-black dark:text-white/20 animate-spin mb-6" />
+                                <p className="text-black dark:text-white/40 font-light text-xl">Opening message...</p>
                             </div>
-                        ) : (
-                            <>
-                                <div className="mb-4">
-                                    <input
-                                        type="text"
-                                        value={draftSubject}
-                                        onChange={(e) => setDraftSubject(e.target.value)}
-                                        className="w-full bg-neutral-900/30 text-black dark:text-white text-lg font-medium px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-800 focus:outline-none focus:border-neutral-700 transition-colors"
-                                        placeholder="Subject"
-                                    />
-                                </div>
-                                <div className="flex-1 overflow-y-auto custom-scrollbar relative">
-                                    {proposedRefinement && selection ? (
-                                        <div className="text-neutral-900 dark:text-neutral-200 font-light leading-relaxed text-xl whitespace-pre-wrap">
-                                            {draftContent.slice(0, selection.start)}
-                                            <span className="text-black dark:text-white/20 line-through decoration-white/30 decoration-1 bg-white/[0.03]">
-                                                {selection.text}
-                                            </span>
-                                            <span className="text-black bg-white px-1.5 py-0.5 rounded-md shadow-[0_0_25px_rgba(255,255,255,0.1)] border border-white/20 font-medium">
-                                                {proposedRefinement}
-                                            </span>
-                                            {draftContent.slice(selection.end)}
+                        ) : selectedTraditionalEmail ? (
+                            <div className="max-w-4xl mx-auto space-y-12 pb-20">
+                                <div className="traditional-email-content font-sans text-lg">
+                                    {selectedTraditionalEmail.isHtml ? (
+                                        <div className="bg-white dark:bg-white/95 rounded-xl overflow-hidden shadow-inner border border-neutral-200 dark:border-white/10 ring-1 ring-black/5 flex">
+                                            <iframe
+                                                title="Email Content"
+                                                srcDoc={selectedTraditionalEmail.body}
+                                                className="w-full min-h-[60vh] border-none bg-transparent"
+                                                sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin"
+                                                style={{ backgroundColor: 'transparent', colorSchemes: 'light dark' } as any}
+                                                onLoad={(e) => {
+                                                    const iframe = e.target as HTMLIFrameElement;
+                                                    if (iframe.contentWindow) {
+                                                        // Add base target blank so all links open in new tab
+                                                        const base = iframe.contentDocument?.createElement('base');
+                                                        if (base) {
+                                                            base.target = '_blank';
+                                                            iframe.contentDocument?.head.appendChild(base);
+                                                        }
+                                                        // Auto-resize height based on content
+                                                        try {
+                                                            const height = iframe.contentWindow.document.documentElement.scrollHeight;
+                                                            if (height > 0) iframe.style.height = `${height}px`;
+                                                        } catch (err) { }
+                                                    }
+                                                }}
+                                            />
                                         </div>
                                     ) : (
-                                        <textarea
-                                            value={draftContent}
-                                            onChange={(e) => setDraftContent(e.target.value)}
-                                            className="w-full h-full bg-transparent text-neutral-900 dark:text-neutral-200 resize-none focus:outline-none font-light leading-relaxed text-xl selection:bg-white selection:text-black"
-                                            placeholder="AI generated draft will appear here..."
+                                        <div
+                                            className="whitespace-pre-wrap selection:bg-blue-500/30 text-black dark:text-neutral-300 font-light leading-relaxed p-6 bg-black/5 dark:bg-white/5 rounded-2xl font-mono text-sm"
+                                            dangerouslySetInnerHTML={{ __html: linkify(selectedTraditionalEmail.body) }}
                                         />
                                     )}
                                 </div>
-                                {/* Progressive Blur for Textarea */}
-                                <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-neutral-900/80 to-transparent pointer-events-none z-10" />
-                            </>
-                        )}
 
-                        {/* World-Class AI Refinement Tooltip for Sift */}
-                        <AnimatePresence mode="wait">
-                            {(showTooltip || isRefinementActive || proposedRefinement) && selection && (
-                                <motion.div
-                                    initial={{ opacity: 0, scale: 0.96, y: 8, filter: 'blur(6px)' }}
-                                    animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
-                                    exit={{ opacity: 0, scale: 0.96, y: 8, filter: 'blur(6px)' }}
-                                    transition={{ type: 'spring', damping: 22, stiffness: 320 }}
-                                    style={{
-                                        position: 'absolute',
-                                        left: '50%',
-                                        top: `${Math.max(8, selection.rect.y - 56)}px`,
-                                        transform: 'translateX(-50%)',
-                                        zIndex: 100
-                                    }}
-                                    className="pointer-events-auto refinement-toolkit"
-                                >
-                                    {!isRefinementActive && !proposedRefinement && (
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); setIsRefinementActive(true); }}
-                                            className="bg-zinc-900 border border-neutral-200 dark:border-white/10 rounded-full px-5 py-2.5 flex items-center gap-4 shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_20px_rgba(255,255,255,0.05)] backdrop-blur-2xl hover:bg-zinc-800 hover:border-white/20 transition-all group active:scale-95"
-                                        >
-                                            <Sparkles className="w-3.5 h-3.5 text-neutral-600 group-hover:text-black dark:text-white transition-colors" />
-                                            <span className="text-black dark:text-white font-bold text-xs tracking-tight">Ask for changes</span>
-                                            <div className="flex items-center gap-1 opacity-40">
-                                                <div className="px-1.5 py-0.5 rounded border border-white/20 bg-black/5 dark:bg-white/5 text-[9px] font-bold uppercase tracking-tighter">M</div>
-                                            </div>
-                                        </button>
-                                    )}
-
-                                    {isRefinementActive && (
-                                        <div className="bg-white dark:bg-zinc-950/90 border border-neutral-200 dark:border-white/10 rounded-[1.5rem] p-1.5 shadow-[0_30px_70px_rgba(0,0,0,0.9)] w-[360px] backdrop-blur-3xl overflow-hidden ring-1 ring-white/10" onClick={(e) => e.stopPropagation()}>
-                                            <div className="relative group/input">
-                                                <input
-                                                    autoFocus
-                                                    value={refinementInstruction}
-                                                    onChange={(e) => setRefinementInstruction(e.target.value)}
-                                                    onKeyDown={(e) => {
-                                                        if (e.key === 'Enter') handleSiftRefinementSubmit();
-                                                        if (e.key === 'Escape') setIsRefinementActive(false);
-                                                    }}
-                                                    placeholder="Describe your changes"
-                                                    className="w-full bg-white/[0.04] text-black dark:text-white text-[14px] py-3.5 px-5 pr-14 rounded-2xl border border-white/[0.08] focus:outline-none focus:border-white/20 transition-all placeholder:text-zinc-600 font-medium tracking-tight"
-                                                />
-                                                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
-                                                    <button 
-                                                        onClick={(e) => { e.stopPropagation(); handleSiftRefinementSubmit(); }}
-                                                        disabled={isProcessingRefinement || !refinementInstruction.trim()}
-                                                        className="w-9 h-9 bg-white rounded-xl flex items-center justify-center text-black hover:bg-zinc-200 transition-all disabled:opacity-30 disabled:grayscale shadow-lg shadow-white/5 active:scale-90"
+                                {/* Attachments Section */}
+                                {selectedTraditionalEmail.attachments?.length > 0 && (
+                                    <div className="space-y-6 pt-12 border-t border-neutral-200 dark:border-white/5">
+                                        <div className="flex items-center gap-2 text-black dark:text-white/40 text-[10px] uppercase tracking-[0.2em] font-bold">
+                                            <Download className="w-3.5 h-3.5" />
+                                            Attachments
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            {selectedTraditionalEmail.attachments.map((att: any, i: number) => (
+                                                <div key={i} className="flex items-center gap-4 p-4 bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-2xl group hover:border-white/20 transition-all">
+                                                    <div className="p-3 bg-black/5 dark:bg-white/5 rounded-xl text-black dark:text-white/40">
+                                                        {att.mimeType?.startsWith('image/') ? <Sparkles className="w-5 h-5" /> : <Inbox className="w-5 h-5" />}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-sm font-medium text-black dark:text-white truncate">{att.filename}</p>
+                                                        <p className="text-xs text-neutral-600 dark:text-neutral-500 font-light mt-0.5">{(att.size / 1024).toFixed(0)} KB</p>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => {
+                                                            window.open(`/api/attachments/download?messageId=${selectedTraditionalEmail.id}&attachmentId=${att.attachmentId}&filename=${encodeURIComponent(att.filename)}`, '_blank');
+                                                            toast.success('Downloading...', { description: att.filename });
+                                                        }}
+                                                        className="p-2.5 bg-black/5 hover:bg-black/10 dark:bg-white/10 rounded-xl text-black hover:text-black dark:text-white transition-all shadow-sm"
                                                     >
-                                                        {isProcessingRefinement ? (
-                                                            <div className="w-4 h-4 border-[2px] border-black/20 border-t-black rounded-full animate-spin" />
-                                                        ) : (
-                                                            <ArrowUp className="w-4 h-4 stroke-[3]" />
-                                                        )}
+                                                        <Download className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); setNoteEmailId(selectedTraditionalEmail.id); setNoteSubject(`Note: ${att.filename}`); setNoteContent(`Reference to document "${att.filename}" in email "${selectedTraditionalEmail.subject}"`); setShowNoteEditor(true); }}
+                                                        className="p-2.5 bg-black/5 hover:bg-black/10 dark:bg-white/10 border border-neutral-200 dark:border-white/10 rounded-xl text-black hover:text-black dark:text-white transition-all"
+                                                    >
+                                                        <FilePlus className="w-4 h-4" />
                                                     </button>
                                                 </div>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {proposedRefinement && (
-                                        <div className="bg-white dark:bg-zinc-950/90 border border-white/20 rounded-2xl p-2 flex items-center gap-2 shadow-[0_30px_70px_rgba(0,0,0,0.9)] backdrop-blur-3xl ring-1 ring-white/10" onClick={(e) => e.stopPropagation()}>
-                                            <button 
-                                                onClick={(e) => { e.stopPropagation(); setProposedRefinement(null); }}
-                                                className="h-10 px-5 rounded-xl text-neutral-600 hover:text-black dark:text-white hover:bg-black/5 dark:bg-white/5 text-[13px] font-bold transition-all flex items-center gap-3 active:scale-95"
-                                            >
-                                                Undo
-                                                <div className="px-1.5 py-0.5 rounded border border-neutral-200 dark:border-white/10 bg-black/5 dark:bg-white/5 text-[9px] font-bold opacity-40 uppercase">Esc</div>
-                                            </button>
-                                            <div className="w-px h-6 bg-black/10 dark:bg-white/10 mx-1" />
-                                            <button 
-                                                onClick={(e) => { e.stopPropagation(); handleAcceptSiftRefinement(); }}
-                                                className="h-10 px-5 bg-white hover:bg-zinc-200 rounded-xl text-black text-[13px] font-bold transition-all flex items-center gap-4 shadow-xl shadow-white/5 active:scale-95"
-                                            >
-                                                Accept
-                                                <div className="flex items-center gap-1 opacity-70">
-                                                    <div className="px-1.5 py-0.5 rounded border border-black/30 bg-black/10 text-[9px] font-bold uppercase tracking-tighter">Ctrl</div>
-                                                    <CornerDownLeft className="w-3 h-3" />
-                                                </div>
-                                            </button>
-                                        </div>
-                                    )}
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
-
-                    <div className="mt-8 flex justify-end gap-4">
-                        <Button
-                            variant="outline"
-                            onClick={() => setShowDraftEditor(false)}
-                            className="h-14 px-8 border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-400 hover:bg-neutral-800 rounded-2xl"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            className="h-14 bg-[#fafafa] hover:bg-neutral-200 text-[#0a0a0a] px-10 rounded-2xl text-lg font-medium shadow-lg shadow-white/5"
-                            onClick={handleSendReply}
-                        >
-                            Send Reply
-                        </Button>
-                    </div>
-                </div>
-            </div>
-
-            {/* Draft Backdrop */}
-            {showDraftEditor && (
-                <div
-                    className="fixed inset-0 bg-black/30 backdrop-blur-[60px] z-[55] transition-opacity duration-700"
-                    onClick={() => setShowDraftEditor(false)}
-                >
-                    <div className="absolute inset-0 bg-gradient-to-b from-white/[0.01] via-transparent to-black/20 pointer-events-none" />
-                </div>
-            )}
-
-            {/* Note Editor - Premium UI in bottom-right */}
-            <div
-                className={`fixed bottom-0 right-0 lg:bottom-6 lg:right-6 w-full lg:w-96 h-[85vh] lg:h-[32rem] bg-gradient-to-br from-neutral-800/90 to-neutral-900/90 backdrop-blur-2xl rounded-t-[2rem] lg:rounded-[2rem] shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-[60] border border-neutral-700/50`}
-                style={{
-                    transform: showNoteEditor ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.95)',
-                    opacity: showNoteEditor ? 1 : 0,
-                    pointerEvents: showNoteEditor ? 'auto' : 'none'
-                }}
-            >
-                <div className="p-6 h-[32rem] flex flex-col">
-                    {/* Header with close button */}
-                    <div className="flex justify-between items-center mb-4">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-yellow-500/10 rounded-xl">
-                                <Sparkles className="w-5 h-5 text-yellow-400" />
-                            </div>
-                            <div>
-                                <h3 className="text-lg font-medium text-black dark:text-white">AI Note</h3>
-                                <p className="text-xs text-neutral-500 dark:text-neutral-400 font-light">Intelligent insights</p>
-                            </div>
-                        </div>
-                        <button
-                            onClick={() => setShowNoteEditor(false)}
-                            className="p-2 hover:bg-neutral-700/50 rounded-full transition-colors text-neutral-600 hover:text-black dark:text-white"
-                        >
-                            <X className="w-5 h-5" />
-                        </button>
-                    </div>
-
-                    {/* Note Content Area */}
-                    <div className="flex-1 bg-neutral-900/30 rounded-[1.5rem] border border-neutral-200 dark:border-neutral-800/50 p-4 mb-4 overflow-hidden flex flex-col">
-                        <input
-                            type="text"
-                            value={noteSubject}
-                            onChange={(e) => setNoteSubject(e.target.value)}
-                            className="w-full bg-transparent text-black dark:text-white text-base font-medium px-3 py-2 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-yellow-500/20 transition-colors mb-3"
-                            placeholder="Note heading..."
-                        />
-                        <div className="flex-1 bg-transparent text-neutral-900 dark:text-neutral-200 resize-none focus:outline-none font-light leading-relaxed text-sm custom-scrollbar overflow-y-auto">
-                            {/* Render markdown formatting */}
-                            <div className="prose prose-invert max-w-none whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: renderMarkdown(noteContent) }} />
-                        </div>
-                        {/* Progressive Blur for Textarea */}
-                        <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-neutral-900/80 to-transparent pointer-events-none z-10" />
-                    </div>
-
-                    {/* Save Button */}
-                    <button
-                        onClick={handleSaveNote}
-                        disabled={isSavingNote || !noteContent.trim()}
-                        className={`h-12 bg-gradient-to-r ${isSavingNote || !noteContent.trim() ? 'from-neutral-700 to-neutral-800' : 'from-yellow-500 to-yellow-600'} text-black font-medium rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center`}
-                    >
-                        {isSavingNote ? (
-                            <>
-                                <Sparkles className="w-4 h-4 mr-2 animate-pulse" />
-                                Saving...
-                            </>
-                        ) : (
-                            <>
-                                <Sparkles className="w-4 h-4 mr-2" />
-                                Save Note
-                            </>
-                        )}
-                    </button>
-                </div>
-            </div>
-
-            {/* Scheduling Modal */}
-            <SchedulingModal
-                isOpen={showSchedulingModal}
-                onClose={() => setShowSchedulingModal(false)}
-                emailId={schedulingEmailId || ''}
-            />
-
-            {/* Traditional Email Detailed View Modal */}
-            <div
-                className={`fixed top-1/2 left-1/2 bg-black rounded-[2.5rem] shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-[70] flex flex-col border border-neutral-200 dark:border-white/10`}
-                style={{
-                    width: '75%',
-                    height: '90vh',
-                    transform: isTraditionalModalOpen ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -45%) scale(0.95)',
-                    opacity: isTraditionalModalOpen ? 1 : 0,
-                    pointerEvents: isTraditionalModalOpen ? 'auto' : 'none'
-                }}
-            >
-                {/* Header */}
-                <div className="p-10 border-b border-neutral-200 dark:border-white/5 flex items-start justify-between">
-                    <div className="flex-1 min-w-0 pr-10">
-                        {isSummarizing ? (
-                            <div className="space-y-3">
-                                <div className="h-7 w-2/3 bg-black/5 dark:bg-white/5 rounded-lg animate-pulse" />
-                                <div className="h-4 w-1/3 bg-black/5 dark:bg-white/5 rounded-lg animate-pulse" />
-                            </div>
-                        ) : selectedTraditionalEmail ? (
-                            <div className="space-y-4">
-                                <h2 className="text-3xl font-semibold text-black dark:text-white tracking-tight leading-tight">
-                                    {selectedTraditionalEmail.subject}
-                                </h2>
-                                <div className="flex flex-wrap items-center gap-5">
-                                    <div className="flex items-center gap-3 px-4 py-2 bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-full">
-                                        <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-black dark:text-white/40 text-sm font-bold">
-                                            {selectedTraditionalEmail.from?.[0]?.toUpperCase() || 'U'}
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-sm text-black dark:text-white font-medium">
-                                                {selectedTraditionalEmail.from?.split('<')[0]?.trim() || 'Sender'}
-                                            </span>
-                                            <span className="text-[10px] text-neutral-600 dark:text-neutral-500 font-light truncate max-w-[200px]">
-                                                {selectedTraditionalEmail.from?.match(/<(.+)>/)?.[1] || selectedTraditionalEmail.from}
-                                            </span>
+                                            ))}
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-500">
-                                        <Clock className="w-4 h-4" />
-                                        <span className="text-sm font-light">
-                                            {new Date(selectedTraditionalEmail.date).toLocaleString([], { dateStyle: 'long', timeStyle: 'short' })}
-                                        </span>
-                                    </div>
-                                </div>
+                                )}
                             </div>
                         ) : null}
                     </div>
-                    <button
-                        onClick={() => setIsTraditionalModalOpen(false)}
-                        className="p-3 bg-black/5 hover:bg-black/10 dark:bg-white/10 border border-neutral-200 dark:border-white/10 rounded-full text-black hover:text-black dark:text-white transition-all shadow-lg"
-                    >
-                        <X className="w-7 h-7" />
-                    </button>
-                </div>
 
-                {/* Body Content */}
-                <div className="flex-1 overflow-y-auto p-12 custom-scrollbar">
-                    {isSummarizing ? (
-                        <div className="flex flex-col items-center justify-center h-full">
-                            <RefreshCw className="w-10 h-10 text-black dark:text-white/20 animate-spin mb-6" />
-                            <p className="text-black dark:text-white/40 font-light text-xl">Opening message...</p>
-                        </div>
-                    ) : selectedTraditionalEmail ? (
-                        <div className="max-w-4xl mx-auto space-y-12 pb-20">
-                            <div className="traditional-email-content font-sans text-lg">
-                                {selectedTraditionalEmail.isHtml ? (
-                                    <div className="bg-white dark:bg-white/95 rounded-xl overflow-hidden shadow-inner border border-neutral-200 dark:border-white/10 ring-1 ring-black/5 flex">
-                                        <iframe
-                                            title="Email Content"
-                                            srcDoc={selectedTraditionalEmail.body}
-                                            className="w-full min-h-[60vh] border-none bg-transparent"
-                                            sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin"
-                                            style={{ backgroundColor: 'transparent', colorSchemes: 'light dark' } as any}
-                                            onLoad={(e) => {
-                                                const iframe = e.target as HTMLIFrameElement;
-                                                if (iframe.contentWindow) {
-                                                    // Add base target blank so all links open in new tab
-                                                    const base = iframe.contentDocument?.createElement('base');
-                                                    if (base) {
-                                                        base.target = '_blank';
-                                                        iframe.contentDocument?.head.appendChild(base);
-                                                    }
-                                                    // Auto-resize height based on content
-                                                    try {
-                                                        const height = iframe.contentWindow.document.documentElement.scrollHeight;
-                                                        if (height > 0) iframe.style.height = `${height}px`;
-                                                    } catch (err) {}
-                                                }
-                                            }}
-                                        />
-                                    </div>
-                                ) : (
-                                    <div
-                                        className="whitespace-pre-wrap selection:bg-blue-500/30 text-black dark:text-neutral-300 font-light leading-relaxed p-6 bg-black/5 dark:bg-white/5 rounded-2xl font-mono text-sm"
-                                        dangerouslySetInnerHTML={{ __html: linkify(selectedTraditionalEmail.body) }}
-                                    />
-                                )}
-                            </div>
-
-                            {/* Attachments Section */}
-                            {selectedTraditionalEmail.attachments?.length > 0 && (
-                                <div className="space-y-6 pt-12 border-t border-neutral-200 dark:border-white/5">
-                                    <div className="flex items-center gap-2 text-black dark:text-white/40 text-[10px] uppercase tracking-[0.2em] font-bold">
-                                        <Download className="w-3.5 h-3.5" />
-                                        Attachments
-                                    </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        {selectedTraditionalEmail.attachments.map((att: any, i: number) => (
-                                            <div key={i} className="flex items-center gap-4 p-4 bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-2xl group hover:border-white/20 transition-all">
-                                                <div className="p-3 bg-black/5 dark:bg-white/5 rounded-xl text-black dark:text-white/40">
-                                                    {att.mimeType?.startsWith('image/') ? <Sparkles className="w-5 h-5" /> : <Inbox className="w-5 h-5" />}
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-medium text-black dark:text-white truncate">{att.filename}</p>
-                                                    <p className="text-xs text-neutral-600 dark:text-neutral-500 font-light mt-0.5">{(att.size / 1024).toFixed(0)} KB</p>
-                                                </div>
-                                                <button
-                                                    onClick={() => {
-                                                        window.open(`/api/attachments/download?messageId=${selectedTraditionalEmail.id}&attachmentId=${att.attachmentId}&filename=${encodeURIComponent(att.filename)}`, '_blank');
-                                                        toast.success('Downloading...', { description: att.filename });
-                                                    }}
-                                                    className="p-2.5 bg-black/5 hover:bg-black/10 dark:bg-white/10 rounded-xl text-black hover:text-black dark:text-white transition-all shadow-sm"
-                                                >
-                                                    <Download className="w-4 h-4" />
-                                                </button>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); setNoteEmailId(selectedTraditionalEmail.id); setNoteSubject(`Note: ${att.filename}`); setNoteContent(`Reference to document "${att.filename}" in email "${selectedTraditionalEmail.subject}"`); setShowNoteEditor(true); }}
-                                                    className="p-2.5 bg-black/5 hover:bg-black/10 dark:bg-white/10 border border-neutral-200 dark:border-white/10 rounded-xl text-black hover:text-black dark:text-white transition-all"
-                                                >
-                                                    <FilePlus className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    ) : null}
-                </div>
-
-                {/* Footer Controls */}
-                {!isSummarizing && selectedTraditionalEmail && (
-                    <div className="p-10 border-t border-neutral-200 dark:border-white/5 bg-white/[0.01] flex items-center justify-between">
-                        <button
-                            onClick={() => setIsTraditionalModalOpen(false)}
-                            className="px-10 py-4 bg-black/5 hover:bg-black/10 dark:bg-white/10 border border-neutral-200 dark:border-white/10 rounded-2xl text-base font-medium text-black transition-all hover:text-black dark:text-white"
-                        >
-                            Close Viewer
-                        </button>
-                        <div className="flex items-center gap-4">
+                    {/* Footer Controls */}
+                    {!isSummarizing && selectedTraditionalEmail && (
+                        <div className="p-10 border-t border-neutral-200 dark:border-white/5 bg-white/[0.01] flex items-center justify-between">
                             <button
-                                onClick={() => { setDraftTo(selectedTraditionalEmail.from?.match(/<(.+)>/)?.[1] || selectedTraditionalEmail.from); setDraftSubject(`Re: ${selectedTraditionalEmail.subject}`); setDraftContent(''); setShowDraftEditor(true); }}
-                                className="px-10 py-4 bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/10 hover:border-white/20 rounded-2xl text-base font-medium text-black hover:text-black dark:text-white transition-all"
+                                onClick={() => setIsTraditionalModalOpen(false)}
+                                className="px-10 py-4 bg-black/5 hover:bg-black/10 dark:bg-white/10 border border-neutral-200 dark:border-white/10 rounded-2xl text-base font-medium text-black transition-all hover:text-black dark:text-white"
                             >
-                                Reply
+                                Close Viewer
                             </button>
-                            <button
-                                onClick={() => window.open(`https://mail.google.com/mail/u/0/#inbox/${selectedTraditionalEmail.id}`, '_blank')}
-                                className="flex items-center gap-3 px-10 py-4 bg-white text-black hover:bg-neutral-200 rounded-2xl text-base font-bold transition-all shadow-2xl active:scale-95"
-                            >
-                                <ExternalLink className="w-5 h-5" />
-                                Open in Gmail
-                            </button>
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {/* Traditional Backdrop */}
-            {isTraditionalModalOpen && (
-                <div
-                    className="fixed inset-0 bg-black/90 backdrop-blur-2xl z-[65] transition-opacity duration-300"
-                    onClick={() => setIsTraditionalModalOpen(false)}
-                />
-            )}
-
-            {/* Arcus AI Panel */}
-            <AnimatePresence>
-                {isEmailArcusOpen && !isArcusMinimized && (
-                    <motion.div
-                        className="arcus-panel arcus-panel-motion"
-                        style={{ height: arcusPanelHeight }}
-                        drag="y"
-                        dragControls={arcusDragControls}
-                        dragListener={false}
-                        dragConstraints={{ top: 0, bottom: arcusPanelHeight }}
-                        dragElastic={0.06}
-                        onDragEnd={handleArcusDragEnd}
-                        animate={arcusPanelAnimControls}
-                        initial={false}
-                        exit={{ opacity: 0, y: arcusPanelHeight * 0.55, scale: 0.985, transition: { duration: 0.18 } }}
-                    >
-                        <div
-                            className="arcus-header"
-                            style={{ touchAction: 'none' }}
-                            onPointerDown={(e) => arcusDragControls.start(e)}
-                            onDoubleClick={minimizeArcus}
-                        >
-                            <div className="w-full">
-                                <div className="flex justify-center">
-                                    <div className="h-1 w-12 rounded-full bg-black/10 dark:bg-white/10" />
-                                </div>
-                                <div className="mt-4 flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-neutral-800 flex items-center justify-center border border-neutral-200 dark:border-white/10 transition-all flex-shrink-0 overflow-hidden">
-                                            <img src="/arcus-ai-icon.jpg" alt="Arcus" className="w-full h-full object-cover" />
-                                        </div>
-                                        <div>
-                                            <h4 className="text-xs font-bold text-black dark:text-white uppercase tracking-widest leading-none mb-1 font-sans">Arcus Intelligence</h4>
-                                            <p className="text-[10px] text-neutral-600 dark:text-neutral-500 truncate max-w-[250px] font-medium font-sans">{arcusEmailSubject}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); minimizeArcus(); }}
-                                            className="p-2 hover:bg-black/5 dark:bg-white/5 rounded-full text-black hover:text-black dark:text-white transition-all"
-                                            aria-label="Minimize Arcus"
-                                            type="button"
-                                        >
-                                            <ChevronDown className="w-5 h-5" />
-                                        </button>
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); closeArcus(); }}
-                                            className="p-2 hover:bg-black/5 dark:bg-white/5 rounded-full text-black hover:text-black dark:text-white transition-all"
-                                            aria-label="Close Arcus"
-                                            type="button"
-                                        >
-                                            <X className="w-5 h-5" />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="arcus-content custom-scrollbar">
-                            {arcusMessages.map((msg) => (
-                                <div key={msg.id} className={msg.role === 'user' ? 'arcus-message-user' : 'arcus-message-agent'}>
-                                    <div className="prose prose-invert prose-sm">
-                                        <div dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }} />
-                                    </div>
-                                    <div className={`text-[10px] mt-2 font-medium ${msg.role === 'user' ? 'text-black/40' : 'text-black dark:text-white/20'}`}>
-                                        {msg.timestamp}
-                                    </div>
-                                </div>
-                            ))}
-
-                            {isArcusLoading && (
-                                <div className="arcus-message-agent flex items-center gap-3">
-                                    <div className="w-2.5 h-2.5 rounded-full bg-white animate-[arcus-dot-pulse_1s_ease-in-out_infinite]" />
-                                    <span className="text-sm text-black dark:text-white/70 font-medium">Thinking...</span>
-                                </div>
-                            )}
-                            <div ref={messagesEndRef} />
-                        </div>
-
-                        <div className="arcus-input-container">
-                            <div className="arcus-input-wrapper">
-                                <input
-                                    type="text"
-                                    className="arcus-input"
-                                    value={arcusQuery}
-                                    placeholder="Ask Arcus anything..."
-                                    onChange={(e) => setArcusQuery(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                            handleSendAskAI();
-                                        }
-                                    }}
-                                    autoFocus
-                                />
+                            <div className="flex items-center gap-4">
                                 <button
-                                    onClick={() => handleSendAskAI()}
-                                    disabled={isArcusLoading || !arcusQuery.trim()}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-white text-black hover:bg-neutral-200 rounded-xl disabled:opacity-30 transition-all shadow-lg"
-                                    type="button"
+                                    onClick={() => { setDraftTo(selectedTraditionalEmail.from?.match(/<(.+)>/)?.[1] || selectedTraditionalEmail.from); setDraftSubject(`Re: ${selectedTraditionalEmail.subject}`); setDraftContent(''); setShowDraftEditor(true); }}
+                                    className="px-10 py-4 bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/10 hover:border-white/20 rounded-2xl text-base font-medium text-black hover:text-black dark:text-white transition-all"
                                 >
-                                    <Zap className={`w-4 h-4 ${isArcusLoading ? 'animate-pulse' : 'fill-black'}`} />
+                                    Reply
+                                </button>
+                                <button
+                                    onClick={() => window.open(`https://mail.google.com/mail/u/0/#inbox/${selectedTraditionalEmail.id}`, '_blank')}
+                                    className="flex items-center gap-3 px-10 py-4 bg-white text-black hover:bg-neutral-200 rounded-2xl text-base font-bold transition-all shadow-2xl active:scale-95"
+                                >
+                                    <ExternalLink className="w-5 h-5" />
+                                    Open in Gmail
                                 </button>
                             </div>
-                            <p className="text-[10px] text-neutral-600 text-center mt-4 font-medium uppercase tracking-tighter italic">
-                                Connected to Arcus Agent Intelligence
-                            </p>
                         </div>
-                    </motion.div>
+                    )}
+                </div>
+
+                {/* Traditional Backdrop */}
+                {isTraditionalModalOpen && (
+                    <div
+                        className="fixed inset-0 bg-black/90 backdrop-blur-2xl z-[65] transition-opacity duration-300"
+                        onClick={() => setIsTraditionalModalOpen(false)}
+                    />
                 )}
-            </AnimatePresence>
 
-            <AnimatePresence>
-                {isEmailArcusOpen && isArcusMinimized && (
-                    <motion.button
-                        type="button"
-                        className="arcus-minimized-tab"
-                        onClick={restoreArcus}
-                        initial={{ opacity: 0, y: 14, scale: 0.98 }}
-                        animate={{ opacity: 1, y: 0, scale: 1, transition: { type: 'spring', damping: 26, stiffness: 340 } }}
-                        exit={{ opacity: 0, y: 14, scale: 0.98, transition: { duration: 0.14 } }}
-                        aria-label="Restore Arcus"
-                    >
-                        <span className="arcus-minimized-dot" aria-hidden="true" />
-                        <span className="arcus-minimized-title">Ask AI</span>
-                        <span className="arcus-minimized-subject">{arcusEmailSubject || 'Conversation'}</span>
-                    </motion.button>
+                {/* Arcus AI Panel */}
+                <AnimatePresence>
+                    {isEmailArcusOpen && !isArcusMinimized && (
+                        <motion.div
+                            className="arcus-panel arcus-panel-motion"
+                            style={{ height: arcusPanelHeight }}
+                            drag="y"
+                            dragControls={arcusDragControls}
+                            dragListener={false}
+                            dragConstraints={{ top: 0, bottom: arcusPanelHeight }}
+                            dragElastic={0.06}
+                            onDragEnd={handleArcusDragEnd}
+                            animate={arcusPanelAnimControls}
+                            initial={false}
+                            exit={{ opacity: 0, y: arcusPanelHeight * 0.55, scale: 0.985, transition: { duration: 0.18 } }}
+                        >
+                            <div
+                                className="arcus-header"
+                                style={{ touchAction: 'none' }}
+                                onPointerDown={(e) => arcusDragControls.start(e)}
+                                onDoubleClick={minimizeArcus}
+                            >
+                                <div className="w-full">
+                                    <div className="flex justify-center">
+                                        <div className="h-1 w-12 rounded-full bg-black/10 dark:bg-white/10" />
+                                    </div>
+                                    <div className="mt-4 flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-neutral-800 flex items-center justify-center border border-neutral-200 dark:border-white/10 transition-all flex-shrink-0 overflow-hidden">
+                                                <img src="/arcus-ai-icon.jpg" alt="Arcus" className="w-full h-full object-cover" />
+                                            </div>
+                                            <div>
+                                                <h4 className="text-xs font-bold text-black dark:text-white uppercase tracking-widest leading-none mb-1 font-sans">Arcus Intelligence</h4>
+                                                <p className="text-[10px] text-neutral-600 dark:text-neutral-500 truncate max-w-[250px] font-medium font-sans">{arcusEmailSubject}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); minimizeArcus(); }}
+                                                className="p-2 hover:bg-black/5 dark:bg-white/5 rounded-full text-black hover:text-black dark:text-white transition-all"
+                                                aria-label="Minimize Arcus"
+                                                type="button"
+                                            >
+                                                <ChevronDown className="w-5 h-5" />
+                                            </button>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); closeArcus(); }}
+                                                className="p-2 hover:bg-black/5 dark:bg-white/5 rounded-full text-black hover:text-black dark:text-white transition-all"
+                                                aria-label="Close Arcus"
+                                                type="button"
+                                            >
+                                                <X className="w-5 h-5" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="arcus-content custom-scrollbar">
+                                {arcusMessages.map((msg) => (
+                                    <div key={msg.id} className={msg.role === 'user' ? 'arcus-message-user' : 'arcus-message-agent'}>
+                                        <div className="prose prose-invert prose-sm">
+                                            <div dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }} />
+                                        </div>
+                                        <div className={`text-[10px] mt-2 font-medium ${msg.role === 'user' ? 'text-black/40' : 'text-black dark:text-white/20'}`}>
+                                            {msg.timestamp}
+                                        </div>
+                                    </div>
+                                ))}
+
+                                {isArcusLoading && (
+                                    <div className="arcus-message-agent flex items-center gap-3">
+                                        <div className="w-2.5 h-2.5 rounded-full bg-white animate-[arcus-dot-pulse_1s_ease-in-out_infinite]" />
+                                        <span className="text-sm text-black dark:text-white/70 font-medium">Thinking...</span>
+                                    </div>
+                                )}
+                                <div ref={messagesEndRef} />
+                            </div>
+
+                            <div className="arcus-input-container">
+                                <div className="arcus-input-wrapper">
+                                    <input
+                                        type="text"
+                                        className="arcus-input"
+                                        value={arcusQuery}
+                                        placeholder="Ask Arcus anything..."
+                                        onChange={(e) => setArcusQuery(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                handleSendAskAI();
+                                            }
+                                        }}
+                                        autoFocus
+                                    />
+                                    <button
+                                        onClick={() => handleSendAskAI()}
+                                        disabled={isArcusLoading || !arcusQuery.trim()}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-white text-black hover:bg-neutral-200 rounded-xl disabled:opacity-30 transition-all shadow-lg"
+                                        type="button"
+                                    >
+                                        <Zap className={`w-4 h-4 ${isArcusLoading ? 'animate-pulse' : 'fill-black'}`} />
+                                    </button>
+                                </div>
+                                <p className="text-[10px] text-neutral-600 text-center mt-4 font-medium uppercase tracking-tighter italic">
+                                    Connected to Arcus Agent Intelligence
+                                </p>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                <AnimatePresence>
+                    {isEmailArcusOpen && isArcusMinimized && (
+                        <motion.button
+                            type="button"
+                            className="arcus-minimized-tab"
+                            onClick={restoreArcus}
+                            initial={{ opacity: 0, y: 14, scale: 0.98 }}
+                            animate={{ opacity: 1, y: 0, scale: 1, transition: { type: 'spring', damping: 26, stiffness: 340 } }}
+                            exit={{ opacity: 0, y: 14, scale: 0.98, transition: { duration: 0.14 } }}
+                            aria-label="Restore Arcus"
+                        >
+                            <span className="arcus-minimized-dot" aria-hidden="true" />
+                            <span className="arcus-minimized-title">Ask AI</span>
+                            <span className="arcus-minimized-subject">{arcusEmailSubject || 'Conversation'}</span>
+                        </motion.button>
+                    )}
+                </AnimatePresence>
+
+                {/* Backdrop */}
+                {selectedInsight && (
+                    <div
+                        className="fixed inset-0 bg-black/80 backdrop-blur-xl z-40 transition-opacity duration-300"
+                        onClick={() => setSelectedInsight(null)}
+                    />
                 )}
-            </AnimatePresence>
 
-            {/* Backdrop */}
-            {selectedInsight && (
-                <div
-                    className="fixed inset-0 bg-black/80 backdrop-blur-xl z-40 transition-opacity duration-300"
-                    onClick={() => setSelectedInsight(null)}
-                />
-            )}
-
-            {/* Global Style for Email Content */}
-            <style dangerouslySetInnerHTML={{
-                __html: `
+                {/* Global Style for Email Content */}
+                <style dangerouslySetInnerHTML={{
+                    __html: `
                 .traditional-email-content a, 
                 .traditional-email-content [href] {
                     color: #3b82f6 !important;
@@ -3140,21 +3168,21 @@ export function GmailInterfaceFixed() {
                     100% { transform: scale(0.7); opacity: 0.8; }
                 }
             ` }} />
-            
-            {/* New Voice Profile Modal Integration */}
-            <VoiceProfileModal 
-                isOpen={isVoiceProfileModalOpen} 
-                onClose={() => setIsVoiceProfileModalOpen(false)} 
-                profile={userVoiceProfile}
-                onReAnalyze={() => {
-                    toast.promise(fetch('/api/user/voice-profile', { method: 'POST' }), {
-                        loading: 'Analyzing Gmail DNA...',
-                        success: 'Profile updated!',
-                        error: 'Failed to analyze'
-                    });
-                }}
-            />
-        </div>
+
+                {/* New Voice Profile Modal Integration */}
+                <VoiceProfileModal
+                    isOpen={isVoiceProfileModalOpen}
+                    onClose={() => setIsVoiceProfileModalOpen(false)}
+                    profile={userVoiceProfile}
+                    onReAnalyze={() => {
+                        toast.promise(fetch('/api/user/voice-profile', { method: 'POST' }), {
+                            loading: 'Analyzing Gmail DNA...',
+                            success: 'Profile updated!',
+                            error: 'Failed to analyze'
+                        });
+                    }}
+                />
+            </div>
         </LayoutGroup>
     );
 }

@@ -112,7 +112,7 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
     }, []);
 
     const resize = useCallback((e: MouseEvent) => {
-        if (isResizing) {
+        if (isResizing && window.innerWidth >= 768) {
             const sidebarWidth = isSidebarCollapsed ? 80 : 256;
             const chatMinWidth = 500;
             const paddingAndGap = 48; // 32px padding (p-4 * 2) + 16px gap (gap-4)
@@ -141,13 +141,13 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
 
     return (
         <div
-            className="h-full flex flex-col overflow-hidden relative flex-shrink-0 bg-neutral-100 dark:bg-[#161616] border-l border-white/[0.05] z-50 group/canvas selection:bg-blue-500/30"
-            style={{ width: `${width}px` }}
+            className="h-full flex flex-col overflow-hidden relative flex-shrink-0 bg-neutral-100 dark:bg-[#161616] border-l border-white/[0.05] z-50 group/canvas selection:bg-blue-500/30 w-full md:w-auto"
+            style={{ width: typeof window !== 'undefined' && window.innerWidth < 768 ? '100vw' : `${width}px` }}
         >
             {/* Resize Handle */}
             <div 
                 onMouseDown={startResizing}
-                className="absolute left-0 top-0 bottom-0 w-1.5 cursor-ew-resize hover:bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 transition-colors z-[100]"
+                className="hidden md:block absolute left-0 top-0 bottom-0 w-1.5 cursor-ew-resize hover:bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 transition-colors z-[100]"
             />
 
             {/* Premium Header - Reusing Chat Interface Design Language */}

@@ -435,6 +435,8 @@ export default function NotesPage() {
         }
     };
 
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
     return (
         <Fragment>
             <UsageLimitModal
@@ -447,14 +449,29 @@ export default function NotesPage() {
                 currentPlan={usageLimitModalData?.currentPlan || 'starter'}
             />
             <div className={cn("min-h-screen bg-[#F9F8F6] dark:bg-[#0c0c0c] transition-all duration-500", (isDeleteDialogOpen || isShareDialogOpen || isShareOptionsOpen || isImageShareOpen) && "pause-animations")}>
-                <div className="flex">
+                <div className="flex w-full">
                     {/* Mailient Sidebar - Responsive */}
-                    <div className="hidden lg:block">
-                        <HomeFeedSidebar />
+                    <div className="z-50">
+                        <HomeFeedSidebar 
+                            isOpen={isMobileMenuOpen}
+                            onClose={() => setIsMobileMenuOpen(false)}
+                        />
                     </div>
 
                     {/* Main Content Wrapper */}
-                    <div className="flex-1 lg:ml-64 min-h-screen relative overflow-hidden">
+                    <div className="flex-1 md:ml-64 min-h-screen relative overflow-hidden w-full">
+                        {/* Mobile Header */}
+                        <div className="md:hidden flex items-center justify-between px-6 py-4 bg-white dark:bg-[#111111] border-b border-neutral-200 dark:border-white/5 sticky top-0 z-40">
+                            <button 
+                                onClick={() => setIsMobileMenuOpen(true)}
+                                className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors text-neutral-600 dark:text-neutral-400"
+                            >
+                                <PanelLeft className="w-5 h-5" />
+                            </button>
+                            <span className="font-bold text-sm tracking-tight text-neutral-900 dark:text-white uppercase">Notes</span>
+                            <div className="w-9" /> {/* Spacer */}
+                        </div>
+
                         {/* Curvy Content Area */}
                         <div className="lg:mt-2.5 lg:mr-2.5 lg:mb-2.5 bg-white dark:bg-[#111111] rounded-none lg:rounded-[2.5rem] min-h-screen lg:min-h-[calc(100vh-20px)] border-none lg:border border-[#EBE9E2] dark:border-white/[0.05] shadow-none lg:shadow-[0_20px_50px_rgba(0,0,0,0.06)] dark:shadow-none overflow-y-auto custom-scrollbar">
                             <div className="flex flex-col pb-24">

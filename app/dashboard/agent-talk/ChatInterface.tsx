@@ -491,6 +491,7 @@ export default function ChatInterface({
   const [isDeepThinkingState, setIsDeepThinkingState] = useState<boolean>(false);
   const [isSearchingState, setIsSearchingState] = useState<boolean>(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
 
 
@@ -1066,7 +1067,10 @@ export default function ChatInterface({
       const hasCanvas = Boolean(data.canvasData && (data.canvasData.content || data.execution?.requiresApproval));
       if (hasCanvas) {
         setCanvasData(data.canvasData);
-        if (isCanvas) setIsCanvasOpen(true);
+        // Automatically open canvas for complex tasks or explicit canvas requests
+        if (isCanvas || data.complexity === 'complex' || data.canvasType === 'action_plan') {
+          setIsCanvasOpen(true);
+        }
       }
 
       await refreshArcusCredits(true);
@@ -2198,19 +2202,22 @@ export default function ChatInterface({
           </AnimatePresence>
 
           <HomeFeedSidebar 
-            className="z-30" 
+            className="z-50" 
             onCollapse={(collapsed) => setIsSidebarCollapsed(collapsed)}
             onOpenSettings={() => setIsSettingsOpen(true)}
             onOpenHelp={() => setIsHelpOpen(true)}
             onOpenRewards={() => setIsRewardsOpen(true)}
+            isOpen={isMobileMenuOpen}
+            onClose={() => setIsMobileMenuOpen(false)}
           />
 
           <LayoutGroup>
           {/* Main Layout Wrapper - Absolute positioned to fill screen strictly */}
           <div 
             className={cn(
-              "absolute inset-0 transition-all duration-500 ease-in-out bg-white dark:bg-black overflow-hidden flex flex-row",
-              isSidebarCollapsed ? "left-20" : "left-64"
+              "absolute inset-0 transition-all duration-500 ease-in-out bg-white dark:bg-black overflow-hidden flex flex-col md:flex-row",
+              isSidebarCollapsed ? "md:left-20" : "md:left-64",
+              "left-0"
             )} 
             style={{ height: '100vh', maxHeight: '100vh' }}
           >
@@ -2224,6 +2231,14 @@ export default function ChatInterface({
                 <div className="relative px-8 py-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
+                      {/* Mobile Menu Button */}
+                      <button 
+                        onClick={() => setIsMobileMenuOpen(true)}
+                        className="md:hidden p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors text-neutral-600 dark:text-neutral-400"
+                      >
+                        <PanelLeft className="w-5 h-5" />
+                      </button>
+                      
                       {/* Leftmost: Title and Dropdown with refined Zinc styling */}
                       {!isInitialMode && (
                         <div className="relative" ref={titleMenuRef}>
