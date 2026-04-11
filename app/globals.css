@@ -147,22 +147,6 @@ html, body, #__next, *, ::before, ::after,
 
 /* ===== LIGHT THEME (default) ===== */
 :root {
-  --background: oklch(0.985 0 0);
-  --foreground: oklch(0.1 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.1 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.1 0 0);
-  --primary: oklch(0.15 0 0);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.65 0.25 25);
-  --secondary-foreground: oklch(1 0 0);
-  --muted: oklch(0.95 0 0);
-  --muted-foreground: oklch(0.45 0 0);
-  --accent: oklch(0.65 0.25 25);
-  --accent-foreground: oklch(0.15 0 0);
-  --destructive: oklch(0.6 0.25 15);
-  --destructive-foreground: oklch(1 0 0);
   --border: oklch(0 0 0 / 0.12);
   --input: oklch(0 0 0 / 0.08);
   --ring: oklch(0 0 0 / 0.2);

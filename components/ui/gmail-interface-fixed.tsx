@@ -8,7 +8,7 @@ import { Button } from './button';
 import { SettingsCard } from './settings-card';
 import { Badge } from './badge';
 import { HomeFeedSidebar } from './home-feed-sidebar';
-import { RefreshCw, AlertCircle, TrendingUp, Clock, Target, Zap, Mail, Home, X, User, Sparkles, ArrowLeft, LayoutList, Inbox, ExternalLink, Download, FilePlus, ChevronDown, ChevronRight, Plus, Users, Building, Phone, Loader2, MessageCircle, Send, ArrowUp, CornerDownLeft, Menu, Shield } from 'lucide-react';
+import { RefreshCw, AlertCircle, TrendingUp, Clock, Target, Zap, Mail, Home, X, User, Sparkles, ArrowLeft, LayoutList, Inbox, ExternalLink, Download, FilePlus, ChevronDown, ChevronRight, Plus, Users, Building, Phone, Loader2, MessageCircle, Send, ArrowUp, CornerDownLeft, Menu, Shield, Activity } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './avatar';
 import { toast } from 'sonner';
 import { HelpCard } from './help-card';
@@ -18,6 +18,7 @@ import { UsageLimitModal } from './usage-limit-modal';
 import { UsageBadge } from './bubble-button';
 import { TokenExpiryAlert } from './token-expiry-alert';
 import { ArcusTerminalLoader } from './arcus-terminal-loader';
+import { VoiceProfileModal } from './voice-profile-modal';
 import { triggerSuccessConfetti } from '@/lib/confetti';
 import { useDashboardSettings } from '@/lib/DashboardSettingsContext';
 
@@ -275,6 +276,9 @@ export function GmailInterfaceFixed() {
     const [isLoadingNudges, setIsLoadingNudges] = useState(false);
     const [hasAttemptedNudges, setHasAttemptedNudges] = useState(false);
 
+    const [isVoiceProfileModalOpen, setIsVoiceProfileModalOpen] = useState(false);
+    const [userVoiceProfile, setUserVoiceProfile] = useState<any>(null);
+
     const arcusDragControls = useDragControls();
     const arcusPanelAnimControls = useAnimation();
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -286,6 +290,113 @@ export function GmailInterfaceFixed() {
     // --- All Callbacks (useCallback) ---
 
 
+
+
+    const fetchSiftInsights = useCallback(async (isLoadMore: boolean = false) => {
+        let timerInterval: any;
+        try {
+            setLoading(true);
+            setError(null);
+
+            setCountdown(30);
+            timerInterval = setInterval(() => {
+                setCountdown(prev => (prev !== null ? prev - 1 : null));
+            }, 1000);
+
+            const url = isLoadMore && nextPageToken
+                ? `/api/home-feed/insights?pageToken=${encodeURIComponent(nextPageToken)}`
+                : '/api/home-feed/insights';
+
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' },
+            });
+
+            if (response.status === 401) {
+                setIsTokenExpired(true);
+                setLoading(false);
+                setCountdown(null);
+                if (timerInterval) clearInterval(timerInterval);
+                return;
+            }
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                if (errorData.error === 'Gmail not connected') {
+                    setIsGmailConnected(false);
+                    setLoading(false);
+                    setCountdown(null);
+                    if (timerInterval) clearInterval(timerInterval);
+                    return;
+                }
+                throw new Error(errorData.error || `Failed to fetch insights: ${response.statusText}`);
+            }
+
+            const data: SiftInsightsResponse = await response.json();
+
+            if (data.success) {
+                const unsubscribedResponse = await fetch('/api/email/unsubscribe/list', {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' },
+                });
+
+                const unsubscribedData = await unsubscribedResponse.json();
+                const unsubscribedEmailIds = unsubscribedData.success ? unsubscribedData.emails.map((e: any) => e.email_id) : [];
+
+                const enrichedInsights = (data.insights || []).map(insight => {
+                    let sourceEmails: any[] = insight.source_emails || [];
+                    if (sourceEmails.length === 0 && insight.metadata) {
+                        const meta = insight.metadata;
+                        sourceEmails = meta.opportunityDetails || meta.urgentItems || meta.hotLeads || meta.atRiskConversations || meta.missedFollowUps || meta.unreadImportantEmails || [];
+                    }
+                    const filteredEmails = sourceEmails.filter(email => !unsubscribedEmailIds.includes(email.id));
+                    let processedEmails = filteredEmails.map(email => ({ ...email, key: `${email.id}-${insight.type}` }));
+                    return { ...insight, source_emails: processedEmails };
+                });
+
+                if (isLoadMore) {
+                    setInsights(prev => [...prev, ...enrichedInsights]);
+                } else {
+                    setInsights(enrichedInsights);
+                }
+
+                setSummary(data.sift_intelligence_summary);
+                setLastUpdated(data.timestamp);
+                setNextPageToken(data.nextPageToken || null);
+                if (!isLoadMore) setHasInitialLoad(true);
+
+                if (!isLoadMore && data.insights && data.insights.length > 0) {
+                    playSystemSound('success');
+                    showNotification('Arcus Sift AI', {
+                        body: `Discovered ${data.insights.length} new structural insights.`,
+                        icon: '/favicon.ico'
+                    });
+                }
+            } else {
+                throw new Error(data.error || 'Failed to fetch insights');
+            }
+        } catch (error: any) {
+            console.error('Error fetching insights:', error);
+            setError(error.message);
+            toast.error(error.message);
+        } finally {
+            setLoading(false);
+            setCountdown(null);
+            if (timerInterval) clearInterval(timerInterval);
+        }
+    }, [nextPageToken, setInsights, setSummary, setLastUpdated, setNextPageToken, setHasInitialLoad, playSystemSound, showNotification, setIsTokenExpired, setIsGmailConnected]);
+
+    const fetchVoiceProfile = useCallback(async () => {
+        try {
+            const response = await fetch('/api/user/voice-profile');
+            const data = await response.json();
+            if (data.profile) {
+                setUserVoiceProfile(data.profile);
+            }
+        } catch (error) {
+            console.error('Error fetching voice profile:', error);
+        }
+    }, []);
 
 
     const fetchUsage = useCallback(async (force: boolean = false) => {
@@ -361,6 +472,16 @@ export function GmailInterfaceFixed() {
             setHasAttemptedNudges(true);
         }
     }, [settings.smartNudges, isLoadingNudges]);
+
+    useEffect(() => {
+        if (!hasInitialLoad && session?.user?.email) {
+            fetchSiftInsights(true);
+            fetchUsage(true);
+            fetchNudges();
+            fetchVoiceProfile();
+            setHasInitialLoad(true);
+        }
+    }, [session, hasInitialLoad, fetchSiftInsights, fetchUsage, fetchNudges, fetchVoiceProfile]);
 
     // Fetch nudges on mount or when setting changes
     useEffect(() => {
@@ -1299,201 +1420,10 @@ export function GmailInterfaceFixed() {
         }
     };
 
-    // ... (keep fetchSiftInsights and others)
-
-
-    const fetchSiftInsights = async (isLoadMore: boolean = false) => {
-        let timerInterval: any;
-        try {
-            setLoading(true);
-            setError(null);
-
-            // Timer logic: Start at 30 and count down
-            setCountdown(30);
-            timerInterval = setInterval(() => {
-                setCountdown(prev => (prev !== null ? prev - 1 : null));
-            }, 1000);
-
-            console.log(isLoadMore ? '🤖 Loading more Sift AI insights...' : '🤖 Fetching Sift AI insights...');
-
-            const url = isLoadMore && nextPageToken
-                ? `/api/home-feed/insights?pageToken=${encodeURIComponent(nextPageToken)}`
-                : '/api/home-feed/insights';
-
-            const response = await fetch(url, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            if (response.status === 401) {
-                setIsTokenExpired(true);
-                setLoading(false);
-                setCountdown(null);
-                if (timerInterval) clearInterval(timerInterval);
-                return;
-            }
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                if (errorData.error === 'Gmail not connected') {
-                    setIsGmailConnected(false);
-                    setLoading(false);
-                    setCountdown(null);
-                    if (timerInterval) clearInterval(timerInterval);
-                    return;
-                }
-                throw new Error(errorData.error || `Failed to fetch insights: ${response.statusText}`);
-            }
-
-            const data: SiftInsightsResponse = await response.json();
-
-            if (data.success) {
-                // Fetch unsubscribed emails from the database
-                const unsubscribedResponse = await fetch('/api/email/unsubscribe/list', {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                });
-
-                const unsubscribedData = await unsubscribedResponse.json();
-                const unsubscribedEmailIds = unsubscribedData.success ? unsubscribedData.emails.map((e: any) => e.email_id) : [];
-
-                const enrichedInsights = (data.insights || []).map(insight => {
-                    // Prefer source_emails directly from API, fallback to metadata categories
-                    let sourceEmails: any[] = insight.source_emails || [];
-
-                    // If no source_emails, try metadata categories
-                    if (sourceEmails.length === 0 && insight.metadata) {
-                        const meta = insight.metadata;
-                        sourceEmails = meta.opportunityDetails ||
-                            meta.urgentItems ||
-                            meta.hotLeads ||
-                            meta.atRiskConversations ||
-                            meta.missedFollowUps ||
-                            meta.unreadImportantEmails || [];
-                    }
-
-                    // Filter out unsubscribed emails
-                    const filteredEmails = sourceEmails.filter(email => !unsubscribedEmailIds.includes(email.id));
-
-                    // Smart Grouping: Group source emails by subject if enabled
-                    let processedEmails = filteredEmails.map(email => ({
-                        id: email.id,
-                        subject: email.subject || 'No Subject',
-                        snippet: email.snippet || '',
-                        sender: email.sender || { name: 'Unknown', email: '' },
-                        receivedAt: email.receivedAt || new Date().toISOString()
-                    }));
-
-                    if (settings.smartGrouping) {
-                        const groups = new Map<string, typeof processedEmails[0]>();
-                        processedEmails.forEach(email => {
-                            // Normalize subject for grouping (remove "Re:", "Fwd:", etc.)
-                            const baseSubject = email.subject.replace(/^(Re|Fwd|Reply):/i, '').trim();
-                            if (!groups.has(baseSubject)) {
-                                groups.set(baseSubject, email);
-                            } else {
-                                // Keep the most recent one? Or combine?
-                                // Let's keep the existing one in the map (usually the first one encountered)
-                            }
-                        });
-                        processedEmails = Array.from(groups.values());
-                    }
-
-                    return {
-                        ...insight,
-                        source_emails: processedEmails
-                    };
-                }).filter(insight => insight.source_emails.length > 0); // Only keep insights with emails
-
-                if (isLoadMore) {
-                    // Merging logic: Combine new insights with existing ones by category type
-                    setInsights(prevInsights => {
-                        const merged = [...prevInsights];
-                        enrichedInsights.forEach(newInsight => {
-                            const existingIndex = merged.findIndex(i => i.type === newInsight.type);
-                            if (existingIndex !== -1) {
-                                // Merge source emails and update content
-                                const existingEmails = merged[existingIndex].source_emails || [];
-                                const newEmails = newInsight.source_emails || [];
-
-                                // Avoid duplicates
-                                const existingIds = new Set(existingEmails.map(e => e.id));
-                                const uniqueNewEmails = newEmails.filter(e => !existingIds.has(e.id));
-
-                                merged[existingIndex] = {
-                                    ...merged[existingIndex],
-                                    source_emails: [...existingEmails, ...uniqueNewEmails],
-                                    content: `${existingEmails.length + uniqueNewEmails.length} items identified`
-                                };
-                            } else {
-                                merged.push(newInsight);
-                            }
-                        });
-                        return merged;
-                    });
-
-                    // Merge summaries
-                    if (data.sift_intelligence_summary) {
-                        setSummary(prevSummary => {
-                            if (!prevSummary) return data.sift_intelligence_summary;
-                            const newSummary = { ...prevSummary };
-                            Object.keys(data.sift_intelligence_summary as object).forEach(key => {
-                                (newSummary as any)[key] = ((prevSummary as any)[key] || 0) + ((data.sift_intelligence_summary as any)[key] || 0);
-                            });
-                            return newSummary;
-                        });
-                    }
-                } else {
-                    setInsights(enrichedInsights);
-                    setSummary(data.sift_intelligence_summary);
-                }
-
-                setNextPageToken(data.nextPageToken || null);
-                setLastUpdated(new Date().toLocaleString());
-                setHasInitialLoad(true);
-                console.log('✅ Sift AI insights processed successfully');
-
-                // Trigger notification and sound
-                if (enrichedInsights.length > 0) {
-                    showNotification('In-box Intelligence Updated', {
-                        body: `Sift AI identified ${enrichedInsights.length} key insights in your inbox.`,
-                        icon: '/favicon.ico'
-                    });
-                    if (settings.soundEffects) playSystemSound('notification');
-                }
-            } else {
-                throw new Error(data.error || 'Unknown error occurred');
-            }
-        } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Failed to load insights';
-            setError(errorMessage);
-            console.error('❌ Error fetching Sift AI insights:', errorMessage);
-        } finally {
-            setLoading(false);
-            setCountdown(null);
-            if (timerInterval) clearInterval(timerInterval);
-        }
-    };
-
-
-    useEffect(() => {
-        console.log('🔐 Session status:', session?.user?.email ? 'Authenticated' : 'Not authenticated');
-        if (session?.user?.email && !hasInitialLoad && !loading) {
-            fetchSiftInsights();
-        }
-    }, [session, hasInitialLoad, loading]);
-
-    const refreshInsights = () => {
-        fetchSiftInsights();
-    };
+    const refreshInsights = () => fetchSiftInsights();
 
     const getCardType = (insight: SiftInsight) => {
         const category = insight.metadata?.category || "";
-
         if (category === 'opportunity') return 'opportunity' as const;
         if (category === 'urgent') return 'urgent-action' as const;
         if (category === 'lead') return 'hot-leads' as const;
@@ -1501,7 +1431,6 @@ export function GmailInterfaceFixed() {
         if (category === 'follow_up') return 'missed-followups' as const;
         if (category === 'important') return 'unread-important' as const;
 
-        // Fallback to title keywords if category is missing
         const title = (insight.title || "").toLowerCase();
         if (title.includes('urgent') || title.includes('action')) return 'urgent-action' as const;
         if (title.includes('lead') || title.includes('hot')) return 'hot-leads' as const;
@@ -1510,7 +1439,6 @@ export function GmailInterfaceFixed() {
         if (title.includes('important')) return 'unread-important' as const;
         if (title.includes('opportunity')) return 'opportunity' as const;
 
-        // Final fallback to section
         switch (insight.section) {
             case 'opportunities': return 'opportunity' as const;
             case 'ai-highlights': return 'arcus-suggestion' as const;
@@ -1597,7 +1525,7 @@ export function GmailInterfaceFixed() {
                     marginLeft: typeof window !== 'undefined' && window.innerWidth < 768 ? 0 : 256,
                     width: typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : 'calc(100% - 256px)'
                 }}
-                className="flex-1 min-h-screen relative overflow-hidden bg-[#F9F8F6] dark:bg-[#0c0c0c]"
+                className="flex-1 min-h-screen relative overflow-hidden bg-transparent"
             >
                 <TokenExpiryAlert isVisible={isTokenExpired} />
                 
@@ -1714,9 +1642,9 @@ export function GmailInterfaceFixed() {
 
                     {/* Stats Grid */}
                     {summary && (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-px bg-neutral-800/50 rounded-xl overflow-hidden mb-12 md:mb-16">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-12 md:mb-16">
                             {/* Opportunities */}
-                            <div className="bg-white dark:bg-[#0a0a0a] p-6 hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors">
+                            <div className="glass-morphism rounded-2xl p-6 transition-all hover:scale-[1.02] active:scale-[0.98]">
                                 <div className="flex items-center gap-3 mb-4">
                                     <Target className="h-4 w-4 text-neutral-600 dark:text-neutral-500" strokeWidth={1.5} />
                                 </div>
@@ -1725,7 +1653,7 @@ export function GmailInterfaceFixed() {
                             </div>
 
                             {/* Urgent */}
-                            <div className="bg-white dark:bg-[#0a0a0a] p-6 hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors">
+                            <div className="glass-morphism rounded-2xl p-6 transition-all hover:scale-[1.02] active:scale-[0.98] liquid-border">
                                 <div className="flex items-center gap-3 mb-4">
                                     <Zap className="h-4 w-4 text-neutral-600 dark:text-neutral-500" strokeWidth={1.5} />
                                 </div>
@@ -1734,7 +1662,7 @@ export function GmailInterfaceFixed() {
                             </div>
 
                             {/* Hot Leads */}
-                            <div className="bg-white dark:bg-[#0a0a0a] p-6 hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors">
+                            <div className="glass-morphism rounded-2xl p-6 transition-all hover:scale-[1.02] active:scale-[0.98] liquid-border">
                                 <div className="flex items-center gap-3 mb-4">
                                     <TrendingUp className="h-4 w-4 text-neutral-600 dark:text-neutral-500" strokeWidth={1.5} />
                                 </div>
@@ -1743,7 +1671,7 @@ export function GmailInterfaceFixed() {
                             </div>
 
                             {/* At Risk */}
-                            <div className="bg-white dark:bg-[#0a0a0a] p-6 hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors">
+                            <div className="glass-morphism rounded-2xl p-6 transition-all hover:scale-[1.02] active:scale-[0.98] liquid-border">
                                 <div className="flex items-center gap-3 mb-4">
                                     <AlertCircle className="h-4 w-4 text-neutral-600 dark:text-neutral-500" strokeWidth={1.5} />
                                 </div>
@@ -1752,7 +1680,7 @@ export function GmailInterfaceFixed() {
                             </div>
 
                             {/* Follow-ups */}
-                            <div className="bg-white dark:bg-[#0a0a0a] p-6 hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors">
+                            <div className="glass-morphism rounded-2xl p-6 transition-all hover:scale-[1.02] active:scale-[0.98] liquid-border">
                                 <div className="flex items-center gap-3 mb-4">
                                     <Clock className="h-4 w-4 text-neutral-600 dark:text-neutral-500" strokeWidth={1.5} />
                                 </div>
@@ -1761,7 +1689,7 @@ export function GmailInterfaceFixed() {
                             </div>
 
                             {/* Important */}
-                            <div className="bg-white dark:bg-[#0a0a0a] p-6 hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors">
+                            <div className="glass-morphism rounded-2xl p-6 transition-all hover:scale-[1.02] active:scale-[0.98] liquid-border">
                                 <div className="flex items-center gap-3 mb-4">
                                     <Mail className="h-4 w-4 text-neutral-600 dark:text-neutral-500" strokeWidth={1.5} />
                                 </div>
@@ -2608,6 +2536,18 @@ export function GmailInterfaceFixed() {
                         </button>
                     </div>
 
+                    {/* Voice Profile Quick Access */}
+                    <div className="mb-6">
+                        <button
+                            onClick={() => setIsVoiceProfileModalOpen(true)}
+                            className="flex items-center gap-3 px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl transition-all group"
+                        >
+                            <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
+                            <span className="text-xs font-medium text-white/50 group-hover:text-white/80">Mimic My Style Active</span>
+                            <Activity className="w-3.5 h-3.5 text-white/20 group-hover:text-white/40 ml-2" />
+                        </button>
+                    </div>
+
                     <div ref={draftContainerRef} className="flex-1 bg-neutral-900/30 rounded-[2rem] border border-neutral-200 dark:border-neutral-800/50 p-8 overflow-hidden flex flex-col shadow-inner relative" onMouseUp={handleSiftMouseUp}>
                         {isDrafting ? (
                             <div className="flex-1 flex flex-col items-center justify-center">
@@ -3201,6 +3141,20 @@ export function GmailInterfaceFixed() {
                     100% { transform: scale(0.7); opacity: 0.8; }
                 }
             ` }} />
+            
+            {/* New Voice Profile Modal Integration */}
+            <VoiceProfileModal 
+                isOpen={isVoiceProfileModalOpen} 
+                onClose={() => setIsVoiceProfileModalOpen(false)} 
+                profile={userVoiceProfile}
+                onReAnalyze={() => {
+                    toast.promise(fetch('/api/user/voice-profile', { method: 'POST' }), {
+                        loading: 'Analyzing Gmail DNA...',
+                        success: 'Profile updated!',
+                        error: 'Failed to analyze'
+                    });
+                }}
+            />
         </div>
         </LayoutGroup>
     );
