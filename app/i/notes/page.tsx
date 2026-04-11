@@ -9,7 +9,7 @@ import { HomeFeedSidebar } from '@/components/ui/home-feed-sidebar';
 import {
     Sparkles, Plus, Search, X, Edit, Trash, Save, Folder, Tag, Clock,
     MoreVertical, FileText, Pen, NotebookPen, AlertTriangle, Share2,
-    Image, Copy, Mic, RotateCw, LayoutGrid, List, Send, Loader2
+    Image, Copy, Mic, RotateCw, LayoutGrid, List, Send, Loader2, PanelLeft
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
