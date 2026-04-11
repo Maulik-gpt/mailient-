@@ -1483,9 +1483,14 @@ export function GmailInterfaceFixed() {
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
-    function setIsArcusOpen(arg0: boolean): void {
-        throw new Error('Function not implemented.');
-    }
+    const [isClient, setIsClient] = useState(false);
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
+    const setIsArcusOpen = (open: boolean) => {
+        if (open) router.push('/dashboard/agent-talk');
+    };
 
     return (
         <LayoutGroup>

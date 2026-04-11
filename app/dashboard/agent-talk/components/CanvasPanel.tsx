@@ -137,12 +137,17 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
         };
     }, [resize, stopResizing]);
 
+    const [isClient, setIsClient] = useState(false);
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
     if (!isOpen || !canvasData) return null;
 
     return (
         <div
             className="h-full flex flex-col overflow-hidden relative flex-shrink-0 bg-neutral-100 dark:bg-[#161616] border-l border-white/[0.05] z-50 group/canvas selection:bg-blue-500/30 w-full md:w-auto"
-            style={{ width: typeof window !== 'undefined' && window.innerWidth < 768 ? '100vw' : `${width}px` }}
+            style={{ width: isClient && window.innerWidth < 768 ? '100vw' : `${width}px` }}
         >
             {/* Resize Handle */}
             <div 
