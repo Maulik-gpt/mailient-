@@ -13,8 +13,8 @@ export class SchedulingAIService {
         this.apiKey = (process.env.OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY2 || process.env.OPENROUTER_API_KEY3 || '').trim();
         // Fallback chain of free/cheap models to handle rate limits
         this.models = [
-            'stepfun/step-3.5-flash:free',
-            'meta-llama/llama-3.1-8b-instruct:free',
+            'nvidia/nemotron-3-super-120b-a12b:free',
+            'meta-llama/llama-3.3-70b-instruct:free',
             'qwen/qwen3-coder:free'
         ];
         this.baseURL = 'https://openrouter.ai/api/v1';

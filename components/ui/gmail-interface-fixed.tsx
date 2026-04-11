@@ -1515,16 +1515,15 @@ export function GmailInterfaceFixed() {
             {/* Main Content Wrapper */}
             <motion.div 
                 animate={{ 
-                    x: typeof window !== 'undefined' && window.innerWidth < 768 
+                    marginLeft: typeof window !== 'undefined' && window.innerWidth < 768 
                         ? 0 
-                        : (sidebarCollapsed ? -176 : 0) // Shift based on the delta from expanded to collapsed (256-80=176)
+                        : (sidebarCollapsed ? 80 : 256),
+                    width: typeof window !== 'undefined' && window.innerWidth < 768 
+                        ? '100%' 
+                        : `calc(100% - ${sidebarCollapsed ? 80 : 256}px)`
                 }}
                 initial={false}
                 transition={{ type: "spring", stiffness: 260, damping: 32, mass: 0.8 }}
-                style={{ 
-                    marginLeft: typeof window !== 'undefined' && window.innerWidth < 768 ? 0 : 256,
-                    width: typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : 'calc(100% - 256px)'
-                }}
                 className="flex-1 min-h-screen relative overflow-hidden bg-transparent"
             >
                 <TokenExpiryAlert isVisible={isTokenExpired} />
