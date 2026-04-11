@@ -31,6 +31,19 @@ export async function POST(request) {
     }
     const result = await gmailService.sendEmail({ to, subject, body, isHtml });
 
+    // INCREMENTAL VOICE PROFILING: Learn from this new sent email
+    if (session?.user?.email && result && !result.error) {
+      try {
+        const { voiceProfileService } = await import('@/lib/voice-profile-service');
+        // Clean body if HTML
+        const cleanBody = isHtml ? body.replace(/<[^>]*>?/gm, '').trim() : body;
+        // Don't await - let it run in background to keep send fast
+        voiceProfileService.addToProfile(session.user.email, cleanBody);
+      } catch (profileError) {
+        console.warn('⚠️ Failed to incrementally update voice profile:', profileError.message);
+      }
+    }
+
     return Response.json(result);
   } catch (error) {
     console.error('Error sending email:', error);

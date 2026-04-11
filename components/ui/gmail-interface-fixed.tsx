@@ -1947,9 +1947,8 @@ export function GmailInterfaceFixed() {
                                 </div>
                                 <div className="max-h-[700px] overflow-y-auto custom-scrollbar">
                                     {isLoadingContacts && contacts.length === 0 ? (
-                                        <div className="py-32 text-center">
-                                            <Loader2 className="w-8 h-8 mx-auto text-neutral-700 animate-spin mb-4" />
-                                            <p className="text-neutral-600 dark:text-neutral-500 font-light text-lg">Loading contacts...</p>
+                                        <div className="py-12 md:py-20 animate-in fade-in duration-700">
+                                            <ArcusTerminalLoader />
                                         </div>
                                     ) : contacts.length > 0 ? (
                                         contacts.map((contact) => (
@@ -2126,9 +2125,8 @@ export function GmailInterfaceFixed() {
                                 </div>
 
                                 {isLoadingTraditional ? (
-                                    <div className="py-32 text-center">
-                                        <RefreshCw className="w-8 h-8 mx-auto text-neutral-700 animate-spin mb-4" />
-                                        <p className="text-neutral-600 dark:text-neutral-500 font-light text-lg">Loading your inbox...</p>
+                                    <div className="py-12 md:py-20 animate-in fade-in duration-700">
+                                        <ArcusTerminalLoader />
                                     </div>
                                 ) : traditionalEmails.length > 0 ? (
                                     <div className="space-y-px bg-neutral-900/20 border border-neutral-200 dark:border-neutral-800/50 rounded-2xl overflow-hidden shadow-2xl">
