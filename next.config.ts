@@ -69,7 +69,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.posthog.com https://*.google.com https://*.googleapis.com https://*.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: https://*.googleusercontent.com https://*.githubusercontent.com https://*.posthog.com https://*.cloudinary.com; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://*.supabase.co https://*.openai.com https://*.openrouter.ai https://*.posthog.com https://*.stripe.com; frame-src 'self' https://*.stripe.com https://*.google.com;"
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.posthog.com https://*.google.com https://*.googleapis.com https://*.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://api.fontshare.com; img-src 'self' data: https: https://*.googleusercontent.com https://*.githubusercontent.com https://*.posthog.com https://*.cloudinary.com; font-src 'self' https://fonts.gstatic.com data: https://api.fontshare.com https://cdn.fontshare.com; connect-src 'self' https://*.supabase.co https://*.openai.com https://*.openrouter.ai https://*.posthog.com https://*.stripe.com; frame-src 'self' https://*.stripe.com https://*.google.com;"
           }
         ],
       },

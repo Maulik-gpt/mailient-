@@ -8,18 +8,18 @@ import { Button } from './button';
 export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze }) => {
   if (!isOpen) return null;
 
-  // Derive display values from profile or use fallback mock data if real analysis is pending
+  // Derive display values from profile using simple actual fallbacks to prevent mock display
   const stats = profile?.stats || {
-    lowercasePercent: 88,
-    noGreetingPercent: 73,
-    noSignOffPercent: 61,
-    noPeriodsPercent: 55
+    lowercasePercent: 0,
+    noGreetingPercent: 0,
+    noSignOffPercent: 0,
+    noPeriodsPercent: 0
   };
 
   const writingStyle = [
-    { label: 'sentence length', value: profile?.avgSentenceLength || 6, sub: 'words avg', icon: Clock },
-    { label: 'reply size', value: profile?.replyLength || 'short', sub: '<80 words', icon: MessageSquare },
-    { label: 'emoji use', value: profile?.emojis?.frequency > 0.1 ? 'frequent' : 'rare', sub: '1 per 8 emails', icon: Smile }
+    { label: 'sentence length', value: profile?.avgSentenceLength || 0, sub: 'words avg', icon: Clock },
+    { label: 'reply size', value: profile?.replyLength || 'standard', sub: 'length', icon: MessageSquare },
+    { label: 'emoji use', value: profile?.emojis?.frequency > 0.1 ? 'frequent' : 'infrequent', sub: 'frequency', icon: Smile }
   ];
 
   const signals = [
@@ -29,16 +29,10 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze }) => 
     { label: 'no periods', value: stats.noPeriodsPercent }
   ];
 
-  const phrases = profile?.fillers?.length > 0 ? profile.fillers.map((f, i) => ({
+  const phrases = profile?.fillers?.length > 0 ? profile.fillers.map((f: string, i: number) => ({
     text: `"${f}"`,
-    count: Math.max(5, 20 - (i * 4))
-  })) : [
-    { text: '"lmk"', count: 19 },
-    { text: '"sounds good"', count: 14 },
-    { text: '"yeah"', count: 11 },
-    { text: '"will do"', count: 8 },
-    { text: '"tbh"', count: 5 }
-  ];
+    count: Math.max(2, 10 - (i * 2))
+  })) : [];
 
   const toneTags = profile?.vibe?.formal ? ['formal', 'warm', 'direct'] : ['casual', 'direct', 'low punctuation', 'warm'];
 
