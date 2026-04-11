@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 
-const STEPFUN_MODEL = 'nvidia/nemotron-3-super-120b-a12b:free';
+const STEPFUN_MODEL = 'nvidia/nemotron-3-nano-30b-a3b:free';
 const OPENROUTER_BASE = 'https://openrouter.ai/api/v1';
 
 /**

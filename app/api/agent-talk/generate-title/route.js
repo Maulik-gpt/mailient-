@@ -58,7 +58,7 @@ export async function POST(request) {
         }
 
         // Use Liquid Thinking for title generation as requested
-        const model = 'nvidia/nemotron-3-super-120b-a12b:free';
+        const model = 'nvidia/nemotron-nano-9b-v2:free';
 
         const systemPrompt = `You are a chat title generator that creates SHORT, DESCRIPTIVE titles for conversations.
 
