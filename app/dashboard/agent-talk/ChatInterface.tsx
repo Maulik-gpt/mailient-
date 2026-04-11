@@ -2205,6 +2205,7 @@ export default function ChatInterface({
             onOpenRewards={() => setIsRewardsOpen(true)}
           />
 
+          <LayoutGroup>
           {/* Main Layout Wrapper - Absolute positioned to fill screen strictly */}
           <div 
             className={cn(
@@ -2381,7 +2382,6 @@ export default function ChatInterface({
             </div>
 
             {/* Chat Body - Absolute Layout Rebuild to avoid displacement */}
-            <LayoutGroup>
             <div
               className="flex-1 relative z-20 min-h-0 min-w-0"
               style={{ flex: '1 1 0%', minHeight: 0, overflow: 'hidden' }}
@@ -2817,7 +2817,7 @@ export default function ChatInterface({
                   </motion.div>
                 )}
               </AnimatePresence>
-          </div>
+            </div>
           </LayoutGroup>
         </div>
         <NoScrollbarStyles />
