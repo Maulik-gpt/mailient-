@@ -16,6 +16,8 @@ import { RewardsCard } from './rewards-card';
 import { SchedulingModal } from './scheduling-modal';
 import { UsageLimitModal } from './usage-limit-modal';
 import { UsageBadge } from './bubble-button';
+import { TokenExpiryAlert } from './token-expiry-alert';
+import { ArcusTerminalLoader } from './arcus-terminal-loader';
 import { triggerSuccessConfetti } from '@/lib/confetti';
 import { useDashboardSettings } from '@/lib/DashboardSettingsContext';
 
@@ -209,6 +211,8 @@ export function GmailInterfaceFixed() {
         currentPlan: 'free' | 'starter' | 'pro' | 'none';
     } | null>(null);
 
+    const [isTokenExpired, setIsTokenExpired] = useState(false);
+
     // AI Refinement State for Sift
     const [selection, setSelection] = useState<{ text: string; rect: DOMRect; start: number; end: number } | null>(null);
     const [isRefinementActive, setIsRefinementActive] = useState(false);
@@ -298,6 +302,10 @@ export function GmailInterfaceFixed() {
         fetchTimeoutRef.current = setTimeout(async () => {
             try {
                 const res = await fetch('/api/subscription/usage');
+                if (res.status === 401) {
+                    setIsTokenExpired(true);
+                    return;
+                }
                 if (res.ok) {
                     const data = await res.json();
                     setUsageData({
@@ -329,6 +337,11 @@ export function GmailInterfaceFixed() {
             const res = await fetch('/api/nudges', { signal: controller.signal });
             clearTimeout(timeoutId);
             
+            if (res.status === 401) {
+                setIsTokenExpired(true);
+                return;
+            }
+
             if (res.ok) {
                 const data = await res.json();
                 console.log(`✅ Nudges loaded: ${data.nudges?.length || 0} items`);
@@ -592,6 +605,11 @@ export function GmailInterfaceFixed() {
         setHasLoadedMore(false);
         try {
             const response = await fetch('/api/gmail/messages?maxResults=50');
+            if (response.status === 401) {
+                setIsTokenExpired(true);
+                setIsLoadingTraditional(false);
+                return;
+            }
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
                 throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
@@ -1309,6 +1327,14 @@ export function GmailInterfaceFixed() {
                 },
             });
 
+            if (response.status === 401) {
+                setIsTokenExpired(true);
+                setLoading(false);
+                setCountdown(null);
+                if (timerInterval) clearInterval(timerInterval);
+                return;
+            }
+
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
                 if (errorData.error === 'Gmail not connected') {
@@ -1573,6 +1599,8 @@ export function GmailInterfaceFixed() {
                 }}
                 className="flex-1 min-h-screen relative overflow-hidden bg-[#F9F8F6] dark:bg-[#0c0c0c]"
             >
+                <TokenExpiryAlert isVisible={isTokenExpired} />
+                
                 {/* Security & Credits Section */}
                 <div className="absolute top-6 right-10 z-50 flex items-center gap-4">
                     {/* Security Shield Indicator */}
@@ -2205,6 +2233,42 @@ export function GmailInterfaceFixed() {
                                     </div>
                                 )}
                             </div>
+                        ) : !isGmailConnected ? (
+                            <div className="text-center py-20 px-6 max-w-lg mx-auto bg-white/50 dark:bg-white/[0.02] border border-neutral-200 dark:border-white/5 rounded-[3rem] backdrop-blur-3xl shadow-2xl relative overflow-hidden group">
+                                <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-transparent opacity-50 pointer-events-none" />
+                                
+                                <div className="relative z-10">
+                                    <div className="w-24 h-24 mx-auto mb-10 rounded-full border border-blue-500/20 bg-blue-500/5 flex items-center justify-center relative shadow-[0_0_40px_rgba(59,130,246,0.1)] group-hover:scale-110 transition-transform duration-700">
+                                        <div className="absolute inset-0 bg-blue-400/10 blur-2xl rounded-full" />
+                                        <Mail className="h-10 w-10 text-blue-500 relative z-10" strokeWidth={1.5} />
+                                    </div>
+                                    
+                                    <h3 className="text-3xl font-medium text-black dark:text-white mb-4 tracking-tight">Connect your Workspace</h3>
+                                    <p className="text-neutral-600 dark:text-neutral-400 mb-12 font-light leading-relaxed">
+                                        Mailient needs access to your Gmail to detect opportunities, summarize threads, and help you handle your inbox like a pro.
+                                    </p>
+                                    
+                                    <div className="flex flex-col gap-5 items-center">
+                                        <Button
+                                            onClick={() => signIn("google", { callbackUrl: window.location.href, redirect: true })}
+                                            className="h-14 px-12 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl transition-all font-bold shadow-[0_15px_30px_rgba(37,99,235,0.3)] hover:scale-[1.03] active:scale-[0.98] border-none group flex items-center gap-3 overflow-hidden relative"
+                                        >
+                                            <div className="absolute inset-x-0 bottom-0 h-1 bg-white/20 -translate-x-full group-hover:translate-x-0 transition-transform duration-700" />
+                                            <Mail className="w-5 h-5" />
+                                            <span>Connect Google Workspace</span>
+                                        </Button>
+                                        
+                                        <div className="flex items-center gap-2.5 text-[10px] uppercase tracking-widest text-neutral-500 dark:text-neutral-600 font-black">
+                                            <Shield className="w-3.5 h-3.5" />
+                                            <span>Cloud Shield Active • AES-256 Encrypted</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : loading && insights.length === 0 ? (
+                            <div className="py-12 md:py-20 animate-in fade-in duration-1000">
+                                <ArcusTerminalLoader />
+                            </div>
                         ) : hasInitialLoad ? (
                             insights.length > 0 ? (
                                 <div>
@@ -2215,7 +2279,7 @@ export function GmailInterfaceFixed() {
                                         <div className="flex items-center gap-3">
                                             <span className="text-xs text-neutral-600">{insights.length} insights</span>
                                             <span className="text-neutral-800">·</span>
-                                            <span className="text-xs text-neutral-600">{totalItems} items</span>
+                                            <span className="text-xs text-neutral-600">{(summary as any)?.opportunities_detected || 0} items</span>
                                         </div>
                                     </div>
 
@@ -2269,38 +2333,6 @@ export function GmailInterfaceFixed() {
                                     </Button>
                                 </div>
                             )
-                        ) : !isGmailConnected ? (
-                            <div className="text-center py-20 px-6 max-w-lg mx-auto bg-white/50 dark:bg-white/[0.02] border border-neutral-200 dark:border-white/5 rounded-[3rem] backdrop-blur-3xl shadow-2xl relative overflow-hidden group">
-                                <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-transparent opacity-50 pointer-events-none" />
-                                
-                                <div className="relative z-10">
-                                    <div className="w-24 h-24 mx-auto mb-10 rounded-full border border-blue-500/20 bg-blue-500/5 flex items-center justify-center relative shadow-[0_0_40px_rgba(59,130,246,0.1)] group-hover:scale-110 transition-transform duration-700">
-                                        <div className="absolute inset-0 bg-blue-400/10 blur-2xl rounded-full" />
-                                        <Mail className="h-10 w-10 text-blue-500 relative z-10" strokeWidth={1.5} />
-                                    </div>
-                                    
-                                    <h3 className="text-3xl font-medium text-black dark:text-white mb-4 tracking-tight">Connect your Workspace</h3>
-                                    <p className="text-neutral-600 dark:text-neutral-400 mb-12 font-light leading-relaxed">
-                                        Mailient needs access to your Gmail to detect opportunities, summarize threads, and help you handle your inbox like a pro.
-                                    </p>
-                                    
-                                    <div className="flex flex-col gap-5 items-center">
-                                        <Button
-                                            onClick={() => signIn("google", { callbackUrl: window.location.href, redirect: true })}
-                                            className="h-14 px-12 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl transition-all font-bold shadow-[0_15px_30px_rgba(37,99,235,0.3)] hover:scale-[1.03] active:scale-[0.98] border-none group flex items-center gap-3 overflow-hidden relative"
-                                        >
-                                            <div className="absolute inset-x-0 bottom-0 h-1 bg-white/20 -translate-x-full group-hover:translate-x-0 transition-transform duration-700" />
-                                            <Mail className="w-5 h-5" />
-                                            <span>Connect Google Workspace</span>
-                                        </Button>
-                                        
-                                        <div className="flex items-center gap-2.5 text-[10px] uppercase tracking-widest text-neutral-500 dark:text-neutral-600 font-black">
-                                            <Shield className="w-3.5 h-3.5" />
-                                            <span>Cloud Shield Active • AES-256 Encrypted</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
                         ) : (
                             <div className="text-center py-24">
                                 <div className="w-12 h-12 mx-auto mb-8 rounded-full border border-neutral-200 dark:border-neutral-800 flex items-center justify-center">
@@ -2326,7 +2358,8 @@ export function GmailInterfaceFixed() {
                                 </Button>
                             </div>
                         )
-                    )}
+                    )
+                }
                 </div>
             </div>
         </motion.div>
