@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { AnimatePresence, motion, type PanInfo, useAnimation, useDragControls, LayoutGroup } from 'framer-motion';
 import { useSession, signIn } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { SiftCard } from './sift-card';
 import { Button } from './button';
 import { SettingsCard } from './settings-card';
@@ -174,6 +175,7 @@ interface SiftInsightsResponse {
 
 export function GmailInterfaceFixed() {
     const { data: session } = useSession();
+    const router = useRouter();
     const [insights, setInsights] = useState<SiftInsight[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
