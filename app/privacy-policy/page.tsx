@@ -1,272 +1,137 @@
-"use client";
-
-import React from "react";
-import Link from "next/link";
-import { ArrowLeft, ShieldCheck, Mail, Calendar, Video, Lock, UserCheck, RefreshCw, Trash2, Globe } from "lucide-react";
+import React from 'react';
+import { HomeFeedSidebar } from '@/components/ui/home-feed-sidebar';
+import { Mail, Shield, Lock, Eye, CheckCircle2, XCircle, Globe, Scale } from 'lucide-react';
 
 export default function PrivacyPolicy() {
     return (
-        <div className="min-h-screen bg-black text-[#fafafa] font-['Satoshi'] selection:bg-white selection:text-black">
-            {/* Background accents */}
-            <div className="fixed inset-0 pointer-events-none">
-                <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-900/10 rounded-full blur-[160px] opacity-50" />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-900/10 rounded-full blur-[160px] opacity-50" />
-            </div>
+        <div className="min-h-screen bg-[#F9F8F6] dark:bg-[#0c0c0c] flex overflow-hidden selection:bg-black selection:text-white dark:selection:bg-white dark:selection:text-black">
+            <HomeFeedSidebar className="z-50" />
+            <div className="flex-1 p-6 md:p-12 lg:p-20 overflow-y-auto relative z-10">
+                {/* Premium Grain Overlay */}
+                <div className="fixed inset-0 pointer-events-none opacity-[0.03] z-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] brightness-100 contrast-150" />
 
-            <main className="relative z-10 max-w-3xl mx-auto pt-20 pb-32 px-6">
-                <Link
-                    href="/"
-                    className="inline-flex items-center gap-2 text-neutral-500 hover:text-white transition-colors mb-12 group"
-                >
-                    <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                    <span className="text-sm font-medium uppercase tracking-widest">Back to Home</span>
-                </Link>
+                <div className="max-w-4xl mx-auto bg-white dark:bg-[#111111] rounded-[2.5rem] p-8 md:p-16 shadow-2xl border border-neutral-200 dark:border-white/5 relative z-10 animate-fade-in">
+                    
+                    <div className="flex items-center gap-4 mb-8">
+                        <div className="w-12 h-12 bg-black dark:bg-white rounded-2xl flex items-center justify-center shadow-lg">
+                            <Shield className="text-white dark:text-black w-6 h-6" />
+                        </div>
+                        <div>
+                            <h1 className="text-4xl font-bold text-black dark:text-white tracking-tight">Privacy Policy</h1>
+                            <p className="text-sm text-neutral-500 dark:text-white/40 mt-1 uppercase tracking-widest font-bold">Effective: April 12, 2026</p>
+                        </div>
+                    </div>
 
-                <header className="mb-16">
-                    <h1 className="text-5xl md:text-7xl font-black tracking-tighter italic uppercase leading-none mb-6">
-                        Privacy <br /> Policy
-                    </h1>
-                    <p className="text-neutral-500 font-medium tracking-widest uppercase text-sm">
-                        Effective Date: 16th Feb, 2026
-                    </p>
-                </header>
-
-                <div className="space-y-12 text-neutral-300 leading-relaxed font-medium">
-                    <section className="space-y-4">
-                        <p className="text-lg text-white font-medium italic">
-                            Mailient (“Mailient”, “we”, “our”, or “us”) is an AI-powered email assistant designed to help users manage their inbox more efficiently. This Privacy Policy explains what information we collect, how we use it, and how we protect it.
-                        </p>
-                        <div className="p-6 bg-blue-950/20 border border-blue-500/20 rounded-[2rem] flex gap-4 items-start">
-                            <ShieldCheck className="w-6 h-6 text-blue-400 shrink-0 mt-1" />
-                            <p className="text-sm font-bold text-blue-200 uppercase tracking-tight italic">
-                                Mailient strictly limits its access to Google user data to only what is necessary to provide the functionality explicitly requested and enabled by the user.
+                    <div className="prose dark:prose-invert max-w-none space-y-12 text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                        
+                        <div className="bg-neutral-50 dark:bg-white/[0.02] border border-neutral-100 dark:border-white/[0.05] rounded-3xl p-8 space-y-4">
+                            <p className="text-lg font-medium text-black dark:text-white/90 leading-snug italic">
+                                "Your privacy is not just a policy—it is a core feature of the Mailient architecture."
+                            </p>
+                            <p>
+                                This Privacy Policy describes how Mailient Intelligence ("Mailient," "we," "us," or "our") collects, uses, stores, and protects your personal information when you use our email intelligence platform at <b>mailient.xyz</b>. By using Mailient, you agree to the practices described in this policy.
                             </p>
                         </div>
-                    </section>
 
-                    <section className="space-y-6">
-                        <h2 className="text-2xl font-bold text-white tracking-tight italic uppercase flex items-center gap-3">
-                            <span className="w-8 h-[1px] bg-white/20" /> 1. Information We Collect
-                        </h2>
+                        <section>
+                            <h2 className="flex items-center gap-3 text-2xl font-bold text-black dark:text-white mb-6">
+                                <Scale className="w-5 h-5 opacity-40" /> 1. Who we are
+                            </h2>
+                            <p>Mailient is an AI-powered email intelligence platform founded and operated by Maulik. Our service connects to your Gmail or Google Workspace account (with your explicit permission) to help you triage, summarize, draft, and manage email communications more efficiently.</p>
+                            <div className="mt-4 p-4 bg-black/5 dark:bg-white/5 rounded-xl border border-black/5 dark:border-white/5 flex items-center gap-3">
+                                <Mail className="w-4 h-4 text-black dark:text-white" />
+                                <span className="text-sm font-medium">Contact: mailient.xyz@gmail.com</span>
+                            </div>
+                        </section>
 
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-bold text-neutral-100 flex items-center gap-2">
-                                <span className="text-white/20 italic">A.</span> Account Information
-                            </h3>
-                            <p>When you create an account, we may collect:</p>
-                            <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                {[
-                                    { label: "Your name", icon: <UserCheck className="w-4 h-4" /> },
-                                    { label: "Your email address", icon: <Mail className="w-4 h-4" /> },
-                                    { label: "Basic profile details", icon: <ShieldCheck className="w-4 h-4" /> }
-                                ].map((item) => (
-                                    <li key={item.label} className="bg-white/5 border border-white/10 px-4 py-3 rounded-xl text-sm italic flex items-center gap-3">
-                                        <span className="text-neutral-500">{item.icon}</span>
-                                        {item.label}
+                        <section>
+                            <h2 className="flex items-center gap-3 text-2xl font-bold text-black dark:text-white mb-6">
+                                <Globe className="w-5 h-5 opacity-40" /> 2. Scope of this policy
+                            </h2>
+                            <p>This policy applies to:</p>
+                            <ul className="grid grid-cols-1 md:grid-cols-2 gap-3 list-none p-0">
+                                {['Users of mailient.xyz', 'Google / Workspace connections', 'Free, Starter, and Pro tiers', 'Visitors browsing non-auth areas'].map(item => (
+                                    <li key={item} className="flex items-center gap-3 bg-neutral-50 dark:bg-white/[0.03] p-3 rounded-xl text-sm font-medium">
+                                        <CheckCircle2 className="w-4 h-4 text-emerald-500" /> {item}
                                     </li>
                                 ))}
                             </ul>
-                            <p className="text-sm text-neutral-500">This information is used solely to create and manage your Mailient account.</p>
-                        </div>
+                        </section>
 
-                        <div className="space-y-4 pt-4">
-                            <h3 className="text-lg font-bold text-neutral-100 flex items-center gap-2">
-                                <span className="text-white/20 italic">B.</span> Google User Data
-                            </h3>
-                            <p>When you connect your Google account, we request access only to the Google API scopes required to provide the features you enable. Depending on the permissions granted, Mailient may access:</p>
+                        <section>
+                            <h2 className="flex items-center gap-3 text-2xl font-bold text-black dark:text-white mb-6">
+                                <Eye className="w-5 h-5 opacity-40" /> 3. Information we collect
+                            </h2>
+                            <div className="space-y-6">
+                                <div>
+                                    <h3 className="text-lg font-bold text-black dark:text-white mb-2">3.1 Account and identity information</h3>
+                                    <p>When you sign up or log in via Google OAuth 2.0, we receive from Google: your full name, email address, and profile picture. We never receive or store your Google account password.</p>
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-black dark:text-white mb-2">3.2 Email data</h3>
+                                    <p>To provide AI-powered inbox analysis, Mailient accesses your Gmail data through the official Gmail API. This may include: email subject lines, sender and recipient addresses, timestamps, email body content, and thread metadata.</p>
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-black dark:text-white mb-2">3.3 Usage and analytics data</h3>
+                                    <p>We collect anonymized usage data including features used, frequency of use, session duration, error logs, and browser or device type.</p>
+                                </div>
+                            </div>
+                        </section>
 
-                            <div className="grid gap-4">
-                                <div className="p-6 bg-white/5 border border-white/10 rounded-[2rem] space-y-4">
-                                    <div className="flex gap-4 items-center border-b border-white/5 pb-4">
-                                        <div className="w-10 h-10 bg-blue-500/10 rounded-full flex items-center justify-center">
-                                            <Mail className="w-5 h-5 text-blue-400" />
+                        <section className="bg-black dark:bg-white rounded-[2rem] p-8 md:p-12 text-white dark:text-black">
+                            <h2 className="text-3xl font-bold mb-8 tracking-tight">5. What we do not do</h2>
+                            <div className="grid grid-cols-1 gap-6">
+                                {[
+                                    { title: "No Selling Data", desc: "We do not sell your personal data — ever. Your email content and identity information are not sold." },
+                                    { title: "No Public Model Training", desc: "Your email content is never used to improve foundational or publicly shared machine learning models." },
+                                    { title: "No Automated Sending", desc: "All email sending actions require you to review and approve each message before it is sent." },
+                                    { title: "No Password Storage", desc: "Authentication is handled entirely through Google OAuth 2.0; we never see your credentials." },
+                                    { title: "No Advertising", desc: "Mailient is a subscription product. We do not allow advertisers to target you." }
+                                ].map((item, idx) => (
+                                    <div key={idx} className="flex gap-4 items-start border-b border-white/10 dark:border-black/10 pb-6 last:border-0 last:pb-0">
+                                        <XCircle className="w-6 h-6 shrink-0 opacity-50" />
+                                        <div>
+                                            <h4 className="font-bold text-lg mb-1 uppercase tracking-tighter">{item.title}</h4>
+                                            <p className="opacity-70 text-sm leading-relaxed">{item.desc}</p>
                                         </div>
-                                        <h4 className="text-white font-bold uppercase tracking-wider italic text-lg">Gmail Data</h4>
                                     </div>
-                                    <p className="text-sm text-neutral-400 leading-relaxed">
-                                        Email content, metadata (sender, recipient, subject, timestamp), thread information, and labels.
-                                    </p>
-                                    <div className="space-y-2 pt-2">
-                                        <p className="text-xs font-black text-neutral-500 uppercase tracking-widest mb-3">Strict Use Cases:</p>
-                                        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                            {[
-                                                "Display your inbox",
-                                                "Generate AI summaries",
-                                                "Draft replies at request",
-                                                "Organize or label messages",
-                                                "Send emails on approval"
-                                            ].map((text) => (
-                                                <li key={text} className="flex items-center gap-2 text-xs text-neutral-400">
-                                                    <div className="w-1 h-1 bg-blue-500 rounded-full" />
-                                                    {text}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
+                                ))}
+                            </div>
+                        </section>
+
+                        <section>
+                            <h2 className="flex items-center gap-3 text-2xl font-bold text-black dark:text-white mb-6">
+                                <Lock className="w-5 h-5 opacity-40" /> 6. Data security and encryption
+                            </h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="p-6 bg-blue-500/5 border border-blue-500/10 rounded-2xl">
+                                    <h4 className="font-bold text-black dark:text-white mb-2">AES-256 Encryption</h4>
+                                    <p className="text-sm">Sensitive metadata is encrypted using military-grade standards. Decryption keys reside in your browser.</p>
+                                </div>
+                                <div className="p-6 bg-emerald-500/5 border border-emerald-500/10 rounded-2xl">
+                                    <h4 className="font-bold text-black dark:text-white mb-2">Zero-Knowledge</h4>
+                                    <p className="text-sm">We store only encrypted blobs which we cannot read. Processing happens securely in memory.</p>
                                 </div>
                             </div>
-                            <p className="text-sm italic text-neutral-500 border-l border-white/20 pl-4 py-1">
-                                Mailient does not access Gmail data beyond what is necessary to perform these user-requested tasks.
-                            </p>
-                        </div>
-                    </section>
-
-                    <section className="space-y-4">
-                        <h2 className="text-2xl font-bold text-white tracking-tight italic uppercase flex items-center gap-3">
-                            <span className="w-8 h-[1px] bg-white/20" /> 2. How We Use Google User Data
-                        </h2>
-                        <p>Google user data is used exclusively to provide the core functionality of Mailient. We only perform actions you directly initiate.</p>
-
-                        <div className="p-6 bg-neutral-900 border border-white/10 rounded-[2rem] space-y-4">
-                            <ul className="space-y-3 text-sm">
-                                <li className="flex gap-3">
-                                    <div className="w-5 h-5 shrink-0 bg-green-500/10 rounded flex items-center justify-center">
-                                        <ShieldCheck className="w-3 h-3 text-green-400" />
-                                    </div>
-                                    <span>Emails are sent only when you explicitly draft, review, and confirm sending.</span>
-                                </li>
-                                <li className="flex gap-3">
-                                    <div className="w-5 h-5 shrink-0 bg-green-500/10 rounded flex items-center justify-center">
-                                        <ShieldCheck className="w-3 h-3 text-green-400" />
-                                    </div>
-                                    <span>Mailient does not automatically send bulk emails or follow-up sequences without direct user action.</span>
-                                </li>
-                            </ul>
-                        </div>
-
-                        <div className="p-6 bg-red-950/20 border border-red-500/20 rounded-[2rem] space-y-3 mt-4">
-                            <span className="text-xs font-black text-red-400 uppercase tracking-[0.2em]">Our Strict Prohibitions:</span>
-                            <ul className="space-y-2 text-sm italic">
-                                <li className="flex gap-3 text-red-100"><span className="text-red-500 font-bold shrink-0">×</span> No advertising, marketing, or profiling unrelated to functionality.</li>
-                                <li className="flex gap-3 text-red-100"><span className="text-red-500 font-bold shrink-0">×</span> We do not sell Google user data.</li>
-                                <li className="flex gap-3 text-red-100"><span className="text-red-500 font-bold shrink-0">×</span> We do not use Google user data to train public or shared AI models.</li>
-                            </ul>
-                        </div>
-                    </section>
-
-                    <section className="space-y-4">
-                        <h2 className="text-2xl font-bold text-white tracking-tight italic uppercase flex items-center gap-3">
-                            <span className="w-8 h-[1px] bg-white/20" /> 3. AI Processing
-                        </h2>
-                        <p>When you use AI features, only the data necessary to generate output is securely transmitted to providers.</p>
-                        <div className="p-6 bg-white/[0.03] border border-white/10 rounded-[2rem] flex gap-4">
-                            <RefreshCw className="w-5 h-5 text-purple-400 shrink-0 mt-1" />
-                            <p className="text-sm">
-                                These providers process data solely to generate the requested result and are not permitted to use it for independent purposes. Mailient does not use Gmail data to train public AI systems.
-                            </p>
-                        </div>
-                    </section>
-
-                    <section className="space-y-4">
-                        <h2 className="text-2xl font-bold text-white tracking-tight italic uppercase flex items-center gap-3">
-                            <span className="w-8 h-[1px] bg-white/20" /> 4. Data Storage and Security
-                        </h2>
-                        <p>We implement reasonable administrative, technical, and physical safeguards to protect your data.</p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="p-4 bg-white/5 border border-white/5 rounded-2xl">
-                                <div className="flex items-center gap-2 text-xs font-bold text-white uppercase mb-2">
-                                    <Lock className="w-3 h-3" /> Encryption
-                                </div>
-                                <p className="text-xs text-neutral-400 italic">Data is encrypted in transit using HTTPS and stored securely.</p>
+                        </section>
+                        
+                        <section className="border-t border-neutral-100 dark:border-white/5 pt-12">
+                            <h2 className="text-2xl font-bold text-black dark:text-white mb-6">15. Contact us</h2>
+                            <div className="space-y-2 text-sm font-medium">
+                                <p className="text-black dark:text-white text-lg font-bold italic mb-4">Mailient Intelligence</p>
+                                <p>Email: <a href="mailto:mailient.xyz@gmail.com" className="hover:text-black dark:hover:text-white transition-colors underline decoration-black/10">mailient.xyz@gmail.com</a></p>
+                                <p>Website: <a href="https://mailient.xyz" className="hover:text-black dark:hover:text-white transition-colors">mailient.xyz</a></p>
+                                <p>Founder: <a href="https://x.com/Maulik_055" className="hover:text-black dark:hover:text-white transition-colors">@Maulik_055 on X</a></p>
                             </div>
-                            <div className="p-4 bg-white/5 border border-white/5 rounded-2xl">
-                                <div className="flex items-center gap-2 text-xs font-bold text-white uppercase mb-2">
-                                    <ShieldCheck className="w-3 h-3" /> Access
-                                </div>
-                                <p className="text-xs text-neutral-400 italic">OAuth access tokens are stored securely with restricted access.</p>
+                            <div className="mt-12 text-[10px] text-neutral-400 dark:text-white/20 uppercase tracking-[0.2em] font-bold">
+                                © 2026 Mailient Intelligence. All rights reserved.
                             </div>
-                        </div>
-                        <p className="text-xs text-neutral-500 italic">While we take industry-standard precautions, no online system can guarantee absolute security.</p>
-                    </section>
+                        </section>
 
-                    <section className="space-y-6">
-                        <h2 className="text-2xl font-bold text-white tracking-tight italic uppercase flex items-center gap-3">
-                            <span className="w-8 h-[1px] bg-white/20" /> 5. Sharing and Disclosure
-                        </h2>
-                        <p>Mailient does not sell or rent Google user data. We share only in limited circumstances:</p>
-                        <ul className="space-y-3">
-                            {[
-                                { title: "Service Providers", desc: "Infrastructure providers (hosting/database) receive the minimum data required." },
-                                { title: "AI Processing Providers", desc: "Only data necessary to generate AI outputs requested by you." },
-                                { title: "Legal Requirements", desc: "If required by applicable law, regulation, or valid legal process." }
-                            ].map((item) => (
-                                <li key={item.title} className="flex gap-4 p-4 bg-white/[0.02] border-l border-white/20">
-                                    <div>
-                                        <h5 className="text-white text-sm font-bold uppercase italic tracking-wider">{item.title}</h5>
-                                        <p className="text-xs text-neutral-400 mt-1">{item.desc}</p>
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
-                        <div className="p-4 bg-red-950/10 border border-red-500/10 rounded-xl">
-                            <p className="text-[10px] font-black text-red-400 uppercase tracking-widest">Crucial Header:</p>
-                            <p className="text-xs text-neutral-400 italic mt-1 font-bold">Google user data is never shared for advertising, marketing, or unrelated analytics purposes.</p>
-                        </div>
-                    </section>
-
-                    <section className="space-y-4">
-                        <h2 className="text-2xl font-bold text-white tracking-tight italic uppercase flex items-center gap-3">
-                            <span className="w-8 h-[1px] bg-white/20" /> 6. Data Retention
-                        </h2>
-                        <div className="flex gap-4 p-6 bg-white/5 border border-white/10 rounded-[2rem]">
-                            <Trash2 className="w-6 h-6 text-neutral-500 shrink-0" />
-                            <div className="space-y-2">
-                                <p className="text-sm">Mailient retains data only as long as necessary to provide the service.</p>
-                                <p className="text-xs text-neutral-400 italic">Disconnecting your account revokes OAuth tokens and initiates data deletion within a reasonable timeframe.</p>
-                            </div>
-                        </div>
-                    </section>
-
-                    <section className="space-y-4">
-                        <h2 className="text-2xl font-bold text-white tracking-tight italic uppercase flex items-center gap-3">
-                            <span className="w-8 h-[1px] bg-white/20" /> 7. User Control and Rights
-                        </h2>
-                        <p>You maintain full control over your data. You may:</p>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                            {[
-                                "Revoke Google access via Google settings",
-                                "Disconnect account from Mailient",
-                                "Request full account deletion",
-                                "Request deletion of specific data"
-                            ].map(text => (
-                                <div key={text} className="p-3 bg-white/5 rounded-lg border border-white/5 italic">
-                                    {text}
-                                </div>
-                            ))}
-                        </div>
-                    </section>
-
-                    <section className="space-y-4">
-                        <h2 className="text-2xl font-bold text-white tracking-tight italic uppercase flex items-center gap-3">
-                            <span className="w-8 h-[1px] bg-white/20" /> 8. Third-Party Services
-                        </h2>
-                        <p>Mailient relies on trusted third-party service providers for infrastructure, AI processing, and payment handling. These providers are contractually restricted from using data for unrelated purposes.</p>
-                    </section>
-
-                    <section className="space-y-4">
-                        <h2 className="text-2xl font-bold text-white tracking-tight italic uppercase flex items-center gap-3">
-                            <span className="w-8 h-[1px] bg-white/20" /> 9. Changes to This Policy
-                        </h2>
-                        <p>We may update this Privacy Policy from time to time. Updates will be reflected with a revised effective date at the top of this page.</p>
-                    </section>
-
-                    <section className="space-y-6 pt-12 border-t border-white/10">
-                        <h2 className="text-2xl font-bold text-white tracking-tight italic uppercase flex items-center gap-3">
-                            <span className="w-8 h-[1px] bg-white/20" /> 10. Contact
-                        </h2>
-                        <p>If you have privacy-related questions or requests, please contact us at:</p>
-                        <div className="flex flex-col sm:flex-row gap-4">
-                            <a
-                                href="mailto:mailient.xyz@gmail.com"
-                                className="inline-flex items-center gap-3 px-8 py-4 bg-[#fafafa] text-black rounded-2xl font-black italic uppercase tracking-tighter hover:scale-[1.02] transition-transform shadow-[0_0_40px_rgba(255,255,255,0.1)]"
-                            >
-                                <Mail className="w-4 h-4" />
-                                mailient.xyz@gmail.com
-                            </a>
-                        </div>
-                    </section>
+                    </div>
                 </div>
-            </main>
+                <div className="h-20" /> {/* Spacer */}
+            </div>
         </div>
     );
 }
