@@ -35,7 +35,8 @@ import { useTheme } from 'next-themes';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { toast } from 'sonner';
 import { cn } from "@/lib/utils";
-import { GradientWave } from "@/components/ui/gradient-wave";
+import { audioRuntime } from '@/lib/audio-runtime';
+import { NotificationService } from '@/lib/notification-service';
 
 // Detect and wrap URLs in plain text with premium styling for actions
 const linkify = (text: string, isUser: boolean = false): string => {
@@ -497,6 +498,45 @@ export default function ChatInterface({
 
   // Subscription state - to hide upgrade button for Pro users
   const [currentPlan, setCurrentPlan] = useState<'free' | 'starter' | 'pro' | 'none' | null>(null);
+
+  // Audio & Notification State
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+
+  // Sync notification state and request permission
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedNotify = localStorage.getItem('arcus_notifications_enabled') === 'true';
+      const savedSound = localStorage.getItem('arcus_sound_enabled') !== 'false';
+      
+      setNotificationsEnabled(savedNotify && NotificationService.permission === 'granted');
+      setSoundEnabled(savedSound);
+      audioRuntime.setEnabled(savedSound);
+    }
+  }, []);
+
+  const toggleNotifications = async () => {
+    const isGranted = await NotificationService.requestPermission();
+    if (isGranted) {
+      const newState = !notificationsEnabled;
+      setNotificationsEnabled(newState);
+      localStorage.setItem('arcus_notifications_enabled', String(newState));
+      if (newState) {
+        toast.success('Alerts enabled');
+        NotificationService.notify('Arcus Alerts Active', 'I will notify you here when tasks are complete.', { soundType: 'success' });
+      }
+    } else {
+      toast.error('Permission denied', { description: 'Enable in browser settings' });
+    }
+  };
+
+  const toggleSound = () => {
+    const newState = !soundEnabled;
+    setSoundEnabled(newState);
+    audioRuntime.setEnabled(newState);
+    localStorage.setItem('arcus_sound_enabled', String(newState));
+    if (newState) audioRuntime.playNotify();
+  };
 
   const [arcusCredits, setArcusCredits] = useState<{
     usage: number;
@@ -1148,6 +1188,17 @@ export default function ChatInterface({
       setIsLoading(false);
       setIsSearchingState(false);
       setIsDeepThinkingState(false);
+
+      // Trigger high-fidelity notification & sound
+      if (data.message && !isUserMessage) {
+          if (notificationsEnabled || soundEnabled) {
+              const preview = data.message.substring(0, 100) + (data.message.length > 100 ? '...' : '');
+              NotificationService.notify('Arcus Response', preview, {
+                  soundType: hasCanvas ? 'success' : 'notify',
+                  silent: !notificationsEnabled
+              });
+          }
+      }
 
       // Force scroll after state update
       requestAnimationFrame(() => {
@@ -2338,6 +2389,46 @@ export default function ChatInterface({
                           <span className="text-[10px]">Settings</span>
                         </TooltipContent>
                       </Tooltip>
+
+                      <div className="flex items-center gap-1.5 ml-1 border-l border-neutral-200 dark:border-white/10 pl-4">
+                        <Tooltip delayDuration={100}>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={toggleNotifications}
+                              className={cn(
+                                "p-2 rounded-lg transition-all active:scale-95",
+                                notificationsEnabled 
+                                  ? "bg-blue-500/10 text-blue-500"
+                                  : "text-black/40 dark:text-white/20 hover:bg-black/5 dark:hover:bg-white/5"
+                              )}
+                            >
+                              <Bell className="w-4 h-4" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom">
+                            <span className="text-[10px]">{notificationsEnabled ? "Disable" : "Enable"} Alerts</span>
+                          </TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip delayDuration={100}>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={toggleSound}
+                              className={cn(
+                                "p-2 rounded-lg transition-all active:scale-95",
+                                soundEnabled 
+                                  ? "bg-amber-500/10 text-amber-500"
+                                  : "text-black/40 dark:text-white/20 hover:bg-black/5 dark:hover:bg-white/5"
+                              )}
+                            >
+                              <Volume2 className="w-4 h-4" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom">
+                            <span className="text-[10px]">{soundEnabled ? "Mute" : "Unmute"} Sounds</span>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                     </div>
 
                     {/* Right Side: New Chat and History */}
