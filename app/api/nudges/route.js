@@ -4,6 +4,7 @@ import { DatabaseService } from '@/lib/supabase.js';
 import { decrypt } from '@/lib/crypto.js';
 import { GmailService } from '@/lib/gmail.js';
 import { ArcusAIService } from '@/lib/arcus-ai.js';
+import { subscriptionService } from '@/lib/subscription-service.js';
 
 export async function GET(request) {
   try {
@@ -54,7 +55,6 @@ export async function GET(request) {
     
     // 3. AI Usage Check (Arcus Engine)
     // Smart Nudges consume "arcus_ai" credits
-    const subscriptionService = (await import('@/lib/subscription-service.js')).subscriptionService;
     const canUse = await subscriptionService.canUseFeature(session.user.email, 'arcus_ai');
     
     if (!canUse) {
