@@ -1,8 +1,7 @@
 import { auth } from '@/lib/auth';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseAdmin, DatabaseService } from '@/lib/supabase';
 import { voiceProfileService } from '@/lib/voice-profile-service';
 import { GmailService } from '@/lib/gmail';
-import { DatabaseService } from '@/lib/supabase';
 import { decrypt } from '@/lib/crypto';
 
 export async function GET() {
@@ -12,7 +11,8 @@ export async function GET() {
             return Response.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { data: profile, error } = await supabase
+        const adminDb = getSupabaseAdmin();
+        const { data: profile, error } = await adminDb
             .from('user_voice_profiles')
             .select('*')
             .eq('user_id', session.user.email)
