@@ -435,20 +435,6 @@ export function GmailInterfaceFixed() {
         fetchUsage(true);
     }, [fetchUsage]);
 
-    const fetchNudges = useCallback(async () => {
-        if (!settings.smartNudges || isLoadingNudges) return;
-
-        setIsLoadingNudges(true);
-        console.log('📡 Fetching smart nudges...');
-
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
-
-        try {
-            const res = await fetch('/api/nudges', { signal: controller.signal });
-            clearTimeout(timeoutId);
-
-            if (res.status === 401) {
     useEffect(() => {
         if (!hasInitialLoad && session?.user?.email) {
             fetchSiftInsights(true);

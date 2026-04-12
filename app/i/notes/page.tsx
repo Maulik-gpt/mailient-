@@ -556,7 +556,7 @@ export default function NotesPage() {
                                                                 value={searchQuery}
                                                                 onChange={(e) => setSearchQuery(e.target.value)}
                                                                 placeholder="Search your thoughts..."
-                                                                className="w-full bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-full py-1.5 px-4 text-sm text-neutral-800 dark:text-neutral-200 placeholder:text-neutral-600 dark:text-neutral-400 outline-none focus:border-neutral-300 dark:focus:border-neutral-700 transition-all"
+                                                                className="w-full bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-full py-1.5 px-4 text-sm text-neutral-800 dark:text-neutral-200 placeholder:text-neutral-600 dark:placeholder:text-neutral-500 outline-none focus:border-neutral-300 dark:focus:border-neutral-700 transition-all"
                                                             />
                                                             {searchQuery && (
                                                                 <button
