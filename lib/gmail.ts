@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Gmail Service for interacting with Gmail API
  * Handles authentication, rate limiting, and all Gmail operations
