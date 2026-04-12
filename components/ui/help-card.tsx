@@ -81,7 +81,7 @@ export function HelpCard({ onClose }: HelpCardProps) {
                                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
                                     activeSection === section.id 
                                     ? 'bg-black dark:bg-white text-white dark:text-black shadow-lg font-bold' 
-                                    : 'text-neutral-600 dark:text-neutral-500 hover:text-black dark:text-neutral-400 dark:hover:text-white hover:bg-black/5 dark:bg-white/5'
+                                    : 'text-neutral-600 hover:text-black dark:text-neutral-400 dark:hover:text-white hover:bg-black/5 dark:bg-white/5'
                                 }`}
                             >
                                 <section.icon className="w-4 h-4" />

@@ -110,10 +110,10 @@ export default function FAQs() {
                   value={item.id}
                   className="border-b border-neutral-100 dark:border-white/5 py-1"
                 >
-                  <AccordionTrigger className="cursor-pointer text-sm font-semibold hover:no-underline dark:text-neutral-900 dark:text-neutral-300 py-4">
+                  <AccordionTrigger className="cursor-pointer text-sm font-semibold hover:no-underline dark:text-neutral-300 py-4">
                     {item.question}
                   </AccordionTrigger>
-                  <AccordionContent className="text-neutral-500 dark:text-neutral-600 dark:text-neutral-400">
+                  <AccordionContent className="text-neutral-500 dark:text-neutral-400">
                     <BlurredStagger text={item.answer} />
                   </AccordionContent>
                 </AccordionItem>
@@ -160,7 +160,7 @@ export const BlurredStagger = ({
         variants={container}
         initial="hidden"
         animate="show"
-        className="text-sm leading-relaxed break-words whitespace-normal text-neutral-500 dark:text-neutral-600 dark:text-neutral-400"
+        className="text-sm leading-relaxed break-words whitespace-normal text-neutral-500 dark:text-neutral-400"
       >
         {text.split("").map((char, index) => (
           <motion.span

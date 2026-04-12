@@ -351,19 +351,6 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                         <div className="flex items-center justify-between group">
                                             <div className="space-y-1">
                                                 <div className="flex items-center gap-2">
-                                                    <Sparkles className="w-4 h-4 text-amber-500" />
-                                                    <h3 className="text-[15px] font-semibold text-black dark:text-white">Smart Nudges</h3>
-                                                </div>
-                                                <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                                                    AI-powered reminders for emails you might have forgotten to reply to.
-                                                </p>
-                                            </div>
-                                            <ToggleSwitch checked={settings.smartNudges} onChange={(v) => updateSetting('smartNudges', v)} />
-                                        </div>
-                                        <div className="h-px bg-neutral-50 dark:bg-white/5" />
-                                        <div className="flex items-center justify-between group">
-                                            <div className="space-y-1">
-                                                <div className="flex items-center gap-2">
                                                     <Keyboard className="w-4 h-4 text-blue-500" />
                                                     <h3 className="text-[15px] font-semibold text-black dark:text-white">Default Draft Tone</h3>
                                                 </div>

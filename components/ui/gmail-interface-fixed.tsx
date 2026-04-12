@@ -274,8 +274,6 @@ export function GmailInterfaceFixed() {
     const [showRewards, setShowRewards] = useState(false);
 
     // Smart Nudges state
-    const [nudges, setNudges] = useState<any[]>([]);
-    const [isLoadingNudges, setIsLoadingNudges] = useState(false);
     const [hasAttemptedNudges, setHasAttemptedNudges] = useState(false);
 
     const [isVoiceProfileModalOpen, setIsVoiceProfileModalOpen] = useState(false);
@@ -451,46 +449,14 @@ export function GmailInterfaceFixed() {
             clearTimeout(timeoutId);
 
             if (res.status === 401) {
-                setIsTokenExpired(true);
-                return;
-            }
-
-            if (res.ok) {
-                const data = await res.json();
-                console.log(`✅ Nudges loaded: ${data.nudges?.length || 0} items`);
-                setNudges(data.nudges || []);
-                setHasAttemptedNudges(true);
-            } else {
-                console.warn('⚠️ Nudges API returned non-OK status:', res.status);
-            }
-        } catch (e: any) {
-            if (e.name === 'AbortError') {
-                console.error('💥 Nudges request timed out after 45s');
-            } else {
-                console.error('Failed to fetch nudges', e);
-            }
-        } finally {
-            setIsLoadingNudges(false);
-            setHasAttemptedNudges(true);
-        }
-    }, [settings.smartNudges, isLoadingNudges]);
-
     useEffect(() => {
         if (!hasInitialLoad && session?.user?.email) {
             fetchSiftInsights(true);
             fetchUsage(true);
-            fetchNudges();
             fetchVoiceProfile();
             setHasInitialLoad(true);
         }
-    }, [session, hasInitialLoad, fetchSiftInsights, fetchUsage, fetchNudges, fetchVoiceProfile]);
-
-    // Fetch nudges on mount or when setting changes
-    useEffect(() => {
-        if (settings.smartNudges && !hasAttemptedNudges) {
-            fetchNudges();
-        }
-    }, [settings.smartNudges, hasAttemptedNudges, fetchNudges]);
+    }, [session, hasInitialLoad, fetchSiftInsights, fetchUsage, fetchVoiceProfile]);
 
     const fetchContacts = useCallback(async (query: string = '') => {
         setIsLoadingContacts(true);
@@ -1734,89 +1700,6 @@ export function GmailInterfaceFixed() {
                                 </div>
                             )}
 
-                            {/* Smart Nudges */}
-                            {settings.smartNudges && (
-                                <div className="mb-12 animate-in fade-in slide-in-from-top-4 duration-700">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <div className="flex items-center gap-2">
-                                            <Sparkles className="w-4 h-4 text-amber-500" />
-                                            <h2 className="text-sm font-semibold text-black dark:text-white uppercase tracking-wider">Smart Nudges</h2>
-                                            <span className="text-[10px] bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded-full font-bold uppercase tracking-widest border border-amber-500/20 ml-2">AI Agent Active</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            {nudges.length > 0 && (
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="text-[10px] uppercase font-bold tracking-widest text-neutral-600 hover:text-black dark:text-white"
-                                                    onClick={() => setNudges([])}
-                                                >
-                                                    Dismiss All
-                                                </Button>
-                                            )}
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="text-[10px] uppercase font-bold tracking-widest text-neutral-600 hover:text-black dark:text-white flex items-center gap-1.5"
-                                                onClick={fetchNudges}
-                                                disabled={isLoadingNudges}
-                                            >
-                                                <RefreshCw className={`w-3 h-3 ${isLoadingNudges ? 'animate-spin' : ''}`} />
-                                                <span>{isLoadingNudges ? 'Scanning...' : 'Scan Now'}</span>
-                                            </Button>
-                                        </div>
-                                    </div>
-
-                                    {nudges.length === 0 && !isLoadingNudges ? (
-                                        <div className="bg-white dark:bg-[#0a0a0a]/50 border border-white/[0.03] rounded-2xl p-8 flex flex-col items-center justify-center text-center">
-                                            <div className="w-12 h-12 rounded-full bg-neutral-200/50 dark:bg-neutral-900/50 flex items-center justify-center mb-3">
-                                                <Mail className="w-5 h-5 text-neutral-700 font-light" />
-                                            </div>
-                                            <h3 className="text-sm font-medium text-neutral-900 dark:text-neutral-300 mb-1">You're all caught up!</h3>
-                                            <p className="text-xs text-neutral-600 dark:text-neutral-500 max-w-[280px]">Arcus didn't find any urgent unreplied emails from the last 30 days.</p>
-                                        </div>
-                                    ) : (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                            {isLoadingNudges ? (
-                                                Array(3).fill(0).map((_, i) => (
-                                                    <div key={i} className="bg-neutral-800/20 border border-neutral-200 dark:border-neutral-800/50 rounded-2xl p-5 animate-pulse h-[140px] flex flex-col gap-3">
-                                                        <div className="w-20 h-3 bg-neutral-800 rounded-full" />
-                                                        <div className="w-full h-4 bg-neutral-800 rounded-full" />
-                                                        <div className="w-3/4 h-3 bg-neutral-800/60 rounded-full" />
-                                                        <div className="mt-auto w-24 h-3 bg-neutral-800/40 rounded-full" />
-                                                    </div>
-                                                ))
-                                            ) : (
-                                                nudges.map((nudge) => (
-                                                    <div
-                                                        key={nudge.id}
-                                                        onClick={() => nudge.fullEmail && handleTraditionalEmailClick(nudge.fullEmail.id)}
-                                                        className="group relative bg-white dark:bg-[#0a0a0a] border border-white/[0.03] rounded-2xl p-5 hover:bg-neutral-900/80 transition-all cursor-pointer overflow-hidden"
-                                                    >
-                                                        <div className="flex items-start justify-between mb-3">
-                                                            <div className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border ${nudge.urgency === 'high' ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
-                                                                }`}>
-                                                                {nudge.urgency} Priority
-                                                            </div>
-                                                        </div>
-                                                        <h4 className="text-sm font-semibold text-black mb-1 truncate group-hover:text-black dark:text-white transition-colors">
-                                                            {nudge.subject}
-                                                        </h4>
-                                                        <p className="text-xs text-neutral-600 dark:text-neutral-500 line-clamp-2 leading-relaxed font-light mb-4">
-                                                            {nudge.reason}
-                                                        </p>
-                                                        <div className="flex items-center gap-2 text-[10px] text-amber-500/80 font-medium">
-                                                            <Zap className="w-3 h-3" />
-                                                            <span>{nudge.suggestedAction}</span>
-                                                        </div>
-                                                        <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-500/5 to-transparent blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
-                                                    </div>
-                                                ))
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
 
                             {/* Error & Limit Reached States */}
                             {error && (
