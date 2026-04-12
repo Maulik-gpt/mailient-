@@ -2406,7 +2406,6 @@ export default function ChatInterface({
                         </TooltipContent>
                       </Tooltip>
                     </div>
-                    </div>
 
                     {/* Right Side: New Chat and History */}
                     <div className="flex items-center gap-3">
