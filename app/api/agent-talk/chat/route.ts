@@ -110,7 +110,8 @@ export async function POST(request: Request) {
     }
 
     if (aiResult.usedAI) {
-      await subscriptionService.incrementFeatureUsage(userId, FEATURE_TYPES.ARCUS_AI);
+      // Use conversationId as a fallback idempotency key if specific runId isn't provided
+      await subscriptionService.incrementFeatureUsage(userId, FEATURE_TYPES.ARCUS_AI, currentConversationId);
     }
 
     return NextResponse.json({

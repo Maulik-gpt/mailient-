@@ -989,8 +989,8 @@ Body: ${emailData.body || emailData.snippet}
         console.log('⚠️ Failed to save conversation:', error.message);
       }
 
-      // Increment usage after successful chat
-      await subscriptionService.incrementFeatureUsage(userEmail, FEATURE_TYPES.ARCUS_AI);
+      // Increment usage after successful chat with idempotency (runId)
+      await subscriptionService.incrementFeatureUsage(userEmail, FEATURE_TYPES.ARCUS_AI, operatorRun?.runId || runId);
     }
 
     return NextResponse.json({
