@@ -518,15 +518,8 @@ export default function ChatInterface({
   const toggleNotifications = async () => {
     const isGranted = await NotificationService.requestPermission();
     if (isGranted) {
-      const newState = !notificationsEnabled;
-      setNotificationsEnabled(newState);
-      localStorage.setItem('arcus_notifications_enabled', String(newState));
-      if (newState) {
-        toast.success('Alerts enabled');
-        NotificationService.notify('Arcus Alerts Active', 'I will notify you here when tasks are complete.', { soundType: 'success' });
-      }
-    } else {
-      toast.error('Permission denied', { description: 'Enable in browser settings' });
+      setNotificationsEnabled(true);
+      localStorage.setItem('arcus_notifications_enabled', 'true');
     }
   };
 
@@ -535,8 +528,26 @@ export default function ChatInterface({
     setSoundEnabled(newState);
     audioRuntime.setEnabled(newState);
     localStorage.setItem('arcus_sound_enabled', String(newState));
-    if (newState) audioRuntime.playNotify();
   };
+
+  // Global Click Sound Listener
+  useEffect(() => {
+    const handleGlobalClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      // Play sound if clicking a button, link, or role="button"
+      if (
+        target.closest('button') || 
+        target.closest('a') || 
+        target.getAttribute('role') === 'button' ||
+        target.closest('.interactive-card')
+      ) {
+        audioRuntime.playClick();
+      }
+    };
+
+    window.addEventListener('click', handleGlobalClick);
+    return () => window.removeEventListener('click', handleGlobalClick);
+  }, [soundEnabled]);
 
   const [arcusCredits, setArcusCredits] = useState<{
     usage: number;
@@ -889,6 +900,11 @@ export default function ChatInterface({
         if (intentRes.ok) intentData = await intentRes.json();
       } catch (e) {
         console.warn('Intent analysis failed:', e);
+      }
+
+      // Auto-request notifications on first interaction if not yet decided
+      if (typeof window !== 'undefined' && NotificationService.permission === 'default' && !notificationsEnabled) {
+          toggleNotifications();
       }
 
       // --- PHASE II: Immediate AI Assessment ---
@@ -2389,46 +2405,7 @@ export default function ChatInterface({
                           <span className="text-[10px]">Settings</span>
                         </TooltipContent>
                       </Tooltip>
-
-                      <div className="flex items-center gap-1.5 ml-1 border-l border-neutral-200 dark:border-white/10 pl-4">
-                        <Tooltip delayDuration={100}>
-                          <TooltipTrigger asChild>
-                            <button
-                              onClick={toggleNotifications}
-                              className={cn(
-                                "p-2 rounded-lg transition-all active:scale-95",
-                                notificationsEnabled 
-                                  ? "bg-blue-500/10 text-blue-500"
-                                  : "text-black/40 dark:text-white/20 hover:bg-black/5 dark:hover:bg-white/5"
-                              )}
-                            >
-                              <Bell className="w-4 h-4" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent side="bottom">
-                            <span className="text-[10px]">{notificationsEnabled ? "Disable" : "Enable"} Alerts</span>
-                          </TooltipContent>
-                        </Tooltip>
-
-                        <Tooltip delayDuration={100}>
-                          <TooltipTrigger asChild>
-                            <button
-                              onClick={toggleSound}
-                              className={cn(
-                                "p-2 rounded-lg transition-all active:scale-95",
-                                soundEnabled 
-                                  ? "bg-amber-500/10 text-amber-500"
-                                  : "text-black/40 dark:text-white/20 hover:bg-black/5 dark:hover:bg-white/5"
-                              )}
-                            >
-                              <Volume2 className="w-4 h-4" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent side="bottom">
-                            <span className="text-[10px]">{soundEnabled ? "Mute" : "Unmute"} Sounds</span>
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
+                    </div>
                     </div>
 
                     {/* Right Side: New Chat and History */}
