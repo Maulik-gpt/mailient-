@@ -12,7 +12,7 @@ interface Section {
 }
 
 export default function PrivacyPolicy() {
-  const currentDate = "April 12, 2026";
+  const lastUpdated = "April 12, 2026";
 
   const sections: Section[] = [
     {
@@ -64,7 +64,7 @@ export default function PrivacyPolicy() {
           </div>
           <div>
             <h4 className="font-bold text-black dark:text-white mb-2">3.5 Subscription and payment information</h4>
-            <p>If you upgrade to a paid plan, payment is processed by a third-party payment processor. We do not store your full credit card number, CVV, or raw financial information. We may retain your subscription tier, billing status, and anonymized transaction records.</p>
+            <p>If you upgrade to a paid plan (Starter at $7.99/month or Pro at $29.99/month), payment is processed by a third-party payment processor. We do not store your full credit card number, CVV, or raw financial information. We may retain your subscription tier, billing status, and anonymized transaction records.</p>
           </div>
         </div>
       )
@@ -75,14 +75,32 @@ export default function PrivacyPolicy() {
       content: (
         <div className="space-y-4">
           <p>We use the information we collect for the following purposes:</p>
-          <ul className="list-disc pl-5 space-y-3">
-            <li><strong>Service delivery:</strong> Powering AI inbox analysis, drafting, summaries, and smart triage via Sift and Arcus.</li>
-            <li><strong>Personalization:</strong> Calibrating your neural voice style and relationship tracking to match your unique communication style.</li>
-            <li><strong>Product improvement:</strong> Analyzing anonymized usage patterns to improve AI accuracy, feature quality, and reliability.</li>
-            <li><strong>Security & compliance:</strong> Detecting and preventing abuse, fraud, unauthorized access, and policy violations.</li>
-            <li><strong>Support & communication:</strong> Responding to support requests and providing essential updates.</li>
-            <li><strong>Billing & subscriptions:</strong> Managing your plan tier, usage limits, and subscription lifecycle.</li>
-          </ul>
+          <div className="space-y-4">
+            <div>
+              <p className="font-bold text-black dark:text-white">Service delivery</p>
+              <p>Powering AI inbox analysis, drafting, summaries, and smart triage via Sift and Arcus.</p>
+            </div>
+            <div>
+              <p className="font-bold text-black dark:text-white">Personalization</p>
+              <p>Calibrating your neural voice style and relationship tracking to match your unique communication style.</p>
+            </div>
+            <div>
+              <p className="font-bold text-black dark:text-white">Product improvement</p>
+              <p>Analyzing anonymized usage patterns to improve AI accuracy, feature quality, and reliability.</p>
+            </div>
+            <div>
+              <p className="font-bold text-black dark:text-white">Security & compliance</p>
+              <p>Detecting and preventing abuse, fraud, unauthorized access, and policy violations.</p>
+            </div>
+            <div>
+              <p className="font-bold text-black dark:text-white">Support & communication</p>
+              <p>Responding to support requests, sending essential service notifications, and providing updates.</p>
+            </div>
+            <div>
+              <p className="font-bold text-black dark:text-white">Billing & subscriptions</p>
+              <p>Managing your plan tier, usage limits, and processing subscription renewals or upgrades.</p>
+            </div>
+          </div>
         </div>
       )
     },
@@ -91,25 +109,25 @@ export default function PrivacyPolicy() {
       title: "5. What we do not do with your data",
       content: (
         <div className="space-y-6">
-          <div className="flex gap-4 items-start border-l-2 border-red-500/20 pl-6">
+          <div className="flex gap-4 items-start pl-6">
             <div className="text-red-500 font-bold">✕</div>
-            <p><strong>We do not sell your personal data — ever.</strong> Your email content and identity information are not sold to advertisers, data brokers, or any third party.</p>
+            <p>We do not sell your personal data — ever. Your email content and identity information are not sold to advertisers, data brokers, or any third party.</p>
           </div>
-          <div className="flex gap-4 items-start border-l-2 border-red-500/20 pl-6">
+          <div className="flex gap-4 items-start pl-6">
             <div className="text-red-500 font-bold">✕</div>
-            <p><strong>We do not use your data to train public AI models.</strong> Your email content is never used to improve foundational or publicly shared machine learning models.</p>
+            <p>We do not use your data to train public AI models — your email content is never used to improve foundational or publicly shared machine learning models.</p>
           </div>
-          <div className="flex gap-4 items-start border-l-2 border-red-500/20 pl-6">
+          <div className="flex gap-4 items-start pl-6">
             <div className="text-red-500 font-bold">✕</div>
-            <p><strong>We do not send emails automatically on your behalf.</strong> All email sending actions require you to review and approve each message before it is sent.</p>
+            <p>We do not send emails automatically on your behalf — all email sending actions require you to review and approve each message before it is sent.</p>
           </div>
-          <div className="flex gap-4 items-start border-l-2 border-red-500/20 pl-6">
+          <div className="flex gap-4 items-start pl-6">
             <div className="text-red-500 font-bold">✕</div>
-            <p><strong>We do not store your passwords.</strong> Authentication is handled entirely through Google OAuth 2.0; we never see or store your Google credentials.</p>
+            <p>We do not store your passwords — authentication is handled entirely through Google OAuth 2.0; we never see or store your Google credentials.</p>
           </div>
-          <div className="flex gap-4 items-start border-l-2 border-red-500/20 pl-6">
+          <div className="flex gap-4 items-start pl-6">
             <div className="text-red-500 font-bold">✕</div>
-            <p><strong>We do not serve advertisements.</strong> Mailient is a subscription product and is not supported by advertising. We do not allow advertisers to target you based on your email content.</p>
+            <p>We do not serve advertisements — Mailient is a subscription product and is not supported by advertising. We do not allow advertisers to target you based on your email content.</p>
           </div>
         </div>
       )
@@ -120,10 +138,13 @@ export default function PrivacyPolicy() {
       content: (
         <div className="space-y-4">
           <p>We take the security of your data extremely seriously and have implemented multiple layers of protection:</p>
-          <ul className="list-disc pl-5 space-y-3">
-            <li><strong>AES-256 encryption:</strong> Sensitive metadata and stored data is encrypted using AES-256. Your decryption keys reside in your browser and never transmit to our servers.</li>
+          <ul className="list-disc pl-5 space-y-4">
+            <li><strong>AES-256 encryption:</strong> Sensitive metadata and stored data is encrypted using AES-256, a military-grade encryption standard. Your decryption keys reside in your browser and never transmit to our servers.</li>
             <li><strong>Zero-knowledge architecture:</strong> We store only encrypted blobs which we cannot read. Sensitive metadata is encrypted client-side before reaching our servers.</li>
-            <li><strong>Secure transmission:</strong> All data transmitted between your browser and our servers is encrypted via TLS.</li>
+            <li><strong>Google OAuth 2.0:</strong> We authenticate users via enterprise-grade Google OAuth 2.0. Access tokens are scoped, time-limited, and can be revoked by you at any time via your Google account settings.</li>
+            <li><strong>Secure transmission:</strong> All data transmitted between your browser and our servers is encrypted via TLS (Transport Layer Security).</li>
+            <li><strong>Access controls:</strong> Internal access to user data is strictly limited to systems that require it to deliver the service. No human team member routinely accesses your email content.</li>
+            <li><strong>Breach notification:</strong> In the event of a data breach that affects your personal data, we will notify you and relevant regulatory authorities within the timeframes required by applicable law.</li>
           </ul>
         </div>
       )
@@ -133,12 +154,14 @@ export default function PrivacyPolicy() {
       title: "7. Google API services disclosure",
       content: (
         <div className="space-y-4">
-          <p>Mailient's use of information received from Google APIs adheres to the Google API Services User Data Policy, including the Limited Use requirements.</p>
-          <ul className="list-disc pl-5 space-y-2">
-            <li>We only request the minimum permissions necessary.</li>
-            <li>Gmail data is used solely to deliver and improve Mailient's core features.</li>
-            <li>We do not transfer Gmail data except as necessary to provide the service.</li>
-            <li>You can revoke access at any time via myaccount.google.com/permissions.</li>
+          <p>Mailient's use of information received from Google APIs adheres to the Google API Services User Data Policy, including the Limited Use requirements. This means:</p>
+          <ul className="list-disc pl-5 space-y-3">
+            <li>We only request the minimum permissions necessary to provide the features you use.</li>
+            <li>Gmail data is used solely to deliver and improve Mailient's core email features.</li>
+            <li>We do not transfer Gmail data to third parties except as necessary to provide the service, or as required by law.</li>
+            <li>We do not use Gmail data for serving advertisements or for any purpose other than providing and improving the Mailient service.</li>
+            <li>Humans at Mailient do not read your Gmail messages unless you explicitly share them for support purposes or as required by law.</li>
+            <li>You can revoke Mailient's access to your Google account at any time by visiting <a href="https://myaccount.google.com/permissions" className="text-black dark:text-white font-medium underline underline-offset-4 decoration-neutral-300 dark:decoration-neutral-700 hover:decoration-black dark:hover:decoration-white transition-all">myaccount.google.com/permissions</a>.</li>
           </ul>
         </div>
       )
@@ -148,12 +171,14 @@ export default function PrivacyPolicy() {
       title: "8. Data retention",
       content: (
         <div className="space-y-4">
-          <p>We retain your data only for as long as necessary:</p>
-          <ul className="list-disc pl-5 space-y-2">
-            <li>Email content is processed transiently and not permanently stored.</li>
-            <li>Account information is retained while your account is active.</li>
-            <li>Usage analytics (anonymized) may be retained for up to 24 months.</li>
-            <li>Billing records may be retained for up to 7 years as required by law.</li>
+          <p>We retain your data only for as long as necessary to provide our service or as required by law:</p>
+          <ul className="list-disc pl-5 space-y-3">
+            <li>Email content and metadata accessed via the Gmail API is processed transiently and is not permanently stored on our servers beyond what is needed for the immediate analysis.</li>
+            <li>Account information (name, email address) is retained for as long as your account is active.</li>
+            <li>Notes you create are retained until you delete them or close your account.</li>
+            <li>Usage analytics (anonymized) may be retained for up to 24 months for product development purposes.</li>
+            <li>Billing records may be retained for up to 7 years as required by financial and tax regulations.</li>
+            <li>Upon account deletion, we will delete or anonymize your personal data within 30 days, except where retention is required by law.</li>
           </ul>
         </div>
       )
@@ -163,7 +188,13 @@ export default function PrivacyPolicy() {
       title: "9. Sharing of information",
       content: (
         <div className="space-y-4">
-          <p>We do not sell your personal data. We may share limited information only with trusted service providers who process data on our behalf, or when required for legal compliance.</p>
+          <p>We do not sell your personal data. We may share limited information only in the following circumstances:</p>
+          <ul className="list-disc pl-5 space-y-4">
+            <li><strong>Service providers:</strong> We may engage trusted third-party vendors (e.g., cloud hosting, payment processors, analytics tools) who process data on our behalf under contractual data processing agreements and are not permitted to use the data for their own purposes.</li>
+            <li><strong>Legal compliance:</strong> We may disclose information if required to do so by applicable law, court order, or regulatory authority, or to protect the rights, property, or safety of Mailient, our users, or the public.</li>
+            <li><strong>Business transfers:</strong> In the event of a merger, acquisition, or sale of assets, your data may be transferred. We will notify you before your data is transferred and becomes subject to a different privacy policy.</li>
+          </ul>
+          <p>We never share your Gmail data or email content with third parties for advertising, profiling, or any commercial purpose beyond service delivery.</p>
         </div>
       )
     },
@@ -171,8 +202,35 @@ export default function PrivacyPolicy() {
       id: 10,
       title: "10. Your rights and choices",
       content: (
-        <div className="space-y-4">
-          <p>Regardless of location, you have rights to access, correct, delete, or port your personal data. To exercise these rights, contact us at mailient.xyz@gmail.com.</p>
+        <div className="space-y-6">
+          <p>Regardless of where you are located, you have the following rights regarding your personal data:</p>
+          <div className="space-y-4">
+            <div>
+              <p className="font-bold text-black dark:text-white tracking-tight">Access</p>
+              <p>Request a copy of the personal data we hold about you.</p>
+            </div>
+            <div>
+              <p className="font-bold text-black dark:text-white tracking-tight">Correction</p>
+              <p>Request correction of inaccurate or incomplete information.</p>
+            </div>
+            <div>
+              <p className="font-bold text-black dark:text-white tracking-tight">Deletion</p>
+              <p>Request deletion of your personal data (right to be forgotten).</p>
+            </div>
+            <div>
+              <p className="font-bold text-black dark:text-white tracking-tight">Portability</p>
+              <p>Receive your data in a structured, machine-readable format.</p>
+            </div>
+            <div>
+              <p className="font-bold text-black dark:text-white tracking-tight">Objection</p>
+              <p>Object to certain types of processing, including profiling.</p>
+            </div>
+            <div>
+              <p className="font-bold text-black dark:text-white tracking-tight">Revocation of consent</p>
+              <p>Withdraw access permissions granted to Mailient at any time.</p>
+            </div>
+          </div>
+          <p>To exercise any of these rights, contact us at <a href="mailto:mailient.xyz@gmail.com" className="text-black dark:text-white font-medium underline underline-offset-4 decoration-neutral-300 dark:decoration-neutral-700 hover:decoration-black dark:hover:decoration-white transition-all">mailient.xyz@gmail.com</a>. We will respond within 30 days. You may also revoke Google access permissions at any time via your Google account settings at <a href="https://myaccount.google.com/permissions" className="text-black dark:text-white font-medium underline underline-offset-4 decoration-neutral-300 dark:decoration-neutral-700 hover:decoration-black dark:hover:decoration-white transition-all">myaccount.google.com/permissions</a>.</p>
         </div>
       )
     },
@@ -181,7 +239,13 @@ export default function PrivacyPolicy() {
       title: "11. Cookies and tracking technologies",
       content: (
         <div className="space-y-4">
-          <p>Mailient uses minimal essential cookies to maintain your login session. We do not use advertising or behavioral tracking technologies.</p>
+          <p>Mailient uses minimal cookies and similar technologies to operate the service:</p>
+          <ul className="list-disc pl-5 space-y-3">
+            <li><strong>Essential cookies:</strong> Required to maintain your login session and ensure the application functions correctly. These cannot be disabled without breaking the service.</li>
+            <li><strong>Analytics cookies:</strong> We may use anonymized, aggregated analytics (e.g., page views, feature usage) to understand how users interact with Mailient. No email content is included in these analytics.</li>
+          </ul>
+          <p>We do not use advertising cookies, cross-site tracking cookies, or third-party behavioral tracking technologies.</p>
+          <p>You can manage or delete cookies via your browser settings. Disabling essential cookies will prevent you from using the application.</p>
         </div>
       )
     },
@@ -190,7 +254,7 @@ export default function PrivacyPolicy() {
       title: "12. International data transfers",
       content: (
         <div className="space-y-4">
-          <p>Mailient is operated globally. We ensure any international transfer of data is subject to appropriate safeguards in accordance with law.</p>
+          <p>Mailient is operated globally and your data may be processed in countries other than your country of residence. We ensure that any international transfer of personal data is subject to appropriate safeguards in accordance with applicable data protection laws, including standard contractual clauses or equivalent measures where required. By using Mailient, you acknowledge that your data may be transferred to and processed in countries with different data protection standards than your own.</p>
         </div>
       )
     },
@@ -199,7 +263,14 @@ export default function PrivacyPolicy() {
       title: "13. Third-party services and integrations",
       content: (
         <div className="space-y-4">
-          <p>Mailient relies on providers such as Google (OAuth/Gmail), secure payment processors, and AI model APIs. All providers are vetted for high security standards.</p>
+          <p>Mailient integrates with or relies on the following categories of third-party services:</p>
+          <ul className="list-disc pl-5 space-y-4">
+            <li><strong>Google (Gmail API & OAuth):</strong> Core to our service. Google's privacy policy governs their data handling at <a href="https://policies.google.com/privacy" className="hover:text-black dark:hover:text-white transition-colors">policies.google.com/privacy</a>.</li>
+            <li><strong>Payment processors:</strong> Used to handle subscription payments. They do not receive your email content.</li>
+            <li><strong>Cloud infrastructure providers:</strong> Used to host and operate our service securely.</li>
+            <li><strong>AI model providers:</strong> We may use AI APIs to power features such as drafting and summarization. Any data sent is subject to data processing agreements and is not used for model training on our users' data.</li>
+          </ul>
+          <p>We carefully vet all third-party processors and ensure they operate under data processing agreements consistent with this Privacy Policy.</p>
         </div>
       )
     },
@@ -208,7 +279,13 @@ export default function PrivacyPolicy() {
       title: "14. Changes to this policy",
       content: (
         <div className="space-y-4">
-          <p>We may update this policy periodically. When material changes occur, we will update the date and notify users where significant changes take place.</p>
+          <p>We may update this Privacy Policy from time to time to reflect changes in our practices, technology, legal requirements, or other factors. When we make material changes, we will:</p>
+          <ul className="list-disc pl-5 space-y-3">
+            <li>Update the "Last Updated" date at the top of this policy</li>
+            <li>Notify you by email or in-app notification for significant changes</li>
+            <li>Where required by law, seek your renewed consent before the changes take effect</li>
+          </ul>
+          <p>We encourage you to review this policy periodically. Continued use of Mailient after changes are posted constitutes your acceptance of the updated policy.</p>
         </div>
       )
     },
@@ -218,9 +295,9 @@ export default function PrivacyPolicy() {
       content: (
         <div className="space-y-2">
           <p className="font-bold text-black dark:text-white">Mailient Intelligence</p>
-          <p>Email: mailient.xyz@gmail.com</p>
-          <p>Website: mailient.xyz</p>
-          <p>Founder: @Maulik_055 on X</p>
+          <p>Email: <a href="mailto:mailient.xyz@gmail.com" className="text-black dark:text-white font-medium underline underline-offset-4 decoration-neutral-300 dark:decoration-neutral-700 hover:decoration-black dark:hover:decoration-white transition-all">mailient.xyz@gmail.com</a></p>
+          <p>Website: <a href="https://mailient.xyz" className="hover:text-black dark:hover:text-white transition-colors">mailient.xyz</a></p>
+          <p>Founder: <a href="https://x.com/Maulik_055" className="text-black dark:text-white font-medium underline underline-offset-4 decoration-neutral-300 dark:decoration-neutral-700 hover:decoration-black dark:hover:decoration-white transition-all">@Maulik_055 on X</a></p>
         </div>
       )
     }
@@ -242,13 +319,16 @@ export default function PrivacyPolicy() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-black dark:text-white mb-6 lowercase">
-              privacy policy
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-black dark:text-white mb-6">
+              Privacy Policy
             </h1>
             <p className="text-sm font-semibold tracking-wide text-neutral-400 dark:text-neutral-500 uppercase">
-              Effective Date: {currentDate}
+              Last Updated: {lastUpdated}
             </p>
             <div className="h-px w-full bg-neutral-100 dark:bg-neutral-900 my-10" />
+            <p className="text-[17px] leading-[1.7] text-neutral-600 dark:text-neutral-400">
+                This Privacy Policy describes how Mailient Intelligence ("Mailient," "we," "us," or "our") collects, uses, stores, and protects your personal information when you use our email intelligence platform at mailient.xyz. By using Mailient, you agree to the practices described in this policy.
+            </p>
           </motion.div>
         </header>
 
