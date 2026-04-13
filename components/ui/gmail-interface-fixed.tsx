@@ -439,12 +439,11 @@ export function GmailInterfaceFixed() {
 
     useEffect(() => {
         if (!hasInitialLoad && session?.user?.email) {
-            fetchSiftInsights(true);
             fetchUsage(true);
             fetchVoiceProfile();
             setHasInitialLoad(true);
         }
-    }, [session, hasInitialLoad, fetchSiftInsights, fetchUsage, fetchVoiceProfile]);
+    }, [session, hasInitialLoad, fetchUsage, fetchVoiceProfile]);
 
     const fetchContacts = useCallback(async (query: string = '') => {
         setIsLoadingContacts(true);
