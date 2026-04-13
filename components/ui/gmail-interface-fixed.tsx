@@ -1460,20 +1460,8 @@ export function GmailInterfaceFixed() {
 
     const totalItems = summary ? Object.values(summary as Record<string, number>).reduce((a: number, b: number) => a + b, 0) : 0;
 
-    const [isMobile, setIsMobile] = useState(false);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-    // Initial width check and resize listener
-    useEffect(() => {
-        const checkMobile = () => {
-            setIsMobile(window.innerWidth < 768);
-        };
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
-    }, []);
-
     const [isClient, setIsClient] = useState(false);
     useEffect(() => {
         setIsClient(true);
