@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth.js';
 import { DatabaseService } from '@/lib/supabase.js';
 import { decrypt } from '@/lib/crypto.js';
-import { GmailService } from '@/lib/gmail.js';
+import { GmailService } from '@/lib/gmail.ts';
 import { ArcusAIService } from '@/lib/arcus-ai.js';
 import { subscriptionService } from '@/lib/subscription-service.js';
 

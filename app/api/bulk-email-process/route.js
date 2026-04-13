@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 import { auth } from '@/lib/auth.js';
 import { DatabaseService } from '@/lib/supabase.js';
 import { decrypt } from '@/lib/crypto.js';
-import { GmailService } from '@/lib/gmail.js';
+import { GmailService } from '@/lib/gmail.ts';
 import { AIConfig } from '@/lib/ai-config.js';
 import { subscriptionService } from '@/lib/subscription-service.js';
 
