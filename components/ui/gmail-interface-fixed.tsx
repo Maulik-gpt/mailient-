@@ -183,6 +183,8 @@ export function GmailInterfaceFixed() {
     const [summary, setSummary] = useState<SiftInsightsResponse['sift_intelligence_summary']>();
     const [nextPageToken, setNextPageToken] = useState<string | null>(null);
     const [countdown, setCountdown] = useState<number | null>(null);
+    const [mounted, setMounted] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
 
     const [hasInitialLoad, setHasInitialLoad] = useState(false);
     const [selectedInsight, setSelectedInsight] = useState<SiftInsight | null>(null);
@@ -497,9 +499,11 @@ export function GmailInterfaceFixed() {
     }, [arcusMessages]);
 
     useEffect(() => {
+        setMounted(true);
         const computeHeight = () => {
-            const h = typeof window !== 'undefined' ? window.innerHeight : 900;
+            const h = window.innerHeight;
             setArcusPanelHeight(Math.max(h - 48, 520));
+            setIsMobile(window.innerWidth < 768);
         };
         computeHeight();
         window.addEventListener('resize', computeHeight);
@@ -636,6 +640,39 @@ export function GmailInterfaceFixed() {
             </>
         );
     }, [decodeEntities]);
+
+    const formatDate = useCallback((dateString: string | undefined | null, options?: Intl.DateTimeFormatOptions) => {
+        if (!mounted || !dateString) return '';
+        try {
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return '';
+            return date.toLocaleString(undefined, options);
+        } catch (e) {
+            return '';
+        }
+    }, [mounted]);
+
+    const formatTime = useCallback((dateString: string | undefined | null) => {
+        if (!mounted || !dateString) return '';
+        try {
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return '';
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        } catch (e) {
+            return '';
+        }
+    }, [mounted]);
+
+    const formatDateOnly = useCallback((dateString: string | undefined | null) => {
+        if (!mounted || !dateString) return '';
+        try {
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return '';
+            return date.toLocaleDateString();
+        } catch (e) {
+            return '';
+        }
+    }, [mounted]);
 
     const handleEmailClick = async (emailId: string) => {
         setSelectedEmailId(emailId);
@@ -2193,668 +2230,668 @@ export function GmailInterfaceFixed() {
                     </div>
                 </motion.div>
 
-                {/* Details Modal */}
-                <div
-                    className={`fixed top-1/2 left-1/2 bg-white dark:bg-[#1a1a1a] rounded-none md:rounded-[2.5rem] shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-50 flex flex-col border border-neutral-200 dark:border-neutral-800 overflow-hidden`}
-                    style={{
-                        width: typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : '70%',
-                        height: typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : '85vh',
-                        transform: selectedInsight ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -45%) scale(0.95)',
-                        opacity: selectedInsight ? 1 : 0,
-                        pointerEvents: selectedInsight ? 'auto' : 'none'
-                    }}
-                >
-                    <div className="p-6 md:p-10 flex-1 overflow-y-auto relative custom-scrollbar">
-                        {selectedInsight && (
-                            <div className="space-y-8 pb-20">
-                                {/* Header with Back Button if Email Selected */}
-                                <div className="flex justify-between items-start">
-                                    <div className="flex items-center gap-4">
-                                        {selectedEmailId && (
-                                            <button
-                                                onClick={() => setSelectedEmailId(null)}
-                                                className="p-2 -ml-2 hover:bg-neutral-800 rounded-full transition-colors text-neutral-600 hover:text-black dark:text-white"
-                                            >
-                                                <ArrowLeft className="w-6 h-6" />
-                                            </button>
-                                        )}
-                                        <div>
-                                            {!selectedEmailId && (
-                                                <Badge variant="outline" className="mb-4 border-neutral-700 text-neutral-500 dark:text-neutral-400 px-3 py-1 rounded-full text-xs uppercase tracking-wider">
-                                                    {selectedInsight.type.replace('-', ' ')}
-                                                </Badge>
-                                            )}
-                                            <h2 className={`font-medium text-black dark:text-white mb-2 ${selectedEmailId ? 'text-xl md:text-2xl' : 'text-2xl md:text-3xl'}`}>
-                                                {selectedEmailId
-                                                    ? selectedInsight.source_emails?.find(e => e.id === selectedEmailId)?.subject
-                                                    : selectedInsight.title}
-                                            </h2>
-                                            {!selectedEmailId && (
-                                                <p className="text-neutral-600 dark:text-neutral-500 text-sm font-light">
-                                                    {new Date(selectedInsight.timestamp).toLocaleString()}
-                                                </p>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={() => setSelectedInsight(null)}
-                                        className="p-3 hover:bg-neutral-800 rounded-full transition-colors text-neutral-600 hover:text-black dark:text-white"
-                                    >
-                                        <X className="w-6 h-6" />
-                                    </button>
-                                </div>
+                                                {/* Details Modal */}
+                                                <div
+                                                    className={`fixed top-1/2 left-1/2 bg-white dark:bg-[#1a1a1a] rounded-none md:rounded-[2.5rem] shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-50 flex flex-col border border-neutral-200 dark:border-neutral-800 overflow-hidden`}
+                                                    style={{
+                                                        width: isMobile ? '100%' : '70%',
+                                                        height: isMobile ? '100%' : '85vh',
+                                                        transform: selectedInsight ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -45%) scale(0.95)',
+                                                        opacity: selectedInsight ? 1 : 0,
+                                                        pointerEvents: selectedInsight ? 'auto' : 'none'
+                                                    }}
+                                                >
+                                                    <div className="p-6 md:p-10 flex-1 overflow-y-auto relative custom-scrollbar">
+                                                        {selectedInsight && (
+                                                            <div className="space-y-8 pb-20">
+                                                                {/* Header with Back Button if Email Selected */}
+                                                                <div className="flex justify-between items-start">
+                                                                    <div className="flex items-center gap-4">
+                                                                        {selectedEmailId && (
+                                                                            <button
+                                                                                onClick={() => setSelectedEmailId(null)}
+                                                                                className="p-2 -ml-2 hover:bg-neutral-800 rounded-full transition-colors text-neutral-600 hover:text-black dark:text-white"
+                                                                            >
+                                                                                <ArrowLeft className="w-6 h-6" />
+                                                                            </button>
+                                                                        )}
+                                                                        <div>
+                                                                            {!selectedEmailId && (
+                                                                                <Badge variant="outline" className="mb-4 border-neutral-700 text-neutral-500 dark:text-neutral-400 px-3 py-1 rounded-full text-xs uppercase tracking-wider">
+                                                                                    {selectedInsight.type.replace('-', ' ')}
+                                                                                </Badge>
+                                                                            )}
+                                                                            <h2 className={`font-medium text-black dark:text-white mb-2 ${selectedEmailId ? 'text-xl md:text-2xl' : 'text-2xl md:text-3xl'}`}>
+                                                                                {selectedEmailId
+                                                                                    ? selectedInsight.source_emails?.find(e => e.id === selectedEmailId)?.subject
+                                                                                    : selectedInsight.title}
+                                                                            </h2>
+                                                                            {!selectedEmailId && (
+                                                                                <p className="text-neutral-600 dark:text-neutral-500 text-sm font-light">
+                                                                                    {formatDate(selectedInsight.timestamp)}
+                                                                                </p>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                    <button
+                                                                        onClick={() => setSelectedInsight(null)}
+                                                                        className="p-3 hover:bg-neutral-800 rounded-full transition-colors text-neutral-600 hover:text-black dark:text-white"
+                                                                    >
+                                                                        <X className="w-6 h-6" />
+                                                                    </button>
+                                                                </div>
 
-                                {/* Main Content Area */}
-                                {!selectedEmailId ? (
-                                    /* Insight Overview View */
-                                    <>
-                                        <div className="prose prose-invert max-w-none">
-                                            <p className="text-neutral-900 dark:text-neutral-300 leading-relaxed whitespace-pre-wrap text-lg font-light">
-                                                {formatAIText(selectedInsight.content)}
-                                            </p>
-                                        </div>
+                                                                {/* Main Content Area */}
+                                                                {!selectedEmailId ? (
+                                                                    /* Insight Overview View */
+                                                                    <>
+                                                                        <div className="prose prose-invert max-w-none">
+                                                                            <p className="text-neutral-900 dark:text-neutral-300 leading-relaxed whitespace-pre-wrap text-lg font-light">
+                                                                                {formatAIText(selectedInsight.content)}
+                                                                            </p>
+                                                                        </div>
 
-                                        {/* Source Emails List */}
-                                        {selectedInsight.source_emails && selectedInsight.source_emails.length > 0 && (
-                                            <div className="mt-12">
-                                                <h3 className="text-xs font-medium text-neutral-600 dark:text-neutral-500 uppercase tracking-widest mb-6">
-                                                    Source Emails
-                                                </h3>
-                                                <div className="grid grid-cols-1 gap-4">
-                                                    {selectedInsight.source_emails.map((email) => (
-                                                        <div
-                                                            key={email.id}
-                                                            onClick={() => handleEmailClick(email.id)}
-                                                            className="bg-neutral-200/50 dark:bg-neutral-900/50 rounded-2xl p-6 hover:bg-neutral-800/50 transition-all cursor-pointer border border-neutral-200 dark:border-neutral-800/50 group hover:border-neutral-700"
-                                                        >
-                                                            <div className="flex items-start gap-5">
-                                                                {email.sender.avatar ? (
-                                                                    <img
-                                                                        src={email.sender.avatar}
-                                                                        alt={email.sender.name}
-                                                                        className="w-12 h-12 rounded-full object-cover flex-shrink-0 border border-neutral-200 dark:border-neutral-800"
-                                                                    />
+                                                                        {/* Source Emails List */}
+                                                                        {selectedInsight.source_emails && selectedInsight.source_emails.length > 0 && (
+                                                                            <div className="mt-12">
+                                                                                <h3 className="text-xs font-medium text-neutral-600 dark:text-neutral-500 uppercase tracking-widest mb-6">
+                                                                                    Source Emails
+                                                                                </h3>
+                                                                                <div className="grid grid-cols-1 gap-4">
+                                                                                    {selectedInsight.source_emails.map((email) => (
+                                                                                        <div
+                                                                                            key={email.id}
+                                                                                            onClick={() => handleEmailClick(email.id)}
+                                                                                            className="bg-neutral-200/50 dark:bg-neutral-900/50 rounded-2xl p-6 hover:bg-neutral-800/50 transition-all cursor-pointer border border-neutral-200 dark:border-neutral-800/50 group hover:border-neutral-700"
+                                                                                        >
+                                                                                            <div className="flex items-start gap-5">
+                                                                                                {email.sender.avatar ? (
+                                                                                                    <img
+                                                                                                        src={email.sender.avatar}
+                                                                                                        alt={email.sender.name}
+                                                                                                        className="w-12 h-12 rounded-full object-cover flex-shrink-0 border border-neutral-200 dark:border-neutral-800"
+                                                                                                    />
+                                                                                                ) : (
+                                                                                                    <div className="w-12 h-12 rounded-full bg-neutral-800 flex items-center justify-center flex-shrink-0 border border-neutral-700">
+                                                                                                        <User className="w-6 h-6 text-neutral-600 dark:text-neutral-500" />
+                                                                                                    </div>
+                                                                                                )}
+                                                                                                <div className="flex-1 min-w-0">
+                                                                                                    <div className="flex justify-between items-start mb-2">
+                                                                                                        <p className="text-base font-medium text-[#fafafa] truncate pr-2 group-hover:text-blue-400 transition-colors">
+                                                                                                            {email.sender.name}
+                                                                                                        </p>
+                                                                                                        <span className="text-xs text-neutral-600 dark:text-neutral-500 whitespace-nowrap font-light">
+                                                                                                            {formatDateOnly(email.receivedAt)}
+                                                                                                        </span>
+                                                                                                    </div>
+                                                                                                    <p className="text-sm text-neutral-900 dark:text-neutral-300 font-medium truncate mb-2">
+                                                                                                        {email.subject}
+                                                                                                    </p>
+                                                                                                    <p className="text-sm text-neutral-600 dark:text-neutral-500 line-clamp-2 font-light leading-relaxed">
+                                                                                                        {email.snippet}
+                                                                                                    </p>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    ))}
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+                                                                    </>
                                                                 ) : (
-                                                                    <div className="w-12 h-12 rounded-full bg-neutral-800 flex items-center justify-center flex-shrink-0 border border-neutral-700">
-                                                                        <User className="w-6 h-6 text-neutral-600 dark:text-neutral-500" />
+                                                                    /* Email Detail & AI Summary View */
+                                                                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                                                        {isSummarizing ? (
+                                                                            <div className="flex flex-col items-center justify-center py-32">
+                                                                                <div className="relative">
+                                                                                    <Sparkles className="w-16 h-16 text-black dark:text-white animate-pulse" strokeWidth={1} />
+                                                                                    <div className="absolute inset-0 bg-black/10 dark:bg-white/10 blur-3xl rounded-full animate-pulse" />
+                                                                                </div>
+                                                                                <p className="mt-8 text-neutral-600 dark:text-neutral-500 font-light text-xl animate-pulse">
+                                                                                    Sift AI is analyzing the conversation...
+                                                                                </p>
+                                                                            </div>
+                                                                        ) : (
+                                                                            <div className="space-y-10">
+                                                                                {/* AI Summary Card */}
+                                                                                <div className="bg-gradient-to-br from-neutral-800/40 to-neutral-900/40 rounded-[2rem] p-8 border border-neutral-200 dark:border-neutral-800/50 shadow-2xl relative overflow-hidden">
+                                                                                    <div className="absolute top-0 right-0 p-8 opacity-5">
+                                                                                        <Sparkles className="w-32 h-32 text-black dark:text-white" />
+                                                                                    </div>
+
+                                                                                    <div className="flex items-center gap-3 mb-6">
+                                                                                        <Sparkles className="w-5 h-5 text-yellow-500" />
+                                                                                        <h3 className="text-xs font-medium text-yellow-600 uppercase tracking-widest">
+                                                                                            AI Intelligence Summary
+                                                                                        </h3>
+                                                                                    </div>
+
+                                                                                    <p className="text-neutral-900 dark:text-neutral-200 leading-relaxed text-xl font-light whitespace-pre-wrap">
+                                                                                        {formatAIText(emailSummary)}
+                                                                                    </p>
+                                                                                </div>
+
+                                                                                {/* Premium Coming Soon Message (inline) */}
+                                                                                <div id="coming-soon-message" className="mb-6 p-4 bg-gradient-to-r from-neutral-800 to-neutral-900 rounded-2xl border border-neutral-700 text-center hidden">
+                                                                                    <p className="text-neutral-900 dark:text-neutral-300 font-medium">
+                                                                                        🚀 <span className="font-light">Coming Soon...</span>
+                                                                                    </p>
+                                                                                    <p className="text-neutral-600 dark:text-neutral-500 text-sm font-light mt-1">
+                                                                                        This premium feature will be available soon!
+                                                                                    </p>
+                                                                                </div>
+
+                                                                                {/* Action Buttons */}
+                                                                                <div className="grid grid-cols-2 gap-6">
+                                                                                    {getActionButtons(selectedInsight).map((label, index) => (
+                                                                                        <Button
+                                                                                            key={index}
+                                                                                            onClick={() => {
+                                                                                                if (label === 'Draft Reply' && selectedEmailId) {
+                                                                                                    handleDraftReply(selectedEmailId, selectedInsight.type);
+                                                                                                } else if (label === 'Reply Now' && selectedEmailId) {
+                                                                                                    handleDraftReply(selectedEmailId, selectedInsight.type);
+                                                                                                } else if (label === 'Repair Reply' && selectedEmailId) {
+                                                                                                    handleRepairReply(selectedEmailId, selectedInsight.type);
+                                                                                                } else if (label.toLowerCase().includes('call') && selectedEmailId) {
+                                                                                                    handleScheduleCall(selectedEmailId);
+                                                                                                } else if (label === 'Schedule Meeting' && selectedEmailId) {
+                                                                                                    handleScheduleCall(selectedEmailId);
+                                                                                                } else if (label === 'Escalate' && selectedEmailId) {
+                                                                                                    handleEscalate(selectedEmailId);
+                                                                                                } else if (label === 'Add Note' && selectedEmailId) {
+                                                                                                    handleAddNote(selectedEmailId);
+                                                                                                } else if (label === 'Send follow-up' && selectedEmailId) {
+                                                                                                    handleDraftReply(selectedEmailId, 'follow-up');
+                                                                                                } else if (label === 'Unsubscribe' && selectedEmailId) {
+                                                                                                    handleUnsubscribe(selectedEmailId);
+                                                                                                } else if (label === 'Coming Soon') {
+                                                                                                    // Premium inline message instead of toast
+                                                                                                    const comingSoonElement = document.getElementById('coming-soon-message');
+                                                                                                    if (comingSoonElement) {
+                                                                                                        comingSoonElement.style.display = 'block';
+                                                                                                        setTimeout(() => {
+                                                                                                            comingSoonElement.style.display = 'none';
+                                                                                                        }, 3000);
+                                                                                                    }
+                                                                                                }
+                                                                                            }}
+                                                                                            className="h-14 md:h-16 bg-gradient-to-r from-neutral-900 to-neutral-700 hover:from-neutral-800 hover:to-neutral-600 text-[#fafafa] border border-neutral-600 rounded-2xl transition-all duration-300 font-medium text-base md:text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                                                                                        >
+                                                                                            {label}
+                                                                                        </Button>
+                                                                                    ))}
+                                                                                </div>
+
+                                                                                {/* Original Email Content (Optional context) */}
+                                                                                <div className="pt-10 border-t border-neutral-200 dark:border-neutral-800/50">
+                                                                                    <h4 className="text-xs font-medium text-neutral-600 uppercase tracking-widest mb-6">Original Message Snippet</h4>
+                                                                                    <div className="bg-neutral-900/30 rounded-2xl p-8 text-neutral-500 dark:text-neutral-400 text-base leading-relaxed font-light border border-neutral-200 dark:border-neutral-800/30">
+                                                                                        {selectedInsight.source_emails?.find(e => e.id === selectedEmailId)?.snippet}
+                                                                                        ...
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
                                                                     </div>
                                                                 )}
-                                                                <div className="flex-1 min-w-0">
-                                                                    <div className="flex justify-between items-start mb-2">
-                                                                        <p className="text-base font-medium text-[#fafafa] truncate pr-2 group-hover:text-blue-400 transition-colors">
-                                                                            {email.sender.name}
-                                                                        </p>
-                                                                        <span className="text-xs text-neutral-600 dark:text-neutral-500 whitespace-nowrap font-light">
-                                                                            {new Date(email.receivedAt).toLocaleDateString()}
-                                                                        </span>
-                                                                    </div>
-                                                                    <p className="text-sm text-neutral-900 dark:text-neutral-300 font-medium truncate mb-2">
-                                                                        {email.subject}
-                                                                    </p>
-                                                                    <p className="text-sm text-neutral-600 dark:text-neutral-500 line-clamp-2 font-light leading-relaxed">
-                                                                        {email.snippet}
-                                                                    </p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    {/* Progressive Blur Bottom */}
+                                                    <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#1a1a1a] to-transparent pointer-events-none rounded-b-none lg:rounded-b-[2.5rem] z-10" />
+                                                </div>
+
+                                                {/* Draft Editor Modal */}
+                                                <div
+                                                    className={`fixed top-1/2 left-1/2 bg-[#0d0d0d]/95 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_0_120px_rgba(0,0,0,0.6),0_0_60px_rgba(255,255,255,0.02)] transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-[60] flex flex-col border border-white/[0.06] overflow-hidden`}
+                                                    style={{
+                                                        width: isMobile ? '100%' : '55%',
+                                                        minWidth: isMobile ? '100%' : '600px',
+                                                        maxWidth: isMobile ? '100%' : '900px',
+                                                        height: isMobile ? '100%' : '88vh',
+                                                        transform: showDraftEditor ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -45%) scale(0.95)',
+                                                        opacity: showDraftEditor ? 1 : 0,
+                                                        pointerEvents: showDraftEditor ? 'auto' : 'none',
+                                                        borderRadius: isMobile ? '0' : '2.5rem'
+                                                    }}
+                                                >
+                                                    <div className="p-10 flex flex-col h-full relative">
+                                                        <div className="flex justify-between items-center mb-8">
+                                                            <div className="flex items-center gap-4">
+                                                                <div className="p-3 bg-blue-500/10 rounded-2xl">
+                                                                    <Sparkles className="w-6 h-6 text-blue-400" />
+                                                                </div>
+                                                                <div>
+                                                                    <h3 className="text-2xl font-medium text-black dark:text-white">AI Draft Reply</h3>
+                                                                    <p className="text-sm text-neutral-600 dark:text-neutral-500 font-light">Sift AI generated response</p>
                                                                 </div>
                                                             </div>
+                                                            <button
+                                                                onClick={() => setShowDraftEditor(false)}
+                                                                className="p-3 hover:bg-neutral-800 rounded-full transition-colors text-neutral-600 hover:text-black dark:text-white"
+                                                            >
+                                                                <X className="w-6 h-6" />
+                                                            </button>
                                                         </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </>
-                                ) : (
-                                    /* Email Detail & AI Summary View */
-                                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                        {isSummarizing ? (
-                                            <div className="flex flex-col items-center justify-center py-32">
-                                                <div className="relative">
-                                                    <Sparkles className="w-16 h-16 text-black dark:text-white animate-pulse" strokeWidth={1} />
-                                                    <div className="absolute inset-0 bg-black/10 dark:bg-white/10 blur-3xl rounded-full animate-pulse" />
-                                                </div>
-                                                <p className="mt-8 text-neutral-600 dark:text-neutral-500 font-light text-xl animate-pulse">
-                                                    Sift AI is analyzing the conversation...
-                                                </p>
-                                            </div>
-                                        ) : (
-                                            <div className="space-y-10">
-                                                {/* AI Summary Card */}
-                                                <div className="bg-gradient-to-br from-neutral-800/40 to-neutral-900/40 rounded-[2rem] p-8 border border-neutral-200 dark:border-neutral-800/50 shadow-2xl relative overflow-hidden">
-                                                    <div className="absolute top-0 right-0 p-8 opacity-5">
-                                                        <Sparkles className="w-32 h-32 text-black dark:text-white" />
-                                                    </div>
 
-                                                    <div className="flex items-center gap-3 mb-6">
-                                                        <Sparkles className="w-5 h-5 text-yellow-500" />
-                                                        <h3 className="text-xs font-medium text-yellow-600 uppercase tracking-widest">
-                                                            AI Intelligence Summary
-                                                        </h3>
-                                                    </div>
+                                                        {/* Voice Profile Quick Access */}
+                                                        <div className="mb-6">
+                                                            <button
+                                                                onClick={() => setIsVoiceProfileModalOpen(true)}
+                                                                className="flex items-center gap-3 px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl transition-all group"
+                                                            >
+                                                                <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
+                                                                <span className="text-xs font-medium text-white/50 group-hover:text-white/80">Mimic My Style Active</span>
+                                                                <Activity className="w-3.5 h-3.5 text-white/20 group-hover:text-white/40 ml-2" />
+                                                            </button>
+                                                        </div>
 
-                                                    <p className="text-neutral-900 dark:text-neutral-200 leading-relaxed text-xl font-light whitespace-pre-wrap">
-                                                        {formatAIText(emailSummary)}
-                                                    </p>
-                                                </div>
-
-                                                {/* Premium Coming Soon Message (inline) */}
-                                                <div id="coming-soon-message" className="mb-6 p-4 bg-gradient-to-r from-neutral-800 to-neutral-900 rounded-2xl border border-neutral-700 text-center hidden">
-                                                    <p className="text-neutral-900 dark:text-neutral-300 font-medium">
-                                                        🚀 <span className="font-light">Coming Soon...</span>
-                                                    </p>
-                                                    <p className="text-neutral-600 dark:text-neutral-500 text-sm font-light mt-1">
-                                                        This premium feature will be available soon!
-                                                    </p>
-                                                </div>
-
-                                                {/* Action Buttons */}
-                                                <div className="grid grid-cols-2 gap-6">
-                                                    {getActionButtons(selectedInsight).map((label, index) => (
-                                                        <Button
-                                                            key={index}
-                                                            onClick={() => {
-                                                                if (label === 'Draft Reply' && selectedEmailId) {
-                                                                    handleDraftReply(selectedEmailId, selectedInsight.type);
-                                                                } else if (label === 'Reply Now' && selectedEmailId) {
-                                                                    handleDraftReply(selectedEmailId, selectedInsight.type);
-                                                                } else if (label === 'Repair Reply' && selectedEmailId) {
-                                                                    handleRepairReply(selectedEmailId, selectedInsight.type);
-                                                                } else if (label.toLowerCase().includes('call') && selectedEmailId) {
-                                                                    handleScheduleCall(selectedEmailId);
-                                                                } else if (label === 'Schedule Meeting' && selectedEmailId) {
-                                                                    handleScheduleCall(selectedEmailId);
-                                                                } else if (label === 'Escalate' && selectedEmailId) {
-                                                                    handleEscalate(selectedEmailId);
-                                                                } else if (label === 'Add Note' && selectedEmailId) {
-                                                                    handleAddNote(selectedEmailId);
-                                                                } else if (label === 'Send follow-up' && selectedEmailId) {
-                                                                    handleDraftReply(selectedEmailId, 'follow-up');
-                                                                } else if (label === 'Unsubscribe' && selectedEmailId) {
-                                                                    handleUnsubscribe(selectedEmailId);
-                                                                } else if (label === 'Coming Soon') {
-                                                                    // Premium inline message instead of toast
-                                                                    const comingSoonElement = document.getElementById('coming-soon-message');
-                                                                    if (comingSoonElement) {
-                                                                        comingSoonElement.style.display = 'block';
-                                                                        setTimeout(() => {
-                                                                            comingSoonElement.style.display = 'none';
-                                                                        }, 3000);
-                                                                    }
-                                                                }
-                                                            }}
-                                                            className="h-14 md:h-16 bg-gradient-to-r from-neutral-900 to-neutral-700 hover:from-neutral-800 hover:to-neutral-600 text-[#fafafa] border border-neutral-600 rounded-2xl transition-all duration-300 font-medium text-base md:text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                                                        >
-                                                            {label}
-                                                        </Button>
-                                                    ))}
-                                                </div>
-
-                                                {/* Original Email Content (Optional context) */}
-                                                <div className="pt-10 border-t border-neutral-200 dark:border-neutral-800/50">
-                                                    <h4 className="text-xs font-medium text-neutral-600 uppercase tracking-widest mb-6">Original Message Snippet</h4>
-                                                    <div className="bg-neutral-900/30 rounded-2xl p-8 text-neutral-500 dark:text-neutral-400 text-base leading-relaxed font-light border border-neutral-200 dark:border-neutral-800/30">
-                                                        {selectedInsight.source_emails?.find(e => e.id === selectedEmailId)?.snippet}
-                                                        ...
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                    {/* Progressive Blur Bottom */}
-                    <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#1a1a1a] to-transparent pointer-events-none rounded-b-none lg:rounded-b-[2.5rem] z-10" />
-                </div>
-
-                {/* Draft Editor Modal */}
-                <div
-                    className={`fixed top-1/2 left-1/2 bg-[#0d0d0d]/95 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_0_120px_rgba(0,0,0,0.6),0_0_60px_rgba(255,255,255,0.02)] transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-[60] flex flex-col border border-white/[0.06] overflow-hidden`}
-                    style={{
-                        width: typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : '55%',
-                        minWidth: typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : '600px',
-                        maxWidth: typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : '900px',
-                        height: typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : '88vh',
-                        transform: showDraftEditor ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -45%) scale(0.95)',
-                        opacity: showDraftEditor ? 1 : 0,
-                        pointerEvents: showDraftEditor ? 'auto' : 'none',
-                        borderRadius: typeof window !== 'undefined' && window.innerWidth < 768 ? '0' : '2.5rem'
-                    }}
-                >
-                    <div className="p-10 flex flex-col h-full relative">
-                        <div className="flex justify-between items-center mb-8">
-                            <div className="flex items-center gap-4">
-                                <div className="p-3 bg-blue-500/10 rounded-2xl">
-                                    <Sparkles className="w-6 h-6 text-blue-400" />
-                                </div>
-                                <div>
-                                    <h3 className="text-2xl font-medium text-black dark:text-white">AI Draft Reply</h3>
-                                    <p className="text-sm text-neutral-600 dark:text-neutral-500 font-light">Sift AI generated response</p>
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => setShowDraftEditor(false)}
-                                className="p-3 hover:bg-neutral-800 rounded-full transition-colors text-neutral-600 hover:text-black dark:text-white"
-                            >
-                                <X className="w-6 h-6" />
-                            </button>
-                        </div>
-
-                        {/* Voice Profile Quick Access */}
-                        <div className="mb-6">
-                            <button
-                                onClick={() => setIsVoiceProfileModalOpen(true)}
-                                className="flex items-center gap-3 px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl transition-all group"
-                            >
-                                <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
-                                <span className="text-xs font-medium text-white/50 group-hover:text-white/80">Mimic My Style Active</span>
-                                <Activity className="w-3.5 h-3.5 text-white/20 group-hover:text-white/40 ml-2" />
-                            </button>
-                        </div>
-
-                        <div ref={draftContainerRef} className="flex-1 bg-neutral-900/30 rounded-[2rem] border border-neutral-200 dark:border-neutral-800/50 p-8 overflow-hidden flex flex-col shadow-inner relative" onMouseUp={handleSiftMouseUp}>
-                            {isDrafting ? (
-                                <div className="flex-1 flex flex-col items-center justify-center">
-                                    <div className="relative mb-6">
-                                        <Sparkles className="w-12 h-12 text-blue-400 animate-pulse" />
-                                        <div className="absolute inset-0 bg-blue-400/20 blur-2xl rounded-full animate-pulse" />
-                                    </div>
-                                    <p className="text-neutral-500 dark:text-neutral-400 text-lg font-light animate-pulse">Sift AI is drafting your response...</p>
-                                </div>
-                            ) : (
-                                <>
-                                    <div className="mb-4">
-                                        <input
-                                            type="text"
-                                            value={draftSubject}
-                                            onChange={(e) => setDraftSubject(e.target.value)}
-                                            className="w-full bg-neutral-900/30 text-black dark:text-white text-lg font-medium px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-800 focus:outline-none focus:border-neutral-700 transition-colors"
-                                            placeholder="Subject"
-                                        />
-                                    </div>
-                                    <div className="flex-1 overflow-y-auto custom-scrollbar relative">
-                                        {proposedRefinement && selection ? (
-                                            <div className="text-neutral-900 dark:text-neutral-200 font-light leading-relaxed text-xl whitespace-pre-wrap">
-                                                {draftContent.slice(0, selection.start)}
-                                                <span className="text-black dark:text-white/20 line-through decoration-white/30 decoration-1 bg-white/[0.03]">
-                                                    {selection.text}
-                                                </span>
-                                                <span className="text-black bg-white px-1.5 py-0.5 rounded-md shadow-[0_0_25px_rgba(255,255,255,0.1)] border border-white/20 font-medium">
-                                                    {proposedRefinement}
-                                                </span>
-                                                {draftContent.slice(selection.end)}
-                                            </div>
-                                        ) : (
-                                            <textarea
-                                                value={draftContent}
-                                                onChange={(e) => setDraftContent(e.target.value)}
-                                                className="w-full h-full bg-transparent text-neutral-900 dark:text-neutral-200 resize-none focus:outline-none font-light leading-relaxed text-xl selection:bg-white selection:text-black"
-                                                placeholder="AI generated draft will appear here..."
-                                            />
-                                        )}
-                                    </div>
-                                    {/* Progressive Blur for Textarea */}
-                                    <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-neutral-900/80 to-transparent pointer-events-none z-10" />
-                                </>
-                            )}
-
-                            {/* World-Class AI Refinement Tooltip for Sift */}
-                            <AnimatePresence mode="wait">
-                                {(showTooltip || isRefinementActive || proposedRefinement) && selection && (
-                                    <motion.div
-                                        initial={{ opacity: 0, scale: 0.96, y: 8, filter: 'blur(6px)' }}
-                                        animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
-                                        exit={{ opacity: 0, scale: 0.96, y: 8, filter: 'blur(6px)' }}
-                                        transition={{ type: 'spring', damping: 22, stiffness: 320 }}
-                                        style={{
-                                            position: 'absolute',
-                                            left: '50%',
-                                            top: `${Math.max(8, selection.rect.y - 56)}px`,
-                                            transform: 'translateX(-50%)',
-                                            zIndex: 100
-                                        }}
-                                        className="pointer-events-auto refinement-toolkit"
-                                    >
-                                        {!isRefinementActive && !proposedRefinement && (
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); setIsRefinementActive(true); }}
-                                                className="bg-zinc-900 border border-neutral-200 dark:border-white/10 rounded-full px-5 py-2.5 flex items-center gap-4 shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_20px_rgba(255,255,255,0.05)] backdrop-blur-2xl hover:bg-zinc-800 hover:border-white/20 transition-all group active:scale-95"
-                                            >
-                                                <Sparkles className="w-3.5 h-3.5 text-neutral-600 group-hover:text-black dark:text-white transition-colors" />
-                                                <span className="text-black dark:text-white font-bold text-xs tracking-tight">Ask for changes</span>
-                                                <div className="flex items-center gap-1 opacity-40">
-                                                    <div className="px-1.5 py-0.5 rounded border border-white/20 bg-black/5 dark:bg-white/5 text-[9px] font-bold uppercase tracking-tighter">M</div>
-                                                </div>
-                                            </button>
-                                        )}
-
-                                        {isRefinementActive && (
-                                            <div className="bg-white dark:bg-zinc-950/90 border border-neutral-200 dark:border-white/10 rounded-[1.5rem] p-1.5 shadow-[0_30px_70px_rgba(0,0,0,0.9)] w-[360px] backdrop-blur-3xl overflow-hidden ring-1 ring-white/10" onClick={(e) => e.stopPropagation()}>
-                                                <div className="relative group/input">
-                                                    <input
-                                                        autoFocus
-                                                        value={refinementInstruction}
-                                                        onChange={(e) => setRefinementInstruction(e.target.value)}
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === 'Enter') handleSiftRefinementSubmit();
-                                                            if (e.key === 'Escape') setIsRefinementActive(false);
-                                                        }}
-                                                        placeholder="Describe your changes"
-                                                        className="w-full bg-white/[0.04] text-black dark:text-white text-[14px] py-3.5 px-5 pr-14 rounded-2xl border border-white/[0.08] focus:outline-none focus:border-white/20 transition-all placeholder:text-zinc-600 font-medium tracking-tight"
-                                                    />
-                                                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); handleSiftRefinementSubmit(); }}
-                                                            disabled={isProcessingRefinement || !refinementInstruction.trim()}
-                                                            className="w-9 h-9 bg-white rounded-xl flex items-center justify-center text-black hover:bg-zinc-200 transition-all disabled:opacity-30 disabled:grayscale shadow-lg shadow-white/5 active:scale-90"
-                                                        >
-                                                            {isProcessingRefinement ? (
-                                                                <div className="w-4 h-4 border-[2px] border-black/20 border-t-black rounded-full animate-spin" />
+                                                        <div ref={draftContainerRef} className="flex-1 bg-neutral-900/30 rounded-[2rem] border border-neutral-200 dark:border-neutral-800/50 p-8 overflow-hidden flex flex-col shadow-inner relative" onMouseUp={handleSiftMouseUp}>
+                                                            {isDrafting ? (
+                                                                <div className="flex-1 flex flex-col items-center justify-center">
+                                                                    <div className="relative mb-6">
+                                                                        <Sparkles className="w-12 h-12 text-blue-400 animate-pulse" />
+                                                                        <div className="absolute inset-0 bg-blue-400/20 blur-2xl rounded-full animate-pulse" />
+                                                                    </div>
+                                                                    <p className="text-neutral-500 dark:text-neutral-400 text-lg font-light animate-pulse">Sift AI is drafting your response...</p>
+                                                                </div>
                                                             ) : (
-                                                                <ArrowUp className="w-4 h-4 stroke-[3]" />
+                                                                <>
+                                                                    <div className="mb-4">
+                                                                        <input
+                                                                            type="text"
+                                                                            value={draftSubject}
+                                                                            onChange={(e) => setDraftSubject(e.target.value)}
+                                                                            className="w-full bg-neutral-900/30 text-black dark:text-white text-lg font-medium px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-800 focus:outline-none focus:border-neutral-700 transition-colors"
+                                                                            placeholder="Subject"
+                                                                        />
+                                                                    </div>
+                                                                    <div className="flex-1 overflow-y-auto custom-scrollbar relative">
+                                                                        {proposedRefinement && selection ? (
+                                                                            <div className="text-neutral-900 dark:text-neutral-200 font-light leading-relaxed text-xl whitespace-pre-wrap">
+                                                                                {draftContent.slice(0, selection.start)}
+                                                                                <span className="text-black dark:text-white/20 line-through decoration-white/30 decoration-1 bg-white/[0.03]">
+                                                                                    {selection.text}
+                                                                                </span>
+                                                                                <span className="text-black bg-white px-1.5 py-0.5 rounded-md shadow-[0_0_25px_rgba(255,255,255,0.1)] border border-white/20 font-medium">
+                                                                                    {proposedRefinement}
+                                                                                </span>
+                                                                                {draftContent.slice(selection.end)}
+                                                                            </div>
+                                                                        ) : (
+                                                                            <textarea
+                                                                                value={draftContent}
+                                                                                onChange={(e) => setDraftContent(e.target.value)}
+                                                                                className="w-full h-full bg-transparent text-neutral-900 dark:text-neutral-200 resize-none focus:outline-none font-light leading-relaxed text-xl selection:bg-white selection:text-black"
+                                                                                placeholder="AI generated draft will appear here..."
+                                                                            />
+                                                                        )}
+                                                                    </div>
+                                                                    {/* Progressive Blur for Textarea */}
+                                                                    <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-neutral-900/80 to-transparent pointer-events-none z-10" />
+                                                                </>
+                                                            )}
+
+                                                            {/* World-Class AI Refinement Tooltip for Sift */}
+                                                            <AnimatePresence mode="wait">
+                                                                {(showTooltip || isRefinementActive || proposedRefinement) && selection && (
+                                                                    <motion.div
+                                                                        initial={{ opacity: 0, scale: 0.96, y: 8, filter: 'blur(6px)' }}
+                                                                        animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
+                                                                        exit={{ opacity: 0, scale: 0.96, y: 8, filter: 'blur(6px)' }}
+                                                                        transition={{ type: 'spring', damping: 22, stiffness: 320 }}
+                                                                        style={{
+                                                                            position: 'absolute',
+                                                                            left: '50%',
+                                                                            top: `${Math.max(8, selection.rect.y - 56)}px`,
+                                                                            transform: 'translateX(-50%)',
+                                                                            zIndex: 100
+                                                                        }}
+                                                                        className="pointer-events-auto refinement-toolkit"
+                                                                    >
+                                                                        {!isRefinementActive && !proposedRefinement && (
+                                                                            <button
+                                                                                onClick={(e) => { e.stopPropagation(); setIsRefinementActive(true); }}
+                                                                                className="bg-zinc-900 border border-neutral-200 dark:border-white/10 rounded-full px-5 py-2.5 flex items-center gap-4 shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_20px_rgba(255,255,255,0.05)] backdrop-blur-2xl hover:bg-zinc-800 hover:border-white/20 transition-all group active:scale-95"
+                                                                            >
+                                                                                <Sparkles className="w-3.5 h-3.5 text-neutral-600 group-hover:text-black dark:text-white transition-colors" />
+                                                                                <span className="text-black dark:text-white font-bold text-xs tracking-tight">Ask for changes</span>
+                                                                                <div className="flex items-center gap-1 opacity-40">
+                                                                                    <div className="px-1.5 py-0.5 rounded border border-white/20 bg-black/5 dark:bg-white/5 text-[9px] font-bold uppercase tracking-tighter">M</div>
+                                                                                </div>
+                                                                            </button>
+                                                                        )}
+
+                                                                        {isRefinementActive && (
+                                                                            <div className="bg-white dark:bg-zinc-950/90 border border-neutral-200 dark:border-white/10 rounded-[1.5rem] p-1.5 shadow-[0_30px_70px_rgba(0,0,0,0.9)] w-[360px] backdrop-blur-3xl overflow-hidden ring-1 ring-white/10" onClick={(e) => e.stopPropagation()}>
+                                                                                <div className="relative group/input">
+                                                                                    <input
+                                                                                        autoFocus
+                                                                                        value={refinementInstruction}
+                                                                                        onChange={(e) => setRefinementInstruction(e.target.value)}
+                                                                                        onKeyDown={(e) => {
+                                                                                            if (e.key === 'Enter') handleSiftRefinementSubmit();
+                                                                                            if (e.key === 'Escape') setIsRefinementActive(false);
+                                                                                        }}
+                                                                                        placeholder="Describe your changes"
+                                                                                        className="w-full bg-white/[0.04] text-black dark:text-white text-[14px] py-3.5 px-5 pr-14 rounded-2xl border border-white/[0.08] focus:outline-none focus:border-white/20 transition-all placeholder:text-zinc-600 font-medium tracking-tight"
+                                                                                    />
+                                                                                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                                                                                        <button
+                                                                                            onClick={(e) => { e.stopPropagation(); handleSiftRefinementSubmit(); }}
+                                                                                            disabled={isProcessingRefinement || !refinementInstruction.trim()}
+                                                                                            className="w-9 h-9 bg-white rounded-xl flex items-center justify-center text-black hover:bg-zinc-200 transition-all disabled:opacity-30 disabled:grayscale shadow-lg shadow-white/5 active:scale-90"
+                                                                                        >
+                                                                                            {isProcessingRefinement ? (
+                                                                                                <div className="w-4 h-4 border-[2px] border-black/20 border-t-black rounded-full animate-spin" />
+                                                                                            ) : (
+                                                                                                <ArrowUp className="w-4 h-4 stroke-[3]" />
+                                                                                            )}
+                                                                                        </button>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+
+                                                                        {proposedRefinement && (
+                                                                            <div className="bg-white dark:bg-zinc-950/90 border border-white/20 rounded-2xl p-2 flex items-center gap-2 shadow-[0_30px_70px_rgba(0,0,0,0.9)] backdrop-blur-3xl ring-1 ring-white/10" onClick={(e) => e.stopPropagation()}>
+                                                                                <button
+                                                                                    onClick={(e) => { e.stopPropagation(); setProposedRefinement(null); }}
+                                                                                    className="h-10 px-5 rounded-xl text-neutral-600 hover:text-black dark:text-white hover:bg-black/5 dark:bg-white/5 text-[13px] font-bold transition-all flex items-center gap-3 active:scale-95"
+                                                                                >
+                                                                                    Undo
+                                                                                    <div className="px-1.5 py-0.5 rounded border border-neutral-200 dark:border-white/10 bg-black/5 dark:bg-white/5 text-[9px] font-bold opacity-40 uppercase">Esc</div>
+                                                                                </button>
+                                                                                <div className="w-px h-6 bg-black/10 dark:bg-white/10 mx-1" />
+                                                                                <button
+                                                                                    onClick={(e) => { e.stopPropagation(); handleAcceptSiftRefinement(); }}
+                                                                                    className="h-10 px-5 bg-white hover:bg-zinc-200 rounded-xl text-black text-[13px] font-bold transition-all flex items-center gap-4 shadow-xl shadow-white/5 active:scale-95"
+                                                                                >
+                                                                                    Accept
+                                                                                    <div className="flex items-center gap-1 opacity-70">
+                                                                                        <div className="px-1.5 py-0.5 rounded border border-black/30 bg-black/10 text-[9px] font-bold uppercase tracking-tighter">Ctrl</div>
+                                                                                        <CornerDownLeft className="w-3 h-3" />
+                                                                                    </div>
+                                                                                </button>
+                                                                            </div>
+                                                                        )}
+                                                                    </motion.div>
+                                                                )}
+                                                            </AnimatePresence>
+                                                        </div>
+
+                                                        <div className="mt-8 flex justify-end gap-4">
+                                                            <Button
+                                                                variant="outline"
+                                                                onClick={() => setShowDraftEditor(false)}
+                                                                className="h-14 px-8 border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-400 hover:bg-neutral-800 rounded-2xl"
+                                                            >
+                                                                Cancel
+                                                            </Button>
+                                                            <Button
+                                                                className="h-14 bg-[#fafafa] hover:bg-neutral-200 text-[#0a0a0a] px-10 rounded-2xl text-lg font-medium shadow-lg shadow-white/5"
+                                                                onClick={handleSendReply}
+                                                            >
+                                                                Send Reply
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Draft Backdrop */}
+                                                {showDraftEditor && (
+                                                    <div
+                                                        className="fixed inset-0 bg-black/30 backdrop-blur-[60px] z-[55] transition-opacity duration-700"
+                                                        onClick={() => setShowDraftEditor(false)}
+                                                    >
+                                                        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.01] via-transparent to-black/20 pointer-events-none" />
+                                                    </div>
+                                                )}
+
+                                                {/* Note Editor - Premium UI in bottom-right */}
+                                                <div
+                                                    className={`fixed bottom-0 right-0 lg:bottom-6 lg:right-6 w-full lg:w-96 h-[85vh] lg:h-[32rem] bg-gradient-to-br from-neutral-800/90 to-neutral-900/90 backdrop-blur-2xl rounded-t-[2rem] lg:rounded-[2rem] shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-[60] border border-neutral-700/50`}
+                                                    style={{
+                                                        transform: showNoteEditor ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.95)',
+                                                        opacity: showNoteEditor ? 1 : 0,
+                                                        pointerEvents: showNoteEditor ? 'auto' : 'none'
+                                                    }}
+                                                >
+                                                    <div className="p-6 h-[32rem] flex flex-col">
+                                                        {/* Header with close button */}
+                                                        <div className="flex justify-between items-center mb-4">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="p-2 bg-yellow-500/10 rounded-xl">
+                                                                    <Sparkles className="w-5 h-5 text-yellow-400" />
+                                                                </div>
+                                                                <div>
+                                                                    <h3 className="text-lg font-medium text-black dark:text-white">AI Note</h3>
+                                                                    <p className="text-xs text-neutral-500 dark:text-neutral-400 font-light">Intelligent insights</p>
+                                                                </div>
+                                                            </div>
+                                                            <button
+                                                                onClick={() => setShowNoteEditor(false)}
+                                                                className="p-2 hover:bg-neutral-700/50 rounded-full transition-colors text-neutral-600 hover:text-black dark:text-white"
+                                                            >
+                                                                <X className="w-5 h-5" />
+                                                            </button>
+                                                        </div>
+
+                                                        {/* Note Content Area */}
+                                                        <div className="flex-1 bg-neutral-900/30 rounded-[1.5rem] border border-neutral-200 dark:border-neutral-800/50 p-4 mb-4 overflow-hidden flex flex-col">
+                                                            <input
+                                                                type="text"
+                                                                value={noteSubject}
+                                                                onChange={(e) => setNoteSubject(e.target.value)}
+                                                                className="w-full bg-transparent text-black dark:text-white text-base font-medium px-3 py-2 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-yellow-500/20 transition-colors mb-3"
+                                                                placeholder="Note heading..."
+                                                            />
+                                                            <div className="flex-1 bg-transparent text-neutral-900 dark:text-neutral-200 resize-none focus:outline-none font-light leading-relaxed text-sm custom-scrollbar overflow-y-auto">
+                                                                {/* Render markdown formatting */}
+                                                                <div className="prose prose-invert max-w-none whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: renderMarkdown(noteContent) }} />
+                                                            </div>
+                                                            {/* Progressive Blur for Textarea */}
+                                                            <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-neutral-900/80 to-transparent pointer-events-none z-10" />
+                                                        </div>
+
+                                                        {/* Save Button */}
+                                                        <button
+                                                            onClick={handleSaveNote}
+                                                            disabled={isSavingNote || !noteContent.trim()}
+                                                            className={`h-12 bg-gradient-to-r ${isSavingNote || !noteContent.trim() ? 'from-neutral-700 to-neutral-800' : 'from-yellow-500 to-yellow-600'} text-black font-medium rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center`}
+                                                        >
+                                                            {isSavingNote ? (
+                                                                <>
+                                                                    <Sparkles className="w-4 h-4 mr-2 animate-pulse" />
+                                                                    Saving...
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Sparkles className="w-4 h-4 mr-2" />
+                                                                    Save Note
+                                                                </>
                                                             )}
                                                         </button>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        )}
 
-                                        {proposedRefinement && (
-                                            <div className="bg-white dark:bg-zinc-950/90 border border-white/20 rounded-2xl p-2 flex items-center gap-2 shadow-[0_30px_70px_rgba(0,0,0,0.9)] backdrop-blur-3xl ring-1 ring-white/10" onClick={(e) => e.stopPropagation()}>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); setProposedRefinement(null); }}
-                                                    className="h-10 px-5 rounded-xl text-neutral-600 hover:text-black dark:text-white hover:bg-black/5 dark:bg-white/5 text-[13px] font-bold transition-all flex items-center gap-3 active:scale-95"
+                                                {/* Scheduling Modal */}
+                                                <SchedulingModal
+                                                    isOpen={showSchedulingModal}
+                                                    onClose={() => setShowSchedulingModal(false)}
+                                                    emailId={schedulingEmailId || ''}
+                                                />
+
+                                                {/* Traditional Email Detailed View Modal */}
+                                                <div
+                                                    className={`fixed top-1/2 left-1/2 bg-black rounded-[2.5rem] shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-[70] flex flex-col border border-neutral-200 dark:border-white/10`}
+                                                    style={{
+                                                        width: '75%',
+                                                        height: '90vh',
+                                                        transform: isTraditionalModalOpen ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -45%) scale(0.95)',
+                                                        opacity: isTraditionalModalOpen ? 1 : 0,
+                                                        pointerEvents: isTraditionalModalOpen ? 'auto' : 'none'
+                                                    }}
                                                 >
-                                                    Undo
-                                                    <div className="px-1.5 py-0.5 rounded border border-neutral-200 dark:border-white/10 bg-black/5 dark:bg-white/5 text-[9px] font-bold opacity-40 uppercase">Esc</div>
-                                                </button>
-                                                <div className="w-px h-6 bg-black/10 dark:bg-white/10 mx-1" />
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); handleAcceptSiftRefinement(); }}
-                                                    className="h-10 px-5 bg-white hover:bg-zinc-200 rounded-xl text-black text-[13px] font-bold transition-all flex items-center gap-4 shadow-xl shadow-white/5 active:scale-95"
-                                                >
-                                                    Accept
-                                                    <div className="flex items-center gap-1 opacity-70">
-                                                        <div className="px-1.5 py-0.5 rounded border border-black/30 bg-black/10 text-[9px] font-bold uppercase tracking-tighter">Ctrl</div>
-                                                        <CornerDownLeft className="w-3 h-3" />
+                                                    {/* Header */}
+                                                    <div className="p-10 border-b border-neutral-200 dark:border-white/5 flex items-start justify-between">
+                                                        <div className="flex-1 min-w-0 pr-10">
+                                                            {isSummarizing ? (
+                                                                <div className="space-y-3">
+                                                                    <div className="h-7 w-2/3 bg-black/5 dark:bg-white/5 rounded-lg animate-pulse" />
+                                                                    <div className="h-4 w-1/3 bg-black/5 dark:bg-white/5 rounded-lg animate-pulse" />
+                                                                </div>
+                                                            ) : selectedTraditionalEmail ? (
+                                                                <div className="space-y-4">
+                                                                    <h2 className="text-3xl font-semibold text-black dark:text-white tracking-tight leading-tight">
+                                                                        {selectedTraditionalEmail.subject}
+                                                                    </h2>
+                                                                    <div className="flex flex-wrap items-center gap-5">
+                                                                        <div className="flex items-center gap-3 px-4 py-2 bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-full">
+                                                                            <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-black dark:text-white/40 text-sm font-bold">
+                                                                                {selectedTraditionalEmail.from?.[0]?.toUpperCase() || 'U'}
+                                                                            </div>
+                                                                            <div className="flex flex-col">
+                                                                                <span className="text-sm text-black dark:text-white font-medium">
+                                                                                    {selectedTraditionalEmail.from?.split('<')[0]?.trim() || 'Sender'}
+                                                                                </span>
+                                                                                <span className="text-[10px] text-neutral-600 dark:text-neutral-500 font-light truncate max-w-[200px]">
+                                                                                    {selectedTraditionalEmail.from?.match(/<(.+)>/)?.[1] || selectedTraditionalEmail.from}
+                                                                                </span>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-500">
+                                                                            <Clock className="w-4 h-4" />
+                                                                            <span className="text-sm font-light">
+                                                                                {formatDate(selectedTraditionalEmail.date, { dateStyle: 'long', timeStyle: 'short' })}
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            ) : null}
+                                                        </div>
+                                                        <button
+                                                            onClick={() => setIsTraditionalModalOpen(false)}
+                                                            className="p-3 bg-black/5 hover:bg-black/10 dark:bg-white/10 border border-neutral-200 dark:border-white/10 rounded-full text-black hover:text-black dark:text-white transition-all shadow-lg"
+                                                        >
+                                                            <X className="w-7 h-7" />
+                                                        </button>
                                                     </div>
-                                                </button>
-                                            </div>
-                                        )}
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </div>
 
-                        <div className="mt-8 flex justify-end gap-4">
-                            <Button
-                                variant="outline"
-                                onClick={() => setShowDraftEditor(false)}
-                                className="h-14 px-8 border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-400 hover:bg-neutral-800 rounded-2xl"
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                className="h-14 bg-[#fafafa] hover:bg-neutral-200 text-[#0a0a0a] px-10 rounded-2xl text-lg font-medium shadow-lg shadow-white/5"
-                                onClick={handleSendReply}
-                            >
-                                Send Reply
-                            </Button>
-                        </div>
-                    </div>
-                </div>
+                                                    {/* Body Content */}
+                                                    <div className="flex-1 overflow-y-auto p-12 custom-scrollbar">
+                                                        {isSummarizing ? (
+                                                            <div className="flex flex-col items-center justify-center h-full">
+                                                                <RefreshCw className="w-10 h-10 text-black dark:text-white/20 animate-spin mb-6" />
+                                                                <p className="text-black dark:text-white/40 font-light text-xl">Opening message...</p>
+                                                            </div>
+                                                        ) : selectedTraditionalEmail ? (
+                                                            <div className="max-w-4xl mx-auto space-y-12 pb-20">
+                                                                <div className="traditional-email-content font-sans text-lg">
+                                                                    {selectedTraditionalEmail.isHtml ? (
+                                                                        <div className="bg-white dark:bg-white/95 rounded-xl overflow-hidden shadow-inner border border-neutral-200 dark:border-white/10 ring-1 ring-black/5 flex">
+                                                                            <iframe
+                                                                                title="Email Content"
+                                                                                srcDoc={selectedTraditionalEmail.body}
+                                                                                className="w-full min-h-[60vh] border-none bg-transparent"
+                                                                                sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin"
+                                                                                style={{ backgroundColor: 'transparent', colorSchemes: 'light dark' } as any}
+                                                                                onLoad={(e) => {
+                                                                                    const iframe = e.target as HTMLIFrameElement;
+                                                                                    if (iframe.contentWindow) {
+                                                                                        // Add base target blank so all links open in new tab
+                                                                                        const base = iframe.contentDocument?.createElement('base');
+                                                                                        if (base) {
+                                                                                            base.target = '_blank';
+                                                                                            iframe.contentDocument?.head.appendChild(base);
+                                                                                        }
+                                                                                        // Auto-resize height based on content
+                                                                                        try {
+                                                                                            const height = iframe.contentWindow.document.documentElement.scrollHeight;
+                                                                                            if (height > 0) iframe.style.height = `${height}px`;
+                                                                                        } catch (err) { }
+                                                                                    }
+                                                                                }}
+                                                                            />
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div
+                                                                            className="whitespace-pre-wrap selection:bg-blue-500/30 text-black dark:text-neutral-300 font-light leading-relaxed p-6 bg-black/5 dark:bg-white/5 rounded-2xl font-mono text-sm"
+                                                                            dangerouslySetInnerHTML={{ __html: linkify(selectedTraditionalEmail.body) }}
+                                                                        />
+                                                                    )}
+                                                                </div>
 
-                {/* Draft Backdrop */}
-                {showDraftEditor && (
-                    <div
-                        className="fixed inset-0 bg-black/30 backdrop-blur-[60px] z-[55] transition-opacity duration-700"
-                        onClick={() => setShowDraftEditor(false)}
-                    >
-                        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.01] via-transparent to-black/20 pointer-events-none" />
-                    </div>
-                )}
-
-                {/* Note Editor - Premium UI in bottom-right */}
-                <div
-                    className={`fixed bottom-0 right-0 lg:bottom-6 lg:right-6 w-full lg:w-96 h-[85vh] lg:h-[32rem] bg-gradient-to-br from-neutral-800/90 to-neutral-900/90 backdrop-blur-2xl rounded-t-[2rem] lg:rounded-[2rem] shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-[60] border border-neutral-700/50`}
-                    style={{
-                        transform: showNoteEditor ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.95)',
-                        opacity: showNoteEditor ? 1 : 0,
-                        pointerEvents: showNoteEditor ? 'auto' : 'none'
-                    }}
-                >
-                    <div className="p-6 h-[32rem] flex flex-col">
-                        {/* Header with close button */}
-                        <div className="flex justify-between items-center mb-4">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-yellow-500/10 rounded-xl">
-                                    <Sparkles className="w-5 h-5 text-yellow-400" />
-                                </div>
-                                <div>
-                                    <h3 className="text-lg font-medium text-black dark:text-white">AI Note</h3>
-                                    <p className="text-xs text-neutral-500 dark:text-neutral-400 font-light">Intelligent insights</p>
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => setShowNoteEditor(false)}
-                                className="p-2 hover:bg-neutral-700/50 rounded-full transition-colors text-neutral-600 hover:text-black dark:text-white"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        {/* Note Content Area */}
-                        <div className="flex-1 bg-neutral-900/30 rounded-[1.5rem] border border-neutral-200 dark:border-neutral-800/50 p-4 mb-4 overflow-hidden flex flex-col">
-                            <input
-                                type="text"
-                                value={noteSubject}
-                                onChange={(e) => setNoteSubject(e.target.value)}
-                                className="w-full bg-transparent text-black dark:text-white text-base font-medium px-3 py-2 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-yellow-500/20 transition-colors mb-3"
-                                placeholder="Note heading..."
-                            />
-                            <div className="flex-1 bg-transparent text-neutral-900 dark:text-neutral-200 resize-none focus:outline-none font-light leading-relaxed text-sm custom-scrollbar overflow-y-auto">
-                                {/* Render markdown formatting */}
-                                <div className="prose prose-invert max-w-none whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: renderMarkdown(noteContent) }} />
-                            </div>
-                            {/* Progressive Blur for Textarea */}
-                            <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-neutral-900/80 to-transparent pointer-events-none z-10" />
-                        </div>
-
-                        {/* Save Button */}
-                        <button
-                            onClick={handleSaveNote}
-                            disabled={isSavingNote || !noteContent.trim()}
-                            className={`h-12 bg-gradient-to-r ${isSavingNote || !noteContent.trim() ? 'from-neutral-700 to-neutral-800' : 'from-yellow-500 to-yellow-600'} text-black font-medium rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center`}
-                        >
-                            {isSavingNote ? (
-                                <>
-                                    <Sparkles className="w-4 h-4 mr-2 animate-pulse" />
-                                    Saving...
-                                </>
-                            ) : (
-                                <>
-                                    <Sparkles className="w-4 h-4 mr-2" />
-                                    Save Note
-                                </>
-                            )}
-                        </button>
-                    </div>
-                </div>
-
-                {/* Scheduling Modal */}
-                <SchedulingModal
-                    isOpen={showSchedulingModal}
-                    onClose={() => setShowSchedulingModal(false)}
-                    emailId={schedulingEmailId || ''}
-                />
-
-                {/* Traditional Email Detailed View Modal */}
-                <div
-                    className={`fixed top-1/2 left-1/2 bg-black rounded-[2.5rem] shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-[70] flex flex-col border border-neutral-200 dark:border-white/10`}
-                    style={{
-                        width: '75%',
-                        height: '90vh',
-                        transform: isTraditionalModalOpen ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -45%) scale(0.95)',
-                        opacity: isTraditionalModalOpen ? 1 : 0,
-                        pointerEvents: isTraditionalModalOpen ? 'auto' : 'none'
-                    }}
-                >
-                    {/* Header */}
-                    <div className="p-10 border-b border-neutral-200 dark:border-white/5 flex items-start justify-between">
-                        <div className="flex-1 min-w-0 pr-10">
-                            {isSummarizing ? (
-                                <div className="space-y-3">
-                                    <div className="h-7 w-2/3 bg-black/5 dark:bg-white/5 rounded-lg animate-pulse" />
-                                    <div className="h-4 w-1/3 bg-black/5 dark:bg-white/5 rounded-lg animate-pulse" />
-                                </div>
-                            ) : selectedTraditionalEmail ? (
-                                <div className="space-y-4">
-                                    <h2 className="text-3xl font-semibold text-black dark:text-white tracking-tight leading-tight">
-                                        {selectedTraditionalEmail.subject}
-                                    </h2>
-                                    <div className="flex flex-wrap items-center gap-5">
-                                        <div className="flex items-center gap-3 px-4 py-2 bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-full">
-                                            <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-black dark:text-white/40 text-sm font-bold">
-                                                {selectedTraditionalEmail.from?.[0]?.toUpperCase() || 'U'}
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-sm text-black dark:text-white font-medium">
-                                                    {selectedTraditionalEmail.from?.split('<')[0]?.trim() || 'Sender'}
-                                                </span>
-                                                <span className="text-[10px] text-neutral-600 dark:text-neutral-500 font-light truncate max-w-[200px]">
-                                                    {selectedTraditionalEmail.from?.match(/<(.+)>/)?.[1] || selectedTraditionalEmail.from}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-500">
-                                            <Clock className="w-4 h-4" />
-                                            <span className="text-sm font-light">
-                                                {new Date(selectedTraditionalEmail.date).toLocaleString([], { dateStyle: 'long', timeStyle: 'short' })}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            ) : null}
-                        </div>
-                        <button
-                            onClick={() => setIsTraditionalModalOpen(false)}
-                            className="p-3 bg-black/5 hover:bg-black/10 dark:bg-white/10 border border-neutral-200 dark:border-white/10 rounded-full text-black hover:text-black dark:text-white transition-all shadow-lg"
-                        >
-                            <X className="w-7 h-7" />
-                        </button>
-                    </div>
-
-                    {/* Body Content */}
-                    <div className="flex-1 overflow-y-auto p-12 custom-scrollbar">
-                        {isSummarizing ? (
-                            <div className="flex flex-col items-center justify-center h-full">
-                                <RefreshCw className="w-10 h-10 text-black dark:text-white/20 animate-spin mb-6" />
-                                <p className="text-black dark:text-white/40 font-light text-xl">Opening message...</p>
-                            </div>
-                        ) : selectedTraditionalEmail ? (
-                            <div className="max-w-4xl mx-auto space-y-12 pb-20">
-                                <div className="traditional-email-content font-sans text-lg">
-                                    {selectedTraditionalEmail.isHtml ? (
-                                        <div className="bg-white dark:bg-white/95 rounded-xl overflow-hidden shadow-inner border border-neutral-200 dark:border-white/10 ring-1 ring-black/5 flex">
-                                            <iframe
-                                                title="Email Content"
-                                                srcDoc={selectedTraditionalEmail.body}
-                                                className="w-full min-h-[60vh] border-none bg-transparent"
-                                                sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin"
-                                                style={{ backgroundColor: 'transparent', colorSchemes: 'light dark' } as any}
-                                                onLoad={(e) => {
-                                                    const iframe = e.target as HTMLIFrameElement;
-                                                    if (iframe.contentWindow) {
-                                                        // Add base target blank so all links open in new tab
-                                                        const base = iframe.contentDocument?.createElement('base');
-                                                        if (base) {
-                                                            base.target = '_blank';
-                                                            iframe.contentDocument?.head.appendChild(base);
-                                                        }
-                                                        // Auto-resize height based on content
-                                                        try {
-                                                            const height = iframe.contentWindow.document.documentElement.scrollHeight;
-                                                            if (height > 0) iframe.style.height = `${height}px`;
-                                                        } catch (err) { }
-                                                    }
-                                                }}
-                                            />
-                                        </div>
-                                    ) : (
-                                        <div
-                                            className="whitespace-pre-wrap selection:bg-blue-500/30 text-black dark:text-neutral-300 font-light leading-relaxed p-6 bg-black/5 dark:bg-white/5 rounded-2xl font-mono text-sm"
-                                            dangerouslySetInnerHTML={{ __html: linkify(selectedTraditionalEmail.body) }}
-                                        />
-                                    )}
-                                </div>
-
-                                {/* Attachments Section */}
-                                {selectedTraditionalEmail.attachments?.length > 0 && (
-                                    <div className="space-y-6 pt-12 border-t border-neutral-200 dark:border-white/5">
-                                        <div className="flex items-center gap-2 text-black dark:text-white/40 text-[10px] uppercase tracking-[0.2em] font-bold">
-                                            <Download className="w-3.5 h-3.5" />
-                                            Attachments
-                                        </div>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            {selectedTraditionalEmail.attachments.map((att: any, i: number) => (
-                                                <div key={i} className="flex items-center gap-4 p-4 bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-2xl group hover:border-white/20 transition-all">
-                                                    <div className="p-3 bg-black/5 dark:bg-white/5 rounded-xl text-black dark:text-white/40">
-                                                        {att.mimeType?.startsWith('image/') ? <Sparkles className="w-5 h-5" /> : <Inbox className="w-5 h-5" />}
+                                                                {/* Attachments Section */}
+                                                                {selectedTraditionalEmail.attachments?.length > 0 && (
+                                                                    <div className="space-y-6 pt-12 border-t border-neutral-200 dark:border-white/5">
+                                                                        <div className="flex items-center gap-2 text-black dark:text-white/40 text-[10px] uppercase tracking-[0.2em] font-bold">
+                                                                            <Download className="w-3.5 h-3.5" />
+                                                                            Attachments
+                                                                        </div>
+                                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                                            {selectedTraditionalEmail.attachments.map((att: any, i: number) => (
+                                                                                <div key={i} className="flex items-center gap-4 p-4 bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-2xl group hover:border-white/20 transition-all">
+                                                                                    <div className="p-3 bg-black/5 dark:bg-white/5 rounded-xl text-black dark:text-white/40">
+                                                                                        {att.mimeType?.startsWith('image/') ? <Sparkles className="w-5 h-5" /> : <Inbox className="w-5 h-5" />}
+                                                                                    </div>
+                                                                                    <div className="flex-1 min-w-0">
+                                                                                        <p className="text-sm font-medium text-black dark:text-white truncate">{att.filename}</p>
+                                                                                        <p className="text-xs text-neutral-600 dark:text-neutral-500 font-light mt-0.5">{(att.size / 1024).toFixed(0)} KB</p>
+                                                                                    </div>
+                                                                                    <button
+                                                                                        onClick={() => {
+                                                                                            window.open(`/api/attachments/download?messageId=${selectedTraditionalEmail.id}&attachmentId=${att.attachmentId}&filename=${encodeURIComponent(att.filename)}`, '_blank');
+                                                                                            toast.success('Downloading...', { description: att.filename });
+                                                                                        }}
+                                                                                        className="p-2.5 bg-black/5 hover:bg-black/10 dark:bg-white/10 rounded-xl text-black hover:text-black dark:text-white transition-all shadow-sm"
+                                                                                    >
+                                                                                        <Download className="w-4 h-4" />
+                                                                                    </button>
+                                                                                    <button
+                                                                                        onClick={(e) => { e.stopPropagation(); setNoteEmailId(selectedTraditionalEmail.id); setNoteSubject(`Note: ${att.filename}`); setNoteContent(`Reference to document "${att.filename}" in email "${selectedTraditionalEmail.subject}"`); setShowNoteEditor(true); }}
+                                                                                        className="p-2.5 bg-black/5 hover:bg-black/10 dark:bg-white/10 border border-neutral-200 dark:border-white/10 rounded-xl text-black hover:text-black dark:text-white transition-all"
+                                                                                    >
+                                                                                        <FilePlus className="w-4 h-4" />
+                                                                                    </button>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        ) : null}
                                                     </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="text-sm font-medium text-black dark:text-white truncate">{att.filename}</p>
-                                                        <p className="text-xs text-neutral-600 dark:text-neutral-500 font-light mt-0.5">{(att.size / 1024).toFixed(0)} KB</p>
-                                                    </div>
-                                                    <button
-                                                        onClick={() => {
-                                                            window.open(`/api/attachments/download?messageId=${selectedTraditionalEmail.id}&attachmentId=${att.attachmentId}&filename=${encodeURIComponent(att.filename)}`, '_blank');
-                                                            toast.success('Downloading...', { description: att.filename });
-                                                        }}
-                                                        className="p-2.5 bg-black/5 hover:bg-black/10 dark:bg-white/10 rounded-xl text-black hover:text-black dark:text-white transition-all shadow-sm"
-                                                    >
-                                                        <Download className="w-4 h-4" />
-                                                    </button>
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); setNoteEmailId(selectedTraditionalEmail.id); setNoteSubject(`Note: ${att.filename}`); setNoteContent(`Reference to document "${att.filename}" in email "${selectedTraditionalEmail.subject}"`); setShowNoteEditor(true); }}
-                                                        className="p-2.5 bg-black/5 hover:bg-black/10 dark:bg-white/10 border border-neutral-200 dark:border-white/10 rounded-xl text-black hover:text-black dark:text-white transition-all"
-                                                    >
-                                                        <FilePlus className="w-4 h-4" />
-                                                    </button>
+
+                                                    {/* Footer Controls */}
+                                                    {!isSummarizing && selectedTraditionalEmail && (
+                                                        <div className="p-10 border-t border-neutral-200 dark:border-white/5 bg-white/[0.01] flex items-center justify-between">
+                                                            <button
+                                                                onClick={() => setIsTraditionalModalOpen(false)}
+                                                                className="px-10 py-4 bg-black/5 hover:bg-black/10 dark:bg-white/10 border border-neutral-200 dark:border-white/10 rounded-2xl text-base font-medium text-black transition-all hover:text-black dark:text-white"
+                                                            >
+                                                                Close Viewer
+                                                            </button>
+                                                            <div className="flex items-center gap-4">
+                                                                <button
+                                                                    onClick={() => { setDraftTo(selectedTraditionalEmail.from?.match(/<(.+)>/)?.[1] || selectedTraditionalEmail.from); setDraftSubject(`Re: ${selectedTraditionalEmail.subject}`); setDraftContent(''); setShowDraftEditor(true); }}
+                                                                    className="px-10 py-4 bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/10 hover:border-white/20 rounded-2xl text-base font-medium text-black hover:text-black dark:text-white transition-all"
+                                                                >
+                                                                    Reply
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => window.open(`https://mail.google.com/mail/u/0/#inbox/${selectedTraditionalEmail.id}`, '_blank')}
+                                                                    className="flex items-center gap-3 px-10 py-4 bg-white text-black hover:bg-neutral-200 rounded-2xl text-base font-bold transition-all shadow-2xl active:scale-95"
+                                                                >
+                                                                    <ExternalLink className="w-5 h-5" />
+                                                                    Open in Gmail
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        ) : null}
-                    </div>
-
-                    {/* Footer Controls */}
-                    {!isSummarizing && selectedTraditionalEmail && (
-                        <div className="p-10 border-t border-neutral-200 dark:border-white/5 bg-white/[0.01] flex items-center justify-between">
-                            <button
-                                onClick={() => setIsTraditionalModalOpen(false)}
-                                className="px-10 py-4 bg-black/5 hover:bg-black/10 dark:bg-white/10 border border-neutral-200 dark:border-white/10 rounded-2xl text-base font-medium text-black transition-all hover:text-black dark:text-white"
-                            >
-                                Close Viewer
-                            </button>
-                            <div className="flex items-center gap-4">
-                                <button
-                                    onClick={() => { setDraftTo(selectedTraditionalEmail.from?.match(/<(.+)>/)?.[1] || selectedTraditionalEmail.from); setDraftSubject(`Re: ${selectedTraditionalEmail.subject}`); setDraftContent(''); setShowDraftEditor(true); }}
-                                    className="px-10 py-4 bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/10 hover:border-white/20 rounded-2xl text-base font-medium text-black hover:text-black dark:text-white transition-all"
-                                >
-                                    Reply
-                                </button>
-                                <button
-                                    onClick={() => window.open(`https://mail.google.com/mail/u/0/#inbox/${selectedTraditionalEmail.id}`, '_blank')}
-                                    className="flex items-center gap-3 px-10 py-4 bg-white text-black hover:bg-neutral-200 rounded-2xl text-base font-bold transition-all shadow-2xl active:scale-95"
-                                >
-                                    <ExternalLink className="w-5 h-5" />
-                                    Open in Gmail
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </div>
 
                 {/* Traditional Backdrop */}
                 {isTraditionalModalOpen && (
