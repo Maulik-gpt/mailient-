@@ -31,6 +31,10 @@ function HomeFeedContent() {
         try {
           // Detect if user might have just returned from payment or activation
           const mightHaveJustPaid = () => {
+            // Check if we already verified in this tab session to prevent infinite reload loops
+            const alreadyVerified = sessionStorage.getItem('activation_verified_this_session');
+            if (alreadyVerified === 'true') return false;
+
             const referrer = document.referrer || '';
             const pendingPlan = localStorage.getItem('pending_plan');
             const pendingTimestamp = localStorage.getItem('pending_plan_timestamp');
@@ -78,6 +82,7 @@ function HomeFeedContent() {
               if (isSuccess) {
                 console.log('🎉 [HomeFeed] Activation confirmed!', planType);
                 localStorage.setItem('onboarding_completed', 'true');
+                sessionStorage.setItem('activation_verified_this_session', 'true');
                 localStorage.removeItem('pending_plan');
                 localStorage.removeItem('pending_plan_timestamp');
                     setPaymentVerified(true);
