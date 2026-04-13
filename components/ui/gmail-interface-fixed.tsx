@@ -2009,7 +2009,7 @@ export function GmailInterfaceFixed() {
                                                                         {email.from?.split('<')[0]?.trim()}
                                                                     </h4>
                                                                     <span className="text-[10px] uppercase tracking-widest text-neutral-500 dark:text-neutral-600 font-medium">
-                                                                        {new Date(email.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                                                        {mounted ? new Date(email.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : ''}
                                                                     </span>
                                                                 </div>
                                                                 <p className="text-sm text-black dark:text-white/60 font-medium truncate mb-1">
