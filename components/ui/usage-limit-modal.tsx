@@ -43,7 +43,7 @@ export function UsageLimitModal({
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50"
+                        className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[2000]"
                         onClick={onClose}
                     />
 
@@ -53,7 +53,7 @@ export function UsageLimitModal({
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
                         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                        className="fixed inset-0 flex items-center justify-center z-50 p-4 md:p-8"
+                        className="fixed inset-0 flex items-center justify-center z-[2000] p-4 md:p-8"
                         onClick={(e: React.MouseEvent) => e.stopPropagation()}
                     >
                         <div className="bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)]">

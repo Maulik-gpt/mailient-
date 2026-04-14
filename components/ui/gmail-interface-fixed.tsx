@@ -2138,7 +2138,12 @@ export function GmailInterfaceFixed() {
                                                             type={getCardType(insight)}
                                                             title={insight.title}
                                                             content={insight.content}
-                                                            onClick={() => setSelectedInsight(insight)}
+                                                            onClick={() => {
+                                                                setSelectedInsight(insight);
+                                                                if (insight.source_emails && insight.source_emails.length > 0) {
+                                                                    setSelectedEmailId(insight.source_emails[0].id);
+                                                                }
+                                                            }}
                                                         />
                                                     </motion.div>
                                                 ))}
@@ -2432,7 +2437,7 @@ export function GmailInterfaceFixed() {
 
                                                 {/* Draft Editor Modal */}
                                                 <div
-                                                    className={`fixed top-1/2 left-1/2 bg-[#0d0d0d]/95 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_0_120px_rgba(0,0,0,0.6),0_0_60px_rgba(255,255,255,0.02)] transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-[60] flex flex-col border border-white/[0.06] overflow-hidden`}
+                                                    className={`fixed top-1/2 left-1/2 bg-[#0d0d0d]/95 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_0_120px_rgba(0,0,0,0.6),0_0_60px_rgba(255,255,255,0.02)] transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-[1100] flex flex-col border border-white/[0.06] overflow-hidden`}
                                                     style={{
                                                         width: isMobile ? '100%' : '55%',
                                                         minWidth: isMobile ? '100%' : '600px',
@@ -2630,7 +2635,7 @@ export function GmailInterfaceFixed() {
                                                 {/* Draft Backdrop */}
                                                 {showDraftEditor && (
                                                     <div
-                                                        className="fixed inset-0 bg-black/30 backdrop-blur-[60px] z-[55] transition-opacity duration-700"
+                                                        className="fixed inset-0 bg-black/30 backdrop-blur-[60px] z-[1090] transition-opacity duration-700"
                                                         onClick={() => setShowDraftEditor(false)}
                                                     >
                                                         <div className="absolute inset-0 bg-gradient-to-b from-white/[0.01] via-transparent to-black/20 pointer-events-none" />
@@ -2639,7 +2644,7 @@ export function GmailInterfaceFixed() {
 
                                                 {/* Note Editor - Premium UI in bottom-right */}
                                                 <div
-                                                    className={`fixed bottom-0 right-0 lg:bottom-6 lg:right-6 w-full lg:w-96 h-[85vh] lg:h-[32rem] bg-gradient-to-br from-neutral-800/90 to-neutral-900/90 backdrop-blur-2xl rounded-t-[2rem] lg:rounded-[2rem] shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-[60] border border-neutral-700/50`}
+                                                    className={`fixed bottom-0 right-0 lg:bottom-6 lg:right-6 w-full lg:w-96 h-[85vh] lg:h-[32rem] bg-gradient-to-br from-neutral-800/90 to-neutral-900/90 backdrop-blur-2xl rounded-t-[2rem] lg:rounded-[2rem] shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-[1110] border border-neutral-700/50`}
                                                     style={{
                                                         transform: showNoteEditor ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.95)',
                                                         opacity: showNoteEditor ? 1 : 0,
@@ -2713,7 +2718,7 @@ export function GmailInterfaceFixed() {
 
                                                 {/* Traditional Email Detailed View Modal */}
                                                 <div
-                                                    className={`fixed top-1/2 left-1/2 bg-black rounded-[2.5rem] shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-[70] flex flex-col border border-neutral-200 dark:border-white/10`}
+                                                    className={`fixed top-1/2 left-1/2 bg-black rounded-[2.5rem] shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-[1200] flex flex-col border border-neutral-200 dark:border-white/10`}
                                                     style={{
                                                         width: '75%',
                                                         height: '90vh',
@@ -2883,7 +2888,7 @@ export function GmailInterfaceFixed() {
                 {/* Traditional Backdrop */}
                 {isTraditionalModalOpen && (
                     <div
-                        className="fixed inset-0 bg-black/90 backdrop-blur-2xl z-[65] transition-opacity duration-300"
+                        className="fixed inset-0 bg-black/90 backdrop-blur-2xl z-[1300] transition-opacity duration-300"
                         onClick={() => setIsTraditionalModalOpen(false)}
                     />
                 )}
