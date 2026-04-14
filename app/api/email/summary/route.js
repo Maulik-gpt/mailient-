@@ -102,15 +102,21 @@ export async function POST(request) {
         console.log(`🔒 Compliance mode: ${compliance.isComplianceMode ? 'ENABLED' : 'DISABLED'}`);
 
         // Generate Summary
+        console.log('🔧 [Summary API] Creating AIConfig...');
+        console.log('🔧 [Summary API] OPENROUTER_API_KEY exists:', !!process.env.OPENROUTER_API_KEY);
+        console.log('🔧 [Summary API] OPENROUTER_API_KEY length:', process.env.OPENROUTER_API_KEY?.length);
+        
         const aiService = new AIConfig();
+        console.log('🔧 [Summary API] AIConfig created, hasAIConfigured:', aiService.hasAIConfigured());
 
         if (!aiService.hasAIConfigured()) {
-            console.error('❌ AI service not configured');
+            console.error('❌ [Summary API] AI service not configured - OPENROUTER_API_KEY missing or invalid');
             return NextResponse.json({ error: 'AI service not configured - Please check OPENROUTER_API_KEY' }, { status: 500 });
         }
 
-        console.log('🤖 Generating email summary with AI...');
+        console.log('🤖 [Summary API] Generating email summary with AI...');
         const summary = await aiService.generateEmailSummary(emailContent, complianceConfig.privacyMode, context);
+        console.log('✅ [Summary API] Summary generated successfully');
 
         if (typeof summary === 'string' && summary.trim().length > 0) {
             await subscriptionService.incrementFeatureUsage(userId, FEATURE_TYPES.EMAIL_SUMMARY);
