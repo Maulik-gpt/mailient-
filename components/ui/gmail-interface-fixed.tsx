@@ -182,7 +182,7 @@ export function GmailInterfaceFixed() {
     const [lastUpdated, setLastUpdated] = useState<string>('');
     const [summary, setSummary] = useState<SiftInsightsResponse['sift_intelligence_summary']>();
     const [nextPageToken, setNextPageToken] = useState<string | null>(null);
-    const [countdown, setCountdown] = useState<number | null>(null);
+
     const [mounted, setMounted] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
 
@@ -300,10 +300,7 @@ export function GmailInterfaceFixed() {
             setLoading(true);
             setError(null);
 
-            setCountdown(30);
-            timerInterval = setInterval(() => {
-                setCountdown(prev => (prev !== null ? prev - 1 : null));
-            }, 1000);
+
 
             const url = isLoadMore && nextPageToken
                 ? `/api/home-feed/insights?pageToken=${encodeURIComponent(nextPageToken)}`
@@ -317,7 +314,6 @@ export function GmailInterfaceFixed() {
             if (response.status === 401) {
                 setIsTokenExpired(true);
                 setLoading(false);
-                setCountdown(null);
                 if (timerInterval) clearInterval(timerInterval);
                 return;
             }
@@ -327,8 +323,7 @@ export function GmailInterfaceFixed() {
                 if (errorData.error === 'Gmail not connected') {
                     setIsGmailConnected(false);
                     setLoading(false);
-                    setCountdown(null);
-                    if (timerInterval) clearInterval(timerInterval);
+                if (timerInterval) clearInterval(timerInterval);
                     return;
                 }
                 throw new Error(errorData.error || `Failed to fetch insights: ${response.statusText}`);
@@ -383,7 +378,6 @@ export function GmailInterfaceFixed() {
             toast.error(error.message);
         } finally {
             setLoading(false);
-            setCountdown(null);
             if (timerInterval) clearInterval(timerInterval);
         }
     }, [nextPageToken, setInsights, setSummary, setLastUpdated, setNextPageToken, setHasInitialLoad, playSystemSound, showNotification, setIsTokenExpired, setIsGmailConnected]);
@@ -1541,14 +1535,7 @@ export function GmailInterfaceFixed() {
 
                     {/* Security & Credits Section */}
                     <div className="absolute top-6 right-10 z-50 flex items-center gap-4">
-                        {/* Security Shield Indicator */}
-                        <div className="hidden md:flex items-center gap-2.5 px-3.5 py-2 rounded-full bg-white/50 dark:bg-white/[0.03] border border-green-500/20 backdrop-blur-md shadow-sm group cursor-help" title="End-to-End Encryption & RLS Active">
-                            <div className="relative">
-                                <Shield className="h-3.5 w-3.5 text-green-500" />
-                                <div className="absolute inset-0 bg-green-500/20 blur-sm rounded-full animate-pulse" />
-                            </div>
-                            <span className="text-[10px] font-bold text-green-600 dark:text-green-500 uppercase tracking-widest opacity-80 group-hover:opacity-100 transition-opacity">Zero-Knowledge Mode Active</span>
-                        </div>
+
 
                         {usageData && usageData.planType !== 'pro' && (
                             <UsageBadge
@@ -1593,14 +1580,7 @@ export function GmailInterfaceFixed() {
                                 </div>
 
                                 <div className="flex flex-wrap items-center gap-3 md:gap-6 w-full md:w-auto">
-                                    {countdown !== null && (
-                                        <div className="flex items-center gap-2 px-3 py-1 bg-neutral-200/50 dark:bg-neutral-900/50 rounded-full border border-neutral-200 dark:border-neutral-800/50">
-                                            <div className={`w-1.5 h-1.5 rounded-full ${countdown < 0 ? 'bg-red-500 animate-pulse' : 'bg-blue-500 animate-pulse'}`} />
-                                            <span className={`text-xs font-mono tabular-nums ${countdown < 0 ? 'text-red-500' : 'text-neutral-500 dark:text-neutral-400'}`}>
-                                                {countdown}s
-                                            </span>
-                                        </div>
-                                    )}
+
                                     {lastUpdated && (
                                         <span className="text-xs text-neutral-600 dark:text-neutral-500 font-light">
                                             Updated {lastUpdated}
@@ -2218,28 +2198,32 @@ export function GmailInterfaceFixed() {
                     </div>
                 </motion.div>
 
-                                                {/* Backdrop Overlay with Blur */}
+                                                {/* Backdrop Overlay with Premium Textured Blur */}
                                                 <div
-                                                    className={`fixed inset-0 z-40 transition-all duration-500 ${
+                                                    className={`fixed inset-0 z-[1000] transition-all duration-700 ${
                                                         selectedInsight 
                                                             ? 'opacity-100 pointer-events-auto' 
                                                             : 'opacity-0 pointer-events-none'
                                                     }`}
                                                     style={{
-                                                        backgroundColor: 'rgba(0, 0, 0, 0.6)',
-                                                        backdropFilter: selectedInsight ? 'blur(12px)' : 'blur(0px)',
-                                                        WebkitBackdropFilter: selectedInsight ? 'blur(12px)' : 'blur(0px)'
+                                                        backgroundColor: 'rgba(0, 0, 0, 0.75)',
+                                                        backdropFilter: selectedInsight ? 'blur(20px) saturate(180%)' : 'blur(0px)',
+                                                        WebkitBackdropFilter: selectedInsight ? 'blur(20px) saturate(180%)' : 'blur(0px)'
                                                     }}
                                                     onClick={() => setSelectedInsight(null)}
-                                                />
+                                                >
+                                                    {/* Texture Overlay */}
+                                                    <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'url("https://grainy-gradients.vercel.app/noise.svg")' }} />
+                                                </div>
 
                                                 {/* Details Modal */}
                                                 <div
-                                                    className={`fixed top-1/2 left-1/2 bg-white dark:bg-[#1a1a1a] rounded-none md:rounded-[2.5rem] shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-50 flex flex-col border border-neutral-200 dark:border-neutral-800 overflow-hidden`}
+                                                    className={`fixed top-1/2 left-1/2 bg-white dark:bg-[#0a0a0a] rounded-none md:rounded-[3rem] shadow-[0_0_100px_rgba(0,0,0,0.5)] transition-all duration-700 cubic-bezier(0.16, 1, 0.3, 1) z-[1001] flex flex-col border border-neutral-200 dark:border-white/5 overflow-hidden`}
                                                     style={{
-                                                        width: isMobile ? '100%' : '70%',
+                                                        width: isMobile ? '100%' : '75%',
+                                                        maxWidth: '1200px',
                                                         height: isMobile ? '100%' : '85vh',
-                                                        transform: selectedInsight ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -45%) scale(0.95)',
+                                                        transform: selectedInsight ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -48%) scale(0.98)',
                                                         opacity: selectedInsight ? 1 : 0,
                                                         pointerEvents: selectedInsight ? 'auto' : 'none'
                                                     }}
@@ -3033,13 +3017,7 @@ export function GmailInterfaceFixed() {
                     )}
                 </AnimatePresence>
 
-                {/* Backdrop */}
-                {selectedInsight && (
-                    <div
-                        className="fixed inset-0 bg-black/80 backdrop-blur-xl z-40 transition-opacity duration-300"
-                        onClick={() => setSelectedInsight(null)}
-                    />
-                )}
+
 
                 {/* Global Style for Email Content */}
                 <style dangerouslySetInnerHTML={{
