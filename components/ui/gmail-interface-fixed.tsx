@@ -2168,6 +2168,23 @@ export function GmailInterfaceFixed() {
                                         <div className="text-center py-24">
                                             <Mail className="h-8 w-8 mx-auto text-neutral-700 mb-6" strokeWidth={1} />
                                             <h3 className="text-lg font-light text-neutral-900 dark:text-neutral-300 mb-2">No insights yet</h3>
+                                            <p className="text-sm text-neutral-600 dark:text-neutral-500 mb-6 font-light">
+                                                Click refresh to load insights
+                                            </p>
+                                            <Button
+                                                onClick={refreshInsights}
+                                                disabled={loading || !mounted}
+                                                className="h-10 px-6 bg-[#fafafa] hover:bg-neutral-200 text-[#0a0a0a] rounded-lg transition-colors font-medium"
+                                            >
+                                                {loading && mounted ? (
+                                                    <>
+                                                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                                        Analyzing
+                                                    </>
+                                                ) : (
+                                                    'Load Insights'
+                                                )}
+                                            </Button>
                                         </div>
                                     )
                                 ) : (
