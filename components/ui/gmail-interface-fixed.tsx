@@ -2218,6 +2218,21 @@ export function GmailInterfaceFixed() {
                     </div>
                 </motion.div>
 
+                                                {/* Backdrop Overlay with Blur */}
+                                                <div
+                                                    className={`fixed inset-0 z-40 transition-all duration-500 ${
+                                                        selectedInsight 
+                                                            ? 'opacity-100 pointer-events-auto' 
+                                                            : 'opacity-0 pointer-events-none'
+                                                    }`}
+                                                    style={{
+                                                        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                                                        backdropFilter: selectedInsight ? 'blur(12px)' : 'blur(0px)',
+                                                        WebkitBackdropFilter: selectedInsight ? 'blur(12px)' : 'blur(0px)'
+                                                    }}
+                                                    onClick={() => setSelectedInsight(null)}
+                                                />
+
                                                 {/* Details Modal */}
                                                 <div
                                                     className={`fixed top-1/2 left-1/2 bg-white dark:bg-[#1a1a1a] rounded-none md:rounded-[2.5rem] shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-50 flex flex-col border border-neutral-200 dark:border-neutral-800 overflow-hidden`}
