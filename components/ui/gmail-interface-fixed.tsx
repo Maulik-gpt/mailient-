@@ -2168,23 +2168,6 @@ export function GmailInterfaceFixed() {
                                         <div className="text-center py-24">
                                             <Mail className="h-8 w-8 mx-auto text-neutral-700 mb-6" strokeWidth={1} />
                                             <h3 className="text-lg font-light text-neutral-900 dark:text-neutral-300 mb-2">No insights yet</h3>
-                                            <p className="text-sm text-neutral-600 mb-8 font-light">
-                                                {error ? "Unable to load insights" : "Click refresh to load insights"}
-                                            </p>
-                                            <Button
-                                                onClick={refreshInsights}
-                                                disabled={loading}
-                                                className="h-10 px-6 bg-[#fafafa] hover:bg-neutral-200 text-[#0a0a0a] rounded-lg transition-colors font-medium"
-                                            >
-                                                {loading ? (
-                                                    <>
-                                                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                                                        Loading
-                                                    </>
-                                                ) : (
-                                                    'Load Insights'
-                                                )}
-                                            </Button>
                                         </div>
                                     )
                                 ) : (
@@ -2198,10 +2181,10 @@ export function GmailInterfaceFixed() {
                                         </p>
                                         <Button
                                             onClick={refreshInsights}
-                                            disabled={loading}
+                                            disabled={loading || !mounted}
                                             className="h-11 px-8 bg-black dark:bg-[#fafafa] text-white dark:text-black hover:bg-black/90 dark:hover:bg-neutral-200 rounded-xl transition-all font-medium shadow-lg hover:scale-105 active:scale-95 border-none"
                                         >
-                                            {loading ? (
+                                            {loading && mounted ? (
                                                 <>
                                                     <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
                                                     Analyzing
