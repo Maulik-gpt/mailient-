@@ -37,6 +37,7 @@ import { toast } from 'sonner';
 import { cn } from "@/lib/utils";
 import { audioRuntime } from '@/lib/audio-runtime';
 import { NotificationService } from '@/lib/notification-service';
+import { GradientWave } from '@/components/ui/gradient-wave';
 
 // Detect and wrap URLs in plain text with premium styling for actions
 const linkify = (text: string, isUser: boolean = false): string => {
@@ -1205,8 +1206,8 @@ export default function ChatInterface({
       setIsSearchingState(false);
       setIsDeepThinkingState(false);
 
-      // Trigger high-fidelity notification & sound
-      if (data.message && !isUserMessage) {
+      // Trigger high-fidelity notification & sound (always for AI responses in this function)
+      if (data.message) {
           if (notificationsEnabled || soundEnabled) {
               const preview = data.message.substring(0, 100) + (data.message.length > 100 ? '...' : '');
               NotificationService.notify('Arcus Response', preview, {
