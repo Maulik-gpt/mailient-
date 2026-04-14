@@ -438,12 +438,11 @@ export function GmailInterfaceFixed() {
     }, [fetchUsage]);
 
     useEffect(() => {
-        if (!hasInitialLoad && session?.user?.email) {
+        if (session?.user?.email) {
             fetchUsage(true);
             fetchVoiceProfile();
-            setHasInitialLoad(true);
         }
-    }, [session, hasInitialLoad, fetchUsage, fetchVoiceProfile]);
+    }, [session, fetchUsage, fetchVoiceProfile]);
 
     const fetchContacts = useCallback(async (query: string = '') => {
         setIsLoadingContacts(true);
