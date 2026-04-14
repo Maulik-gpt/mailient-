@@ -865,10 +865,14 @@ Body: ${emailData.body || emailData.snippet}
       console.log('⚡ Starting parallel generation for ' + (shouldGenerateCanvas ? 'Canvas + Response' : 'Response only'));
       const generations = [];
       
+      // Fetch memory context from Supermemory
+      const memoryContext = await arcusAI.getSupermemoryContext(userEmail, message);
+
       // Always generate response
       const responsePromise = arcusAI.generateResponse(message, {
         conversationHistory,
         emailContext,
+        memoryContext,
         integrations: {
           gmail: effectiveGmailConnected,
           calendar: effectiveGmailConnected,
@@ -985,6 +989,11 @@ Body: ${emailData.body || emailData.snippet}
     if (userEmail) {
       try {
         await saveConversation(userEmail, message, finalResponse, currentConversationId, db);
+        
+        // Save to Supermemory for long-term consistency
+        arcusAI.storeMemory(userEmail, `User: ${message}\nArcus: ${finalResponse}`).catch(e => {
+            console.warn('⚠️ Supermemory save background error:', e.message);
+        });
       } catch (error) {
         console.log('⚠️ Failed to save conversation:', error.message);
       }
