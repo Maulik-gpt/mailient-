@@ -102,16 +102,18 @@ export async function POST(request) {
         console.log(`🔒 Compliance mode: ${compliance.isComplianceMode ? 'ENABLED' : 'DISABLED'}`);
 
         // Generate Summary
-        console.log('🔧 [Summary API] Creating AIConfig...');
-        console.log('🔧 [Summary API] OPENROUTER_API_KEY exists:', !!process.env.OPENROUTER_API_KEY);
-        console.log('🔧 [Summary API] OPENROUTER_API_KEY length:', process.env.OPENROUTER_API_KEY?.length);
+        const apiKey = process.env.OPENROUTER_API_KEY;
+        console.log('🔧 [Summary API] Environment check:');
+        console.log('🔧 [Summary API] - OPENROUTER_API_KEY exists:', !!apiKey);
+        console.log('🔧 [Summary API] - OPENROUTER_API_KEY length:', apiKey?.length);
+        if (apiKey) console.log('🔧 [Summary API] - OPENROUTER_API_KEY prefix:', apiKey.substring(0, 10));
         
         const aiService = new AIConfig();
-        console.log('🔧 [Summary API] AIConfig created, hasAIConfigured:', aiService.hasAIConfigured());
+        console.log('🔧 [Summary API] AIConfig initialized, hasAIConfigured:', aiService.hasAIConfigured());
 
         if (!aiService.hasAIConfigured()) {
-            console.error('❌ [Summary API] AI service not configured - OPENROUTER_API_KEY missing or invalid');
-            return NextResponse.json({ error: 'AI service not configured - Please check OPENROUTER_API_KEY' }, { status: 500 });
+            console.error('❌ [Summary API] AI service not configured - OPENROUTER_API_KEY missing or invalid in process.env');
+            return NextResponse.json({ error: 'AI service not configured - Please check your OpenRouter API key configuration' }, { status: 500 });
         }
 
         console.log('🤖 [Summary API] Generating email summary with AI...');
