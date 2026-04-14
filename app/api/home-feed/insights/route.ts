@@ -117,7 +117,7 @@ export async function GET(request: Request) {
     }
 
     const { searchParams } = new URL(request.url);
-    const pageToken = searchParams.get('pageToken') || undefined;
+    const pageToken = searchParams.get('pageToken') as string | null;
 
     const gmailService = new GmailService(accessToken, refreshToken || '');
     gmailService.setUserEmail(userEmail); // Enable token refresh persistence
@@ -126,7 +126,7 @@ export async function GET(request: Request) {
 
     // Only fetch INBOX emails (exclude sent, drafts, etc.)
     // 'in:inbox' ensures we only analyze emails received by the user, not ones they sent
-    const recentEmails = await gmailService.getEmails(50, 'in:inbox newer_than:60d', pageToken);
+    const recentEmails = await gmailService.getEmails(50, 'in:inbox newer_than:60d', pageToken as any);
     const allMessages = recentEmails.messages || [];
     const nextPageToken = recentEmails.nextPageToken;
 
@@ -153,7 +153,7 @@ export async function GET(request: Request) {
             from: parsed.from || '',
             subject: parsed.subject || '(No Subject)',
             snippet: parsed.snippet || '',
-            body: (parsed.body || '').substring(0, 1500),
+            body: (parsed.body || '').substring(0, 400),
             timestamp: parsed.date || new Date().toISOString()
           };
         } catch (e) {
