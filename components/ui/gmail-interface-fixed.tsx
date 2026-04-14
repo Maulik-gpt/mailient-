@@ -1802,8 +1802,9 @@ export function GmailInterfaceFixed() {
                                         </div>
                                         <div className="max-h-[700px] overflow-y-auto custom-scrollbar">
                                             {isLoadingContacts && contacts.length === 0 ? (
-                                                <div className="py-12 md:py-20 animate-in fade-in duration-700">
-                                                    <ArcusTerminalLoader />
+                                                <div className="py-12 md:py-20 animate-in fade-in duration-700 flex flex-col items-center justify-center">
+                                                    <div className="w-8 h-8 border-2 border-neutral-200 dark:border-neutral-700 border-t-neutral-900 dark:border-t-neutral-300 rounded-full animate-spin" />
+                                                    <p className="mt-4 text-sm text-neutral-500 dark:text-neutral-400">Loading contacts...</p>
                                                 </div>
                                             ) : contacts.length > 0 ? (
                                                 contacts.map((contact) => (
@@ -1980,8 +1981,9 @@ export function GmailInterfaceFixed() {
                                         </div>
 
                                         {isLoadingTraditional ? (
-                                            <div className="py-12 md:py-20 animate-in fade-in duration-700">
-                                                <ArcusTerminalLoader />
+                                            <div className="py-12 md:py-20 animate-in fade-in duration-700 flex flex-col items-center justify-center">
+                                                <div className="w-8 h-8 border-2 border-neutral-200 dark:border-neutral-700 border-t-neutral-900 dark:border-t-neutral-300 rounded-full animate-spin" />
+                                                <p className="mt-4 text-sm text-neutral-500 dark:text-neutral-400">Loading emails...</p>
                                             </div>
                                         ) : traditionalEmails.length > 0 ? (
                                             <div className="space-y-px bg-neutral-900/20 border border-neutral-200 dark:border-neutral-800/50 rounded-2xl overflow-hidden shadow-2xl">
