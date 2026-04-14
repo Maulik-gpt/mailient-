@@ -418,7 +418,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                                         onClick={() => setCalComEventType(type)}
                                                         className={`flex-1 py-3 rounded-xl border transition-all duration-300 font-medium text-sm ${calComEventType === type
                                                             ? 'bg-indigo-500 text-black dark:text-white border-indigo-500'
-                                                            : 'bg-neutral-900/30 text-neutral-500 dark:text-neutral-600 dark:text-neutral-400 border-neutral-200 dark:border-neutral-800 hover:border-neutral-700'
+                                                            : 'bg-neutral-900/30 text-neutral-500 dark:text-neutral-400 border-neutral-200 dark:border-neutral-800 hover:border-neutral-700'
                                                             }`}
                                                     >
                                                         {type}
@@ -536,7 +536,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                             onClick={() => setRecommendation({ ...recommendation, suggested_duration: dur })}
                                             className={`flex-1 py-3 rounded-2xl border transition-all duration-300 font-medium ${recommendation?.suggested_duration === dur
                                                 ? 'bg-white text-black border-white'
-                                                : 'bg-neutral-900/30 text-neutral-500 dark:text-neutral-600 dark:text-neutral-400 border-neutral-200 dark:border-neutral-800 hover:border-neutral-700'
+                                                : 'bg-neutral-900/30 text-neutral-500 dark:text-neutral-400 border-neutral-200 dark:border-neutral-800 hover:border-neutral-700'
                                                 }`}
                                         >
                                             {dur} min
@@ -573,7 +573,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                                 }`}
                                         >
                                             <div className="flex items-center gap-4">
-                                                <div className={`p-3 rounded-2xl ${provider === 'google' ? 'bg-blue-500 text-black dark:text-white' : 'bg-neutral-800 text-neutral-500 dark:text-neutral-600 dark:text-neutral-400 group-hover:bg-neutral-700'}`}>
+                                                <div className={`p-3 rounded-2xl ${provider === 'google' ? 'bg-blue-500 text-black dark:text-white' : 'bg-neutral-800 text-neutral-500 dark:text-neutral-400 group-hover:bg-neutral-700'}`}>
                                                     <Video className="w-5 h-5" />
                                                 </div>
                                                 <div className="text-left">
@@ -593,7 +593,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                                             disabled={true}
                                         >
                                             <div className="flex items-center gap-4">
-                                                <div className={`p-3 rounded-2xl ${provider === 'zoom' ? 'bg-blue-400 text-black dark:text-white' : 'bg-neutral-800 text-neutral-500 dark:text-neutral-600 dark:text-neutral-400'}`}>
+                                                <div className={`p-3 rounded-2xl ${provider === 'zoom' ? 'bg-blue-400 text-black dark:text-white' : 'bg-neutral-800 text-neutral-500 dark:text-neutral-400'}`}>
                                                     <Video className="w-5 h-5" />
                                                 </div>
                                                 <div className="text-left">
