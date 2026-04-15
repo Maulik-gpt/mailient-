@@ -117,8 +117,14 @@ export async function POST(request) {
         }
 
         console.log('🤖 [Summary API] Generating email summary with AI...');
-        const summary = await aiService.generateEmailSummary(emailContent, complianceConfig.privacyMode, context);
-        console.log('✅ [Summary API] Summary generated successfully');
+        let summary = await aiService.generateEmailSummary(emailContent, complianceConfig.privacyMode, context);
+        console.log('✅ [Summary API] Summary generated:', summary?.substring(0, 50));
+
+        // Ensure we always have a non-empty summary
+        if (!summary || summary.trim().length === 0) {
+            console.warn('⚠️ [Summary API] Empty summary returned, using fallback');
+            summary = 'No summary available for this email.';
+        }
 
         if (typeof summary === 'string' && summary.trim().length > 0) {
             await subscriptionService.incrementFeatureUsage(userId, FEATURE_TYPES.EMAIL_SUMMARY);
