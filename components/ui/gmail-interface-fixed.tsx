@@ -2141,7 +2141,7 @@ export function GmailInterfaceFixed() {
                                                             onClick={() => {
                                                                 setSelectedInsight(insight);
                                                                 if (insight.source_emails && insight.source_emails.length > 0) {
-                                                                    setSelectedEmailId(insight.source_emails[0].id);
+                                                                    handleEmailClick(insight.source_emails[0].id);
                                                                 }
                                                             }}
                                                         />
@@ -2347,7 +2347,7 @@ export function GmailInterfaceFixed() {
                                                                         ) : (
                                                                             <div className="space-y-10">
                                                                                 {/* AI Summary Card */}
-                                                                                <div className="bg-gradient-to-br from-neutral-800/40 to-neutral-900/40 rounded-[2rem] p-8 border border-neutral-200 dark:border-neutral-800/50 shadow-2xl relative overflow-hidden">
+                                                                                <div className="bg-neutral-50 dark:bg-neutral-800/40 rounded-[2rem] p-8 border border-neutral-200 dark:border-neutral-800/50 shadow-2xl relative overflow-hidden">
                                                                                     <div className="absolute top-0 right-0 p-8 opacity-5">
                                                                                         <Sparkles className="w-32 h-32 text-black dark:text-white" />
                                                                                     </div>
@@ -2359,7 +2359,7 @@ export function GmailInterfaceFixed() {
                                                                                         </h3>
                                                                                     </div>
 
-                                                                                    <p className="text-neutral-200 leading-relaxed text-xl font-light whitespace-pre-wrap">
+                                                                                    <p className="text-neutral-800 dark:text-neutral-200 leading-relaxed text-xl font-light whitespace-pre-wrap">
                                                                                         {formatAIText(emailSummary)}
                                                                                     </p>
                                                                                 </div>
