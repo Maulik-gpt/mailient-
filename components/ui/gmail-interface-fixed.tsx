@@ -2359,7 +2359,7 @@ export function GmailInterfaceFixed() {
                                                                                         </h3>
                                                                                     </div>
 
-                                                                                    <p className="text-neutral-900 dark:text-neutral-200 leading-relaxed text-xl font-light whitespace-pre-wrap">
+                                                                                    <p className="text-neutral-200 leading-relaxed text-xl font-light whitespace-pre-wrap">
                                                                                         {formatAIText(emailSummary)}
                                                                                     </p>
                                                                                 </div>
