@@ -300,10 +300,16 @@ export function GmailInterfaceFixed() {
             setLoading(true);
             setError(null);
 
-
-
-            const url = isLoadMore && nextPageToken
-                ? `/api/home-feed/insights?pageToken=${encodeURIComponent(nextPageToken)}`
+            const params = new URLSearchParams();
+            if (isLoadMore) {
+                params.set('loadMore', 'true');
+                if (nextPageToken) {
+                    params.set('pageToken', nextPageToken);
+                }
+            }
+            
+            const url = params.toString() 
+                ? `/api/home-feed/insights?${params.toString()}`
                 : '/api/home-feed/insights';
 
             const response = await fetch(url, {

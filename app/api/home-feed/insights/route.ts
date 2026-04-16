@@ -27,6 +27,21 @@ interface EnrichedEmail {
   receivedAt: string;
 }
 
+// Store for cumulative email data across requests (in-memory, per-deployment)
+// In production, use Redis or database
+const cumulativeEmailStore = new Map<string, { emailIds: string[]; timestamp: number }>();
+
+// Cleanup old entries every hour
+setInterval(() => {
+  const now = Date.now();
+  const ONE_HOUR = 60 * 60 * 1000;
+  for (const [key, value] of cumulativeEmailStore.entries()) {
+    if (now - value.timestamp > ONE_HOUR) {
+      cumulativeEmailStore.delete(key);
+    }
+  }
+}, 60 * 60 * 1000);
+
 export async function GET(request: Request) {
   try {
     // @ts-ignore
@@ -118,11 +133,25 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const pageToken = searchParams.get('pageToken') as string | null;
+    const isLoadMore = searchParams.get('loadMore') === 'true';
 
     const gmailService = new GmailService(accessToken, refreshToken || '');
     gmailService.setUserEmail(userEmail); // Enable token refresh persistence
 
-    console.log('📧 Fetching emails for analysis...');
+    console.log('📧 Fetching emails for analysis...', { isLoadMore, pageToken });
+
+    // Get previously stored email IDs for this user
+    const storeKey = `sift_${userEmail}`;
+    const storedData = cumulativeEmailStore.get(storeKey);
+    let previousEmailIds: string[] = [];
+    
+    if (isLoadMore && storedData) {
+      previousEmailIds = storedData.emailIds;
+      console.log(`📧 Load more: ${previousEmailIds.length} previous emails in store`);
+    } else if (!isLoadMore) {
+      // Clear store on fresh load
+      cumulativeEmailStore.delete(storeKey);
+    }
 
     // Only fetch INBOX emails (exclude sent, drafts, etc.)
     // 'in:inbox' ensures we only analyze emails received by the user, not ones they sent
@@ -130,8 +159,22 @@ export async function GET(request: Request) {
     const allMessages = recentEmails.messages || [];
     const nextPageToken = recentEmails.nextPageToken;
 
-    // Get email IDs (up to 50)
-    const uniqueIds: string[] = allMessages.slice(0, 50).map((m: any) => m.id);
+    // Get new email IDs (up to 50)
+    const newEmailIds: string[] = allMessages.slice(0, 50).map((m: any) => m.id);
+    
+    // Combine with previous emails (for load more) and deduplicate
+    const combinedIds = [...new Set([...previousEmailIds, ...newEmailIds])];
+    
+    console.log(`📧 Total emails to analyze: ${combinedIds.length} (${previousEmailIds.length} previous + ${newEmailIds.length} new)`);
+
+    // Update store with cumulative email IDs
+    cumulativeEmailStore.set(storeKey, { 
+      emailIds: combinedIds, 
+      timestamp: Date.now() 
+    });
+
+    // Use combined IDs for analysis (limit to most recent 100 for performance)
+    const uniqueIds = combinedIds.slice(0, 100);
 
     console.log(`📬 Fetching details for ${uniqueIds.length} emails...`);
 
