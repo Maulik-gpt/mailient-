@@ -57,61 +57,55 @@ export async function POST(request) {
             });
         }
 
-        // Use Liquid Thinking for title generation as requested
-        const model = 'nvidia/nemotron-nano-9b-v2:free';
+        // Use the requested model chain for title generation (Nano -> Super -> Qwen)
+        const models = [
+            'nvidia/nemotron-3-nano-30b-a3b:free',      // 1. NVIDIA Nano
+            'nvidia/nemotron-3-super-120b-a12b:free',    // 2. NVIDIA Super
+            'qwen/qwen3-coder:free'                      // 3. Qwen Coder
+        ];
 
-        const systemPrompt = `You are a chat title generator that creates SHORT, DESCRIPTIVE titles for conversations.
+        let generatedTitle = '';
+        let lastError = null;
 
-CRITICAL: Analyze the user's message as a 3rd-person observer and generate a TOPIC-BASED title that describes WHAT the conversation is about, NOT a rephrasing of their question.
+        for (const model of models) {
+            try {
+                console.log(`🚀 Attempting title generation via ${model}`);
+                const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`,
+                        'HTTP-Referer': process.env.HOST || 'https://mailient.xyz',
+                        'X-Title': 'Mailient Chat Title Generator'
+                    },
+                    body: JSON.stringify({
+                        model,
+                        messages: [
+                            { role: 'system', content: systemPrompt },
+                            { role: 'user', content: `Generate a short title for a conversation that starts with: "${message}"` }
+                        ],
+                        temperature: 0.3,
+                        max_tokens: 50
+                    })
+                });
 
-RULES:
-1. Write titles as TOPICS or DESCRIPTIONS, not questions
-2. Use 3-5 words maximum
-3. Use Title Case (capitalize first letter of each word)
-4. DO NOT include personal pronouns like "my", "I", "your", "me"
-5. DO NOT use quotes, colons, or special characters
-6. Focus on the SUBJECT MATTER, not the action being requested
-
-TRANSFORMATION EXAMPLES:
-- "What emails did I get from John today?" → "Emails From John"
-- "Help me draft a reply to my boss about the project deadline" → "Project Deadline Reply"
-- "Can you summarize my unread emails?" → "Unread Email Summary"
-- "Schedule a meeting with Sarah for next week" → "Meeting With Sarah"
-- "Hello, how are you doing today?" → "General Greeting"
-- "What are my urgent emails?" → "Urgent Emails Review"
-- "Find notes about the marketing campaign" → "Marketing Campaign Notes"
-- "Can you help me summarize my newsletter from last week?" → "Newsletter Summary"
-- "What are my urgent emails from today?" → "Today's Urgent Emails"
-
-OUTPUT: Just the title, nothing else. No explanations, no quotes, no colons.`;
-
-        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`,
-                'HTTP-Referer': process.env.HOST || 'https://mailient.xyz',
-                'X-Title': 'Mailient Chat Title Generator'
-            },
-            body: JSON.stringify({
-                model,
-                messages: [
-                    { role: 'system', content: systemPrompt },
-                    { role: 'user', content: `Generate a short title for a conversation that starts with: "${message}"` }
-                ],
-                temperature: 0.3,
-                max_tokens: 50
-            })
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('❌ OpenRouter title generation failed:', response.status, errorText);
-            throw new Error(`Title generation failed: ${response.status}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    generatedTitle = data?.choices?.[0]?.message?.content?.trim() || '';
+                    if (generatedTitle) {
+                        console.log(`✅ Title generation success with ${model}`);
+                        break;
+                    }
+                } else {
+                    const errorText = await response.text();
+                    console.warn(`⚠️ Title generation failed for ${model}:`, response.status, errorText);
+                    lastError = new Error(`Title generation failed: ${response.status}`);
+                }
+            } catch (err) {
+                console.error(`❌ Title generation error with ${model}:`, err.message);
+                lastError = err;
+            }
         }
-
-        const data = await response.json();
-        let generatedTitle = data?.choices?.[0]?.message?.content?.trim() || '';
 
         // Clean up the title
         generatedTitle = generatedTitle

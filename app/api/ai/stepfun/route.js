@@ -42,53 +42,76 @@ export async function POST(request) {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 25000);
 
-        const response = await fetch(`${OPENROUTER_BASE}/chat/completions`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`,
-                'HTTP-Referer': process.env.HOST || 'https://mailient.xyz',
-                'X-Title': 'Mailient',
-                ...(privacyMode ? { 'X-OpenRouter-Data-Collection': 'opt-out' } : {})
-            },
-            body: JSON.stringify({
-                model: STEPFUN_MODEL,
-                messages,
-                temperature,
-                max_tokens: maxTokens,
-                provider: {
-                    data_collection: privacyMode ? 'deny' : 'allow'
+        // Strictly follow the requested model chain: Nano -> Super -> Qwen
+        const models = [
+            'nvidia/nemotron-3-nano-30b-a3b:free',       // 1. NVIDIA Nano
+            'nvidia/nemotron-3-super-120b-a12b:free',    // 2. NVIDIA Super
+            'qwen/qwen3-coder:free'                      // 3. Qwen Coder
+        ];
+
+        let lastError = null;
+        let finalResponse = null;
+        let usedModel = '';
+
+        for (const model of models) {
+            try {
+                console.log(`🔮 StepFun attempting via ${model}`);
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 12000); // 12s timeout for fast failover
+
+                const response = await fetch(`${OPENROUTER_BASE}/chat/completions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`,
+                        'HTTP-Referer': process.env.HOST || 'https://mailient.xyz',
+                        'X-Title': 'Mailient',
+                        ...(privacyMode ? { 'X-OpenRouter-Data-Collection': 'opt-out' } : {})
+                    },
+                    body: JSON.stringify({
+                        model,
+                        messages,
+                        temperature,
+                        max_tokens: maxTokens,
+                        provider: {
+                            data_collection: privacyMode ? 'deny' : 'allow'
+                        }
+                    }),
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data?.choices?.[0]?.message?.content) {
+                        finalResponse = data;
+                        usedModel = model;
+                        console.log(`✅ StepFun success with ${model}`);
+                        break;
+                    }
+                } else {
+                    const errorText = await response.text();
+                    console.warn(`⚠️ StepFun model ${model} failed (${response.status}):`, errorText.substring(0, 100));
+                    lastError = new Error(`API error: ${response.status}`);
                 }
-            }),
-            signal: controller.signal
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`❌ StepFun API error ${response.status}:`, errorText.substring(0, 200));
-            return NextResponse.json(
-                { error: `Model API error: ${response.status}`, detail: errorText.substring(0, 200) },
-                { status: response.status }
-            );
+            } catch (err) {
+                console.error(`❌ StepFun error with ${model}:`, err.message);
+                lastError = err;
+            }
         }
 
-        const data = await response.json();
-        const content = data?.choices?.[0]?.message?.content;
-
-        if (!content) {
-            console.warn('⚠️ StepFun returned empty content');
-            return NextResponse.json({ error: 'Model returned empty response' }, { status: 502 });
+        if (!finalResponse) {
+            throw lastError || new Error('All models in StepFun chain failed');
         }
 
-        console.log('✅ StepFun response received');
+        const content = finalResponse.choices[0].message.content;
 
         return NextResponse.json({
             success: true,
             content,
-            model: STEPFUN_MODEL,
-            usage: data.usage || null
+            model: usedModel,
+            usage: finalResponse.usage || null
         });
 
     } catch (error) {

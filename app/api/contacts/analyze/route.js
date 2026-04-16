@@ -107,39 +107,59 @@ ${emailContents.map(e => `[${e.direction.toUpperCase()}] Date: ${e.date}\nSubjec
 
 JSON ONLY.`;
 
-                const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${openRouterKey}`,
-                        'Content-Type': 'application/json',
-                        'HTTP-Referer': 'https://mailient.xyz',
-                        'X-Title': 'Mailient'
-                    },
-                    body: JSON.stringify({
-                        model: 'google/gemini-2.0-flash-001',
-                        messages: [
-                            { role: 'system', content: 'You are a Relationship Intelligence AI. Build a 12-point chronological sentiment graph based on tone and frequency. Higher index = more recent. Higher values = warmer tone.' },
-                            { role: 'user', content: prompt }
-                        ],
-                        temperature: 0.1
-                    })
-                });
+                // Strictly follow the requested model chain: Nano -> Super -> Qwen
+                const models = [
+                    'nvidia/nemotron-3-nano-30b-a3b:free',       // 1. NVIDIA Nano
+                    'nvidia/nemotron-3-super-120b-a12b:free',    // 2. NVIDIA Super
+                    'qwen/qwen3-coder:free'                      // 3. Qwen Coder
+                ];
 
-                if (response.ok) {
-                    const data = await response.json();
-                    const jsonMatch = (data.choices?.[0]?.message?.content || '').match(/\{[\s\S]*\}/);
-                    if (jsonMatch) {
-                        const analysis = JSON.parse(jsonMatch[0]);
-                        relationshipScore = analysis.relationshipScore || 65;
-                        trend = analysis.trend || 'stable';
-                        sentimentHistory = analysis.sentimentHistory || [];
-                        aiSuggestion = analysis.aiSuggestion || '';
-                        recentTopics = analysis.recentTopics || [];
+                let finalAnalysis = null;
+
+                for (const model of models) {
+                    try {
+                        console.log(`🚀 Attempting contact analysis via ${model}`);
+                        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${openRouterKey}`,
+                                'Content-Type': 'application/json',
+                                'HTTP-Referer': 'https://mailient.xyz',
+                                'X-Title': 'Mailient'
+                            },
+                            body: JSON.stringify({
+                                model,
+                                messages: [
+                                    { role: 'system', content: 'You are a Relationship Intelligence AI. Build a 12-point chronological sentiment graph based on tone and frequency. Higher index = more recent. Higher values = warmer tone.' },
+                                    { role: 'user', content: prompt }
+                                ],
+                                temperature: 0.1
+                            })
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            const jsonMatch = (data.choices?.[0]?.message?.content || '').match(/\{[\s\S]*\}/);
+                            if (jsonMatch) {
+                                finalAnalysis = JSON.parse(jsonMatch[0]);
+                                console.log(`✅ Contact analysis success with ${model}`);
+                                break;
+                            }
+                        } else {
+                            console.warn(`⚠️ Contact analysis failed for ${model}:`, response.status);
+                        }
+                    } catch (err) {
+                        console.error(`❌ Contact analysis error with ${model}:`, err.message);
                     }
                 }
-            } catch (aiError) {
-                console.error('AI error:', aiError);
-            }
+
+                if (finalAnalysis) {
+                    relationshipScore = finalAnalysis.relationshipScore || 65;
+                    trend = finalAnalysis.trend || 'stable';
+                    sentimentHistory = finalAnalysis.sentimentHistory || [];
+                    aiSuggestion = finalAnalysis.aiSuggestion || '';
+                    recentTopics = finalAnalysis.recentTopics || [];
+                }
         }
 
         if (sentimentHistory.length === 0) {

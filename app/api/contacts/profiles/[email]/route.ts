@@ -203,28 +203,49 @@ export async function GET(
                     Days since first contact: ${daysSinceFirst}
                 `;
 
-                const aiResp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${apiKey}`,
-                        'HTTP-Referer': process.env.HOST || 'https://mailient.xyz',
-                        'X-Title': 'Mailient'
-                    },
-                    body: JSON.stringify({
-                        model: 'google/gemini-2.0-flash-exp:free',
-                        messages: [
-                            { role: 'system', content: 'You are an AI that provides one-line suggestions for email relationships. Under 15 words, professional.' },
-                            { role: 'user', content: `One-liner suggestion for this relationship:\n${relationshipContext}` }
-                        ],
-                        max_tokens: 50,
-                        temperature: 0.3
-                    })
-                });
+                const models = [
+                    'nvidia/nemotron-3-nano-30b-a3b:free',       // 1. NVIDIA Nano
+                    'nvidia/nemotron-3-super-120b-a12b:free',    // 2. NVIDIA Super
+                    'qwen/qwen3-coder:free'                      // 3. Qwen Coder
+                ];
 
-                if (aiResp.ok) {
-                    const data = await aiResp.json();
-                    contactDetail.aiSuggestion = data.choices?.[0]?.message?.content?.trim() || 'Maintain consistency in communication.';
+                for (const model of models) {
+                    try {
+                        console.log(`🚀 Attempting profile suggestion via ${model}`);
+                        const aiResp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${apiKey}`,
+                                'HTTP-Referer': process.env.HOST || 'https://mailient.xyz',
+                                'X-Title': 'Mailient'
+                            },
+                            body: JSON.stringify({
+                                model,
+                                messages: [
+                                    { role: 'system', content: 'You are an AI that provides one-line suggestions for email relationships. Under 15 words, professional.' },
+                                    { role: 'user', content: `One-liner suggestion for this relationship:\n${relationshipContext}` }
+                                ],
+                                max_tokens: 50,
+                                temperature: 0.3
+                            })
+                        });
+
+                        if (aiResp.ok) {
+                            const data = await aiResp.json();
+                            contactDetail.aiSuggestion = data.choices?.[0]?.message?.content?.trim();
+                            if (contactDetail.aiSuggestion) {
+                                console.log(`✅ Profile suggestion success with ${model}`);
+                                break;
+                            }
+                        }
+                    } catch (err) {
+                        console.error(`❌ Profile suggestion error with ${model}:`, err);
+                    }
+                }
+                
+                if (!contactDetail.aiSuggestion) {
+                    contactDetail.aiSuggestion = 'Maintain consistency in communication.';
                 }
             }
         } catch (aiErr) {
