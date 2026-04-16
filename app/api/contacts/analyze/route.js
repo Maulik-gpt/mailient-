@@ -185,3 +185,4 @@ JSON ONLY.`;
         return NextResponse.json({ error: 'Analysis failed' }, { status: 500 });
     }
 }
+
