@@ -4,7 +4,7 @@ import Providers from "./providers";
 
 export const metadata = {
   title: "Mailient",
-  description: "Intelligent email management with AI-powered relationship tracking",
+  description: "Stop dreading your inbox. AI surfaces the deals and urgent replies hiding in the noise. Draft faster in your voice. Know exactly what needs your attention without the Sunday night panic of what did I miss.",
   metadataBase: new URL('https://mailient.xyz'),
   icons: {
     icon: [
