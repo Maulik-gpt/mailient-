@@ -160,6 +160,7 @@ JSON ONLY.`;
                     aiSuggestion = finalAnalysis.aiSuggestion || '';
                     recentTopics = finalAnalysis.recentTopics || [];
                 }
+            }
         }
 
         if (sentimentHistory.length === 0) {
