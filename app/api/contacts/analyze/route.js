@@ -160,6 +160,8 @@ JSON ONLY.`;
                     aiSuggestion = finalAnalysis.aiSuggestion || '';
                     recentTopics = finalAnalysis.recentTopics || [];
                 }
+            } catch (aiError) {
+                console.error('AI analysis error:', aiError);
             }
         }
 
