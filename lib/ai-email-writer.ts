@@ -191,8 +191,8 @@ class AIEmailWriterService {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    // Use the faster and more accurate free model from OpenRouter
-                    model: 'arcee-ai/trinity-large-preview:free',
+                    // Use fast NVIDIA/Qwen models for low latency
+                    model: 'nvidia/nemotron-3-nano-30b-a3b:free',
                     messages: [
                         {
                             role: 'system',
