@@ -1972,16 +1972,8 @@ export function GmailInterfaceFixed() {
                                             </div>
                                         ) : traditionalEmails.length > 0 ? (
                                             <div className="space-y-px bg-neutral-900/20 border border-neutral-200 dark:border-neutral-800/50 rounded-2xl overflow-hidden shadow-2xl">
-                                                {traditionalEmails.map((email, index) => (
+                                                {traditionalEmails.map((email) => (
                                                     <React.Fragment key={email.id}>
-                                                        {/* Separation line after 50 emails */}
-                                                        {index === 50 && (
-                                                            <div className="py-8 flex items-center justify-center gap-4 bg-white/[0.01] border-y border-white/[0.03]">
-                                                                <div className="h-[1px] w-24 bg-gradient-to-r from-transparent to-neutral-800" />
-                                                                <span className="text-[10px] uppercase font-bold tracking-[0.3em] text-neutral-600">Previous Messages</span>
-                                                                <div className="h-[1px] w-24 bg-gradient-to-l from-transparent to-neutral-800" />
-                                                            </div>
-                                                        )}
                                                         <div
                                                             onClick={() => handleTraditionalEmailClick(email.id)}
                                                             className="group flex items-center gap-6 p-5 hover:bg-black/5 active:bg-black/10 dark:hover:bg-white/[0.04] dark:active:bg-white/[0.06] transition-all cursor-pointer border-b border-black/5 dark:border-white/[0.02] last:border-0 relative overflow-hidden"
