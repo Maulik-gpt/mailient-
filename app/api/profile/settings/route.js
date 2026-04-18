@@ -58,7 +58,8 @@ export async function GET(req) {
         push_notifications: true,
         marketing_emails: false,
         auto_save: true,
-        compact_mode: false
+        compact_mode: false,
+        ai_model_preference: 'nvidia/nemotron-3-nano-30b-a3b:free'
       },
       privacy_settings: {
         profile_visibility: 'public',

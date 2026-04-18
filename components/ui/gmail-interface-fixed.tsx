@@ -22,6 +22,7 @@ import { ArcusTerminalLoader } from './arcus-terminal-loader';
 import { VoiceProfileModal } from './voice-profile-modal';
 import { triggerSuccessConfetti } from '@/lib/confetti';
 import { useDashboardSettings } from '@/lib/DashboardSettingsContext';
+import { SoundMenu } from './sound-menu';
 
 // Simple markdown renderer for bold text
 const renderMarkdown = (text: string): string => {
@@ -280,6 +281,48 @@ export function GmailInterfaceFixed() {
 
     const [isVoiceProfileModalOpen, setIsVoiceProfileModalOpen] = useState(false);
     const [userVoiceProfile, setUserVoiceProfile] = useState<any>(null);
+    const [isAnalyzingVoice, setIsAnalyzingVoice] = useState(false);
+
+    // Fetch voice profile on mount
+    useEffect(() => {
+        const fetchVoiceProfile = async () => {
+            try {
+                const response = await fetch('/api/user/voice-profile');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.profile?.voice_profile) {
+                        setUserVoiceProfile(data.profile.voice_profile);
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching voice profile:', error);
+            }
+        };
+        fetchVoiceProfile();
+    }, []);
+
+    // Create/Analyze voice profile
+    const handleCreateVoiceProfile = async () => {
+        setIsAnalyzingVoice(true);
+        try {
+            const response = await fetch('/api/user/voice-profile', {
+                method: 'POST'
+            });
+            const data = await response.json();
+            
+            if (response.ok && data.profile) {
+                setUserVoiceProfile(data.profile);
+                toast.success('Voice profile created successfully!');
+            } else {
+                toast.error(data.error || 'Failed to create voice profile');
+            }
+        } catch (error) {
+            console.error('Error creating voice profile:', error);
+            toast.error('Failed to create voice profile');
+        } finally {
+            setIsAnalyzingVoice(false);
+        }
+    };
 
     const arcusDragControls = useDragControls();
     const arcusPanelAnimControls = useAnimation();
@@ -813,7 +856,8 @@ export function GmailInterfaceFixed() {
                     category,
                     tone: settings.aiTone,
                     aiProtection: settings.aiProtection,
-                    privacyMode: settings.privacyMode
+                    privacyMode: settings.privacyMode,
+                    voiceProfile: userVoiceProfile // Pass voice profile for cloning
                 })
             });
 
@@ -1541,8 +1585,7 @@ export function GmailInterfaceFixed() {
 
                     {/* Security & Credits Section */}
                     <div className="absolute top-6 right-10 z-50 flex items-center gap-4">
-
-
+                        <SoundMenu />
                         {usageData && usageData.planType !== 'pro' && (
                             <UsageBadge
                                 icon={<Sparkles className="h-3.5 w-3.5 text-amber-500" />}
@@ -3071,13 +3114,9 @@ export function GmailInterfaceFixed() {
                     isOpen={isVoiceProfileModalOpen}
                     onClose={() => setIsVoiceProfileModalOpen(false)}
                     profile={userVoiceProfile}
-                    onReAnalyze={() => {
-                        toast.promise(fetch('/api/user/voice-profile', { method: 'POST' }), {
-                            loading: 'Analyzing Gmail DNA...',
-                            success: 'Profile updated!',
-                            error: 'Failed to analyze'
-                        });
-                    }}
+                    onCreate={handleCreateVoiceProfile}
+                    onReAnalyze={handleCreateVoiceProfile}
+                    isAnalyzing={isAnalyzingVoice}
                 />
             </div>
         </LayoutGroup>

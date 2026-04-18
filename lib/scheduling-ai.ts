@@ -1,7 +1,6 @@
-/**
- * Scheduling AI Service
  * Uses a secondary OpenRouter key and cheaper models for scheduling tasks
  */
+import { getModelChain } from './ai-constants.js';
 export class SchedulingAIService {
     private apiKey: string;
     private models: string[];
@@ -12,21 +11,20 @@ export class SchedulingAIService {
         // Use all available keys for robustness
         this.apiKey = (process.env.OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY2 || process.env.OPENROUTER_API_KEY3 || '').trim();
         // Fallback chain of free/cheap models to handle rate limits
-        this.models = [
-            'nvidia/nemotron-3-nano-30b-a3b:free',
-            'nvidia/nemotron-3-super-120b-a12b:free',
-            'qwen/qwen3-coder:free'
-        ];
+        this.models = getModelChain();
         this.baseURL = 'https://openrouter.ai/api/v1';
     }
 
     async callOpenRouter(
         messages: Array<{ role: string; content: string }>,
-        options: { temperature?: number; maxTokens?: number } = {}
+        options: { temperature?: number; maxTokens?: number; modelPreference?: string } = {}
     ) {
         let lastError: Error | null = null;
+        
+        // Dynamically get models based on preference if provided
+        const modelsToTry = options.modelPreference ? getModelChain(options.modelPreference) : this.models;
 
-        for (const model of this.models) {
+        for (const model of modelsToTry) {
             try {
                 console.log(`🤖 Scheduling AI: Trying model ${model}...`);
                 const response = await fetch(`${this.baseURL}/chat/completions`, {

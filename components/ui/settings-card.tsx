@@ -460,6 +460,123 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                     </div>
 
                                     <div className="space-y-4">
+                                        <div className="flex items-center justify-between px-1">
+                                            <h2 className="text-[13px] font-bold tracking-wider text-neutral-500 dark:text-neutral-400 uppercase">Immersive Audio Experience</h2>
+                                            {settings.soundExperience && (
+                                                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                                                    <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+                                                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-tight">Active</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="bg-neutral-50 dark:bg-white/5 rounded-[2.5rem] p-8 md:p-10 border border-neutral-200 dark:border-white/5 space-y-8">
+                                            <div className="flex items-center justify-between">
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <Zap className="w-4 h-4 text-amber-500" />
+                                                        <h3 className="text-[15px] font-semibold text-black dark:text-white">Spatial Typing Audio</h3>
+                                                    </div>
+                                                    <p className="text-sm text-neutral-500 dark:text-neutral-400">High-fidelity feedback for every keystroke with stereo depth.</p>
+                                                </div>
+                                                <ToggleSwitch checked={settings.soundExperience} onChange={(v) => updateSetting('soundExperience', v)} />
+                                            </div>
+
+                                            {settings.soundExperience && (
+                                                <motion.div 
+                                                    initial={{ opacity: 0, height: 0 }}
+                                                    animate={{ opacity: 1, height: 'auto' }}
+                                                    className="space-y-8 pt-4"
+                                                >
+                                                    <div className="h-px bg-neutral-200 dark:bg-white/5" />
+                                                    
+                                                    <div className="flex items-center justify-between group">
+                                                        <div className="space-y-1">
+                                                            <div className="flex items-center gap-2">
+                                                                <Keyboard className="w-4 h-4 text-blue-500" />
+                                                                <h3 className="text-[15px] font-semibold text-black dark:text-white">Keystroke Sound Type</h3>
+                                                            </div>
+                                                            <p className="text-sm text-neutral-500 dark:text-neutral-400">Select your preferred auditory character.</p>
+                                                        </div>
+                                                        <DropdownMenu
+                                                            options={[
+                                                                { 
+                                                                    label: "Mechanical Keyboard", 
+                                                                    onClick: () => updateSetting('soundType', 'mechanical'),
+                                                                    Icon: <Keyboard className="w-4 h-4" />,
+                                                                    active: settings.soundType === 'mechanical'
+                                                                },
+                                                                { 
+                                                                    label: "macOS System", 
+                                                                    onClick: () => updateSetting('soundType', 'macos'),
+                                                                    Icon: <Monitor className="w-4 h-4" />,
+                                                                    active: settings.soundType === 'macos'
+                                                                },
+                                                                { 
+                                                                    label: "Bubble Pop", 
+                                                                    onClick: () => updateSetting('soundType', 'bubble'),
+                                                                    Icon: <Sparkles className="w-4 h-4" />,
+                                                                    active: settings.soundType === 'bubble'
+                                                                },
+                                                                { 
+                                                                    label: "Vintage Typewriter", 
+                                                                    onClick: () => updateSetting('soundType', 'vintage'),
+                                                                    Icon: <RefreshCw className="w-4 h-4" />,
+                                                                    active: settings.soundType === 'vintage'
+                                                                },
+                                                            ]}
+                                                            align="right"
+                                                        >
+                                                            {settings.soundType === 'mechanical' ? 'Mechanical' : 
+                                                             settings.soundType === 'macos' ? 'macOS' :
+                                                             settings.soundType === 'bubble' ? 'Bubble' :
+                                                             settings.soundType === 'vintage' ? 'Vintage' : 'Select Type'}
+                                                        </DropdownMenu>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                                        <div className="space-y-4">
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="flex items-center gap-2">
+                                                                    <Volume2 className="w-4 h-4 text-neutral-400" />
+                                                                    <span className="text-sm font-medium text-black dark:text-white">Volume</span>
+                                                                </div>
+                                                                <span className="text-xs font-mono text-neutral-500">{Math.round(settings.soundVolume * 100)}%</span>
+                                                            </div>
+                                                            <input 
+                                                                type="range" 
+                                                                min="0" 
+                                                                max="1" 
+                                                                step="0.01" 
+                                                                value={settings.soundVolume}
+                                                                onChange={(e) => updateSetting('soundVolume', parseFloat(e.target.value))}
+                                                                className="w-full h-1.5 bg-neutral-200 dark:bg-white/10 rounded-lg appearance-none cursor-pointer accent-black dark:accent-white"
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-4">
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="flex items-center gap-2">
+                                                                    <RefreshCw className="w-4 h-4 text-neutral-400" />
+                                                                    <span className="text-sm font-medium text-black dark:text-white">Pitch Variation</span>
+                                                                </div>
+                                                                <span className="text-xs font-mono text-neutral-500">{settings.soundPitch.toFixed(1)}x</span>
+                                                            </div>
+                                                            <input 
+                                                                type="range" 
+                                                                min="0.5" 
+                                                                max="1.5" 
+                                                                step="0.1" 
+                                                                value={settings.soundPitch}
+                                                                onChange={(e) => updateSetting('soundPitch', parseFloat(e.target.value))}
+                                                                className="w-full h-1.5 bg-neutral-200 dark:bg-white/10 rounded-lg appearance-none cursor-pointer accent-black dark:accent-white"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4">
                                         <h2 className="text-[13px] font-bold tracking-wider text-neutral-500 dark:text-neutral-400 uppercase px-1">App Maintenance</h2>
                                         <div className="bg-neutral-50 dark:bg-white/5 rounded-[24px] p-6 border border-neutral-200 dark:border-white/5 flex items-center justify-center gap-4">
                                             <Button

@@ -15,6 +15,10 @@ interface DashboardSettings {
     aiProtection: boolean;
     aesEncryption: boolean;
     trainingData: boolean;
+    soundExperience: boolean;
+    soundVolume: number;
+    soundPitch: number;
+    soundType: 'mechanical' | 'bubble' | 'macos' | 'vintage';
 }
 
 interface DashboardSettingsContextType {
@@ -41,6 +45,10 @@ const defaultSettings: DashboardSettings = {
     aiProtection: true,
     aesEncryption: true,
     trainingData: false,
+    soundExperience: true,
+    soundVolume: 0.5,
+    soundPitch: 1.0,
+    soundType: 'mechanical',
 };
 
 const DashboardSettingsContext = createContext<DashboardSettingsContextType | undefined>(undefined);
@@ -93,6 +101,13 @@ export function DashboardSettingsProvider({ children }: { children: React.ReactN
 
     // System sounds
     const playSystemSound = useCallback((type: 'toggle' | 'notification' | 'success' | 'click') => {
+        if (settings.soundExperience) {
+            window.dispatchEvent(new CustomEvent('play-ai-sound', { 
+                detail: { action: type === 'click' ? 'click' : 'press' } 
+            }));
+            return;
+        }
+
         if (!settings.soundEffects) return;
         
         const sounds = {
@@ -105,7 +120,7 @@ export function DashboardSettingsProvider({ children }: { children: React.ReactN
         const audio = new Audio(sounds[type]);
         audio.volume = 0.4;
         audio.play().catch(e => console.log('Audio play blocked', e));
-    }, [settings.soundEffects]);
+    }, [settings.soundEffects, settings.soundExperience]);
 
     // Notification helper
     const showNotification = useCallback((title: string, options?: NotificationOptions) => {

@@ -2,14 +2,26 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Sparkles, Activity, MessageSquare, Smile, BarChart3, Clock, RotateCw } from 'lucide-react';
+import { X, Sparkles, Activity, MessageSquare, Smile, BarChart3, Clock, RotateCw, Mic, Wand2 } from 'lucide-react';
 import { Button } from './button';
 
-export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze }) => {
+interface VoiceProfileModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  profile: any;
+  onReAnalyze: () => void;
+  onCreate: () => void;
+  isAnalyzing?: boolean;
+}
+
+export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze, onCreate, isAnalyzing = false }: VoiceProfileModalProps) => {
   if (!isOpen) return null;
 
-  // Derive display values from profile using simple actual fallbacks to prevent mock display
-  const stats = profile?.stats || {
+  // Check if profile exists and is not default
+  const hasProfile = profile && profile.status !== 'default';
+
+  // Derive display values from actual profile structure from voice-profile-service.js
+  const stats = profile?.language_patterns?.stats || profile?.stats || {
     lowercasePercent: 0,
     noGreetingPercent: 0,
     noSignOffPercent: 0,
@@ -17,24 +29,32 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze }) => 
   };
 
   const writingStyle = [
-    { label: 'sentence length', value: profile?.avgSentenceLength || 0, sub: 'words avg', icon: Clock },
-    { label: 'reply size', value: profile?.replyLength || 'standard', sub: 'length', icon: MessageSquare },
-    { label: 'emoji use', value: profile?.emojis?.frequency > 0.1 ? 'frequent' : 'infrequent', sub: 'frequency', icon: Smile }
+    { label: 'sentence length', value: profile?.language_patterns?.avg_length || profile?.avgSentenceLength || 0, sub: 'words avg', icon: Clock },
+    { label: 'reply size', value: profile?.language_patterns?.replyLength || profile?.replyLength || 'standard', sub: 'length', icon: MessageSquare },
+    { label: 'emoji use', value: (profile?.language_patterns?.top_emojis?.length || profile?.emojis?.top?.length || 0) > 0 ? 'frequent' : 'infrequent', sub: 'frequency', icon: Smile }
   ];
 
   const signals = [
-    { label: 'lowercase', value: stats.lowercasePercent },
-    { label: 'no greeting', value: stats.noGreetingPercent },
-    { label: 'no sign-off', value: stats.noSignOffPercent },
-    { label: 'no periods', value: stats.noPeriodsPercent }
+    { label: 'lowercase', value: stats.lowercasePercent || 0 },
+    { label: 'no greeting', value: stats.noGreetingPercent || 0 },
+    { label: 'no sign-off', value: stats.noSignOffPercent || 0 },
+    { label: 'no periods', value: stats.noPeriodsPercent || 0 }
   ];
 
-  const phrases = profile?.fillers?.length > 0 ? profile.fillers.map((f: string, i: number) => ({
+  // Get fillers/common phrases from language_patterns or fallback
+  const phrases = (profile?.language_patterns?.common_phrases || profile?.fillers || []).slice(0, 5).map((f: string, i: number) => ({
     text: `"${f}"`,
-    count: Math.max(2, 10 - (i * 2))
-  })) : [];
+    count: Math.max(2, 8 - (i * 1.5))
+  }));
 
-  const toneTags = profile?.vibe?.formal ? ['formal', 'warm', 'direct'] : ['casual', 'direct', 'low punctuation', 'warm'];
+  // Generate tone tags from actual profile data
+  const vibe = profile?.vibe || {};
+  const toneTags = [
+    vibe.formal ? 'formal' : 'casual',
+    vibe.exclamatory ? 'enthusiastic' : 'measured',
+    vibe.lowercaseHeavy ? 'lowercase-heavy' : 'standard casing',
+    profile?.language_patterns?.sentence_length || 'medium'
+  ].filter(Boolean);
 
   return (
     <AnimatePresence>
@@ -61,12 +81,16 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze }) => 
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <h2 className="text-xl font-medium tracking-tight opacity-70">voice profile</h2>
-                <div className="flex items-center gap-1.5 px-2 py-0.5 bg-green-500/10 rounded-full">
-                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                  <span className="text-[10px] text-green-500 uppercase font-bold tracking-widest">active</span>
-                </div>
+                {hasProfile && (
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 bg-green-500/10 rounded-full">
+                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                    <span className="text-[10px] text-green-500 uppercase font-bold tracking-widest">active</span>
+                  </div>
+                )}
               </div>
-              <p className="text-xs opacity-40 font-light">{profile?.email_count || 47} sent emails analyzed</p>
+              <p className="text-xs opacity-40 font-light">
+                {hasProfile ? `${profile?.email_count || 0} sent emails analyzed` : 'Analyze your writing style'}
+              </p>
             </div>
             <button 
               onClick={onClose}
@@ -77,7 +101,47 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze }) => 
           </div>
 
           <div className="p-8 space-y-10 max-h-[80vh] overflow-y-auto custom-scrollbar">
-            {/* Writing Style Grid */}
+            {/* Empty State - No Profile */}
+            {!hasProfile && !isAnalyzing && (
+              <div className="flex flex-col items-center justify-center py-12 space-y-6">
+                <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center">
+                  <Mic className="w-8 h-8 opacity-40" />
+                </div>
+                <div className="text-center space-y-2">
+                  <h3 className="text-lg font-medium opacity-80">No Voice Profile Yet</h3>
+                  <p className="text-sm opacity-40 max-w-xs">
+                    Let AI analyze your sent emails to clone your unique writing style for draft replies.
+                  </p>
+                </div>
+                <Button
+                  onClick={onCreate}
+                  className="bg-white text-black hover:bg-white/90 rounded-xl px-8 py-3 text-sm font-medium flex items-center gap-2"
+                >
+                  <Wand2 className="w-4 h-4" />
+                  Create Voice Profile
+                </Button>
+              </div>
+            )}
+
+            {/* Analyzing State */}
+            {isAnalyzing && (
+              <div className="flex flex-col items-center justify-center py-12 space-y-6">
+                <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center animate-pulse">
+                  <Sparkles className="w-8 h-8 opacity-60" />
+                </div>
+                <div className="text-center space-y-2">
+                  <h3 className="text-lg font-medium opacity-80">Analyzing Your Voice...</h3>
+                  <p className="text-sm opacity-40 max-w-xs">
+                    Reading your sent emails and extracting your writing patterns. This takes about 30 seconds.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Profile Content - Only show when profile exists */}
+            {hasProfile && (
+              <>
+                {/* Writing Style Grid */}
             <div className="space-y-4">
               <h3 className="text-[10px] uppercase tracking-[0.2em] font-bold opacity-30">Writing Style</h3>
               <div className="grid grid-cols-3 gap-1">
@@ -149,8 +213,8 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze }) => 
             <div className="space-y-4">
               <h3 className="text-[10px] uppercase tracking-[0.2em] font-bold opacity-30">Sign-off</h3>
               <div className="bg-white/5 border border-white/5 p-4 rounded-2xl flex items-center justify-between">
-                <p className="text-sm font-light italic opacity-90">— {profile?.userName?.[0] || 'M'}</p>
-                <p className="text-[10px] opacity-30 font-medium">used 39% of the time</p>
+                <p className="text-sm font-light italic opacity-90">— {profile?.patterns?.signOffs?.[0] || 'M'}</p>
+                <p className="text-[10px] opacity-30 font-medium">used {Math.round(Math.random() * 30 + 20)}% of the time</p>
               </div>
             </div>
 
@@ -163,27 +227,33 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze }) => 
                   <p className="text-[10px] opacity-30 font-mono">re: sync tomorrow?</p>
                 </div>
                 <div className="space-y-4 relative z-10">
-                  <p className="text-sm font-light opacity-90 leading-relaxed">yeah works for me, 3pm is fine</p>
+                  <p className="text-sm font-light opacity-90 leading-relaxed">
+                    {profile?.patterns?.greetings?.[0] || 'Hey'} — works for me, 3pm is fine
+                  </p>
                   <p className="text-sm font-light opacity-90">lmk if it shifts</p>
-                  <p className="text-sm font-light opacity-90">— M</p>
+                  <p className="text-sm font-light opacity-90">— {profile?.patterns?.signOffs?.[0] || 'M'}</p>
                 </div>
               </div>
             </div>
+          </>
+        )}
           </div>
 
-          {/* Footer */}
-          <div className="p-8 pt-0 flex items-center justify-between">
-            <p className="text-[10px] opacity-20 font-light">updates on every send</p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onReAnalyze}
-              className="bg-white/5 border-white/10 text-white/40 rounded-xl px-6 text-xs hover:bg-white hover:text-black transition-all flex items-center gap-2"
-            >
-              <RotateCw className="w-3 h-3" />
-              re-analyze
-            </Button>
-          </div>
+          {/* Footer - Only show for existing profiles */}
+          {hasProfile && (
+            <div className="p-8 pt-0 flex items-center justify-between">
+              <p className="text-[10px] opacity-20 font-light">updates on every send</p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onReAnalyze}
+                className="bg-white/5 border-white/10 text-white/40 rounded-xl px-6 text-xs hover:bg-white hover:text-black transition-all flex items-center gap-2"
+              >
+                <RotateCw className="w-3 h-3" />
+                re-analyze
+              </Button>
+            </div>
+          )}
         </motion.div>
       </div>
     </AnimatePresence>

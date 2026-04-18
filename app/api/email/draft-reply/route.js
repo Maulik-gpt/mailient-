@@ -32,7 +32,7 @@ export async function POST(request) {
             }, { status: 403 });
         }
 
-        const { emailId, category, context, tone } = await request.json();
+        const { emailId, category, context, tone, voiceProfile: voiceProfileFromRequest } = await request.json();
         if (!emailId) {
             return NextResponse.json({ error: 'Email ID required' }, { status: 400 });
         }
@@ -102,7 +102,13 @@ export async function POST(request) {
         // Fetch user's voice profile for voice cloning (if available)
         let voiceProfile = null;
         try {
-            voiceProfile = await voiceProfileService.getVoiceProfile(userId);
+            // Use voice profile from request if provided (frontend cached), otherwise fetch from DB
+            if (voiceProfileFromRequest && voiceProfileFromRequest.status !== 'default') {
+                console.log('🎙️ Using voice profile from frontend request');
+                voiceProfile = voiceProfileFromRequest;
+            } else {
+                voiceProfile = await voiceProfileService.getVoiceProfile(userId);
+            }
             
             // SPECIAL FEATURE: If mimic tone is selected but no voice profile exists, create one now
             if (tone === 'mimic' && (!voiceProfile || voiceProfile.status === 'default')) {

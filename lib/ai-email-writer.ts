@@ -1,8 +1,6 @@
-/**
- * AI Email Writer Service
- * Generates highly personalized cold emails using AI
  * Features: Multiple templates, A/B testing variants, follow-up sequences
  */
+import { getModelChain } from './ai-constants.js';
 
 interface BusinessProfile {
     name: string;
@@ -192,7 +190,7 @@ class AIEmailWriterService {
                 },
                 body: JSON.stringify({
                     // Use fast NVIDIA/Qwen models for low latency
-                    model: 'nvidia/nemotron-3-nano-30b-a3b:free',
+                    model: getModelChain()[0],
                     messages: [
                         {
                             role: 'system',

@@ -342,7 +342,23 @@ async function createEnhancedTables() {
       CREATE INDEX IF NOT EXISTS idx_unsubscribed_emails_sender ON unsubscribed_emails(sender_email);
     `;
 
-    const statements = [contactsSQL, insightsSQL, unsubscribedSQL];
+    // Create user_voice_profiles table for voice cloning feature
+    const voiceProfilesSQL = `
+      CREATE TABLE IF NOT EXISTS user_voice_profiles (
+        id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+        user_id TEXT UNIQUE NOT NULL,
+        voice_profile JSONB NOT NULL,
+        email_count INTEGER DEFAULT 0,
+        status TEXT DEFAULT 'complete' CHECK (status IN ('complete', 'analyzing', 'default', 'error')),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      );
+      
+      CREATE INDEX IF NOT EXISTS idx_user_voice_profiles_user_id ON user_voice_profiles(user_id);
+      CREATE INDEX IF NOT EXISTS idx_user_voice_profiles_status ON user_voice_profiles(status);
+    `;
+
+    const statements = [contactsSQL, insightsSQL, unsubscribedSQL, voiceProfilesSQL];
 
     for (const sql of statements) {
       try {
