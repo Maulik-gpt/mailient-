@@ -6,6 +6,7 @@ import { decrypt } from '@/lib/crypto.js';
 import { GmailService } from '@/lib/gmail';
 import { AIConfig } from '@/lib/ai-config.js';
 import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service';
+import crypto from 'crypto';
 
 interface EmailDetail {
   id: string;
@@ -14,6 +15,7 @@ interface EmailDetail {
   snippet: string;
   body: string;
   timestamp: string;
+  hash?: string; // Content hash for caching
 }
 
 interface EnrichedEmail {
@@ -27,9 +29,23 @@ interface EnrichedEmail {
   receivedAt: string;
 }
 
+interface CachedInsight {
+  emailHash: string;
+  category: string;
+  title: string;
+  content: string;
+  priority: string;
+  timestamp: number;
+}
+
 // Store for cumulative email data across requests (in-memory, per-deployment)
-// In production, use Redis or database
 const cumulativeEmailStore = new Map<string, { emailIds: string[]; timestamp: number }>();
+
+// Cache for AI analysis results - keyed by email hash
+const analysisCache = new Map<string, CachedInsight>();
+
+// Concurrency limit for parallel operations
+const CONCURRENCY_LIMIT = 20;
 
 // Cleanup old entries every hour
 setInterval(() => {
@@ -40,7 +56,46 @@ setInterval(() => {
       cumulativeEmailStore.delete(key);
     }
   }
+  // Also clean old cache entries (keep for 30 minutes)
+  for (const [key, value] of analysisCache.entries()) {
+    if (now - value.timestamp > 30 * 60 * 1000) {
+      analysisCache.delete(key);
+    }
+  }
 }, 60 * 60 * 1000);
+
+// Helper: Create hash of email content
+function createEmailHash(email: EmailDetail): string {
+  const content = `${email.from}|${email.subject}|${email.snippet}|${email.body?.slice(0, 200)}`;
+  return crypto.createHash('md5').update(content).digest('hex');
+}
+
+// Helper: Process array with concurrency limit
+async function processWithConcurrency<T, R>(
+  items: T[],
+  processor: (item: T) => Promise<R>,
+  limit: number
+): Promise<R[]> {
+  const results: R[] = [];
+  const executing: Promise<void>[] = [];
+  
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    const promise = processor(item).then(result => {
+      results[i] = result;
+    });
+    
+    executing.push(promise);
+    
+    if (executing.length >= limit) {
+      await Promise.race(executing);
+      executing.splice(executing.findIndex(p => p === promise), 1);
+    }
+  }
+  
+  await Promise.all(executing);
+  return results;
+}
 
 export async function GET(request: Request) {
   try {
@@ -176,22 +231,16 @@ export async function GET(request: Request) {
     // Use combined IDs for analysis (limit to most recent 100 for performance)
     const uniqueIds = combinedIds.slice(0, 100);
 
-    console.log(`📬 Fetching details for ${uniqueIds.length} emails...`);
+    console.log(`📬 Fetching details for ${uniqueIds.length} emails in parallel...`);
 
-    // Fetch full email details
-    // Fetch full email details with batching to avoid Rate Limits
-    const emailDetails: EmailDetail[] = [];
-    const BATCH_SIZE = 15; // Increased batch size for faster processing
-
-    for (let i = 0; i < uniqueIds.length; i += BATCH_SIZE) {
-      const batch = uniqueIds.slice(i, i + BATCH_SIZE);
-      console.log(`📡 Fetching batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(uniqueIds.length / BATCH_SIZE)}...`);
-
-      const batchPromises = batch.map(async (id: string): Promise<EmailDetail | null> => {
+    // Fetch all email details in parallel with concurrency limit
+    const emailDetails = await processWithConcurrency(
+      uniqueIds,
+      async (id: string): Promise<EmailDetail | null> => {
         try {
           const details = await gmailService.getEmailDetails(id);
           const parsed = gmailService.parseEmailData(details);
-          return {
+          const email: EmailDetail = {
             id: parsed.id,
             from: parsed.from || '',
             subject: parsed.subject || '(No Subject)',
@@ -199,21 +248,16 @@ export async function GET(request: Request) {
             body: (parsed.body || '').substring(0, 400),
             timestamp: parsed.date || new Date().toISOString()
           };
+          email.hash = createEmailHash(email);
+          return email;
         } catch (e) {
           console.error(`Failed to fetch email ${id}:`, e);
           return null;
         }
-      });
+      },
+      CONCURRENCY_LIMIT
+    );
 
-      const batchResults = await Promise.all(batchPromises);
-      const validResults = batchResults.filter((d): d is EmailDetail => d !== null);
-      emailDetails.push(...validResults);
-
-      // Small delay between batches
-      if (i + BATCH_SIZE < uniqueIds.length) {
-        await new Promise(resolve => setTimeout(resolve, 50)); // Reduced delay between batches
-      }
-    }
     const filteredEmails = emailDetails.filter((d): d is EmailDetail => d !== null);
 
     console.log(`✅ Successfully fetched ${filteredEmails.length} email details`);
@@ -239,6 +283,20 @@ export async function GET(request: Request) {
     const emailMap = new Map<string, EmailDetail>();
     filteredEmails.forEach(email => emailMap.set(email.id, email));
 
+    // Separate emails into cached and uncached
+    const uncachedEmails: EmailDetail[] = [];
+    const cachedInsights: Map<string, CachedInsight> = new Map();
+    
+    for (const email of filteredEmails) {
+      if (email.hash && analysisCache.has(email.hash)) {
+        cachedInsights.set(email.id, analysisCache.get(email.hash)!);
+      } else {
+        uncachedEmails.push(email);
+      }
+    }
+    
+    console.log(`📊 Cache status: ${cachedInsights.size} cached, ${uncachedEmails.length} new emails to analyze`);
+
     // Initialize AI service
     const aiConfig = new AIConfig();
     const aiService = aiConfig.getService();
@@ -246,21 +304,65 @@ export async function GET(request: Request) {
       throw new Error('AI Service not available');
     }
 
-    console.log('🤖 Sending emails to AI for analysis...');
-
-    // Send emails to AI with explicit IDs for reference
-    const aiData = await aiService.generateInboxIntelligence(filteredEmails, privacyMode);
-    const rawInsights = aiData.inbox_intelligence || [];
-    const stats = aiData.sift_intelligence_summary || {
-      opportunities_detected: 0,
-      urgent_action_required: 0,
-      hot_leads_heating_up: 0,
-      conversations_at_risk: 0,
-      missed_follow_ups: 0,
-      unread_but_important: 0
+    // Combine cached and new insights
+    let rawInsights: any[] = [];
+    
+    // Convert cached insights to expected format
+    for (const [emailId, cached] of cachedInsights) {
+      rawInsights.push({
+        id: `cached-${emailId}`,
+        type: cached.category,
+        title: cached.title,
+        content: cached.content,
+        metadata: {
+          category: cached.category,
+          priority: cached.priority,
+          emails_involved: [emailId]
+        }
+      });
+    }
+    
+    // Analyze only uncached emails (much faster!)
+    if (uncachedEmails.length > 0) {
+      console.log(`🤖 Analyzing ${uncachedEmails.length} new emails with AI...`);
+      const startTime = Date.now();
+      
+      const aiData = await aiService.generateInboxIntelligence(uncachedEmails, privacyMode);
+      const newInsights = aiData.inbox_intelligence || [];
+      
+      // Cache new insights by email hash
+      for (const insight of newInsights) {
+        const involvedIds: string[] = insight.metadata?.emails_involved || [];
+        for (const emailId of involvedIds) {
+          const email = emailMap.get(emailId);
+          if (email?.hash) {
+            analysisCache.set(email.hash, {
+              emailHash: email.hash,
+              category: insight.metadata?.category || 'important',
+              title: insight.title || 'Insight',
+              content: insight.content || '',
+              priority: insight.metadata?.priority || 'medium',
+              timestamp: Date.now()
+            });
+          }
+        }
+      }
+      
+      rawInsights = [...rawInsights, ...newInsights];
+      console.log(`✅ AI analysis completed in ${Date.now() - startTime}ms, generated ${newInsights.length} new insights`);
+    } else {
+      console.log('✅ All emails cached - instant response!');
+    }
+    
+    // Calculate stats from all insights
+    const stats = {
+      opportunities_detected: rawInsights.filter(i => i.metadata?.category === 'opportunity').length,
+      urgent_action_required: rawInsights.filter(i => i.metadata?.category === 'urgent').length,
+      hot_leads_heating_up: rawInsights.filter(i => i.metadata?.category === 'lead').length,
+      conversations_at_risk: rawInsights.filter(i => i.metadata?.category === 'risk').length,
+      missed_follow_ups: rawInsights.filter(i => i.metadata?.category === 'follow_up').length,
+      unread_but_important: rawInsights.filter(i => i.metadata?.category === 'important').length
     };
-
-    console.log(`🧠 AI generated ${rawInsights.length} insights`);
 
     // Helper function to parse sender from "From" header
     const parseSender = (fromHeader: string): { name: string; email: string } => {
