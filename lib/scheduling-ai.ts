@@ -1,3 +1,4 @@
+/**
  * Uses a secondary OpenRouter key and cheaper models for scheduling tasks
  */
 import { getModelChain } from './ai-constants.js';
