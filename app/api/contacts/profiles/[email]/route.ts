@@ -9,6 +9,8 @@ import { DatabaseService } from '@/lib/supabase.js';
 import { decrypt } from '@/lib/crypto.js';
 // @ts-ignore
 import { subscriptionService } from '@/lib/subscription-service.js';
+// @ts-ignore
+import { getModelChain } from '@/lib/ai-constants.js';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -203,11 +205,7 @@ export async function GET(
                     Days since first contact: ${daysSinceFirst}
                 `;
 
-                const models = [
-                    'nvidia/nemotron-3-nano-30b-a3b:free',       // 1. NVIDIA Nano
-                    'nvidia/nemotron-3-super-120b-a12b:free',    // 2. NVIDIA Super
-                    'qwen/qwen3-coder:free'                      // 3. Qwen Coder
-                ];
+                const models = getModelChain();
 
                 for (const model of models) {
                     try {

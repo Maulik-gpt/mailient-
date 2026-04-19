@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
+import { DEFAULT_AI_MODELS, getModelChain } from '@/lib/ai-constants.js';
 
-const STEPFUN_MODEL = 'nvidia/nemotron-3-nano-30b-a3b:free';
+const STEPFUN_MODEL = DEFAULT_AI_MODELS[0];
 const OPENROUTER_BASE = 'https://openrouter.ai/api/v1';
 
 /**
@@ -42,12 +43,8 @@ export async function POST(request) {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 25000);
 
-        // Strictly follow the requested model chain: Nano -> Super -> Qwen
-        const models = [
-            'nvidia/nemotron-3-nano-30b-a3b:free',       // 1. NVIDIA Nano
-            'nvidia/nemotron-3-super-120b-a12b:free',    // 2. NVIDIA Super
-            'qwen/qwen3-coder:free'                      // 3. Qwen Coder
-        ];
+        // Use centralized model chain
+        const models = getModelChain();
 
         let lastError = null;
         let finalResponse = null;

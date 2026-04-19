@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth.js';
 import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service.js';
+import { getModelChain } from '@/lib/ai-constants.js';
 
 /**
  * Generate a concise chat title based on the user's first message
@@ -57,12 +58,8 @@ export async function POST(request) {
             });
         }
 
-        // Use the requested model chain for title generation (Nano -> Super -> Qwen)
-        const models = [
-            'nvidia/nemotron-3-nano-30b-a3b:free',      // 1. NVIDIA Nano
-            'nvidia/nemotron-3-super-120b-a12b:free',    // 2. NVIDIA Super
-            'qwen/qwen3-coder:free'                      // 3. Qwen Coder
-        ];
+        // Use the centralized model chain for title generation
+        const models = getModelChain();
 
         let generatedTitle = '';
         let lastError = null;

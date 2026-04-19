@@ -1,6 +1,7 @@
 // app/api/profile/settings/route.js
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase.js";
+import { DEFAULT_AI_MODELS } from "@/lib/ai-constants.js";
 
 // CRITICAL: Force dynamic rendering to prevent build-time evaluation
 export const dynamic = 'force-dynamic';
@@ -59,7 +60,7 @@ export async function GET(req) {
         marketing_emails: false,
         auto_save: true,
         compact_mode: false,
-        ai_model_preference: 'nvidia/nemotron-3-nano-30b-a3b:free'
+        ai_model_preference: DEFAULT_AI_MODELS[0]
       },
       privacy_settings: {
         profile_visibility: 'public',
