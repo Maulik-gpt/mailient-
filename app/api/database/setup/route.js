@@ -347,9 +347,9 @@ async function createEnhancedTables() {
       CREATE TABLE IF NOT EXISTS user_voice_profiles (
         id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
         user_id TEXT UNIQUE NOT NULL,
-        voice_profile JSONB NOT NULL,
+        voice_profile JSONB NOT NULL DEFAULT '{}',
         email_count INTEGER DEFAULT 0,
-        status TEXT DEFAULT 'complete' CHECK (status IN ('complete', 'analyzing', 'default', 'error')),
+        status TEXT DEFAULT 'default',
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       );
