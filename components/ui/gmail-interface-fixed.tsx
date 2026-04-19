@@ -2606,29 +2606,31 @@ export function GmailInterfaceFixed() {
                                                                     <p className="text-zinc-500 font-medium tracking-wide animate-pulse">Crafting reply...</p>
                                                                 </div>
                                                             ) : (
-                                                                <div 
-                                                                    ref={draftContentEditorRef}
-                                                                    contentEditable
-                                                                    suppressContentEditableWarning
-                                                                    className="w-full h-full text-zinc-100 focus:outline-none leading-[1.8] font-[400] text-[15px] whitespace-pre-wrap selection:bg-blue-500/30 font-sans [&_a]:text-[#60a5fa] [&_a]:underline [&_a]:cursor-pointer [&_b]:font-bold [&_strong]:font-bold [&_i]:italic [&_em]:italic"
-                                                                    onInput={(e) => setDraftContent(e.currentTarget.innerHTML)}
-                                                                    style={{ minHeight: '200px' }}
-                                                                />
-                                                                {/* Attachment chips */}
-                                                                {draftAttachments.length > 0 && (
-                                                                    <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-white/[0.06]">
-                                                                        {draftAttachments.map((file, i) => (
-                                                                            <div key={i} className="flex items-center gap-2 bg-white/[0.06] rounded-lg px-3 py-1.5 text-sm text-zinc-300">
-                                                                                <Paperclip className="w-3.5 h-3.5 text-zinc-500" />
-                                                                                <span className="max-w-[140px] truncate">{file.name}</span>
-                                                                                <span className="text-zinc-600 text-xs">({(file.size / 1024).toFixed(0)}KB)</span>
-                                                                                <button onClick={() => setDraftAttachments(prev => prev.filter((_, idx) => idx !== i))} className="ml-1 text-zinc-500 hover:text-red-400 transition-colors">
-                                                                                    <X className="w-3.5 h-3.5" />
-                                                                                </button>
-                                                                            </div>
-                                                                        ))}
-                                                                    </div>
-                                                                )}
+                                                                <>
+                                                                    <div 
+                                                                        ref={draftContentEditorRef}
+                                                                        contentEditable
+                                                                        suppressContentEditableWarning
+                                                                        className="w-full h-full text-zinc-100 focus:outline-none leading-[1.8] font-[400] text-[15px] whitespace-pre-wrap selection:bg-blue-500/30 font-sans [&_a]:text-[#60a5fa] [&_a]:underline [&_a]:cursor-pointer [&_b]:font-bold [&_strong]:font-bold [&_i]:italic [&_em]:italic"
+                                                                        onInput={(e) => setDraftContent(e.currentTarget.innerHTML)}
+                                                                        style={{ minHeight: '200px' }}
+                                                                    />
+                                                                    {/* Attachment chips */}
+                                                                    {draftAttachments.length > 0 && (
+                                                                        <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-white/[0.06]">
+                                                                            {draftAttachments.map((file, i) => (
+                                                                                <div key={i} className="flex items-center gap-2 bg-white/[0.06] rounded-lg px-3 py-1.5 text-sm text-zinc-300">
+                                                                                    <Paperclip className="w-3.5 h-3.5 text-zinc-500" />
+                                                                                    <span className="max-w-[140px] truncate">{file.name}</span>
+                                                                                    <span className="text-zinc-600 text-xs">({(file.size / 1024).toFixed(0)}KB)</span>
+                                                                                    <button onClick={() => setDraftAttachments(prev => prev.filter((_, idx) => idx !== i))} className="ml-1 text-zinc-500 hover:text-red-400 transition-colors">
+                                                                                        <X className="w-3.5 h-3.5" />
+                                                                                    </button>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    )}
+                                                                </>
                                                             )}
 
                                                             {/* Floating Toolbar Toolkit */}
