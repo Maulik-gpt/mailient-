@@ -1445,11 +1445,11 @@ export function GmailInterfaceFixed() {
 
         try {
             // Encode attachments to base64
-            let encodedAttachments = [];
+            let encodedAttachments: { filename: string, mimeType: string, content: string }[] = [];
             if (draftAttachments && draftAttachments.length > 0) {
                 encodedAttachments = await Promise.all(
                     draftAttachments.map(async (file) => {
-                        return new Promise((resolve) => {
+                        return new Promise<{ filename: string, mimeType: string, content: string }>((resolve) => {
                             const reader = new FileReader();
                             reader.onload = (e) => {
                                 const base64 = (e.target?.result as string).split(',')[1];
