@@ -2198,7 +2198,9 @@ export function GmailInterfaceFixed() {
                                                 <div className="flex items-center gap-3">
                                                     <span className="text-xs text-neutral-600">{insights.length} insights</span>
                                                     <span className="text-neutral-800">·</span>
-                                                    <span className="text-xs text-neutral-600">{(summary as any)?.opportunities_detected || 0} items</span>
+                                                    <span className="text-xs text-neutral-600">
+                                                        {summary ? Object.values(summary).reduce((a, b) => a + (typeof b === 'number' ? b : 0), 0) : 0} items
+                                                    </span>
                                                 </div>
                                             </div>
 
