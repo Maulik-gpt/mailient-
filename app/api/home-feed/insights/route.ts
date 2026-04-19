@@ -328,7 +328,28 @@ export async function GET(request: Request) {
       const startTime = Date.now();
       
       const aiData = await aiService.generateInboxIntelligence(uncachedEmails, privacyMode);
-      const newInsights = aiData.inbox_intelligence || [];
+      
+      // Robust mapping: handle both flat array and category-keyed dictionary responses
+      const newInsights: any[] = [];
+      if (aiData.inbox_intelligence) {
+        newInsights.push(...aiData.inbox_intelligence);
+      } else {
+        const categories = ['opportunity', 'urgent', 'lead', 'risk', 'follow_up', 'important'];
+        categories.forEach(cat => {
+          if (aiData[cat] && aiData[cat].ids && aiData[cat].ids.length > 0) {
+            newInsights.push({
+              type: cat,
+              title: aiData[cat].title || cat,
+              content: aiData[cat].summary || '',
+              metadata: {
+                category: cat,
+                priority: aiData[cat].relevance >= 8 ? 'high' : 'medium',
+                emails_involved: aiData[cat].ids
+              }
+            });
+          }
+        });
+      }
       
       // Cache new insights by email hash
       for (const insight of newInsights) {
