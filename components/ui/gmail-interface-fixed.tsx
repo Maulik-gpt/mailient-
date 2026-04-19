@@ -1444,6 +1444,27 @@ export function GmailInterfaceFixed() {
         `;
 
         try {
+            // Encode attachments to base64
+            let encodedAttachments = [];
+            if (draftAttachments && draftAttachments.length > 0) {
+                encodedAttachments = await Promise.all(
+                    draftAttachments.map(async (file) => {
+                        return new Promise((resolve) => {
+                            const reader = new FileReader();
+                            reader.onload = (e) => {
+                                const base64 = (e.target?.result as string).split(',')[1];
+                                resolve({
+                                    filename: file.name,
+                                    mimeType: file.type || 'application/octet-stream',
+                                    content: base64
+                                });
+                            };
+                            reader.readAsDataURL(file);
+                        });
+                    })
+                );
+            }
+
             const response = await fetch('/api/gmail/send', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1451,7 +1472,9 @@ export function GmailInterfaceFixed() {
                     to: draftTo,
                     subject: draftSubject,
                     body: bodyHtml,
-                    isHtml: true
+                    isHtml: true,
+                    threadId: selectedEmailId,
+                    attachments: encodedAttachments
                 })
             });
 

@@ -604,13 +604,21 @@ export class GmailService {
   /**
    * Send email (optionally as a reply in a thread)
    */
-  async sendEmail({ to, subject, body, threadId = null, isHtml = false }) {
+  async sendEmail({ to, subject, body, threadId = null, isHtml = false, attachments = [] }) {
+    const boundary = `----=_Part_${Math.random().toString(36).substring(2)}_${Date.now()}`;
+    const isMultipart = attachments && attachments.length > 0;
+
     const headers = [
       `To: ${to}`,
       `Subject: ${subject}`,
       `MIME-Version: 1.0`,
-      `Content-Type: ${isHtml ? 'text/html' : 'text/plain'}; charset=UTF-8`,
     ];
+
+    if (isMultipart) {
+      headers.push(`Content-Type: multipart/mixed; boundary="${boundary}"`);
+    } else {
+      headers.push(`Content-Type: ${isHtml ? 'text/html' : 'text/plain'}; charset=UTF-8`);
+    }
 
     if (threadId) {
       try {
@@ -630,11 +638,40 @@ export class GmailService {
       }
     }
 
-    const mimeMessage = [
-      ...headers,
-      '',
-      body,
-    ].join('\r\n');
+    let mimeMessage = '';
+
+    if (isMultipart) {
+      const parts = [];
+      headers.push(''); // blank line after headers
+      parts.push(headers.join('\r\n'));
+
+      // Body part
+      parts.push(`--${boundary}`);
+      parts.push(`Content-Type: ${isHtml ? 'text/html' : 'text/plain'}; charset=UTF-8`);
+      parts.push(''); // blank line before content
+      parts.push(body);
+
+      // Attachments
+      for (const attachment of attachments) {
+        parts.push(`--${boundary}`);
+        parts.push(`Content-Type: ${attachment.mimeType}; name="${attachment.filename}"`);
+        parts.push(`Content-Disposition: attachment; filename="${attachment.filename}"`);
+        parts.push(`Content-Transfer-Encoding: base64`);
+        parts.push(''); // blank line before content
+        
+        // Chunk the base64 content to standard 76 chars per line
+        const b64 = attachment.content;
+        const chunks = b64.match(/.{1,76}/g) || [];
+        parts.push(chunks.join('\r\n'));
+      }
+
+      parts.push(`--${boundary}--`);
+      mimeMessage = parts.join('\r\n');
+    } else {
+      headers.push('');
+      headers.push(body);
+      mimeMessage = headers.join('\r\n');
+    }
 
     const encodedMessage = Buffer.from(mimeMessage).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 

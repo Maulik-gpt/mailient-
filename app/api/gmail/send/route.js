@@ -19,7 +19,7 @@ export async function POST(request) {
     }
 
     const emailData = await request.json();
-    const { to, subject, body, isHtml = false } = emailData;
+    const { to, subject, body, isHtml = false, threadId = null, attachments = [] } = emailData;
 
     if (!to || !subject || !body) {
       return Response.json({ error: 'Missing required fields: to, subject, body' }, { status: 400 });
@@ -29,7 +29,7 @@ export async function POST(request) {
     if (session?.user?.email) {
       gmailService.setUserEmail(session.user.email); // Enable token refresh persistence
     }
-    const result = await gmailService.sendEmail({ to, subject, body, isHtml });
+    const result = await gmailService.sendEmail({ to, subject, body, isHtml, threadId, attachments });
 
     // INCREMENTAL VOICE PROFILING: Learn from this new sent email
     if (session?.user?.email && result && !result.error) {
