@@ -9,7 +9,7 @@ import { Button } from './button';
 import { SettingsCard } from './settings-card';
 import { Badge } from './badge';
 import { HomeFeedSidebar } from './home-feed-sidebar';
-import { RefreshCw, AlertCircle, TrendingUp, Clock, Target, Zap, Mail, Home, X, User, Sparkles, ArrowLeft, LayoutList, Inbox, ExternalLink, Download, FilePlus, ChevronDown, ChevronRight, Plus, Users, Building, Phone, Loader2, MessageCircle, Send, ArrowUp, CornerDownLeft, Menu, Shield, Activity, PanelLeft } from 'lucide-react';
+import { RefreshCw, AlertCircle, TrendingUp, Clock, Target, Zap, Mail, Home, X, User, Sparkles, ArrowLeft, LayoutList, Inbox, ExternalLink, Download, FilePlus, ChevronDown, ChevronRight, Plus, Users, Building, Phone, Loader2, MessageCircle, Send, ArrowUp, CornerDownLeft, Menu, Shield, Activity, PanelLeft, Mic } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './avatar';
 import { toast } from 'sonner';
 import { HelpCard } from './help-card';
@@ -2511,14 +2511,25 @@ export function GmailInterfaceFixed() {
 
                                                         {/* Voice Profile Quick Access */}
                                                         <div className="mb-6">
-                                                            <button
-                                                                onClick={() => setIsVoiceProfileModalOpen(true)}
-                                                                className="flex items-center gap-3 px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl transition-all group"
-                                                            >
-                                                                <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
-                                                                <span className="text-xs font-medium text-white/50 group-hover:text-white/80">Mimic My Style Active</span>
-                                                                <Activity className="w-3.5 h-3.5 text-white/20 group-hover:text-white/40 ml-2" />
-                                                            </button>
+                                                            {userVoiceProfile && userVoiceProfile.status !== 'default' ? (
+                                                                <button
+                                                                    onClick={() => setIsVoiceProfileModalOpen(true)}
+                                                                    className="flex items-center gap-3 px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl transition-all group"
+                                                                >
+                                                                    <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
+                                                                    <span className="text-xs font-medium text-white/50 group-hover:text-white/80">Mimic My Style Active</span>
+                                                                    <Activity className="w-3.5 h-3.5 text-white/20 group-hover:text-white/40 ml-2" />
+                                                                </button>
+                                                            ) : (
+                                                                <button
+                                                                    onClick={() => setIsVoiceProfileModalOpen(true)}
+                                                                    className="flex items-center gap-3 px-5 py-2.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 rounded-2xl transition-all group"
+                                                                >
+                                                                    <Mic className="w-4 h-4 text-blue-400" />
+                                                                    <span className="text-xs font-medium text-blue-400/80 group-hover:text-blue-400">Clone My Voice</span>
+                                                                    <span className="text-[10px] px-1.5 py-0.5 bg-blue-500/20 text-blue-400 rounded-full">New</span>
+                                                                </button>
+                                                            )}
                                                         </div>
 
                                                         <div ref={draftContainerRef} className="flex-1 bg-neutral-900/30 rounded-[2rem] border border-neutral-200 dark:border-neutral-800/50 p-8 overflow-hidden flex flex-col shadow-inner relative" onMouseUp={handleSiftMouseUp}>
