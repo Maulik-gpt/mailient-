@@ -354,14 +354,19 @@ export async function GET(request: Request) {
       console.log('✅ All emails cached - instant response!');
     }
     
-    // Calculate stats from all insights
+    // Calculate stats from all insights by counting involved emails
+    const getEmailCount = (category: string) => {
+      const insights = rawInsights.filter(i => i.metadata?.category === category);
+      return insights.reduce((total, insight) => total + (insight.metadata?.emails_involved?.length || 0), 0);
+    };
+
     const stats = {
-      opportunities_detected: rawInsights.filter(i => i.metadata?.category === 'opportunity').length,
-      urgent_action_required: rawInsights.filter(i => i.metadata?.category === 'urgent').length,
-      hot_leads_heating_up: rawInsights.filter(i => i.metadata?.category === 'lead').length,
-      conversations_at_risk: rawInsights.filter(i => i.metadata?.category === 'risk').length,
-      missed_follow_ups: rawInsights.filter(i => i.metadata?.category === 'follow_up').length,
-      unread_but_important: rawInsights.filter(i => i.metadata?.category === 'important').length
+      opportunities_detected: getEmailCount('opportunity'),
+      urgent_action_required: getEmailCount('urgent'),
+      hot_leads_heating_up: getEmailCount('lead'),
+      conversations_at_risk: getEmailCount('risk'),
+      missed_follow_ups: getEmailCount('follow_up'),
+      unread_but_important: getEmailCount('important')
     };
 
     // Helper function to parse sender from "From" header
