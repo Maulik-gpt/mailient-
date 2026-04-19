@@ -9,7 +9,7 @@ import { Button } from './button';
 import { SettingsCard } from './settings-card';
 import { Badge } from './badge';
 import { HomeFeedSidebar } from './home-feed-sidebar';
-import { RefreshCw, AlertCircle, TrendingUp, Clock, Target, Zap, Mail, Home, X, User, Sparkles, ArrowLeft, LayoutList, Inbox, ExternalLink, Download, FilePlus, ChevronDown, ChevronRight, Plus, Users, Building, Phone, Loader2, MessageCircle, Send, ArrowUp, CornerDownLeft, Menu, Shield, Activity, PanelLeft, Mic } from 'lucide-react';
+import { RefreshCw, AlertCircle, TrendingUp, Clock, Target, Zap, Mail, Home, X, User, Sparkles, ArrowLeft, LayoutList, Inbox, ExternalLink, Download, FilePlus, ChevronDown, ChevronRight, Plus, Users, Building, Phone, Loader2, MessageCircle, Send, ArrowUp, CornerDownLeft, Menu, Shield, Activity, PanelLeft, Mic, Copy, Link as LinkIcon, Bold, Italic, Type } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './avatar';
 import { toast } from 'sonner';
 import { HelpCard } from './help-card';
@@ -220,7 +220,15 @@ export function GmailInterfaceFixed() {
     const [isTokenExpired, setIsTokenExpired] = useState(false);
 
     // AI Refinement State for Sift
-    const [selection, setSelection] = useState<{ text: string; rect: DOMRect; start: number; end: number } | null>(null);
+    const draftContentEditorRef = useRef<HTMLDivElement>(null);
+    const [selection, setSelection] = useState<{ text: string; rect: DOMRect; start: number; end: number; range?: globalThis.Range } | null>(null);
+
+    // Sync state for contentEditable
+    useEffect(() => {
+        if (draftContentEditorRef.current && !isDrafting && draftContent !== draftContentEditorRef.current.innerHTML) {
+            draftContentEditorRef.current.innerHTML = draftContent;
+        }
+    }, [draftContent, isDrafting]);
     const [isRefinementActive, setIsRefinementActive] = useState(false);
     const [refinementInstruction, setRefinementInstruction] = useState('');
     const [isProcessingRefinement, setIsProcessingRefinement] = useState(false);
@@ -990,37 +998,27 @@ export function GmailInterfaceFixed() {
         // Prevent clearing if we are clicking inside the toolkit or actively refining
         if (!showDraftEditor || isDrafting || isRefinementActive || isProcessingRefinement || proposedRefinement) return;
 
-        // Target the draft textarea specifically for reliable selection tracking
-        const textarea = document.querySelector('textarea[placeholder="AI generated draft will appear here..."]') as HTMLTextAreaElement;
-        if (!textarea) return;
+        const sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
 
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        const text = textarea.value.substring(start, end);
+        const range = sel.getRangeAt(0);
+        const text = sel.toString();
 
         if (text && text.trim().length > 0) {
-            // Get the container's bounding rect for relative positioning
             const containerRect = draftContainerRef.current?.getBoundingClientRect();
-            const textareaRect = textarea.getBoundingClientRect();
+            const rect = range.getBoundingClientRect();
 
-            // Estimate vertical position based on selection offset within the textarea
-            const textBeforeSelection = textarea.value.substring(0, start);
-            const lineCount = (textBeforeSelection.match(/\n/g) || []).length;
-            const lineHeight = parseFloat(getComputedStyle(textarea).lineHeight) || 28;
-            const scrollTop = textarea.scrollTop;
-
-            // Calculate position relative to the container
-            const selectionTopRelative = textareaRect.top - (containerRect?.top || 0) + (lineCount * lineHeight) - scrollTop;
-
-            // Create a synthetic rect for positioning the tooltip
-            const syntheticRect = new DOMRect(
-                textareaRect.left + textareaRect.width / 2, // center X
-                Math.max(0, selectionTopRelative - 12), // slightly above the line
-                0,
-                0
-            );
-
-            setSelection({ text, rect: syntheticRect, start, end });
+            setSelection({
+                text,
+                start: 0,
+                end: text.length,
+                range,
+                rect: {
+                    ...rect,
+                    y: rect.top - (containerRect?.top || 0) + 12,
+                    x: rect.left - (containerRect?.left || 0) + (rect.width / 2)
+                } as DOMRect
+            });
             setShowTooltip(true);
         } else {
             // Only clear selection if we actually clicked away from everything
@@ -1121,11 +1119,24 @@ export function GmailInterfaceFixed() {
 
     const handleAcceptSiftRefinement = () => {
         if (!selection || !proposedRefinement) return;
-        const newContent =
-            draftContent.slice(0, selection.start) +
-            proposedRefinement +
-            draftContent.slice(selection.end);
-        setDraftContent(newContent);
+        
+        // Use document.execCommand to replace the text seamlessly in the contentEditable
+        if (selection.range) {
+            const sel = window.getSelection();
+            if (sel) {
+                sel.removeAllRanges();
+                sel.addRange(selection.range);
+                document.execCommand('insertText', false, proposedRefinement);
+                
+                if (draftContentEditorRef.current) {
+                    setDraftContent(draftContentEditorRef.current.innerHTML);
+                }
+            }
+        } else {
+            // Fallback (if somehow range is lost)
+            setDraftContent(draftContent.replace(selection.text, proposedRefinement));
+        }
+
         setProposedRefinement(null);
         setSelection(null);
     };
@@ -2476,140 +2487,168 @@ export function GmailInterfaceFixed() {
                                                     <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#1a1a1a] to-transparent pointer-events-none rounded-b-none lg:rounded-b-[2.5rem] z-10" />
                                                 </div>
 
-                                                {/* Draft Editor Modal */}
-                                                <div
-                                                    className={`fixed top-1/2 left-1/2 bg-[#0d0d0d]/95 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_0_120px_rgba(0,0,0,0.6),0_0_60px_rgba(255,255,255,0.02)] transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-[1100] flex flex-col border border-white/[0.06] overflow-hidden`}
-                                                    style={{
-                                                        width: isMobile ? '100%' : '55%',
-                                                        minWidth: isMobile ? '100%' : '600px',
-                                                        maxWidth: isMobile ? '100%' : '900px',
-                                                        height: isMobile ? '100%' : '88vh',
-                                                        transform: showDraftEditor ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -45%) scale(0.95)',
-                                                        opacity: showDraftEditor ? 1 : 0,
-                                                        pointerEvents: showDraftEditor ? 'auto' : 'none',
-                                                        borderRadius: isMobile ? '0' : '2.5rem'
-                                                    }}
-                                                >
-                                                    <div className="p-10 flex flex-col h-full relative">
-                                                        <div className="flex justify-between items-center mb-8">
-                                                            <div className="flex items-center gap-4">
-                                                                <div className="p-3 bg-blue-500/10 rounded-2xl">
-                                                                    <Sparkles className="w-6 h-6 text-blue-400" />
-                                                                </div>
-                                                                <div>
-                                                                    <h3 className="text-2xl font-medium text-black dark:text-white">AI Draft Reply</h3>
-                                                                    <p className="text-sm text-neutral-600 dark:text-neutral-500 font-light">Sift AI generated response</p>
-                                                                </div>
+                                                {/* Draft Editor UI */}
+                                                <div className={`fixed inset-0 z-[1100] flex items-center justify-center p-4 transition-all duration-500 overflow-hidden ${showDraftEditor ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+                                                    {/* Backdrop */}
+                                                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowDraftEditor(false)} />
+                                                    
+                                                    {/* Editor Container */}
+                                                    <div 
+                                                        className="bg-[#1C1C1C] rounded-[24px] w-full max-w-3xl flex flex-col shadow-2xl relative z-10 mx-auto"
+                                                        style={{ 
+                                                            transform: showDraftEditor ? 'scale(1) translateY(0)' : 'scale(0.95) translateY(20px)',
+                                                            transition: 'all 0.5s cubic-bezier(0.32, 0.72, 0, 1)'
+                                                        }}
+                                                    >
+                                                        {/* Header */}
+                                                        <div className="flex justify-between items-center px-8 py-5">
+                                                            <span className="text-zinc-400 font-medium tracking-wide">Email</span>
+                                                            <div className="flex items-center gap-2">
+                                                                <button 
+                                                                    onClick={() => {
+                                                                        const tempDiv = document.createElement('div');
+                                                                        tempDiv.innerHTML = draftContentEditorRef.current?.innerHTML || draftContent;
+                                                                        navigator.clipboard.writeText(tempDiv.innerText);
+                                                                        toast.success('Copied to clipboard');
+                                                                    }}
+                                                                    className="p-2 hover:bg-neutral-800 rounded-lg text-white/50 hover:text-white transition-colors"
+                                                                >
+                                                                    <Copy className="w-[18px] h-[18px]" strokeWidth={1.5} />
+                                                                </button>
+                                                                <button 
+                                                                    onClick={handleSendReply}
+                                                                    className="p-2 hover:bg-neutral-800 rounded-lg text-white/50 hover:text-white transition-colors"
+                                                                >
+                                                                    <Send className="w-[18px] h-[18px]" strokeWidth={1.5} />
+                                                                </button>
                                                             </div>
-                                                            <button
-                                                                onClick={() => setShowDraftEditor(false)}
-                                                                className="p-3 hover:bg-neutral-800 rounded-full transition-colors text-neutral-600 hover:text-black dark:text-white"
-                                                            >
-                                                                <X className="w-6 h-6" />
-                                                            </button>
                                                         </div>
 
-                                                        {/* Voice Profile Quick Access */}
-                                                        <div className="mb-6">
-                                                            {userVoiceProfile && userVoiceProfile.status !== 'default' ? (
-                                                                <button
-                                                                    onClick={() => setIsVoiceProfileModalOpen(true)}
-                                                                    className="flex items-center gap-3 px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl transition-all group"
-                                                                >
-                                                                    <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
-                                                                    <span className="text-xs font-medium text-white/50 group-hover:text-white/80">Mimic My Style Active</span>
-                                                                    <Activity className="w-3.5 h-3.5 text-white/20 group-hover:text-white/40 ml-2" />
-                                                                </button>
-                                                            ) : (
-                                                                <button
-                                                                    onClick={() => setIsVoiceProfileModalOpen(true)}
-                                                                    className="flex items-center gap-3 px-5 py-2.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 rounded-2xl transition-all group"
-                                                                >
-                                                                    <Mic className="w-4 h-4 text-blue-400" />
-                                                                    <span className="text-xs font-medium text-blue-400/80 group-hover:text-blue-400">Clone My Voice</span>
-                                                                    <span className="text-[10px] px-1.5 py-0.5 bg-blue-500/20 text-blue-400 rounded-full">New</span>
-                                                                </button>
-                                                            )}
+                                                        {/* Subject Line */}
+                                                        <div className="px-8 pb-4 flex items-center gap-4 border-b border-white/[0.04]">
+                                                            <span className="text-white font-bold bg-transparent border-none">Subject</span>
+                                                            <input 
+                                                                value={draftSubject}
+                                                                onChange={(e) => setDraftSubject(e.target.value)}
+                                                                className="bg-transparent border-none focus:outline-none text-zinc-300 w-full"
+                                                                placeholder="Email Subject"
+                                                            />
                                                         </div>
 
-                                                        <div ref={draftContainerRef} className="flex-1 bg-neutral-900/30 rounded-[2rem] border border-neutral-200 dark:border-neutral-800/50 p-8 overflow-hidden flex flex-col shadow-inner relative" onMouseUp={handleSiftMouseUp}>
+                                                        {/* Content Area */}
+                                                        <div 
+                                                            ref={draftContainerRef} 
+                                                            className="px-8 py-6 flex-1 min-h-[350px] relative overflow-y-auto"
+                                                            onMouseUp={handleSiftMouseUp}
+                                                        >
                                                             {isDrafting ? (
-                                                                <div className="flex-1 flex flex-col items-center justify-center">
+                                                                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                                                                     <div className="relative mb-6">
-                                                                        <Sparkles className="w-12 h-12 text-blue-400 animate-pulse" />
-                                                                        <div className="absolute inset-0 bg-blue-400/20 blur-2xl rounded-full animate-pulse" />
+                                                                        <Sparkles className="w-8 h-8 text-blue-400 animate-pulse" />
+                                                                        <div className="absolute inset-0 bg-blue-400/20 blur-xl rounded-full animate-pulse" />
                                                                     </div>
-                                                                    <p className="text-neutral-500 dark:text-neutral-400 text-lg font-light animate-pulse">Sift AI is drafting your response...</p>
+                                                                    <p className="text-zinc-500 font-medium tracking-wide animate-pulse">Crafting reply...</p>
                                                                 </div>
                                                             ) : (
-                                                                <>
-                                                                    <div className="mb-4">
-                                                                        <input
-                                                                            type="text"
-                                                                            value={draftSubject}
-                                                                            onChange={(e) => setDraftSubject(e.target.value)}
-                                                                            className="w-full bg-neutral-900/30 text-black dark:text-white text-lg font-medium px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-800 focus:outline-none focus:border-neutral-700 transition-colors"
-                                                                            placeholder="Subject"
-                                                                        />
-                                                                    </div>
-                                                                    <div className="flex-1 overflow-y-auto custom-scrollbar relative">
-                                                                        {proposedRefinement && selection ? (
-                                                                            <div className="text-neutral-900 dark:text-neutral-200 font-light leading-relaxed text-xl whitespace-pre-wrap">
-                                                                                {draftContent.slice(0, selection.start)}
-                                                                                <span className="text-black dark:text-white/20 line-through decoration-white/30 decoration-1 bg-white/[0.03]">
-                                                                                    {selection.text}
-                                                                                </span>
-                                                                                <span className="text-black bg-white px-1.5 py-0.5 rounded-md shadow-[0_0_25px_rgba(255,255,255,0.1)] border border-white/20 font-medium">
-                                                                                    {proposedRefinement}
-                                                                                </span>
-                                                                                {draftContent.slice(selection.end)}
-                                                                            </div>
-                                                                        ) : (
-                                                                            <textarea
-                                                                                value={draftContent}
-                                                                                onChange={(e) => setDraftContent(e.target.value)}
-                                                                                className="w-full h-full bg-transparent text-neutral-900 dark:text-neutral-200 resize-none focus:outline-none font-light leading-relaxed text-xl selection:bg-white selection:text-black"
-                                                                                placeholder="AI generated draft will appear here..."
-                                                                            />
-                                                                        )}
-                                                                    </div>
-                                                                    {/* Progressive Blur for Textarea */}
-                                                                    <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-neutral-900/80 to-transparent pointer-events-none z-10" />
-                                                                </>
+                                                                <div 
+                                                                    ref={draftContentEditorRef}
+                                                                    contentEditable
+                                                                    className="w-full h-full text-zinc-100 focus:outline-none leading-[1.8] font-[400] text-[15px] prose-invert prose-p:my-2 prose-a:text-blue-400 prose-a:underline hover:prose-a:text-blue-300 whitespace-pre-wrap selection:bg-blue-500/30 font-sans"
+                                                                    onInput={(e) => setDraftContent(e.currentTarget.innerHTML)}
+                                                                    placeholder="Type your reply here..."
+                                                                />
                                                             )}
 
-                                                            {/* World-Class AI Refinement Tooltip for Sift */}
+                                                            {/* Floating Toolbar Toolkit */}
                                                             <AnimatePresence mode="wait">
                                                                 {(showTooltip || isRefinementActive || proposedRefinement) && selection && (
                                                                     <motion.div
-                                                                        initial={{ opacity: 0, scale: 0.96, y: 8, filter: 'blur(6px)' }}
+                                                                        initial={{ opacity: 0, scale: 0.96, y: 8, filter: 'blur(4px)' }}
                                                                         animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
-                                                                        exit={{ opacity: 0, scale: 0.96, y: 8, filter: 'blur(6px)' }}
-                                                                        transition={{ type: 'spring', damping: 22, stiffness: 320 }}
+                                                                        exit={{ opacity: 0, scale: 0.96, y: 8, filter: 'blur(4px)' }}
+                                                                        transition={{ type: 'spring', damping: 25, stiffness: 400 }}
                                                                         style={{
                                                                             position: 'absolute',
-                                                                            left: '50%',
-                                                                            top: `${Math.max(8, selection.rect.y - 56)}px`,
+                                                                            left: `${selection.rect.x}px`,
+                                                                            top: `${Math.max(8, selection.rect.y - 50)}px`,
                                                                             transform: 'translateX(-50%)',
                                                                             zIndex: 100
                                                                         }}
                                                                         className="pointer-events-auto refinement-toolkit"
                                                                     >
                                                                         {!isRefinementActive && !proposedRefinement && (
-                                                                            <button
-                                                                                onClick={(e) => { e.stopPropagation(); setIsRefinementActive(true); }}
-                                                                                className="bg-zinc-900 border border-neutral-200 dark:border-white/10 rounded-full px-5 py-2.5 flex items-center gap-4 shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_20px_rgba(255,255,255,0.05)] backdrop-blur-2xl hover:bg-zinc-800 hover:border-white/20 transition-all group active:scale-95"
-                                                                            >
-                                                                                <Sparkles className="w-3.5 h-3.5 text-neutral-600 group-hover:text-black dark:text-white transition-colors" />
-                                                                                <span className="text-black dark:text-white font-bold text-xs tracking-tight">Ask for changes</span>
-                                                                                <div className="flex items-center gap-1 opacity-40">
-                                                                                    <div className="px-1.5 py-0.5 rounded border border-white/20 bg-black/5 dark:bg-white/5 text-[9px] font-bold uppercase tracking-tighter">M</div>
+                                                                            <div className="bg-[#2A2A2A] border border-white/10 rounded-[14px] px-2 py-1.5 flex items-center gap-3 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl">
+                                                                                <button 
+                                                                                    onClick={(e) => { e.stopPropagation(); setIsRefinementActive(true); }}
+                                                                                    className="flex items-center gap-2 pl-2 pr-1 py-1 text-[#3b82f6] hover:text-blue-400 font-medium tracking-wide transition-colors text-[14px]"
+                                                                                >
+                                                                                    Ask for changes
+                                                                                    <span className="text-[#3b82f6] font-normal text-[13px] opacity-80 pl-1">Ctrl + K</span>
+                                                                                </button>
+                                                                                
+                                                                                <div className="w-[1px] h-4 bg-zinc-700 mx-1"></div>
+                                                                                
+                                                                                <div className="flex items-center gap-1">
+                                                                                    <button 
+                                                                                        onClick={(e) => {
+                                                                                            e.stopPropagation();
+                                                                                            const url = prompt("Enter link URL:");
+                                                                                            if (url) {
+                                                                                                if (selection.range) {
+                                                                                                    const sel = window.getSelection();
+                                                                                                    sel?.removeAllRanges();
+                                                                                                    sel?.addRange(selection.range);
+                                                                                                    document.execCommand('createLink', false, url);
+                                                                                                    if (draftContentEditorRef.current) setDraftContent(draftContentEditorRef.current.innerHTML);
+                                                                                                }
+                                                                                            }
+                                                                                        }}
+                                                                                        className="p-1.5 text-zinc-300 hover:text-white hover:bg-white/10 rounded-md transition-colors"
+                                                                                    >
+                                                                                        <LinkIcon className="w-4 h-4" />
+                                                                                    </button>
+                                                                                    <button 
+                                                                                        onClick={(e) => {
+                                                                                            e.stopPropagation();
+                                                                                            if (selection.range) {
+                                                                                                const sel = window.getSelection();
+                                                                                                sel?.removeAllRanges();
+                                                                                                sel?.addRange(selection.range);
+                                                                                                document.execCommand('bold', false, undefined);
+                                                                                                if (draftContentEditorRef.current) setDraftContent(draftContentEditorRef.current.innerHTML);
+                                                                                            }
+                                                                                        }}
+                                                                                        className="p-1 px-[10px] text-zinc-300 hover:text-white hover:bg-white/10 rounded-md font-bold transition-colors font-serif text-[15px]"
+                                                                                    >
+                                                                                        B
+                                                                                    </button>
+                                                                                    <button 
+                                                                                        onClick={(e) => {
+                                                                                            e.stopPropagation();
+                                                                                            if (selection.range) {
+                                                                                                const sel = window.getSelection();
+                                                                                                sel?.removeAllRanges();
+                                                                                                sel?.addRange(selection.range);
+                                                                                                document.execCommand('italic', false, undefined);
+                                                                                                if (draftContentEditorRef.current) setDraftContent(draftContentEditorRef.current.innerHTML);
+                                                                                            }
+                                                                                        }}
+                                                                                        className="p-1 px-[10px] text-zinc-300 hover:text-white hover:bg-white/10 rounded-md italic font-serif transition-colors text-[16px]"
+                                                                                    >
+                                                                                        I
+                                                                                    </button>
                                                                                 </div>
-                                                                            </button>
+                                                                                
+                                                                                <div className="w-[1px] h-4 bg-zinc-700 mx-1"></div>
+                                                                                
+                                                                                <div className="flex items-center gap-1.5 px-2 py-1 text-zinc-300 hover:text-white text-[14px] cursor-pointer hover:bg-white/10 rounded-md transition-colors">
+                                                                                    Text <ChevronDown className="w-[14px] h-[14px]" />
+                                                                                </div>
+                                                                            </div>
                                                                         )}
 
                                                                         {isRefinementActive && (
-                                                                            <div className="bg-white dark:bg-zinc-950/90 border border-neutral-200 dark:border-white/10 rounded-[1.5rem] p-1.5 shadow-[0_30px_70px_rgba(0,0,0,0.9)] w-[360px] backdrop-blur-3xl overflow-hidden ring-1 ring-white/10" onClick={(e) => e.stopPropagation()}>
+                                                                            <div className="bg-[#2A2A2A] border border-white/10 rounded-[14px] p-1.5 shadow-[0_30px_70px_rgba(0,0,0,0.6)] w-[360px] backdrop-blur-xl ring-1 ring-white/5" onClick={(e) => e.stopPropagation()}>
                                                                                 <div className="relative group/input">
                                                                                     <input
                                                                                         autoFocus
@@ -2620,16 +2659,16 @@ export function GmailInterfaceFixed() {
                                                                                             if (e.key === 'Escape') setIsRefinementActive(false);
                                                                                         }}
                                                                                         placeholder="Describe your changes"
-                                                                                        className="w-full bg-white/[0.04] text-black dark:text-white text-[14px] py-3.5 px-5 pr-14 rounded-2xl border border-white/[0.08] focus:outline-none focus:border-white/20 transition-all placeholder:text-zinc-600 font-medium tracking-tight"
+                                                                                        className="w-full bg-white/[0.04] text-white text-[14px] py-3.5 px-5 pr-14 rounded-xl border border-transparent focus:outline-none focus:bg-white/[0.06] transition-all placeholder:text-zinc-500 font-medium tracking-tight"
                                                                                     />
                                                                                     <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
                                                                                         <button
                                                                                             onClick={(e) => { e.stopPropagation(); handleSiftRefinementSubmit(); }}
                                                                                             disabled={isProcessingRefinement || !refinementInstruction.trim()}
-                                                                                            className="w-9 h-9 bg-white rounded-xl flex items-center justify-center text-black hover:bg-zinc-200 transition-all disabled:opacity-30 disabled:grayscale shadow-lg shadow-white/5 active:scale-90"
+                                                                                            className="w-8 h-8 bg-[#3b82f6] rounded-lg flex items-center justify-center text-white hover:bg-blue-400 transition-all disabled:opacity-30 disabled:grayscale"
                                                                                         >
                                                                                             {isProcessingRefinement ? (
-                                                                                                <div className="w-4 h-4 border-[2px] border-black/20 border-t-black rounded-full animate-spin" />
+                                                                                                <div className="w-4 h-4 border-[2px] border-white/20 border-t-white rounded-full animate-spin" />
                                                                                             ) : (
                                                                                                 <ArrowUp className="w-4 h-4 stroke-[3]" />
                                                                                             )}
@@ -2640,59 +2679,32 @@ export function GmailInterfaceFixed() {
                                                                         )}
 
                                                                         {proposedRefinement && (
-                                                                            <div className="bg-white dark:bg-zinc-950/90 border border-white/20 rounded-2xl p-2 flex items-center gap-2 shadow-[0_30px_70px_rgba(0,0,0,0.9)] backdrop-blur-3xl ring-1 ring-white/10" onClick={(e) => e.stopPropagation()}>
-                                                                                <button
-                                                                                    onClick={(e) => { e.stopPropagation(); setProposedRefinement(null); }}
-                                                                                    className="h-10 px-5 rounded-xl text-neutral-600 hover:text-black dark:text-white hover:bg-black/5 dark:bg-white/5 text-[13px] font-bold transition-all flex items-center gap-3 active:scale-95"
-                                                                                >
-                                                                                    Undo
-                                                                                    <div className="px-1.5 py-0.5 rounded border border-neutral-200 dark:border-white/10 bg-black/5 dark:bg-white/5 text-[9px] font-bold opacity-40 uppercase">Esc</div>
-                                                                                </button>
-                                                                                <div className="w-px h-6 bg-black/10 dark:bg-white/10 mx-1" />
-                                                                                <button
-                                                                                    onClick={(e) => { e.stopPropagation(); handleAcceptSiftRefinement(); }}
-                                                                                    className="h-10 px-5 bg-white hover:bg-zinc-200 rounded-xl text-black text-[13px] font-bold transition-all flex items-center gap-4 shadow-xl shadow-white/5 active:scale-95"
-                                                                                >
-                                                                                    Accept
-                                                                                    <div className="flex items-center gap-1 opacity-70">
-                                                                                        <div className="px-1.5 py-0.5 rounded border border-black/30 bg-black/10 text-[9px] font-bold uppercase tracking-tighter">Ctrl</div>
-                                                                                        <CornerDownLeft className="w-3 h-3" />
-                                                                                    </div>
-                                                                                </button>
+                                                                            <div className="bg-[#2A2A2A] border border-white/10 rounded-[14px] p-2 flex flex-col gap-3 shadow-[0_30px_70px_rgba(0,0,0,0.6)] w-[360px] backdrop-blur-xl ring-1 ring-white/5" onClick={(e) => e.stopPropagation()}>
+                                                                                <div className="px-3 pt-2 text-zinc-200 text-[14px] tracking-wide leading-relaxed font-medium">
+                                                                                    <div dangerouslySetInnerHTML={{ __html: proposedRefinement }} />
+                                                                                </div>
+                                                                                <div className="flex items-center gap-2 mt-1">
+                                                                                    <button
+                                                                                        onClick={(e) => { e.stopPropagation(); setProposedRefinement(null); }}
+                                                                                        className="h-9 w-full rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 text-[13px] font-medium transition-all"
+                                                                                    >
+                                                                                        Discard
+                                                                                    </button>
+                                                                                    <button
+                                                                                        onClick={(e) => { e.stopPropagation(); handleAcceptSiftRefinement(); }}
+                                                                                        className="h-9 w-full bg-white hover:bg-zinc-200 rounded-lg text-black text-[13px] font-bold transition-all shadow-md"
+                                                                                    >
+                                                                                        Accept
+                                                                                    </button>
+                                                                                </div>
                                                                             </div>
                                                                         )}
                                                                     </motion.div>
                                                                 )}
                                                             </AnimatePresence>
                                                         </div>
-
-                                                        <div className="mt-8 flex justify-end gap-4">
-                                                            <Button
-                                                                variant="outline"
-                                                                onClick={() => setShowDraftEditor(false)}
-                                                                className="h-14 px-8 border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-400 hover:bg-neutral-800 rounded-2xl"
-                                                            >
-                                                                Cancel
-                                                            </Button>
-                                                            <Button
-                                                                className="h-14 bg-[#fafafa] hover:bg-neutral-200 text-[#0a0a0a] px-10 rounded-2xl text-lg font-medium shadow-lg shadow-white/5"
-                                                                onClick={handleSendReply}
-                                                            >
-                                                                Send Reply
-                                                            </Button>
-                                                        </div>
                                                     </div>
                                                 </div>
-
-                                                {/* Draft Backdrop */}
-                                                {showDraftEditor && (
-                                                    <div
-                                                        className="fixed inset-0 bg-black/30 backdrop-blur-[60px] z-[1090] transition-opacity duration-700"
-                                                        onClick={() => setShowDraftEditor(false)}
-                                                    >
-                                                        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.01] via-transparent to-black/20 pointer-events-none" />
-                                                    </div>
-                                                )}
 
                                                 {/* Note Editor - Premium UI in bottom-right */}
                                                 <div
