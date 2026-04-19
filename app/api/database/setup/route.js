@@ -354,6 +354,15 @@ async function createEnhancedTables() {
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       );
       
+      -- Add status column if table exists but column doesn't
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                      WHERE table_name = 'user_voice_profiles' AND column_name = 'status') THEN
+          ALTER TABLE user_voice_profiles ADD COLUMN status TEXT DEFAULT 'default';
+        END IF;
+      END $$;
+      
       CREATE INDEX IF NOT EXISTS idx_user_voice_profiles_user_id ON user_voice_profiles(user_id);
       CREATE INDEX IF NOT EXISTS idx_user_voice_profiles_status ON user_voice_profiles(status);
     `;
