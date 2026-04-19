@@ -9,7 +9,7 @@ import { Button } from './button';
 import { SettingsCard } from './settings-card';
 import { Badge } from './badge';
 import { HomeFeedSidebar } from './home-feed-sidebar';
-import { RefreshCw, AlertCircle, TrendingUp, Clock, Target, Zap, Mail, Home, X, User, Sparkles, ArrowLeft, LayoutList, Inbox, ExternalLink, Download, FilePlus, ChevronDown, ChevronRight, Plus, Users, Building, Phone, Loader2, MessageCircle, Send, ArrowUp, CornerDownLeft, Menu, Shield, Activity, PanelLeft, Mic, Copy, Link as LinkIcon, Bold, Italic, Type } from 'lucide-react';
+import { RefreshCw, AlertCircle, TrendingUp, Clock, Target, Zap, Mail, Home, X, User, Sparkles, ArrowLeft, LayoutList, Inbox, ExternalLink, Download, FilePlus, ChevronDown, ChevronRight, Plus, Users, Building, Phone, Loader2, MessageCircle, Send, ArrowUp, CornerDownLeft, Menu, Shield, Activity, PanelLeft, Mic, Copy, Link as LinkIcon, Bold, Italic, Paperclip, Check } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './avatar';
 import { toast } from 'sonner';
 import { HelpCard } from './help-card';
@@ -234,6 +234,10 @@ export function GmailInterfaceFixed() {
     const [isProcessingRefinement, setIsProcessingRefinement] = useState(false);
     const [proposedRefinement, setProposedRefinement] = useState<string | null>(null);
     const [showTooltip, setShowTooltip] = useState(false);
+    const [showLinkInput, setShowLinkInput] = useState(false);
+    const [linkInputUrl, setLinkInputUrl] = useState('');
+    const [draftAttachments, setDraftAttachments] = useState<File[]>([]);
+    const attachmentInputRef = useRef<HTMLInputElement>(null);
 
     // --- All State Hooks ---
 
@@ -1405,7 +1409,9 @@ export function GmailInterfaceFixed() {
     };
 
     const handleSendReply = async () => {
-        if (!draftTo || !draftSubject || !draftContent) {
+        // Read HTML directly from the contentEditable editor to preserve all formatting
+        const editorHtml = draftContentEditorRef.current?.innerHTML || draftContent;
+        if (!draftTo || !draftSubject || !editorHtml) {
             toast.error('Please check recipients and content.');
             return;
         }
@@ -1422,14 +1428,17 @@ export function GmailInterfaceFixed() {
             </div>
         `;
 
-        // Convert newlines to breaks and markdown bold to strong tags
-        const formattedContent = draftContent
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\n/g, '<br/>');
-
+        // The editorHtml is already rich HTML from contentEditable (bold=<b>/<strong>, italic=<i>/<em>, link=<a>)
+        // We just inline-style it for Gmail compatibility
         const bodyHtml = `
-            <div style="font-family: sans-serif; font-size: 16px; line-height: 1.6; color: #333 text-align: left;">
-                ${formattedContent}
+            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 15px; line-height: 1.7; color: #222; text-align: left;">
+                ${editorHtml
+                    .replace(/<b>/gi, '<b style="font-weight:700;">')
+                    .replace(/<strong>/gi, '<strong style="font-weight:700;">')
+                    .replace(/<i>/gi, '<i style="font-style:italic;">')
+                    .replace(/<em>/gi, '<em style="font-style:italic;">')
+                    .replace(/<a /gi, '<a style="color:#1a73e8; text-decoration:underline;" ')
+                }
             </div>
             ${footerHtml}
         `;
@@ -1454,6 +1463,7 @@ export function GmailInterfaceFixed() {
                 triggerSuccessConfetti(); // Dopamine boost!
                 setShowDraftEditor(false);
                 setDraftContent('');
+                setDraftAttachments([]);
             } else {
                 console.error('❌ Failed to send email:', data);
                 toast.error(`Failed to send: ${data.error || 'Unknown error'}`, { id: toastId });
@@ -2504,6 +2514,29 @@ export function GmailInterfaceFixed() {
                                                         <div className="flex justify-between items-center px-8 py-5">
                                                             <span className="text-zinc-400 font-medium tracking-wide">Email</span>
                                                             <div className="flex items-center gap-2">
+                                                                {/* Attachment Picker */}
+                                                                <input
+                                                                    ref={attachmentInputRef}
+                                                                    type="file"
+                                                                    multiple
+                                                                    className="hidden"
+                                                                    onChange={(e) => {
+                                                                        if (e.target.files) {
+                                                                            setDraftAttachments(prev => [...prev, ...Array.from(e.target.files!)]);
+                                                                            toast.success(`${e.target.files.length} file(s) attached`);
+                                                                        }
+                                                                    }}
+                                                                />
+                                                                <button 
+                                                                    onClick={() => attachmentInputRef.current?.click()}
+                                                                    className="p-2 hover:bg-neutral-800 rounded-lg text-white/50 hover:text-white transition-colors relative"
+                                                                    title="Attach files"
+                                                                >
+                                                                    <Paperclip className="w-[18px] h-[18px]" strokeWidth={1.5} />
+                                                                    {draftAttachments.length > 0 && (
+                                                                        <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-blue-500 rounded-full text-[10px] text-white font-bold flex items-center justify-center">{draftAttachments.length}</span>
+                                                                    )}
+                                                                </button>
                                                                 <button 
                                                                     onClick={() => {
                                                                         const tempDiv = document.createElement('div');
@@ -2553,10 +2586,26 @@ export function GmailInterfaceFixed() {
                                                                 <div 
                                                                     ref={draftContentEditorRef}
                                                                     contentEditable
-                                                                    className="w-full h-full text-zinc-100 focus:outline-none leading-[1.8] font-[400] text-[15px] prose-invert prose-p:my-2 prose-a:text-blue-400 prose-a:underline hover:prose-a:text-blue-300 whitespace-pre-wrap selection:bg-blue-500/30 font-sans"
+                                                                    suppressContentEditableWarning
+                                                                    className="w-full h-full text-zinc-100 focus:outline-none leading-[1.8] font-[400] text-[15px] whitespace-pre-wrap selection:bg-blue-500/30 font-sans [&_a]:text-[#60a5fa] [&_a]:underline [&_a]:cursor-pointer [&_b]:font-bold [&_strong]:font-bold [&_i]:italic [&_em]:italic"
                                                                     onInput={(e) => setDraftContent(e.currentTarget.innerHTML)}
-                                                                    placeholder="Type your reply here..."
+                                                                    style={{ minHeight: '200px' }}
                                                                 />
+                                                                {/* Attachment chips */}
+                                                                {draftAttachments.length > 0 && (
+                                                                    <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-white/[0.06]">
+                                                                        {draftAttachments.map((file, i) => (
+                                                                            <div key={i} className="flex items-center gap-2 bg-white/[0.06] rounded-lg px-3 py-1.5 text-sm text-zinc-300">
+                                                                                <Paperclip className="w-3.5 h-3.5 text-zinc-500" />
+                                                                                <span className="max-w-[140px] truncate">{file.name}</span>
+                                                                                <span className="text-zinc-600 text-xs">({(file.size / 1024).toFixed(0)}KB)</span>
+                                                                                <button onClick={() => setDraftAttachments(prev => prev.filter((_, idx) => idx !== i))} className="ml-1 text-zinc-500 hover:text-red-400 transition-colors">
+                                                                                    <X className="w-3.5 h-3.5" />
+                                                                                </button>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
                                                             )}
 
                                                             {/* Floating Toolbar Toolkit */}
@@ -2576,41 +2625,35 @@ export function GmailInterfaceFixed() {
                                                                         }}
                                                                         className="pointer-events-auto refinement-toolkit"
                                                                     >
-                                                                        {!isRefinementActive && !proposedRefinement && (
-                                                                            <div className="bg-[#2A2A2A] border border-white/10 rounded-[14px] px-2 py-1.5 flex items-center gap-3 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl">
+                                                                        {!isRefinementActive && !proposedRefinement && !showLinkInput && (
+                                                                            <div className="bg-[#2A2A2A] border border-white/10 rounded-[14px] px-2 py-1.5 flex items-center gap-1 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl" onMouseDown={(e) => e.preventDefault()}>
                                                                                 <button 
-                                                                                    onClick={(e) => { e.stopPropagation(); setIsRefinementActive(true); }}
-                                                                                    className="flex items-center gap-2 pl-2 pr-1 py-1 text-[#3b82f6] hover:text-blue-400 font-medium tracking-wide transition-colors text-[14px]"
+                                                                                    onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setIsRefinementActive(true); }}
+                                                                                    className="flex items-center gap-2 pl-3 pr-2 py-1.5 text-[#3b82f6] hover:text-blue-400 font-medium tracking-wide transition-colors text-[13px]"
                                                                                 >
                                                                                     Ask for changes
-                                                                                    <span className="text-[#3b82f6] font-normal text-[13px] opacity-80 pl-1">Ctrl + K</span>
                                                                                 </button>
                                                                                 
-                                                                                <div className="w-[1px] h-4 bg-zinc-700 mx-1"></div>
+                                                                                <div className="w-[1px] h-4 bg-zinc-700"></div>
                                                                                 
-                                                                                <div className="flex items-center gap-1">
+                                                                                <div className="flex items-center">
                                                                                     <button 
-                                                                                        onClick={(e) => {
+                                                                                        onMouseDown={(e) => {
+                                                                                            e.preventDefault();
                                                                                             e.stopPropagation();
-                                                                                            const url = prompt("Enter link URL:");
-                                                                                            if (url) {
-                                                                                                if (selection.range) {
-                                                                                                    const sel = window.getSelection();
-                                                                                                    sel?.removeAllRanges();
-                                                                                                    sel?.addRange(selection.range);
-                                                                                                    document.execCommand('createLink', false, url);
-                                                                                                    if (draftContentEditorRef.current) setDraftContent(draftContentEditorRef.current.innerHTML);
-                                                                                                }
-                                                                                            }
+                                                                                            setShowLinkInput(true);
+                                                                                            setLinkInputUrl('');
                                                                                         }}
-                                                                                        className="p-1.5 text-zinc-300 hover:text-white hover:bg-white/10 rounded-md transition-colors"
+                                                                                        className="p-1.5 text-zinc-400 hover:text-white hover:bg-white/10 rounded-md transition-colors"
+                                                                                        title="Insert link"
                                                                                     >
                                                                                         <LinkIcon className="w-4 h-4" />
                                                                                     </button>
                                                                                     <button 
-                                                                                        onClick={(e) => {
+                                                                                        onMouseDown={(e) => {
+                                                                                            e.preventDefault();
                                                                                             e.stopPropagation();
-                                                                                            if (selection.range) {
+                                                                                            if (selection?.range) {
                                                                                                 const sel = window.getSelection();
                                                                                                 sel?.removeAllRanges();
                                                                                                 sel?.addRange(selection.range);
@@ -2618,14 +2661,16 @@ export function GmailInterfaceFixed() {
                                                                                                 if (draftContentEditorRef.current) setDraftContent(draftContentEditorRef.current.innerHTML);
                                                                                             }
                                                                                         }}
-                                                                                        className="p-1 px-[10px] text-zinc-300 hover:text-white hover:bg-white/10 rounded-md font-bold transition-colors font-serif text-[15px]"
+                                                                                        className="p-1.5 px-2.5 text-zinc-400 hover:text-white hover:bg-white/10 rounded-md font-bold transition-colors text-[14px]"
+                                                                                        title="Bold"
                                                                                     >
                                                                                         B
                                                                                     </button>
                                                                                     <button 
-                                                                                        onClick={(e) => {
+                                                                                        onMouseDown={(e) => {
+                                                                                            e.preventDefault();
                                                                                             e.stopPropagation();
-                                                                                            if (selection.range) {
+                                                                                            if (selection?.range) {
                                                                                                 const sel = window.getSelection();
                                                                                                 sel?.removeAllRanges();
                                                                                                 sel?.addRange(selection.range);
@@ -2633,16 +2678,80 @@ export function GmailInterfaceFixed() {
                                                                                                 if (draftContentEditorRef.current) setDraftContent(draftContentEditorRef.current.innerHTML);
                                                                                             }
                                                                                         }}
-                                                                                        className="p-1 px-[10px] text-zinc-300 hover:text-white hover:bg-white/10 rounded-md italic font-serif transition-colors text-[16px]"
+                                                                                        className="p-1.5 px-2.5 text-zinc-400 hover:text-white hover:bg-white/10 rounded-md italic transition-colors text-[14px]"
+                                                                                        title="Italic"
                                                                                     >
                                                                                         I
                                                                                     </button>
                                                                                 </div>
-                                                                                
-                                                                                <div className="w-[1px] h-4 bg-zinc-700 mx-1"></div>
-                                                                                
-                                                                                <div className="flex items-center gap-1.5 px-2 py-1 text-zinc-300 hover:text-white text-[14px] cursor-pointer hover:bg-white/10 rounded-md transition-colors">
-                                                                                    Text <ChevronDown className="w-[14px] h-[14px]" />
+                                                                            </div>
+                                                                        )}
+
+                                                                        {/* Inline Link Input (replaces browser prompt) */}
+                                                                        {showLinkInput && !isRefinementActive && !proposedRefinement && (
+                                                                            <div className="bg-[#2A2A2A] border border-white/10 rounded-[14px] p-1.5 shadow-[0_30px_70px_rgba(0,0,0,0.6)] w-[320px] backdrop-blur-xl ring-1 ring-white/5" onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.preventDefault()}>
+                                                                                <div className="relative">
+                                                                                    <input
+                                                                                        autoFocus
+                                                                                        value={linkInputUrl}
+                                                                                        onChange={(e) => setLinkInputUrl(e.target.value)}
+                                                                                        onKeyDown={(e) => {
+                                                                                            if (e.key === 'Enter' && linkInputUrl.trim()) {
+                                                                                                e.preventDefault();
+                                                                                                if (selection?.range) {
+                                                                                                    const sel = window.getSelection();
+                                                                                                    sel?.removeAllRanges();
+                                                                                                    sel?.addRange(selection.range);
+                                                                                                    const finalUrl = linkInputUrl.startsWith('http') ? linkInputUrl : `https://${linkInputUrl}`;
+                                                                                                    document.execCommand('createLink', false, finalUrl);
+                                                                                                    // Style the newly created link
+                                                                                                    if (draftContentEditorRef.current) {
+                                                                                                        draftContentEditorRef.current.querySelectorAll('a').forEach(a => {
+                                                                                                            a.style.color = '#60a5fa';
+                                                                                                            a.style.textDecoration = 'underline';
+                                                                                                            a.setAttribute('target', '_blank');
+                                                                                                        });
+                                                                                                        setDraftContent(draftContentEditorRef.current.innerHTML);
+                                                                                                    }
+                                                                                                }
+                                                                                                setShowLinkInput(false);
+                                                                                                setLinkInputUrl('');
+                                                                                            }
+                                                                                            if (e.key === 'Escape') {
+                                                                                                setShowLinkInput(false);
+                                                                                                setLinkInputUrl('');
+                                                                                            }
+                                                                                        }}
+                                                                                        placeholder="Paste or type a URL..."
+                                                                                        className="w-full bg-white/[0.04] text-white text-[13px] py-3 px-4 pr-12 rounded-xl border border-transparent focus:outline-none focus:bg-white/[0.06] transition-all placeholder:text-zinc-500 font-medium"
+                                                                                    />
+                                                                                    <button
+                                                                                        onMouseDown={(e) => {
+                                                                                            e.preventDefault();
+                                                                                            e.stopPropagation();
+                                                                                            if (linkInputUrl.trim() && selection?.range) {
+                                                                                                const sel = window.getSelection();
+                                                                                                sel?.removeAllRanges();
+                                                                                                sel?.addRange(selection.range);
+                                                                                                const finalUrl = linkInputUrl.startsWith('http') ? linkInputUrl : `https://${linkInputUrl}`;
+                                                                                                document.execCommand('createLink', false, finalUrl);
+                                                                                                if (draftContentEditorRef.current) {
+                                                                                                    draftContentEditorRef.current.querySelectorAll('a').forEach(a => {
+                                                                                                        a.style.color = '#60a5fa';
+                                                                                                        a.style.textDecoration = 'underline';
+                                                                                                        a.setAttribute('target', '_blank');
+                                                                                                    });
+                                                                                                    setDraftContent(draftContentEditorRef.current.innerHTML);
+                                                                                                }
+                                                                                            }
+                                                                                            setShowLinkInput(false);
+                                                                                            setLinkInputUrl('');
+                                                                                        }}
+                                                                                        disabled={!linkInputUrl.trim()}
+                                                                                        className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 bg-[#3b82f6] rounded-lg flex items-center justify-center text-white hover:bg-blue-400 transition-all disabled:opacity-30"
+                                                                                    >
+                                                                                        <Check className="w-4 h-4 stroke-[3]" />
+                                                                                    </button>
                                                                                 </div>
                                                                             </div>
                                                                         )}

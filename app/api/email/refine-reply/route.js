@@ -35,7 +35,13 @@ export async function POST(request) {
         const systemPrompt = `You are an AI email assistant. 
 Given an entire email draft and a specific PART of that email that the user has selected, your task is to rewrite ONLY the selected part based on the user's instruction.
 Keep the tone consistent with the rest of the email.
-Return ONLY the rewritten text for the selected part, nothing else. No conversational filler, explanations, or quotation marks around the output.`;
+
+CRITICAL OUTPUT RULES:
+- Return ONLY the rewritten text for the selected part
+- No conversational filler, explanations, or quotation marks
+- Do NOT include any reasoning, planning, or meta-commentary
+- Wrap your final output in <email> and </email> tags
+- Example: <email>the rewritten text goes here</email>`;
 
         const userPrompt = `FULL EMAIL DRAFT:
 """
@@ -48,15 +54,16 @@ SELECTED PART TO REWRITE:
 USER INSTRUCTION FOR THIS PART:
 "${instruction}"
 
-REWRITTEN VERSION:`;
+REWRITTEN VERSION (wrap in <email> tags):`;
 
-        // Use callOpenRouter (the actual method) instead of non-existent generateCompletion
         const aiResponse = await aiService.callOpenRouter([
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt }
-        ], { maxTokens: 600, temperature: 0.4 });
+        ], { maxTokens: 1200, temperature: 0.4 });
 
-        const refinedText = aiService.extractResponse(aiResponse)?.trim() || '';
+        // Use extractEmailDraft to strip any thinking/reasoning
+        const rawText = aiService.extractResponse(aiResponse) || '';
+        const refinedText = aiService.extractEmailDraft(rawText)?.trim() || '';
 
         if (refinedText) {
             await subscriptionService.incrementFeatureUsage(userId, FEATURE_TYPES.DRAFT_REPLY);
