@@ -11,7 +11,7 @@ export async function POST(request) {
         }
 
         const userId = session.user.email;
-        const { fullContent, selectedText, instruction } = await request.json();
+        const { fullContent, selectedText, instruction, originalContext } = await request.json();
 
         if (!fullContent || !selectedText || !instruction) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -33,17 +33,23 @@ export async function POST(request) {
         
         // System prompt that instructs the AI to ONLY return the refined version of the SELECTED text
         const systemPrompt = `You are an AI email assistant. 
-Given an entire email draft and a specific PART of that email that the user has selected, your task is to rewrite ONLY the selected part based on the user's instruction.
+Given an entire email draft, the original email you are replying to, and a specific PART of that draft that the user has selected, your task is to rewrite ONLY the selected part based on the user's instruction.
 Keep the tone consistent with the rest of the email.
 
 CRITICAL OUTPUT RULES:
-- Return ONLY the rewritten text for the selected part
-- No conversational filler, explanations, or quotation marks
-- Do NOT include any reasoning, planning, or meta-commentary
-- Wrap your final output in <email> and </email> tags
-- Example: <email>the rewritten text goes here</email>`;
+- You must FIRST write your entire reasoning process and thoughts inside <think> and </think> tags. Do not skip this step!
+- Then, output ONLY the rewritten text for the selected part inside <email> and </email> tags.
+- The text inside <email> tags MUST be a direct replacement for the selected text. Do not add introductory conversational filler.
+- Example: 
+<think>The user wants me to add the link from the original email...</think>
+<email>the rewritten text goes here</email>`;
 
-        const userPrompt = `FULL EMAIL DRAFT:
+        const userPrompt = `ORIGINAL EMAIL BEING REPLIED TO:
+"""
+${originalContext || 'No context provided.'}
+"""
+
+FULL EMAIL DRAFT:
 """
 ${fullContent}
 """
@@ -54,7 +60,7 @@ SELECTED PART TO REWRITE:
 USER INSTRUCTION FOR THIS PART:
 "${instruction}"
 
-REWRITTEN VERSION (wrap in <email> tags):`;
+REWRITTEN VERSION (Remember to put thoughts in <think> tags, and final output in <email> tags):`;
 
         const aiResponse = await aiService.callOpenRouter([
             { role: 'system', content: systemPrompt },

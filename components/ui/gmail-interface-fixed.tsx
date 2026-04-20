@@ -844,6 +844,7 @@ export function GmailInterfaceFixed() {
 
     const [draftSubject, setDraftSubject] = useState('');
     const [draftTo, setDraftTo] = useState('');
+    const [draftOriginalEmailBody, setDraftOriginalEmailBody] = useState('');
 
     // ... (keep existing handleEmailClick)
 
@@ -857,6 +858,7 @@ export function GmailInterfaceFixed() {
         if (email) {
             setDraftTo(email.sender.email); // Set recipient email
             setDraftSubject(email.subject || 'Reply'); // Use original subject without "Re:" prefix
+            setDraftOriginalEmailBody(email.body || email.snippet || '');
         }
 
         try {
@@ -1075,7 +1077,8 @@ export function GmailInterfaceFixed() {
                 body: JSON.stringify({
                     fullContent: draftContent,
                     selectedText: selection.text,
-                    instruction: refinementInstruction
+                    instruction: refinementInstruction,
+                    originalContext: draftOriginalEmailBody
                 })
             });
 
