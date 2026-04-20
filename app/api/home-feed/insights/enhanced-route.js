@@ -135,7 +135,7 @@ async function generateEnhancedFounderIntelligence(gmailService, userEmail) {
 
     const uniqueMessages = [...new Set(allMessages.map(m => m.id))]
       .map(id => allMessages.find(m => m.id === id))
-      .slice(0, 30); // Limit to 30 most relevant emails
+      .slice(0, 50); // Limit to 50 most relevant emails
 
     console.log(`📧 Enhanced Sift AI: Processing ${uniqueMessages.length} unique emails for analysis`);
 
