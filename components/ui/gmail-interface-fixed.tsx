@@ -438,7 +438,14 @@ export function GmailInterfaceFixed() {
             setError(error.message);
             toast.error(error.message);
         } finally {
-            setLoading(false);
+            if (!isLoadMore) {
+                // Give the terminal loader a moment to show the success state
+                setTimeout(() => {
+                    setLoading(false);
+                }, 1500);
+            } else {
+                setLoading(false);
+            }
             if (timerInterval) clearInterval(timerInterval);
         }
     }, [nextPageToken, setInsights, setSummary, setLastUpdated, setNextPageToken, setHasInitialLoad, playSystemSound, showNotification, setIsTokenExpired, setIsGmailConnected]);
@@ -2187,9 +2194,9 @@ export function GmailInterfaceFixed() {
                                             </div>
                                         </div>
                                     </div>
-                                ) : loading && insights.length === 0 ? (
+                                ) : loading ? (
                                     <div className="py-12 md:py-20 animate-in fade-in duration-1000">
-                                        <ArcusTerminalLoader />
+                                        <ArcusTerminalLoader loading={loading} />
                                     </div>
                                 ) : hasInitialLoad ? (
                                     insights.length > 0 ? (
@@ -2230,9 +2237,6 @@ export function GmailInterfaceFixed() {
                                                             content={insight.content}
                                                             onClick={() => {
                                                                 setSelectedInsight(insight);
-                                                                if (insight.source_emails && insight.source_emails.length > 0) {
-                                                                    handleEmailClick(insight.source_emails[0].id);
-                                                                }
                                                             }}
                                                         />
                                                     </motion.div>
