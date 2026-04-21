@@ -19,7 +19,38 @@ button:active,
   transition: transform 0.1s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* --- Global Focus Reset --- */
+/* Removes the default blue browser focus rings from all inputs and interactive elements */
+*:focus,
+*:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+input, 
+textarea, 
+button, 
+select, 
+[contenteditable="true"] {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 @custom-variant dark (&:is(.dark *));
+
+/* Animated border effect - single light flowing around */
+@keyframes borderFlow {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 400% 400%;
+  }
+}
+
+.animate-border-flow {
+  animation: borderFlow 8s linear infinite;
+}
 
 html {
   scroll-behavior: smooth;
