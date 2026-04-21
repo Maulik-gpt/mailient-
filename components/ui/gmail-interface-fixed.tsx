@@ -503,8 +503,9 @@ export function GmailInterfaceFixed() {
         if (session?.user?.email) {
             fetchUsage(true);
             fetchVoiceProfile();
+            fetchSiftInsights();
         }
-    }, [session, fetchUsage, fetchVoiceProfile]);
+    }, [session, fetchUsage, fetchVoiceProfile, fetchSiftInsights]);
 
     const fetchContacts = useCallback(async (query: string = '') => {
         setIsLoadingContacts(true);
@@ -898,7 +899,7 @@ export function GmailInterfaceFixed() {
                 }
                 throw new Error(data?.error || 'Failed to generate draft');
             }
-            setDraftContent(decodeEntities(data.draftReply));
+            setDraftContent(renderMarkdown(decodeEntities(data.draftReply)));
             forceFetchUsage();
         } catch (error) {
             console.error('Error generating draft:', error);
@@ -1246,11 +1247,11 @@ export function GmailInterfaceFixed() {
                 }
                 throw new Error(data?.error || 'Failed to generate repair reply');
             }
-            setDraftContent(data.repairReply);
+            setDraftContent(renderMarkdown(decodeEntities(data.repairReply)));
             forceFetchUsage();
         } catch (error) {
             console.error('Error generating repair reply:', error);
-            setDraftContent("Dear there,\n\nThank you for reaching out. I appreciate your message and will respond shortly.\n\nWith gratitude,\n" + (session?.user?.name || 'User'));
+            setDraftContent(renderMarkdown("Dear there,\n\nThank you for reaching out. I appreciate your message and will respond shortly.\n\nWith gratitude,\n" + (session?.user?.name || 'User')));
         } finally {
             setIsDrafting(false);
         }
@@ -2620,7 +2621,7 @@ export function GmailInterfaceFixed() {
                                                                         ref={draftContentEditorRef}
                                                                         contentEditable
                                                                         suppressContentEditableWarning
-                                                                        className="w-full h-full text-zinc-100 focus:outline-none leading-[1.8] font-[400] text-[15px] whitespace-pre-wrap selection:bg-blue-500/30 font-sans [&_a]:text-[#60a5fa] [&_a]:underline [&_a]:cursor-pointer [&_b]:font-bold [&_strong]:font-bold [&_i]:italic [&_em]:italic"
+                                                                        className="w-full h-full text-zinc-100 focus:outline-none leading-[1.8] font-[400] text-[15px] selection:bg-blue-500/30 font-sans [&_a]:text-[#60a5fa] [&_a]:underline [&_a]:cursor-pointer [&_b]:font-bold [&_strong]:font-bold [&_i]:italic [&_em]:italic [&_p]:mb-4 [&_p:last-child]:mb-0"
                                                                         onInput={(e) => setDraftContent(e.currentTarget.innerHTML)}
                                                                         style={{ minHeight: '200px' }}
                                                                     />
