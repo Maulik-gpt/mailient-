@@ -219,9 +219,10 @@ export function GmailInterfaceFixed() {
 
     const [isTokenExpired, setIsTokenExpired] = useState(false);
 
-    // AI Refinement State for Sift
     const draftContentEditorRef = useRef<HTMLDivElement>(null);
     const [selection, setSelection] = useState<{ text: string; rect: DOMRect; start: number; end: number; range?: globalThis.Range } | null>(null);
+    const [isRefinementActive, setIsRefinementActive] = useState(false);
+    const hasFetchedInitialDataRef = useRef(false);
 
     // Sync state for contentEditable
     useEffect(() => {
@@ -229,7 +230,7 @@ export function GmailInterfaceFixed() {
             draftContentEditorRef.current.innerHTML = draftContent;
         }
     }, [draftContent, isDrafting]);
-    const [isRefinementActive, setIsRefinementActive] = useState(false);
+
     const [refinementInstruction, setRefinementInstruction] = useState('');
     const [isProcessingRefinement, setIsProcessingRefinement] = useState(false);
     const [proposedRefinement, setProposedRefinement] = useState<string | null>(null);
@@ -438,14 +439,7 @@ export function GmailInterfaceFixed() {
             setError(error.message);
             toast.error(error.message);
         } finally {
-            if (!isLoadMore) {
-                // Give the terminal loader a moment to show the success state
-                setTimeout(() => {
-                    setLoading(false);
-                }, 1500);
-            } else {
-                setLoading(false);
-            }
+            setLoading(false);
             if (timerInterval) clearInterval(timerInterval);
         }
     }, [nextPageToken, setInsights, setSummary, setLastUpdated, setNextPageToken, setHasInitialLoad, playSystemSound, showNotification, setIsTokenExpired, setIsGmailConnected]);
@@ -500,12 +494,13 @@ export function GmailInterfaceFixed() {
     }, [fetchUsage]);
 
     useEffect(() => {
-        if (session?.user?.email) {
+        if (session?.user?.email && !hasFetchedInitialDataRef.current) {
+            hasFetchedInitialDataRef.current = true;
             fetchUsage(true);
             fetchVoiceProfile();
-            fetchSiftInsights();
+            // fetchSiftInsights() removed to prevent automatic credit usage on mount/focus
         }
-    }, [session, fetchUsage, fetchVoiceProfile, fetchSiftInsights]);
+    }, [session, fetchUsage, fetchVoiceProfile]);
 
     const fetchContacts = useCallback(async (query: string = '') => {
         setIsLoadingContacts(true);
