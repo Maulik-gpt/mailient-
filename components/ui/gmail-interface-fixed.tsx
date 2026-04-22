@@ -152,6 +152,7 @@ interface SiftInsight {
             avatar?: string;
         };
         receivedAt: string;
+        body?: string;
     }[];
 }
 
