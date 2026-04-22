@@ -8,7 +8,7 @@
 
 import { NextResponse } from 'next/server';
 import { KnowledgeExtractionAgent } from '@/lib/graphrag/knowledge-extraction-agent.js';
-import { auth } from '@/auth';
+import { auth } from '@/lib/auth.js';
 
 export const dynamic = 'force-dynamic';
 

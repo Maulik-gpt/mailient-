@@ -13,7 +13,7 @@
 import { KnowledgeExtractionAgent } from '@/lib/graphrag/knowledge-extraction-agent.js';
 import { HybridSearchService } from '@/lib/graphrag/hybrid-search.js';
 import { GraphRAGService } from '@/lib/graphrag/graph-rag-service.js';
-import { auth } from '@/auth';
+import { auth } from '@/lib/auth.js';
 
 export const dynamic = 'force-dynamic';
 

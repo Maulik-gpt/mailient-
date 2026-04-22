@@ -9,7 +9,7 @@ import { NextResponse } from 'next/server';
 import { HybridSearchService } from '@/lib/graphrag/hybrid-search.js';
 import { GraphRAGService } from '@/lib/graphrag/graph-rag-service.js';
 import { RankingService } from '@/lib/graphrag/ranking-service.js';
-import { auth } from '@/auth';
+import { auth } from '@/lib/auth.js';
 
 export const dynamic = 'force-dynamic';
 
