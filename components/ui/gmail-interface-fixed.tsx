@@ -22,7 +22,6 @@ import { ArcusTerminalLoader } from './arcus-terminal-loader';
 import { VoiceProfileModal } from './voice-profile-modal';
 import { triggerSuccessConfetti } from '@/lib/confetti';
 import { useDashboardSettings } from '@/lib/DashboardSettingsContext';
-import { SoundMenu } from './sound-menu';
 
 // Simple markdown renderer for bold text
 const renderMarkdown = (text: string): string => {
@@ -1673,7 +1672,6 @@ export function GmailInterfaceFixed() {
 
                     {/* Security & Credits Section */}
                     <div className="absolute top-6 right-10 z-50 flex items-center gap-4">
-                        <SoundMenu />
                         {usageData && usageData.planType !== 'pro' && (
                             <UsageBadge
                                 icon={<Sparkles className="h-3.5 w-3.5 text-amber-500" />}

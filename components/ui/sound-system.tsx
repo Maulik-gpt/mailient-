@@ -102,47 +102,10 @@ export function SoundSystem() {
         source.start(0);
     }, [settings.soundExperience, settings.soundType, settings.soundPitch, settings.soundVolume]);
 
+    // Sound effects disabled - clicking sounds removed as per user request
     useEffect(() => {
-        if (!settings.soundExperience) return;
-
-        const handleKeyDown = (e: KeyboardEvent) => {
-            const isTypingKey = e.key.length === 1 || e.key === 'Backspace' || e.key === 'Enter' || e.key === 'Space';
-            
-            const activeElement = document.activeElement;
-            const isInput = activeElement?.tagName === 'INPUT' || 
-                           activeElement?.tagName === 'TEXTAREA' || 
-                           (activeElement as HTMLElement)?.isContentEditable;
-
-            if (isTypingKey && isInput) {
-                playSound('press');
-            }
-        };
-
-        const handleMouseDown = (e: MouseEvent) => {
-            // Only play click sound for interactive elements
-            const target = e.target as HTMLElement;
-            const isInteractive = target.closest('button, a, input, [role="button"], .clickable');
-            
-            if (isInteractive) {
-                playSound('click');
-            }
-        };
-
-        const handleCustomSound = (e: any) => {
-            if (e.detail?.action) {
-                playSound(e.detail.action);
-            }
-        };
-
-        window.addEventListener('keydown', handleKeyDown);
-        window.addEventListener('mousedown', handleMouseDown);
-        window.addEventListener('play-ai-sound', handleCustomSound);
-
-        return () => {
-            window.removeEventListener('keydown', handleKeyDown);
-            window.removeEventListener('mousedown', handleMouseDown);
-            window.removeEventListener('play-ai-sound', handleCustomSound);
-        };
+        // Sounds are disabled - no keyboard or click sound effects
+        return () => {};
     }, [settings.soundExperience, playSound]);
 
     return null;

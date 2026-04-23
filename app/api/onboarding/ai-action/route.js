@@ -103,7 +103,7 @@ export async function POST(request) {
                 case 'summary':
                     result = {
                         type: 'summary',
-                        content: await aiService.generateEmailSummary(emailContent, false, context)
+                        content: await aiService.generateEmailSummary(emailContent, false, context, { timeout: 8000, model: 'google/gemini-2.0-flash-exp:free' })
                     };
                     break;
                 case 'reply':
@@ -115,7 +115,7 @@ export async function POST(request) {
                     };
                     result = {
                         type: 'reply',
-                        content: await aiService.generateDraftReply(emailContent, 'Opportunity', userContext, false)
+                        content: await aiService.generateDraftReply(emailContent, 'Opportunity', userContext, false, { timeout: 8000, model: 'google/gemini-2.0-flash-exp:free' })
                     };
                     break;
                 case 'ask':

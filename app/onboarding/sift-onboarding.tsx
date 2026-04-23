@@ -47,7 +47,6 @@ const STEPS = [
   "Strategy",
   "Scanning",
   "Snapshot",
-  "Sensory",
   "Win",
   "Trust",
   "Profile",
@@ -701,68 +700,7 @@ export default function SiftOnboardingPage() {
           </motion.div>
         );
 
-      case 4: // SENSORY
-        return (
-          <motion.div key="step-sensory" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="max-w-3xl mx-auto px-6 text-center space-y-12">
-            <div className="space-y-6">
-              <h2 className="text-5xl font-medium text-white italic">Immersive Feedback</h2>
-              <p className="text-xl text-zinc-500">Enable high-fidelity spatial audio for an engaging typing experience.</p>
-            </div>
-            
-            <div className="grid grid-cols-1 gap-6 max-w-xl mx-auto">
-              <button
-                onClick={() => updateSetting('soundExperience', !settings.soundExperience)}
-                className={cn(
-                  "p-8 rounded-[2.5rem] border transition-all duration-500 flex items-center justify-between group",
-                  settings.soundExperience 
-                    ? "bg-white border-white text-black shadow-[0_0_50px_rgba(255,255,255,0.15)]" 
-                    : "bg-zinc-950/20 border-white/5 text-zinc-400 hover:border-white/20"
-                )}
-              >
-                <div className="flex items-center gap-4 text-left">
-                  <div className={cn("p-4 rounded-2xl transition-colors", settings.soundExperience ? "bg-black/5" : "bg-white/5")}>
-                    <Waveform className={cn("w-8 h-8", settings.soundExperience ? "text-black" : "text-zinc-500")} />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold">Spatial Typing Audio</h3>
-                    <p className={cn("text-sm", settings.soundExperience ? "text-black/60" : "text-zinc-500")}>Mechanical feedback for every stroke.</p>
-                  </div>
-                </div>
-                {settings.soundExperience && <CheckCircle2 className="w-8 h-8 text-black" />}
-              </button>
-
-              {settings.soundExperience && (
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="p-8 apple-glass-liquid-dark rounded-[2.5rem] border border-white/5 space-y-6"
-                >
-                  <div className="flex items-center justify-between text-zinc-400 text-sm font-medium">
-                    <span>Volume</span>
-                    <span>{Math.round(settings.soundVolume * 100)}%</span>
-                  </div>
-                  <input 
-                    type="range" min="0" max="1" step="0.01"
-                    value={settings.soundVolume}
-                    onChange={(e) => updateSetting('soundVolume', parseFloat(e.target.value))}
-                    className="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-white"
-                  />
-                </motion.div>
-              )}
-            </div>
-
-            <div className="flex flex-col items-center gap-6 pt-8">
-              <LiquidButton onClick={handleNext} className="h-16 px-14 text-white text-lg font-bold shadow-xl">
-                Continue
-              </LiquidButton>
-              <button onClick={handleBack} className="text-zinc-500 hover:text-white transition-colors text-sm uppercase tracking-widest font-bold">
-                Go Back
-              </button>
-            </div>
-          </motion.div>
-        );
-
-      case 5: // IMMEDIATE WIN
+      case 4: // IMMEDIATE WIN
         const delegationEmails = analysisResult?.toReply?.slice(0, 3) || [];
         return (
           <motion.div key="step-4" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="max-w-4xl mx-auto px-6 w-full space-y-12 pb-20">
@@ -821,7 +759,7 @@ export default function SiftOnboardingPage() {
           </motion.div>
         );
 
-      case 7: // PROFILE SETUP
+case 6: // PROFILE SETUP
         return (
           <motion.div key="step-6" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="max-w-2xl mx-auto px-6 w-full space-y-8 pb-20">
             <div className="text-center space-y-4">
@@ -925,7 +863,7 @@ export default function SiftOnboardingPage() {
           </motion.div>
         );
 
-      case 8: // PRICING
+      case 7: // PRICING
         return (
           <motion.div key="step-7" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="w-full max-w-6xl mx-auto px-4 pb-20">
             <div className="text-center mb-16 space-y-4">
@@ -947,7 +885,7 @@ export default function SiftOnboardingPage() {
           </motion.div>
         );
 
-      case 9: // READY
+      case 8: // READY
         return (
           <motion.div key="step-8" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="max-w-xl mx-auto text-center space-y-12 py-20">
             <motion.div
@@ -1051,7 +989,7 @@ function DelegationRow({ email, loading, sent, onSend, onAction, result, actionL
             onClick={onAction}
             className="w-full h-14 text-white text-xs font-black uppercase tracking-widest"
           >
-            {actionLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Delegate to Mailient"}
+            {actionLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Delegate with mailient.xyz"}
           </LiquidButton>
         )}
       </div>
