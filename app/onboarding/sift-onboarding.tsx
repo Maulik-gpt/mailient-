@@ -38,8 +38,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { PricingCard } from "@/components/ui/pricing";
 import posthog from "posthog-js";
 import { LiquidButton } from "@/components/ui/liquid-glass-button";
-import { useDashboardSettings } from "@/lib/DashboardSettingsContext";
-import { Volume2, Keyboard, AudioWaveform as Waveform } from "lucide-react";
 
 const STEPS = [
   "Positioning",
@@ -137,7 +135,6 @@ export default function SiftOnboardingPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session, status } = useSession();
-  const { } = useDashboardSettings();
   const [currentStep, setCurrentStep] = useState(() => {
     const stepFromUrl = searchParams?.get('step');
     return stepFromUrl ? parseInt(stepFromUrl, 10) : 0;

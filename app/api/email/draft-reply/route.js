@@ -73,19 +73,18 @@ Body: ${emailSnippet || ''}`;
         }
 
         // 2. Parallel fetch: subscription check + voice profile (both can run concurrently)
+        // ALWAYS fetch voice profile — it's used as soft style influence for ALL tones
         const voiceProfilePromise = (async () => {
+            // Use frontend-provided profile if it's already complete
             if (voiceProfileFromRequest && voiceProfileFromRequest.status !== 'default') {
                 return voiceProfileFromRequest;
             }
-            // Only fetch if mimic tone is selected - skip for other tones
-            if (tone === 'mimic') {
-                try {
-                    return await voiceProfileService.getVoiceProfile(userId);
-                } catch {
-                    return null;
-                }
+            // Always try to fetch from DB — zero-cost parallel operation
+            try {
+                return await voiceProfileService.getVoiceProfile(userId);
+            } catch {
+                return null;
             }
-            return null;
         })();
 
         const canUsePromise = subscriptionService.canUseFeature(userId, FEATURE_TYPES.DRAFT_REPLY);

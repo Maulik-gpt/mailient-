@@ -107,11 +107,22 @@ export async function POST(request) {
                     };
                     break;
                 case 'reply':
+                    // Fetch voice profile for style-aware drafting (non-blocking)
+                    let onboardingVoiceProfile = null;
+                    try {
+                        const { voiceProfileService } = await import('@/lib/voice-profile-service');
+                        onboardingVoiceProfile = await voiceProfileService.getVoiceProfile(session.user.email);
+                    } catch {
+                        // Silent fail — voice profile is optional for onboarding
+                    }
+                    
                     const userContext = {
                         name: session.user.name || session.user.email.split('@')[0],
                         email: session.user.email,
                         role: context?.role || null,
-                        goals: context?.goals || []
+                        goals: context?.goals || [],
+                        voiceProfile: onboardingVoiceProfile,
+                        tone: onboardingVoiceProfile?.status === 'complete' ? 'mimic' : 'professional'
                     };
                     result = {
                         type: 'reply',

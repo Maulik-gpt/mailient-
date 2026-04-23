@@ -147,6 +147,38 @@ export async function GET(req) {
       console.log(`Processed batch ${Math.floor(i / batchSize) + 1}, saved ${batchResults.length} emails`);
     }
 
+    // VOICE PROFILE AUTO-GENERATION (fire-and-forget — never blocks sync response)
+    // This runs after a successful sync to ensure users get a voice profile automatically
+    try {
+      const userEmail = row.google_email || email;
+      const { voiceProfileService } = await import('@/lib/voice-profile-service');
+      const needsRefresh = await voiceProfileService.needsRefresh(userEmail, 7);
+      
+      if (needsRefresh) {
+        console.log('🎭 [Sync] Voice profile needs refresh — generating in background...');
+        // Fire-and-forget: don't await, don't block response
+        (async () => {
+          try {
+            const { GmailService } = await import('@/lib/gmail');
+            const gmailService = new GmailService(accessToken, null);
+            const sentEmails = await voiceProfileService.fetchSentEmails(gmailService, 30);
+            if (sentEmails.length >= 3) {
+              const profile = await voiceProfileService.analyzeVoiceProfile(sentEmails);
+              await voiceProfileService.saveVoiceProfile(userEmail, profile);
+              console.log('✅ [Sync] Voice profile auto-generated for', userEmail);
+            } else {
+              console.log('⚠️ [Sync] Not enough sent emails for voice profile:', sentEmails.length);
+            }
+          } catch (vpError) {
+            console.warn('⚠️ [Sync] Voice profile auto-generation failed (non-blocking):', vpError.message);
+          }
+        })();
+      }
+    } catch (vpCheckError) {
+      // Silent — voice profile is optional, never break sync
+      console.warn('⚠️ [Sync] Voice profile check skipped:', vpCheckError.message);
+    }
+
     return NextResponse.json({
       ok: true,
       synced: saved.length,
