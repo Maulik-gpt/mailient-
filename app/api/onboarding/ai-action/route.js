@@ -126,7 +126,7 @@ export async function POST(request) {
                     };
                     result = {
                         type: 'reply',
-                        content: await aiService.generateDraftReply(emailContent, 'Opportunity', userContext, false, { timeout: 8000, model: 'google/gemini-2.0-flash-exp:free' })
+                        content: await aiService.generateDraftReply(emailContent, 'Opportunity', userContext, false, { timeout: 15000 })
                     };
                     break;
                 case 'ask':
