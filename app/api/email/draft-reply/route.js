@@ -1,5 +1,4 @@
-export const runtime = 'edge';
-export const preferredRegion = 'iad1'; // US East (N. Virginia) - lowest latency to OpenRouter
+// Draft Reply API Route - Optimized for Node.js Runtime
 
 import { AIConfig } from '@/lib/ai-config';
 import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service';
