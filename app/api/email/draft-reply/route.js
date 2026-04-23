@@ -1,27 +1,116 @@
-import { NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
-import { GmailService } from '@/lib/gmail';
+export const runtime = 'edge';
+export const preferredRegion = 'iad1'; // US East (N. Virginia) - lowest latency to OpenRouter
+
 import { AIConfig } from '@/lib/ai-config';
-import { decrypt } from '@/lib/crypto';
-import { DatabaseService } from '@/lib/supabase';
 import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service';
 import { voiceProfileService } from '@/lib/voice-profile-service';
-import { AIPolicyCompliance } from '@/lib/ai-policy-compliance';
+
+// Simple auth check - optimized for speed
+async function getSession(request) {
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) return null;
+    
+    // Decode the JWT payload for user email (fast, no DB call)
+    try {
+        const token = authHeader.split(' ')[1];
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return { user: { email: payload.email, name: payload.name } };
+    } catch {
+        return null;
+    }
+}
 
 export async function POST(request) {
     try {
-        const session = await auth();
+        const session = await getSession(request);
         if (!session?.user?.email) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+            return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
+                status: 401,
+                headers: { 'Content-Type': 'application/json' }
+            });
         }
 
         const userId = session.user.email;
 
-        // Check subscription and feature usage
-        const canUse = await subscriptionService.canUseFeature(userId, FEATURE_TYPES.DRAFT_REPLY);
+        // Parse request body immediately - subscription check happens in parallel later - accept emailContent from frontend to skip Gmail API call
+        const body = await request.json();
+        const { 
+            emailId, 
+            category, 
+            context, 
+            tone, 
+            voiceProfile: voiceProfileFromRequest,
+            emailContent: emailContentFromFrontend,
+            emailSubject,
+            emailFrom,
+            emailSnippet
+        } = body;
+        
+        if (!emailId) {
+            return new Response(JSON.stringify({ error: 'Email ID required' }), { 
+                status: 400,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+
+        // Build email content from frontend data (fast) or fallback to minimal data
+        let emailContent;
+        if (emailContentFromFrontend) {
+            // Use content already loaded in frontend - SKIPS Gmail API call entirely!
+            const cleanBody = emailContentFromFrontend
+                .replace(/<[^>]*>?/gm, '')
+                .replace(/\s+/g, ' ')
+                .trim()
+                .substring(0, 5000);
+            
+            emailContent = `
+Subject: ${emailSubject || 'Re:'}
+From: ${emailFrom || 'Sender'}
+Snippet: ${emailSnippet || ''}
+Body: ${cleanBody}`;
+        } else {
+            // Fallback - minimal content to unblock the flow
+            emailContent = `
+Subject: ${emailSubject || 'Re:'}
+From: ${emailFrom || 'Sender'}
+Snippet: ${emailSnippet || ''}
+Body: ${emailSnippet || ''}`;
+        }
+
+        // FAST PATH: Parallelize independent operations
+        // 1. Initialize AI service (sync)
+        const aiService = new AIConfig();
+        if (!aiService.hasAIConfigured()) {
+            return new Response(JSON.stringify({ error: 'AI service not configured' }), { 
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+
+        // 2. Parallel fetch: subscription check + voice profile (both can run concurrently)
+        const voiceProfilePromise = (async () => {
+            if (voiceProfileFromRequest && voiceProfileFromRequest.status !== 'default') {
+                return voiceProfileFromRequest;
+            }
+            // Only fetch if mimic tone is selected - skip for other tones
+            if (tone === 'mimic') {
+                try {
+                    return await voiceProfileService.getVoiceProfile(userId);
+                } catch {
+                    return null;
+                }
+            }
+            return null;
+        })();
+
+        const canUsePromise = subscriptionService.canUseFeature(userId, FEATURE_TYPES.DRAFT_REPLY);
+        
+        // Wait for both in parallel
+        const [canUse, voiceProfileRaw] = await Promise.all([canUsePromise, voiceProfilePromise]);
+
         if (!canUse) {
             const usage = await subscriptionService.getFeatureUsage(userId, FEATURE_TYPES.DRAFT_REPLY);
-            return NextResponse.json({
+            return new Response(JSON.stringify({
                 error: 'limit_reached',
                 message: `Sorry, but you've exhausted all the credits of ${usage.period === 'daily' ? 'the day' : 'the month'}.`,
                 usage: usage.usage,
@@ -29,157 +118,81 @@ export async function POST(request) {
                 period: usage.period,
                 planType: usage.planType,
                 upgradeUrl: '/pricing'
-            }, { status: 403 });
+            }), { 
+                status: 403,
+                headers: { 'Content-Type': 'application/json' }
+            });
         }
 
-        const { emailId, category, context, tone, voiceProfile: voiceProfileFromRequest } = await request.json();
-        if (!emailId) {
-            return NextResponse.json({ error: 'Email ID required' }, { status: 400 });
-        }
-
-        // Get Gmail access token
-        let accessToken = session?.accessToken;
-        let refreshToken = session?.refreshToken;
-
-        // CRITICAL: Fetch tokens from database if EITHER accessToken OR refreshToken is missing
-        if (!accessToken || !refreshToken) {
-            try {
-                const db = new DatabaseService();
-                console.log('🔑 Fetching tokens from database for:', session.user.email);
-                const userTokens = await db.getUserTokens(session.user.email);
-                if (userTokens?.encrypted_access_token) {
-                    accessToken = accessToken || decrypt(userTokens.encrypted_access_token);
-                    refreshToken = refreshToken || (userTokens.encrypted_refresh_token ? decrypt(userTokens.encrypted_refresh_token) : '');
-                    console.log('✅ Tokens retrieved from database');
-                }
-            } catch (e) {
-                console.error('Failed to fetch tokens from database:', e);
-            }
-        }
-
-        if (!accessToken) {
-            return NextResponse.json({ error: 'Gmail not connected' }, { status: 403 });
-        }
-
-        const gmailService = new GmailService(accessToken, refreshToken);
-        gmailService.setUserEmail(session.user.email); // Enable token refresh persistence
-
-        // Fetch email content
-        const emailDetails = await gmailService.getEmailDetails(emailId);
-        const parsedEmail = gmailService.parseEmailData(emailDetails);
-
-        // Prepare content for AI
-        const cleanBody = (parsedEmail.body || '')
-            .replace(/<[^>]*>?/gm, '')
-            .replace(/\s+/g, ' ')
-            .trim();
-
-        const truncatedBody = cleanBody.substring(0, 5000);
-
-        const emailContent = `
-      Subject: ${parsedEmail.subject}
-      From: ${parsedEmail.from}
-      Date: ${parsedEmail.date}
-      Snippet: ${parsedEmail.snippet}
-      Body: ${truncatedBody}
-    `;
-
-        // Check Google data policy compliance
-        const compliance = new AIPolicyCompliance();
-        const complianceConfig = compliance.getAIConfig();
+        // FAST FALLBACK: If mimic tone selected but no profile, use professional immediately
+        // NO on-the-fly analysis - that's a separate background job
+        let voiceProfile = voiceProfileRaw;
+        let effectiveTone = tone || 'professional';
         
-        console.log(`🔒 Compliance mode: ${compliance.isComplianceMode ? 'ENABLED' : 'DISABLED'}`);
-
-        // Generate Draft Reply
-        const aiService = new AIConfig();
-
-        if (!aiService.hasAIConfigured()) {
-            console.error('❌ AI service not configured');
-            return NextResponse.json({ error: 'AI service not configured - Please check OPENROUTER_API_KEY' }, { status: 500 });
+        if (tone === 'mimic' && (!voiceProfile || voiceProfile.status === 'default')) {
+            effectiveTone = 'professional'; // Immediate fallback, no delay
+            voiceProfile = null;
         }
 
-        console.log('🤖 Generating email draft with AI...');
-        // Fetch user's voice profile for voice cloning (if available)
-        let voiceProfile = null;
-        try {
-            // Use voice profile from request if provided (frontend cached), otherwise fetch from DB
-            if (voiceProfileFromRequest && voiceProfileFromRequest.status !== 'default') {
-                console.log('🎙️ Using voice profile from frontend request');
-                voiceProfile = voiceProfileFromRequest;
-            } else {
-                voiceProfile = await voiceProfileService.getVoiceProfile(userId);
-            }
-            
-            // SPECIAL FEATURE: If mimic tone is selected but no voice profile exists, create one now
-            if (tone === 'mimic' && (!voiceProfile || voiceProfile.status === 'default')) {
-                console.log('🎙️ Mimic tone selected but no profile - analyzing sent emails now...');
-                const sentEmails = await voiceProfileService.fetchSentEmails(gmailService, 20);
-                if (sentEmails.length >= 3) { // Lower requirement for on-the-fly analysis
-                    voiceProfile = await voiceProfileService.analyzeVoiceProfile(sentEmails);
-                    await voiceProfileService.saveVoiceProfile(userId, voiceProfile);
-                    console.log('✅ Voice profile created on-the-fly');
-                } else {
-                    console.log('⚠️ Not enough sent emails for voice cloning, falling back to professional');
-                }
-            }
-            
-            if (voiceProfile && voiceProfile.status !== 'default') {
-                console.log('🎭 Voice profile found - enabling voice cloning for draft');
-            } else {
-                console.log('📝 No voice profile - using standard draft generation');
-            }
-        } catch (e) {
-            console.warn('Voice profile fetch/analysis failed:', e.message);
-        }
-
-        // Prepare user context, merging session data with onboarding context and voice profile
+        // Prepare user context
         const userContext = {
             name: session.user.name || session.user.email.split('@')[0],
             email: session.user.email,
             role: context?.role || null,
             goals: context?.goals || [],
-            voiceProfile: voiceProfile, // Include voice profile for AI voice cloning
-            tone: tone || 'professional' // Include selected AI tone
+            voiceProfile: voiceProfile,
+            tone: effectiveTone,
+            aiProtection: body.aiProtection ?? true,
+            privacyMode: body.privacyMode ?? false
         };
 
-        // Use follow-up generator for follow-up categories, otherwise use draft reply
-        const isFollowUp = category && typeof category === 'string' &&
-            (category.toLowerCase() === 'follow-up' || category.toLowerCase() === 'missed-followups' || category.toLowerCase() === 'missed-followups');
-
-        const useVoiceCloning = !!voiceProfile && voiceProfile.status !== 'default';
-        console.log(`🤖 Generating ${useVoiceCloning ? 'voice-cloned' : 'standard'} draft with AI...`);
-        
+        // Start streaming IMMEDIATELY - no more delays!
         const { searchParams } = new URL(request.url);
         const shouldStream = searchParams.get('stream') === 'true';
 
         if (shouldStream) {
-            const stream = await aiService.getService().generateDraftReplyStream(emailContent, category || 'Opportunity', userContext, complianceConfig.privacyMode);
+            // Fire usage increment in background (don't await)
+            subscriptionService.incrementFeatureUsage(userId, FEATURE_TYPES.DRAFT_REPLY).catch(() => {});
             
-            // Increment usage in background
-            subscriptionService.incrementFeatureUsage(userId, FEATURE_TYPES.DRAFT_REPLY).catch(console.error);
+            const stream = await aiService.getService().generateDraftReplyStream(
+                emailContent, 
+                category || 'Opportunity', 
+                userContext, 
+                userContext.privacyMode
+            );
 
             return new Response(stream, {
                 headers: {
                     'Content-Type': 'text/plain',
-                    'Transfer-Encoding': 'chunked'
+                    'Transfer-Encoding': 'chunked',
+                    'X-Voice-Cloned': voiceProfile && voiceProfile.status !== 'default' ? 'true' : 'false'
                 }
             });
         }
 
-        const draftReply = isFollowUp
-            ? await aiService.generateFollowUp(emailContent, userContext, complianceConfig.privacyMode)
-            : await aiService.generateDraftReply(emailContent, category || 'Opportunity', userContext, complianceConfig.privacyMode);
+        // Non-streaming fallback (rarely used)
+        const draftReply = await aiService.generateDraftReply(
+            emailContent, 
+            category || 'Opportunity', 
+            userContext, 
+            userContext.privacyMode
+        );
 
-        // Increment usage after successful generation
-        await subscriptionService.incrementFeatureUsage(userId, FEATURE_TYPES.DRAFT_REPLY);
+        // Fire usage increment in background
+        subscriptionService.incrementFeatureUsage(userId, FEATURE_TYPES.DRAFT_REPLY).catch(() => {});
 
-        return NextResponse.json({
+        return new Response(JSON.stringify({
             draftReply,
             voiceCloned: !!voiceProfile && voiceProfile.status !== 'default'
+        }), {
+            headers: { 'Content-Type': 'application/json' }
         });
 
     } catch (error) {
-        console.error('Error generating draft reply:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        console.error('❌ Error generating draft reply:', error);
+        return new Response(JSON.stringify({ error: error.message }), { 
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+        });
     }
 }

@@ -857,25 +857,33 @@ export function GmailInterfaceFixed() {
         setShowDraftEditor(true);
         setDraftContent('');
 
-        // Get the email to reply to and set the "To" field
+        // Get the email to reply to (already loaded in frontend - skip Gmail API call!)
         const email = selectedInsight?.source_emails?.find(e => e.id === emailId);
         if (email) {
-            setDraftTo(email.sender.email); // Set recipient email
-            setDraftSubject(email.subject || 'Reply'); // Use original subject without "Re:" prefix
+            setDraftTo(email.sender.email);
+            setDraftSubject(email.subject || 'Reply');
             setDraftOriginalEmailBody(email.body || email.snippet || '');
         }
-
+        
         try {
             const response = await fetch('/api/email/draft-reply?stream=true', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session?.accessToken || ''}`
+                },
                 body: JSON.stringify({
                     emailId,
                     category,
                     tone: settings.aiTone,
                     aiProtection: settings.aiProtection,
                     privacyMode: settings.privacyMode,
-                    voiceProfile: userVoiceProfile
+                    voiceProfile: userVoiceProfile,
+                    // Pass email content directly - skips Gmail API call!
+                    emailContent: email?.body || email?.snippet || '',
+                    emailSubject: email?.subject || 'Re:',
+                    emailFrom: email?.sender?.email || email?.sender?.name || '',
+                    emailSnippet: email?.snippet || ''
                 })
             });
 
