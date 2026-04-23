@@ -269,7 +269,7 @@ function formatEmailActionResult(result: any) {
         const senderName = fromMatch ? fromMatch[1].trim() : (email.from ? email.from.split('<')[0].trim() : 'Unknown');
         const senderEmail = fromMatch ? fromMatch[2] : (email.from ? email.from : '');
 
-        context += `Email ${index + 1}:\n`;
+        context += `[Email ${index + 1}]\n`;
         context += `  ID: ${email.id || 'N/A'}\n`;
         context += `  From: ${senderName}${senderEmail ? ` <${senderEmail}>` : ''}\n`;
         context += `  Subject: ${email.subject || '(No Subject)'}\n`;
@@ -423,7 +423,7 @@ async function getEmailContext(userMessage: string, userEmail: string) {
 
     // Format comprehensive email context for Sift AI intelligence extraction
     const contextLines = emailDetails.map((email, index) => {
-      let emailInfo = `Email ${index + 1}:\n`;
+      let emailInfo = `[Email ${index + 1}]\n`;
       emailInfo += `  ID: ${email.id}\n`;
       emailInfo += `  From: ${email.senderName}${email.senderEmail ? ` <${email.senderEmail}>` : ''}\n`;
       emailInfo += `  To: ${email.to || 'N/A'}\n`;

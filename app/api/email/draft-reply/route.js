@@ -3,27 +3,13 @@
 import { AIConfig } from '@/lib/ai-config';
 import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service';
 import { voiceProfileService } from '@/lib/voice-profile-service';
-
-// Simple auth check - optimized for speed
-async function getSession(request) {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) return null;
-    
-    // Decode the JWT payload for user email (fast, no DB call)
-    try {
-        const token = authHeader.split(' ')[1];
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        return { user: { email: payload.email, name: payload.name } };
-    } catch {
-        return null;
-    }
-}
+import { auth } from '@/lib/auth.js';
 
 export async function POST(request) {
     try {
-        const session = await getSession(request);
+        const session = await auth();
         if (!session?.user?.email) {
-            return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
+            return new Response(JSON.stringify({ error: 'Unauthorized' }), {
                 status: 401,
                 headers: { 'Content-Type': 'application/json' }
             });
