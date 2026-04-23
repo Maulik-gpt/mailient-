@@ -148,6 +148,24 @@ export async function POST(request) {
 
         const useVoiceCloning = !!voiceProfile && voiceProfile.status !== 'default';
         console.log(`🤖 Generating ${useVoiceCloning ? 'voice-cloned' : 'standard'} draft with AI...`);
+        
+        const { searchParams } = new URL(request.url);
+        const shouldStream = searchParams.get('stream') === 'true';
+
+        if (shouldStream) {
+            const stream = await aiService.getService().generateDraftReplyStream(emailContent, category || 'Opportunity', userContext, complianceConfig.privacyMode);
+            
+            // Increment usage in background
+            subscriptionService.incrementFeatureUsage(userId, FEATURE_TYPES.DRAFT_REPLY).catch(console.error);
+
+            return new Response(stream, {
+                headers: {
+                    'Content-Type': 'text/plain',
+                    'Transfer-Encoding': 'chunked'
+                }
+            });
+        }
+
         const draftReply = isFollowUp
             ? await aiService.generateFollowUp(emailContent, userContext, complianceConfig.privacyMode)
             : await aiService.generateDraftReply(emailContent, category || 'Opportunity', userContext, complianceConfig.privacyMode);

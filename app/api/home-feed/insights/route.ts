@@ -238,7 +238,8 @@ export async function GET(request: Request) {
       uniqueIds,
       async (id: string): Promise<EmailDetail | null> => {
         try {
-          const details = await gmailService.getEmailDetails(id);
+          // OPTIMIZATION: Use 'metadata' format to get headers and snippets without heavy bodies
+          const details = await gmailService.getEmailDetails(id, 'metadata');
           const parsed = gmailService.parseEmailData(details);
           const email: EmailDetail = {
             id: parsed.id,
