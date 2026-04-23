@@ -137,7 +137,7 @@ export default function SiftOnboardingPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session, status } = useSession();
-  const { settings, updateSetting } = useDashboardSettings();
+  const { } = useDashboardSettings();
   const [currentStep, setCurrentStep] = useState(() => {
     const stepFromUrl = searchParams?.get('step');
     return stepFromUrl ? parseInt(stepFromUrl, 10) : 0;
@@ -694,7 +694,7 @@ export default function SiftOnboardingPage() {
             </div>
             <div className="flex justify-center pt-8">
               <LiquidButton onClick={handleNext} className="h-14 px-12 text-white font-bold">
-                Continue to Delegations
+                Continue to Hand Offs
               </LiquidButton>
             </div>
           </motion.div>
@@ -706,7 +706,7 @@ export default function SiftOnboardingPage() {
           <motion.div key="step-4" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="max-w-4xl mx-auto px-6 w-full space-y-12 pb-20">
             <div className="text-center space-y-4">
               <h2 className="text-4xl font-medium text-white">The Immediate Win</h2>
-              <p className="text-zinc-500">Here are 3 emails you can delegate right now.</p>
+              <p className="text-zinc-500">Here are 3 emails you can hand off right now.</p>
             </div>
 
             <div className="space-y-6">
@@ -989,7 +989,7 @@ function DelegationRow({ email, loading, sent, onSend, onAction, result, actionL
             onClick={onAction}
             className="w-full h-14 text-white text-xs font-black uppercase tracking-widest"
           >
-            {actionLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Delegate with mailient.xyz"}
+            {actionLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Hand Off to AI"}
           </LiquidButton>
         )}
       </div>
