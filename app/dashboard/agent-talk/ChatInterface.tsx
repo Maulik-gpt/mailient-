@@ -547,6 +547,8 @@ export default function ChatInterface({
     isUnlimited?: boolean;
   } | null>(null);
 
+  const canvasResolversRef = useRef<Record<number, (approved: boolean) => void>>({});
+
   const handleAcceptCanvas = useCallback((msgId: number) => {
     setMessages(prev => prev.map(m => {
       if (m.id === msgId && m.type === 'agent') {
@@ -568,6 +570,12 @@ export default function ChatInterface({
       }
       return m;
     }));
+    
+    if (canvasResolversRef.current[msgId]) {
+      canvasResolversRef.current[msgId](true);
+      delete canvasResolversRef.current[msgId];
+    }
+    
     toast.success('Mission accepted', { description: 'Opening Arcus Workspace...' });
   }, []);
 
@@ -587,6 +595,12 @@ export default function ChatInterface({
       }
       return m;
     }));
+    
+    if (canvasResolversRef.current[msgId]) {
+      canvasResolversRef.current[msgId](false);
+      delete canvasResolversRef.current[msgId];
+    }
+    
     toast.info('Mission declined', { description: 'Continuing in chat mode.' });
   }, []);
 
@@ -946,6 +960,8 @@ export default function ChatInterface({
           setLiveThinkingBlocks(blocks);
 
           // --- Trigger Arcus Workspace Approval Step ---
+          let userApprovedCanvas = isCanvas;
+          
           if (intentData.needsCanvas === true || isCanvas) {
             const canvasInitialData = {
               type: 'workflow' as const,
@@ -976,7 +992,18 @@ export default function ChatInterface({
               }
               return m;
             }));
+
+            if (!isCanvas && !isPlanMode) {
+              setIsLoading(false);
+              userApprovedCanvas = await new Promise<boolean>((resolve) => {
+                canvasResolversRef.current[assistantMsgId] = resolve;
+              });
+              setIsLoading(true);
+            }
           }
+          
+          // Attach the approval state to requestBody for Phase II
+          requestBody.isCanvas = requestBody.isCanvas || userApprovedCanvas;
         }
 
       }
