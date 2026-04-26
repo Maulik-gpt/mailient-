@@ -315,19 +315,8 @@ const THINKING_MESSAGES = ["Thinking", "Processing", "Analyzing", "Synthesizing"
 const DEEP_THINKING_MESSAGES = ["Thinking deep", "Reasoning", "Simulating outcomes", "Analyzing layers", "Synthesizing deep context", "Architecting solution", "Deeply processing", "Refining logic"];
 
 function RollingThinkingStatus({ onToggle, isOpen, isDeepThinking }: { onToggle: () => void, isOpen: boolean, isDeepThinking?: boolean }) {
-  const [elapsed, setElapsed] = useState(0);
   const [index, setIndex] = useState(0);
   const messages = isDeepThinking ? DEEP_THINKING_MESSAGES : THINKING_MESSAGES;
-
-  useEffect(() => {
-    let timer: any;
-    if (!isOpen) {
-      timer = setInterval(() => {
-        setElapsed(prev => prev + 1);
-      }, 1000);
-    }
-    return () => clearInterval(timer);
-  }, [isOpen]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -337,21 +326,20 @@ function RollingThinkingStatus({ onToggle, isOpen, isDeepThinking }: { onToggle:
   }, [index, isDeepThinking, messages.length]);
 
   return (
-    <div className="flex items-center justify-between w-full group/status cursor-pointer select-none" onClick={onToggle}>
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-2 px-1">
-          <TextShimmer className="text-[14px] font-medium tracking-tight text-black dark:text-white/90" duration={1.5}>
-            {`Thinking for ${elapsed}s`}
-          </TextShimmer>
-        </div>
-      </div>
-
-      <div className={`p-1 rounded-md transition-all duration-300 ${isOpen ? 'bg-black/10 dark:bg-white/10 text-black dark:text-white' : 'text-black dark:text-white/20 group-hover/status:text-black dark:group-hover/status:text-white/50'}`}>
-        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-500 cubic-bezier(0.4, 0, 0.2, 1) ${isOpen ? 'rotate-180' : ''}`} />
-      </div>
+    <div className="flex items-center gap-2 group/status cursor-pointer select-none py-1" onClick={onToggle}>
+      <motion.span 
+        className="text-[14px] font-bold tracking-tight bg-[linear-gradient(110deg,#666,35%,#fff,50%,#666,75%,#666)] bg-[length:200%_100%] bg-clip-text text-transparent"
+        initial={{ backgroundPosition: "200% 0" }}
+        animate={{ backgroundPosition: "-200% 0" }}
+        transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+      >
+        {messages[index]}
+      </motion.span>
+      <ChevronDown className={cn("w-3.5 h-3.5 text-black/20 dark:text-white/20 transition-transform duration-500", isOpen ? "rotate-180" : "")} />
     </div>
   );
 }
+
 
 interface ChatInterfaceProps {
   initialConversationId?: string | null;
@@ -460,10 +448,11 @@ export default function ChatInterface({
 
   // Arcus V2 State
   const [activeMission, setActiveMission] = useState<any>(null);
+  const [liveThinkingBlocks, setLiveThinkingBlocks] = useState<ThinkingBlock[]>([]);
+  const [currentThought, setCurrentThought] = useState<string | undefined>(undefined);
   const [pendingReplyProposal, setPendingReplyProposal] = useState<any>(null);
 
   // Live thinking state (AI-generated, shown during loading)
-  const [liveThinkingBlocks, setLiveThinkingBlocks] = useState<ThinkingBlock[]>([]);
   const [searchSessions, setSearchSessions] = useState<SearchSession[]>([]);
 
   // ... (inside the component)
@@ -944,12 +933,12 @@ export default function ChatInterface({
         if (rawBlocks && rawBlocks.length > 0 && !isDeepThinking) {
           const blocks = rawBlocks.map((b: any) => ({
             ...b,
-            status: 'pending' as const,
+            status: 'active' as const,
             steps: b.steps.map((s: any, idx: number) => ({
               ...s,
               id: `${b.id}-step-${idx}`,
               label: s.action || s.label,
-              status: 'pending' as const,
+              status: idx === 0 ? 'active' as const : 'pending' as const,
               type: s.type || 'think'
             }))
           }));
@@ -988,61 +977,8 @@ export default function ChatInterface({
               return m;
             }));
           }
-
-          for (let bIndex = 0; bIndex < blocks.length; bIndex++) {
-            // Update Block status to active in both Chat and Canvas
-            setLiveThinkingBlocks(prev => prev.map((b, i) => i === bIndex ? { ...b, status: 'active' } : b));
-            setCanvasData(prev => {
-              if (prev?.type === 'workflow') {
-                const newSteps = prev.content.steps.map((s: any, i: number) => ({
-                  ...s,
-                  status: i === bIndex ? 'active' as const : s.status
-                }));
-                return { ...prev, content: { ...prev.content, steps: newSteps } };
-              }
-              return prev;
-            });
-
-            const stepsCount = blocks[bIndex].steps.length;
-            for (let sIndex = 0; sIndex < stepsCount; sIndex++) {
-              setLiveThinkingBlocks(prev => prev.map((b, i) => {
-                if (i === bIndex) {
-                  const newSteps = b.steps.map((s, si) => ({
-                    ...s,
-                    status: si < sIndex ? 'completed' as const : si === sIndex ? 'active' as const : 'pending' as const
-                  }));
-                  return { ...b, steps: newSteps };
-                }
-                return b;
-              }));
-
-              if (sIndex < stepsCount - 1 || bIndex < blocks.length - 1) {
-                await new Promise(r => setTimeout(r, 600));
-              }
-            }
-
-          }
-
-          // --- Deliberate Final Synthesis (Breathing Room) ---
-          setLiveThinkingBlocks(prev => prev.map(b => ({
-            ...b,
-            status: 'completed',
-            steps: b.steps.map(s => ({ ...s, status: 'completed' }))
-          })));
-
-          const synthesisMessageId = Date.now() + 5;
-          setLiveThinkingBlocks(prev => [...prev, {
-            id: 'synthesis-block',
-            title: 'Completing synthesis',
-            status: 'active',
-            initialContext: 'Aggregating all findings and finalizing the optimal response...',
-            steps: [
-              { id: 'synth-1', label: 'Formatting final output', status: 'active', type: 'think' }
-            ]
-          }]);
-
-          await new Promise(r => setTimeout(r, 600));
         }
+
       }
 
       // --- PHASE II: Main Execution & Chat Result ---
@@ -2169,11 +2105,18 @@ export default function ChatInterface({
         if (cancelled) return;
 
         if (Array.isArray(data.steps) && data.steps.length > 0) {
+          const activeStep = data.steps.find((s: any) => s.status === 'active' || s.status === 'blocked_approval');
+          if (activeStep?.label) {
+            setCurrentThought(activeStep.label);
+          } else if (data.run?.status === 'complete') {
+            setCurrentThought('Objective successfully fulfilled.');
+          }
+
           setLiveThinkingBlocks([{
             id: 'running-mission',
-            title: 'Strategic mission execution',
+            title: data.run?.phase === 'research' ? 'Deep information retrieval' : data.run?.phase === 'execution' ? 'Executing strategic actions' : 'Processing mission data',
             status: 'active',
-            initialContext: 'Processing live telemetry and execution steps from Arcus...',
+            initialContext: data.run?.status === 'complete' ? 'Mission finalized and insights synthesized.' : 'Interpreting live telemetry and orchestrating agentic steps...',
             steps: data.steps.map((s: any) => ({
               id: s.id || `step-${s.order}`,
               label: s.label || `Step ${s.order}`,
@@ -2624,7 +2567,7 @@ export default function ChatInterface({
                                   )}
 
                                   {msg.role === 'assistant' && msg.meta?.thinkingBlocks && (
-                                    <div className="mt-4 border-t border-neutral-200 dark:border-white/5 pt-3 px-1">
+                                    <div className="mt-2 px-1">
                                       <ThinkingLayer
                                         blocks={msg.meta.thinkingBlocks}
                                         isVisible={true}
@@ -2829,14 +2772,12 @@ export default function ChatInterface({
                                     }}
                                     className="overflow-hidden px-1 ml-1"
                                   >
-                                    <div className="mb-2 flex items-center gap-2 opacity-30 select-none">
-                                      <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                                      <span className="text-[10px] font-bold tracking-widest uppercase">Live Activity</span>
-                                    </div>
+
                                     <ThinkingLayer
                                       blocks={liveThinkingBlocks}
                                       isVisible={true}
                                       isGenerating={isLoading}
+                                      currentThought={currentThought}
                                       searchSessions={searchSessions}
                                     />
                                   </motion.div>
