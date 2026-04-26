@@ -981,6 +981,9 @@ export default function ChatInterface({
 
       }
 
+      // --- THROTTLE: Prevent bursting back-to-back AI calls to respect OpenRouter rate limits ---
+      await new Promise(r => setTimeout(r, 1200));
+
       // --- PHASE II: Main Execution & Chat Result ---
       const chatRes = await fetch('/api/agent-talk/chat-arcus', {
         method: 'POST',
