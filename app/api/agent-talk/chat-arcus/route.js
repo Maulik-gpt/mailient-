@@ -1400,9 +1400,8 @@ async function executeEmailAction(userMessage, userEmail, session, providedAcces
     let query = 'newer_than:15d';
     let maxResults = 10;
     
-    const aiSearchStep = intentAnalysis?.plan?.find(s => s.type === 'search' || s.action?.toLowerCase().includes('search'));
-    if (aiSearchStep?.description && aiSearchStep.description.length > 5) {
-      query = aiSearchStep.description;
+    if (intentAnalysis?.searchQuery && intentAnalysis.searchQuery.length > 5 && intentAnalysis.searchQuery.toLowerCase() !== 'none') {
+      query = intentAnalysis.searchQuery;
       if (!query.includes('newer_than') && !query.includes('after:')) {
         query += ' newer_than:15d';
       }
