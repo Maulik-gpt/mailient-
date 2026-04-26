@@ -1125,9 +1125,14 @@ function enrichCanvasData({ canvasData, message, canvasType, requiresApproval, r
     },
     summary: {
       title: 'Inbox Summary',
-      keyPoints: ['Summary prepared from available context'],
-      actionItems: ['Review in canvas and choose the next action'],
-      urgency: 'medium'
+      items: [
+        {
+          subject: 'No explicit data extracted',
+          sender: 'Arcus',
+          summary: 'The requested information was processed, but a detailed email summary could not be generated from the context. Please try refining your request.',
+          priority: 'medium'
+        }
+      ]
     },
     research: {
       title: 'Inbox Research',
