@@ -45,7 +45,9 @@ export class SchedulingAIService {
                 });
 
                 if (response.status === 429) {
-                    console.warn(`⚠️ Model ${model} rate limited, trying next...`);
+                    const retryDelay = 1000 + Math.random() * 1000;
+                    console.warn(`⚠️ Model ${model} rate limited, backing off ${retryDelay.toFixed(0)}ms before trying next...`);
+                    await new Promise(resolve => setTimeout(resolve, retryDelay));
                     continue;
                 }
 
