@@ -944,7 +944,7 @@ export default function ChatInterface({
           ? intentData.thinkingBlocks
           : buildFallbackThinkingBlocks(messageText);
 
-        if (rawBlocks && rawBlocks.length > 0 && !isDeepThinking) {
+        if (rawBlocks && rawBlocks.length > 0) {
           const blocks = rawBlocks.map((b: any) => ({
             ...b,
             status: 'active' as const,
