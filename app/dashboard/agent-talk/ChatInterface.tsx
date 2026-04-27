@@ -499,6 +499,7 @@ export default function ChatInterface({
   // Canvas Panel state
   const [isCanvasOpen, setIsCanvasOpen] = useState(false);
   const [feedbackModal, setFeedbackModal] = useState<{isOpen: boolean, type: 'like' | 'dislike', msgId: string | number | null}>({isOpen: false, type: 'like', msgId: null});
+  const [showScrollButton, setShowScrollButton] = useState(false);
   const [canvasData, setCanvasData] = useState<CanvasData | null>(null);
   const [isCanvasExecuting, setIsCanvasExecuting] = useState(false);
   const [activeRun, setActiveRun] = useState<{ runId: string; status?: string; phase?: string } | null>(null);
@@ -1817,6 +1818,22 @@ export default function ChatInterface({
     }
   }, [initialConversationId, isInitialMode]);
 
+  const handleScroll = () => {
+    if (scrollContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
+      const isAtBottom = scrollHeight - scrollTop - clientHeight < 200;
+      setShowScrollButton(!isAtBottom);
+    }
+  };
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (container) {
+      container.addEventListener('scroll', handleScroll);
+      return () => container.removeEventListener('scroll', handleScroll);
+    }
+  }, []);
+
   const scrollToBottom = (instant = false) => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({
@@ -2873,6 +2890,25 @@ export default function ChatInterface({
                     )}
                   </div>
                 </div>
+
+                {/* Scroll to Bottom Button */}
+                <AnimatePresence>
+                  {showScrollButton && !isInitialMode && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.9 }}
+                      className="absolute bottom-32 right-8 z-50"
+                    >
+                      <button
+                        onClick={() => scrollToBottom(false)}
+                        className="w-10 h-10 bg-[#1a1a1a] border border-white/10 rounded-full flex items-center justify-center text-white/60 hover:text-white hover:bg-[#222] transition-all shadow-2xl group"
+                      >
+                        <ChevronDown className="w-5 h-5 group-hover:translate-y-0.5 transition-transform" />
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 {/* Fixed Prompt Box for Conversation Mode */}
                 {!isInitialMode && (
