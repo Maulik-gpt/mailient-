@@ -1104,7 +1104,7 @@ export default function ChatInterface({
     }).join('\\n');
   };
 
-  const processAIMessage = async (messageText: string, conversationIdToUse: string, isNew: boolean, attachments?: any[], options?: { isDeepThinking?: boolean; isCanvas?: boolean; isSearch?: boolean; isPlanMode?: boolean }) => {
+  const processAIMessage = async (messageText: string, conversationIdToUse: string, isNew: boolean, attachments?: any[], options?: { isDeepThinking?: boolean; isCanvas?: boolean; isSearch?: boolean; isPlanMode?: boolean; modelId?: string }) => {
     // Create new abort controller for this request
     if (abortControllerRef.current) abortControllerRef.current.abort();
     abortControllerRef.current = new AbortController();
@@ -1188,7 +1188,8 @@ export default function ChatInterface({
         isDeepThinking,
         isCanvas,
         isSearch,
-        isPlanMode
+        isPlanMode,
+        modelId: options?.modelId
       };
 
       // --- PHASE I: Fast Intent Analysis (AI-Driven Assessment) ---
@@ -2184,7 +2185,7 @@ export default function ChatInterface({
     return conversations;
   };
 
-  const handleSend = async (forcedMessage?: string, files?: File[], options?: { isDeepThinking?: boolean; isCanvas?: boolean; isSearch?: boolean; isPlanMode?: boolean }) => {
+  const handleSend = async (forcedMessage?: string, files?: File[], options?: { isDeepThinking?: boolean; isCanvas?: boolean; isSearch?: boolean; isPlanMode?: boolean; modelId?: string }) => {
     const messageText = (forcedMessage || message).trim();
     if (!messageText && (!files || files.length === 0)) return;
 
@@ -2290,7 +2291,7 @@ export default function ChatInterface({
     }
 
     // Process the AI message directly - don't rely on navigation/loadConversation
-    processAIMessage(messageText, conversationIdToUse as string, shouldCreateNewConversation, attachments, { isDeepThinking, isCanvas, isSearch, isPlanMode });
+    processAIMessage(messageText, conversationIdToUse as string, shouldCreateNewConversation, attachments, { isDeepThinking, isCanvas, isSearch, isPlanMode, modelId: options?.modelId });
   };
 
 
@@ -2808,6 +2809,17 @@ export default function ChatInterface({
                             suggestionInput={suggestionInput}
                             showConnectBanner={true}
                             onConnectClick={() => setIsIntegrationsModalOpen(true)}
+                            currentPlan={currentPlan || 'free'}
+                            onUpgradeClick={() => {
+                              setUsageLimitModalData({
+                                featureName: 'Premium Models',
+                                currentUsage: 0,
+                                limit: 0,
+                                period: 'monthly',
+                                currentPlan: currentPlan || 'starter'
+                              });
+                              setIsUsageLimitModalOpen(true);
+                            }}
                           />
                         </div>
 
@@ -3256,6 +3268,17 @@ export default function ChatInterface({
                         selectedEmailsCount={selectedEmails.length}
                         suggestionInput={suggestionInput}
                         onConnectClick={() => setIsIntegrationsModalOpen(true)}
+                        currentPlan={currentPlan || 'free'}
+                        onUpgradeClick={() => {
+                          setUsageLimitModalData({
+                            featureName: 'Premium Models',
+                            currentUsage: 0,
+                            limit: 0,
+                            period: 'monthly',
+                            currentPlan: currentPlan || 'starter'
+                          });
+                          setIsUsageLimitModalOpen(true);
+                        }}
                       />
                     </div>
                   </div>

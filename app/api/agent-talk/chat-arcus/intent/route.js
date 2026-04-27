@@ -15,13 +15,13 @@ export async function POST(request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { message, conversationId = null, runId = null, attachments = [], isPlanMode = false } = await request.json();
+        const { message, conversationId = null, runId = null, attachments = [], isPlanMode = false, modelId } = await request.json();
         if (!message) {
             return NextResponse.json({ error: 'Message required' }, { status: 400 });
         }
 
         const db = new DatabaseService();
-        const arcusAI = new ArcusAIService();
+        const arcusAI = new ArcusAIService({ modelId });
         const runtime = new ArcusOperatorRuntime({
             db,
             arcusAI,

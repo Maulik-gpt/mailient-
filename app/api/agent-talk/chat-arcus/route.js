@@ -45,7 +45,8 @@ export async function POST(request) {
       isDeepThinking,
       isCanvas,
       isPlanMode,
-      intentAnalysis: frontendIntentAnalysis
+      intentAnalysis: frontendIntentAnalysis,
+      modelId
     } = await request.json();
 
     console.log('🚀 Arcus Chat request received:', message?.substring?.(0, 80));
@@ -157,7 +158,7 @@ export async function POST(request) {
     console.log('📝 Loaded conversation history:', conversationHistory.length, 'messages');
 
     // Initialize AI Services
-    const arcusAI = new ArcusAIService();
+    const arcusAI = new ArcusAIService({ modelId });
     const operatorRuntime = new ArcusOperatorRuntime({ db, arcusAI, userEmail });
     const planModeEngine = new PlanModeEngine({ db, arcusAI });
     const operatorRuntimeEnabled = isFeatureEnabled('arcusOperatorRuntimeV1');

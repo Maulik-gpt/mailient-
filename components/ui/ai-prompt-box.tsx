@@ -453,7 +453,7 @@ const formatFileSize = (bytes: number) => {
 
 // Main PromptInputBox Component
 interface PromptInputBoxProps {
-  onSend?: (message: string, files?: File[], options?: { isDeepThinking?: boolean; isCanvas?: boolean; isSearch?: boolean; isPlanMode?: boolean }) => void;
+  onSend?: (message: string, files?: File[], options?: { isDeepThinking?: boolean; isCanvas?: boolean; isSearch?: boolean; isPlanMode?: boolean; modelId?: string }) => void;
   onStop?: () => void;
   isLoading?: boolean;
   placeholder?: string;
@@ -467,11 +467,22 @@ interface PromptInputBoxProps {
   onModeChange?: (mode: 'agent' | 'plan') => void;
   showConnectBanner?: boolean;
   onConnectClick?: () => void;
+  currentPlan?: 'free' | 'starter' | 'pro' | 'none';
+  onUpgradeClick?: () => void;
 }
 
 const MODES = [
   { id: 'agent', label: 'Agent', icon: Infinity, description: 'Autonomous agent for complex workflows' },
   { id: 'plan', label: 'Plan', icon: Workflow, description: 'Create detailed plans for accomplishing tasks' },
+] as const;
+
+export const AI_MODELS = [
+  { id: 'liquid/lfm-2.5-1.2b-thinking:free', name: 'Liquid', tier: 'free', icon: BrainCog },
+  { id: 'openai/gpt-4.5', name: 'GPT 4.5', tier: 'starter', icon: Sparkles },
+  { id: 'anthropic/claude-opus-4.6', name: 'Opus 4.6', tier: 'starter', icon: MessageSquare },
+  { id: 'google/gemini-3.1-pro', name: 'Gemini 3.1', tier: 'starter', icon: Globe },
+  { id: 'openai/gpt-5.5', name: 'GPT 5.5', tier: 'pro', icon: Sparkles, isFlagship: true },
+  { id: 'anthropic/claude-opus-4.7', name: 'Opus 4.7', tier: 'pro', icon: MessageSquare, isFlagship: true },
 ] as const;
 
 type AgentMode = typeof MODES[number]['id'];
@@ -497,6 +508,8 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
   const [isFocused, setIsFocused] = React.useState(false);
   const [activeMode, setActiveMode] = React.useState<AgentMode>(props.activeMode || 'agent');
   const [isModeMenuOpen, setIsModeMenuOpen] = React.useState(false);
+  const [activeModelId, setActiveModelId] = React.useState<string>(AI_MODELS[0].id);
+  const [isModelMenuOpen, setIsModelMenuOpen] = React.useState(false);
   const [isDismissedConnectBanner, setIsDismissedConnectBanner] = React.useState(false);
   const [integrationStatuses, setIntegrationStatuses] = React.useState<Record<string, boolean>>({});
 
@@ -614,7 +627,8 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
         isDeepThinking: activeMode === 'plan',
         isCanvas: activeMode === 'plan',
         isSearch: activeMode === 'agent',
-        isPlanMode: activeMode === 'plan'
+        isPlanMode: activeMode === 'plan',
+        modelId: activeModelId
       });
       setInput("");
       setFiles([]);
@@ -834,6 +848,84 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                 )}
               </AnimatePresence>
             </div>
+
+            <div className="h-4 w-[1px] bg-white/10 mx-1" />
+
+            {/* Model Selector Dropdown */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  if (props.currentPlan === 'free' || !props.currentPlan) {
+                    props.onUpgradeClick?.();
+                  } else {
+                    setIsModelMenuOpen(!isModelMenuOpen);
+                  }
+                }}
+                className={cn(
+                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border transition-all font-bold",
+                  (props.currentPlan === 'free' || !props.currentPlan)
+                    ? "bg-black/5 dark:bg-white/5 border-transparent text-black/40 dark:text-white/40 grayscale"
+                    : "bg-black/[0.05] dark:bg-white/5 border-black/5 dark:border-white/10 hover:bg-black/10 dark:hover:bg-white/10 hover:border-black/10 dark:hover:border-white/20 text-[#3b82f6]"
+                )}
+              >
+                {React.createElement(AI_MODELS.find(m => m.id === activeModelId)?.icon || BrainCog, { className: "w-3.5 h-3.5" })}
+                <span className="text-[12px] tracking-tight">{AI_MODELS.find(m => m.id === activeModelId)?.name || 'Model'}</span>
+                <ChevronDown className={cn("w-3 h-3 transition-transform", isModelMenuOpen && "rotate-180")} />
+              </button>
+
+              <AnimatePresence>
+                {isModelMenuOpen && (props.currentPlan === 'starter' || props.currentPlan === 'pro') && (
+                  <>
+                    <div className="fixed inset-0 z-[60]" onClick={() => setIsModelMenuOpen(false)} />
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      className="absolute bottom-full left-0 mb-2 w-64 bg-neutral-50 dark:bg-[#1a1a1a] border border-white/10 rounded-2xl shadow-2xl z-[70] overflow-hidden p-1.5"
+                    >
+                      {AI_MODELS.map((model) => {
+                        const isLocked = model.tier === 'pro' && props.currentPlan === 'starter';
+                        return (
+                          <button
+                            key={model.id}
+                            type="button"
+                            onClick={() => {
+                              if (isLocked) {
+                                props.onUpgradeClick?.();
+                                setIsModelMenuOpen(false);
+                              } else {
+                                setActiveModelId(model.id);
+                                setIsModelMenuOpen(false);
+                              }
+                            }}
+                            className={cn(
+                              "w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl transition-all text-left",
+                              activeModelId === model.id 
+                                ? "bg-black/[0.05] dark:bg-white/5 text-black dark:text-white" 
+                                : "hover:bg-black/[0.03] dark:hover:bg-white/[0.03] text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white",
+                              isLocked && "opacity-50 grayscale cursor-not-allowed"
+                            )}
+                          >
+                            <div className="flex items-center gap-3">
+                              <model.icon className={cn("w-4 h-4", activeModelId === model.id ? "text-[#3b82f6]" : "text-inherit")} />
+                              <span className="text-[13px] font-bold">{model.name}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {model.isFlagship && <span className="text-[9px] bg-blue-500/10 text-blue-500 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Flagship</span>}
+                              {isLocked && <span className="text-[9px] bg-white/10 text-white/40 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">PRO</span>}
+                              {activeModelId === model.id && <Check className="w-3.5 h-3.5 text-[#3b82f6]" />}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
+
+            <div className="h-4 w-[1px] bg-white/10 mx-1" />
 
             {/* Brand Integration Dock */}
             <div className="flex items-center -space-x-2 ml-1 opacity-40 hover:opacity-100 transition-all cursor-pointer" onClick={() => props.onConnectClick?.()}>
