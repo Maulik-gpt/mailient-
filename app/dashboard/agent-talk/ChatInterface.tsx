@@ -410,6 +410,40 @@ const NoScrollbarStyles = () => (
   `}</style>
 );
 // --- Premium Components for Action Buttons ---
+const UserMessageCopyButton = ({ msg }: { msg: Message }) => {
+  const [isCopied, setIsCopied] = useState(false);
+  const handleCopy = () => {
+    const text = typeof msg.content === 'string' ? msg.content : msg.content.text;
+    navigator.clipboard.writeText(text);
+    setIsCopied(true);
+    toast.success("Message copied to clipboard", {
+      className: "rounded-2xl bg-[#1a1a1a] border-white/10 text-white p-4",
+      icon: <Check className="w-4 h-4 text-green-400" />
+    });
+    setTimeout(() => setIsCopied(false), 2000);
+  };
+
+  return (
+    <button 
+      onClick={handleCopy}
+      className="absolute -left-10 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full bg-[#1a1a1a] border border-white/10 text-white/40 hover:text-white hover:bg-white/10 opacity-0 group-hover/msg:opacity-100 transition-all shadow-lg"
+      title="Copy message"
+    >
+      <AnimatePresence mode="wait">
+        {isCopied ? (
+          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} key="check">
+            <Check className="w-3.5 h-3.5 text-green-400" />
+          </motion.div>
+        ) : (
+          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} key="copy">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </button>
+  );
+};
+
 
 const MessageActionButtons = ({ msg, onFeedback, onRegenerate, isLoading }: { msg: Message, onFeedback: (type: 'like' | 'dislike', id: string | number) => void, onRegenerate: (id: number) => void, isLoading: boolean }) => {
   const [isCopied, setIsCopied] = useState(false);
@@ -2820,6 +2854,7 @@ export default function ChatInterface({
                               )}
                               <div className="flex flex-col max-w-[95%] group/msg">
                                 <div className={`transition-all relative ${msg.role === 'user' ? 'px-4 py-2 rounded-[22px] bg-[#111]/90 backdrop-blur-xl border border-white/[0.08] text-white shadow-2xl' : 'text-white/90 px-0 py-1'}`}>
+                                  {msg.role === 'user' && <UserMessageCopyButton msg={msg} />}
                                   {msg.role === 'assistant' && msg.meta?.limitReached && (
                                     <div className="flex items-center gap-2 mb-3 opacity-60">
                                       <img src="/arcus-ai-icon.jpg" className="w-4 h-4 rounded-md grayscale" />
