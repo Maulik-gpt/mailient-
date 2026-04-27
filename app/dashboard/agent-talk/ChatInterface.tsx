@@ -414,7 +414,6 @@ const MessageActionButtons = ({ msg, onFeedback, isLoading }: { msg: Message, on
   const [isLiked, setIsLiked] = useState(false);
   const [isDisliked, setIsDisliked] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
 
   const handleCopy = () => {
     const text = typeof msg.content === 'string' ? msg.content : msg.content.text;
@@ -461,19 +460,6 @@ const MessageActionButtons = ({ msg, onFeedback, isLoading }: { msg: Message, on
   const handleRegenerate = () => {
     setIsRegenerating(true);
     setTimeout(() => setIsRegenerating(false), 1000);
-  };
-
-  const handleSpeak = () => {
-    setIsSpeaking(true);
-    const text = typeof msg.content === 'string' ? msg.content : msg.content.text;
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.onend = () => setIsSpeaking(false);
-      window.speechSynthesis.speak(utterance);
-    } else {
-      setIsSpeaking(false);
-    }
   };
 
   return (
@@ -595,26 +581,6 @@ const MessageActionButtons = ({ msg, onFeedback, isLoading }: { msg: Message, on
           </TooltipTrigger>
           <TooltipContent className="bg-[#1a1a1a] border-white/10 text-white rounded-xl px-3 py-2 shadow-2xl">
             <span className="text-[11px] font-bold">Regenerate</span>
-          </TooltipContent>
-        </Tooltip>
-
-        {/* Speak Button */}
-        <Tooltip delayDuration={200}>
-          <TooltipTrigger asChild>
-            <button 
-              onClick={handleSpeak}
-              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-all text-white/40 hover:text-white"
-            >
-              <motion.div
-                animate={isSpeaking ? { scale: [1, 1.2, 1], color: '#60a5fa' } : {}}
-                transition={{ duration: 0.8, repeat: isSpeaking ? Infinity : 0 }}
-              >
-                <Volume2 className="w-4 h-4" />
-              </motion.div>
-            </button>
-          </TooltipTrigger>
-          <TooltipContent className="bg-[#1a1a1a] border-white/10 text-white rounded-xl px-3 py-2 shadow-2xl">
-            <span className="text-[11px] font-bold">Read aloud</span>
           </TooltipContent>
         </Tooltip>
       </div>
