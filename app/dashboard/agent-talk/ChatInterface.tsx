@@ -406,6 +406,179 @@ const NoScrollbarStyles = () => (
     }
   `}</style>
 );
+// --- Premium Components for Action Buttons ---
+
+const MessageActionButtons = ({ msg, onFeedback, isLoading }: { msg: Message, onFeedback: (type: 'like' | 'dislike', id: string | number) => void, isLoading: boolean }) => {
+  const [isCopied, setIsCopied] = useState(false);
+  const [isShared, setIsShared] = useState(false);
+
+  const handleCopy = () => {
+    const text = typeof msg.content === 'string' ? msg.content : msg.content.text;
+    navigator.clipboard.writeText(text);
+    setIsCopied(true);
+    toast.success("Content copied to clipboard", {
+      className: "rounded-2xl bg-[#1a1a1a] border-white/10 text-white p-4",
+      icon: <Check className="w-4 h-4 text-green-400" />
+    });
+    setTimeout(() => setIsCopied(false), 2000);
+  };
+
+  const handleShare = () => {
+    setIsShared(true);
+    const shareUrl = `https://mailient.ai/share/${msg.id || Date.now()}`;
+    navigator.clipboard.writeText(shareUrl);
+    
+    toast.success(
+      <div className="flex flex-col gap-0.5">
+        <p className="font-bold text-[13px]">Copied link to clipboard.</p>
+        <p className="text-white/40 text-[11px]">Shared links can be viewed by anyone with the link.</p>
+      </div>,
+      {
+        duration: 4000,
+        className: "rounded-2xl bg-[#1a1a1a] border-white/10 text-white p-5 shadow-2xl",
+        icon: <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center border border-white/10"><Check className="w-4 h-4 text-white" /></div>
+      }
+    );
+    setTimeout(() => setIsShared(false), 3000);
+  };
+
+  return (
+    <div className="mt-5 flex items-center gap-2 group-hover/msg:opacity-100 transition-opacity">
+      <div className="flex items-center gap-1.5 p-1.5 bg-white/[0.02] border border-white/[0.05] rounded-full backdrop-blur-md">
+        {/* Copy Button */}
+        <Tooltip delayDuration={200}>
+          <TooltipTrigger asChild>
+            <button 
+              onClick={handleCopy}
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-all text-white/40 hover:text-white relative"
+            >
+              <AnimatePresence mode="wait">
+                {isCopied ? (
+                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} key="check">
+                    <Check className="w-4 h-4 text-green-400" />
+                  </motion.div>
+                ) : (
+                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} key="copy">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </button>
+          </TooltipTrigger>
+          <TooltipContent className="bg-[#1a1a1a] border-white/10 text-white rounded-xl px-3 py-2 shadow-2xl">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold">Copy text</span>
+              <span className="text-white/20 text-[10px] font-mono">⌘C</span>
+            </div>
+          </TooltipContent>
+        </Tooltip>
+
+        {/* Share Button */}
+        <Tooltip delayDuration={200}>
+          <TooltipTrigger asChild>
+            <button 
+              onClick={handleShare}
+              className={cn(
+                "w-8 h-8 flex items-center justify-center rounded-full transition-all relative",
+                isShared ? "bg-white/10 text-white" : "hover:bg-white/10 text-white/40 hover:text-white"
+              )}
+            >
+              <AnimatePresence mode="wait">
+                {isShared ? (
+                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} key="check-share">
+                    <Check className="w-4 h-4" />
+                  </motion.div>
+                ) : (
+                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} key="share">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </button>
+          </TooltipTrigger>
+          <TooltipContent className="bg-[#1a1a1a] border-white/10 text-white rounded-xl px-3 py-2 shadow-2xl">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold">Share link</span>
+              <span className="text-white/20 text-[10px] font-mono">⌘L</span>
+            </div>
+          </TooltipContent>
+        </Tooltip>
+
+        {/* Like Button */}
+        <Tooltip delayDuration={200}>
+          <TooltipTrigger asChild>
+            <button 
+              onClick={() => onFeedback('like', msg.id.toString())}
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-all text-white/40 hover:text-white"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" /></svg>
+            </button>
+          </TooltipTrigger>
+          <TooltipContent className="bg-[#1a1a1a] border-white/10 text-white rounded-xl px-3 py-2 shadow-2xl">
+            <span className="text-[11px] font-bold">Helpful</span>
+          </TooltipContent>
+        </Tooltip>
+
+        {/* Dislike Button */}
+        <Tooltip delayDuration={200}>
+          <TooltipTrigger asChild>
+            <button 
+              onClick={() => onFeedback('dislike', msg.id.toString())}
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-all text-white/40 hover:text-white"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" /></svg>
+            </button>
+          </TooltipTrigger>
+          <TooltipContent className="bg-[#1a1a1a] border-white/10 text-white rounded-xl px-3 py-2 shadow-2xl">
+            <span className="text-[11px] font-bold">Not helpful</span>
+          </TooltipContent>
+        </Tooltip>
+
+        {/* Regenerate Button */}
+        <Tooltip delayDuration={200}>
+          <TooltipTrigger asChild>
+            <button 
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-all text-white/40 hover:text-white"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+            </button>
+          </TooltipTrigger>
+          <TooltipContent className="bg-[#1a1a1a] border-white/10 text-white rounded-xl px-3 py-2 shadow-2xl">
+            <span className="text-[11px] font-bold">Regenerate</span>
+          </TooltipContent>
+        </Tooltip>
+
+        {/* Speak Button */}
+        <Tooltip delayDuration={200}>
+          <TooltipTrigger asChild>
+            <button 
+              onClick={() => {
+                const text = typeof msg.content === 'string' ? msg.content : msg.content.text;
+                if ('speechSynthesis' in window) {
+                  window.speechSynthesis.cancel();
+                  const utterance = new SpeechSynthesisUtterance(text);
+                  window.speechSynthesis.speak(utterance);
+                }
+              }}
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-all text-white/40 hover:text-white"
+            >
+              <Volume2 className="w-4 h-4" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent className="bg-[#1a1a1a] border-white/10 text-white rounded-xl px-3 py-2 shadow-2xl">
+            <span className="text-[11px] font-bold">Read aloud</span>
+          </TooltipContent>
+        </Tooltip>
+      </div>
+
+      {(msg as AgentMessage).meta?.durationMs && (
+        <span className="text-[10px] font-mono text-white/20 ml-2">
+          {(((msg as AgentMessage).meta?.durationMs as number) / 1000).toFixed(1)}s
+        </span>
+      )}
+    </div>
+  );
+};
 
 export default function ChatInterface({
   initialConversationId = null,
@@ -2579,42 +2752,11 @@ export default function ChatInterface({
                                   />
 
                                   {msg.role === 'assistant' && (
-                                    <div className="mt-4 flex items-center gap-4 text-white/40">
-                                      <button onClick={() => { navigator.clipboard.writeText(typeof msg.content === 'string' ? msg.content : msg.content.text); }} className="hover:text-white transition-colors" title="Copy">
-                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                                      </button>
-                                      <button className="hover:text-white transition-colors" title="Export">
-                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                                      </button>
-                                      <button onClick={() => setFeedbackModal({isOpen: true, type: 'like', msgId: msg.id})} className="hover:text-white transition-colors" title="Good Response">
-                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" /></svg>
-                                      </button>
-                                      <button onClick={() => setFeedbackModal({isOpen: true, type: 'dislike', msgId: msg.id})} className="hover:text-white transition-colors" title="Bad Response">
-                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" /></svg>
-                                      </button>
-                                      <button className="hover:text-white transition-colors" title="Regenerate">
-                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                                      </button>
-                                      <button 
-                                        className="hover:text-white transition-colors" 
-                                        title="Speak"
-                                        onClick={() => {
-                                          const text = typeof msg.content === 'string' ? msg.content : msg.content.text;
-                                          if ('speechSynthesis' in window) {
-                                            window.speechSynthesis.cancel();
-                                            const utterance = new SpeechSynthesisUtterance(text);
-                                            window.speechSynthesis.speak(utterance);
-                                          }
-                                        }}
-                                      >
-                                        <Volume2 className="w-4 h-4" />
-                                      </button>
-                                      {(msg.meta as any)?.durationMs && (
-                                        <span className="text-[11px] font-mono ml-2">
-                                          {((msg.meta as any).durationMs / 1000).toFixed(1)}s
-                                        </span>
-                                      )}
-                                    </div>
+                                    <MessageActionButtons 
+                                      msg={msg} 
+                                      isLoading={isLoading} 
+                                      onFeedback={(type, id) => setFeedbackModal({isOpen: true, type, msgId: id})} 
+                                    />
                                   )}
                                   {msg.role === 'user' && (msg as UserMessage).attachments && (msg as UserMessage).attachments!.length > 0 && (
                                     <div className="mt-3 flex flex-wrap gap-2 pt-3 border-t border-neutral-200 dark:border-white/10">

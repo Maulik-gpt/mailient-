@@ -26,7 +26,7 @@ export default function Providers({ children }) {
             <SoundSystem />
             <ArcusCommandPalette />
             <OfflineToast />
-            <Toaster />
+            <Toaster position="top-center" theme="dark" closeButton />
           </DashboardSettingsProvider>
         </SessionProvider>
       </ThemeProvider>
