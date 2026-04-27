@@ -2836,7 +2836,7 @@ export default function ChatInterface({
                                       />
                                       
                                       {/* Follow-up Suggestions */}
-                                      {(msg as AgentMessage).meta?.suggestions && (msg as AgentMessage).meta?.suggestions!.length > 0 && (
+                                      {((msg as AgentMessage).meta?.suggestions?.length ?? 0) > 0 && (
                                         <div className="mt-4 flex flex-col gap-2">
                                           {(msg as AgentMessage).meta!.suggestions!.map((suggestion, idx) => (
                                             <button
