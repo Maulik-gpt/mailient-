@@ -86,13 +86,13 @@ const MarkdownComponents = {
   h2: ({node, ...props}: any) => <h2 className="text-xl font-bold text-white mt-6 mb-3 tracking-tight leading-tight" {...props} />,
   h3: ({node, ...props}: any) => <h3 className="text-lg font-bold text-white mt-5 mb-2 tracking-tight leading-tight" {...props} />,
   h4: ({node, ...props}: any) => <h4 className="text-base font-bold text-white mt-4 mb-2 tracking-tight leading-tight" {...props} />,
-  h5: ({node, ...props}: any) => <h5 className="text-[15px] font-bold text-white mt-3 mb-2 tracking-tight leading-tight" {...props} />,
-  h6: ({node, ...props}: any) => <h6 className="text-[14px] font-bold text-white mt-3 mb-2 tracking-tight leading-tight" {...props} />,
-  p: ({node, ...props}: any) => <p className="mb-4 last:mb-0 leading-[1.6] text-[15px] text-white/90" {...props} />,
+  h5: ({node, ...props}: any) => <h5 className="text-[16px] font-bold text-white mt-3 mb-2 tracking-tight leading-tight" {...props} />,
+  h6: ({node, ...props}: any) => <h6 className="text-[15px] font-bold text-white mt-3 mb-2 tracking-tight leading-tight" {...props} />,
+  p: ({node, ...props}: any) => <p className="mb-4 last:mb-0 leading-[1.6] text-[16px] text-white/90" {...props} />,
   ul: ({node, ...props}: any) => <ul className="space-y-2 my-4 list-none pl-2" {...props} />,
   ol: ({node, ...props}: any) => <ol className="space-y-2 my-4 list-decimal pl-6 text-white/90" {...props} />,
   li: ({node, ...props}: any) => (
-    <li className="relative pl-5 text-[15px] text-white/90">
+    <li className="relative pl-5 text-[16px] text-white/90">
       <span className="absolute left-0 top-2.5 w-1.5 h-1.5 bg-white/60 rounded-full" />
       {props.children}
     </li>
@@ -114,14 +114,19 @@ const MarkdownComponents = {
       : <code className="block p-5 bg-[#111] text-white/90 rounded-xl my-6 text-[14px] font-mono overflow-x-auto border border-[#222]" {...props} />,
 };
 
-const MessageContent = ({ content, isUser }: { content: any, isUser?: boolean }) => {
+const MessageContent = ({ content, isUser, isTyping }: { content: any, isUser?: boolean, isTyping?: boolean }) => {
   const textColorClass = isUser ? "text-white" : "text-white/90";
+
+  let textContent = typeof content === 'string' ? content : (content.text || '');
+  if (isTyping) {
+    textContent += ' ▍';
+  }
 
   if (typeof content === 'string') {
     return (
       <div className={`${textColorClass} w-full`}>
         <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
-          {content}
+          {textContent}
         </ReactMarkdown>
       </div>
     );
@@ -130,13 +135,13 @@ const MessageContent = ({ content, isUser }: { content: any, isUser?: boolean })
   return (
     <div className={`space-y-4 ${textColorClass} w-full`}>
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
-        {content.text}
+        {textContent}
       </ReactMarkdown>
       
       {content.list && content.list.length > 0 && (
         <ul className="space-y-2 my-4 list-none pl-2">
           {content.list.map((item: string, i: number) => (
-            <li key={i} className="relative pl-5 text-[15px] text-white/90">
+            <li key={i} className="relative pl-5 text-[16px] text-white/90">
               <span className="absolute left-0 top-2.5 w-1.5 h-1.5 bg-white/60 rounded-full" />
               <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
                 {item}
@@ -493,6 +498,7 @@ export default function ChatInterface({
 
   // Canvas Panel state
   const [isCanvasOpen, setIsCanvasOpen] = useState(false);
+  const [feedbackModal, setFeedbackModal] = useState<{isOpen: boolean, type: 'like' | 'dislike', msgId: string | number | null}>({isOpen: false, type: 'like', msgId: null});
   const [canvasData, setCanvasData] = useState<CanvasData | null>(null);
   const [isCanvasExecuting, setIsCanvasExecuting] = useState(false);
   const [activeRun, setActiveRun] = useState<{ runId: string; status?: string; phase?: string } | null>(null);
@@ -2534,11 +2540,13 @@ export default function ChatInterface({
                             className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
                           >
                             <div className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'} max-w-full items-start`}>
-                              <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center border overflow-hidden ${msg.role === 'user' ? 'bg-[#2b2b2b] border-white/10' : 'bg-transparent border-none'}`}>
-                                {msg.role === 'user' ? <User2 className="w-4 h-4 text-white/50" /> : <img src="/arcus-ai-icon.jpg" className="w-full h-full object-cover" />}
-                              </div>
-                              <div className="flex flex-col max-w-[85%] group/msg">
-                                <div className={`transition-all relative ${msg.role === 'user' ? 'px-5 py-3 rounded-2xl bg-[#222] text-white shadow-sm' : 'text-white/90 px-0 py-1'}`}>
+                              {msg.role === 'user' && (
+                                <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center border overflow-hidden bg-[#2b2b2b] border-white/10">
+                                  <User2 className="w-4 h-4 text-white/50" />
+                                </div>
+                              )}
+                              <div className="flex flex-col max-w-[95%] group/msg">
+                                <div className={`transition-all relative ${msg.role === 'user' ? 'px-5 py-3 rounded-2xl bg-[#222] border border-white/10 text-white shadow-sm' : 'text-white/90 px-0 py-1'}`}>
                                   {msg.role === 'assistant' && msg.meta?.limitReached && (
                                     <div className="flex items-center gap-2 mb-3 opacity-60">
                                       <img src="/arcus-ai-icon.jpg" className="w-4 h-4 rounded-md grayscale" />
@@ -2547,20 +2555,24 @@ export default function ChatInterface({
                                     </div>
                                   )}
 
-                                  <MessageContent content={msg.content} isUser={msg.role === 'user'} />
+                                  <MessageContent 
+                                    content={msg.content} 
+                                    isUser={msg.role === 'user'} 
+                                    isTyping={isLoading && msg.role === 'assistant' && msg.id === messages[messages.length - 1].id}
+                                  />
 
                                   {msg.role === 'assistant' && (
                                     <div className="mt-4 flex items-center gap-4 text-white/40">
-                                      <button className="hover:text-white transition-colors" title="Copy">
+                                      <button onClick={() => { navigator.clipboard.writeText(typeof msg.content === 'string' ? msg.content : msg.content.text); }} className="hover:text-white transition-colors" title="Copy">
                                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                                       </button>
                                       <button className="hover:text-white transition-colors" title="Export">
                                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
                                       </button>
-                                      <button className="hover:text-white transition-colors" title="Good Response">
+                                      <button onClick={() => setFeedbackModal({isOpen: true, type: 'like', msgId: msg.id})} className="hover:text-white transition-colors" title="Good Response">
                                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" /></svg>
                                       </button>
-                                      <button className="hover:text-white transition-colors" title="Bad Response">
+                                      <button onClick={() => setFeedbackModal({isOpen: true, type: 'dislike', msgId: msg.id})} className="hover:text-white transition-colors" title="Bad Response">
                                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" /></svg>
                                       </button>
                                       <button className="hover:text-white transition-colors" title="Regenerate">
@@ -2579,9 +2591,6 @@ export default function ChatInterface({
                                         }}
                                       >
                                         <Volume2 className="w-4 h-4" />
-                                      </button>
-                                      <button className="hover:text-white transition-colors" title="More">
-                                        <MoreHorizontal className="w-4 h-4" />
                                       </button>
                                       {(msg.meta as any)?.durationMs && (
                                         <span className="text-[11px] font-mono ml-2">
@@ -2951,6 +2960,41 @@ export default function ChatInterface({
                     }} 
                 />
             )}
+        </AnimatePresence>
+
+        {/* Feedback Modal for Like/Dislike */}
+        <AnimatePresence>
+          {feedbackModal.isOpen && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                className="bg-[#111] border border-white/10 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl"
+              >
+                <div className="p-6">
+                  <h3 className="text-white text-lg font-bold mb-2 tracking-tight">
+                    {feedbackModal.type === 'like' ? 'What did you like about this?' : 'How can we improve this?'}
+                  </h3>
+                  <p className="text-white/50 text-[13px] mb-4">
+                    {feedbackModal.type === 'like' ? 'Your feedback helps Arcus learn your preferences and tailor future responses.' : 'Your feedback helps Arcus avoid mistakes and improve reasoning accuracy.'}
+                  </p>
+                  <textarea 
+                    className="w-full h-32 bg-black border border-white/10 rounded-xl p-4 text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 resize-none text-[13px]"
+                    placeholder={feedbackModal.type === 'like' ? 'I liked how...' : 'It would be better if...'}
+                    autoFocus
+                  />
+                </div>
+                <div className="px-6 py-4 bg-[#0a0a0a] border-t border-white/5 flex items-center justify-end gap-3">
+                  <button onClick={() => setFeedbackModal(prev => ({...prev, isOpen: false}))} className="px-4 py-2 text-white/50 hover:text-white text-[13px] font-medium transition-colors">Cancel</button>
+                  <button onClick={() => {
+                    toast.success('Feedback submitted', { description: 'Thank you for helping improve Arcus AI.' });
+                    setFeedbackModal(prev => ({...prev, isOpen: false}));
+                  }} className="px-5 py-2 bg-white text-black text-[13px] font-bold rounded-full hover:bg-neutral-200 transition-colors">Submit</button>
+                </div>
+              </motion.div>
+            </div>
+          )}
         </AnimatePresence>
       </>
     </TooltipProvider>
