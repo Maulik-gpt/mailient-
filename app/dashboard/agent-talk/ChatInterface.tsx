@@ -428,7 +428,7 @@ const MessageActionButtons = ({ msg, onFeedback, isLoading }: { msg: Message, on
 
   const handleShare = () => {
     setIsShared(true);
-    const shareUrl = `https://mailient.ai/share/${msg.id || Date.now()}`;
+    const shareUrl = `https://mailient.xyz/share/${msg.id || Date.now()}`;
     navigator.clipboard.writeText(shareUrl);
     
     toast.success(

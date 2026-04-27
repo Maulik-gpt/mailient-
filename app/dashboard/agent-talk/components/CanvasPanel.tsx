@@ -198,7 +198,7 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
 
                 {/* URL / Breadcrumb Bar - Simplified */}
                 <div className="px-5 py-2 bg-[#0a0a0a] border-t border-white/5 text-[11px] font-mono text-white/20 truncate">
-                    https://mailient.ai/arcus/{canvasData.type}/{canvasData?.title?.toLowerCase().replace(/\s+/g, '-') || 'execution'}
+                    https://mailient.xyz/arcus/{canvasData.type}/{canvasData?.title?.toLowerCase().replace(/\s+/g, '-') || 'execution'}
                 </div>
             </div>
 
