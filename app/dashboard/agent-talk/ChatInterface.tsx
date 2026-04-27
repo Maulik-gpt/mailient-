@@ -82,36 +82,44 @@ const linkify = (text: string, isUser: boolean = false): string => {
 };
 
 const MarkdownComponents = {
-  h1: ({node, ...props}: any) => <h1 className="text-2xl font-bold text-black dark:text-white mt-6 mb-4 tracking-tight" {...props} />,
-  h2: ({node, ...props}: any) => <h2 className="text-xl font-bold text-black dark:text-white mt-5 mb-3 tracking-tight" {...props} />,
-  h3: ({node, ...props}: any) => <h3 className="text-lg font-bold text-black dark:text-white mt-4 mb-2 tracking-tight" {...props} />,
-  p: ({node, ...props}: any) => <p className="mb-3 last:mb-0 leading-relaxed text-[14px]" {...props} />,
-  ul: ({node, ...props}: any) => <ul className="space-y-1 my-4 list-disc list-inside bg-black/[0.02] dark:bg-white/[0.02] p-4 rounded-xl border border-black/[0.05] dark:border-white/[0.05]" {...props} />,
-  ol: ({node, ...props}: any) => <ol className="space-y-1 my-4 list-decimal list-inside bg-black/[0.02] dark:bg-white/[0.02] p-4 rounded-xl border border-black/[0.05] dark:border-white/[0.05]" {...props} />,
-  li: ({node, ...props}: any) => <li className="py-0.5 ml-2" {...props} />,
-  strong: ({node, ...props}: any) => <strong className="font-bold text-black dark:text-white tracking-tight" {...props} />,
-  hr: ({node, ...props}: any) => <hr className="my-6 border-t border-neutral-200 dark:border-white/10" {...props} />,
+  h1: ({node, ...props}: any) => <h1 className="text-2xl font-bold text-white mt-8 mb-4 tracking-tight leading-tight" {...props} />,
+  h2: ({node, ...props}: any) => <h2 className="text-xl font-bold text-white mt-6 mb-3 tracking-tight leading-tight" {...props} />,
+  h3: ({node, ...props}: any) => <h3 className="text-lg font-bold text-white mt-5 mb-2 tracking-tight leading-tight" {...props} />,
+  h4: ({node, ...props}: any) => <h4 className="text-base font-bold text-white mt-4 mb-2 tracking-tight leading-tight" {...props} />,
+  h5: ({node, ...props}: any) => <h5 className="text-[15px] font-bold text-white mt-3 mb-2 tracking-tight leading-tight" {...props} />,
+  h6: ({node, ...props}: any) => <h6 className="text-[14px] font-bold text-white mt-3 mb-2 tracking-tight leading-tight" {...props} />,
+  p: ({node, ...props}: any) => <p className="mb-4 last:mb-0 leading-[1.6] text-[15px] text-white/90" {...props} />,
+  ul: ({node, ...props}: any) => <ul className="space-y-2 my-4 list-none pl-2" {...props} />,
+  ol: ({node, ...props}: any) => <ol className="space-y-2 my-4 list-decimal pl-6 text-white/90" {...props} />,
+  li: ({node, ...props}: any) => (
+    <li className="relative pl-5 text-[15px] text-white/90">
+      <span className="absolute left-0 top-2.5 w-1.5 h-1.5 bg-white/60 rounded-full" />
+      {props.children}
+    </li>
+  ),
+  strong: ({node, ...props}: any) => <strong className="font-bold text-white" {...props} />,
+  hr: ({node, ...props}: any) => <hr className="my-8 border-t border-[#222]" {...props} />,
   table: ({node, ...props}: any) => (
-    <div className="overflow-x-auto my-6 border border-neutral-200 dark:border-white/10 rounded-xl">
-      <table className="w-full text-left text-[13px] border-collapse" {...props} />
+    <div className="overflow-x-auto my-8">
+      <table className="w-full text-left text-[14px] border-collapse" {...props} />
     </div>
   ),
-  thead: ({node, ...props}: any) => <thead className="bg-neutral-100 dark:bg-white/5 text-black dark:text-white/80 font-bold border-b border-neutral-200 dark:border-white/10" {...props} />,
-  th: ({node, ...props}: any) => <th className="px-4 py-3 font-semibold" {...props} />,
-  td: ({node, ...props}: any) => <td className="px-4 py-3 border-b border-neutral-200 dark:border-white/5 last:border-b-0" {...props} />,
-  a: ({node, ...props}: any) => <a className="text-blue-600 dark:text-blue-400 hover:underline underline-offset-4" target="_blank" rel="noopener noreferrer" {...props} />,
+  thead: ({node, ...props}: any) => <thead className="text-white/60 font-medium border-b border-[#333]" {...props} />,
+  th: ({node, ...props}: any) => <th className="px-4 py-3 font-semibold whitespace-nowrap" {...props} />,
+  td: ({node, ...props}: any) => <td className="px-4 py-3 border-b border-[#222] text-white/90" {...props} />,
+  a: ({node, ...props}: any) => <a className="text-blue-400 hover:text-blue-300 underline underline-offset-4 decoration-blue-400/30 hover:decoration-blue-400" target="_blank" rel="noopener noreferrer" {...props} />,
   code: ({node, inline, ...props}: any) => 
     inline 
-      ? <code className="px-1.5 py-0.5 bg-black/5 dark:bg-white/10 rounded-md text-[12px] font-mono text-black dark:text-white" {...props} />
-      : <code className="block p-4 bg-[#111111] text-white/90 rounded-xl my-4 text-[13px] font-mono overflow-x-auto border border-white/10" {...props} />,
+      ? <code className="px-1.5 py-0.5 bg-[#222] rounded-md text-[13px] font-mono text-white/90" {...props} />
+      : <code className="block p-5 bg-[#111] text-white/90 rounded-xl my-6 text-[14px] font-mono overflow-x-auto border border-[#222]" {...props} />,
 };
 
 const MessageContent = ({ content, isUser }: { content: any, isUser?: boolean }) => {
-  const textColorClass = isUser ? "text-black dark:text-white" : "text-black dark:text-white/80";
+  const textColorClass = isUser ? "text-white" : "text-white/90";
 
   if (typeof content === 'string') {
     return (
-      <div className={textColorClass}>
+      <div className={`${textColorClass} w-full`}>
         <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
           {content}
         </ReactMarkdown>
@@ -120,16 +128,16 @@ const MessageContent = ({ content, isUser }: { content: any, isUser?: boolean })
   }
   
   return (
-    <div className={`space-y-4 ${textColorClass}`}>
+    <div className={`space-y-4 ${textColorClass} w-full`}>
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
         {content.text}
       </ReactMarkdown>
       
       {content.list && content.list.length > 0 && (
-        <ul className="space-y-2 mt-2 bg-black/[0.02] dark:bg-white/[0.02] p-4 rounded-xl border border-black/[0.05] dark:border-white/[0.05]">
+        <ul className="space-y-2 my-4 list-none pl-2">
           {content.list.map((item: string, i: number) => (
-            <li key={i} className="flex gap-2 items-start">
-              <div className="w-1 h-1 rounded-full bg-current mt-2.5 opacity-50 shrink-0" />
+            <li key={i} className="relative pl-5 text-[15px] text-white/90">
+              <span className="absolute left-0 top-2.5 w-1.5 h-1.5 bg-white/60 rounded-full" />
               <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
                 {item}
               </ReactMarkdown>
@@ -139,7 +147,7 @@ const MessageContent = ({ content, isUser }: { content: any, isUser?: boolean })
       )}
       
       {content.footer && (
-        <div className="mt-4 italic opacity-60 text-sm border-t border-neutral-200 dark:border-white/10 pt-3">
+        <div className="mt-6 italic opacity-60 text-sm border-t border-[#222] pt-4">
           <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
             {content.footer}
           </ReactMarkdown>
@@ -2274,7 +2282,7 @@ export default function ChatInterface({
           >
             {/* Chat Column (Order 1 - LEFT) - Premium Refinement */}
             <div
-              className="flex-1 flex flex-col relative h-full min-w-0 transition-all duration-500 order-1 bg-neutral-50/80 dark:bg-[#111111]/80 backdrop-blur-3xl border-x border-t border-neutral-200 dark:border-white/5 rounded-t-[40px] shadow-[0_-20px_50px_-15px_rgba(0,0,0,0.1)] dark:shadow-[0_-20px_50px_-15px_rgba(0,0,0,0.5)] overflow-hidden"
+              className="flex-1 flex flex-col relative h-full min-w-0 transition-all duration-500 order-1 bg-black backdrop-blur-3xl border-x border-t border-white/[0.05] rounded-t-[40px] shadow-[0_-20px_50px_-15px_rgba(0,0,0,0.5)] overflow-hidden"
               style={{ display: 'flex', flexDirection: 'column', height: '100%', maxHeight: '100%' }}
             >
               {/* Header - Glassmorphic fixed height */}
@@ -2525,12 +2533,12 @@ export default function ChatInterface({
                             key={msg.id} 
                             className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
                           >
-                            <div className={`flex gap-2.5 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'} max-w-full items-start`}>
-                              <div className={`w-7 h-7 rounded-lg flex-shrink-0 flex items-center justify-center border ${msg.role === 'user' ? 'bg-[#2b2b2b] border-neutral-200 dark:border-white/10' : 'bg-graphite-surface border-graphite-border'}`}>
-                                {msg.role === 'user' ? <User2 className="w-3.5 h-3.5 text-black dark:text-white/50" /> : <img src="/arcus-ai-icon.jpg" className="w-full h-full object-cover grayscale" />}
+                            <div className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'} max-w-full items-start`}>
+                              <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center border overflow-hidden ${msg.role === 'user' ? 'bg-[#2b2b2b] border-white/10' : 'bg-transparent border-none'}`}>
+                                {msg.role === 'user' ? <User2 className="w-4 h-4 text-white/50" /> : <img src="/arcus-ai-icon.jpg" className="w-full h-full object-cover" />}
                               </div>
                               <div className="flex flex-col max-w-[85%] group/msg">
-                                <div className={`transition-all relative ${msg.role === 'user' ? 'px-4 py-2.5 rounded-xl bg-[#2b2b2b] text-black dark:text-white border border-neutral-200 dark:border-white/5 shadow-sm' : 'text-graphite-text px-0 py-1'}`}>
+                                <div className={`transition-all relative ${msg.role === 'user' ? 'px-5 py-3 rounded-2xl bg-[#222] text-white shadow-sm' : 'text-white/90 px-0 py-1'}`}>
                                   {msg.role === 'assistant' && msg.meta?.limitReached && (
                                     <div className="flex items-center gap-2 mb-3 opacity-60">
                                       <img src="/arcus-ai-icon.jpg" className="w-4 h-4 rounded-md grayscale" />
@@ -2542,20 +2550,45 @@ export default function ChatInterface({
                                   <MessageContent content={msg.content} isUser={msg.role === 'user'} />
 
                                   {msg.role === 'assistant' && (
-                                    <button
-                                      onClick={() => {
-                                        const text = typeof msg.content === 'string' ? msg.content : msg.content.text;
-                                        if ('speechSynthesis' in window) {
-                                          window.speechSynthesis.cancel();
-                                          const utterance = new SpeechSynthesisUtterance(text);
-                                          window.speechSynthesis.speak(utterance);
-                                        }
-                                      }}
-                                      className="absolute -right-8 top-1 opacity-0 group-hover/msg:opacity-100 transition-opacity p-1.5 hover:bg-black/5 dark:bg-white/5 rounded-full text-black hover:text-black dark:text-white"
-                                      title="Speak"
-                                    >
-                                      <Volume2 className="w-3.5 h-3.5" />
-                                    </button>
+                                    <div className="mt-4 flex items-center gap-4 text-white/40">
+                                      <button className="hover:text-white transition-colors" title="Copy">
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                                      </button>
+                                      <button className="hover:text-white transition-colors" title="Export">
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                                      </button>
+                                      <button className="hover:text-white transition-colors" title="Good Response">
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" /></svg>
+                                      </button>
+                                      <button className="hover:text-white transition-colors" title="Bad Response">
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" /></svg>
+                                      </button>
+                                      <button className="hover:text-white transition-colors" title="Regenerate">
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                                      </button>
+                                      <button 
+                                        className="hover:text-white transition-colors" 
+                                        title="Speak"
+                                        onClick={() => {
+                                          const text = typeof msg.content === 'string' ? msg.content : msg.content.text;
+                                          if ('speechSynthesis' in window) {
+                                            window.speechSynthesis.cancel();
+                                            const utterance = new SpeechSynthesisUtterance(text);
+                                            window.speechSynthesis.speak(utterance);
+                                          }
+                                        }}
+                                      >
+                                        <Volume2 className="w-4 h-4" />
+                                      </button>
+                                      <button className="hover:text-white transition-colors" title="More">
+                                        <MoreHorizontal className="w-4 h-4" />
+                                      </button>
+                                      {msg.meta?.durationMs && (
+                                        <span className="text-[11px] font-mono ml-2">
+                                          {(msg.meta.durationMs / 1000).toFixed(1)}s
+                                        </span>
+                                      )}
+                                    </div>
                                   )}
                                   {msg.role === 'user' && (msg as UserMessage).attachments && (msg as UserMessage).attachments!.length > 0 && (
                                     <div className="mt-3 flex flex-wrap gap-2 pt-3 border-t border-neutral-200 dark:border-white/10">
