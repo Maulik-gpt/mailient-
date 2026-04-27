@@ -10,6 +10,7 @@ import { ChatHistoryModal } from './components/ChatHistoryModal';
 import { ThinkingLayer, ResultCard, type ThinkingStep, type ThinkingBlock, type SearchSession } from './components/ThinkingLayer';
 import { CanvasPanel, type CanvasData } from './components/CanvasPanel';
 import { PlanArtifactCard, type PlanArtifact } from './components/PlanArtifactCard';
+import { PlanCanvas } from './components/PlanCanvas';
 import { SearchExecutionPanel } from './components/SearchExecutionPanel';
 import { ConnectorBar } from './components/ConnectorBar';
 import ReactMarkdown from 'react-markdown';
@@ -1088,7 +1089,7 @@ export default function ChatInterface({
       setIsDeepThinkingState(isDeepThinking);
       setIsSearchingState(isSearch);
 
-      if (isDeepThinking) {
+      if (isDeepThinking && !isPlanMode) {
         setLiveThinkingBlocks([{
           id: 'deep-block',
           title: 'Deep Reasoning Process',
@@ -1099,6 +1100,20 @@ export default function ChatInterface({
             { id: 'deep-context', label: 'Performing comprehensive context retrieval...', status: 'pending', type: 'search' },
             { id: 'deep-reasoning', label: 'Processing logical pathways and edge cases...', status: 'pending', type: 'think' },
             { id: 'deep-synthesis', label: 'Synthesizing final high-quality resolution...', status: 'pending', type: 'analyze' }
+          ]
+        }]);
+      } else if (isPlanMode) {
+        setLiveThinkingBlocks([{
+          id: 'plan-block',
+          title: 'Strategic Plan Architecture',
+          status: 'active',
+          initialContext: 'Architecting a comprehensive plan...',
+          steps: [
+            { id: 'plan-understand', label: 'Understanding objectives and constraints...', status: 'active', type: 'think' },
+            { id: 'plan-research', label: 'Gathering relevant context and data...', status: 'pending', type: 'search' },
+            { id: 'plan-structure', label: 'Structuring execution steps...', status: 'pending', type: 'analyze' },
+            { id: 'plan-validate', label: 'Validating plan feasibility...', status: 'pending', type: 'think' },
+            { id: 'plan-finalize', label: 'Finalizing plan with success criteria...', status: 'pending', type: 'draft' }
           ]
         }]);
       } else if (isSearch) {
@@ -1173,21 +1188,26 @@ export default function ChatInterface({
       }
 
       // --- PHASE II: Immediate AI Assessment ---
-      if (intentData?.initialResponse) {
+      // Plan Mode: Show elegant acknowledgment paragraph
+      const planAcknowledgment = isPlanMode
+        ? `I've deeply understood your request. I'm now architecting a comprehensive plan to bring this to life — analyzing objectives, structuring execution steps, and defining clear success criteria.`
+        : null;
+
+      if (intentData?.initialResponse || planAcknowledgment) {
         const initialMessage: AgentMessage = {
           id: assistantMsgId,
           type: 'agent',
           role: 'assistant',
           content: {
-            text: intentData.initialResponse,
+            text: planAcknowledgment || intentData.initialResponse,
             list: [],
             footer: ''
           },
           time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
           meta: {
-            actionType: 'thought',
+            actionType: isPlanMode ? 'plan' : 'thought',
             isStreaming: true,
-            canvasApproval: ((intentData.needsCanvas === true || isCanvas) && !isPlanMode) ? {
+            canvasApproval: ((intentData?.needsCanvas === true || isCanvas) && !isPlanMode) ? {
               status: 'pending' as const,
               title: intentData.canvasTitle || 'Launch Arcus Mission?',
               description: intentData.canvasDescription || intentData.initialResponse || 'This request would be best handled in the specialized Arcus Workspace.',
@@ -1391,7 +1411,11 @@ export default function ChatInterface({
         : undefined;
 
       // Extract suggestions if any (mocking them if backend doesn't provide yet)
-      const suggestions = data.suggestions || (isInitialMode ? [
+      const suggestions = data.suggestions || (isPlanMode ? [
+        "Execute this plan now",
+        "Refine the plan steps",
+        "Add more detail to the plan"
+      ] : isInitialMode ? [
         "How can I help with this further?",
         "Tell me more about this.",
         "Execute next steps"
@@ -2914,15 +2938,15 @@ export default function ChatInterface({
                                     </div>
                                   )}
 
-                                  {/* Plan Artifact Card (Phase 2) */}
+                                  {/* Plan Canvas (Inline + Full-Screen Modal) */}
                                   {msg.role === 'assistant' && (msg as AgentMessage).meta?.planArtifact && (
                                     <div className="mt-4">
-                                      <PlanArtifactCard
+                                      <PlanCanvas
                                         plan={(msg as AgentMessage).meta!.planArtifact!}
-                                        onApprove={async (planId) => {
-                                          await handleAcceptPlan((msg as AgentMessage).meta!.planArtifact!);
+                                        onExecute={async (planId) => {
+                                          await handlePlanApprove(planId, msg.id as number);
                                         }}
-                                        onReject={async (planId) => {
+                                        onDecline={async (planId) => {
                                           await handleDeclinePlan((msg as AgentMessage).meta!.planArtifact!);
                                         }}
                                         isProcessing={isProcessingPlan}
