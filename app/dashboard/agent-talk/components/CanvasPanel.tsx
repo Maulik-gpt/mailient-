@@ -188,25 +188,17 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                 
                 {/* Status Bar / Browser Style */}
                 <div className="flex items-center gap-3 px-5 py-2.5 bg-[#1c1c1d] border-t border-white/5 text-[12px] font-medium text-white/40">
-                    <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 rounded bg-white/5 flex items-center justify-center">
-                            <Terminal className="w-3 h-3 text-blue-400" />
-                        </div>
-                        <span className="text-white/60">Arcus is using {canvasData.type === 'analytics' ? 'Data Engine' : 'Intelligent Agent'}</span>
-                    </div>
-                    <span className="text-white/10">|</span>
-                    <span className="truncate text-white/30 flex-1">
-                        {canvasData.type === 'analytics' ? 'Running analytical_sifting_protocol_v2.0' : 
-                         canvasData.type === 'summary' ? 'Extracting semantic_weights_from_inbox' : 
-                         'Navigating workspace objects...'}
+                    <span className="text-white/60">Arcus is using {canvasData.type === 'analytics' ? 'Data Engine' : 'Intelligent Agent'}</span>
+                    <span className="truncate text-white/20 flex-1">
+                        {canvasData.type === 'analytics' ? 'analytical_sifting_protocol_v2.0' : 
+                         canvasData.type === 'summary' ? 'semantic_weights_from_inbox' : 
+                         'workspace_execution_flow'}
                     </span>
                 </div>
 
-                {/* URL / Breadcrumb Bar */}
-                <div className="px-5 py-2 bg-[#0a0a0a] border-t border-white/5">
-                    <div className="h-8 bg-white/5 rounded-lg border border-white/5 flex items-center px-4 text-[11px] font-mono text-white/30 truncate">
-                        https://mailient.ai/arcus/{canvasData.type}/{canvasData?.title?.toLowerCase().replace(/\s+/g, '-') || 'execution'}
-                    </div>
+                {/* URL / Breadcrumb Bar - Simplified */}
+                <div className="px-5 py-2 bg-[#0a0a0a] border-t border-white/5 text-[11px] font-mono text-white/20 truncate">
+                    https://mailient.ai/arcus/{canvasData.type}/{canvasData?.title?.toLowerCase().replace(/\s+/g, '-') || 'execution'}
                 </div>
             </div>
 
