@@ -411,6 +411,10 @@ const NoScrollbarStyles = () => (
 const MessageActionButtons = ({ msg, onFeedback, isLoading }: { msg: Message, onFeedback: (type: 'like' | 'dislike', id: string | number) => void, isLoading: boolean }) => {
   const [isCopied, setIsCopied] = useState(false);
   const [isShared, setIsShared] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
+  const [isDisliked, setIsDisliked] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
   const handleCopy = () => {
     const text = typeof msg.content === 'string' ? msg.content : msg.content.text;
@@ -440,6 +444,36 @@ const MessageActionButtons = ({ msg, onFeedback, isLoading }: { msg: Message, on
       }
     );
     setTimeout(() => setIsShared(false), 3000);
+  };
+
+  const handleLike = () => {
+    setIsLiked(true);
+    onFeedback('like', msg.id.toString());
+    setTimeout(() => setIsLiked(false), 1500);
+  };
+
+  const handleDislike = () => {
+    setIsDisliked(true);
+    onFeedback('dislike', msg.id.toString());
+    setTimeout(() => setIsDisliked(false), 1500);
+  };
+
+  const handleRegenerate = () => {
+    setIsRegenerating(true);
+    setTimeout(() => setIsRegenerating(false), 1000);
+  };
+
+  const handleSpeak = () => {
+    setIsSpeaking(true);
+    const text = typeof msg.content === 'string' ? msg.content : msg.content.text;
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.onend = () => setIsSpeaking(false);
+      window.speechSynthesis.speak(utterance);
+    } else {
+      setIsSpeaking(false);
+    }
   };
 
   return (
@@ -508,10 +542,15 @@ const MessageActionButtons = ({ msg, onFeedback, isLoading }: { msg: Message, on
         <Tooltip delayDuration={200}>
           <TooltipTrigger asChild>
             <button 
-              onClick={() => onFeedback('like', msg.id.toString())}
+              onClick={handleLike}
               className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-all text-white/40 hover:text-white"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" /></svg>
+              <motion.div
+                animate={isLiked ? { scale: [1, 1.3, 1], color: '#4ade80' } : {}}
+                transition={{ duration: 0.4 }}
+              >
+                <svg className="w-4 h-4" fill={isLiked ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" /></svg>
+              </motion.div>
             </button>
           </TooltipTrigger>
           <TooltipContent className="bg-[#1a1a1a] border-white/10 text-white rounded-xl px-3 py-2 shadow-2xl">
@@ -523,10 +562,15 @@ const MessageActionButtons = ({ msg, onFeedback, isLoading }: { msg: Message, on
         <Tooltip delayDuration={200}>
           <TooltipTrigger asChild>
             <button 
-              onClick={() => onFeedback('dislike', msg.id.toString())}
+              onClick={handleDislike}
               className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-all text-white/40 hover:text-white"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" /></svg>
+              <motion.div
+                animate={isDisliked ? { scale: [1, 1.3, 1], color: '#f87171' } : {}}
+                transition={{ duration: 0.4 }}
+              >
+                <svg className="w-4 h-4" fill={isDisliked ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" /></svg>
+              </motion.div>
             </button>
           </TooltipTrigger>
           <TooltipContent className="bg-[#1a1a1a] border-white/10 text-white rounded-xl px-3 py-2 shadow-2xl">
@@ -538,9 +582,15 @@ const MessageActionButtons = ({ msg, onFeedback, isLoading }: { msg: Message, on
         <Tooltip delayDuration={200}>
           <TooltipTrigger asChild>
             <button 
+              onClick={handleRegenerate}
               className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-all text-white/40 hover:text-white"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+              <motion.div
+                animate={isRegenerating ? { rotate: 360 } : {}}
+                transition={{ duration: 0.6, ease: "easeInOut" }}
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+              </motion.div>
             </button>
           </TooltipTrigger>
           <TooltipContent className="bg-[#1a1a1a] border-white/10 text-white rounded-xl px-3 py-2 shadow-2xl">
@@ -552,17 +602,15 @@ const MessageActionButtons = ({ msg, onFeedback, isLoading }: { msg: Message, on
         <Tooltip delayDuration={200}>
           <TooltipTrigger asChild>
             <button 
-              onClick={() => {
-                const text = typeof msg.content === 'string' ? msg.content : msg.content.text;
-                if ('speechSynthesis' in window) {
-                  window.speechSynthesis.cancel();
-                  const utterance = new SpeechSynthesisUtterance(text);
-                  window.speechSynthesis.speak(utterance);
-                }
-              }}
+              onClick={handleSpeak}
               className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-all text-white/40 hover:text-white"
             >
-              <Volume2 className="w-4 h-4" />
+              <motion.div
+                animate={isSpeaking ? { scale: [1, 1.2, 1], color: '#60a5fa' } : {}}
+                transition={{ duration: 0.8, repeat: isSpeaking ? Infinity : 0 }}
+              >
+                <Volume2 className="w-4 h-4" />
+              </motion.div>
             </button>
           </TooltipTrigger>
           <TooltipContent className="bg-[#1a1a1a] border-white/10 text-white rounded-xl px-3 py-2 shadow-2xl">
@@ -571,9 +619,9 @@ const MessageActionButtons = ({ msg, onFeedback, isLoading }: { msg: Message, on
         </Tooltip>
       </div>
 
-      {(msg as AgentMessage).meta?.durationMs && (
+      {(msg as any).meta?.durationMs && (
         <span className="text-[10px] font-mono text-white/20 ml-2">
-          {(((msg as AgentMessage).meta?.durationMs as number) / 1000).toFixed(1)}s
+          {(((msg as any).meta.durationMs) / 1000).toFixed(1)}s
         </span>
       )}
     </div>
