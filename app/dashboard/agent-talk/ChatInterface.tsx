@@ -460,13 +460,10 @@ const MessageActionButtons = ({ msg, onFeedback, onRegenerate, isLoading }: { ms
     setTimeout(() => setIsDisliked(false), 1500);
   };
 
-  const handleRegenerate = () => {
-    setIsRegenerating(true);
-    setTimeout(() => setIsRegenerating(false), 1000);
-  };
+  // Regenerate spin animation is driven by onRegenerate triggering the modal
 
   return (
-    <div className="mt-5 flex items-center gap-2 group-hover/msg:opacity-100 transition-opacity">
+    <div className={cn("mt-5 flex items-center gap-2 transition-opacity", isLoading ? "opacity-30 pointer-events-none" : "group-hover/msg:opacity-100")}>
       <div className="flex items-center gap-1.5 p-1.5 bg-white/[0.02] border border-white/[0.05] rounded-full backdrop-blur-md">
         {/* Copy Button */}
         <Tooltip delayDuration={200}>
@@ -1771,32 +1768,7 @@ export default function ChatInterface({
   };
 
   // Plan approval handlers (Phase 2)
-  const handleAcceptPlan = async (plan: PlanArtifact) => {
-    setIsProcessingPlan(true);
-    try {
-      await fetch('/api/agent-talk/chat-arcus', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: `Approve and execute plan: ${plan.planId}`,
-          runId: activeRun?.runId || null,
-          conversationId: currentConversationId,
-          isNewConversation: false,
-          actionType: 'approve_plan',
-          actionPayload: { planId: plan.planId },
-          executeCanvasAction: 'approve_plan',
-          canvasActionData: { planId: plan.planId }
-        })
-      });
-      
-      toast.success('Plan approved and execution started');
-    } catch (error) {
-      console.error('Error approving plan:', error);
-      toast.error('Error approving plan');
-    } finally {
-      setIsProcessingPlan(false);
-    }
-  };
+  // Plan approval is handled by handlePlanApprove (L1823) which also updates message state
 
   const handleDeclinePlan = async (plan: PlanArtifact) => {
     try {
@@ -2872,13 +2844,22 @@ export default function ChatInterface({
                                       />
                                       
                                       {/* Follow-up Suggestions */}
-                                      {((msg as AgentMessage).meta?.suggestions?.length ?? 0) > 0 && (
+                                      {!isLoading && ((msg as AgentMessage).meta?.suggestions?.length ?? 0) > 0 && (
                                         <div className="mt-4 flex flex-col gap-2">
                                           {(msg as AgentMessage).meta!.suggestions!.map((suggestion, idx) => (
                                             <button
                                               key={idx}
-                                              onClick={() => handleSend(suggestion)}
-                                              className="flex items-center gap-2 group/sug text-white/50 hover:text-white transition-all text-left w-fit"
+                                              onClick={() => {
+                                                // Remove suggestions from this message on click
+                                                setMessages(prev => prev.map(m => {
+                                                  if (m.id === msg.id && m.type === 'agent') {
+                                                    return { ...m, meta: { ...(m as AgentMessage).meta, suggestions: undefined } };
+                                                  }
+                                                  return m;
+                                                }));
+                                                handleSend(suggestion);
+                                              }}
+                                              className="flex items-center gap-2 group/sug text-black/40 dark:text-white/50 hover:text-black dark:hover:text-white transition-all text-left w-fit"
                                             >
                                               <svg className="w-4 h-4 opacity-40 group-hover/sug:opacity-100 transition-opacity" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                                 <path d="M12 20L12 10M12 10L16 14M12 10L8 14" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" transform="rotate(90 12 12)" />
@@ -2971,15 +2952,15 @@ export default function ChatInterface({
                                     <motion.div
                                       initial={{ opacity: 0, y: 8 }}
                                       animate={{ opacity: 1, y: 0 }}
-                                      className="mt-4 p-4 rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-sm"
+                                      className="mt-4 p-4 rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-black/[0.02] dark:bg-white/[0.02] backdrop-blur-sm"
                                     >
-                                      <p className="text-[13px] text-white/50 mb-3">
+                                      <p className="text-[13px] text-black/50 dark:text-white/50 mb-3">
                                         This content is quite rich. Would you like to expand it on the canvas for a better view?
                                       </p>
                                       <div className="flex items-center gap-2">
                                         <button
                                           onClick={() => setIsCanvasOpen(true)}
-                                          className="px-4 py-2 bg-white text-black text-[12px] font-bold rounded-xl hover:bg-neutral-200 transition-all active:scale-[0.98]"
+                                          className="px-4 py-2 bg-black dark:bg-white text-white dark:text-black text-[12px] font-bold rounded-xl hover:bg-black/80 dark:hover:bg-neutral-200 transition-all active:scale-[0.98]"
                                         >
                                           Yes, open canvas
                                         </button>
@@ -2993,7 +2974,7 @@ export default function ChatInterface({
                                               return m;
                                             }));
                                           }}
-                                          className="px-4 py-2 text-white/30 hover:text-white/60 text-[12px] font-bold rounded-xl bg-white/[0.03] hover:bg-white/[0.06] transition-all"
+                                          className="px-4 py-2 text-black/30 dark:text-white/30 hover:text-black/60 dark:hover:text-white/60 text-[12px] font-bold rounded-xl bg-black/[0.03] dark:bg-white/[0.03] hover:bg-black/[0.06] dark:hover:bg-white/[0.06] transition-all"
                                         >
                                           No, keep it here
                                         </button>
@@ -3310,11 +3291,12 @@ export default function ChatInterface({
         {/* Feedback Modal for Like/Dislike */}
         <AnimatePresence>
           {feedbackModal.isOpen && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setFeedbackModal(prev => ({...prev, isOpen: false}))}>
               <motion.div 
                 initial={{ opacity: 0, scale: 0.95, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                onClick={(e) => e.stopPropagation()}
                 className="bg-[#111] border border-white/10 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl"
               >
                 <div className="p-6">
@@ -3344,11 +3326,12 @@ export default function ChatInterface({
         {/* Regenerate Confirmation Modal */}
         <AnimatePresence>
           {regenerateModal.isOpen && (
-            <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setRegenerateModal({ isOpen: false, msgId: null })}>
               <motion.div 
                 initial={{ opacity: 0, scale: 0.95, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                onClick={(e) => e.stopPropagation()}
                 className="bg-[#111] border border-white/10 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl"
               >
                 <div className="p-6 text-center">

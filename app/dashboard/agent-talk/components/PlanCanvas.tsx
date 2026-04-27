@@ -65,30 +65,30 @@ export function PlanCanvas({ plan, onExecute, onDecline, isProcessing }: PlanCan
         onClick={() => setIsModalOpen(true)}
       >
         <div className={cn(
-          "relative overflow-hidden rounded-2xl border bg-[#0a0a0a] transition-all duration-300",
+          "relative overflow-hidden rounded-2xl border bg-white dark:bg-[#0a0a0a] transition-all duration-300",
           "hover:border-white/15 hover:shadow-[0_0_40px_rgba(255,255,255,0.03)]",
           isDraft ? "border-white/10" : isRunning ? "border-blue-500/25" : "border-white/[0.06]"
         )}>
           {/* Subtle top accent line */}
-          <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+          <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-black/10 dark:via-white/10 to-transparent" />
 
           {/* ── Header ── */}
           <div className="px-6 pt-5 pb-4">
             <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-black/[0.04] dark:bg-white/[0.04] border border-black/[0.08] dark:border-white/[0.08] flex items-center justify-center shrink-0">
                 {isRunning
-                  ? <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
-                  : <Sparkles className="w-5 h-5 text-white/40" />
+                  ? <Loader2 className="w-5 h-5 text-blue-500 dark:text-blue-400 animate-spin" />
+                  : <Sparkles className="w-5 h-5 text-black/40 dark:text-white/40" />
                 }
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2.5 mb-1">
-                  <h3 className="text-[15px] font-bold text-white tracking-tight truncate">{plan.title}</h3>
+                  <h3 className="text-[15px] font-bold text-black dark:text-white tracking-tight truncate">{plan.title}</h3>
                   <StatusPill status={plan.status} />
                 </div>
-                <p className="text-[13px] text-white/40 leading-relaxed line-clamp-2">{plan.objective}</p>
+                <p className="text-[13px] text-black/40 dark:text-white/40 leading-relaxed line-clamp-2">{plan.objective}</p>
               </div>
-              <ChevronRight className="w-4 h-4 text-white/20 group-hover:text-white/40 transition-colors shrink-0 mt-1" />
+              <ChevronRight className="w-4 h-4 text-black/20 dark:text-white/20 group-hover:text-black/40 dark:group-hover:text-white/40 transition-colors shrink-0 mt-1" />
             </div>
           </div>
 
@@ -99,7 +99,7 @@ export function PlanCanvas({ plan, onExecute, onDecline, isProcessing }: PlanCan
                 <StepRow key={todo.todoId} todo={todo} index={i} compact />
               ))}
               {plan.todos.length > 3 && (
-                <p className="text-[11px] text-white/20 pl-7 pt-1">
+                <p className="text-[11px] text-black/40 dark:text-white/20 pl-7 pt-1">
                   +{plan.todos.length - 3} more steps
                 </p>
               )}
@@ -110,7 +110,7 @@ export function PlanCanvas({ plan, onExecute, onDecline, isProcessing }: PlanCan
           {totalCount > 0 && (
             <div className="px-6 pb-4">
               <div className="flex items-center gap-3">
-                <div className="flex-1 h-1 bg-white/[0.04] rounded-full overflow-hidden">
+                <div className="flex-1 h-1 bg-black/[0.04] dark:bg-white/[0.04] rounded-full overflow-hidden">
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${progress}%` }}
@@ -118,22 +118,22 @@ export function PlanCanvas({ plan, onExecute, onDecline, isProcessing }: PlanCan
                     className={cn(
                       "h-full rounded-full",
                       isRunning ? "bg-gradient-to-r from-blue-500 to-emerald-400" :
-                      plan.status === 'completed' ? "bg-emerald-400" : "bg-white/20"
+                      plan.status === 'completed' ? "bg-emerald-500 dark:bg-emerald-400" : "bg-black/20 dark:bg-white/20"
                     )}
                   />
                 </div>
-                <span className="text-[10px] text-white/25 font-mono">{completedCount}/{totalCount}</span>
+                <span className="text-[10px] text-black/40 dark:text-white/25 font-mono">{completedCount}/{totalCount}</span>
               </div>
             </div>
           )}
 
           {/* ── Action Bar ── */}
           {isDraft && (
-            <div className="px-6 py-4 border-t border-white/[0.04] flex items-center gap-3">
+            <div className="px-6 py-4 border-t border-black/[0.04] dark:border-white/[0.04] flex items-center gap-3">
               <button
                 onClick={(e) => { e.stopPropagation(); handleExecute(); }}
                 disabled={isExecuting || isProcessing}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-white text-black text-[12px] font-bold rounded-xl hover:bg-neutral-200 transition-all disabled:opacity-40 active:scale-[0.98]"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-black dark:bg-white text-white dark:text-black text-[12px] font-bold rounded-xl hover:bg-black/80 dark:hover:bg-neutral-200 transition-all disabled:opacity-40 active:scale-[0.98]"
               >
                 {isExecuting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
                 {isExecuting ? 'Starting...' : 'Execute Plan'}
@@ -141,7 +141,7 @@ export function PlanCanvas({ plan, onExecute, onDecline, isProcessing }: PlanCan
               {onDecline && (
                 <button
                   onClick={(e) => { e.stopPropagation(); onDecline(plan.planId); }}
-                  className="px-4 py-2.5 text-white/30 hover:text-white/60 text-[12px] font-bold rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.04] transition-all"
+                  className="px-4 py-2.5 text-black/40 dark:text-white/30 hover:text-black/60 dark:hover:text-white/60 text-[12px] font-bold rounded-xl bg-black/[0.03] dark:bg-white/[0.03] hover:bg-black/[0.06] dark:hover:bg-white/[0.06] border border-black/[0.04] dark:border-white/[0.04] transition-all"
                 >
                   Dismiss
                 </button>
