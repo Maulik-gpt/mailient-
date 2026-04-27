@@ -2546,7 +2546,7 @@ export default function ChatInterface({
                                 </div>
                               )}
                               <div className="flex flex-col max-w-[95%] group/msg">
-                                <div className={`transition-all relative ${msg.role === 'user' ? 'px-5 py-3 rounded-2xl bg-[#222] border border-white/10 text-white shadow-sm' : 'text-white/90 px-0 py-1'}`}>
+                                <div className={`transition-all relative ${msg.role === 'user' ? 'px-4 py-2 rounded-[22px] bg-[#111]/90 backdrop-blur-xl border border-white/[0.08] text-white shadow-2xl' : 'text-white/90 px-0 py-1'}`}>
                                   {msg.role === 'assistant' && msg.meta?.limitReached && (
                                     <div className="flex items-center gap-2 mb-3 opacity-60">
                                       <img src="/arcus-ai-icon.jpg" className="w-4 h-4 rounded-md grayscale" />
