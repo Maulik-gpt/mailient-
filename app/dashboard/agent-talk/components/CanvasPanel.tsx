@@ -146,60 +146,72 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
 
     return (
         <div
-            className="h-full flex flex-col overflow-hidden relative flex-shrink-0 bg-[#1E1E1E] border-l border-white/10 z-50 group/canvas selection:bg-blue-500/30 w-full md:w-auto shadow-2xl"
-            style={{ width: isClient && window.innerWidth < 768 ? '100vw' : `${width}px` }}
+            className="h-[calc(100vh-32px)] flex flex-col overflow-hidden relative flex-shrink-0 bg-[#0a0a0a] border border-white/10 z-50 group/canvas selection:bg-blue-500/30 w-full md:w-auto shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] rounded-[28px] m-4"
+            style={{ width: isClient && window.innerWidth < 768 ? 'calc(100vw - 32px)' : `${width}px` }}
         >
             {/* Resize Handle */}
             <div 
                 onMouseDown={startResizing}
-                className="hidden md:block absolute left-0 top-0 bottom-0 w-1.5 cursor-ew-resize hover:bg-black/[0.05] dark:hover:bg-white/10 transition-colors z-[100]"
+                className="hidden md:block absolute left-0 top-0 bottom-0 w-1.5 cursor-ew-resize hover:bg-white/10 transition-colors z-[100]"
             />
 
-            {/* Premium Header - Terminal/Browser Window Design */}
-            <div className="shrink-0 bg-[#252526] border-b border-white/5">
-                <div className="flex items-center justify-between px-4 py-3">
-                    <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1.5 opacity-50">
-                            <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
-                            <div className="w-2.5 h-2.5 rounded-full bg-yellow-500" />
-                            <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
+            {/* Premium Header - macOS/Manus Style */}
+            <div className="shrink-0 bg-[#161617] border-b border-white/5">
+                <div className="flex items-center justify-between px-5 py-4">
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1.5">
+                            <div className="w-3 h-3 rounded-full bg-white/10" />
+                            <div className="w-3 h-3 rounded-full bg-white/10" />
+                            <div className="w-3 h-3 rounded-full bg-white/10" />
                         </div>
-                        <h2 className="text-[13px] font-medium text-white/80 tracking-tight ml-2">
+                        <h2 className="text-[14px] font-semibold text-white/90 tracking-tight ml-2">
                            Arcus's Computer
                         </h2>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <button className="p-1.5 hover:bg-white/10 rounded-md transition-colors text-white/40 hover:text-white">
-                            <Laptop className="w-3.5 h-3.5" />
-                        </button>
-                        <button className="p-1.5 hover:bg-white/10 rounded-md transition-colors text-white/40 hover:text-white">
-                            <Layout className="w-3.5 h-3.5" />
-                        </button>
-                        <div className="w-[1px] h-4 bg-white/10 mx-1" />
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-3 mr-2">
+                            <button className="p-1.5 hover:bg-white/10 rounded-md transition-colors text-white/60 hover:text-white">
+                                <Laptop className="w-4 h-4" />
+                            </button>
+                            <button className="p-1.5 hover:bg-white/10 rounded-md transition-colors text-white/60 hover:text-white">
+                                <Layout className="w-4 h-4" />
+                            </button>
+                        </div>
                         <button 
                             onClick={onClose}
-                            className="p-1.5 hover:bg-red-500/20 hover:text-red-400 rounded-md transition-colors text-white/40"
+                            className="w-8 h-8 flex items-center justify-center hover:bg-white/10 rounded-full transition-colors text-white/60"
                         >
-                            <X className="w-4 h-4" />
+                            <X className="w-5 h-5" />
                         </button>
                     </div>
                 </div>
                 
-                {/* Sub-header / Status Bar */}
-                <div className="flex items-center gap-2 px-4 py-2 bg-[#1E1E1E] border-t border-white/5 text-[11px] font-mono text-white/40">
-                    <Code className="w-3.5 h-3.5 text-blue-400" />
-                    <span>Arcus is executing</span>
-                    <span className="text-white/20">|</span>
-                    <span className="truncate text-green-400/70">
-                        {canvasData.type === 'analytics' ? 'Running data_analysis()' : 
-                         canvasData.type === 'summary' ? 'Running summary_extraction()' : 
-                         'Processing workspace object...'}
+                {/* Status Bar / Browser Style */}
+                <div className="flex items-center gap-3 px-5 py-2.5 bg-[#1c1c1d] border-t border-white/5 text-[12px] font-medium text-white/40">
+                    <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 rounded bg-white/5 flex items-center justify-center">
+                            <Terminal className="w-3 h-3 text-blue-400" />
+                        </div>
+                        <span className="text-white/60">Arcus is using {canvasData.type === 'analytics' ? 'Data Engine' : 'Intelligent Agent'}</span>
+                    </div>
+                    <span className="text-white/10">|</span>
+                    <span className="truncate text-white/30 flex-1">
+                        {canvasData.type === 'analytics' ? 'Running analytical_sifting_protocol_v2.0' : 
+                         canvasData.type === 'summary' ? 'Extracting semantic_weights_from_inbox' : 
+                         'Navigating workspace objects...'}
                     </span>
+                </div>
+
+                {/* URL / Breadcrumb Bar */}
+                <div className="px-5 py-2 bg-[#0a0a0a] border-t border-white/5">
+                    <div className="h-8 bg-white/5 rounded-lg border border-white/5 flex items-center px-4 text-[11px] font-mono text-white/30 truncate">
+                        https://mailient.ai/arcus/{canvasData.type}/{canvasData?.title?.toLowerCase().replace(/\s+/g, '-') || 'execution'}
+                    </div>
                 </div>
             </div>
 
             {/* Inner Content Window */}
-            <div className="flex-1 bg-[#1E1E1E] flex flex-col overflow-hidden relative">
+            <div className="flex-1 bg-[#0a0a0a] flex flex-col overflow-hidden relative">
                 {/* Content Scroll Area */}
                 <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar p-6">
                         <AnimatePresence mode="wait">
@@ -470,34 +482,43 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                             )}
                         </AnimatePresence>
                     </div>
-
-                    {/* Inner Window Footer (Removed Progress Bar) */}
                 </div>
 
-            {/* Bottom Status Bar */}
-            <div className="shrink-0 h-12 bg-[#252526] border-t border-white/5 px-4 flex items-center justify-between text-white/30 text-[11px] font-mono">
-                <div className="flex items-center gap-3">
-                    <span className="opacity-50">[]</span>
-                    <div className="flex items-center gap-1 opacity-50">
-                        <button className="hover:text-white transition-colors p-1"><ChevronLeft className="w-3.5 h-3.5" /></button>
-                        <button className="hover:text-white transition-colors p-1"><ChevronRight className="w-3.5 h-3.5" /></button>
+            {/* Bottom Status Bar - Media Style */}
+            <div className="shrink-0 h-16 bg-[#161617] border-t border-white/5 px-6 flex items-center justify-between text-white/30 text-[12px]">
+                <div className="flex items-center gap-5">
+                    <div className="flex items-center gap-1">
+                        <button className="hover:text-white transition-colors p-1"><ChevronLeft className="w-5 h-5" /></button>
+                        <button className="hover:text-white transition-colors p-1"><ChevronRight className="w-5 h-5" /></button>
                     </div>
+                    
                     {/* Media Progress Bar */}
-                    <div className="flex items-center gap-2 flex-1 w-[160px] ml-2">
-                        <div className="h-1 flex-1 bg-blue-500/20 rounded-full relative overflow-hidden">
-                            <div className="absolute left-0 top-0 bottom-0 w-[80%] bg-blue-500 rounded-full" />
-                        </div>
-                        <div className="flex items-center gap-1.5 text-blue-400">
-                            <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-                            <span>live</span>
+                    <div className="flex flex-col gap-1.5 w-[200px]">
+                        <div className="h-1.5 w-full bg-white/5 rounded-full relative overflow-hidden">
+                            <motion.div 
+                                initial={{ width: "0%" }}
+                                animate={{ width: "85%" }}
+                                className="absolute left-0 top-0 bottom-0 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]" 
+                            />
                         </div>
                     </div>
+                    
+                    <div className="flex items-center gap-2 text-blue-400 font-bold uppercase tracking-widest text-[10px]">
+                        <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
+                        <span>live</span>
+                    </div>
                 </div>
-                <div className="flex items-center gap-3 text-right">
-                    <span className="max-w-[200px] truncate opacity-40">
-                        Automating workflows for {canvasData?.title || 'the objective'}...
-                    </span>
-                    <span className="opacity-30">2 / 4 ^</span>
+
+                <div className="flex items-center gap-4 text-right">
+                    <div className="flex flex-col items-end">
+                        <span className="text-white/60 font-medium truncate max-w-[240px]">
+                            {canvasData?.title || 'Processing objective'}
+                        </span>
+                        <span className="text-[10px] text-white/20 font-mono">
+                            VERIFYING LEADS FOR ACCURACY... 2 / 4
+                        </span>
+                    </div>
+                    <ChevronDown className="w-4 h-4 opacity-30" />
                 </div>
             </div>
 

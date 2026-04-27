@@ -2898,13 +2898,13 @@ export default function ChatInterface({
                       initial={{ opacity: 0, y: 10, scale: 0.9 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.9 }}
-                      className="absolute bottom-32 right-8 z-50"
+                      className="absolute bottom-[110px] right-12 z-50"
                     >
                       <button
                         onClick={() => scrollToBottom(false)}
-                        className="w-10 h-10 bg-[#1a1a1a] border border-white/10 rounded-full flex items-center justify-center text-white/60 hover:text-white hover:bg-[#222] transition-all shadow-2xl group"
+                        className="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center shadow-[0_10px_30px_rgba(255,255,255,0.2)] hover:scale-110 active:scale-95 transition-all group"
                       >
-                        <ChevronDown className="w-5 h-5 group-hover:translate-y-0.5 transition-transform" />
+                        <ChevronDown className="w-6 h-6 group-hover:translate-y-0.5 transition-transform" />
                       </button>
                     </motion.div>
                   )}
