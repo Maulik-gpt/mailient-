@@ -31,9 +31,21 @@ export async function POST(request) {
         });
 
         const messageLower = String(message || '').toLowerCase();
+        const isGreeting = /^(hi|hello|hey|good morning|good afternoon|good evening|howdy)/i.test(messageLower);
         const forceCanvas = messageLower.includes('canvas') || (messageLower.includes('draft') && (messageLower.includes('reply') || messageLower.includes('email')));
 
-        const intentAnalysis = await arcusAI.analyzeIntentAndPlan(message, {
+        const intentAnalysis = isGreeting ? {
+            intent: 'general_chat',
+            complexity: 'simple',
+            needsCanvas: false,
+            initialResponse: "Hello! I'm Arcus, your high-performance work layer. How can I assist you today?",
+            thinkingBlocks: [{
+                id: 'greeting-block',
+                title: 'Initializing interaction',
+                initialContext: 'Processing greeting and preparing for engagement...',
+                steps: [{ action: 'Analyzing intent', detail: 'Greeting detected, skipping information retrieval.', type: 'think' }]
+            }]
+        } : await arcusAI.analyzeIntentAndPlan(message, {
             userEmail: session.user.email,
             userName: session.user.name || 'User',
             attachments,
@@ -83,13 +95,16 @@ export async function POST(request) {
         });
     } catch (error) {
         console.error('Intent analysis error:', error);
+        const isGreeting = /^(hi|hello|hey|good morning|good afternoon|good evening|howdy)/i.test(String(message || '').toLowerCase());
         const fallbackRunId = `run_fallback_${Date.now()}`;
         return NextResponse.json({
             runId: fallbackRunId,
-            initialResponse: "I'm looking into that for you.",
+            initialResponse: isGreeting ? "Hello! How can I help you today?" : "I'm looking into that for you.",
             intent: 'general_chat',
             complexity: 'simple',
-            plan: [
+            plan: isGreeting ? [
+                { step: 1, id: `${fallbackRunId}_1`, kind: 'analyze', status: 'active', label: 'Processing greeting', action: 'analyze', description: 'Processing greeting', type: 'analyze', detail: 'Interaction initialized.' }
+            ] : [
                 { step: 1, id: `${fallbackRunId}_1`, kind: 'analyze', status: 'active', label: 'Understanding your request', action: 'analyze', description: 'Understanding your request', type: 'analyze', detail: 'Intent detection and task classification' },
                 { step: 2, id: `${fallbackRunId}_2`, kind: 'search', status: 'pending', label: 'Gathering relevant context', action: 'search', description: 'Gathering relevant context', type: 'search', detail: 'Finding the most relevant threads and context' },
                 { step: 3, id: `${fallbackRunId}_3`, kind: 'draft', status: 'pending', label: 'Preparing output for review', action: 'draft', description: 'Preparing output for review', type: 'draft', detail: 'Building execution-ready canvas output' }
