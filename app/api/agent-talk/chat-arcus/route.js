@@ -869,7 +869,12 @@ Body: ${emailData.body || emailData.snippet}
       const memoryContext = await arcusAI.getSupermemoryContext(userEmail, message);
 
       // Always generate response
-      const responsePromise = arcusAI.generateResponse(message, {
+      let contextMessage = message;
+      if (!shouldGenerateCanvas && intentAnalysis?.needsCanvas) {
+        contextMessage = `User requested: "${message}". [SYSTEM NOTE: The user declined the visual Canvas. You MUST output all details, summaries, and findings directly here in this chat response.]`;
+      }
+      
+      const responsePromise = arcusAI.generateResponse(contextMessage, {
         conversationHistory,
         emailContext,
         memoryContext,
