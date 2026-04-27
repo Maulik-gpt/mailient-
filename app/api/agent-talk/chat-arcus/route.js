@@ -1452,28 +1452,22 @@ async function executeEmailAction(userMessage, userEmail, session, providedAcces
         return { action: 'read_emails', success: true, emails: [], query, count: 0 };
       }
 
-      // 🚀 PERFORMANCE FIX: Fetch email details in parallel (was sequential)
-      const emailDetails = await Promise.all(messages.slice(0, 8).map(async (message) => {
+      // 🚀 PERFORMANCE FIX: Fetch email details in parallel, limited to 5 to prevent 504 timeouts
+      const emailDetails = await Promise.all(messages.slice(0, 5).map(async (message) => {
         try {
-          // Deep Retrieval: Fetch the whole thread to see the sequence and history
-          const thread = await gmailService.getThreadDetails(message.threadId);
-          const threadMessages = thread.messages || [];
-          if (threadMessages.length === 0) return null;
+          // Fast Retrieval: Fetch only the specific message rather than the full thread to prevent Vercel 504 Timeouts
+          const targetMsg = await gmailService.getEmailDetails(message.id);
+          if (!targetMsg) return null;
 
-          // Focus on the message the search actually pointed to (or the last one if not found)
-          const targetMsg = threadMessages.find(m => m.id === message.id) || threadMessages[threadMessages.length - 1];
           const parsed = gmailService.parseEmailData(targetMsg);
           
-          // Map thread messages to a concise history
-          const history = threadMessages.map(m => {
-            const mParsed = gmailService.parseEmailData(m);
-            return {
-              from: mParsed.from,
-              date: mParsed.date,
-              snippet: mParsed.snippet,
-              isMe: mParsed.from?.includes(userEmail) || mParsed.from?.includes('me')
-            };
-          });
+          // Omit full thread history to save processing time and context window
+          const history = [{
+            from: parsed.from,
+            date: parsed.date,
+            snippet: parsed.snippet,
+            isMe: parsed.from?.includes(userEmail) || parsed.from?.includes('me')
+          }];
 
           const fullBody = parsed.body || parsed.snippet || '';
           const bodyContent = fullBody.length > 4000 ? fullBody.substring(0, 4000) + '...' : fullBody;
