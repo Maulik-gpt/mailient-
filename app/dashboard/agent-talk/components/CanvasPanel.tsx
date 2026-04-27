@@ -146,7 +146,7 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
 
     return (
         <div
-            className="h-full flex flex-col overflow-hidden relative flex-shrink-0 bg-neutral-100 dark:bg-[#161616] border-l border-white/[0.05] z-50 group/canvas selection:bg-blue-500/30 w-full md:w-auto"
+            className="h-full flex flex-col overflow-hidden relative flex-shrink-0 bg-[#1E1E1E] border-l border-white/10 z-50 group/canvas selection:bg-blue-500/30 w-full md:w-auto shadow-2xl"
             style={{ width: isClient && window.innerWidth < 768 ? '100vw' : `${width}px` }}
         >
             {/* Resize Handle */}
@@ -155,39 +155,53 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                 className="hidden md:block absolute left-0 top-0 bottom-0 w-1.5 cursor-ew-resize hover:bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 transition-colors z-[100]"
             />
 
-            {/* Premium Header - Reusing Chat Interface Design Language */}
-            <div className="shrink-0 pt-6 px-6 pb-2">
-                <div className="flex items-center justify-between">
-                    <div className="flex flex-col">
-                        <h2 className="text-[15px] font-bold text-black/95 dark:text-white/95 tracking-tight flex items-center gap-2">
+            {/* Premium Header - Terminal/Browser Window Design */}
+            <div className="shrink-0 bg-[#252526] border-b border-white/5">
+                <div className="flex items-center justify-between px-4 py-3">
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1.5 opacity-50">
+                            <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
+                            <div className="w-2.5 h-2.5 rounded-full bg-yellow-500" />
+                            <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                        </div>
+                        <h2 className="text-[13px] font-medium text-white/80 tracking-tight ml-2">
                            Arcus's Computer
                         </h2>
                     </div>
                     <div className="flex items-center gap-3">
-                        {canvasData.type === 'analytics' && onSendToChat && (
-                            <button 
-                                onClick={() => onSendToChat("Can you explain the current analytics trends for my emails?")}
-                                className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 text-[11px] font-bold rounded-lg transition-all border border-blue-500/20"
-                            >
-                                <Info className="w-3.5 h-3.5" />
-                                <span>Explain Chart</span>
-                            </button>
-                        )}
+                        <button className="p-1.5 hover:bg-white/10 rounded-md transition-colors text-white/40 hover:text-white">
+                            <Laptop className="w-3.5 h-3.5" />
+                        </button>
+                        <button className="p-1.5 hover:bg-white/10 rounded-md transition-colors text-white/40 hover:text-white">
+                            <Layout className="w-3.5 h-3.5" />
+                        </button>
+                        <div className="w-[1px] h-4 bg-white/10 mx-1" />
                         <button 
                             onClick={onClose}
-                            className="p-2 hover:bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 rounded-lg transition-all text-black/40 dark:text-white/40 hover:text-black dark:text-white"
+                            className="p-1.5 hover:bg-red-500/20 hover:text-red-400 rounded-md transition-colors text-white/40"
                         >
                             <X className="w-4 h-4" />
                         </button>
                     </div>
                 </div>
+                
+                {/* Sub-header / Status Bar */}
+                <div className="flex items-center gap-2 px-4 py-2 bg-[#1E1E1E] border-t border-white/5 text-[11px] font-mono text-white/40">
+                    <Code className="w-3.5 h-3.5 text-blue-400" />
+                    <span>Arcus is executing</span>
+                    <span className="text-white/20">|</span>
+                    <span className="truncate text-green-400/70">
+                        {canvasData.type === 'analytics' ? 'Running data_analysis()' : 
+                         canvasData.type === 'summary' ? 'Running summary_extraction()' : 
+                         'Processing workspace object...'}
+                    </span>
+                </div>
             </div>
 
-            {/* Inner Content Window (The "Arcus Computer" bit) */}
-            <div className="flex-1 px-4 py-4 overflow-hidden flex flex-col">
-                <div className="flex-1 bg-white dark:bg-black border border-neutral-200 dark:border-white/5 rounded-2xl flex flex-col overflow-hidden shadow-2xl relative">
-                    {/* Content Scroll Area */}
-                    <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar p-6">
+            {/* Inner Content Window */}
+            <div className="flex-1 bg-[#1E1E1E] flex flex-col overflow-hidden relative">
+                {/* Content Scroll Area */}
+                <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar p-6">
                         <AnimatePresence mode="wait">
                             {canvasData.type === 'workflow' ? (
                                 <motion.div key="workflow" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
@@ -290,40 +304,42 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                                     isExecuting={isExecuting}
                                 />
                             ) : canvasData.type === 'analytics' ? (
-                                <div className="h-full flex flex-col space-y-8 overflow-y-auto pr-2 custom-scrollbar">
+                                <div className="h-full flex flex-col space-y-4 overflow-y-auto pr-2 custom-scrollbar">
                                   {/* Dynamic Stats Row */}
                                   <div className="grid grid-cols-2 gap-4">
                                     {(canvasData.content?.stats || []).map((stat: any, i: number) => (
-                                      <div key={i} className="p-5 bg-white/[0.03] border border-neutral-200 dark:border-white/5 rounded-2xl">
-                                        <div className="flex items-center gap-2 mb-2 text-black/30 dark:text-white/30">
+                                      <div key={i} className="p-5 bg-[#0a0a0a] border border-white/5 rounded-2xl flex flex-col justify-between min-h-[120px]">
+                                        <div className="flex items-center gap-2 mb-2 text-white/40">
                                           {stat.changeDirection === 'up' ? <TrendingUp className="w-3.5 h-3.5" /> : <Users className="w-3.5 h-3.5" />}
                                           <span className="text-[10px] font-bold uppercase tracking-widest">{stat.label}</span>
                                         </div>
-                                        <div className="text-[24px] font-bold text-black dark:text-white">{stat.value}</div>
-                                        {stat.change && (
-                                          <div className={cn("text-[10px] mt-1 font-mono", stat.changeDirection === 'up' ? 'text-emerald-400' : stat.changeDirection === 'down' ? 'text-red-400' : 'text-blue-400')}>
-                                            {stat.change}
-                                          </div>
-                                        )}
+                                        <div>
+                                          <div className="text-[32px] font-bold text-white tracking-tight">{stat.value}</div>
+                                          {stat.change && (
+                                            <div className={cn("text-[11px] font-medium tracking-tight mt-1", stat.changeDirection === 'up' ? 'text-emerald-500' : stat.changeDirection === 'down' ? 'text-red-500' : 'text-blue-500')}>
+                                              {stat.changeDirection === 'up' ? '+' : stat.changeDirection === 'down' ? '-' : ''}{stat.change}
+                                            </div>
+                                          )}
+                                        </div>
                                       </div>
                                     ))}
                                   </div>
 
                                   {/* Dynamic Area Chart */}
                                   {canvasData.content?.areaChart && (
-                                    <div className="p-6 bg-white dark:bg-black border border-neutral-200 dark:border-white/5 rounded-2xl h-[280px]">
-                                      <div className="flex items-center justify-between mb-6">
-                                        <div className="text-[12px] font-bold text-black dark:text-white flex items-center gap-2">
-                                          <LineChart className="w-4 h-4 text-emerald-400" />
-                                          {canvasData.content.areaChart.label || 'Trend Overview'}
+                                    <div className="p-6 bg-[#0a0a0a] border border-white/5 rounded-2xl h-[240px]">
+                                      <div className="flex items-center justify-between mb-8">
+                                        <div className="text-[12px] font-bold text-white flex items-center gap-2 tracking-tight">
+                                          <LineChart className="w-4 h-4 text-emerald-500" />
+                                          {canvasData.content.areaChart.label || 'Emails Received per Day'}
                                         </div>
                                       </div>
-                                      <div className="h-full w-full pb-8">
+                                      <div className="h-[140px] w-full">
                                         <ResponsiveContainer width="100%" height="100%">
                                           <AreaChart data={canvasData.content.areaChart.data || []}>
                                             <defs>
                                               <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.15}/>
                                                 <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
                                               </linearGradient>
                                             </defs>
@@ -343,9 +359,9 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
 
                                   {/* Dynamic Pie Chart */}
                                   {canvasData.content?.pieChart && (
-                                    <div className="p-6 bg-white/[0.02] rounded-2xl border border-neutral-200 dark:border-white/5">
-                                      <div className="text-[12px] font-bold text-black dark:text-white mb-4 flex items-center gap-2">
-                                        <PieChart className="w-4 h-4 text-blue-400" />
+                                    <div className="p-6 bg-[#0a0a0a] border border-white/5 rounded-2xl">
+                                      <div className="text-[12px] font-bold text-white mb-6 flex items-center gap-2 tracking-tight">
+                                        <PieChart className="w-4 h-4 text-blue-500" />
                                         {canvasData.content.pieChart.label || 'Distribution'}
                                       </div>
                                       <div className="flex items-center gap-8">
@@ -357,9 +373,10 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                                                 cx="50%"
                                                 cy="50%"
                                                 innerRadius={40}
-                                                outerRadius={60}
-                                                paddingAngle={5}
+                                                outerRadius={55}
+                                                paddingAngle={4}
                                                 dataKey="value"
+                                                stroke="none"
                                               >
                                                 {(canvasData.content.pieChart.data || []).map((_: any, index: number) => (
                                                   <Cell key={`cell-${index}`} fill={['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981'][index % 5]} />
@@ -377,9 +394,9 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                                               <div key={i} className="flex items-center justify-between">
                                                 <div className="flex items-center gap-2">
                                                   <div className={cn("w-2 h-2 rounded-full", colors[i % colors.length])} />
-                                                  <span className="text-[11px] text-black/70 dark:text-white/70">{seg.name}</span>
+                                                  <span className="text-[11px] text-white/70">{seg.name}</span>
                                                 </div>
-                                                <span className="text-[11px] font-mono text-black/40 dark:text-white/40">{pct}%</span>
+                                                <span className="text-[11px] font-mono text-white/40">{pct}%</span>
                                               </div>
                                             );
                                           })}
@@ -459,11 +476,29 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
             </div>
 
             {/* Bottom Status Bar */}
-            <div className="shrink-0 h-14 px-6 border-t border-neutral-200 dark:border-white/5 flex items-center justify-between text-black/30 dark:text-white/30">
+            <div className="shrink-0 h-12 bg-[#252526] border-t border-white/5 px-4 flex items-center justify-between text-white/30 text-[11px] font-mono">
                 <div className="flex items-center gap-3">
-                    <span className="text-[11px] font-medium truncate max-w-[300px]">
-                        Automating mission workflows and data synthesis for {canvasData.title || 'the objective'}...
+                    <span className="opacity-50">[]</span>
+                    <div className="flex items-center gap-1 opacity-50">
+                        <button className="hover:text-white transition-colors p-1"><ChevronLeft className="w-3.5 h-3.5" /></button>
+                        <button className="hover:text-white transition-colors p-1"><ChevronRight className="w-3.5 h-3.5" /></button>
+                    </div>
+                    {/* Media Progress Bar */}
+                    <div className="flex items-center gap-2 flex-1 w-[160px] ml-2">
+                        <div className="h-1 flex-1 bg-blue-500/20 rounded-full relative overflow-hidden">
+                            <div className="absolute left-0 top-0 bottom-0 w-[80%] bg-blue-500 rounded-full" />
+                        </div>
+                        <div className="flex items-center gap-1.5 text-blue-400">
+                            <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+                            <span>live</span>
+                        </div>
+                    </div>
+                </div>
+                <div className="flex items-center gap-3 text-right">
+                    <span className="max-w-[200px] truncate opacity-40">
+                        Automating workflows for {canvasData.title || 'the objective'}...
                     </span>
+                    <span className="opacity-30">2 / 4 ^</span>
                 </div>
             </div>
 
