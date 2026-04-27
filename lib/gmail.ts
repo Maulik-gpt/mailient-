@@ -402,14 +402,13 @@ export class GmailService {
   /**
    * Get emails/messages
    */
-  async getEmails(maxResults = 500, query = '', pageToken = null, orderBy = null) {
+  async getEmails(maxResults = 500, query = '', pageToken = null) {
     const params = new URLSearchParams({
       maxResults: Math.min(maxResults, 500).toString(), // Gmail API max is 500
     });
 
     if (query) params.append('q', query);
     if (pageToken) params.append('pageToken', pageToken);
-    if (orderBy) params.append('orderBy', orderBy);
 
     return this.makeRequest(`${this.baseUrl}/messages?${params}`);
   }

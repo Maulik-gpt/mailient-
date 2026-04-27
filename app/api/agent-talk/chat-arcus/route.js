@@ -1435,14 +1435,13 @@ async function executeEmailAction(userMessage, userEmail, session, providedAcces
     }
 
     try {
-      let emailsResponse = await gmailService.getEmails(maxResults, query, null, 'internalDate desc');
+      let emailsResponse = await gmailService.getEmails(maxResults, query, null);
       let messages = emailsResponse?.messages || [];
 
-      // Fallback: If no unread/specific results, try a broader recent search
       if (messages.length === 0 && (query.includes('is:unread') || query.includes('from:'))) {
         console.log('🔄 Arcus: No results for specific query, falling back to broader search');
         const fallbackQuery = 'newer_than:15d';
-        emailsResponse = await gmailService.getEmails(maxResults, fallbackQuery, null, 'internalDate desc');
+        emailsResponse = await gmailService.getEmails(maxResults, fallbackQuery, null);
         messages = emailsResponse?.messages || [];
         query = fallbackQuery; // Update query so UI shows fallback
       }
