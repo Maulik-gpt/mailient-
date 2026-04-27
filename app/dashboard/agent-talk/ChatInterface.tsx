@@ -12,7 +12,8 @@ import { CanvasPanel, type CanvasData } from './components/CanvasPanel';
 import { PlanArtifactCard, type PlanArtifact } from './components/PlanArtifactCard';
 import { SearchExecutionPanel } from './components/SearchExecutionPanel';
 import { ConnectorBar } from './components/ConnectorBar';
-
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { PromptInputBox } from '@/components/ui/ai-prompt-box';
 import { ConnectorsModal } from '@/components/ui/connectors-modal';
 import { EmailSelectionModal } from '@/components/ui/email-selection-modal';
@@ -80,60 +81,69 @@ const linkify = (text: string, isUser: boolean = false): string => {
   });
 };
 
-const renderMarkdown = (text: string, isUser: boolean = false): string => {
-  if (!text) return text;
-
-  const paragraphs = text.split(/\n\n+/);
-
-  const renderedParagraphs = paragraphs.map(para => {
-    let processedPara = para.replace(/\*\*(.*?)\*\*/g, `<strong class="font-bold text-black dark:text-white tracking-tight">$1</strong>`);
-
-    if (processedPara.includes('\n- ') || processedPara.startsWith('- ') || processedPara.includes('\n* ') || processedPara.startsWith('* ')) {
-      const lines = processedPara.split('\n');
-      const listItems = lines.map(line => {
-        const match = line.match(/^[\s]*[-*]\s*(.*)$/);
-        if (match) {
-          return `<li class="ml-4 py-1">${match[1]}</li>`;
-        }
-        return line;
-      });
-
-      let joinedList = listItems.join('\n');
-      const listBg = isUser ? 'bg-black/[0.03]' : 'bg-black/[0.02] dark:bg-white/[0.02]';
-      const listBorder = isUser ? 'border-black/[0.05]' : 'border-white/[0.05]';
-      joinedList = joinedList.replace(/(<li[\s\S]*?<\/li>(?:\n<li[\s\S]*?<\/li>)*)/g, `<ul class="space-y-1 my-6 list-none ${listBg} p-6 rounded-2xl border ${listBorder} relative shadow-inner overflow-hidden"><div class="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none"></div>$1</ul>`);
-      return joinedList;
-    }
-
-    processedPara = linkify(processedPara, isUser);
-    processedPara = processedPara.replace(/\n/g, '<br/>');
-
-    const textColorClass = isUser ? "text-black dark:text-white" : "text-black dark:text-white/70";
-    return `<p class="mb-3 last:mb-0 leading-relaxed ${textColorClass} text-[14px]">${processedPara}</p>`;
-  });
-
-  return renderedParagraphs.join('');
+const MarkdownComponents = {
+  h1: ({node, ...props}: any) => <h1 className="text-2xl font-bold text-black dark:text-white mt-6 mb-4 tracking-tight" {...props} />,
+  h2: ({node, ...props}: any) => <h2 className="text-xl font-bold text-black dark:text-white mt-5 mb-3 tracking-tight" {...props} />,
+  h3: ({node, ...props}: any) => <h3 className="text-lg font-bold text-black dark:text-white mt-4 mb-2 tracking-tight" {...props} />,
+  p: ({node, ...props}: any) => <p className="mb-3 last:mb-0 leading-relaxed text-[14px]" {...props} />,
+  ul: ({node, ...props}: any) => <ul className="space-y-1 my-4 list-disc list-inside bg-black/[0.02] dark:bg-white/[0.02] p-4 rounded-xl border border-black/[0.05] dark:border-white/[0.05]" {...props} />,
+  ol: ({node, ...props}: any) => <ol className="space-y-1 my-4 list-decimal list-inside bg-black/[0.02] dark:bg-white/[0.02] p-4 rounded-xl border border-black/[0.05] dark:border-white/[0.05]" {...props} />,
+  li: ({node, ...props}: any) => <li className="py-0.5 ml-2" {...props} />,
+  strong: ({node, ...props}: any) => <strong className="font-bold text-black dark:text-white tracking-tight" {...props} />,
+  hr: ({node, ...props}: any) => <hr className="my-6 border-t border-neutral-200 dark:border-white/10" {...props} />,
+  table: ({node, ...props}: any) => (
+    <div className="overflow-x-auto my-6 border border-neutral-200 dark:border-white/10 rounded-xl">
+      <table className="w-full text-left text-[13px] border-collapse" {...props} />
+    </div>
+  ),
+  thead: ({node, ...props}: any) => <thead className="bg-neutral-100 dark:bg-white/5 text-black dark:text-white/80 font-bold border-b border-neutral-200 dark:border-white/10" {...props} />,
+  th: ({node, ...props}: any) => <th className="px-4 py-3 font-semibold" {...props} />,
+  td: ({node, ...props}: any) => <td className="px-4 py-3 border-b border-neutral-200 dark:border-white/5 last:border-b-0" {...props} />,
+  a: ({node, ...props}: any) => <a className="text-blue-600 dark:text-blue-400 hover:underline underline-offset-4" target="_blank" rel="noopener noreferrer" {...props} />,
+  code: ({node, inline, ...props}: any) => 
+    inline 
+      ? <code className="px-1.5 py-0.5 bg-black/5 dark:bg-white/10 rounded-md text-[12px] font-mono text-black dark:text-white" {...props} />
+      : <code className="block p-4 bg-[#111111] text-white/90 rounded-xl my-4 text-[13px] font-mono overflow-x-auto border border-white/10" {...props} />,
 };
 
 const MessageContent = ({ content, isUser }: { content: any, isUser?: boolean }) => {
+  const textColorClass = isUser ? "text-black dark:text-white" : "text-black dark:text-white/80";
+
   if (typeof content === 'string') {
-    return <div dangerouslySetInnerHTML={{ __html: renderMarkdown(content, isUser) }} />;
+    return (
+      <div className={textColorClass}>
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
+          {content}
+        </ReactMarkdown>
+      </div>
+    );
   }
+  
   return (
-    <div className="space-y-4">
-      <div dangerouslySetInnerHTML={{ __html: renderMarkdown(content.text, isUser) }} />
+    <div className={`space-y-4 ${textColorClass}`}>
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
+        {content.text}
+      </ReactMarkdown>
+      
       {content.list && content.list.length > 0 && (
-        <ul className="space-y-2 mt-2">
+        <ul className="space-y-2 mt-2 bg-black/[0.02] dark:bg-white/[0.02] p-4 rounded-xl border border-black/[0.05] dark:border-white/[0.05]">
           {content.list.map((item: string, i: number) => (
             <li key={i} className="flex gap-2 items-start">
-              <div className="w-1 h-1 rounded-full bg-current mt-2 opacity-50" />
-              <div dangerouslySetInnerHTML={{ __html: renderMarkdown(item, isUser) }} />
+              <div className="w-1 h-1 rounded-full bg-current mt-2.5 opacity-50 shrink-0" />
+              <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
+                {item}
+              </ReactMarkdown>
             </li>
           ))}
         </ul>
       )}
+      
       {content.footer && (
-        <div className="mt-4 italic opacity-60 text-sm" dangerouslySetInnerHTML={{ __html: renderMarkdown(content.footer, isUser) }} />
+        <div className="mt-4 italic opacity-60 text-sm border-t border-neutral-200 dark:border-white/10 pt-3">
+          <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
+            {content.footer}
+          </ReactMarkdown>
+        </div>
       )}
     </div>
   );

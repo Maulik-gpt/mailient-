@@ -871,7 +871,9 @@ Body: ${emailData.body || emailData.snippet}
       // Always generate response
       let contextMessage = message;
       if (!shouldGenerateCanvas && intentAnalysis?.needsCanvas) {
-        contextMessage = `User requested: "${message}". [SYSTEM NOTE: The user declined the visual Canvas. You MUST output all details, summaries, and findings directly here in this chat response.]`;
+        contextMessage = `User requested: "${message}". [SYSTEM NOTE: The user declined the visual Canvas. You MUST output all details, summaries, and findings directly here in this chat response using markdown.]`;
+      } else if (shouldGenerateCanvas) {
+        contextMessage = `User requested: "${message}". [SYSTEM NOTE: A detailed interactive UI Canvas/Workspace has ALREADY been generated and opened for the user with this data. Do NOT write an essay or repeat the data here. Provide a very brief 1-2 sentence confirmation acknowledging the action and directing their attention to the workspace.]`;
       }
       
       const responsePromise = arcusAI.generateResponse(contextMessage, {
