@@ -315,6 +315,7 @@ interface AgentMessage {
       isSearching: boolean;
     };
     suggestions?: string[];
+    canvasExpansion?: boolean; // Phase 2: Whether to show canvas expansion prompt
   };
 }
 
@@ -1377,6 +1378,16 @@ export default function ChatInterface({
         }
       }
 
+      // --- PHASE 2: Canvas Expansion Prompting (Agent Mode only) ---
+      // Detect if the canvas content is complex enough to suggest expansion
+      const canvasContentLength = JSON.stringify(data.canvasData?.content || '').length;
+      const canvasSectionCount = data.canvasData?.sections?.length || 0;
+      const isCanvasComplex = hasCanvas && !isPlanMode && !isCanvas && (
+        canvasSectionCount >= 5 || canvasContentLength > 2000
+      );
+      // Store expansion suggestion flag on the message for inline rendering
+      const shouldSuggestExpansion = isCanvasComplex && !isCanvasOpen;
+
       await refreshArcusCredits(true);
 
       if (data.conversationId && data.conversationId !== conversationIdToUse) {
@@ -1448,7 +1459,8 @@ export default function ChatInterface({
           internalThought: aiThought || undefined,
           searchSessions: data.searchSessions || undefined,
           planArtifact: data.planArtifact || undefined, // Phase 2: Include plan artifact
-          suggestions: suggestions // Add suggestions
+          suggestions: suggestions, // Add suggestions
+          canvasExpansion: shouldSuggestExpansion || undefined // Phase 2: Canvas expansion prompt
         }
       };
 
@@ -2954,6 +2966,40 @@ export default function ChatInterface({
                                     </div>
                                   )}
 
+                                  {/* Phase 2: Canvas Expansion Prompt */}
+                                  {msg.role === 'assistant' && (msg as AgentMessage).meta?.canvasExpansion && (
+                                    <motion.div
+                                      initial={{ opacity: 0, y: 8 }}
+                                      animate={{ opacity: 1, y: 0 }}
+                                      className="mt-4 p-4 rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-sm"
+                                    >
+                                      <p className="text-[13px] text-white/50 mb-3">
+                                        This content is quite rich. Would you like to expand it on the canvas for a better view?
+                                      </p>
+                                      <div className="flex items-center gap-2">
+                                        <button
+                                          onClick={() => setIsCanvasOpen(true)}
+                                          className="px-4 py-2 bg-white text-black text-[12px] font-bold rounded-xl hover:bg-neutral-200 transition-all active:scale-[0.98]"
+                                        >
+                                          Yes, open canvas
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            // Remove the expansion prompt from this message
+                                            setMessages(prev => prev.map(m => {
+                                              if (m.id === msg.id && m.type === 'agent') {
+                                                return { ...m, meta: { ...(m as AgentMessage).meta, canvasExpansion: undefined } };
+                                              }
+                                              return m;
+                                            }));
+                                          }}
+                                          className="px-4 py-2 text-white/30 hover:text-white/60 text-[12px] font-bold rounded-xl bg-white/[0.03] hover:bg-white/[0.06] transition-all"
+                                        >
+                                          No, keep it here
+                                        </button>
+                                      </div>
+                                    </motion.div>
+                                  )}
                                   {/* Search Execution Panel (Phase 4) */}
                                   {msg.role === 'assistant' && (msg as AgentMessage).meta?.searchExecution && (
                                     <div className="mt-4">

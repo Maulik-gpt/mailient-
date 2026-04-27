@@ -228,8 +228,21 @@ function PlanModal({
                 <div className="flex items-center gap-3 mb-1.5">
                   <h2 className="text-xl font-bold text-white tracking-tight">{plan.title}</h2>
                   <StatusPill status={plan.status} />
+                  {plan.version > 1 && (
+                    <span className="text-[9px] font-mono text-white/20 bg-white/[0.04] px-1.5 py-0.5 rounded border border-white/[0.06]">
+                      v{plan.version}
+                    </span>
+                  )}
                 </div>
-                <p className="text-[14px] text-white/40 leading-relaxed">{plan.objective}</p>
+                <div className="flex items-center gap-3">
+                  <p className="text-[14px] text-white/40 leading-relaxed flex-1">{plan.objective}</p>
+                  <span className={cn(
+                    "text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full shrink-0",
+                    plan.complexity === 'complex' ? "text-amber-400/60 bg-amber-500/5" : "text-white/20 bg-white/[0.03]"
+                  )}>
+                    {plan.complexity}
+                  </span>
+                </div>
               </div>
             </div>
             <button
