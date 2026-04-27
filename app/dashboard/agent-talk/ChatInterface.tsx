@@ -2583,9 +2583,9 @@ export default function ChatInterface({
                                       <button className="hover:text-white transition-colors" title="More">
                                         <MoreHorizontal className="w-4 h-4" />
                                       </button>
-                                      {msg.meta?.durationMs && (
+                                      {(msg.meta as any)?.durationMs && (
                                         <span className="text-[11px] font-mono ml-2">
-                                          {(msg.meta.durationMs / 1000).toFixed(1)}s
+                                          {((msg.meta as any).durationMs / 1000).toFixed(1)}s
                                         </span>
                                       )}
                                     </div>

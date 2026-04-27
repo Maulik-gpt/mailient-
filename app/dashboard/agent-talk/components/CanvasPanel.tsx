@@ -152,7 +152,7 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
             {/* Resize Handle */}
             <div 
                 onMouseDown={startResizing}
-                className="hidden md:block absolute left-0 top-0 bottom-0 w-1.5 cursor-ew-resize hover:bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 transition-colors z-[100]"
+                className="hidden md:block absolute left-0 top-0 bottom-0 w-1.5 cursor-ew-resize hover:bg-black/[0.05] dark:hover:bg-white/10 transition-colors z-[100]"
             />
 
             {/* Premium Header - Terminal/Browser Window Design */}
@@ -245,7 +245,7 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                                           <button 
                                             disabled={deckIndex === 0}
                                             onClick={() => setDeckIndex(p => Math.max(0, p - 1))}
-                                            className="w-8 h-8 rounded-lg bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 flex items-center justify-center hover:bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 disabled:opacity-20 transition-all"
+                                            className="w-8 h-8 rounded-lg bg-black/[0.03] dark:bg-white/5 flex items-center justify-center hover:bg-black/[0.05] dark:hover:bg-white/10 disabled:opacity-20 transition-all"
                                           >
                                             <ChevronLeft className="w-4 h-4 text-black dark:text-white" />
                                           </button>
@@ -253,7 +253,7 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                                           <button 
                                             disabled={deckIndex >= (canvasData.content?.items?.length || 1) - 1}
                                             onClick={() => setDeckIndex(p => Math.min((canvasData.content?.items?.length || 1) - 1, p + 1))}
-                                            className="w-8 h-8 rounded-lg bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 flex items-center justify-center hover:bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 disabled:opacity-20 transition-all"
+                                            className="w-8 h-8 rounded-lg bg-black/[0.03] dark:bg-white/5 flex items-center justify-center hover:bg-black/[0.05] dark:hover:bg-white/10 disabled:opacity-20 transition-all"
                                           >
                                             <ChevronRight className="w-4 h-4 text-black dark:text-white" />
                                           </button>
@@ -274,12 +274,12 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                                           <h3 className="text-[20px] font-bold text-black dark:text-white mb-2 leading-tight">
                                             {canvasData.content?.items?.[deckIndex]?.subject || 'Email Summary'}
                                           </h3>
-                                          <p className="text-[14px] text-black/5 dark:text-black/50 dark:text-white/50 leading-relaxed font-mono">
+                                          <p className="text-[14px] text-black/5 dark:text-white/50 leading-relaxed font-mono">
                                             {canvasData.content?.items?.[deckIndex]?.summary || 'No summary available for this item.'}
                                           </p>
                                           {canvasData.content?.items?.[deckIndex]?.sender && (
                                             <div className="mt-8 flex items-center gap-3">
-                                              <div className="px-4 py-2 bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 rounded-full border border-neutral-200 dark:border-white/5 text-[11px] text-black/40 dark:text-white/40 font-mono">
+                                              <div className="px-4 py-2 bg-black/[0.03] dark:bg-white/5 rounded-full border border-neutral-200 dark:border-white/5 text-[11px] text-black/40 dark:text-white/40 font-mono">
                                                 From: {canvasData.content.items[deckIndex].sender}
                                               </div>
                                               {canvasData.content?.items?.[deckIndex]?.priority && (
@@ -459,7 +459,7 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                                         />
                                     ) : (
                                         <div className="h-full flex flex-col items-center justify-center opacity-30 px-12 text-center">
-                                            <div className="w-12 h-12 rounded-2xl bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 border border-neutral-200 dark:border-white/10 flex items-center justify-center mb-4">
+                                            <div className="w-12 h-12 rounded-2xl bg-black/[0.03] dark:bg-white/5 border border-neutral-200 dark:border-white/10 flex items-center justify-center mb-4">
                                                 <Sparkles className="w-6 h-6 text-black/40 dark:text-white/40" />
                                             </div>
                                             <p className="text-[13px] font-bold text-black dark:text-white tracking-tight">Mission Active</p>
@@ -473,7 +473,6 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
 
                     {/* Inner Window Footer (Removed Progress Bar) */}
                 </div>
-            </div>
 
             {/* Bottom Status Bar */}
             <div className="shrink-0 h-12 bg-[#252526] border-t border-white/5 px-4 flex items-center justify-between text-white/30 text-[11px] font-mono">
@@ -496,14 +495,14 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                 </div>
                 <div className="flex items-center gap-3 text-right">
                     <span className="max-w-[200px] truncate opacity-40">
-                        Automating workflows for {canvasData.title || 'the objective'}...
+                        Automating workflows for {canvasData?.title || 'the objective'}...
                     </span>
                     <span className="opacity-30">2 / 4 ^</span>
                 </div>
             </div>
 
             {/* Float Action Controls (only for actionable types) */}
-            {(canvasData.type === 'email_draft' || canvasData.type === 'reply') && (
+            {(canvasData?.type === 'email_draft' || canvasData?.type === 'reply') && (
                 <div className="absolute right-8 bottom-20 flex gap-3">
                     <button 
                         onClick={() => handleExecute('send_email')}
@@ -515,7 +514,7 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                     {!editMode ? (
                         <button 
                             onClick={() => setEditMode(true)}
-                            className="w-10 h-10 bg-[#2a2a2a] border border-neutral-200 dark:border-white/10 text-black/60 dark:text-white/60 hover:text-black dark:text-white rounded-full flex items-center justify-center transition-all shadow-xl"
+                            className="w-10 h-10 bg-[#2a2a2a] border border-neutral-200 dark:border-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white rounded-full flex items-center justify-center transition-all shadow-xl"
                         >
                             <Edit3 className="w-4 h-4" />
                         </button>
@@ -579,7 +578,7 @@ interface PlanArtifactViewProps {
 }
 
 const todoStatusConfig: Record<string, { label: string; color: string; bgColor: string; icon: any }> = {
-    pending: { label: 'Pending', color: 'text-black/30 dark:text-white/30', bgColor: 'bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5', icon: Clock },
+    pending: { label: 'Pending', color: 'text-black/30 dark:text-white/30', bgColor: 'bg-black/[0.03] dark:bg-white/5', icon: Clock },
     ready: { label: 'Ready', color: 'text-blue-400', bgColor: 'bg-blue-500/10', icon: CheckCircle2 },
     running: { label: 'Running', color: 'text-amber-400', bgColor: 'bg-amber-500/10', icon: Loader2 },
     completed: { label: 'Done', color: 'text-emerald-400', bgColor: 'bg-emerald-500/10', icon: CheckCircle2 },
@@ -630,7 +629,7 @@ function PlanArtifactView({ content, onExecute, isExecuting: isExecutingProp }: 
                         </div>
                         <div>
                             <h2 className="text-[18px] font-bold text-black/95 dark:text-white/95">{content.title || 'Execution Plan'}</h2>
-                            <p className="text-[13px] text-black/5 dark:text-black/50 dark:text-white/50 mt-0.5">{content.objective}</p>
+                            <p className="text-[13px] text-black/5 dark:text-white/50 mt-0.5">{content.objective}</p>
                         </div>
                     </div>
                     <span className={cn(
@@ -648,7 +647,7 @@ function PlanArtifactView({ content, onExecute, isExecuting: isExecutingProp }: 
                             <span>Progress</span>
                             <span>{progress.completed}/{progress.total} completed</span>
                         </div>
-                        <div className="h-2 bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 rounded-full overflow-hidden">
+                        <div className="h-2 bg-black/[0.03] dark:bg-white/5 rounded-full overflow-hidden">
                             <motion.div
                                 initial={{ width: 0 }}
                                 animate={{ width: `${progressPercent}%` }}
@@ -690,7 +689,7 @@ function PlanArtifactView({ content, onExecute, isExecuting: isExecutingProp }: 
             )}
 
             {/* Tabs */}
-            <div className="flex items-center gap-1 p-1 bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 rounded-lg">
+            <div className="flex items-center gap-1 p-1 bg-black/[0.03] dark:bg-white/5 rounded-lg">
                 {(['overview', 'todos', 'timeline'] as const).map((tab) => (
                     <button
                         key={tab}
@@ -698,8 +697,8 @@ function PlanArtifactView({ content, onExecute, isExecuting: isExecutingProp }: 
                         className={cn(
                             "flex-1 py-2 text-[12px] font-bold rounded-md transition-all",
                             activeTab === tab 
-                                ? "bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 text-black dark:text-white" 
-                                : "text-black/40 dark:text-white/40 hover:text-black/60 dark:text-white/60"
+                                ? "bg-black/[0.05] dark:bg-white/10 text-black dark:text-white" 
+                                : "text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60"
                         )}
                     >
                         {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -902,7 +901,7 @@ function TimelineItem({
             <div className="space-y-1">
                 <h4 className="text-[13px] font-semibold text-black/80 dark:text-white/80">{title}</h4>
                 {description && (
-                    <p className={cn("text-[12px]", isError ? 'text-red-400/80' : 'text-black/5 dark:text-black/50 dark:text-white/50')}>
+                    <p className={cn("text-[12px]", isError ? 'text-red-400/80' : 'text-black/5 dark:text-white/50')}>
                         {description}
                     </p>
                 )}
