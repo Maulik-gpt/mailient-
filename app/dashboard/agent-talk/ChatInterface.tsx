@@ -313,6 +313,7 @@ interface AgentMessage {
       answer?: string;
       isSearching: boolean;
     };
+    suggestions?: string[];
   };
 }
 
@@ -408,7 +409,7 @@ const NoScrollbarStyles = () => (
 );
 // --- Premium Components for Action Buttons ---
 
-const MessageActionButtons = ({ msg, onFeedback, isLoading }: { msg: Message, onFeedback: (type: 'like' | 'dislike', id: string | number) => void, isLoading: boolean }) => {
+const MessageActionButtons = ({ msg, onFeedback, onRegenerate, isLoading }: { msg: Message, onFeedback: (type: 'like' | 'dislike', id: string | number) => void, onRegenerate: (id: number) => void, isLoading: boolean }) => {
   const [isCopied, setIsCopied] = useState(false);
   const [isShared, setIsShared] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
@@ -568,7 +569,7 @@ const MessageActionButtons = ({ msg, onFeedback, isLoading }: { msg: Message, on
         <Tooltip delayDuration={200}>
           <TooltipTrigger asChild>
             <button 
-              onClick={handleRegenerate}
+              onClick={() => onRegenerate(msg.id as number)}
               className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-all text-white/40 hover:text-white"
             >
               <motion.div
@@ -612,6 +613,7 @@ export default function ChatInterface({
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [newMessageIds, setNewMessageIds] = useState<Set<number>>(new Set());
+  const [regenerateModal, setRegenerateModal] = useState<{ isOpen: boolean, msgId: number | null }>({ isOpen: false, msgId: null });
   const [isInitialMode, setIsInitialMode] = useState<boolean>(!initialConversationId);
   const [showHistory, setShowHistory] = useState<boolean>(false);
   const [historyRefreshKey, setHistoryRefreshKey] = useState<number>(0);
@@ -815,6 +817,53 @@ export default function ChatInterface({
     
     toast.info('Mission declined', { description: 'Continuing in chat mode.' });
   }, []);
+
+  const handleRegenerateClick = (msgId: number) => {
+    setRegenerateModal({ isOpen: true, msgId });
+  };
+
+  const handleConfirmRegenerate = () => {
+    const msgId = regenerateModal.msgId;
+    if (msgId === null) return;
+
+    // 1. Find the assistant message
+    const assistantMsgIndex = messages.findIndex(m => m.id === msgId);
+    if (assistantMsgIndex === -1) return;
+
+    // 2. Find preceding user message
+    const userMsgIndex = assistantMsgIndex - 1;
+    if (userMsgIndex < 0 || messages[userMsgIndex].role !== 'user') {
+      toast.error("Could not find original request to regenerate.");
+      setRegenerateModal({ isOpen: false, msgId: null });
+      return;
+    }
+
+    const userMsg = messages[userMsgIndex] as UserMessage;
+    const messageText = userMsg.content;
+    const attachments = userMsg.attachments;
+
+    // 3. Remove assistant message
+    const newMessages = messages.slice(0, assistantMsgIndex);
+    setMessages(newMessages);
+
+    // 4. Update localStorage
+    if (currentConversationId) {
+      const existingConversationRaw = localStorage.getItem(`conversation_${currentConversationId}`);
+      if (existingConversationRaw) {
+        try {
+          const existingData = JSON.parse(existingConversationRaw);
+          existingData.messages = newMessages;
+          localStorage.setItem(`conversation_${currentConversationId}`, JSON.stringify(existingData));
+        } catch (e) {
+          console.error('Error updating storage for regeneration:', e);
+        }
+      }
+    }
+
+    // 5. Close modal and trigger AI
+    setRegenerateModal({ isOpen: false, msgId: null });
+    processAIMessage(messageText, currentConversationId as string, false, attachments);
+  };
 
   const refreshArcusCredits = useCallback(async (showToast = false) => {
     try {
@@ -1341,6 +1390,17 @@ export default function ChatInterface({
         }
         : undefined;
 
+      // Extract suggestions if any (mocking them if backend doesn't provide yet)
+      const suggestions = data.suggestions || (isInitialMode ? [
+        "How can I help with this further?",
+        "Tell me more about this.",
+        "Execute next steps"
+      ] : [
+        "What else can you do?",
+        "Show me more details",
+        "Fine-tune this result"
+      ]);
+
       // --- PHASE III: Update the acknowledgment message with final content ---
       const finalAgentMessage: AgentMessage = {
         id: assistantMsgId,
@@ -1364,6 +1424,7 @@ export default function ChatInterface({
           internalThought: aiThought || undefined,
           searchSessions: data.searchSessions || undefined,
           planArtifact: data.planArtifact || undefined, // Phase 2: Include plan artifact
+          suggestions: suggestions // Add suggestions
         }
       };
 
@@ -2766,11 +2827,33 @@ export default function ChatInterface({
                                   />
 
                                   {msg.role === 'assistant' && (
-                                    <MessageActionButtons 
-                                      msg={msg} 
-                                      isLoading={isLoading} 
-                                      onFeedback={(type, id) => setFeedbackModal({isOpen: true, type, msgId: id})} 
-                                    />
+                                    <>
+                                      <MessageActionButtons 
+                                        msg={msg} 
+                                        isLoading={isLoading} 
+                                        onFeedback={(type, id) => setFeedbackModal({isOpen: true, type, msgId: id})} 
+                                        onRegenerate={handleRegenerateClick}
+                                      />
+                                      
+                                      {/* Follow-up Suggestions */}
+                                      {(msg as AgentMessage).meta?.suggestions && (msg as AgentMessage).meta?.suggestions!.length > 0 && (
+                                        <div className="mt-4 flex flex-col gap-2">
+                                          {(msg as AgentMessage).meta!.suggestions!.map((suggestion, idx) => (
+                                            <button
+                                              key={idx}
+                                              onClick={() => handleSend(suggestion)}
+                                              className="flex items-center gap-2 group/sug text-white/50 hover:text-white transition-all text-left w-fit"
+                                            >
+                                              <svg className="w-4 h-4 opacity-40 group-hover/sug:opacity-100 transition-opacity" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                                <path d="M12 20L12 10M12 10L16 14M12 10L8 14" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" transform="rotate(90 12 12)" />
+                                                <path d="M20 20H12" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                              </svg>
+                                              <span className="text-[13px] font-medium">{suggestion}</span>
+                                            </button>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </>
                                   )}
                                   {msg.role === 'user' && (msg as UserMessage).attachments && (msg as UserMessage).attachments!.length > 0 && (
                                     <div className="mt-3 flex flex-wrap gap-2 pt-3 border-t border-neutral-200 dark:border-white/10">
@@ -3183,6 +3266,35 @@ export default function ChatInterface({
                     toast.success('Feedback submitted', { description: 'Thank you for helping improve Arcus AI.' });
                     setFeedbackModal(prev => ({...prev, isOpen: false}));
                   }} className="px-5 py-2 bg-white text-black text-[13px] font-bold rounded-full hover:bg-neutral-200 transition-colors">Submit</button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+        {/* Regenerate Confirmation Modal */}
+        <AnimatePresence>
+          {regenerateModal.isOpen && (
+            <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                className="bg-[#111] border border-white/10 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl"
+              >
+                <div className="p-6 text-center">
+                  <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4 border border-white/10">
+                    <svg className="w-6 h-6 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  </div>
+                  <h3 className="text-white text-lg font-bold mb-2 tracking-tight">Regenerate reply?</h3>
+                  <p className="text-white/40 text-[13px] leading-relaxed">
+                    This will remove the current response and Arcus will attempt to generate a new one based on your request.
+                  </p>
+                </div>
+                <div className="px-6 py-4 bg-[#0a0a0a] border-t border-white/5 flex items-center gap-3">
+                  <button onClick={() => setRegenerateModal({ isOpen: false, msgId: null })} className="flex-1 px-4 py-2.5 text-white/50 hover:text-white text-[13px] font-bold transition-colors bg-white/5 hover:bg-white/10 rounded-xl">Cancel</button>
+                  <button onClick={handleConfirmRegenerate} className="flex-1 px-4 py-2.5 bg-white text-black text-[13px] font-bold rounded-xl hover:bg-neutral-200 transition-colors">Regenerate</button>
                 </div>
               </motion.div>
             </div>
