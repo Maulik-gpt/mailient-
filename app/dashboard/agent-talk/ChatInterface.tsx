@@ -1964,17 +1964,17 @@ export default function ChatInterface({
 
 
 
-  const startNewChat = async () => {
-    // Save current conversation before starting new one
+  const startNewChat = () => {
+    // Save current conversation asynchronously in the background before starting new one
     if (messages.length > 0 && currentConversationId) {
-      await saveConversation();
+      saveConversation().catch(console.error);
     }
 
-    // Always route to the base Arcus page on a single click
+    // Immediately route to the base Arcus page on a single click
     router.push('/dashboard/agent-talk');
     onNewChat?.();
 
-    // Clear all conversation state for new chat
+    // Clear all conversation state for new chat instantly
     setMessages([]);
     setIsInitialMode(true);
     setIsNewConversation(true);
