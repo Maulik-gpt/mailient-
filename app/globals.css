@@ -606,76 +606,76 @@ html, body, #__next, *, ::before, ::after,
   }
 }
 
-/* Text Selection Styling */
+/* Text Selection Styling - Premium translucent highlight */
 ::selection {
-  background-color: #ffffff;
-  color: #000000;
+  background-color: rgba(255, 255, 255, 0.15);
+  color: inherit;
 }
 
 ::-moz-selection {
-  background-color: #ffffff;
-  color: #000000;
+  background-color: rgba(255, 255, 255, 0.15);
+  color: inherit;
 }
 
 /* Chat message text selection */
 .satoshi-agent-talk ::selection {
-  background-color: #ffffff;
-  color: #000000;
+  background-color: rgba(255, 255, 255, 0.15);
+  color: inherit;
 }
 
 .satoshi-agent-talk ::-moz-selection {
-  background-color: #ffffff;
-  color: #000000;
+  background-color: rgba(255, 255, 255, 0.15);
+  color: inherit;
 }
 
 /* Input and textarea text selection */
 input::selection,
 textarea::selection {
-  background-color: #ffffff;
-  color: #000000;
+  background-color: rgba(255, 255, 255, 0.15);
+  color: inherit;
 }
 
 input::-moz-selection,
 textarea::-moz-selection {
-  background-color: #ffffff;
-  color: #000000;
+  background-color: rgba(255, 255, 255, 0.15);
+  color: inherit;
 }
 
-/* Message bubble text selection - using style attribute selector for better CSS compatibility */
+/* Message bubble text selection */
 [style*="background-color: #0d1a2a"]::selection {
-  background-color: #ffffff;
-  color: #000000;
+  background-color: rgba(255, 255, 255, 0.15);
+  color: inherit;
 }
 
 [style*="background-color: #0d1a2a"]::-moz-selection {
-  background-color: #ffffff;
-  color: #000000;
+  background-color: rgba(255, 255, 255, 0.15);
+  color: inherit;
 }
 
 /* User message bubble text selection */
 .bg-gray-200::selection {
-  background-color: #ffffff;
-  color: #000000;
+  background-color: rgba(0, 0, 0, 0.15);
+  color: inherit;
 }
 
 .bg-gray-200::-moz-selection {
-  background-color: #ffffff;
-  color: #000000;
+  background-color: rgba(0, 0, 0, 0.15);
+  color: inherit;
 }
 
-/* Sidebar and other UI elements text selection - using style attribute selectors */
+/* Sidebar and other UI elements text selection */
 [style*="background-color: #0a0a0a"]::selection,
 [style*="background-color: #0f0f0f"]::selection,
 [style*="background-color: #1a1a1a"]::selection {
-  background-color: #ffffff;
-  color: #000000;
+  background-color: rgba(255, 255, 255, 0.15);
+  color: inherit;
 }
 
 [style*="background-color: #0a0a0a"]::-moz-selection,
 [style*="background-color: #0f0f0f"]::-moz-selection,
 [style*="background-color: #1a1a1a"]::-moz-selection {
-  background-color: #ffffff;
-  color: #000000;
+  background-color: rgba(255, 255, 255, 0.15);
+  color: inherit;
 }
 
 /* Shimmer animation for recording placeholder */
