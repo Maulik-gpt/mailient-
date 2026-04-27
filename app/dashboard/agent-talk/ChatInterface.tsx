@@ -2868,11 +2868,11 @@ export default function ChatInterface({
                 {/* Fixed Prompt Box for Conversation Mode */}
                 {!isInitialMode && (
                   <div
-                    className="absolute bottom-0 left-0 right-0 z-50 bg-[#161616]"
-                    style={{ backgroundColor: '#161616' }}
+                    className="absolute bottom-0 left-0 right-0 z-50 bg-black"
+                    style={{ backgroundColor: '#000000' }}
                   >
                     {/* Shadow gradient to hide content as it scrolls under prompt box */}
-                    <div className="absolute bottom-full left-0 right-0 h-24 bg-gradient-to-t from-[#161616] via-[#161616]/90 to-transparent pointer-events-none" />
+                    <div className="absolute bottom-full left-0 right-0 h-24 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none" />
                     
                     <div className="max-w-3xl mx-auto w-full px-6 py-6 relative">
                       <PromptInputBox
