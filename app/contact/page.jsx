@@ -26,13 +26,14 @@ const XIcon = ({ className }) => (
   </svg>
 );
 
-// FoundrList Icon (based on logo)
+// FoundrList Icon - uses actual logo image
 const FoundrListIcon = ({ className }) => (
-  <svg className={className} viewBox="0 0 32 32" fill="none">
-    <path d="M28 8c0-4.418-3.582-8-8-8H8v.063C3.576 8.213 0 14.693 0 22c0 4.418 3.582 8 8 8h12v-.063c4.424-6.15 8-12.63 8-19.937z" fill="#E85A3C"/>
-    <path d="M8 0h12c4.418 0 8 3.582 8 8 0 3.864-2.736 8.718-6.152 12H8V0z" fill="#E85A3C"/>
-    <path d="M20 12H8v8h12c2.21 0 4-1.79 4-4s-1.79-4-4-4z" fill="#F5F5F5"/>
-  </svg>
+  <img 
+    src="https://www.foundrlist.com/favicon.ico" 
+    alt="FoundrList" 
+    className={className}
+    style={{ objectFit: 'contain' }}
+  />
 );
 
 const fadeInUp = {
@@ -53,7 +54,7 @@ const supportOptions = [
   {
     icon: FileText,
     title: "Documentation",
-    description: "Browse our comprehensive guides and API references.",
+    description: "Describe your issue or question in detail here...",
     href: "#",
     color: "from-gray-500/15 to-gray-400/10"
   },
@@ -203,7 +204,6 @@ export default function ContactPage() {
                 </div>
                 <h3 className="text-lg font-medium text-white mb-2">{option.title}</h3>
                 <p className="text-sm text-white/40 leading-relaxed">{option.description}</p>
-                <ArrowRight className="w-4 h-4 text-white/20 mt-4 group-hover:text-white/60 group-hover:translate-x-1 transition-all duration-300" />
               </motion.a>
             ))}
           </motion.div>
