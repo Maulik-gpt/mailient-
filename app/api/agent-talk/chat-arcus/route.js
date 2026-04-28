@@ -705,7 +705,7 @@ Body: ${emailData.body || emailData.snippet}
             ...intentAnalysis,
             intent: 'multi_step',
             complexity: 'complex',
-            needsCanvas: true,
+            needsCanvas: false, // Plan mode uses PlanCanvas card, not Canvas panel
             canvasType: 'action_plan'
           };
 
