@@ -2,12 +2,12 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Send, 
-  Mail, 
-  MessageSquare, 
-  User, 
-  CheckCircle2, 
+import {
+  Send,
+  Mail,
+  MessageSquare,
+  User,
+  CheckCircle2,
   AlertCircle,
   ArrowRight,
   Sparkles
@@ -52,7 +52,7 @@ export default function ContactPage() {
 
   return (
     <SignInLayout
-      title={<>Contact <br/> Support</>}
+      title={<>Contact <br /> Support</>}
       description="Have a question or need assistance? Reach out to our team of experts."
       hideHero={true}
       allowScroll={true}

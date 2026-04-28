@@ -30,6 +30,7 @@ export interface SignInPageProps {
   children?: React.ReactNode;
   hideHero?: boolean;
   allowScroll?: boolean;
+  maxWidth?: string;
   onSignIn?: (event: React.FormEvent<HTMLFormElement>) => void;
   onGoogleSignIn?: () => void;
   onResetPassword?: () => void;
@@ -65,12 +66,13 @@ export const SignInLayout: React.FC<SignInPageProps> = ({
   children,
   hideHero = false,
   allowScroll = false,
+  maxWidth = "max-w-md",
 }) => {
   return (
     <div className="h-screen flex flex-col md:flex-row bg-[#050505] text-white selection:bg-white selection:text-black overflow-hidden">
       {/* Left column: sign-in form */}
       <section className={`flex-1 flex items-center justify-center p-8 md:p-12 lg:p-20 relative z-10 ${allowScroll ? 'overflow-y-auto custom-scrollbar' : ''}`}>
-        <div className="w-full max-w-md">
+        <div className={`w-full ${maxWidth}`}>
           <div className="flex flex-col gap-8">
             <div className="space-y-4">
               <h1 className="animate-element animate-delay-100 text-5xl md:text-6xl font-bold tracking-tighter leading-[0.9] text-white">{title}</h1>
