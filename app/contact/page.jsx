@@ -52,10 +52,10 @@ const staggerContainer = {
 
 const supportOptions = [
   {
-    icon: FileText,
-    title: "Documentation",
-    description: "Describe your issue or question in detail here...",
-    href: "#",
+    icon: MessageSquare,
+    title: "Send a message",
+    description: "Can't find what you need? Message us directly.",
+    href: "#contact-form",
     color: "from-gray-500/15 to-gray-400/10"
   },
   {
@@ -281,53 +281,70 @@ export default function ContactPage() {
                           </motion.div>
                         )}
 
+                        <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] mb-6">
+                          <p className="text-sm text-white/50">
+                            <span className="text-white/70 font-medium">What to include:</span> Describe your issue, feature request, or question in detail. 
+                            Include your account email, browser/device info, and any error messages you see. The more details, the faster we can help.
+                          </p>
+                        </div>
+
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <label className="text-xs font-medium text-white/50 uppercase tracking-wider">Name</label>
+                            <label className="text-xs font-medium text-white/50 uppercase tracking-wider">Your Name</label>
                             <input
                               type="text"
                               required
                               value={formData.name}
                               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                              placeholder="John Doe"
+                              placeholder="e.g. John Smith"
                               className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white placeholder:text-white/20 focus:border-white/[0.2] focus:bg-white/[0.05] transition-all duration-300 outline-none"
                             />
                           </div>
                           <div className="space-y-2">
-                            <label className="text-xs font-medium text-white/50 uppercase tracking-wider">Email</label>
+                            <label className="text-xs font-medium text-white/50 uppercase tracking-wider">Your Email</label>
                             <input
                               type="email"
                               required
                               value={formData.email}
                               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                              placeholder="john@company.com"
+                              placeholder="e.g. john@gmail.com"
                               className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white placeholder:text-white/20 focus:border-white/[0.2] focus:bg-white/[0.05] transition-all duration-300 outline-none"
                             />
                           </div>
                         </div>
 
                         <div className="space-y-2">
-                          <label className="text-xs font-medium text-white/50 uppercase tracking-wider">Subject</label>
-                          <input
-                            type="text"
+                          <label className="text-xs font-medium text-white/50 uppercase tracking-wider">What is this about?</label>
+                          <select
                             required
                             value={formData.subject}
                             onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                            placeholder="How can we help?"
-                            className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white placeholder:text-white/20 focus:border-white/[0.2] focus:bg-white/[0.05] transition-all duration-300 outline-none"
-                          />
+                            className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:border-white/[0.2] focus:bg-white/[0.05] transition-all duration-300 outline-none appearance-none cursor-pointer"
+                            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='white' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1rem' }}
+                          >
+                            <option value="" className="bg-zinc-900 text-white/40">Select a topic...</option>
+                            <option value="Bug Report" className="bg-zinc-900 text-white">Bug Report - Something is not working</option>
+                            <option value="Feature Request" className="bg-zinc-900 text-white">Feature Request - I have an idea</option>
+                            <option value="Billing Question" className="bg-zinc-900 text-white">Billing Question - About my subscription</option>
+                            <option value="Account Help" className="bg-zinc-900 text-white">Account Help - Login or access issues</option>
+                            <option value="Integration Help" className="bg-zinc-900 text-white">Integration Help - Gmail/Calendar setup</option>
+                            <option value="Other" className="bg-zinc-900 text-white">Other - Something else</option>
+                          </select>
                         </div>
 
                         <div className="space-y-2">
-                          <label className="text-xs font-medium text-white/50 uppercase tracking-wider">Message</label>
+                          <label className="text-xs font-medium text-white/50 uppercase tracking-wider">Tell us what happened</label>
                           <textarea
                             required
-                            rows={5}
+                            rows={6}
                             value={formData.message}
                             onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                            placeholder="Tell us more about your inquiry..."
+                            placeholder="Example: I tried to connect my Gmail account but got an error saying 'Authentication failed'. I am using Chrome on MacOS. My account email is different from the one above."
                             className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white placeholder:text-white/20 focus:border-white/[0.2] focus:bg-white/[0.05] transition-all duration-300 outline-none resize-none"
                           />
+                          <p className="text-xs text-white/30 mt-2">
+                            Tip: Include steps to reproduce, expected vs actual behavior, and screenshots if possible.
+                          </p>
                         </div>
 
                         <button
