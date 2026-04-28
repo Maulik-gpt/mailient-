@@ -906,47 +906,27 @@ Body: ${emailData.body || emailData.snippet}
       // Always generate response
       let contextMessage = message;
       if (isPlanMode) {
-        // Plan Mode: AI generates a unique, strategic plan in the chat response.
-        // The PlanCanvas card displays the objective, but the chat IS the real plan.
+        // Plan Mode: AI writes a SHORT intro in chat. The full plan lives in the plan card.
         if (planArtifact && planArtifact.title) {
           contextMessage = `User requested (Plan Mode): "${message}".
 
 [SYSTEM INSTRUCTIONS — PLAN MODE]
-You are creating a strategic execution plan for the user's email workspace. Generate a UNIQUE, highly specific plan. Never use generic or template language.
+The full plan is already displayed in an interactive Plan Card below your response with typewriter animation.
+
+YOUR JOB: Write ONLY a brief 2-3 sentence introduction. Example tone:
+"I've generated a strategic plan for [objective]. Review the plan below — it covers [brief summary of approach]. Click Execute when you're ready to proceed."
 
 STRICT RULES:
-1. No emojis, no unicode symbols, no decorative characters.
-2. Keep response under 5000 characters.
-3. Use clean markdown with headings and bullet points.
-4. Reference SPECIFIC details from the user's request — names, dates, subjects, tools.
-5. Every plan must be different. Never reuse the same structure or wording across requests.
-6. If the request involves emails, describe exactly which emails to search for, what to look for, and how to act on them.
-
-STRUCTURE YOUR RESPONSE AS:
-
-## [Create a specific, actionable title — not just "Plan: <request>"]
-
-Write a 2-3 sentence strategic overview. Be direct about what Arcus will do and why.
-
-### Approach
-Describe the step-by-step approach in a natural, strategic way. Use numbered steps. Each step should be specific to THIS request — mention real actions like "search for emails from [person]", "draft a reply addressing [topic]", "create a Notion page summarizing [data]".
-
-### Considerations
-What should the user know? Any risks, dependencies, or assumptions that are specific to this request.
-
-### Expected Outcome
-What will the user have when this plan is complete? Be specific.
-
-Tell the user to review the plan card below and click "Execute" when ready.
+1. Do NOT write the full plan in the chat — the plan card handles that.
+2. Do NOT list execution steps, assumptions, or criteria in your response.
+3. No emojis. No unicode symbols.
+4. Keep your response under 500 characters total.
+5. Be direct and confident. Reference what the plan will accomplish.
 
 USER'S REQUEST: "${message}"
-PLAN TITLE: ${planArtifact.title}
-PLAN OBJECTIVE: ${planArtifact.objective}
-
-Generate a plan that is SPECIFIC to this request. Do not copy any template. Think from scratch.]`;
+PLAN TITLE: ${planArtifact.title}]`;
         } else {
-          // Fallback if plan generation failed — AI still generates a unique plan
-          contextMessage = `User requested (Plan Mode): "${message}". [SYSTEM: Generate a detailed, unique strategic plan for this request. Use markdown headings: Approach (numbered steps specific to the request), Considerations, and Expected Outcome. Be specific to the user's actual request. No emojis. No generic template language. Under 5000 characters. Tell the user the plan card will appear below.]`;
+          contextMessage = `User requested (Plan Mode): "${message}". [SYSTEM: Write a brief 2-3 sentence response acknowledging the request. Say you are generating a plan and it will appear below. Do NOT write the plan itself. Under 500 characters. No emojis.]`;
         }
       } else if (!shouldGenerateCanvas && intentAnalysis?.needsCanvas) {
         contextMessage = `User requested: "${message}". [SYSTEM NOTE: The user declined the visual Canvas. You MUST output all details, summaries, and findings directly here in this chat response using markdown.]`;

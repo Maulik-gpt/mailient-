@@ -1,15 +1,71 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Play, Loader2, X, Sparkles, Maximize2, Minimize2, CheckCircle2
+  Play, Loader2, X, Sparkles, Maximize2, CheckCircle2
 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { cn } from '@/lib/utils';
 import type { PlanArtifact, PlanStatus } from './PlanArtifactCard';
 
-// Re-export types for consumers
 export type { PlanArtifact, PlanStatus };
+
+// ─── Markdown styling for plan cards ──────────────────────────
+const PlanMarkdown = {
+  h1: ({node, ...props}: any) => <h1 className="text-xl font-bold text-white mt-5 mb-3 tracking-tight" {...props} />,
+  h2: ({node, ...props}: any) => <h2 className="text-lg font-bold text-white mt-5 mb-2 tracking-tight" {...props} />,
+  h3: ({node, ...props}: any) => <h3 className="text-[15px] font-bold text-white mt-4 mb-2 tracking-tight" {...props} />,
+  p: ({node, ...props}: any) => <p className="mb-3 last:mb-0 leading-[1.7] text-[14px] text-white/70" {...props} />,
+  ul: ({node, ...props}: any) => <ul className="space-y-1.5 my-3 list-none pl-1" {...props} />,
+  ol: ({node, ...props}: any) => <ol className="space-y-1.5 my-3 list-decimal pl-5 text-white/70 text-[14px]" {...props} />,
+  li: ({node, ...props}: any) => (
+    <li className="relative pl-4 text-[14px] text-white/70">
+      <span className="absolute left-0 top-2 w-1 h-1 bg-white/40 rounded-full" />
+      {props.children}
+    </li>
+  ),
+  strong: ({node, ...props}: any) => <strong className="font-bold text-white" {...props} />,
+  hr: ({node, ...props}: any) => <hr className="my-5 border-t border-white/[0.06]" {...props} />,
+  a: ({node, ...props}: any) => <a className="text-blue-400 hover:text-blue-300 underline underline-offset-4 decoration-blue-400/30" target="_blank" rel="noopener noreferrer" {...props} />,
+  code: ({node, inline, ...props}: any) =>
+    inline
+      ? <code className="px-1.5 py-0.5 bg-white/[0.06] rounded-md text-[12px] font-mono text-white/80" {...props} />
+      : <code className="block p-4 bg-white/[0.03] text-white/80 rounded-xl my-4 text-[13px] font-mono overflow-x-auto border border-white/[0.06]" {...props} />,
+};
+
+// ─── Typewriter Hook ──────────────────────────────────────────
+function useTypewriter(text: string, speed: number = 8) {
+  const [displayed, setDisplayed] = useState('');
+  const [isDone, setIsDone] = useState(false);
+  const indexRef = useRef(0);
+
+  useEffect(() => {
+    setDisplayed('');
+    setIsDone(false);
+    indexRef.current = 0;
+
+    if (!text) { setIsDone(true); return; }
+
+    const interval = setInterval(() => {
+      indexRef.current += 1;
+      // Speed up: write 2-4 chars at a time for natural feel
+      const charsPerTick = Math.min(3, text.length - indexRef.current + 1);
+      indexRef.current = Math.min(indexRef.current + charsPerTick - 1, text.length);
+      setDisplayed(text.slice(0, indexRef.current));
+
+      if (indexRef.current >= text.length) {
+        clearInterval(interval);
+        setIsDone(true);
+      }
+    }, speed);
+
+    return () => clearInterval(interval);
+  }, [text, speed]);
+
+  return { displayed, isDone };
+}
 
 // ─── Inline Plan Card ─────────────────────────────────────────
 interface PlanCanvasProps {
@@ -20,12 +76,15 @@ interface PlanCanvasProps {
 }
 
 export function PlanCanvas({ plan, onExecute, onDecline, isProcessing }: PlanCanvasProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
 
   const isDraft = plan.status === 'draft' && !plan.locked;
   const isRunning = plan.status === 'executing';
   const isCompleted = plan.status === 'completed';
+
+  const planText = plan.objective || '';
+  const { displayed, isDone } = useTypewriter(planText, 6);
 
   const handleExecute = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -39,119 +98,189 @@ export function PlanCanvas({ plan, onExecute, onDecline, isProcessing }: PlanCan
     }
   };
 
-  // Build display text from the plan objective (the real AI content)
-  const planText = plan.objective || '';
-
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ type: 'spring', damping: 28, stiffness: 260 }}
-      className="w-full max-w-2xl my-3"
-    >
-      <div className={cn(
-        "relative overflow-hidden rounded-2xl border transition-all duration-300",
-        "bg-[#0c0c0c] shadow-[0_2px_20px_rgba(0,0,0,0.4)]",
-        isDraft ? "border-white/[0.08]" :
-        isRunning ? "border-blue-500/20" :
-        isCompleted ? "border-emerald-500/15" :
-        "border-white/[0.06]"
-      )}>
+    <>
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: 'spring', damping: 28, stiffness: 260 }}
+        className="w-full max-w-2xl my-3"
+      >
+        <div className={cn(
+          "relative overflow-hidden rounded-2xl border transition-all duration-300",
+          "bg-[#0c0c0c] shadow-[0_2px_20px_rgba(0,0,0,0.4)]",
+          isDraft ? "border-white/[0.08]" :
+          isRunning ? "border-blue-500/20" :
+          isCompleted ? "border-emerald-500/15" :
+          "border-white/[0.06]"
+        )}>
 
-        {/* ── Header ── */}
-        <div className="px-5 pt-4 pb-3 flex items-center justify-between">
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div className={cn(
-              "w-8 h-8 rounded-xl flex items-center justify-center shrink-0",
-              isRunning ? "bg-blue-500/10" :
-              isCompleted ? "bg-emerald-500/10" :
-              "bg-white/[0.04]"
-            )}>
-              {isRunning ? (
-                <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
-              ) : isCompleted ? (
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-              ) : (
-                <Sparkles className="w-4 h-4 text-white/30" />
-              )}
+          {/* ── Header ── */}
+          <div className="px-5 pt-4 pb-2 flex items-center justify-between">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className={cn(
+                "w-8 h-8 rounded-xl flex items-center justify-center shrink-0",
+                isRunning ? "bg-blue-500/10" :
+                isCompleted ? "bg-emerald-500/10" :
+                "bg-white/[0.04]"
+              )}>
+                {isRunning ? (
+                  <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
+                ) : isCompleted ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                ) : (
+                  <Sparkles className="w-4 h-4 text-white/30" />
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-[15px] font-bold text-white tracking-tight truncate">{plan.title}</h3>
+                <StatusLabel status={plan.status} />
+              </div>
             </div>
-            <div className="min-w-0 flex-1">
-              <h3 className="text-[14px] font-bold text-white tracking-tight truncate">{plan.title}</h3>
-              <StatusLabel status={plan.status} />
-            </div>
-          </div>
 
-          <div className="flex items-center gap-1.5 shrink-0 ml-3">
-            {/* Expand / Collapse */}
             <button
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="w-7 h-7 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] flex items-center justify-center text-white/25 hover:text-white/50 transition-all"
-              title={isExpanded ? "Collapse" : "Expand"}
+              onClick={() => setIsModalOpen(true)}
+              className="w-7 h-7 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] flex items-center justify-center text-white/25 hover:text-white/50 transition-all shrink-0 ml-3"
+              title="Expand plan"
             >
-              {isExpanded ? (
-                <Minimize2 className="w-3.5 h-3.5" />
-              ) : (
-                <Maximize2 className="w-3.5 h-3.5" />
-              )}
+              <Maximize2 className="w-3.5 h-3.5" />
             </button>
           </div>
-        </div>
 
-        {/* ── Plan Content ── */}
-        <div className="px-5 pb-4">
-          <div className={cn(
-            "text-[13px] text-white/50 leading-[1.75] whitespace-pre-wrap transition-all duration-300",
-            isExpanded ? "" : "line-clamp-4"
-          )}>
-            {planText}
-          </div>
-        </div>
-
-        {/* ── Action Bar ── */}
-        {isDraft && (
-          <div className="px-5 py-3 border-t border-white/[0.04] flex items-center gap-2">
-            <button
-              onClick={handleExecute}
-              disabled={isExecuting || isProcessing}
-              className="flex items-center gap-2 px-4 py-2 bg-white text-black text-[12px] font-bold rounded-xl hover:bg-neutral-200 transition-all disabled:opacity-40 active:scale-[0.98]"
-            >
-              {isExecuting ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Play className="w-3.5 h-3.5" />
+          {/* ── Plan Content with Typewriter ── */}
+          <div className="px-5 pb-4 max-h-[280px] overflow-y-auto arcus-scrollbar">
+            <div className="text-[14px] text-white/60 leading-[1.75]">
+              <ReactMarkdown remarkPlugins={[remarkGfm]} components={PlanMarkdown}>
+                {displayed}
+              </ReactMarkdown>
+              {!isDone && (
+                <span className="inline-block w-[2px] h-[14px] bg-white/50 ml-0.5 animate-pulse align-text-bottom" />
               )}
-              {isExecuting ? 'Starting...' : 'Execute'}
-            </button>
-            {onDecline && (
+            </div>
+          </div>
+
+          {/* ── Action Bar ── */}
+          {isDraft && isDone && (
+            <motion.div
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="px-5 py-3 border-t border-white/[0.04] flex items-center gap-2"
+            >
               <button
-                onClick={(e) => { e.stopPropagation(); onDecline(plan.planId); }}
-                className="px-3 py-2 text-white/25 hover:text-white/50 text-[12px] font-bold rounded-xl hover:bg-white/[0.04] transition-all"
+                onClick={handleExecute}
+                disabled={isExecuting || isProcessing}
+                className="flex items-center gap-2 px-4 py-2 bg-white text-black text-[12px] font-bold rounded-xl hover:bg-neutral-200 transition-all disabled:opacity-40 active:scale-[0.98]"
               >
-                Dismiss
+                {isExecuting ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Play className="w-3.5 h-3.5" />
+                )}
+                {isExecuting ? 'Starting...' : 'Execute'}
               </button>
-            )}
-          </div>
-        )}
+              {onDecline && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onDecline(plan.planId); }}
+                  className="px-3 py-2 text-white/25 hover:text-white/50 text-[12px] font-bold rounded-xl hover:bg-white/[0.04] transition-all"
+                >
+                  Dismiss
+                </button>
+              )}
+            </motion.div>
+          )}
 
-        {isRunning && (
-          <div className="px-5 py-2.5 border-t border-blue-500/10 bg-blue-500/[0.03]">
-            <div className="flex items-center gap-2 text-blue-400">
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              <span className="text-[12px] font-bold">Executing...</span>
+          {isRunning && (
+            <div className="px-5 py-2.5 border-t border-blue-500/10 bg-blue-500/[0.03]">
+              <div className="flex items-center gap-2 text-blue-400">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span className="text-[12px] font-bold">Executing...</span>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {isCompleted && (
-          <div className="px-5 py-2.5 border-t border-emerald-500/10 bg-emerald-500/[0.03]">
-            <div className="flex items-center gap-2 text-emerald-400">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span className="text-[12px] font-bold">Plan executed</span>
+          {isCompleted && (
+            <div className="px-5 py-2.5 border-t border-emerald-500/10 bg-emerald-500/[0.03]">
+              <div className="flex items-center gap-2 text-emerald-400">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span className="text-[12px] font-bold">Plan executed</span>
+              </div>
             </div>
-          </div>
+          )}
+        </div>
+      </motion.div>
+
+      {/* ── Expanded Modal ── */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-md p-6"
+            onClick={() => setIsModalOpen(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: 'spring', damping: 30, stiffness: 280 }}
+              className="w-full max-w-2xl max-h-[85vh] bg-[#0a0a0a] border border-white/[0.08] rounded-3xl overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.8)] flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="shrink-0 px-6 py-5 border-b border-white/[0.05] flex items-center justify-between">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className="w-9 h-9 rounded-xl bg-white/[0.04] flex items-center justify-center shrink-0">
+                    <Sparkles className="w-4.5 h-4.5 text-white/30" />
+                  </div>
+                  <div className="min-w-0">
+                    <h2 className="text-[17px] font-bold text-white tracking-tight truncate">{plan.title}</h2>
+                    <StatusLabel status={plan.status} />
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="w-8 h-8 rounded-full bg-white/[0.05] hover:bg-white/[0.10] flex items-center justify-center text-white/30 hover:text-white transition-all shrink-0"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Modal Body (Scrollable) */}
+              <div className="flex-1 overflow-y-auto px-6 py-6 arcus-scrollbar">
+                <div className="text-[15px] text-white/65 leading-[1.8]">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={PlanMarkdown}>
+                    {planText}
+                  </ReactMarkdown>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              {isDraft && (
+                <div className="shrink-0 px-6 py-4 border-t border-white/[0.05] bg-[#070707] flex items-center gap-3">
+                  <button
+                    onClick={handleExecute}
+                    disabled={isExecuting || isProcessing}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-white text-black text-[13px] font-bold rounded-xl hover:bg-neutral-200 transition-all disabled:opacity-40 active:scale-[0.98]"
+                  >
+                    {isExecuting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+                    {isExecuting ? 'Starting...' : 'Execute'}
+                  </button>
+                  {onDecline && (
+                    <button
+                      onClick={() => onDecline(plan.planId)}
+                      className="px-4 py-2.5 text-white/30 hover:text-white/60 text-[13px] font-bold rounded-xl bg-white/[0.03] hover:bg-white/[0.06] transition-all"
+                    >
+                      Dismiss
+                    </button>
+                  )}
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
         )}
-      </div>
-    </motion.div>
+      </AnimatePresence>
+    </>
   );
 }
 

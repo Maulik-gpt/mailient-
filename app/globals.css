@@ -532,6 +532,29 @@ html, body, #__next, *, ::before, ::after,
   background: transparent;
 }
 
+/* Arcus plan card scrollbar */
+.arcus-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.06) transparent;
+}
+
+.arcus-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.arcus-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.arcus-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+}
+
+.arcus-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
 /* Enhanced scrollbar compatibility for modern browsers */
 .chat-scrollbar,
 .conversation-scrollbar {

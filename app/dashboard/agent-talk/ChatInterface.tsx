@@ -89,11 +89,11 @@ const MarkdownComponents = {
   h4: ({node, ...props}: any) => <h4 className="text-base font-bold text-white mt-4 mb-2 tracking-tight leading-tight" {...props} />,
   h5: ({node, ...props}: any) => <h5 className="text-[16px] font-bold text-white mt-3 mb-2 tracking-tight leading-tight" {...props} />,
   h6: ({node, ...props}: any) => <h6 className="text-[15px] font-bold text-white mt-3 mb-2 tracking-tight leading-tight" {...props} />,
-  p: ({node, ...props}: any) => <p className="mb-4 last:mb-0 leading-[1.6] text-[16px] text-white/90" {...props} />,
+  p: ({node, ...props}: any) => <p className="mb-4 last:mb-0 leading-[1.7] text-[17px] text-white/90" {...props} />,
   ul: ({node, ...props}: any) => <ul className="space-y-2 my-4 list-none pl-2" {...props} />,
   ol: ({node, ...props}: any) => <ol className="space-y-2 my-4 list-decimal pl-6 text-white/90" {...props} />,
   li: ({node, ...props}: any) => (
-    <li className="relative pl-5 text-[16px] text-white/90">
+    <li className="relative pl-5 text-[17px] text-white/90">
       <span className="absolute left-0 top-2.5 w-1.5 h-1.5 bg-white/60 rounded-full" />
       {props.children}
     </li>
@@ -2857,16 +2857,7 @@ export default function ChatInterface({
                                     isTyping={isLoading && msg.role === 'assistant' && msg.id === messages[messages.length - 1].id}
                                   />
 
-                                  {msg.role === 'assistant' && (
-                                    <>
-                                      <MessageActionButtons 
-                                        msg={msg} 
-                                        isLoading={isLoading} 
-                                        onFeedback={(type, id) => setFeedbackModal({isOpen: true, type, msgId: id})} 
-                                        onRegenerate={handleRegenerateClick}
-                                      />
-                                    </>
-                                  )}
+
                                   {msg.role === 'user' && (msg as UserMessage).attachments && (msg as UserMessage).attachments!.length > 0 && (
                                     <div className="mt-3 flex flex-wrap gap-2 pt-3 border-t border-neutral-200 dark:border-white/10">
                                       {(msg as UserMessage).attachments!.map((file, idx) => (
@@ -2992,6 +2983,16 @@ export default function ChatInterface({
                                         }}
                                       />
                                     </div>
+                                  )
+
+                                  {/* Action buttons — AFTER all cards */}
+                                  {msg.role === 'assistant' && (
+                                    <MessageActionButtons 
+                                      msg={msg} 
+                                      isLoading={isLoading} 
+                                      onFeedback={(type, id) => setFeedbackModal({isOpen: true, type, msgId: id})} 
+                                      onRegenerate={handleRegenerateClick}
+                                    />
                                   )}
 
                                   {msg.role === 'assistant' && msg.meta?.limitReached && (
