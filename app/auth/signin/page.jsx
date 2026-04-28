@@ -182,9 +182,9 @@ function SignInContent() {
         <Shield className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" strokeWidth={2} />
         <div className="space-y-1">
           <h4 className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">Gmail Notice</h4>
-          <p className="text-[11px] text-amber-50/90 block leading-relaxed font-light tracking-tight">
-            Mailient is optimized for <span className="text-amber-200 font-medium">Google Workspace</span>. 
-            Personal <span className="text-amber-200 font-medium">@gmail.com</span> accounts may see security warnings.
+          <p className="text-[11px] text-amber-100/60 block leading-relaxed font-light tracking-tight">
+            Mailient is optimized for <span className="text-white font-semibold">Google Workspace</span>. 
+            Personal <span className="text-white font-semibold">@gmail.com</span> accounts may see security warnings.
           </p>
         </div>
       </div>
