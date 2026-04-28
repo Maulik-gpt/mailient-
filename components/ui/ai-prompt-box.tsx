@@ -935,6 +935,8 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
               <DropdownMenu
                 align="right"
                 side="top"
+                hideChevron={true}
+                triggerClassName="bg-[#2a2a2a] hover:bg-[#333333] border-none shadow-none px-4 py-1.5 rounded-full h-8 min-w-[70px] flex items-center justify-center transition-all duration-300"
                 options={AI_MODELS.map(model => {
                   const isLocked = 
                     (model.tier !== 'free' && (props.currentPlan === 'free' || !props.currentPlan)) || 
@@ -961,9 +963,9 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                 })}
                 className="p-0 border-none bg-transparent shadow-none"
               >
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/[0.03] dark:bg-white/[0.03] border border-black/5 dark:border-white/10 hover:bg-black/[0.06] dark:hover:bg-white/[0.06] transition-all group">
-                  {React.createElement(AI_MODELS.find(m => m.id === activeModelId)?.icon || AutoLogo, { className: "w-3.5 h-3.5" })}
-                  <span className="text-[12px] font-bold text-black/60 dark:text-white/60 group-hover:text-black dark:group-hover:text-white transition-colors">
+                <div className="flex items-center gap-1.5">
+                  {activeModelId !== 'auto' && React.createElement(AI_MODELS.find(m => m.id === activeModelId)?.icon || AutoLogo, { className: "w-3.5 h-3.5" })}
+                  <span className="text-[13px] font-semibold text-white/90">
                     {activeModelId === 'auto' ? 'Auto' : AI_MODELS.find(m => m.id === activeModelId)?.name}
                   </span>
                 </div>

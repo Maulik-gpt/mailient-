@@ -15,11 +15,13 @@ type DropdownMenuProps = {
   }[];
   children: React.ReactNode;
   className?: string;
+  triggerClassName?: string;
   align?: "left" | "right";
   side?: "top" | "bottom";
+  hideChevron?: boolean;
 };
 
-const DropdownMenu = ({ options, children, className, align = "left", side = "bottom" }: DropdownMenuProps) => {
+const DropdownMenu = ({ options, children, className, triggerClassName, align = "left", side = "bottom", hideChevron = false }: DropdownMenuProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -45,16 +47,21 @@ const DropdownMenu = ({ options, children, className, align = "left", side = "bo
       <Button
         onClick={toggleDropdown}
         variant="outline"
-        className="px-4 py-2 bg-black/40 hover:bg-black/60 shadow-[0_4px_20px_rgba(0,0,0,0.3)] border border-white/10 rounded-xl backdrop-blur-md transition-all duration-300"
+        className={cn(
+          "px-4 py-2 bg-black/40 hover:bg-black/60 shadow-[0_4px_20px_rgba(0,0,0,0.3)] border border-white/10 rounded-xl backdrop-blur-md transition-all duration-300",
+          triggerClassName
+        )}
       >
         {children ?? "Menu"}
-        <motion.span
-          className="ml-2"
-          animate={{ rotate: isOpen ? 180 : 0 }}
-          transition={{ duration: 0.4, ease: "easeInOut", type: "spring" }}
-        >
-          <ChevronDown className="h-4 w-4 opacity-50" />
-        </motion.span>
+        {!hideChevron && (
+          <motion.span
+            className="ml-2"
+            animate={{ rotate: isOpen ? 180 : 0 }}
+            transition={{ duration: 0.4, ease: "easeInOut", type: "spring" }}
+          >
+            <ChevronDown className="h-4 w-4 opacity-50" />
+          </motion.span>
+        )}
       </Button>
 
       <AnimatePresence>
