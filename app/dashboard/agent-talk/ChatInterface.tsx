@@ -2107,8 +2107,9 @@ export default function ChatInterface({
   }, [isEmailSelectionModalOpen]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const loadedConversationIdRef = useRef<string | null>(null);
+   const scrollContainerRef = useRef<HTMLDivElement>(null);
+   const [isActuallyAtBottom, setIsActuallyAtBottom] = useState(true);
+   const loadedConversationIdRef = useRef<string | null>(null);
 
   // Load initial conversation if provided via URL
   useEffect(() => {
@@ -2148,13 +2149,16 @@ export default function ChatInterface({
     }
   }, [initialConversationId, isInitialMode]);
 
-  const handleScroll = () => {
-    if (scrollContainerRef.current) {
-      const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
-      const isAtBottom = scrollHeight - scrollTop - clientHeight < 200;
-      setShowScrollButton(!isAtBottom);
-    }
-  };
+   const handleScroll = () => {
+     if (scrollContainerRef.current) {
+       const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
+       const isNearBottom = scrollHeight - scrollTop - clientHeight < 200;
+       const isAtBottom = Math.abs(scrollHeight - scrollTop - clientHeight) < 10;
+       
+       setShowScrollButton(!isNearBottom);
+       setIsActuallyAtBottom(isAtBottom);
+     }
+   };
 
   useEffect(() => {
     const container = scrollContainerRef.current;
@@ -3270,19 +3274,20 @@ export default function ChatInterface({
                     <div className="absolute bottom-full left-0 right-0 h-12 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none" />
                     
                     <div className="max-w-3xl mx-auto w-full px-6 py-6 relative">
-                      <PromptInputBox
-                        onSend={(msg, files, opts) => handleSend(msg, files, opts)}
-                        onStop={() => abortControllerRef.current?.abort()}
-                        isLoading={isLoading}
-                        placeholder="Ask follow-up..."
-                        onSearchClick={() => { }}
-                        onAttachEmailClick={() => setIsEmailSelectionModalOpen(true)}
-                        onPersonalityClick={() => setIsPersonalityModalOpen(true)}
-                        selectedEmailsCount={selectedEmails.length}
-                        suggestionInput={suggestionInput}
-                        onConnectClick={() => setIsIntegrationsModalOpen(true)}
-                        currentPlan={currentPlan || 'free'}
-                        onUpgradeClick={() => {
+                       <PromptInputBox
+                         onSend={(msg, files, opts) => handleSend(msg, files, opts)}
+                         onStop={() => abortControllerRef.current?.abort()}
+                         isLoading={isLoading}
+                         placeholder="Ask follow-up..."
+                         onSearchClick={() => { }}
+                         onAttachEmailClick={() => setIsEmailSelectionModalOpen(true)}
+                         onPersonalityClick={() => setIsPersonalityModalOpen(true)}
+                         selectedEmailsCount={selectedEmails.length}
+                         suggestionInput={suggestionInput}
+                         onConnectClick={() => setIsIntegrationsModalOpen(true)}
+                         currentPlan={currentPlan || 'free'}
+                         hideShadow={isActuallyAtBottom}
+                         onUpgradeClick={() => {
                           setUsageLimitModalData({
                             featureName: 'Premium Models',
                             currentUsage: 0,

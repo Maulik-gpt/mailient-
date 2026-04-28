@@ -297,6 +297,7 @@ interface PromptInputProps {
   onDrop?: (e: React.DragEvent) => void;
   onFocus?: () => void;
   onBlur?: () => void;
+  hideShadow?: boolean;
 }
 const PromptInput = forwardRef<HTMLDivElement, PromptInputProps>(
   (
@@ -312,10 +313,11 @@ const PromptInput = forwardRef<HTMLDivElement, PromptInputProps>(
       onDragOver,
       onDragLeave,
       onDrop,
-      onFocus,
-      onBlur,
-    },
-    ref
+       onFocus,
+       onBlur,
+       hideShadow = false,
+     },
+     ref
   ) => {
     const [internalValue, setInternalValue] = React.useState(value || "");
     const handleChange = (newValue: string) => {
@@ -337,12 +339,13 @@ const PromptInput = forwardRef<HTMLDivElement, PromptInputProps>(
           <div
             ref={ref}
             onFocus={onFocus}
-            onBlur={onBlur}
-            className={cn(
-              "rounded-3xl border border-white/10 bg-white dark:bg-[#2b2b2b] p-2 shadow-[0_8px_30px_rgba(0,0,0,0.3)] transition-all duration-300",
-              isLoading && "border-red-500/70",
-              className
-            )}
+             onBlur={onBlur}
+             className={cn(
+               "rounded-3xl border border-white/10 bg-white dark:bg-[#2b2b2b] p-2 transition-all duration-300",
+               !hideShadow && "shadow-[0_8px_30px_rgba(0,0,0,0.3)]",
+               isLoading && "border-red-500/70",
+               className
+             )}
             onDragOver={onDragOver}
             onDragLeave={onDragLeave}
             onDrop={onDrop}
@@ -471,6 +474,7 @@ interface PromptInputBoxProps {
   onConnectClick?: () => void;
   currentPlan?: 'free' | 'starter' | 'pro' | 'none';
   onUpgradeClick?: () => void;
+  hideShadow?: boolean;
 }
 
 const MODES = [
@@ -734,9 +738,10 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => setIsFocused(false)}
-        className={cn(
+         onFocus={() => setIsFocused(true)}
+         onBlur={() => setIsFocused(false)}
+         hideShadow={props.hideShadow}
+         className={cn(
           "w-full bg-white dark:bg-[#2b2b2b] border border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.3)] transition-all duration-300 ease-in-out focus:ring-0 focus:outline-none focus-within:ring-0 focus-within:outline-none",
           isRecording && "border-red-500/70",
           className
