@@ -209,7 +209,7 @@ function SignUpContent() {
 
   return (
     <SignInLayout
-      title="Let’s Continue"
+      title="Welcome"
       description="Mailient is currently in early access. Secure your spot to redefine your inbox."
       heroImageSrc="https://images.unsplash.com/photo-1642615835477-d303d7dc9ee9?w=2160&q=80"
       testimonials={testimonials}

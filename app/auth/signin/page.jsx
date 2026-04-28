@@ -238,7 +238,7 @@ function SignInContent() {
 
   return (
     <SignInLayout
-      title="Welcome"
+      title="Let’s Continue"
       description="Accelerate your email workflow with founder-grade artificial intelligence. Enterprise-level automation for everyday founders."
       heroImageSrc="https://images.unsplash.com/photo-1642615835477-d303d7dc9ee9?w=2160&q=80"
       testimonials={testimonials}
