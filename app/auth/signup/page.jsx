@@ -188,10 +188,10 @@ function SignUpContent() {
 
   const testimonials = [
     {
-      avatarSrc: "https://randomuser.me/api/portraits/women/57.jpg",
-      name: "Sarah Chen",
-      handle: "@sarahdigital",
-      text: "Mailient has completely transformed my workflow. The AI-handled emails are a lifesaver."
+      avatarSrc: "/testimonials/john-oliver.png",
+      name: "John Oliver",
+      handle: "@joms0993",
+      text: "I checked out your tool and it looks great. I think people would find a lot of value in it. The pricing is also very competitive compared to similar tools, which could make an easy choice for users."
     },
     {
       avatarSrc: "https://randomuser.me/api/portraits/men/64.jpg",
