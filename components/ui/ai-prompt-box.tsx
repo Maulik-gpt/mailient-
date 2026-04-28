@@ -477,13 +477,54 @@ const MODES = [
   { id: 'plan', label: 'Plan', icon: Workflow, description: 'Create detailed plans for accomplishing tasks' },
 ] as const;
 
+// --- Custom Model Logos ---
+const AnthropicLogo = ({ className }: { className?: string }) => (
+  <svg className={cn("w-4 h-4", className)} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 3L13.1 9H19L14.2 12.6L15.3 18.6L10.5 15L5.7 18.6L6.8 12.6L2 9H7.9L9 3H12Z" fill="#F06A33" />
+  </svg>
+);
+
+const GoogleGeminiLogo = ({ className }: { className?: string }) => (
+  <svg className={cn("w-4 h-4", className)} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 2L14.5 9.5H22L16 14L18.5 21.5L12 17L5.5 21.5L8 14L2 9.5H9.5L12 2Z" fill="url(#gemini-gradient)" />
+    <defs>
+      <linearGradient id="gemini-gradient" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
+        <stop stopColor="#4285F4" />
+        <stop offset="0.5" stopColor="#34A853" />
+        <stop offset="1" stopColor="#FBBC05" />
+      </linearGradient>
+    </defs>
+  </svg>
+);
+
+const OpenAILogo = ({ className }: { className?: string }) => (
+  <svg className={cn("w-4 h-4", className)} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20ZM12 7C9.24 7 7 9.24 7 12C7 14.76 9.24 17 12 17C14.76 17 17 14.76 17 12C17 9.24 14.76 7 12 7Z" fill="currentColor" />
+  </svg>
+);
+
+const KimiLogo = ({ className }: { className?: string }) => (
+  <svg className={cn("w-4 h-4", className)} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+    <path d="M8 10C8 10 9 9 10 9C11 9 12 10 12 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    <path d="M14 10C14 10 15 9 16 9C17 9 18 10 18 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    <path d="M9 15C9 15 10.5 16.5 12 16.5C13.5 16.5 15 15 15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+  </svg>
+);
+
+const AutoLogo = ({ className }: { className?: string }) => (
+  <svg className={cn("w-4 h-4", className)} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 2L13.5 8.5H20L14.75 12.25L16.25 18.75L11 15L5.75 18.75L7.25 12.25L2 8.5H8.5L10 2H12Z" fill="currentColor" opacity="0.8" />
+  </svg>
+);
+
 export const AI_MODELS = [
-  { id: 'liquid/lfm-2.5-1.2b-thinking:free', name: 'Liquid', tier: 'free', icon: BrainCog },
-  { id: 'openai/gpt-4.5', name: 'GPT 4.5', tier: 'starter', icon: Sparkles },
-  { id: 'anthropic/claude-opus-4.6', name: 'Opus 4.6', tier: 'starter', icon: BrainCog },
-  { id: 'openai/gpt-5.5', name: 'GPT 5.5', tier: 'pro', icon: Sparkles, isFlagship: true },
-  { id: 'anthropic/claude-opus-4.7', name: 'Opus 4.7', tier: 'pro', icon: BrainCog, isFlagship: true },
-  { id: 'google/gemini-3.1-pro', name: 'Gemini 3.1 Pro', tier: 'starter', icon: BrainCog },
+  { id: 'auto', name: 'Auto', tier: 'free', icon: AutoLogo },
+  { id: 'anthropic/claude-opus-4.6', name: 'Sonnet 4.6', tier: 'starter', icon: AnthropicLogo, beta: true },
+  { id: 'anthropic/claude-opus-4.7', name: 'Opus 4.7', tier: 'pro', icon: AnthropicLogo, beta: true, isFlagship: true },
+  { id: 'google/gemini-3.1-pro', name: 'Gemini 3.1 Pro', tier: 'starter', icon: GoogleGeminiLogo, beta: true },
+  { id: 'openai/gpt-4.5', name: 'GPT 4.5', tier: 'starter', icon: OpenAILogo, beta: true },
+  { id: 'openai/gpt-5.5', name: 'GPT 5.5', tier: 'pro', icon: OpenAILogo, beta: true, isFlagship: true },
 ];
 
 type AgentMode = typeof MODES[number]['id'];
@@ -854,18 +895,23 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
 
             {/* Model Selector Dropdown */}
             <div className="relative">
-              <button
-                type="button"
+              <div 
+                className="flex flex-col items-start cursor-pointer group"
                 onClick={() => setIsModelMenuOpen(!isModelMenuOpen)}
-                className={cn(
-                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border transition-all font-bold",
-                  "bg-black/[0.05] dark:bg-white/5 border-black/5 dark:border-white/10 hover:bg-black/10 dark:hover:bg-white/10 hover:border-black/10 dark:hover:border-white/20 text-[#3b82f6]"
-                )}
               >
-                {React.createElement(AI_MODELS.find(m => m.id === activeModelId)?.icon || BrainCog, { className: "w-3.5 h-3.5" })}
-                <span className="text-[12px] tracking-tight">{AI_MODELS.find(m => m.id === activeModelId)?.name || 'Model'}</span>
-                <ChevronDown className={cn("w-3 h-3 transition-transform", isModelMenuOpen && "rotate-180")} />
-              </button>
+                <span className="text-[10px] text-black/40 dark:text-white/40 font-medium px-1 mb-0.5 opacity-0 group-hover:opacity-100 transition-opacity">Change AI model</span>
+                <button
+                  type="button"
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all font-bold",
+                    "bg-black/[0.05] dark:bg-white/5 border border-black/5 dark:border-white/10 hover:bg-black/10 dark:hover:bg-white/10 hover:border-black/10 dark:hover:border-white/20 text-black dark:text-white"
+                  )}
+                >
+                  {React.createElement(AI_MODELS.find(m => m.id === activeModelId)?.icon || AutoLogo, { className: "w-3.5 h-3.5" })}
+                  <span className="text-[13px] tracking-tight">{AI_MODELS.find(m => m.id === activeModelId)?.name || 'Auto'}</span>
+                  <ArrowUp className={cn("w-3.5 h-3.5 ml-1 text-black/20 dark:text-white/20 transition-transform", isModelMenuOpen && "rotate-180")} />
+                </button>
+              </div>
 
               <AnimatePresence>
                 {isModelMenuOpen && (
@@ -875,12 +921,9 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      className="absolute bottom-full left-0 mb-2 w-64 bg-neutral-50 dark:bg-[#1a1a1a] border border-white/10 rounded-2xl shadow-2xl z-[70] overflow-hidden p-1.5"
+                      className="absolute bottom-full left-0 mb-3 w-60 bg-white dark:bg-[#1a1a1a] border border-black/10 dark:border-white/10 rounded-2xl shadow-2xl z-[70] overflow-hidden p-1.5"
                     >
-                      {((props.currentPlan === 'free' || !props.currentPlan) 
-                        ? AI_MODELS.filter(m => m.tier !== 'free') 
-                        : AI_MODELS
-                      ).map((model) => {
+                      {AI_MODELS.map((model) => {
                         const isLocked = 
                           (model.tier !== 'free' && (props.currentPlan === 'free' || !props.currentPlan)) || 
                           (model.tier === 'pro' && props.currentPlan === 'starter');
@@ -908,18 +951,22 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                               "w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl transition-all text-left",
                               activeModelId === model.id 
                                 ? "bg-black/[0.05] dark:bg-white/5 text-black dark:text-white" 
-                                : "hover:bg-black/[0.03] dark:hover:bg-white/[0.03] text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white",
-                              isLocked && "opacity-50 grayscale cursor-not-allowed"
+                                : "hover:bg-black/[0.03] dark:hover:bg-white/[0.03] text-black dark:text-white",
+                              isLocked && "opacity-40 grayscale cursor-not-allowed"
                             )}
                           >
                             <div className="flex items-center gap-3">
-                              <model.icon className={cn("w-4 h-4", activeModelId === model.id ? "text-[#3b82f6]" : "text-inherit")} />
-                              <span className="text-[13px] font-bold">{model.name}</span>
+                              <model.icon className={cn("w-4.5 h-4.5", activeModelId === model.id ? "" : "opacity-70")} />
+                              <div className="flex items-center gap-1.5">
+                                <span className={cn("text-[14px]", activeModelId === model.id ? "font-bold" : "font-medium")}>{model.name}</span>
+                                {model.beta && (
+                                  <span className="text-[10px] bg-black/[0.05] dark:bg-white/10 text-black/40 dark:text-white/40 px-1.5 py-0.5 rounded-md font-bold">Beta</span>
+                                )}
+                              </div>
                             </div>
                             <div className="flex items-center gap-2">
-                              {model.isFlagship && <span className="text-[9px] bg-blue-500/10 text-blue-500 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Flagship</span>}
-                              {isLocked && <span className="text-[9px] bg-white/10 text-white/40 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">PRO</span>}
-                              {activeModelId === model.id && <Check className="w-3.5 h-3.5 text-[#3b82f6]" />}
+                              {activeModelId === model.id && <Check className="w-3.5 h-3.5 text-black dark:text-white" />}
+                              {isLocked && <span className="text-[9px] bg-black/10 dark:bg-white/10 text-black/40 dark:text-white/40 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Locked</span>}
                             </div>
                           </button>
                         );
