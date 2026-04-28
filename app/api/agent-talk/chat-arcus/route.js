@@ -160,7 +160,7 @@ export async function POST(request) {
     // Initialize AI Services
     const arcusAI = new ArcusAIService({ modelId });
     const operatorRuntime = new ArcusOperatorRuntime({ db, arcusAI, userEmail });
-    const planModeEngine = new PlanModeEngine({ db, arcusAI });
+    const planModeEngine = new PlanModeEngine({ arcusAI, db, userEmail });
     const operatorRuntimeEnabled = isFeatureEnabled('arcusOperatorRuntimeV2');
 
     // Initialize Arcus Execution Gateway (Phase 1 - Unified)
@@ -694,71 +694,96 @@ Body: ${emailData.body || emailData.snippet}
       }
     }
 
-    if (operatorRuntimeEnabled && operatorRuntime && operatorRun) {
-      // Phase 2: Generate AI plan for complex intents OR if Plan Mode is forced
-      if (isPlanMode && planModeEngine) {
-        try {
-          console.log('🎯 Forced Plan Mode: Generating detailed execution plan...');
+    // ── PLAN MODE: Generate plan INDEPENDENTLY of operatorRun ──
+    if (isPlanMode && planModeEngine) {
+      // Force complex intent for plan mode
+      intentAnalysis = {
+        ...intentAnalysis,
+        intent: 'multi_step',
+        complexity: 'complex',
+        needsCanvas: false,
+        canvasType: 'action_plan'
+      };
 
-          // Force complex intent for plan mode
-          intentAnalysis = {
-            ...intentAnalysis,
-            intent: 'multi_step',
-            complexity: 'complex',
-            needsCanvas: false, // Plan mode uses PlanCanvas card, not Canvas panel
-            canvasType: 'action_plan'
+      try {
+        console.log('[Plan Mode] Generating execution plan...');
+        const planResult = await planModeEngine.generatePlan({
+          message,
+          runId: operatorRun?.runId || runId || `run_${Date.now()}`,
+          conversationId: currentConversationId,
+          context: { emailContext, notesResult, userName },
+          intent: 'multi_step',
+          complexity: 'complex'
+        });
+
+        if (planResult && planResult.plan) {
+          const rawPlan = planResult.plan;
+          planArtifact = {
+            planId: rawPlan.plan_id || planResult.planId || `plan_${Date.now()}`,
+            title: rawPlan.title || 'Execution Plan',
+            objective: rawPlan.objective || message,
+            status: rawPlan.status || 'draft',
+            version: rawPlan.version || 1,
+            locked: rawPlan.locked || false,
+            intent: rawPlan.intent || 'multi_step',
+            complexity: rawPlan.complexity || 'complex',
+            canvasType: rawPlan.canvas_type || 'action_plan',
+            runId: rawPlan.run_id || null,
+            createdAt: rawPlan.created_at || new Date().toISOString(),
+            assumptions: (() => { try { return typeof rawPlan.assumptions === 'string' ? JSON.parse(rawPlan.assumptions) : (rawPlan.assumptions || []); } catch { return []; } })(),
+            questionsAnswered: (() => { try { return typeof rawPlan.questions_answered === 'string' ? JSON.parse(rawPlan.questions_answered) : (rawPlan.questions_answered || []); } catch { return []; } })(),
+            acceptanceCriteria: (() => { try { return typeof rawPlan.acceptance_criteria === 'string' ? JSON.parse(rawPlan.acceptance_criteria) : (rawPlan.acceptance_criteria || []); } catch { return []; } })(),
+            todos: (planResult.todos || []).map((t, idx) => ({
+              todoId: t.todo_id || `todo_${idx}`,
+              title: t.title || `Step ${idx + 1}`,
+              description: t.description || '',
+              status: t.status || 'pending',
+              actionType: t.action_type || t.actionType || 'generic_task',
+              sortOrder: t.sort_order ?? t.sortOrder ?? idx,
+              dependsOn: t.depends_on || t.dependsOn || [],
+              approvalMode: t.approval_mode || t.approvalMode || 'auto',
+              attemptCount: t.attempt_count || 0,
+              resultPayload: null
+            }))
           };
-
-          const planResult = await planModeEngine.generatePlan({
-            message,
-            runId: operatorRun?.runId || runId || `run_${Date.now()}`,
-            conversationId: currentConversationId,
-            context: { emailContext, notesResult, userName },
-            intent: 'multi_step',
-            complexity: 'complex'
-          });
-
-          if (planResult.plan) {
-            // Normalize plan artifact for frontend (camelCase + parsed JSON + todos)
-            const rawPlan = planResult.plan;
-            planArtifact = {
-              planId: rawPlan.plan_id,
-              title: rawPlan.title,
-              objective: rawPlan.objective,
-              status: rawPlan.status,
-              version: rawPlan.version,
-              locked: rawPlan.locked,
-              intent: rawPlan.intent,
-              complexity: rawPlan.complexity,
-              canvasType: rawPlan.canvas_type,
-              runId: rawPlan.run_id,
-              createdAt: rawPlan.created_at || new Date().toISOString(),
-              assumptions: typeof rawPlan.assumptions === 'string' ? JSON.parse(rawPlan.assumptions) : (rawPlan.assumptions || []),
-              questionsAnswered: typeof rawPlan.questions_answered === 'string' ? JSON.parse(rawPlan.questions_answered) : (rawPlan.questions_answered || []),
-              acceptanceCriteria: typeof rawPlan.acceptance_criteria === 'string' ? JSON.parse(rawPlan.acceptance_criteria) : (rawPlan.acceptance_criteria || []),
-              todos: planResult.todos?.map((t, idx) => ({
-                todoId: t.todo_id || `todo_${idx}`,
-                title: t.title,
-                description: t.description || '',
-                status: t.status || 'pending',
-                actionType: t.action_type || 'generic_task',
-                sortOrder: t.sort_order || idx,
-                dependsOn: t.depends_on || [],
-                approvalMode: t.approval_mode || 'auto',
-                attemptCount: t.attempt_count || 0,
-                resultPayload: typeof t.result_payload === 'string' ? JSON.parse(t.result_payload) : t.result_payload
-              })) || []
-            };
-          }
-
-          console.log(`✅ Plan generated and normalized for Plan Mode: ${planResult.planId}`);
-
-          // CRITICAL: Force approval required for Plan Mode to show the card prominently
-          requiresApproval = true;
-        } catch (err) {
-          console.error('Forced plan generation failed:', err.message);
+          console.log(`[Plan Mode] Plan artifact created: ${planArtifact.planId} with ${planArtifact.todos.length} todos`);
         }
-      } else if (planModeEngine && (intentAnalysis?.complexity === 'complex' || intentAnalysis?.intent === 'multi_step')) {
+      } catch (err) {
+        console.error('[Plan Mode] Engine failed, using hardcoded fallback:', err.message);
+      }
+
+      // ABSOLUTE FALLBACK: If planArtifact is STILL null, create a hardcoded one
+      if (!planArtifact) {
+        console.warn('[Plan Mode] All generation paths failed. Creating hardcoded fallback plan.');
+        planArtifact = {
+          planId: `plan_fallback_${Date.now()}`,
+          title: `Plan: ${message.substring(0, 60)}`,
+          objective: message,
+          status: 'draft',
+          version: 1,
+          locked: false,
+          intent: 'multi_step',
+          complexity: 'complex',
+          canvasType: 'action_plan',
+          runId: null,
+          createdAt: new Date().toISOString(),
+          assumptions: ['Request understood from user input'],
+          questionsAnswered: ['What is the core request?'],
+          acceptanceCriteria: ['Task completed as requested'],
+          todos: [
+            { todoId: 'todo_0', title: 'Analyze request and gather context', description: 'Understand user intent and required inputs', status: 'pending', actionType: 'generic_task', sortOrder: 0, dependsOn: [], approvalMode: 'auto', attemptCount: 0, resultPayload: null },
+            { todoId: 'todo_1', title: 'Execute primary action', description: 'Perform the main task requested by user', status: 'pending', actionType: 'generic_task', sortOrder: 1, dependsOn: ['todo_0'], approvalMode: 'manual', attemptCount: 0, resultPayload: null },
+            { todoId: 'todo_2', title: 'Verify and report results', description: 'Confirm completion and present outcomes', status: 'pending', actionType: 'generic_task', sortOrder: 2, dependsOn: ['todo_1'], approvalMode: 'auto', attemptCount: 0, resultPayload: null }
+          ]
+        };
+      }
+
+      requiresApproval = true;
+    }
+
+    if (operatorRuntimeEnabled && operatorRuntime && operatorRun) {
+      // Auto plan generation for complex Agent-mode intents (NOT Plan mode — that's handled above)
+      if (!isPlanMode && planModeEngine && (intentAnalysis?.complexity === 'complex' || intentAnalysis?.intent === 'multi_step')) {
         try {
           console.log('🎯 Generating AI plan for complex intent...');
           const planResult = await planModeEngine.generatePlan({

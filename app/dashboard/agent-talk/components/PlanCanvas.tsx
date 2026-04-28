@@ -43,8 +43,9 @@ export function PlanCanvas({ plan, onExecute, onDecline, isProcessing }: PlanCan
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
 
-  const completedCount = plan.todos.filter(t => t.status === 'completed').length;
-  const totalCount = plan.todos.length;
+  const todos = plan.todos || [];
+  const completedCount = todos.filter(t => t.status === 'completed').length;
+  const totalCount = todos.length;
   const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
   const isDraft = plan.status === 'draft' && !plan.locked;
   const isRunning = plan.status === 'executing';
@@ -95,12 +96,12 @@ export function PlanCanvas({ plan, onExecute, onDecline, isProcessing }: PlanCan
           {/* ── Steps Preview (max 3) ── */}
           <div className="px-6 pb-4">
             <div className="space-y-1.5">
-              {plan.todos.slice(0, 3).map((todo, i) => (
+              {todos.slice(0, 3).map((todo, i) => (
                 <StepRow key={todo.todoId} todo={todo} index={i} compact />
               ))}
-              {plan.todos.length > 3 && (
+              {todos.length > 3 && (
                 <p className="text-[11px] text-black/40 dark:text-white/20 pl-7 pt-1">
-                  +{plan.todos.length - 3} more steps
+                  +{todos.length - 3} more steps
                 </p>
               )}
             </div>
