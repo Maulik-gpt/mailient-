@@ -1482,7 +1482,7 @@ export default function ChatInterface({
         time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
         meta: {
           actionHistory: data.actionHistory || [],
-          thinkingBlocks: liveThinkingBlocks, // Use the actual blocks shown during streaming
+          // thinkingBlocks intentionally omitted — only shown during live streaming, not after completion
           result: aiResult,
           actionType: data.actionType || 'chat',
           isStreaming: false,
