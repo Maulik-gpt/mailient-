@@ -161,7 +161,7 @@ export async function POST(request) {
     const arcusAI = new ArcusAIService({ modelId });
     const operatorRuntime = new ArcusOperatorRuntime({ db, arcusAI, userEmail });
     const planModeEngine = new PlanModeEngine({ db, arcusAI });
-    const operatorRuntimeEnabled = isFeatureEnabled('arcusOperatorRuntimeV1');
+    const operatorRuntimeEnabled = isFeatureEnabled('arcusOperatorRuntimeV2');
 
     // Initialize Arcus Execution Gateway (Phase 1 - Unified)
     const executionGateway = isFeatureEnabled('arcusExecutionGatewayV1')
