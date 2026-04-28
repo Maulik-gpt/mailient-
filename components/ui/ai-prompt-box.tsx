@@ -4,6 +4,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { ArrowUp, Paperclip, Square, X, StopCircle, Mic, BrainCog, Monitor, FileText, Film, Music, Globe, Mail, Search, Infinity, Workflow, Bug, MessageSquare, Check, ChevronDown, Plus, Plug, Database, Calendar, Layout, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ConnectorsModal } from './connectors-modal';
+import { toast } from 'sonner';
 
 // Utility function for className merging
 const cn = (...classes: (string | undefined | null | false)[]) => classes.filter(Boolean).join(" ");
@@ -855,18 +856,10 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
             <div className="relative">
               <button
                 type="button"
-                onClick={() => {
-                  if (props.currentPlan === 'free' || !props.currentPlan) {
-                    props.onUpgradeClick?.();
-                  } else {
-                    setIsModelMenuOpen(!isModelMenuOpen);
-                  }
-                }}
+                onClick={() => setIsModelMenuOpen(!isModelMenuOpen)}
                 className={cn(
                   "flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border transition-all font-bold",
-                  (props.currentPlan === 'free' || !props.currentPlan)
-                    ? "bg-black/5 dark:bg-white/5 border-transparent text-black/40 dark:text-white/40 grayscale"
-                    : "bg-black/[0.05] dark:bg-white/5 border-black/5 dark:border-white/10 hover:bg-black/10 dark:hover:bg-white/10 hover:border-black/10 dark:hover:border-white/20 text-[#3b82f6]"
+                  "bg-black/[0.05] dark:bg-white/5 border-black/5 dark:border-white/10 hover:bg-black/10 dark:hover:bg-white/10 hover:border-black/10 dark:hover:border-white/20 text-[#3b82f6]"
                 )}
               >
                 {React.createElement(AI_MODELS.find(m => m.id === activeModelId)?.icon || BrainCog, { className: "w-3.5 h-3.5" })}
@@ -875,7 +868,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
               </button>
 
               <AnimatePresence>
-                {isModelMenuOpen && (props.currentPlan === 'starter' || props.currentPlan === 'pro') && (
+                {isModelMenuOpen && (
                   <>
                     <div className="fixed inset-0 z-[60]" onClick={() => setIsModelMenuOpen(false)} />
                     <motion.div
@@ -884,15 +877,27 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
                       className="absolute bottom-full left-0 mb-2 w-64 bg-neutral-50 dark:bg-[#1a1a1a] border border-white/10 rounded-2xl shadow-2xl z-[70] overflow-hidden p-1.5"
                     >
-                      {AI_MODELS.map((model) => {
-                        const isLocked = model.tier === 'pro' && props.currentPlan === 'starter';
+                      {((props.currentPlan === 'free' || !props.currentPlan) 
+                        ? AI_MODELS.filter(m => m.tier !== 'free') 
+                        : AI_MODELS
+                      ).map((model) => {
+                        const isLocked = 
+                          (model.tier !== 'free' && (props.currentPlan === 'free' || !props.currentPlan)) || 
+                          (model.tier === 'pro' && props.currentPlan === 'starter');
+                        
                         return (
                           <button
                             key={model.id}
                             type="button"
                             onClick={() => {
                               if (isLocked) {
-                                props.onUpgradeClick?.();
+                                toast('Unlock Premium Models', {
+                                  description: 'Upgrade your plan to access premium AI models.',
+                                  action: {
+                                    label: 'Upgrade',
+                                    onClick: () => window.location.href = '/pricing'
+                                  }
+                                });
                                 setIsModelMenuOpen(false);
                               } else {
                                 setActiveModelId(model.id);
