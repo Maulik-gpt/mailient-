@@ -378,7 +378,7 @@ async function getEmailContext(userMessage: string, userEmail: string) {
 
     const query = buildGmailSearchQuery(userMessage);
     // Fetch more emails for better context (increased from 5 to 10)
-    const emailsResponse = await gmailService.getEmails(10, query, null, 'internalDate desc');
+    const emailsResponse = await gmailService.getEmails(10, query, null);
     const messages = emailsResponse.messages || [];
 
     if (!messages.length) {
@@ -528,7 +528,7 @@ async function executeEmailAction(userMessage: string, userEmail: string, sessio
       }
 
       try {
-        const emailsResponse = await gmailService.getEmails(maxResults, query, null, 'internalDate desc');
+        const emailsResponse = await gmailService.getEmails(maxResults, query, null);
         const messages = emailsResponse?.messages || [];
 
         if (messages.length === 0) {
