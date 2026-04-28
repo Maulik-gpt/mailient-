@@ -151,7 +151,7 @@ export async function POST(request) {
       getIntegrationStatus(userEmail, db),
       (currentConversationId && userEmail) ? getConversationHistory(userEmail, currentConversationId, db) : Promise.resolve([])
     ]);
-    
+
     const conversationHistory = conversationHistoryResult || [];
     const effectiveGmailConnected = Boolean(gmailAccessToken || integrations?.gmail);
     console.log('Arcus Integration status:', integrations);
@@ -164,15 +164,15 @@ export async function POST(request) {
     const operatorRuntimeEnabled = isFeatureEnabled('arcusOperatorRuntimeV1');
 
     // Initialize Arcus Execution Gateway (Phase 1 - Unified)
-    const executionGateway = isFeatureEnabled('arcusExecutionGatewayV1') 
+    const executionGateway = isFeatureEnabled('arcusExecutionGatewayV1')
       ? new ArcusExecutionGateway({
-          db,
-          arcusAI,
-          userEmail,
-          userName,
-          conversationId: currentConversationId,
-          missionId: activeMission?.missionId || null
-        })
+        db,
+        arcusAI,
+        userEmail,
+        userName,
+        conversationId: currentConversationId,
+        missionId: activeMission?.missionId || null
+      })
       : null;
 
     // Check if this is a canvas action execution request
@@ -182,14 +182,14 @@ export async function POST(request) {
     // Use Arcus Execution Gateway for all canvas actions (Phase 1 - Unified)
     if (requestedAction && requestedPayload && executionGateway) {
       console.log('[Arcus Phase 1] Routing action through Execution Gateway:', requestedAction);
-      
+
       try {
         // Validate action type
-        const validActions = ['send_email', 'save_draft', 'arcus_outreach', 'arcus_auto_pilot', 
+        const validActions = ['send_email', 'save_draft', 'arcus_outreach', 'arcus_auto_pilot',
           'schedule_meeting', 'notion_create_page', 'notion_search', 'notion_append',
           'tasks_add_task', 'tasks_add_tasks', 'tasks_complete_task', 'tasks_list',
           'execute_plan', 'approve_plan', 'arcus_inbox_review'];
-        
+
         if (!validActions.includes(requestedAction)) {
           throw new Error(`Unsupported action type: ${requestedAction}`);
         }
@@ -205,7 +205,7 @@ export async function POST(request) {
         // Determine response status
         const success = executionResult.success || executionResult.status === 'already_completed';
         const statusCode = success ? 200 : (executionResult.status === 'blocked' ? 403 : 500);
-        
+
         return NextResponse.json({
           message: executionResult.message,
           resultStatus: executionResult.status,
@@ -220,11 +220,11 @@ export async function POST(request) {
           externalRefs: executionResult.externalRefs || {},
           nextRecommendedActions: executionResult.nextRecommendedActions || [],
           conversationId: currentConversationId,
-          run: runId ? { 
-            runId, 
-            status: executionResult.status, 
-            phase: executionResult.status === 'completed' ? 'post_execution' : 
-                   executionResult.status === 'blocked' ? 'approval' : 'executing'
+          run: runId ? {
+            runId,
+            status: executionResult.status,
+            phase: executionResult.status === 'completed' ? 'post_execution' :
+              executionResult.status === 'blocked' ? 'approval' : 'executing'
           } : null,
           timestamp: new Date().toISOString(),
           // Include error recovery hint if available
@@ -233,7 +233,7 @@ export async function POST(request) {
 
       } catch (gatewayError) {
         console.error('[Arcus Phase 1] Execution Gateway error:', gatewayError);
-        
+
         // Return categorized error with recovery hint
         return NextResponse.json({
           message: gatewayError.message || 'Action execution failed',
@@ -296,11 +296,11 @@ export async function POST(request) {
             const refreshToken = userTokens.encrypted_refresh_token ? decrypt(userTokens.encrypted_refresh_token) : '';
             const { GmailService } = await import('@/lib/gmail');
             const gmailService = new GmailService(accessToken, refreshToken);
-            
+
             let threadId = requestedPayload.threadId || requestedPayload.messageId;
             let targetTo = requestedPayload.to || '';
             let targetSubject = requestedPayload.subject || '';
-            
+
             // If target information is missing, fetch from the original message/thread
             if (!targetTo && threadId) {
               try {
@@ -403,7 +403,7 @@ export async function POST(request) {
           const planEngine = new ArcusPlanEngine({ db, userEmail });
           const approval = await planEngine.approvePlan(requestedPayload.planId);
           const todos = await planEngine.convertPlanToTodoGraph(requestedPayload.planId);
-          
+
           // PHASE 2: Trigger immediate execution upon approval
           if (operatorRuntime && runId) {
             await operatorRuntime.enqueueJob(runId, 'execute_plan', {
@@ -582,7 +582,7 @@ export async function POST(request) {
     let operatorRun = null;
     let normalizedPlan = [];
     let requiresApproval = false;
-    let planArtifact = null; 
+    let planArtifact = null;
     const planEngine = new ArcusPlanEngine({ db, userEmail });
     let searchSessions = [];
 
@@ -656,7 +656,7 @@ Body: ${emailData.body || emailData.snippet}
       try {
         const emailActionResult = await executeEmailAction(message, userEmail, session, gmailAccessToken, intentAnalysis);
         emailResult = emailActionResult;
-        
+
         if (emailActionResult && emailActionResult.success) {
           emailContext = formatEmailActionResult(emailActionResult);
           const rawEmailData = emailActionResult.emails || [];
@@ -682,14 +682,14 @@ Body: ${emailData.body || emailData.snippet}
             });
           }
         }
-        
+
         if (emailActionResult?.error) {
           console.warn('Arcus email action warning:', emailActionResult.error);
         }
       } catch (err) {
         console.error('Error in Arcus email action:', err);
         if (emailSearchSession) {
-          await planEngine.transitionSearchSession(emailSearchSession.sessionId, 'complete', { resultCount: 0 }).catch(() => {});
+          await planEngine.transitionSearchSession(emailSearchSession.sessionId, 'complete', { resultCount: 0 }).catch(() => { });
         }
       }
     }
@@ -699,7 +699,7 @@ Body: ${emailData.body || emailData.snippet}
       if (isPlanMode && planModeEngine) {
         try {
           console.log('🎯 Forced Plan Mode: Generating detailed execution plan...');
-          
+
           // Force complex intent for plan mode
           intentAnalysis = {
             ...intentAnalysis,
@@ -717,7 +717,7 @@ Body: ${emailData.body || emailData.snippet}
             intent: 'multi_step',
             complexity: 'complex'
           });
-          
+
           if (planResult.plan) {
             // Normalize plan artifact for frontend (camelCase + parsed JSON + todos)
             const rawPlan = planResult.plan;
@@ -750,9 +750,9 @@ Body: ${emailData.body || emailData.snippet}
               })) || []
             };
           }
-          
+
           console.log(`✅ Plan generated and normalized for Plan Mode: ${planResult.planId}`);
-          
+
           // CRITICAL: Force approval required for Plan Mode to show the card prominently
           requiresApproval = true;
         } catch (err) {
@@ -769,7 +769,7 @@ Body: ${emailData.body || emailData.snippet}
             intent: intentAnalysis?.intent || 'general',
             complexity: intentAnalysis?.complexity || 'simple'
           });
-          
+
           if (planResult.plan) {
             const rawPlan = planResult.plan;
             planArtifact = {
@@ -808,7 +808,7 @@ Body: ${emailData.body || emailData.snippet}
       }
     }
 
-        // --- STEP STATE TRANSITIONS ---
+    // --- STEP STATE TRANSITIONS ---
     if (operatorRuntime && operatorRun && normalizedPlan.length > 0) {
       const step0 = normalizedPlan[0];
       if (step0) {
@@ -851,7 +851,7 @@ Body: ${emailData.body || emailData.snippet}
     }
 
     // --- CANVAS GENERATION (for complex tasks) ---
-        let canvasData = null;
+    let canvasData = null;
     let executionPolicy = null;
     const messageLower = (message || '').toLowerCase();
     const effectiveCanvasType = intentAnalysis?.canvasType || 'email_draft';
@@ -865,7 +865,7 @@ Body: ${emailData.body || emailData.snippet}
     try {
       console.log('⚡ Starting parallel generation for ' + (shouldGenerateCanvas ? 'Canvas + Response' : 'Response only'));
       const generations = [];
-      
+
       // Fetch memory context from Supermemory
       const memoryContext = await arcusAI.getSupermemoryContext(userEmail, message);
 
@@ -876,7 +876,7 @@ Body: ${emailData.body || emailData.snippet}
       } else if (shouldGenerateCanvas) {
         contextMessage = `User requested: "${message}". [SYSTEM NOTE: A detailed interactive UI Canvas/Workspace has ALREADY been generated and opened for the user with this data. Do NOT write an essay or repeat the data here. Provide a very brief 1-2 sentence confirmation acknowledging the action and directing their attention to the workspace.]`;
       }
-      
+
       const responsePromise = arcusAI.generateResponse(contextMessage, {
         conversationHistory,
         emailContext,
@@ -914,7 +914,7 @@ Body: ${emailData.body || emailData.snippet}
       if (shouldGenerateCanvas) {
         canvasDataResult = results[1];
       }
-      
+
       console.log('✅ Parallel generation completed');
     } catch (err) {
       console.error('💥 Parallel generation failed:', err.message);
@@ -997,10 +997,10 @@ Body: ${emailData.body || emailData.snippet}
     if (userEmail) {
       try {
         await saveConversation(userEmail, message, finalResponse, currentConversationId, db);
-        
+
         // Save to Supermemory for long-term consistency
         arcusAI.storeMemory(userEmail, `User: ${message}\nArcus: ${finalResponse}`).catch(e => {
-            console.warn('⚠️ Supermemory save background error:', e.message);
+          console.warn('⚠️ Supermemory save background error:', e.message);
         });
       } catch (error) {
         console.log('⚠️ Failed to save conversation:', error.message);
@@ -1210,7 +1210,7 @@ async function getIntegrationStatus(userEmail, db) {
   try {
     const tokens = await db.getUserTokens(userEmail);
     const result = { ...defaultStatus };
-    
+
     // Gmail status from legacy tokens table
     result.gmail = !!tokens;
 
@@ -1407,7 +1407,7 @@ async function executeEmailAction(userMessage, userEmail, session, providedAcces
     // 🎯 SMART SEARCH: Use AI-generated query if available
     let query = 'newer_than:60d';
     let maxResults = 10;
-    
+
     if (intentAnalysis?.searchQuery && intentAnalysis.searchQuery.length > 5 && intentAnalysis.searchQuery.toLowerCase() !== 'none') {
       query = intentAnalysis.searchQuery;
       if (!query.includes('newer_than') && !query.includes('after:')) {
@@ -1439,7 +1439,7 @@ async function executeEmailAction(userMessage, userEmail, session, providedAcces
       let emailsResponse = await gmailService.getEmails(maxResults, query, null);
       let messages = emailsResponse?.messages || [];
 
-      if (messages.length === 0 && (query.includes('is:unread') || query.includes('from:'))) {
+      if (messages.length === 0) {
         console.log('🔄 Arcus: No results for specific query, falling back to broader search');
         const fallbackQuery = 'newer_than:120d';
         emailsResponse = await gmailService.getEmails(maxResults, fallbackQuery, null);
@@ -1450,8 +1450,13 @@ async function executeEmailAction(userMessage, userEmail, session, providedAcces
       console.log('📧 Emails found:', messages.length);
 
       if (messages.length === 0) {
-        return { action: 'read_emails', success: true, emails: [], query, count: 0 };
+        // Final fallback: fetch any emails without date filter, up to 20 results
+        console.log('🔄 Arcus: Still no emails, performing unrestricted fetch');
+        const unrestrictedResponse = await gmailService.getEmails(40, '', null);
+        messages = unrestrictedResponse?.messages || [];
+        query = ''; // No query for UI
       }
+
 
       // 🚀 PERFORMANCE FIX: Fetch email details in parallel, limited to 5 to prevent 504 timeouts
       const emailDetails = await Promise.all(messages.slice(0, 5).map(async (message) => {
@@ -1461,7 +1466,7 @@ async function executeEmailAction(userMessage, userEmail, session, providedAcces
           if (!targetMsg) return null;
 
           const parsed = gmailService.parseEmailData(targetMsg);
-          
+
           // Omit full thread history to save processing time and context window
           const history = [{
             from: parsed.from,
@@ -1475,11 +1480,11 @@ async function executeEmailAction(userMessage, userEmail, session, providedAcces
 
           // Smart Categorization (Business vs Personal)
           const labels = parsed.labels || [];
-          let category = 'Business'; 
+          let category = 'Business';
           const personalKeywords = ['family', 'friend', 'social', 'entertainment', 'netflix', 'spotify', 'amazon', 'order', 'shipping'];
           const fromLower = (parsed.from || '').toLowerCase();
           const subLower = (parsed.subject || '').toLowerCase();
-          
+
           if (labels.includes('CATEGORY_SOCIAL') || labels.includes('CATEGORY_PROMOTIONS')) {
             category = 'Personal/Social';
           } else if (personalKeywords.some(k => fromLower.includes(k) || subLower.includes(k))) {
@@ -1500,7 +1505,7 @@ async function executeEmailAction(userMessage, userEmail, session, providedAcces
             isImportant: labels.includes('IMPORTANT'),
             folder: labels.includes('SENT') ? 'Sent' : (labels.includes('TRASH') ? 'Trash' : 'Inbox'),
             category: category,
-            threadHistory: history.slice(-5) 
+            threadHistory: history.slice(-5)
           };
         } catch (error) {
           console.log('Error processing email thread:', error.message);
