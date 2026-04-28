@@ -480,20 +480,20 @@ const MODES = [
 
 // --- Custom Model Logos ---
 const AnthropicLogo = ({ className }: { className?: string }) => (
-  <div className={cn("w-5 h-5 bg-white rounded-lg flex items-center justify-center overflow-hidden border border-white/5", className)}>
-    <img src="/brand/claude.png" className="w-full h-full object-cover" alt="Claude" />
+  <div className={cn("w-5 h-5 bg-white rounded-lg flex items-center justify-center overflow-hidden border border-white/10", className)}>
+    <img src="/brand/claude.png" className="w-full h-full object-contain p-0.5" alt="Claude" />
   </div>
 );
 
 const GoogleGeminiLogo = ({ className }: { className?: string }) => (
-  <div className={cn("w-5 h-5 bg-white rounded-lg flex items-center justify-center overflow-hidden border border-white/5", className)}>
-    <img src="/brand/gemini.png" className="w-full h-full object-cover" alt="Gemini" />
+  <div className={cn("w-5 h-5 bg-white rounded-lg flex items-center justify-center overflow-hidden border border-white/10", className)}>
+    <img src="/brand/gemini.png" className="w-full h-full object-contain p-0.5" alt="Gemini" />
   </div>
 );
 
 const OpenAILogo = ({ className }: { className?: string }) => (
-  <div className={cn("w-5 h-5 bg-white rounded-lg flex items-center justify-center overflow-hidden border border-white/5", className)}>
-    <img src="/brand/gpt.png" className="w-full h-full object-cover" alt="GPT" />
+  <div className={cn("w-5 h-5 bg-white rounded-lg flex items-center justify-center overflow-hidden border border-white/10", className)}>
+    <img src="/brand/gpt.png" className="w-full h-full object-contain p-0.5" alt="GPT" />
   </div>
 );
 
