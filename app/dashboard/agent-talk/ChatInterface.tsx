@@ -156,18 +156,24 @@ const TypewriterMarkdown = ({ content, speed = 4 }: { content: string, speed?: n
   );
 };
 
-const MessageContent = ({ content, isUser, isTyping, isNewResponse }: { content: any, isUser?: boolean, isTyping?: boolean, isNewResponse?: boolean }) => {
+ const MessageContent = ({ content, isUser, isTyping, isNewResponse, hideLinks }: { content: any, isUser?: boolean, isTyping?: boolean, isNewResponse?: boolean, hideLinks?: boolean }) => {
   const textColorClass = isUser ? "text-white" : "text-white/90";
 
   let textContent = typeof content === 'string' ? content : (content.text || '');
   
   if (isTyping) {
     return (
-      <div className={`${textColorClass} w-full`}>
-        <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
-          {textContent + ' ▍'}
-        </ReactMarkdown>
-      </div>
+       <div className={`${textColorClass} w-full`}>
+         <ReactMarkdown 
+           remarkPlugins={[remarkGfm]} 
+           components={{
+             ...MarkdownComponents,
+             ...(hideLinks ? { a: ({ node, ...props }) => <span className="text-inherit underline underline-offset-2 opacity-50 cursor-default">{props.children}</span> } : {})
+           }}
+         >
+           {textContent + ' ▍'}
+         </ReactMarkdown>
+       </div>
     );
   }
 
@@ -177,39 +183,57 @@ const MessageContent = ({ content, isUser, isTyping, isNewResponse }: { content:
   if (typeof content === 'string') {
     return (
       <div className={`${textColorClass} w-full`}>
-        {useTypewriter ? (
-          <TypewriterMarkdown content={textContent} />
-        ) : (
-          <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
-            {textContent}
-          </ReactMarkdown>
-        )}
+         {useTypewriter ? (
+           <TypewriterMarkdown content={textContent} />
+         ) : (
+           <ReactMarkdown 
+             remarkPlugins={[remarkGfm]} 
+             components={{
+               ...MarkdownComponents,
+               ...(hideLinks ? { a: ({ node, ...props }) => <span className="text-inherit underline underline-offset-2 opacity-50 cursor-default">{props.children}</span> } : {})
+             }}
+           >
+             {textContent}
+           </ReactMarkdown>
+         )}
       </div>
     );
   }
   
   return (
     <div className={`space-y-4 ${textColorClass} w-full`}>
-      {useTypewriter ? (
-        <TypewriterMarkdown content={textContent} />
-      ) : (
-        <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
-          {textContent}
-        </ReactMarkdown>
-      )}
+       {useTypewriter ? (
+         <TypewriterMarkdown content={textContent} />
+       ) : (
+         <ReactMarkdown 
+           remarkPlugins={[remarkGfm]} 
+           components={{
+             ...MarkdownComponents,
+             ...(hideLinks ? { a: ({ node, ...props }) => <span className="text-inherit underline underline-offset-2 opacity-50 cursor-default">{props.children}</span> } : {})
+           }}
+         >
+           {textContent}
+         </ReactMarkdown>
+       )}
       
       {content.list && content.list.length > 0 && (
         <ul className="space-y-2 my-4 list-none pl-2">
           {content.list.map((item: string, i: number) => (
             <li key={i} className="relative pl-5 text-[17px] text-white/90">
               <span className="absolute left-0 top-2.5 w-1.5 h-1.5 bg-white/60 rounded-full" />
-              {useTypewriter ? (
-                <TypewriterMarkdown content={item} speed={15} />
-              ) : (
-                <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
-                  {item}
-                </ReactMarkdown>
-              )}
+               {useTypewriter ? (
+                 <TypewriterMarkdown content={item} speed={15} />
+               ) : (
+                 <ReactMarkdown 
+                   remarkPlugins={[remarkGfm]} 
+                   components={{
+                     ...MarkdownComponents,
+                     ...(hideLinks ? { a: ({ node, ...props }) => <span className="text-inherit underline underline-offset-2 opacity-50 cursor-default">{props.children}</span> } : {})
+                   }}
+                 >
+                   {item}
+                 </ReactMarkdown>
+               )}
             </li>
           ))}
         </ul>
@@ -217,9 +241,15 @@ const MessageContent = ({ content, isUser, isTyping, isNewResponse }: { content:
       
       {content.footer && (
         <div className="mt-6 italic opacity-60 text-sm border-t border-[#222] pt-4">
-          <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
-            {content.footer}
-          </ReactMarkdown>
+         <ReactMarkdown 
+           remarkPlugins={[remarkGfm]} 
+           components={{
+             ...MarkdownComponents,
+             ...(hideLinks ? { a: ({ node, ...props }) => <span className="text-inherit underline underline-offset-2 opacity-50 cursor-default">{props.children}</span> } : {})
+           }}
+         >
+           {content.footer}
+         </ReactMarkdown>
         </div>
       )}
     </div>
@@ -994,10 +1024,25 @@ export default function ChatInterface({
           description: `Arcus AI: ${next.usage}/${next.limit} used (${next.remaining} left ${next.period === 'daily' ? 'today' : 'this month'})`
         });
       }
-    } catch {
-      // ignore
-    }
-  }, []);
+       }
+     } catch {
+       // ignore
+     }
+   }, []);
+ 
+   // Auto-vanish limit messages when credits are replenished
+   useEffect(() => {
+     if (arcusCredits && (arcusCredits.remaining > 0 || arcusCredits.isUnlimited)) {
+       setMessages(prev => {
+         const hasLimitMsg = prev.some(m => m.role === 'assistant' && m.meta?.limitReached);
+         if (hasLimitMsg) {
+           console.log('✨ Credits replenished, vanishing limit messages...');
+           return prev.filter(m => !(m.role === 'assistant' && m.meta?.limitReached));
+         }
+         return prev;
+       });
+     }
+   }, [arcusCredits]);
 
   // Fetch subscription status on mount and activate pending plans
   useEffect(() => {
@@ -1413,22 +1458,22 @@ export default function ChatInterface({
           });
           setIsUsageLimitModalOpen(true);
 
-          const limitMessage: AgentMessage = {
-            id: Date.now() + 2,
-            type: 'agent',
-            role: 'assistant',
-            content: {
-              text: "You've reached your daily AI limit for the Starter plan. To keep using Arcus AI and other premium features, please upgrade to Pro.",
-              list: [
-                "Unlock unlimited Arcus AI tasks",
-                "Priority processing for faster results",
-                "Advanced email analytics and search"
-              ],
-              footer: `[Upgrade to Pro at mailient.xyz/pricing](https://mailient.xyz/pricing)`
-            },
-            time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
-            meta: { limitReached: true, actionType: 'limit' }
-          };
+           const limitMessage: AgentMessage = {
+             id: Date.now() + 2,
+             type: 'agent',
+             role: 'assistant',
+             content: {
+               text: "You've reached your AI limit for your current plan. To keep using Arcus AI and other premium features, you'll need more credits.",
+               list: [
+                 "Unlock unlimited Arcus AI tasks",
+                 "Priority processing for faster results",
+                 "Advanced email analytics and search"
+               ],
+               footer: ""
+             },
+             time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+             meta: { limitReached: true, actionType: 'limit' }
+           };
           setMessages(prev => [...prev, limitMessage]);
           setIsLoading(false);
           setIsSearchingState(false);
@@ -2918,12 +2963,13 @@ export default function ChatInterface({
                                     </div>
                                   )}
 
-                                  <MessageContent 
-                                    content={msg.content} 
-                                    isUser={msg.role === 'user'} 
-                                    isTyping={isLoading && msg.role === 'assistant' && msg.id === messages[messages.length - 1].id}
-                                    isNewResponse={msg.role === 'assistant' && msg.id === messages[messages.length - 1].id && !isLoading}
-                                  />
+                                   <MessageContent 
+                                     content={msg.content} 
+                                     isUser={msg.role === 'user'} 
+                                     isTyping={isLoading && msg.role === 'assistant' && msg.id === messages[messages.length - 1].id}
+                                     isNewResponse={msg.role === 'assistant' && msg.id === messages[messages.length - 1].id && !isLoading}
+                                     hideLinks={msg.role === 'assistant' && msg.meta?.limitReached}
+                                   />
 
 
                                   {msg.role === 'user' && (msg as UserMessage).attachments && (msg as UserMessage).attachments!.length > 0 && (
@@ -3053,46 +3099,42 @@ export default function ChatInterface({
                                     </div>
                                   )}
 
-                                  {/* Action buttons — AFTER all cards */}
-                                  {msg.role === 'assistant' && (
-                                    <MessageActionButtons 
-                                      msg={msg} 
-                                      isLoading={isLoading} 
-                                      onFeedback={(type, id) => setFeedbackModal({isOpen: true, type, msgId: id})} 
-                                      onRegenerate={handleRegenerateClick}
-                                    />
-                                  )}
+                                   {/* Action buttons — AFTER all cards */}
+                                   {msg.role === 'assistant' && !msg.meta?.limitReached && (
+                                     <MessageActionButtons 
+                                       msg={msg} 
+                                       isLoading={isLoading} 
+                                       onFeedback={(type, id) => setFeedbackModal({isOpen: true, type, msgId: id})} 
+                                       onRegenerate={handleRegenerateClick}
+                                     />
+                                   )}
 
-                                  {msg.role === 'assistant' && msg.meta?.limitReached && (
-                                    <div className="flex flex-col gap-4 mt-2">
-                                      <a href="/pricing" className="text-black hover:text-black dark:text-white underline underline-offset-4 decoration-white/10 hover:decoration-white transition-all text-[13px] tracking-tight truncate w-fit">
-                                        https://mailient.com/pricing
-                                      </a>
-
-                                      <div className="group relative flex items-center justify-between gap-4 p-4 mt-2 w-full max-w-[500px] bg-white/[0.03] border border-white/[0.08] rounded-2xl transition-all duration-300 hover:bg-black/[0.05] dark:bg-white/[0.05] hover:border-white/12 shadow-2xl overflow-hidden">
-                                        <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent pointer-events-none opacity-50" />
-
-                                        <div className="flex items-center gap-3.5 z-10">
-                                          <div className="w-10 h-10 rounded-full bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/10 flex items-center justify-center relative shadow-inner shrink-0 transition-transform group-hover:scale-105">
-                                            <Sparkles className="w-5 h-5 text-black group-hover:text-black dark:text-white transition-colors" />
-                                          </div>
-                                          <div className="flex flex-col gap-0.5">
-                                            <p className="text-black dark:text-white/90 text-[13px] font-bold tracking-tight leading-relaxed">
-                                              Your credits have been used up.
-                                            </p>
-                                            <p className="text-black dark:text-white/40 text-[11px] font-medium">Please upgrade your plan for more credits.</p>
-                                          </div>
-                                        </div>
-
-                                        <button
-                                          onClick={() => router.push('/pricing')}
-                                          className="relative z-10 px-5 py-2.5 bg-white hover:bg-neutral-200 text-black font-bold text-[12px] tracking-tight uppercase rounded-full transition-all group-active:scale-95 shadow-lg"
-                                        >
-                                          Upgrade
-                                        </button>
-                                      </div>
-                                    </div>
-                                  )}
+                                   {msg.role === 'assistant' && msg.meta?.limitReached && (
+                                     <div className="flex flex-col gap-4 mt-2">
+                                       <div className="group relative flex items-center justify-between gap-4 p-4 mt-2 w-full max-w-[500px] bg-white/[0.03] border border-white/[0.08] rounded-2xl transition-all duration-300 hover:bg-black/[0.05] dark:bg-white/[0.05] hover:border-white/12 shadow-2xl overflow-hidden">
+                                         <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent pointer-events-none opacity-50" />
+ 
+                                         <div className="flex items-center gap-3.5 z-10">
+                                           <div className="w-10 h-10 rounded-full bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/10 flex items-center justify-center relative shadow-inner shrink-0 transition-transform group-hover:scale-105">
+                                             <Sparkles className="w-5 h-5 text-black group-hover:text-black dark:text-white transition-colors" />
+                                           </div>
+                                           <div className="flex flex-col gap-0.5">
+                                             <p className="text-black dark:text-white/90 text-[13px] font-bold tracking-tight leading-relaxed">
+                                               Your credits have been used up.
+                                             </p>
+                                             <p className="text-black dark:text-white/40 text-[11px] font-medium">Please upgrade your plan for more credits.</p>
+                                           </div>
+                                         </div>
+ 
+                                         <button
+                                           onClick={() => window.open('/pricing', '_blank')}
+                                           className="relative z-10 px-5 py-2.5 bg-white hover:bg-neutral-200 text-black font-bold text-[12px] tracking-tight uppercase rounded-full transition-all group-active:scale-95 shadow-lg"
+                                         >
+                                           Upgrade
+                                         </button>
+                                       </div>
+                                     </div>
+                                   )}
 
                                   {msg.role === 'assistant' && (msg as AgentMessage).meta?.canvasApproval && (
                                     <div className="mt-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
