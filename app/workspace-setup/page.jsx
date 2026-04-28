@@ -65,14 +65,9 @@ function WorkspaceSetupContent() {
       title={<>Workspace <br/> Setup</>}
       description="Follow these critical steps to authorize Mailient for your Google Workspace organization."
       heroImageSrc="https://images.unsplash.com/photo-1497366216548-37526070297c?w=2160&q=80"
-      testimonials={[
-        {
-          avatarSrc: "/testimonials/john-oliver.png",
-          name: "John Oliver",
-          handle: "@joms0993",
-          text: "The setup was straightforward once I had the admin guidelines. It's a game-changer for our team's productivity."
-        }
-      ]}
+      hideHero={true}
+      allowScroll={true}
+      testimonials={[]}
     >
       <div className="space-y-8 max-w-md">
         {/* Header Section */}
@@ -165,14 +160,14 @@ function WorkspaceSetupContent() {
         <div className="flex flex-col gap-4 pt-4">
           <button 
             onClick={() => router.push('/auth/signin')}
-            className="w-full h-14 bg-white text-black rounded-2xl font-bold text-sm hover:bg-[#F5F5F5] hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 shadow-[0_20px_40px_rgba(255,255,255,0.1)] active:scale-[0.98]"
+            className="w-full h-14 btn-liquid-glass rounded-2xl font-bold text-sm hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
           >
             I've Completed Setup
             <ArrowRight className="w-4 h-4" />
           </button>
           <button 
             onClick={() => window.open('mailto:support@mailient.xyz')}
-            className="w-full h-14 bg-white/[0.04] text-white/60 rounded-2xl font-semibold text-sm hover:bg-white/[0.08] transition-all border border-white/[0.08]"
+            className="w-full h-14 btn-liquid-glass rounded-2xl font-semibold text-sm transition-all"
           >
             Need Help? Contact Support
           </button>

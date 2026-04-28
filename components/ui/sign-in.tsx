@@ -28,6 +28,8 @@ export interface SignInPageProps {
   heroImageSrc?: string;
   testimonials?: Testimonial[];
   children?: React.ReactNode;
+  hideHero?: boolean;
+  allowScroll?: boolean;
   onSignIn?: (event: React.FormEvent<HTMLFormElement>) => void;
   onGoogleSignIn?: () => void;
   onResetPassword?: () => void;
@@ -61,11 +63,13 @@ export const SignInLayout: React.FC<SignInPageProps> = ({
   heroImageSrc,
   testimonials = [],
   children,
+  hideHero = false,
+  allowScroll = false,
 }) => {
   return (
     <div className="h-screen flex flex-col md:flex-row bg-[#050505] text-white selection:bg-white selection:text-black overflow-hidden">
       {/* Left column: sign-in form */}
-      <section className="flex-1 flex items-center justify-center p-8 md:p-12 lg:p-20 relative z-10">
+      <section className={`flex-1 flex items-center justify-center p-8 md:p-12 lg:p-20 relative z-10 ${allowScroll ? 'overflow-y-auto custom-scrollbar' : ''}`}>
         <div className="w-full max-w-md">
           <div className="flex flex-col gap-8">
             <div className="space-y-4">
@@ -81,7 +85,7 @@ export const SignInLayout: React.FC<SignInPageProps> = ({
       </section>
 
       {/* Right column: hero image + testimonials */}
-      {heroImageSrc && (
+      {heroImageSrc && !hideHero && (
         <section className="hidden md:block flex-1 relative p-6">
           <div
             className="animate-slide-right animate-delay-300 absolute inset-4 rounded-[32px] bg-cover bg-center shadow-[0_40px_100px_rgba(0,0,0,0.8)] border border-white/10 overflow-hidden group"
