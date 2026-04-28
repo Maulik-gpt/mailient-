@@ -479,11 +479,11 @@ const MODES = [
 export const AI_MODELS = [
   { id: 'liquid/lfm-2.5-1.2b-thinking:free', name: 'Liquid', tier: 'free', icon: BrainCog },
   { id: 'openai/gpt-4.5', name: 'GPT 4.5', tier: 'starter', icon: Sparkles },
-  { id: 'anthropic/claude-opus-4.6', name: 'Opus 4.6', tier: 'starter', icon: MessageSquare },
-  { id: 'google/gemini-3.1-pro', name: 'Gemini 3.1', tier: 'starter', icon: Globe },
+  { id: 'anthropic/claude-opus-4.6', name: 'Opus 4.6', tier: 'starter', icon: BrainCog },
   { id: 'openai/gpt-5.5', name: 'GPT 5.5', tier: 'pro', icon: Sparkles, isFlagship: true },
-  { id: 'anthropic/claude-opus-4.7', name: 'Opus 4.7', tier: 'pro', icon: MessageSquare, isFlagship: true },
-] as const;
+  { id: 'anthropic/claude-opus-4.7', name: 'Opus 4.7', tier: 'pro', icon: BrainCog, isFlagship: true },
+  { id: 'google/gemini-3.1-pro', name: 'Gemini 3.1 Pro', tier: 'starter', icon: BrainCog },
+];
 
 type AgentMode = typeof MODES[number]['id'];
 
