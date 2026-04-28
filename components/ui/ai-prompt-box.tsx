@@ -4,6 +4,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { ArrowUp, Paperclip, Square, X, StopCircle, Mic, BrainCog, Monitor, FileText, Film, Music, Globe, Mail, Search, Infinity, Workflow, Bug, MessageSquare, Check, ChevronDown, Plus, Plug, Database, Calendar, Layout, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ConnectorsModal } from './connectors-modal';
+import { DropdownMenu } from './dropdown-menu';
 import { toast } from 'sonner';
 
 // Utility function for className merging
@@ -479,37 +480,27 @@ const MODES = [
 
 // --- Custom Model Logos ---
 const AnthropicLogo = ({ className }: { className?: string }) => (
-  <svg className={cn("w-4 h-4", className)} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M12 3L13.1 9H19L14.2 12.6L15.3 18.6L10.5 15L5.7 18.6L6.8 12.6L2 9H7.9L9 3H12Z" fill="#F06A33" />
-  </svg>
+  <div className={cn("w-5 h-5 bg-white rounded-lg flex items-center justify-center overflow-hidden border border-white/5", className)}>
+    <img src="/brand/claude.png" className="w-full h-full object-cover" alt="Claude" />
+  </div>
 );
 
 const GoogleGeminiLogo = ({ className }: { className?: string }) => (
-  <svg className={cn("w-4 h-4", className)} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M12 2L14.5 9.5H22L16 14L18.5 21.5L12 17L5.5 21.5L8 14L2 9.5H9.5L12 2Z" fill="url(#gemini-gradient)" />
-    <defs>
-      <linearGradient id="gemini-gradient" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
-        <stop stopColor="#4285F4" />
-        <stop offset="0.5" stopColor="#34A853" />
-        <stop offset="1" stopColor="#FBBC05" />
-      </linearGradient>
-    </defs>
-  </svg>
+  <div className={cn("w-5 h-5 bg-white rounded-lg flex items-center justify-center overflow-hidden border border-white/5", className)}>
+    <img src="/brand/gemini.png" className="w-full h-full object-cover" alt="Gemini" />
+  </div>
 );
 
 const OpenAILogo = ({ className }: { className?: string }) => (
-  <svg className={cn("w-4 h-4", className)} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20ZM12 7C9.24 7 7 9.24 7 12C7 14.76 9.24 17 12 17C14.76 17 17 14.76 17 12C17 9.24 14.76 7 12 7Z" fill="currentColor" />
-  </svg>
+  <div className={cn("w-5 h-5 bg-white rounded-lg flex items-center justify-center overflow-hidden border border-white/5", className)}>
+    <img src="/brand/gpt.png" className="w-full h-full object-cover" alt="GPT" />
+  </div>
 );
 
 const KimiLogo = ({ className }: { className?: string }) => (
-  <svg className={cn("w-4 h-4", className)} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-    <path d="M8 10C8 10 9 9 10 9C11 9 12 10 12 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    <path d="M14 10C14 10 15 9 16 9C17 9 18 10 18 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    <path d="M9 15C9 15 10.5 16.5 12 16.5C13.5 16.5 15 15 15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-  </svg>
+  <div className={cn("w-5 h-5 bg-white rounded-lg flex items-center justify-center overflow-hidden border border-white/5", className)}>
+    <div className="w-full h-full bg-gradient-to-br from-blue-500 to-emerald-500" />
+  </div>
 );
 
 const AutoLogo = ({ className }: { className?: string }) => (
@@ -893,92 +884,6 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
 
             <div className="h-4 w-[1px] bg-white/10 mx-1" />
 
-            {/* Model Selector Dropdown */}
-            <div className="relative">
-              <div 
-                className="flex flex-col items-start cursor-pointer group"
-                onClick={() => setIsModelMenuOpen(!isModelMenuOpen)}
-              >
-                <span className="text-[10px] text-black/40 dark:text-white/40 font-medium px-1 mb-0.5 opacity-0 group-hover:opacity-100 transition-opacity">Change AI model</span>
-                <button
-                  type="button"
-                  className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all font-bold",
-                    "bg-black/[0.05] dark:bg-white/5 border border-black/5 dark:border-white/10 hover:bg-black/10 dark:hover:bg-white/10 hover:border-black/10 dark:hover:border-white/20 text-black dark:text-white"
-                  )}
-                >
-                  {React.createElement(AI_MODELS.find(m => m.id === activeModelId)?.icon || AutoLogo, { className: "w-3.5 h-3.5" })}
-                  <span className="text-[13px] tracking-tight">{AI_MODELS.find(m => m.id === activeModelId)?.name || 'Auto'}</span>
-                  <ArrowUp className={cn("w-3.5 h-3.5 ml-1 text-black/20 dark:text-white/20 transition-transform", isModelMenuOpen && "rotate-180")} />
-                </button>
-              </div>
-
-              <AnimatePresence>
-                {isModelMenuOpen && (
-                  <>
-                    <div className="fixed inset-0 z-[60]" onClick={() => setIsModelMenuOpen(false)} />
-                    <motion.div
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      className="absolute bottom-full left-0 mb-3 w-60 bg-white dark:bg-[#1a1a1a] border border-black/10 dark:border-white/10 rounded-2xl shadow-2xl z-[70] overflow-hidden p-1.5"
-                    >
-                      {AI_MODELS.map((model) => {
-                        const isLocked = 
-                          (model.tier !== 'free' && (props.currentPlan === 'free' || !props.currentPlan)) || 
-                          (model.tier === 'pro' && props.currentPlan === 'starter');
-                        
-                        return (
-                          <button
-                            key={model.id}
-                            type="button"
-                            onClick={() => {
-                              if (isLocked) {
-                                toast('Unlock Premium Models', {
-                                  description: 'Upgrade your plan to access premium AI models.',
-                                  action: {
-                                    label: 'Upgrade',
-                                    onClick: () => window.location.href = '/pricing'
-                                  }
-                                });
-                                setIsModelMenuOpen(false);
-                              } else {
-                                setActiveModelId(model.id);
-                                setIsModelMenuOpen(false);
-                              }
-                            }}
-                            className={cn(
-                              "w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl transition-all text-left",
-                              activeModelId === model.id 
-                                ? "bg-black/[0.05] dark:bg-white/5 text-black dark:text-white" 
-                                : "hover:bg-black/[0.03] dark:hover:bg-white/[0.03] text-black dark:text-white",
-                              isLocked && "opacity-40 grayscale cursor-not-allowed"
-                            )}
-                          >
-                            <div className="flex items-center gap-3">
-                              <model.icon className={cn("w-4.5 h-4.5", activeModelId === model.id ? "" : "opacity-70")} />
-                              <div className="flex items-center gap-1.5">
-                                <span className={cn("text-[14px]", activeModelId === model.id ? "font-bold" : "font-medium")}>{model.name}</span>
-                                {model.beta && (
-                                  <span className="text-[10px] bg-black/[0.05] dark:bg-white/10 text-black/40 dark:text-white/40 px-1.5 py-0.5 rounded-md font-bold">Beta</span>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {activeModelId === model.id && <Check className="w-3.5 h-3.5 text-black dark:text-white" />}
-                              {isLocked && <span className="text-[9px] bg-black/10 dark:bg-white/10 text-black/40 dark:text-white/40 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Locked</span>}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </motion.div>
-                  </>
-                )}
-              </AnimatePresence>
-            </div>
-
-            <div className="h-4 w-[1px] bg-white/10 mx-1" />
-
             {/* Brand Integration Dock */}
             <div className="flex items-center -space-x-2 ml-1 opacity-40 hover:opacity-100 transition-all cursor-pointer" onClick={() => props.onConnectClick?.()}>
               {/* Google Calendar */}
@@ -991,7 +896,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
               </div>
               {/* Slack */}
               <div className="w-5 h-5 rounded-full bg-black/[0.05] dark:bg-white/5 border border-black/5 dark:border-white/5 flex items-center justify-center backdrop-blur-md overflow-hidden shadow-sm">
-                <svg className="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><path d="M27.255 80.719c0 7.33-5.978 13.317-13.309 13.317C6.616 94.036.63 88.049.63 80.719s5.987-13.317 13.317-13.317h13.309zm6.709 0c0-7.33 5.987-13.317 13.317-13.317s13.317 5.986 13.317 13.317v33.335c0 7.33-5.986 13.317-13.317 13.317-7.33 0-13.317-5.987-13.317-13.317zm0 0" fill="#de1c59"/><path d="M47.281 27.255c-7.33 0-13.317-5.978-13.317-13.309C33.964 6.616 39.951.63 47.281.63s13.317 5.987 13.317 13.317v13.309zm0 6.709c7.33 0 13.317 5.987 13.317 13.317s-5.986 13.317-13.317 13.317H13.946C6.616 60.598.63 54.612.63 47.281c0-7.33 5.987-13.317 13.317-13.317zm0 0" fill="#35c5f0"/><path d="M100.745 47.281c0-7.33 5.978-13.317 13.309-13.317 7.33 0 13.317 5.987 13.317 13.317s-5.987 13.317-13.317 13.317h-13.309zm-6.709 0c0 7.33-5.987 13.317-13.317 13.317s-13.317-5.986-13.317-13.317V13.946C67.402 6.616 73.388.63 80.719.63c7.33 0 13.317 5.987 13.317 13.317zm0 0" fill="#2eb57d"/><path d="M80.719 100.745c7.33 0 13.317 5.978 13.317 13.309 0 7.33-5.987 13.317-13.317 13.317s-13.317-5.987-13.317-13.317v-13.309zm0-6.709c-7.33 0-13.317-5.987-13.317-13.317s5.986-13.317 13.317-13.317h33.335c7.33 0 13.317 5.986 13.317 13.317 0 7.33-5.987 13.317-13.317 13.317zm0 0" fill="#ebb02e"/></svg>
+                <svg className="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><path d="M27.255 80.719c0 7.33-5.978 13.317-13.309 13.317C6.616 94.036.63 88.049.63 80.719s5.987-13.317 13.317-13.317h13.309zm6.709 0c0-7.33 5.987-13.317 13.317-13.317s13.317 5.986 13.317 13.317v33.335c0 7.33-5.986 13.317-13.317 13.317-7.33 0-13.317-5.987-13.317-13.317zm0 0" fill="#de1c59"/><path d="M47.281 27.255c-7.33 0-13.317-5.978-13.317-13.309C33.964 6.616 39.951.63 47.281.63s13.317 5.987 13.317 13.317v13.309zm0 6.709c7.33 0 13.317 5.987 13.317 13.317s-5.986 13.317-13.317 13.317H13.946C6.616 60.598.63 54.612.63 47.281c0-7.33 5.987-13.317 13.317-13.317zm0 0" fill="#35c5f0"/><path d="M100.745 47.281c0-7.33 5.978-13.317 13.309-13.317 7.33 0 13.317 5.987 13.317 13.317s-5.987 13.317-13.317 13.317h-13.309zm-6.709 0c0 7.33 5.987-13.317 13.317-13.317s-13.317-5.986-13.317-13.317V13.946C67.402 6.616 73.388.63 80.719.63c7.33 0 13.317 5.987 13.317 13.317zm0 0" fill="#2eb57d"/><path d="M80.719 100.745c7.33 0 13.317 5.978 13.317 13.309 0 7.33-5.987 13.317-13.317 13.317s-13.317-5.987-13.317-13.317v-13.309zm0-6.709c-7.33 0-13.317-5.987-13.317-13.317s5.986-13.317 13.317-13.317h33.335c7.33 0 13.317 5.986 13.317 13.317 0 7.33-5.987 13.317-13.317 13.317zm0 0" fill="#ebb02e"/></svg>
               </div>
             </div>
 
@@ -1024,49 +929,90 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
 
           </div>
 
-          <PromptInputAction
-            tooltip={
-              isLoading
-                ? "Stop generation"
-                : isRecording
-                  ? "Stop recording"
-                  : hasContent
-                    ? "Send message"
-                    : "Voice message"
-            }
-          >
-            <button
-              type="button"
-              className={cn(
-                "inline-flex items-center justify-center font-medium h-8 w-8 rounded-full transition-all duration-200 outline-none",
-                isRecording
-                  ? "bg-transparent hover:bg-black/[0.05] dark:bg-white/5 text-red-500 hover:text-red-400"
-                  : isLoading
-                    ? "bg-black dark:bg-white hover:bg-black/80 dark:hover:bg-white/80 text-white dark:text-black"
+          <div className="flex items-center gap-2">
+            {/* Redesigned Model Selector */}
+            <PromptInputAction tooltip="Change the Model">
+              <DropdownMenu
+                align="right"
+                options={AI_MODELS.map(model => {
+                  const isLocked = 
+                    (model.tier !== 'free' && (props.currentPlan === 'free' || !props.currentPlan)) || 
+                    (model.tier === 'pro' && props.currentPlan === 'starter');
+                  
+                  return {
+                    label: model.name,
+                    active: activeModelId === model.id,
+                    Icon: <model.icon className={cn("w-4 h-4", isLocked && "opacity-40 grayscale")} />,
+                    onClick: () => {
+                      if (isLocked) {
+                        toast('Unlock Premium Models', {
+                          description: 'Upgrade your plan to access premium AI models.',
+                          action: {
+                            label: 'Upgrade',
+                            onClick: () => window.location.href = '/pricing'
+                          }
+                        });
+                      } else {
+                        setActiveModelId(model.id);
+                      }
+                    }
+                  };
+                })}
+                className="p-0 border-none bg-transparent shadow-none"
+              >
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/[0.03] dark:bg-white/[0.03] border border-black/5 dark:border-white/10 hover:bg-black/[0.06] dark:hover:bg-white/[0.06] transition-all group">
+                  {React.createElement(AI_MODELS.find(m => m.id === activeModelId)?.icon || AutoLogo, { className: "w-3.5 h-3.5" })}
+                  <span className="text-[12px] font-bold text-black/60 dark:text-white/60 group-hover:text-black dark:group-hover:text-white transition-colors">
+                    {activeModelId === 'auto' ? 'Auto' : AI_MODELS.find(m => m.id === activeModelId)?.name}
+                  </span>
+                </div>
+              </DropdownMenu>
+            </PromptInputAction>
+
+            <PromptInputAction
+              tooltip={
+                isLoading
+                  ? "Stop generation"
+                  : isRecording
+                    ? "Stop recording"
                     : hasContent
-                      ? "bg-black dark:bg-white hover:bg-black/80 dark:hover:bg-white/80 text-white dark:text-black shadow-lg"
-                      : "bg-transparent hover:bg-black/[0.05] dark:bg-white/5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white"
-              )}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (isLoading && onStop) onStop();
-                else if (isRecording) setIsRecording(false);
-                else if (hasContent) handleSubmit();
-                else setIsRecording(true);
-              }}
-              disabled={isLoading && !onStop}
+                      ? "Send message"
+                      : "Voice message"
+              }
             >
-              {isLoading ? (
-                <Square className="h-4 w-4 fill-white" />
-              ) : isRecording ? (
-                <StopCircle className="h-5 w-5 text-red-500" />
-              ) : hasContent ? (
-                <ArrowUp className="h-4 w-4 text-black" />
-              ) : (
-                <Mic className="h-5 w-5 text-[#9CA3AF] transition-colors" />
-              )}
-            </button>
-          </PromptInputAction>
+              <button
+                type="button"
+                className={cn(
+                  "inline-flex items-center justify-center font-medium h-8 w-8 rounded-full transition-all duration-200 outline-none",
+                  isRecording
+                    ? "bg-transparent hover:bg-black/[0.05] dark:bg-white/5 text-red-500 hover:text-red-400"
+                    : isLoading
+                      ? "bg-black dark:bg-white hover:bg-black/80 dark:hover:bg-white/80 text-white dark:text-black"
+                      : hasContent
+                        ? "bg-black dark:bg-white hover:bg-black/80 dark:hover:bg-white/80 text-white dark:text-black shadow-lg"
+                        : "bg-transparent hover:bg-black/[0.05] dark:bg-white/5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white"
+                )}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (isLoading && onStop) onStop();
+                  else if (isRecording) setIsRecording(false);
+                  else if (hasContent) handleSubmit();
+                  else setIsRecording(true);
+                }}
+                disabled={isLoading && !onStop}
+              >
+                {isLoading ? (
+                  <Square className="h-4 w-4 fill-white" />
+                ) : isRecording ? (
+                  <StopCircle className="h-5 w-5 text-red-500" />
+                ) : hasContent ? (
+                  <ArrowUp className="h-4 w-4 text-black" />
+                ) : (
+                  <Mic className="h-5 w-5 text-[#9CA3AF] transition-colors" />
+                )}
+              </button>
+            </PromptInputAction>
+          </div>
         </PromptInputActions>
 
         {/* Connect Banner - Arcus Aesthetic Refinement */}
