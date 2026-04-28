@@ -63,7 +63,7 @@ export const SignInLayout: React.FC<SignInPageProps> = ({
   children,
 }) => {
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-[#050505] text-white selection:bg-white selection:text-black overflow-hidden">
+    <div className="h-screen flex flex-col md:flex-row bg-[#050505] text-white selection:bg-white selection:text-black overflow-hidden">
       {/* Left column: sign-in form */}
       <section className="flex-1 flex items-center justify-center p-8 md:p-12 lg:p-20 relative z-10">
         <div className="w-full max-w-md">
@@ -84,7 +84,7 @@ export const SignInLayout: React.FC<SignInPageProps> = ({
       {heroImageSrc && (
         <section className="hidden md:block flex-1 relative p-6">
           <div 
-            className="animate-slide-right animate-delay-300 absolute inset-6 rounded-[40px] bg-cover bg-center shadow-[0_40px_100px_rgba(0,0,0,0.8)] border border-white/10 overflow-hidden group" 
+            className="animate-slide-right animate-delay-300 absolute inset-4 rounded-[32px] bg-cover bg-center shadow-[0_40px_100px_rgba(0,0,0,0.8)] border border-white/10 overflow-hidden group" 
             style={{ backgroundImage: `url(${heroImageSrc})` }}
           >
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
@@ -92,10 +92,8 @@ export const SignInLayout: React.FC<SignInPageProps> = ({
           </div>
 
           {testimonials.length > 0 && (
-            <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-wrap gap-4 px-8 w-full justify-center">
+            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-full px-12 flex justify-center">
               <TestimonialCard testimonial={testimonials[0]} delay="animate-delay-1000" />
-              {testimonials[1] && <div className="hidden lg:flex"><TestimonialCard testimonial={testimonials[1]} delay="animate-delay-1200" /></div>}
-              {testimonials[2] && <div className="hidden xl:flex"><TestimonialCard testimonial={testimonials[2]} delay="animate-delay-1400" /></div>}
             </div>
           )}
         </section>
