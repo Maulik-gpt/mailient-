@@ -511,11 +511,13 @@ const AutoLogo = ({ className }: { className?: string }) => (
 
 export const AI_MODELS = [
   { id: 'auto', name: 'Auto', tier: 'free', icon: AutoLogo },
-  { id: 'anthropic/claude-opus-4.6', name: 'Sonnet 4.6', tier: 'starter', icon: AnthropicLogo, beta: true },
-  { id: 'anthropic/claude-opus-4.7', name: 'Opus 4.7', tier: 'pro', icon: AnthropicLogo, beta: true, isFlagship: true },
-  { id: 'google/gemini-3.1-pro', name: 'Gemini 3.1 Pro', tier: 'starter', icon: GoogleGeminiLogo, beta: true },
-  { id: 'openai/gpt-4.5', name: 'GPT 4.5', tier: 'starter', icon: OpenAILogo, beta: true },
-  { id: 'openai/gpt-5.5', name: 'GPT 5.5', tier: 'pro', icon: OpenAILogo, beta: true, isFlagship: true },
+  // Starter Tier — available for Starter ($7.99/mo) and Pro users
+  { id: 'anthropic/claude-sonnet-4.6', name: 'Sonnet 4.6', tier: 'starter', icon: AnthropicLogo },
+  { id: 'google/gemini-3.1-pro-preview', name: 'Gemini 3.1 Pro', tier: 'starter', icon: GoogleGeminiLogo },
+  { id: 'openai/gpt-5.4', name: 'GPT 5.4', tier: 'starter', icon: OpenAILogo },
+  // Pro Tier — available only for Pro ($29.99/mo) users
+  { id: 'anthropic/claude-opus-4.6', name: 'Opus 4.6', tier: 'pro', icon: AnthropicLogo, isFlagship: true },
+  { id: 'openai/gpt-5.5', name: 'GPT 5.5', tier: 'pro', icon: OpenAILogo, isFlagship: true },
 ];
 
 type AgentMode = typeof MODES[number]['id'];
