@@ -16,11 +16,24 @@ import {
   Zap,
   Shield,
   Clock,
-  HeadphonesIcon,
-  MessageCircle,
-  Twitter,
   Youtube
 } from 'lucide-react';
+
+// Custom X (Twitter) Icon
+const XIcon = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+  </svg>
+);
+
+// FoundrList Icon (based on logo)
+const FoundrListIcon = ({ className }) => (
+  <svg className={className} viewBox="0 0 32 32" fill="none">
+    <path d="M28 8c0-4.418-3.582-8-8-8H8v.063C3.576 8.213 0 14.693 0 22c0 4.418 3.582 8 8 8h12v-.063c4.424-6.15 8-12.63 8-19.937z" fill="#E85A3C"/>
+    <path d="M8 0h12c4.418 0 8 3.582 8 8 0 3.864-2.736 8.718-6.152 12H8V0z" fill="#E85A3C"/>
+    <path d="M20 12H8v8h12c2.21 0 4-1.79 4-4s-1.79-4-4-4z" fill="#F5F5F5"/>
+  </svg>
+);
 
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
@@ -71,30 +84,23 @@ const contactMethods = [
   {
     icon: Mail,
     label: "Email us",
-    value: "support@mailient.com",
+    value: "mailient.xyz@gmail.com",
     description: "We reply within 24 hours",
-    href: "mailto:support@mailient.com"
+    href: "mailto:mailient.xyz@gmail.com"
   },
   {
     icon: Clock,
     label: "Live chat",
-    value: "Available 9am-6pm EST",
-    description: "For Pro & Enterprise plans",
-    href: "#"
-  },
-  {
-    icon: HeadphonesIcon,
-    label: "Schedule a call",
-    value: "Book a consultation",
-    description: "30-minute onboarding session",
+    value: "Replies within 24-48 business hours",
+    description: "Connect with our team",
     href: "#"
   }
 ];
 
 const socialLinks = [
-  { icon: Twitter, href: "https://x.com/Maulik_055", label: "Twitter" },
+  { icon: XIcon, href: "https://x.com/Maulik_055", label: "X" },
   { icon: Youtube, href: "https://www.youtube.com/@maulik-5", label: "YouTube" },
-  { icon: MessageCircle, href: "#", label: "Discord" }
+  { icon: FoundrListIcon, href: "https://www.foundrlist.com/server/5788a18f-345c-434c-b2ad-1a58bf238faa", label: "FoundrList", external: true }
 ];
 
 export default function ContactPage() {
