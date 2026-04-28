@@ -600,7 +600,7 @@ export async function POST(request) {
 
     // --- CONTEXT SEARCH ---
     const detectedIsNotesQuery = isNotesQuery !== undefined ? isNotesQuery : isNotesRelatedQuery(message);
-    const detectedIsEmailQuery = isEmailRelatedQuery(message) || (intentAnalysis?.gmailActions?.length > 0);
+    const detectedIsEmailQuery = isEmailRelatedQuery(message) || (intentAnalysis?.gmailActions?.length > 0) || !!intentAnalysis?.searchQuery || ['search', 'draft_email', 'reply_email', 'summarize', 'arcus_inbox_review', 'arcus_auto_pilot'].includes(intentAnalysis?.intent);
 
     let emailContext = null;
     let emailResult = null;
