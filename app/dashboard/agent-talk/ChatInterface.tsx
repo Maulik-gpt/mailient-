@@ -2983,7 +2983,7 @@ export default function ChatInterface({
                                         }}
                                       />
                                     </div>
-                                  )
+                                  )}
 
                                   {/* Action buttons — AFTER all cards */}
                                   {msg.role === 'assistant' && (
