@@ -1695,30 +1695,6 @@ export default function ChatInterface({
         }
         
         setIsCanvasOpen(false);
-
-        // Add confirmation message with external refs if available
-        const confirmMessage: AgentMessage = {
-          id: Date.now() + 1,
-          type: 'agent',
-          role: 'assistant',
-          notes: [],
-          content: {
-            text: result.message || 'Done! The action was completed successfully.',
-            list: result.executionResult?.externalRefs ? 
-              Object.entries(result.executionResult.externalRefs).map(([key, value]) => `${key}: ${value}`) : 
-              [],
-            footer: result.nextRecommendedActions?.length ? 
-              `Next: ${result.nextRecommendedActions.join(', ')}` : 
-              ''
-          },
-          meta: {
-            executionResult: result.executionResult,
-            externalRefs: result.externalRefs,
-            recoveryHint: result.recoveryHint
-          },
-          time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
-        };
-        setMessages(prev => [...prev, confirmMessage]);
       } else {
         // Phase 1: Handle categorized errors with recovery hints
         const errorCategory = result.error?.category || result.executionResult?.error?.category;
@@ -2889,34 +2865,6 @@ export default function ChatInterface({
                                         onFeedback={(type, id) => setFeedbackModal({isOpen: true, type, msgId: id})} 
                                         onRegenerate={handleRegenerateClick}
                                       />
-                                      
-                                      {/* Follow-up Suggestions */}
-                                      {!isLoading && ((msg as AgentMessage).meta?.suggestions?.length ?? 0) > 0 && (
-                                        <div className="mt-4 flex flex-col gap-2">
-                                          {(msg as AgentMessage).meta!.suggestions!.map((suggestion, idx) => (
-                                            <button
-                                              key={idx}
-                                              onClick={() => {
-                                                // Remove suggestions from this message on click
-                                                setMessages(prev => prev.map(m => {
-                                                  if (m.id === msg.id && m.type === 'agent') {
-                                                    return { ...m, meta: { ...(m as AgentMessage).meta, suggestions: undefined } };
-                                                  }
-                                                  return m;
-                                                }));
-                                                handleSend(suggestion);
-                                              }}
-                                              className="flex items-center gap-2 group/sug text-black/40 dark:text-white/50 hover:text-black dark:hover:text-white transition-all text-left w-fit"
-                                            >
-                                              <svg className="w-4 h-4 opacity-40 group-hover/sug:opacity-100 transition-opacity" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                                <path d="M12 20L12 10M12 10L16 14M12 10L8 14" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" transform="rotate(90 12 12)" />
-                                                <path d="M20 20H12" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                              </svg>
-                                              <span className="text-[13px] font-medium">{suggestion}</span>
-                                            </button>
-                                          ))}
-                                        </div>
-                                      )}
                                     </>
                                   )}
                                   {msg.role === 'user' && (msg as UserMessage).attachments && (msg as UserMessage).attachments!.length > 0 && (
