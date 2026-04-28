@@ -855,8 +855,8 @@ Body: ${emailData.body || emailData.snippet}
     let executionPolicy = null;
     const messageLower = (message || '').toLowerCase();
     const effectiveCanvasType = intentAnalysis?.canvasType || 'email_draft';
-    // CRITICAL: Disable canvas generation if we are in plan mode to prevent UI confusion
-    const shouldGenerateCanvas = isPlanMode ? false : Boolean(isCanvas);
+    // CRITICAL: Allow canvas generation in agent mode if the intent strictly requires it (e.g. drafting emails)
+    const shouldGenerateCanvas = isPlanMode ? false : (Boolean(isCanvas) && intentAnalysis?.needsCanvas);
 
     // --- PARALLEL GENERATION: Generate canvas and response at the same time ---
     let canvasDataResult = null;
@@ -892,7 +892,8 @@ Body: ${emailData.body || emailData.snippet}
         userName,
         privacyMode,
         attachments,
-        isDeepThinking
+        isDeepThinking,
+        isCanvas: shouldGenerateCanvas
       });
       generations.push(responsePromise);
 
