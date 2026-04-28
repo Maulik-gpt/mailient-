@@ -871,7 +871,11 @@ Body: ${emailData.body || emailData.snippet}
 
       // Always generate response
       let contextMessage = message;
-      if (!shouldGenerateCanvas && intentAnalysis?.needsCanvas) {
+      if (isPlanMode) {
+        // Plan Mode: The PlanModeEngine generates the structured plan artifact separately.
+        // The AI response here is just a brief chat acknowledgment.
+        contextMessage = `User requested (Plan Mode): "${message}". [SYSTEM NOTE: A structured execution plan with actionable steps is being generated as a Plan Artifact card. Your job here is to provide a brief 2-3 sentence strategic acknowledgment. Confirm you understand the objective, mention the key phases you'll cover, and tell the user to review the plan card below. Do NOT write the full plan here — it will appear as an interactive card.]`;
+      } else if (!shouldGenerateCanvas && intentAnalysis?.needsCanvas) {
         contextMessage = `User requested: "${message}". [SYSTEM NOTE: The user declined the visual Canvas. You MUST output all details, summaries, and findings directly here in this chat response using markdown.]`;
       } else if (shouldGenerateCanvas) {
         contextMessage = `User requested: "${message}". [SYSTEM NOTE: A detailed interactive UI Canvas/Workspace has ALREADY been generated and opened for the user with this data. Do NOT write an essay or repeat the data here. Provide a very brief 1-2 sentence confirmation acknowledging the action and directing their attention to the workspace.]`;

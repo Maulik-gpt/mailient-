@@ -1273,10 +1273,10 @@ export default function ChatInterface({
 
           setLiveThinkingBlocks(blocks);
 
-          // --- Trigger Arcus Workspace Approval Step ---
+          // --- Trigger Arcus Workspace Approval Step (Agent mode only, NOT Plan mode) ---
           let userApprovedCanvas = isCanvas;
           
-          if (intentData.needsCanvas === true || isCanvas) {
+          if (!isPlanMode && (intentData.needsCanvas === true || isCanvas)) {
             const canvasInitialData = {
               type: 'workflow' as const,
               title: intentData.canvasTitle || "Arcus's Computer",
@@ -1400,8 +1400,8 @@ export default function ChatInterface({
       })));
       await new Promise(r => setTimeout(r, 300));
 
-      // Canvas data handling
-      const hasCanvas = Boolean(data.canvasData && (data.canvasData.content || data.execution?.requiresApproval));
+      // Canvas data handling (Agent mode only — Plan mode uses PlanCanvas card)
+      const hasCanvas = Boolean(!isPlanMode && data.canvasData && (data.canvasData.content || data.execution?.requiresApproval));
       if (hasCanvas) {
         setCanvasData(data.canvasData);
         // Automatically open canvas for complex tasks or explicit canvas requests

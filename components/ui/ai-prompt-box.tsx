@@ -667,7 +667,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
     if (input.trim() || files.length > 0) {
       onSend(input, files, {
         isDeepThinking: activeMode === 'plan',
-        isCanvas: true, // Always allow canvas, backend will decide based on intent
+        isCanvas: activeMode === 'agent', // Canvas is Agent-mode only; Plan uses PlanCanvas artifact
         isSearch: activeMode === 'agent',
         isPlanMode: activeMode === 'plan',
         modelId: activeModelId
