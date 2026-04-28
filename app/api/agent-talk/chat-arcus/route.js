@@ -872,9 +872,50 @@ Body: ${emailData.body || emailData.snippet}
       // Always generate response
       let contextMessage = message;
       if (isPlanMode) {
-        // Plan Mode: The PlanModeEngine generates the structured plan artifact separately.
-        // The AI response here is just a brief chat acknowledgment.
-        contextMessage = `User requested (Plan Mode): "${message}". [SYSTEM NOTE: A structured execution plan with actionable steps is being generated as a Plan Artifact card. Your job here is to provide a brief 2-3 sentence strategic acknowledgment. Confirm you understand the objective, mention the key phases you'll cover, and tell the user to review the plan card below. Do NOT write the full plan here — it will appear as an interactive card.]`;
+        // Plan Mode: The PlanModeEngine has already generated the plan artifact.
+        // Inject plan data into context so the AI writes a detailed, structured response that mirrors the card.
+        if (planArtifact && planArtifact.title) {
+          const todoList = (planArtifact.todos || []).map((t, i) => `${i + 1}. **${t.title}** — ${t.description || t.actionType || 'Task'}`).join('\n');
+          const assumptions = (planArtifact.assumptions || []).map(a => `- ${a}`).join('\n');
+          const criteria = (planArtifact.acceptanceCriteria || []).map(c => `- ${c}`).join('\n');
+          
+          contextMessage = `User requested (Plan Mode): "${message}".
+
+[SYSTEM NOTE — PLAN ARTIFACT ALREADY GENERATED]
+A structured interactive Plan Card has been generated and will appear below your response. The user can click "Execute" on it.
+
+Your job is to write a DETAILED, structured text response that complements the plan card. Use markdown with headings and bullet points. Follow this exact structure:
+
+## 🎯 [Plan Title]
+Write a 2-3 sentence strategic overview of the objective.
+
+### 📋 Execution Steps
+List all steps as a numbered list with brief descriptions of each.
+
+### 🔍 Key Assumptions
+Bullet the assumptions the plan is based on.
+
+### ✅ Success Criteria
+Bullet the acceptance criteria.
+
+### ⚡ Next Steps
+Tell the user to review the interactive plan card below and click "Execute" when ready.
+
+PLAN DATA TO MIRROR:
+- Title: ${planArtifact.title}
+- Objective: ${planArtifact.objective || 'See plan card'}
+- Steps:
+${todoList || 'See plan card'}
+- Assumptions:
+${assumptions || 'None specified'}
+- Acceptance Criteria:
+${criteria || 'None specified'}
+
+Write your response using the above data. Be specific, use the exact step names, and keep it high-fidelity. Do NOT say "I've created a plan" generically — reference the actual steps by name.]`;
+        } else {
+          // Fallback if plan generation failed
+          contextMessage = `User requested (Plan Mode): "${message}". [SYSTEM NOTE: A plan is being generated. Provide a detailed strategic breakdown of how you would approach this task. Use markdown headings and bullet points. Structure it as: Objective, Key Steps, Assumptions, and Success Criteria. Tell the user the plan card will appear below.]`;
+        }
       } else if (!shouldGenerateCanvas && intentAnalysis?.needsCanvas) {
         contextMessage = `User requested: "${message}". [SYSTEM NOTE: The user declined the visual Canvas. You MUST output all details, summaries, and findings directly here in this chat response using markdown.]`;
       } else if (shouldGenerateCanvas) {
