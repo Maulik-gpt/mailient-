@@ -402,53 +402,104 @@ export default function ContactPage() {
                 </div>
               </div>
 
-              {/* Enterprise CTA */}
-              <div className="p-6 rounded-2xl bg-gradient-to-br from-gray-500/10 to-gray-400/5 border border-white/[0.06]">
-                <h3 className="text-lg font-medium text-white mb-2">Enterprise support</h3>
-                <p className="text-sm text-white/40 mb-4">
-                  Need dedicated support? Our enterprise plan includes priority response and a dedicated account manager.
-                </p>
-                <a
-                  href="/pricing"
-                  className="inline-flex items-center gap-2 text-sm font-medium text-white/80 hover:text-white transition-colors"
-                >
-                  View enterprise plans
-                  <ArrowRight className="w-4 h-4" />
-                </a>
-              </div>
             </motion.div>
           </div>
         </section>
 
-        {/* Bottom CTA */}
-        <section className="py-16 px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="max-w-3xl mx-auto text-center"
-          >
-            <p className="text-white/30 text-sm mb-4">Still have questions?</p>
-            <h2 className="text-3xl sm:text-4xl font-semibold text-white mb-6">
-              Ready to transform your inbox?
-            </h2>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <a
-                href="/auth/signup"
-                className="px-8 py-4 rounded-xl bg-white text-black font-medium hover:bg-white/90 transition-all duration-300"
-              >
-                Start free trial
-              </a>
-              <a
-                href="/auth/signin"
-                className="px-8 py-4 rounded-xl bg-white/[0.05] border border-white/[0.1] text-white font-medium hover:bg-white/[0.08] hover:border-white/[0.15] transition-all duration-300"
-              >
-                Sign in
-              </a>
+        {/* Footer */}
+        <footer className="py-20 px-6 border-t border-zinc-900 z-10 relative bg-zinc-950">
+          <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-12">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-white rounded flex items-center justify-center">
+                <Mail className="w-4 h-4 text-black" />
+              </div>
+              <span className="font-bold tracking-tight text-white">Mailient</span>
             </div>
-          </motion.div>
-        </section>
+            <div className="flex gap-8 text-sm font-bold text-zinc-400 uppercase tracking-widest">
+              <a href="https://x.com/Maulik_055" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Twitter</a>
+              <a href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</a>
+              <a href="/terms-of-service" className="hover:text-white transition-colors">Terms of Service</a>
+            </div>
+            <div className="flex flex-col md:flex-row items-center gap-8">
+              <div className="flex items-center gap-6">
+                <a
+                  href="https://www.producthunt.com/products/mailient?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-mailient"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="opacity-40 hover:opacity-100 transition-all duration-500 scale-90 hover:scale-100"
+                >
+                  <img
+                    src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1059008&theme=dark&t=1768213643164"
+                    alt="Maileint - Stop managing emails, Start automating them. | Product Hunt"
+                    className="h-8 w-auto grayscale hover:grayscale-0"
+                  />
+                </a>
+                <a
+                  href="https://www.foundrlist.com/product/mailient-2"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="opacity-40 hover:opacity-100 transition-all duration-500 scale-90 hover:scale-100"
+                >
+                  <img
+                    src="https://www.foundrlist.com/api/badge/mailient-2"
+                    alt="Live on FoundrList"
+                    width={160}
+                    height={64}
+                    className="w-auto grayscale hover:grayscale-0"
+                  />
+                </a>
+                <a
+                  href="https://launchigniter.com/product/mailient?ref=badge-mailient"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="opacity-40 hover:opacity-100 transition-all duration-500 scale-90 hover:scale-100"
+                >
+                  <img
+                    src="https://launchigniter.com/api/badge/mailient?theme=dark"
+                    alt="Featured on LaunchIgniter"
+                    className="h-8 w-auto grayscale hover:grayscale-0"
+                  />
+                </a>
+                <a
+                  href="https://www.launchit.site/project/mailient"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="opacity-40 hover:opacity-100 transition-all duration-500 scale-90 hover:scale-100"
+                >
+                  <img
+                    src="/badges/featured-dark.svg"
+                    alt="Launched on Launchit"
+                    className="h-8 w-auto grayscale hover:grayscale-0"
+                  />
+                </a>
+                <a
+                  href="https://fazier.com/launches/mailient.xyz"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="opacity-40 hover:opacity-100 transition-all duration-500 scale-90 hover:scale-100"
+                >
+                  <img
+                    src="https://fazier.com/api/v1//public/badges/launch_badges.svg?badge_type=launched&theme=dark"
+                    width={120}
+                    alt="Fazier badge"
+                    className="w-auto grayscale hover:grayscale-0"
+                  />
+                </a>
+              </div>
+              <p className="text-xs text-zinc-600">© 2026 Mailient Intelligence.</p>
+            </div>
+          </div>
+          <div className="flex justify-center pt-10 text-zinc-500 text-xs text-center max-w-2xl mx-auto">
+            <p>
+              Mailient is a product of Maulik. All claims and features are based on the developer&apos;s statements and are subject to verification.
+            </p>
+          </div>
+          <div className="pt-20 -mb-20 flex justify-center opacity-[0.03] select-none pointer-events-none w-full overflow-hidden">
+            <span className="text-[15vw] md:text-[22vw] font-black uppercase tracking-tighter leading-none text-white whitespace-nowrap">
+              mailient
+            </span>
+          </div>
+        </footer>
       </div>
     </main>
   );
