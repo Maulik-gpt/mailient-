@@ -115,7 +115,7 @@ const MarkdownComponents = {
       : <code className="block p-5 bg-[#111] text-white/90 rounded-xl my-6 text-[14px] font-mono overflow-x-auto border border-[#222]" {...props} />,
 };
 
-const TypewriterMarkdown = ({ content, speed = 4 }: { content: string, speed?: number }) => {
+ const TypewriterMarkdown = ({ content, speed = 4, hideLinks }: { content: string, speed?: number, hideLinks?: boolean }) => {
   const [displayedText, setDisplayedText] = useState("");
   const [isDone, setIsDone] = useState(false);
   const words = content.split(/(\s+)/); // Preserve spaces
@@ -149,11 +149,17 @@ const TypewriterMarkdown = ({ content, speed = 4 }: { content: string, speed?: n
     return () => clearInterval(interval);
   }, [content, speed]);
 
-  return (
-    <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
-      {isDone ? content : displayedText}
-    </ReactMarkdown>
-  );
+   return (
+     <ReactMarkdown 
+       remarkPlugins={[remarkGfm]} 
+       components={{
+         ...MarkdownComponents,
+         ...(hideLinks ? { a: ({ node, ...props }) => <span className="text-inherit underline underline-offset-2 opacity-50 cursor-default">{props.children}</span> } : {})
+       }}
+     >
+       {isDone ? content : displayedText}
+     </ReactMarkdown>
+   );
 };
 
  const MessageContent = ({ content, isUser, isTyping, isNewResponse, hideLinks }: { content: any, isUser?: boolean, isTyping?: boolean, isNewResponse?: boolean, hideLinks?: boolean }) => {
@@ -183,9 +189,9 @@ const TypewriterMarkdown = ({ content, speed = 4 }: { content: string, speed?: n
   if (typeof content === 'string') {
     return (
       <div className={`${textColorClass} w-full`}>
-         {useTypewriter ? (
-           <TypewriterMarkdown content={textContent} />
-         ) : (
+          {useTypewriter ? (
+            <TypewriterMarkdown content={textContent} hideLinks={hideLinks} />
+          ) : (
            <ReactMarkdown 
              remarkPlugins={[remarkGfm]} 
              components={{
@@ -202,9 +208,9 @@ const TypewriterMarkdown = ({ content, speed = 4 }: { content: string, speed?: n
   
   return (
     <div className={`space-y-4 ${textColorClass} w-full`}>
-       {useTypewriter ? (
-         <TypewriterMarkdown content={textContent} />
-       ) : (
+        {useTypewriter ? (
+          <TypewriterMarkdown content={textContent} hideLinks={hideLinks} />
+        ) : (
          <ReactMarkdown 
            remarkPlugins={[remarkGfm]} 
            components={{
@@ -221,9 +227,9 @@ const TypewriterMarkdown = ({ content, speed = 4 }: { content: string, speed?: n
           {content.list.map((item: string, i: number) => (
             <li key={i} className="relative pl-5 text-[17px] text-white/90">
               <span className="absolute left-0 top-2.5 w-1.5 h-1.5 bg-white/60 rounded-full" />
-               {useTypewriter ? (
-                 <TypewriterMarkdown content={item} speed={15} />
-               ) : (
+                {useTypewriter ? (
+                  <TypewriterMarkdown content={item} speed={15} hideLinks={hideLinks} />
+                ) : (
                  <ReactMarkdown 
                    remarkPlugins={[remarkGfm]} 
                    components={{
@@ -1024,11 +1030,10 @@ export default function ChatInterface({
           description: `Arcus AI: ${next.usage}/${next.limit} used (${next.remaining} left ${next.period === 'daily' ? 'today' : 'this month'})`
         });
       }
-       }
-     } catch {
-       // ignore
-     }
-   }, []);
+    } catch {
+      // ignore
+    }
+  }, []);
  
    // Auto-vanish limit messages when credits are replenished
    useEffect(() => {
