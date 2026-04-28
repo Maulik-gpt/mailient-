@@ -115,38 +115,101 @@ const MarkdownComponents = {
       : <code className="block p-5 bg-[#111] text-white/90 rounded-xl my-6 text-[14px] font-mono overflow-x-auto border border-[#222]" {...props} />,
 };
 
-const MessageContent = ({ content, isUser, isTyping }: { content: any, isUser?: boolean, isTyping?: boolean }) => {
+const TypewriterMarkdown = ({ content, speed = 4 }: { content: string, speed?: number }) => {
+  const [displayedText, setDisplayedText] = useState("");
+  const [isDone, setIsDone] = useState(false);
+  const words = content.split(/(\s+)/); // Preserve spaces
+  const indexRef = useRef(0);
+
+  useEffect(() => {
+    // If content is short or we already started, reset if content changed significantly
+    // But usually we just want to run it once for the final response
+    let currentText = "";
+    indexRef.current = 0;
+    setDisplayedText("");
+    setIsDone(false);
+
+    const interval = setInterval(() => {
+      if (indexRef.current >= words.length) {
+        setIsDone(true);
+        clearInterval(interval);
+        return;
+      }
+
+      // Add 2-3 words at a time for "fast" word-by-word feel
+      const batchSize = 3;
+      for (let i = 0; i < batchSize && indexRef.current < words.length; i++) {
+        currentText += words[indexRef.current];
+        indexRef.current++;
+      }
+      
+      setDisplayedText(currentText);
+    }, speed);
+
+    return () => clearInterval(interval);
+  }, [content, speed]);
+
+  return (
+    <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
+      {isDone ? content : displayedText}
+    </ReactMarkdown>
+  );
+};
+
+const MessageContent = ({ content, isUser, isTyping, isNewResponse }: { content: any, isUser?: boolean, isTyping?: boolean, isNewResponse?: boolean }) => {
   const textColorClass = isUser ? "text-white" : "text-white/90";
 
   let textContent = typeof content === 'string' ? content : (content.text || '');
+  
   if (isTyping) {
-    textContent += ' ▍';
+    return (
+      <div className={`${textColorClass} w-full`}>
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
+          {textContent + ' ▍'}
+        </ReactMarkdown>
+      </div>
+    );
   }
+
+  // If it's a new AI response and not streaming, use typewriter
+  const useTypewriter = !isUser && isNewResponse;
 
   if (typeof content === 'string') {
     return (
       <div className={`${textColorClass} w-full`}>
-        <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
-          {textContent}
-        </ReactMarkdown>
+        {useTypewriter ? (
+          <TypewriterMarkdown content={textContent} />
+        ) : (
+          <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
+            {textContent}
+          </ReactMarkdown>
+        )}
       </div>
     );
   }
   
   return (
     <div className={`space-y-4 ${textColorClass} w-full`}>
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
-        {textContent}
-      </ReactMarkdown>
+      {useTypewriter ? (
+        <TypewriterMarkdown content={textContent} />
+      ) : (
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
+          {textContent}
+        </ReactMarkdown>
+      )}
       
       {content.list && content.list.length > 0 && (
         <ul className="space-y-2 my-4 list-none pl-2">
           {content.list.map((item: string, i: number) => (
-            <li key={i} className="relative pl-5 text-[16px] text-white/90">
+            <li key={i} className="relative pl-5 text-[17px] text-white/90">
               <span className="absolute left-0 top-2.5 w-1.5 h-1.5 bg-white/60 rounded-full" />
-              <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
-                {item}
-              </ReactMarkdown>
+              {useTypewriter ? (
+                <TypewriterMarkdown content={item} speed={15} />
+              ) : (
+                <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
+                  {item}
+                </ReactMarkdown>
+              )}
             </li>
           ))}
         </ul>
@@ -2855,6 +2918,7 @@ export default function ChatInterface({
                                     content={msg.content} 
                                     isUser={msg.role === 'user'} 
                                     isTyping={isLoading && msg.role === 'assistant' && msg.id === messages[messages.length - 1].id}
+                                    isNewResponse={msg.role === 'assistant' && msg.id === messages[messages.length - 1].id && !isLoading}
                                   />
 
 
