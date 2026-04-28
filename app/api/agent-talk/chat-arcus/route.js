@@ -1313,7 +1313,7 @@ async function searchEmailBySender(senderName, userEmail, session) {
 
     // Search for emails from this sender
     const query = `from:${senderName} newer_than:30d`;
-    const emailsResponse = await gmailService.getEmails(1, query, null, 'internalDate desc');
+    const emailsResponse = await gmailService.getEmails(1, query, null);
     const messages = emailsResponse?.messages || [];
 
     if (messages.length === 0) return null;
@@ -1405,27 +1405,27 @@ async function executeEmailAction(userMessage, userEmail, session, providedAcces
     const gmailService = new GmailService(accessToken, refreshToken || '');
 
     // 🎯 SMART SEARCH: Use AI-generated query if available
-    let query = 'newer_than:15d';
+    let query = 'newer_than:60d';
     let maxResults = 10;
     
     if (intentAnalysis?.searchQuery && intentAnalysis.searchQuery.length > 5 && intentAnalysis.searchQuery.toLowerCase() !== 'none') {
       query = intentAnalysis.searchQuery;
       if (!query.includes('newer_than') && !query.includes('after:')) {
-        query += ' newer_than:15d';
+        query += ' newer_than:60d';
       }
     } else {
       if (lowerMessage.includes('unread')) {
-        query = 'is:unread newer_than:15d';
+        query = 'is:unread newer_than:60d';
       } else if (lowerMessage.includes('important') || lowerMessage.includes('urgent')) {
-        query = 'is:important newer_than:15d';
+        query = 'is:important newer_than:60d';
       } else if (lowerMessage.includes('starred')) {
-        query = 'is:starred newer_than:30d';
+        query = 'is:starred newer_than:90d';
       } else if (lowerMessage.includes('sent')) {
-        query = 'in:sent newer_than:15d';
+        query = 'in:sent newer_than:60d';
       } else if (lowerMessage.includes('today')) {
-        query = 'newer_than:1d';
+        query = 'newer_than:2d';
       } else if (lowerMessage.includes('analytics') || lowerMessage.includes('insights')) {
-        query = 'newer_than:30d';
+        query = 'newer_than:90d';
         maxResults = 25;
       }
 
@@ -1441,7 +1441,7 @@ async function executeEmailAction(userMessage, userEmail, session, providedAcces
 
       if (messages.length === 0 && (query.includes('is:unread') || query.includes('from:'))) {
         console.log('🔄 Arcus: No results for specific query, falling back to broader search');
-        const fallbackQuery = 'newer_than:15d';
+        const fallbackQuery = 'newer_than:120d';
         emailsResponse = await gmailService.getEmails(maxResults, fallbackQuery, null);
         messages = emailsResponse?.messages || [];
         query = fallbackQuery; // Update query so UI shows fallback
@@ -1594,7 +1594,9 @@ function isEmailRelatedQuery(message) {
     'from', 'subject', 'attachment', 'urgent', 'important',
     'today', 'yesterday', 'this week', 'recent', 'latest',
     'received', 'sent', 'what did', 'show me', 'find',
-    'search', 'check', 'any new', 'pending', 'waiting'
+    'search', 'check', 'any new', 'pending', 'waiting',
+    'invoice', 'receipt', 'newsletter', 'update', 'notification',
+    'meeting', 'schedule', 'calendar', 'client', 'customer'
   ];
   const lowerMessage = message.toLowerCase();
   return emailKeywords.some(keyword => lowerMessage.includes(keyword));

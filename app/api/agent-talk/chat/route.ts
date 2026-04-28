@@ -447,14 +447,14 @@ async function getEmailContext(userMessage: string, userEmail: string) {
 
 function buildGmailSearchQuery(userMessage: string) {
   const lowerMessage = userMessage.toLowerCase();
-  let query = 'newer_than:30d';
+  let query = 'newer_than:60d';
 
   if (lowerMessage.includes('unread')) {
-    query = 'is:unread newer_than:7d';
+    query = 'is:unread newer_than:30d';
   } else if (lowerMessage.includes('urgent') || lowerMessage.includes('important')) {
-    query = 'is:important newer_than:7d';
+    query = 'is:important newer_than:30d';
   } else if (lowerMessage.includes('today') || lowerMessage.includes('recent') || lowerMessage.includes('yesterday')) {
-    query = 'newer_than:7d';
+    query = 'newer_than:15d';
   }
 
   const fromMatch = userMessage.match(/from\s+([^\s,]+)/i);
@@ -506,19 +506,19 @@ async function executeEmailAction(userMessage: string, userEmail: string, sessio
       lowerMessage.includes('check') || lowerMessage.includes('what') ||
       lowerMessage.includes('email') || lowerMessage.includes('inbox')) {
 
-      let query = 'newer_than:7d';
+      let query = 'newer_than:60d';
       let maxResults = 5;
 
       if (lowerMessage.includes('unread')) {
-        query = 'is:unread newer_than:7d';
+        query = 'is:unread newer_than:30d';
       } else if (lowerMessage.includes('important') || lowerMessage.includes('urgent')) {
-        query = 'is:important newer_than:7d';
+        query = 'is:important newer_than:30d';
       } else if (lowerMessage.includes('starred')) {
         query = 'is:starred';
       } else if (lowerMessage.includes('sent')) {
-        query = 'in:sent newer_than:7d';
+        query = 'in:sent newer_than:30d';
       } else if (lowerMessage.includes('today')) {
-        query = 'newer_than:1d';
+        query = 'newer_than:2d';
       }
 
       // Extract sender name if mentioned
