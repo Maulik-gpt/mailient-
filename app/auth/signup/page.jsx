@@ -148,13 +148,13 @@ function SignUpContent() {
   );
 
   const GmailWarning = () => (
-    <div className="p-4 bg-amber-500/[0.08] border border-amber-500/30 rounded-2xl mb-6">
+    <div className="p-4 bg-amber-500/[0.12] border border-amber-500/40 rounded-2xl mb-6">
       <div className="flex gap-3">
         <Shield className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" strokeWidth={2} />
         <div className="space-y-1">
           <h4 className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">Gmail Notice</h4>
-          <p className="text-[11px] text-amber-100/70 block leading-relaxed font-light tracking-tight">
-            Mailient is optimized for <span className="text-amber-300 font-medium">Google Workspace</span>. 
+          <p className="text-[11px] text-amber-50/90 block leading-relaxed font-light tracking-tight">
+            Mailient is optimized for <span className="text-amber-200 font-medium">Google Workspace</span>. 
             Personal accounts may experience limited functionality or security warnings.
           </p>
         </div>
