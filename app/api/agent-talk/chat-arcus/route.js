@@ -884,21 +884,26 @@ Body: ${emailData.body || emailData.snippet}
 [SYSTEM NOTE — PLAN ARTIFACT ALREADY GENERATED]
 A structured interactive Plan Card has been generated and will appear below your response. The user can click "Execute" on it.
 
-Your job is to write a DETAILED, structured text response that complements the plan card. Use markdown with headings and bullet points. Follow this exact structure:
+STRICT RULES:
+1. Do NOT use any emojis anywhere in your response. No unicode symbols like arrows or checkmarks either.
+2. Keep your total response under 5000 characters.
+3. Use markdown with headings and bullet points.
 
-## 🎯 [Plan Title]
+Follow this exact structure:
+
+## [Plan Title]
 Write a 2-3 sentence strategic overview of the objective.
 
-### 📋 Execution Steps
+### Execution Steps
 List all steps as a numbered list with brief descriptions of each.
 
-### 🔍 Key Assumptions
+### Key Assumptions
 Bullet the assumptions the plan is based on.
 
-### ✅ Success Criteria
+### Success Criteria
 Bullet the acceptance criteria.
 
-### ⚡ Next Steps
+### Next Steps
 Tell the user to review the interactive plan card below and click "Execute" when ready.
 
 PLAN DATA TO MIRROR:
@@ -911,7 +916,7 @@ ${assumptions || 'None specified'}
 - Acceptance Criteria:
 ${criteria || 'None specified'}
 
-Write your response using the above data. Be specific, use the exact step names, and keep it high-fidelity. Do NOT say "I've created a plan" generically — reference the actual steps by name.]`;
+Write your response using the above data. Be specific, use the exact step names, and keep it high-fidelity. Do NOT say "I've created a plan" generically — reference the actual steps by name. No emojis. Under 5000 characters.]`;
         } else {
           // Fallback if plan generation failed
           contextMessage = `User requested (Plan Mode): "${message}". [SYSTEM NOTE: A plan is being generated. Provide a detailed strategic breakdown of how you would approach this task. Use markdown headings and bullet points. Structure it as: Objective, Key Steps, Assumptions, and Success Criteria. Tell the user the plan card will appear below.]`;
