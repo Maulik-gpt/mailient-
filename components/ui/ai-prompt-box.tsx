@@ -934,6 +934,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
             <PromptInputAction tooltip="Change the Model">
               <DropdownMenu
                 align="right"
+                side="top"
                 options={AI_MODELS.map(model => {
                   const isLocked = 
                     (model.tier !== 'free' && (props.currentPlan === 'free' || !props.currentPlan)) || 

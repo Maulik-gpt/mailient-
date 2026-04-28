@@ -16,9 +16,10 @@ type DropdownMenuProps = {
   children: React.ReactNode;
   className?: string;
   align?: "left" | "right";
+  side?: "top" | "bottom";
 };
 
-const DropdownMenu = ({ options, children, className, align = "left" }: DropdownMenuProps) => {
+const DropdownMenu = ({ options, children, className, align = "left", side = "bottom" }: DropdownMenuProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -59,17 +60,28 @@ const DropdownMenu = ({ options, children, className, align = "left" }: Dropdown
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ y: -5, scale: 0.95, opacity: 0, filter: "blur(4px)" }}
+            initial={{ 
+              y: side === "top" ? 5 : -5, 
+              scale: 0.95, 
+              opacity: 0, 
+              filter: "blur(4px)" 
+            }}
             animate={{ y: 0, scale: 1, opacity: 1, filter: "blur(0px)" }}
-            exit={{ y: -5, scale: 0.95, opacity: 0, filter: "blur(4px)" }}
+            exit={{ 
+              y: side === "top" ? 5 : -5, 
+              scale: 0.95, 
+              opacity: 0, 
+              filter: "blur(4px)" 
+            }}
             transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
             className={cn(
-                "absolute z-50 w-56 mt-2 p-1.5 bg-[#0A0A0A]/95 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl border border-white/10 flex flex-col gap-1 overflow-hidden",
-                align === "right" ? "right-0" : "left-0"
+                "absolute z-50 w-56 p-1.5 bg-black rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] backdrop-blur-xl border border-white/10 flex flex-col gap-1 overflow-hidden",
+                align === "right" ? "right-0" : "left-0",
+                side === "top" ? "bottom-full mb-2" : "top-full mt-2"
             )}
           >
             {/* Ambient glow in dropdown */}
-            <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-br from-white/[0.05] to-transparent pointer-events-none" />
             
             {options && options.length > 0 ? (
               options.map((option, index) => (
