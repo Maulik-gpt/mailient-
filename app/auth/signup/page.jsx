@@ -209,7 +209,7 @@ function SignUpContent() {
 
   return (
     <SignInLayout
-      title={<>Join the <br/> Waitlist</>}
+      title="Let’s Continue"
       description="Mailient is currently in early access. Secure your spot to redefine your inbox."
       heroImageSrc="https://images.unsplash.com/photo-1642615835477-d303d7dc9ee9?w=2160&q=80"
       testimonials={testimonials}
@@ -220,7 +220,7 @@ function SignUpContent() {
             <motion.div key="step1" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.4 }} className="space-y-6">
               <StepIndicator currentStep={1} />
               <div className="mb-8">
-                <h2 className="text-white text-lg font-medium tracking-tight mb-2 italic">Create account</h2>
+                <h2 className="text-white text-lg font-medium tracking-tight mb-2">Create account</h2>
                 <p className="text-white/30 text-xs font-medium tracking-tight">Join the community of founders using AI to master their communication.</p>
               </div>
 
@@ -255,7 +255,7 @@ function SignUpContent() {
           {step === 2 && (
             <motion.div key="step2" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.4 }} className="space-y-6">
               <StepIndicator currentStep={2} />
-              <button onClick={backToStep1} className="flex items-center gap-2 text-white/30 hover:text-white transition-colors text-xs font-light mb-8 group w-fit italic">
+              <button onClick={backToStep1} className="flex items-center gap-2 text-white/30 hover:text-white transition-colors text-xs font-light mb-8 group w-fit">
                 <ArrowLeft className="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" />
                 use different email
               </button>
@@ -264,7 +264,7 @@ function SignUpContent() {
                   <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/20">Identity</span>
                   <span className={`text-[10px] font-bold uppercase tracking-[0.2em] ${isGmail ? 'text-amber-500/60' : 'text-white/20'}`}>{isGmail ? 'Personal Gmail' : 'Personal'}</span>
                 </div>
-                <div className="text-white font-semibold truncate text-sm tracking-tight italic">{email}</div>
+                <div className="text-white font-semibold truncate text-sm tracking-tight">{email}</div>
               </div>
 
               {error && (
@@ -286,7 +286,7 @@ function SignUpContent() {
                       <Building2 className="w-5 h-5 text-white/40" strokeWidth={1.5} />
                     </div>
                     <div>
-                      <h3 className="text-white text-sm font-semibold tracking-tight mb-2 italic">Workspace Required</h3>
+                      <h3 className="text-white text-sm font-semibold tracking-tight mb-2">Workspace Required</h3>
                       <p className="text-white/35 text-[11px] leading-relaxed font-light tracking-tight">Mailient is optimized for Google Workspace.</p>
                     </div>
                   </div>
@@ -299,14 +299,14 @@ function SignUpContent() {
           {step === 3 && (
             <motion.div key="step3" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.4 }} className="space-y-6">
               <StepIndicator currentStep={3} />
-              <button onClick={() => setStep(2)} className="flex items-center gap-2 text-white/30 hover:text-white transition-colors text-xs font-light mb-8 group w-fit italic">
+              <button onClick={() => setStep(2)} className="flex items-center gap-2 text-white/30 hover:text-white transition-colors text-xs font-light mb-8 group w-fit">
                 <ArrowLeft className="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" />
                 back to connection
               </button>
               <div className="mb-8">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-8 h-8 rounded-lg bg-white/[0.06] border border-white/[0.1] flex items-center justify-center"><UserCog className="w-4 h-4 text-white/60" /></div>
-                  <h2 className="text-white text-base font-semibold tracking-tight italic">Admin Setup</h2>
+                  <h2 className="text-white text-base font-semibold tracking-tight">Admin Setup</h2>
                 </div>
                 <p className="text-white/30 text-[11px] font-light leading-relaxed tracking-tight">Approve Mailient for your workspace.</p>
               </div>
@@ -321,7 +321,7 @@ function SignUpContent() {
                     <div className="flex items-start gap-3">
                       <div className="w-5 h-5 rounded-full bg-white/[0.06] flex items-center justify-center shrink-0 mt-0.5 border border-white/5"><span className="text-[9px] font-bold text-white/50">{item.step}</span></div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-white/80 text-[11px] font-semibold tracking-tight mb-1 italic">{item.title}</p>
+                        <p className="text-white/80 text-[11px] font-semibold tracking-tight mb-1">{item.title}</p>
                         <p className="text-white/30 text-[10px] leading-relaxed font-light tracking-tight">{item.desc}</p>
                         {item.copyable && (
                           <div className="mt-3 flex items-center gap-2">
@@ -356,7 +356,7 @@ function SignUpContent() {
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center"><Shield className="w-6 h-6 text-white/50" /></div>
                       <div>
-                        <h2 className="text-xl text-white font-semibold tracking-tight italic">Approval Required</h2>
+                        <h2 className="text-xl text-white font-semibold tracking-tight">Approval Required</h2>
                         <p className="text-white/25 text-xs font-light mt-1">Your workspace admin must authorize Mailient.</p>
                       </div>
                     </div>

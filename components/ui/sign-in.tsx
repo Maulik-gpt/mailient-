@@ -69,7 +69,7 @@ export const SignInLayout: React.FC<SignInPageProps> = ({
         <div className="w-full max-w-md">
           <div className="flex flex-col gap-8">
              <div className="space-y-4">
-                <h1 className="animate-element animate-delay-100 text-5xl md:text-6xl font-bold tracking-tighter leading-[0.9] text-white italic">{title}</h1>
+                <h1 className="animate-element animate-delay-100 text-5xl md:text-6xl font-bold tracking-tighter leading-[0.9] text-white">{title}</h1>
                 <p className="animate-element animate-delay-200 text-white/40 text-sm font-medium tracking-tight max-w-[320px] leading-relaxed">{description}</p>
              </div>
 

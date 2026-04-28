@@ -238,7 +238,7 @@ function SignInContent() {
 
   return (
     <SignInLayout
-      title={<>Connect to <br/> Mailient</>}
+      title="Welcome"
       description="Accelerate your email workflow with founder-grade artificial intelligence. Enterprise-level automation for everyday founders."
       heroImageSrc="https://images.unsplash.com/photo-1642615835477-d303d7dc9ee9?w=2160&q=80"
       testimonials={testimonials}
@@ -257,7 +257,7 @@ function SignInContent() {
             >
               <StepIndicator currentStep={1} />
               <div className="mb-8">
-                <h2 className="text-white text-lg font-medium tracking-tight mb-2 italic">Welcome back</h2>
+                <h2 className="text-white text-lg font-medium tracking-tight mb-2">Welcome back</h2>
                 <p className="text-white/30 text-xs font-medium tracking-tight">Enter your email address to access your workspace.</p>
               </div>
 
@@ -322,7 +322,7 @@ function SignInContent() {
               className="space-y-6"
             >
               <StepIndicator currentStep={2} />
-              <button onClick={backToStep1} className="flex items-center gap-2 text-white/30 hover:text-white transition-colors text-xs font-light mb-8 group w-fit italic">
+              <button onClick={backToStep1} className="flex items-center gap-2 text-white/30 hover:text-white transition-colors text-xs font-light mb-8 group w-fit">
                 <ArrowLeft className="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" />
                 use different email
               </button>
@@ -333,7 +333,7 @@ function SignInContent() {
                     {isGmail ? 'Personal Gmail' : 'Personal'}
                   </span>
                 </div>
-                <div className="text-white font-semibold truncate text-sm tracking-tight italic">{email}</div>
+                <div className="text-white font-semibold truncate text-sm tracking-tight">{email}</div>
               </div>
 
               {error && (
@@ -355,7 +355,7 @@ function SignInContent() {
                       <Building2 className="w-5 h-5 text-white/40" strokeWidth={1.5} />
                     </div>
                     <div>
-                      <h3 className="text-white text-sm font-semibold tracking-tight mb-2 italic">Workspace Preferred</h3>
+                      <h3 className="text-white text-sm font-semibold tracking-tight mb-2">Workspace Preferred</h3>
                       <p className="text-white/35 text-[11px] leading-relaxed font-light tracking-tight">Mailient is optimized for Google Workspace.</p>
                     </div>
                   </div>
@@ -376,7 +376,7 @@ function SignInContent() {
               className="space-y-6"
             >
               <StepIndicator currentStep={3} />
-              <button onClick={() => setStep(2)} className="flex items-center gap-2 text-white/30 hover:text-white transition-colors text-xs font-light mb-8 group w-fit italic">
+              <button onClick={() => setStep(2)} className="flex items-center gap-2 text-white/30 hover:text-white transition-colors text-xs font-light mb-8 group w-fit">
                 <ArrowLeft className="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" />
                 back to connection
               </button>
@@ -385,7 +385,7 @@ function SignInContent() {
                   <div className="w-8 h-8 rounded-lg bg-white/[0.06] border border-white/[0.1] flex items-center justify-center">
                     <UserCog className="w-4 h-4 text-white/60" strokeWidth={1.5} />
                   </div>
-                  <h2 className="text-white text-base font-semibold tracking-tight italic">Admin Setup</h2>
+                  <h2 className="text-white text-base font-semibold tracking-tight">Admin Setup</h2>
                 </div>
                 <p className="text-white/30 text-[11px] font-light leading-relaxed tracking-tight">Approve Mailient for your workspace.</p>
               </div>
@@ -402,7 +402,7 @@ function SignInContent() {
                         <span className="text-[9px] font-bold text-white/50">{item.step}</span>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-white/80 text-[11px] font-semibold tracking-tight mb-1 italic">{item.title}</p>
+                        <p className="text-white/80 text-[11px] font-semibold tracking-tight mb-1">{item.title}</p>
                         <p className="text-white/30 text-[10px] leading-relaxed font-light tracking-tight">{item.desc}</p>
                         {item.copyable && (
                           <div className="mt-3 flex items-center gap-2">
@@ -440,7 +440,7 @@ function SignInContent() {
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center"><Shield className="w-6 h-6 text-white/50" /></div>
                       <div>
-                        <h2 className="text-xl text-white font-semibold tracking-tight italic">Approval Required</h2>
+                        <h2 className="text-xl text-white font-semibold tracking-tight">Approval Required</h2>
                         <p className="text-white/25 text-xs font-light mt-1">Your workspace admin must authorize Mailient.</p>
                       </div>
                     </div>
