@@ -42,28 +42,28 @@ const supportOptions = [
     title: "Documentation",
     description: "Browse our comprehensive guides and API references.",
     href: "#",
-    color: "from-blue-500/20 to-cyan-500/20"
+    color: "from-gray-500/15 to-gray-400/10"
   },
   {
     icon: HelpCircle,
     title: "FAQs",
     description: "Find quick answers to common questions.",
     href: "#",
-    color: "from-purple-500/20 to-pink-500/20"
+    color: "from-gray-500/15 to-gray-400/10"
   },
   {
     icon: Zap,
     title: "Feature Requests",
     description: "Suggest new features or vote on existing ideas.",
     href: "#",
-    color: "from-amber-500/20 to-orange-500/20"
+    color: "from-gray-500/15 to-gray-400/10"
   },
   {
     icon: Shield,
     title: "Security",
     description: "Report security concerns or vulnerabilities.",
     href: "#",
-    color: "from-emerald-500/20 to-teal-500/20"
+    color: "from-gray-500/15 to-gray-400/10"
   }
 ];
 
@@ -138,9 +138,9 @@ export default function ContactPage() {
     <main className="min-h-screen bg-black text-white overflow-hidden">
       {/* Background Effects */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-purple-500/10 rounded-full blur-[150px]" />
-        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[150px]" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-white/[0.02] rounded-full blur-[200px]" />
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gray-800/5 rounded-full blur-[150px]" />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gray-700/5 rounded-full blur-[150px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gray-600/[0.02] rounded-full blur-[180px]" />
       </div>
 
       <div className="relative z-10">
@@ -255,7 +255,7 @@ export default function ContactPage() {
                         className="space-y-6"
                       >
                         <div className="flex items-center gap-3 mb-8">
-                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center">
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-500/15 to-gray-400/10 flex items-center justify-center">
                             <MessageSquare className="w-5 h-5 text-white/70" />
                           </div>
                           <div>
@@ -397,7 +397,7 @@ export default function ContactPage() {
               </div>
 
               {/* Enterprise CTA */}
-              <div className="p-6 rounded-2xl bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-white/[0.08]">
+              <div className="p-6 rounded-2xl bg-gradient-to-br from-gray-500/10 to-gray-400/5 border border-white/[0.06]">
                 <h3 className="text-lg font-medium text-white mb-2">Enterprise support</h3>
                 <p className="text-sm text-white/40 mb-4">
                   Need dedicated support? Our enterprise plan includes priority response and a dedicated account manager.
