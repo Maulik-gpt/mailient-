@@ -466,7 +466,13 @@ const AgentThinkingSection = ({ content, isComplete }: { content: string, isComp
             animate={{ scale: [1, 1.25, 1], opacity: [0.4, 0.8, 0.4] }}
             transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
           />
-          <div className="absolute inset-1 rounded-full bg-blue-400 border border-blue-200/40 shadow-inner" />
+          <div className="absolute inset-1 rounded-full bg-blue-400 border border-blue-200/40 shadow-inner overflow-hidden">
+            <motion.div 
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent w-[200%]"
+              animate={{ x: ['-100%', '100%'] }}
+              transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+            />
+          </div>
         </div>
         <TextShimmer 
           className="text-[13px] font-bold text-white/40 tracking-wider uppercase select-none" 
@@ -509,15 +515,35 @@ const AgentTaskPill = ({ step }: { step: AgentStep }) => {
   };
 
   return (
-    <div className="flex items-center gap-2.5 px-3 py-1.5 bg-white/[0.03] border border-white/[0.08] rounded-full w-fit mt-3 group/pill transition-all hover:bg-white/[0.05] hover:border-white/12">
-      <div className="flex items-center justify-center w-5 h-5 rounded-full bg-white/5 border border-white/10 text-white/40 group-hover/pill:text-white group-hover/pill:border-white/20 transition-all">
+    <div className={cn(
+      "flex items-center gap-2.5 px-3 py-1.5 rounded-full w-fit mt-3 group/pill transition-all border",
+      step.status === 'active' 
+        ? "bg-white/[0.06] border-white/20 shadow-[0_0_10px_rgba(255,255,255,0.05)] overflow-hidden relative" 
+        : "bg-white/[0.03] border-white/[0.08] hover:bg-white/[0.05] hover:border-white/12"
+    )}>
+      {step.status === 'active' && (
+        <motion.div 
+          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.05] to-transparent w-[200%]"
+          animate={{ x: ['-100%', '100%'] }}
+          transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+        />
+      )}
+      <div className="flex items-center justify-center w-5 h-5 rounded-full bg-white/5 border border-white/10 text-white/40 group-hover/pill:text-white group-hover/pill:border-white/20 transition-all z-10">
         {getIcon()}
       </div>
-      <span className="text-[13px] text-white/50 group-hover/pill:text-white/80 transition-colors tracking-tight font-medium">
-        {step.label}
-      </span>
+      <div className="z-10">
+        {step.status === 'active' ? (
+          <TextShimmer className="text-[13px] text-white/80 tracking-tight font-medium" duration={2}>
+            {step.label}
+          </TextShimmer>
+        ) : (
+          <span className="text-[13px] text-white/50 group-hover/pill:text-white/80 transition-colors tracking-tight font-medium">
+            {step.label}
+          </span>
+        )}
+      </div>
       {step.status === 'active' && (
-        <div className="flex items-center gap-1 ml-1">
+        <div className="flex items-center gap-1 ml-1 z-10">
           <motion.div 
             className="w-1 h-1 rounded-full bg-white/40"
             animate={{ opacity: [0.3, 1, 0.3] }}
@@ -536,7 +562,7 @@ const AgentTaskPill = ({ step }: { step: AgentStep }) => {
         </div>
       )}
       {step.status === 'completed' && (
-        <Check className="w-3 h-3 text-green-400/50 ml-1" />
+        <Check className="w-3 h-3 text-green-400/50 ml-1 z-10" />
       )}
     </div>
   );
@@ -3418,25 +3444,36 @@ export default function ChatInterface({
                                    )}
 
                                    {msg.role === 'assistant' && msg.meta?.limitReached && (
-                                     <div className="flex flex-col gap-4 mt-2">
-                                       <div className="group relative flex items-center justify-between gap-4 p-4 mt-2 w-full max-w-[500px] bg-white/[0.03] border border-white/[0.08] rounded-2xl transition-all duration-300 hover:bg-black/[0.05] dark:bg-white/[0.05] hover:border-white/12 shadow-2xl overflow-hidden">
-                                         <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent pointer-events-none opacity-50" />
+                                     <div className="flex flex-col gap-3 mt-4">
+                                       <div className="flex flex-col gap-1 px-1">
+                                         <p className="text-white/80 text-[14px] font-medium tracking-tight">
+                                           You don't have enough credits. Please upgrade via the below link to continue.
+                                         </p>
+                                         <a 
+                                           href="/pricing" 
+                                           target="_blank" 
+                                           rel="noopener noreferrer"
+                                           className="text-white/40 text-[13px] hover:text-white/60 underline underline-offset-4 transition-colors w-fit break-all"
+                                         >
+                                           https://mailient.xyz/pricing
+                                         </a>
+                                       </div>
+
+                                       <div className="group relative flex items-center justify-between gap-4 px-5 py-3 w-full max-w-[700px] bg-[#111] border border-white/[0.08] rounded-full transition-all duration-300 hover:border-white/20 shadow-2xl overflow-hidden mt-2">
+                                         <div className="absolute inset-0 bg-gradient-to-r from-white/[0.02] to-transparent pointer-events-none" />
  
                                          <div className="flex items-center gap-3.5 z-10">
-                                           <div className="w-10 h-10 rounded-full bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/10 flex items-center justify-center relative shadow-inner shrink-0 transition-transform group-hover:scale-105">
-                                             <Sparkles className="w-5 h-5 text-black group-hover:text-black dark:text-white transition-colors" />
+                                           <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                                             <Sparkles className="w-4 h-4 text-white/40" />
                                            </div>
-                                           <div className="flex flex-col gap-0.5">
-                                             <p className="text-black dark:text-white/90 text-[13px] font-bold tracking-tight leading-relaxed">
-                                               Your credits have been used up.
-                                             </p>
-                                             <p className="text-black dark:text-white/40 text-[11px] font-medium">Please upgrade your plan for more credits.</p>
-                                           </div>
+                                           <p className="text-white/90 text-[13.5px] font-medium tracking-tight">
+                                             Your credits have been used up. Please upgrade your plan for more credits.
+                                           </p>
                                          </div>
  
                                          <button
                                            onClick={() => window.open('/pricing', '_blank')}
-                                           className="relative z-10 px-5 py-2.5 bg-white hover:bg-neutral-200 text-black font-bold text-[12px] tracking-tight uppercase rounded-full transition-all group-active:scale-95 shadow-lg"
+                                           className="relative z-10 px-6 py-2 bg-white hover:bg-neutral-200 text-black font-bold text-[13px] tracking-tight rounded-full transition-all active:scale-95 shadow-lg shrink-0"
                                          >
                                            Upgrade
                                          </button>
