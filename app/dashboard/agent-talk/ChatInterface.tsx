@@ -8,6 +8,7 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import { AddSquareIcon, Cancel01Icon, WorkHistoryIcon } from '@hugeicons/core-free-icons';
 import { ChatHistoryModal } from './components/ChatHistoryModal';
 import { ThinkingLayer, ResultCard, type ThinkingStep, type ThinkingBlock, type SearchSession } from './components/ThinkingLayer';
+import { AgentExecutionTimeline, type AgentStep } from './components/AgentExecutionTimeline';
 import { CanvasPanel, type CanvasData } from './components/CanvasPanel';
 import { PlanArtifactCard, type PlanArtifact } from './components/PlanArtifactCard';
 import { PlanCanvas } from './components/PlanCanvas';
@@ -828,6 +829,11 @@ export default function ChatInterface({
   const [isProcessingPlan, setIsProcessingPlan] = useState(false);
   const [isDeepThinkingState, setIsDeepThinkingState] = useState<boolean>(false);
   const [isSearchingState, setIsSearchingState] = useState<boolean>(false);
+
+  // Agent Loop execution timeline state (Phase 2)
+  const [agentSteps, setAgentSteps] = useState<AgentStep[]>([]);
+  const [isAgentLoopActive, setIsAgentLoopActive] = useState(false);
+  const [agentRunMeta, setAgentRunMeta] = useState<{ runId?: string; totalDurationMs?: number } | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -1227,13 +1233,16 @@ export default function ChatInterface({
     const assistantMsgId = Date.now() + 1;
 
     setIsLoading(true);
-    setLiveThinkingBlocks([{
-      id: 'agent-loop',
-      title: 'Arcus Agent Loop',
-      status: 'active' as const,
-      initialContext: 'Executing multi-step agentic reasoning...',
-      steps: [{ id: 'al-1', label: 'Analysing your request...', status: 'active' as const, type: 'think' as const }]
+    setIsAgentLoopActive(true);
+    setAgentSteps([{
+      id: 'al-init',
+      type: 'thinking',
+      label: 'Analysing your request...',
+      status: 'active',
+      startedAt: Date.now(),
+      iteration: 0
     }]);
+    setLiveThinkingBlocks([]);
 
     // Add placeholder assistant message
     const placeholderMsg: AgentMessage = {
@@ -1297,57 +1306,57 @@ export default function ChatInterface({
 
           switch (currentEventType) {
             case 'thinking':
-              setLiveThinkingBlocks(prev => {
-                const blocks = [...prev];
-                const block = blocks[0];
-                if (!block) return prev;
-                // Update current step or add new one
-                const existingStep = block.steps.find(s => s.status === 'active');
-                if (existingStep) existingStep.label = data.step || 'Processing...';
-                return [{ ...block, steps: [...block.steps] }];
+              setAgentSteps(prev => {
+                const steps = [...prev];
+                const active = steps.find(s => s.status === 'active');
+                if (active) {
+                  active.label = data.step || 'Processing...';
+                } else {
+                  steps.push({
+                    id: `al-think-${data.iteration}`,
+                    type: 'thinking',
+                    label: data.step || 'Reasoning...',
+                    status: 'active',
+                    startedAt: Date.now(),
+                    iteration: data.iteration
+                  });
+                }
+                return steps;
               });
               break;
 
             case 'tool_call':
               stepIndex++;
-              setLiveThinkingBlocks(prev => {
-                const blocks = [...prev];
-                const block = blocks[0];
-                if (!block) return prev;
-                // Mark previous steps complete, add new active step
-                const updatedSteps: ThinkingStep[] = block.steps.map(s => ({ ...s, status: 'completed' as const }));
-                updatedSteps.push({
+              // Complete any active steps, add new tool_call step
+              setAgentSteps(prev => {
+                const steps = prev.map(s => s.status === 'active' ? { ...s, status: 'completed' as const, completedAt: Date.now() } : s);
+                steps.push({
                   id: `al-tool-${stepIndex}`,
+                  type: 'tool_call',
+                  tool: data.tool,
                   label: `Calling ${data.tool}...`,
-                  status: 'active' as const,
-                  type: 'execute' as const
+                  status: 'active',
+                  startedAt: Date.now(),
+                  iteration: data.iteration
                 });
-                return [{ ...block, steps: updatedSteps }];
+                return steps;
               });
               break;
 
             case 'tool_result':
-              setLiveThinkingBlocks(prev => {
-                const blocks = [...prev];
-                const block = blocks[0];
-                if (!block) return prev;
-                const updatedSteps = block.steps.map(s =>
-                  s.status === 'active' ? { ...s, label: data.summary || `${data.tool} done`, status: 'completed' as const } : s
-                );
-                return [{ ...block, steps: updatedSteps }];
-              });
+              setAgentSteps(prev => prev.map(s =>
+                s.status === 'active'
+                  ? { ...s, status: 'completed' as const, completedAt: Date.now(), summary: data.summary || `${data.tool} done`, label: data.summary || s.label }
+                  : s
+              ));
               break;
 
             case 'tool_error':
-              setLiveThinkingBlocks(prev => {
-                const blocks = [...prev];
-                const block = blocks[0];
-                if (!block) return prev;
-                const updatedSteps = block.steps.map(s =>
-                  s.status === 'active' ? { ...s, label: `Error: ${data.error}`, status: 'error' as const } : s
-                );
-                return [{ ...block, steps: updatedSteps }];
-              });
+              setAgentSteps(prev => prev.map(s =>
+                s.status === 'active'
+                  ? { ...s, status: 'error' as const, completedAt: Date.now(), summary: `Error: ${data.error}`, label: `Error: ${data.error}` }
+                  : s
+              ));
               break;
 
             case 'approval_required':
@@ -1378,12 +1387,20 @@ export default function ChatInterface({
               break;
 
             case 'done':
-              // Mark all steps complete
-              setLiveThinkingBlocks(prev => prev.map(b => ({
-                ...b,
-                status: 'completed' as const,
-                steps: b.steps.map(s => ({ ...s, status: 'completed' as const }))
-              })));
+              // Mark all agent steps complete
+              setAgentSteps(prev => {
+                const finalSteps = prev.map(s =>
+                  s.status === 'active' ? { ...s, status: 'completed' as const, completedAt: Date.now() } : s
+                );
+                // Embed timeline into the message for persistence
+                setMessages(msgs => msgs.map(m => {
+                  if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+                  return { ...m, meta: { ...(m.meta || {}), agentSteps: finalSteps, agentRunId: data.runId, agentDurationMs: data.durationMs } };
+                }));
+                return finalSteps;
+              });
+              setIsAgentLoopActive(false);
+              setAgentRunMeta({ runId: data.runId, totalDurationMs: data.durationMs });
               break;
           }
           currentEventType = '';
@@ -1424,6 +1441,7 @@ export default function ChatInterface({
       }));
     } finally {
       setIsLoading(false);
+      setIsAgentLoopActive(false);
       setLiveThinkingBlocks([]);
       setTimeout(() => scrollToBottom(true), 100);
     }
@@ -3255,6 +3273,18 @@ export default function ChatInterface({
                                     </div>
                                   )}
 
+                                  {/* Agent Loop Timeline embedded in completed messages */}
+                                  {msg.role === 'assistant' && (msg as AgentMessage).meta?.agentSteps && (
+                                    <div className="mt-2 px-1">
+                                      <AgentExecutionTimeline
+                                        steps={(msg as AgentMessage).meta.agentSteps}
+                                        isActive={false}
+                                        runId={(msg as AgentMessage).meta.agentRunId}
+                                        totalDurationMs={(msg as AgentMessage).meta.agentDurationMs}
+                                      />
+                                    </div>
+                                  )}
+
                                   {/* Plan Canvas (Inline + Full-Screen Modal) */}
                                   {msg.role === 'assistant' && (msg as AgentMessage).meta?.planArtifact && (
                                     <div className="mt-4">
@@ -3502,6 +3532,22 @@ export default function ChatInterface({
                                   </motion.div>
                                 )}
                               </AnimatePresence>
+
+                              {/* Agent Loop Execution Timeline (Phase 2) */}
+                              {agentSteps.length > 0 && (
+                                <motion.div
+                                  initial={{ opacity: 0, y: 4 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  className="px-1 ml-1 mt-2"
+                                >
+                                  <AgentExecutionTimeline
+                                    steps={agentSteps}
+                                    isActive={isAgentLoopActive}
+                                    runId={agentRunMeta?.runId}
+                                    totalDurationMs={agentRunMeta?.totalDurationMs}
+                                  />
+                                </motion.div>
+                              )}
                             </div>
                           </div>
                         )}
