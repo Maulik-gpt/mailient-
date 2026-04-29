@@ -1363,13 +1363,31 @@ export default function ChatInterface({
               break;
 
             case 'approval_required':
-              // Show approval message directly
+              // Show approval message directly with canvasApproval structure
               finalContent = data.meta?.actionPayload
                 ? `I've prepared this action for you. Please approve to proceed.`
                 : 'This action requires your approval.';
               setMessages(prev => prev.map(m => {
                 if (m.id !== assistantMsgId || m.type !== 'agent') return m;
-                return { ...m, content: { text: finalContent, list: [], footer: '' }, meta: { ...(m.meta || {}), isStreaming: false, pendingApproval: true, actionType: data.tool, actionPayload: data.params } };
+                return {
+                  ...m,
+                  content: { text: finalContent, list: [], footer: '' },
+                  meta: {
+                    ...(m.meta || {}),
+                    isStreaming: false,
+                    canvasApproval: {
+                      status: 'pending',
+                      title: `Approve ${data.tool}?`,
+                      description: data.description || 'This action requires your approval to proceed.',
+                      canvasData: {
+                        content: data.params || {},
+                        type: 'workflow'
+                      }
+                    },
+                    actionType: data.tool,
+                    actionPayload: data.params
+                  }
+                };
               }));
               break;
 
@@ -1451,11 +1469,9 @@ export default function ChatInterface({
   };
 
   const processAIMessage = async (messageText: string, conversationIdToUse: string, isNew: boolean, attachments?: any[], options?: { isDeepThinking?: boolean; isCanvas?: boolean; isSearch?: boolean; isPlanMode?: boolean; modelId?: string }) => {
-    // ── Agent Loop routing: use SSE-based loop for simple queries ──────
-    const useAgentLoop = !options?.isCanvas && !options?.isPlanMode && !options?.isDeepThinking && !options?.isSearch && (!attachments || attachments.length === 0);
-    if (useAgentLoop) {
-      return processAgentLoopMessage(messageText, conversationIdToUse, isNew);
-    }
+    // ── Agent Loop routing: Use the new autonomous SSE loop for ALL queries ──────
+    // The AI will now autonomously decide to use search, canvas, or plan tools.
+    return processAgentLoopMessage(messageText, conversationIdToUse, isNew);
 
     // ── Legacy path: canvas, plan mode, deep thinking, search ─────────
     // Create new abort controller for this request
