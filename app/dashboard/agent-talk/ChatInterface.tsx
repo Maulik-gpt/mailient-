@@ -1256,21 +1256,15 @@ export default function ChatInterface({
               });
               break;
 
-            case 'tool_call':
-              stepIndex++;
-              finalContent += `Calling ${data.tool}...\n`;
-              setMessages(prev => prev.map(m => {
-                if (m.id !== assistantMsgId || m.type !== 'agent') return m;
-                return { ...m, content: { text: finalContent.trim(), list: [], footer: '' } };
-              }));
-              
+              // Tool calls are now silent in the chat stream unless they require approval.
+              // The AI narrates its process via the 'think' tool instead.
               setAgentSteps(prev => {
                 const steps = prev.map(s => s.status === 'active' ? { ...s, status: 'completed' as const, completedAt: Date.now() } : s);
                 steps.push({
                   id: `al-tool-${stepIndex}`,
                   type: 'tool_call',
                   tool: data.tool,
-                  label: `Calling ${data.tool}...`,
+                  label: `Executing ${data.tool}...`,
                   status: 'active',
                   startedAt: Date.now(),
                   iteration: data.iteration
@@ -1280,13 +1274,6 @@ export default function ChatInterface({
               break;
 
             case 'tool_result':
-              if (data.summary) {
-                finalContent += `Result: ${data.summary}\n`;
-                setMessages(prev => prev.map(m => {
-                  if (m.id !== assistantMsgId || m.type !== 'agent') return m;
-                  return { ...m, content: { text: finalContent.trim(), list: [], footer: '' } };
-                }));
-              }
               setAgentSteps(prev => prev.map(s =>
                 s.status === 'active'
                   ? { ...s, status: 'completed' as const, completedAt: Date.now(), summary: data.summary || `${data.tool} done`, label: data.summary || s.label }
