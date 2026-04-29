@@ -85,39 +85,39 @@ const linkify = (text: string, isUser: boolean = false): string => {
 };
 
 const MarkdownComponents = {
-  h1: ({node, ...props}: any) => <h1 className="text-2xl font-bold text-white mt-8 mb-4 tracking-tight leading-tight" {...props} />,
-  h2: ({node, ...props}: any) => <h2 className="text-xl font-bold text-white mt-6 mb-3 tracking-tight leading-tight" {...props} />,
-  h3: ({node, ...props}: any) => <h3 className="text-lg font-bold text-white mt-5 mb-2 tracking-tight leading-tight" {...props} />,
-  h4: ({node, ...props}: any) => <h4 className="text-base font-bold text-white mt-4 mb-2 tracking-tight leading-tight" {...props} />,
-  h5: ({node, ...props}: any) => <h5 className="text-[16px] font-bold text-white mt-3 mb-2 tracking-tight leading-tight" {...props} />,
-  h6: ({node, ...props}: any) => <h6 className="text-[15px] font-bold text-white mt-3 mb-2 tracking-tight leading-tight" {...props} />,
-  p: ({node, ...props}: any) => <p className="mb-4 last:mb-0 leading-[1.7] text-[17px] text-white/90" {...props} />,
-  ul: ({node, ...props}: any) => <ul className="space-y-2 my-4 list-none pl-2" {...props} />,
-  ol: ({node, ...props}: any) => <ol className="space-y-2 my-4 list-decimal pl-6 text-white/90" {...props} />,
-  li: ({node, ...props}: any) => (
+  h1: ({ node, ...props }: any) => <h1 className="text-2xl font-bold text-white mt-8 mb-4 tracking-tight leading-tight" {...props} />,
+  h2: ({ node, ...props }: any) => <h2 className="text-xl font-bold text-white mt-6 mb-3 tracking-tight leading-tight" {...props} />,
+  h3: ({ node, ...props }: any) => <h3 className="text-lg font-bold text-white mt-5 mb-2 tracking-tight leading-tight" {...props} />,
+  h4: ({ node, ...props }: any) => <h4 className="text-base font-bold text-white mt-4 mb-2 tracking-tight leading-tight" {...props} />,
+  h5: ({ node, ...props }: any) => <h5 className="text-[16px] font-bold text-white mt-3 mb-2 tracking-tight leading-tight" {...props} />,
+  h6: ({ node, ...props }: any) => <h6 className="text-[15px] font-bold text-white mt-3 mb-2 tracking-tight leading-tight" {...props} />,
+  p: ({ node, ...props }: any) => <p className="mb-4 last:mb-0 leading-[1.7] text-[17px] text-white/90" {...props} />,
+  ul: ({ node, ...props }: any) => <ul className="space-y-2 my-4 list-none pl-2" {...props} />,
+  ol: ({ node, ...props }: any) => <ol className="space-y-2 my-4 list-decimal pl-6 text-white/90" {...props} />,
+  li: ({ node, ...props }: any) => (
     <li className="relative pl-5 text-[17px] text-white/90">
       <span className="absolute left-0 top-2.5 w-1.5 h-1.5 bg-white/60 rounded-full" />
       {props.children}
     </li>
   ),
-  strong: ({node, ...props}: any) => <strong className="font-bold text-white" {...props} />,
-  hr: ({node, ...props}: any) => <hr className="my-8 border-t border-[#222]" {...props} />,
-  table: ({node, ...props}: any) => (
+  strong: ({ node, ...props }: any) => <strong className="font-bold text-white" {...props} />,
+  hr: ({ node, ...props }: any) => <hr className="my-8 border-t border-[#222]" {...props} />,
+  table: ({ node, ...props }: any) => (
     <div className="overflow-x-auto my-8">
       <table className="w-full text-left text-[14px] border-collapse" {...props} />
     </div>
   ),
-  thead: ({node, ...props}: any) => <thead className="text-white/60 font-medium border-b border-[#333]" {...props} />,
-  th: ({node, ...props}: any) => <th className="px-4 py-3 font-semibold whitespace-nowrap" {...props} />,
-  td: ({node, ...props}: any) => <td className="px-4 py-3 border-b border-[#222] text-white/90" {...props} />,
-  a: ({node, ...props}: any) => <a className="text-blue-400 hover:text-blue-300 underline underline-offset-4 decoration-blue-400/30 hover:decoration-blue-400" target="_blank" rel="noopener noreferrer" {...props} />,
-  code: ({node, inline, ...props}: any) => 
-    inline 
+  thead: ({ node, ...props }: any) => <thead className="text-white/60 font-medium border-b border-[#333]" {...props} />,
+  th: ({ node, ...props }: any) => <th className="px-4 py-3 font-semibold whitespace-nowrap" {...props} />,
+  td: ({ node, ...props }: any) => <td className="px-4 py-3 border-b border-[#222] text-white/90" {...props} />,
+  a: ({ node, ...props }: any) => <a className="text-blue-400 hover:text-blue-300 underline underline-offset-4 decoration-blue-400/30 hover:decoration-blue-400" target="_blank" rel="noopener noreferrer" {...props} />,
+  code: ({ node, inline, ...props }: any) =>
+    inline
       ? <code className="px-1.5 py-0.5 bg-[#222] rounded-md text-[13px] font-mono text-white/90" {...props} />
       : <code className="block p-5 bg-[#111] text-white/90 rounded-xl my-6 text-[14px] font-mono overflow-x-auto border border-[#222]" {...props} />,
 };
 
- const TypewriterMarkdown = ({ content, speed = 4, hideLinks }: { content: string, speed?: number, hideLinks?: boolean }) => {
+const TypewriterMarkdown = ({ content, speed = 4, hideLinks }: { content: string, speed?: number, hideLinks?: boolean }) => {
   const [displayedText, setDisplayedText] = useState("");
   const [isDone, setIsDone] = useState(false);
   const words = content.split(/(\s+)/); // Preserve spaces
@@ -144,27 +144,27 @@ const MarkdownComponents = {
         currentText += words[indexRef.current];
         indexRef.current++;
       }
-      
+
       setDisplayedText(currentText);
     }, speed);
 
     return () => clearInterval(interval);
   }, [content, speed]);
 
-   return (
-     <ReactMarkdown 
-       remarkPlugins={[remarkGfm]} 
-       components={{
-         ...MarkdownComponents,
-         ...(hideLinks ? { a: ({ node, ...props }) => <span className="text-inherit underline underline-offset-2 opacity-50 cursor-default">{props.children}</span> } : {})
-       }}
-     >
-       {isDone ? content : displayedText}
-     </ReactMarkdown>
-   );
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      components={{
+        ...MarkdownComponents,
+        ...(hideLinks ? { a: ({ node, ...props }) => <span className="text-inherit underline underline-offset-2 opacity-50 cursor-default">{props.children}</span> } : {})
+      }}
+    >
+      {isDone ? content : displayedText}
+    </ReactMarkdown>
+  );
 };
 
- const MessageContent = ({ content, isUser, isTyping, isNewResponse, hideLinks }: { content: any, isUser?: boolean, isTyping?: boolean, isNewResponse?: boolean, hideLinks?: boolean }) => {
+const MessageContent = ({ content, isUser, isTyping, isNewResponse, hideLinks }: { content: any, isUser?: boolean, isTyping?: boolean, isNewResponse?: boolean, hideLinks?: boolean }) => {
   const textColorClass = isUser ? "text-white" : "text-white/90";
   let textContent = typeof content === 'string' ? content : (content.text || '');
 
@@ -180,8 +180,8 @@ const MarkdownComponents = {
   // For User: Keep standard markdown rendering
   return (
     <div className={`${textColorClass} w-full`}>
-      <ReactMarkdown 
-        remarkPlugins={[remarkGfm]} 
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
         components={{
           ...MarkdownComponents,
           ...(hideLinks ? { a: ({ node, ...props }) => <span className="text-inherit underline underline-offset-2 opacity-50 cursor-default">{props.children}</span> } : {})
@@ -263,7 +263,7 @@ function extractSearchTerm(message: string): string {
 
 function extractThinking(message: string): { thinking: string; cleanText: string } {
   if (typeof message !== 'string') return { thinking: '', cleanText: '' };
-  
+
   // Match <thinking>...</thinking>
   const thinkingMatch = message.match(/<thinking>([\s\S]*?)<\/thinking>/i);
   if (thinkingMatch) {
@@ -271,7 +271,7 @@ function extractThinking(message: string): { thinking: string; cleanText: string
     const cleanText = message.replace(/<thinking>[\s\S]*?<\/thinking>/gi, '').trim();
     return { thinking, cleanText };
   }
-  
+
   // Fallback for partial/streaming <thinking> tag
   if (message.includes('<thinking>')) {
     const parts = message.split('<thinking>');
@@ -360,6 +360,7 @@ interface AgentMessage {
     };
     suggestions?: string[];
     canvasExpansion?: boolean; // Phase 2: Whether to show canvas expansion prompt
+    continueClicked?: boolean; // Whether the 'Continue' button after credit replenishment was clicked
   };
 }
 
@@ -397,7 +398,7 @@ function RollingThinkingStatus({ onToggle, isOpen, isDeepThinking }: { onToggle:
 
   return (
     <div className="flex items-center gap-2 group/status cursor-pointer select-none py-1" onClick={onToggle}>
-      <motion.span 
+      <motion.span
         className="text-[14px] font-bold tracking-tight bg-[linear-gradient(110deg,#666,35%,#fff,50%,#666,75%,#666)] bg-[length:200%_100%] bg-clip-text text-transparent"
         initial={{ backgroundPosition: "200% 0" }}
         animate={{ backgroundPosition: "-200% 0" }}
@@ -456,32 +457,32 @@ const NoScrollbarStyles = () => (
 
 const AgentThinkingSection = ({ content, isComplete }: { content: string, isComplete?: boolean }) => {
   if (!content && isComplete) return null;
-  
+
   return (
     <div className="flex flex-col gap-3 mt-4 mb-6">
       <div className="flex items-center gap-3">
         <div className="relative w-4 h-4 flex-shrink-0">
-          <motion.div 
+          <motion.div
             className="absolute inset-0 rounded-full bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.8)]"
             animate={{ scale: [1, 1.25, 1], opacity: [0.4, 0.8, 0.4] }}
             transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
           />
           <div className="absolute inset-1 rounded-full bg-blue-400 border border-blue-200/40 shadow-inner overflow-hidden">
-            <motion.div 
+            <motion.div
               className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent w-[200%]"
               animate={{ x: ['-100%', '100%'] }}
               transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
             />
           </div>
         </div>
-        <TextShimmer 
-          className="text-[13px] font-bold text-white/40 tracking-wider uppercase select-none" 
+        <TextShimmer
+          className="text-[13px] font-bold text-white/40 tracking-wider uppercase select-none"
           duration={2.5}
         >
           Thinking
         </TextShimmer>
       </div>
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, x: -5 }}
         animate={{ opacity: 1, x: 0 }}
         className="pl-7 border-l border-white/5 py-1"
@@ -517,12 +518,12 @@ const AgentTaskPill = ({ step }: { step: AgentStep }) => {
   return (
     <div className={cn(
       "flex items-center gap-2.5 px-3 py-1.5 rounded-full w-fit mt-3 group/pill transition-all border",
-      step.status === 'active' 
-        ? "bg-white/[0.06] border-white/20 shadow-[0_0_10px_rgba(255,255,255,0.05)] overflow-hidden relative" 
+      step.status === 'active'
+        ? "bg-white/[0.06] border-white/20 shadow-[0_0_10px_rgba(255,255,255,0.05)] overflow-hidden relative"
         : "bg-white/[0.03] border-white/[0.08] hover:bg-white/[0.05] hover:border-white/12"
     )}>
       {step.status === 'active' && (
-        <motion.div 
+        <motion.div
           className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.05] to-transparent w-[200%]"
           animate={{ x: ['-100%', '100%'] }}
           transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
@@ -544,17 +545,17 @@ const AgentTaskPill = ({ step }: { step: AgentStep }) => {
       </div>
       {step.status === 'active' && (
         <div className="flex items-center gap-1 ml-1 z-10">
-          <motion.div 
+          <motion.div
             className="w-1 h-1 rounded-full bg-white/40"
             animate={{ opacity: [0.3, 1, 0.3] }}
             transition={{ repeat: Infinity, duration: 1.5, times: [0, 0.5, 1] }}
           />
-          <motion.div 
+          <motion.div
             className="w-1 h-1 rounded-full bg-white/40"
             animate={{ opacity: [0.3, 1, 0.3] }}
             transition={{ repeat: Infinity, duration: 1.5, delay: 0.3, times: [0, 0.5, 1] }}
           />
-          <motion.div 
+          <motion.div
             className="w-1 h-1 rounded-full bg-white/40"
             animate={{ opacity: [0.3, 1, 0.3] }}
             transition={{ repeat: Infinity, duration: 1.5, delay: 0.6, times: [0, 0.5, 1] }}
@@ -580,7 +581,7 @@ const UserMessageCopyButton = ({ msg }: { msg: Message }) => {
   };
 
   return (
-    <button 
+    <button
       onClick={handleCopy}
       className="absolute -left-10 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full bg-[#1a1a1a] border border-white/10 text-white/40 hover:text-white hover:bg-white/10 opacity-0 group-hover/msg:opacity-100 transition-all shadow-lg"
       title="Copy message"
@@ -620,7 +621,7 @@ const MessageActionButtons = ({ msg, onFeedback, onRegenerate, isLoading }: { ms
     setIsShared(true);
     const shareUrl = `https://mailient.xyz/share/${msg.id || Date.now()}`;
     navigator.clipboard.writeText(shareUrl);
-    
+
     toast.success(
       <div className="flex flex-col gap-0.5">
         <p className="font-bold text-[13px]">Copied link to clipboard.</p>
@@ -653,7 +654,7 @@ const MessageActionButtons = ({ msg, onFeedback, onRegenerate, isLoading }: { ms
         {/* Copy Button */}
         <Tooltip delayDuration={200}>
           <TooltipTrigger asChild>
-            <button 
+            <button
               onClick={handleCopy}
               className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-all text-white/40 hover:text-white relative"
             >
@@ -681,7 +682,7 @@ const MessageActionButtons = ({ msg, onFeedback, onRegenerate, isLoading }: { ms
         {/* Share Button */}
         <Tooltip delayDuration={200}>
           <TooltipTrigger asChild>
-            <button 
+            <button
               onClick={handleShare}
               className={cn(
                 "w-8 h-8 flex items-center justify-center rounded-full transition-all relative",
@@ -712,7 +713,7 @@ const MessageActionButtons = ({ msg, onFeedback, onRegenerate, isLoading }: { ms
         {/* Like Button */}
         <Tooltip delayDuration={200}>
           <TooltipTrigger asChild>
-            <button 
+            <button
               onClick={handleLike}
               className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-all text-white/40 hover:text-white"
             >
@@ -732,7 +733,7 @@ const MessageActionButtons = ({ msg, onFeedback, onRegenerate, isLoading }: { ms
         {/* Dislike Button */}
         <Tooltip delayDuration={200}>
           <TooltipTrigger asChild>
-            <button 
+            <button
               onClick={handleDislike}
               className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-all text-white/40 hover:text-white"
             >
@@ -752,7 +753,7 @@ const MessageActionButtons = ({ msg, onFeedback, onRegenerate, isLoading }: { ms
         {/* Regenerate Button */}
         <Tooltip delayDuration={200}>
           <TooltipTrigger asChild>
-            <button 
+            <button
               onClick={() => onRegenerate(msg.id as number)}
               className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-all text-white/40 hover:text-white"
             >
@@ -871,7 +872,7 @@ export default function ChatInterface({
 
   // Canvas Panel state
   const [isCanvasOpen, setIsCanvasOpen] = useState(false);
-  const [feedbackModal, setFeedbackModal] = useState<{isOpen: boolean, type: 'like' | 'dislike', msgId: string | number | null}>({isOpen: false, type: 'like', msgId: null});
+  const [feedbackModal, setFeedbackModal] = useState<{ isOpen: boolean, type: 'like' | 'dislike', msgId: string | number | null }>({ isOpen: false, type: 'like', msgId: null });
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [canvasData, setCanvasData] = useState<CanvasData | null>(null);
   const [isCanvasExecuting, setIsCanvasExecuting] = useState(false);
@@ -901,7 +902,7 @@ export default function ChatInterface({
     if (typeof window !== 'undefined') {
       const savedNotify = localStorage.getItem('arcus_notifications_enabled') === 'true';
       const savedSound = localStorage.getItem('arcus_sound_enabled') !== 'false';
-      
+
       setNotificationsEnabled(savedNotify && NotificationService.permission === 'granted');
       setSoundEnabled(savedSound);
       audioRuntime.setEnabled(savedSound);
@@ -929,8 +930,8 @@ export default function ChatInterface({
       const target = e.target as HTMLElement;
       // Play sound if clicking a button, link, or role="button"
       if (
-        target.closest('button') || 
-        target.closest('a') || 
+        target.closest('button') ||
+        target.closest('a') ||
         target.getAttribute('role') === 'button' ||
         target.closest('.interactive-card')
       ) {
@@ -973,12 +974,12 @@ export default function ChatInterface({
       }
       return m;
     }));
-    
+
     if (canvasResolversRef.current[msgId]) {
       canvasResolversRef.current[msgId](true);
       delete canvasResolversRef.current[msgId];
     }
-    
+
     toast.success('Mission accepted', { description: 'Opening Arcus Workspace...' });
   }, []);
 
@@ -998,14 +999,39 @@ export default function ChatInterface({
       }
       return m;
     }));
-    
+
     if (canvasResolversRef.current[msgId]) {
       canvasResolversRef.current[msgId](false);
       delete canvasResolversRef.current[msgId];
     }
-    
+
     toast.info('Mission declined', { description: 'Continuing in chat mode.' });
   }, []);
+
+  const handleContinueWithCredits = useCallback((msgId: number) => {
+    // 1. Mark this message as continued to avoid double-clicks
+    setMessages(prev => prev.map(m => {
+      if (m.id === msgId && m.type === 'agent') {
+        return { ...m, meta: { ...(m as AgentMessage).meta, continueClicked: true } };
+      }
+      return m;
+    }));
+
+    // 2. Add the "Continue" message to the UI
+    const continueMsg: UserMessage = {
+      id: Date.now(),
+      type: 'user',
+      role: 'user',
+      content: "Continue",
+      time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+    };
+    setMessages(prev => [...prev, continueMsg]);
+
+    // 3. Trigger the AI
+    if (currentConversationId) {
+      processAIMessage("Continue", currentConversationId, false);
+    }
+  }, [currentConversationId]);
 
   const handleRegenerateClick = (msgId: number) => {
     setRegenerateModal({ isOpen: true, msgId });
@@ -1091,20 +1117,7 @@ export default function ChatInterface({
       // ignore
     }
   }, []);
- 
-   // Auto-vanish limit messages when credits are replenished
-   useEffect(() => {
-     if (arcusCredits && (arcusCredits.remaining > 0 || arcusCredits.isUnlimited)) {
-       setMessages(prev => {
-         const hasLimitMsg = prev.some(m => m.role === 'assistant' && m.meta?.limitReached);
-         if (hasLimitMsg) {
-           console.log('✨ Credits replenished, vanishing limit messages...');
-           return prev.filter(m => !(m.role === 'assistant' && m.meta?.limitReached));
-         }
-         return prev;
-       });
-     }
-   }, [arcusCredits]);
+
 
   // Fetch subscription status on mount and activate pending plans
   useEffect(() => {
@@ -1458,12 +1471,12 @@ export default function ChatInterface({
 
               setMessages(prev => prev.map(m => {
                 if (m.id !== assistantMsgId || m.type !== 'agent') return m;
-                return { 
-                  ...m, 
+                return {
+                  ...m,
                   content: { text: finalContent.trim(), list: [], footer: '' },
-                  meta: { 
-                    ...(m.meta || {}), 
-                    liveThinking: thinking || (m.meta as any)?.liveThinking 
+                  meta: {
+                    ...(m.meta || {}),
+                    liveThinking: thinking || (m.meta as any)?.liveThinking
                   }
                 };
               }));
@@ -1511,7 +1524,7 @@ export default function ChatInterface({
           generateChatTitle(messageText).then(title => {
             localStorage.setItem(`conv_${conversationIdToUse}_title`, title);
             setChatTitle(title);
-          }).catch(() => {});
+          }).catch(() => { });
         }
       }
 
@@ -1534,7 +1547,7 @@ export default function ChatInterface({
     }
   };
 
-  const processAIMessage = async (messageText: string, conversationIdToUse: string, isNew: boolean, attachments?: any[], options?: { isDeepThinking?: boolean; isCanvas?: boolean; isSearch?: boolean; isPlanMode?: boolean; modelId?: string }) => {
+  async function processAIMessage(messageText: string, conversationIdToUse: string, isNew: boolean, attachments?: any[], options?: { isDeepThinking?: boolean; isCanvas?: boolean; isSearch?: boolean; isPlanMode?: boolean; modelId?: string }) {
     // ── Agent Loop routing: Use the new autonomous SSE loop for ALL queries ──────
     // The AI will now autonomously decide to use search, canvas, or plan tools.
     return processAgentLoopMessage(messageText, conversationIdToUse, isNew);
@@ -1633,10 +1646,10 @@ export default function ChatInterface({
         const intentRes = await fetch('/api/agent-talk/chat-arcus/intent', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            message: messageText, 
-            conversationId: conversationIdToUse, 
-            runId: requestRunId, 
+          body: JSON.stringify({
+            message: messageText,
+            conversationId: conversationIdToUse,
+            runId: requestRunId,
             attachments: attachments || [],
             isPlanMode,
             isCanvas,
@@ -1652,7 +1665,7 @@ export default function ChatInterface({
 
       // Auto-request notifications on first interaction if not yet decided
       if (typeof window !== 'undefined' && NotificationService.permission === 'default' && !notificationsEnabled) {
-          toggleNotifications();
+        toggleNotifications();
       }
 
       // --- PHASE II: Immediate AI Assessment ---
@@ -1710,7 +1723,7 @@ export default function ChatInterface({
 
           // --- Trigger Arcus Workspace Approval Step (Agent mode only, NOT Plan mode) ---
           let userApprovedCanvas = isCanvas;
-          
+
           if (!isPlanMode && (intentData.needsCanvas === true || isCanvas)) {
             const canvasInitialData = {
               type: 'workflow' as const,
@@ -1750,7 +1763,7 @@ export default function ChatInterface({
               setIsLoading(true);
             }
           }
-          
+
           // Attach the approval state to requestBody for Phase II
           requestBody.isCanvas = requestBody.isCanvas || userApprovedCanvas;
         }
@@ -1785,22 +1798,22 @@ export default function ChatInterface({
           });
           setIsUsageLimitModalOpen(true);
 
-           const limitMessage: AgentMessage = {
-             id: Date.now() + 2,
-             type: 'agent',
-             role: 'assistant',
-             content: {
-               text: "You've reached your AI limit for your current plan. To keep using Arcus AI and other premium features, you'll need more credits.",
-               list: [
-                 "Unlock unlimited Arcus AI tasks",
-                 "Priority processing for faster results",
-                 "Advanced email analytics and search"
-               ],
-               footer: ""
-             },
-             time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
-             meta: { limitReached: true, actionType: 'limit' }
-           };
+          const limitMessage: AgentMessage = {
+            id: Date.now() + 2,
+            type: 'agent',
+            role: 'assistant',
+            content: {
+              text: "You've reached your AI limit for your current plan. To keep using Arcus AI and other premium features, you'll need more credits.",
+              list: [
+                "Unlock unlimited Arcus AI tasks",
+                "Priority processing for faster results",
+                "Advanced email analytics and search"
+              ],
+              footer: ""
+            },
+            time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+            meta: { limitReached: true, actionType: 'limit' }
+          };
           setMessages(prev => [...prev, limitMessage]);
           setIsLoading(false);
           setIsSearchingState(false);
@@ -1950,13 +1963,13 @@ export default function ChatInterface({
 
       // Trigger high-fidelity notification & sound (always for AI responses in this function)
       if (data.message) {
-          if (notificationsEnabled || soundEnabled) {
-              const preview = data.message.substring(0, 100) + (data.message.length > 100 ? '...' : '');
-              NotificationService.notify('Arcus Response', preview, {
-                  soundType: hasCanvas ? 'success' : 'notify',
-                  silent: !notificationsEnabled
-              });
-          }
+        if (notificationsEnabled || soundEnabled) {
+          const preview = data.message.substring(0, 100) + (data.message.length > 100 ? '...' : '');
+          NotificationService.notify('Arcus Response', preview, {
+            soundType: hasCanvas ? 'success' : 'notify',
+            silent: !notificationsEnabled
+          });
+        }
       }
 
       // Force scroll after state update
@@ -2118,7 +2131,7 @@ export default function ChatInterface({
       // Phase 1: Handle all execution statuses from the gateway
       const executionStatus = result.resultStatus || result.executionResult?.status;
       const isSuccess = result.executionResult?.success || executionStatus === 'completed' || executionStatus === 'already_completed';
-      
+
       if (isSuccess) {
         // Handle already_completed (idempotency) differently
         if (executionStatus === 'already_completed') {
@@ -2128,19 +2141,19 @@ export default function ChatInterface({
         } else {
           toast.success(result.message || 'Action completed successfully');
         }
-        
+
         setIsCanvasOpen(false);
       } else {
         // Phase 1: Handle categorized errors with recovery hints
         const errorCategory = result.error?.category || result.executionResult?.error?.category;
         const recoveryHint = result.recoveryHint || result.executionResult?.error?.recoveryHint;
-        
+
         let errorMessage = result.message || 'Action failed';
         let actionDescription = '';
-        
+
         if (recoveryHint) {
           errorMessage = recoveryHint.userMessage || errorMessage;
-          
+
           // Add actionable guidance based on recovery action
           if (recoveryHint.requiresUserAction) {
             switch (recoveryHint.recoveryAction) {
@@ -2161,7 +2174,7 @@ export default function ChatInterface({
             actionDescription = 'We\'ll automatically retry this action.';
           }
         }
-        
+
         toast.error(errorMessage, {
           description: actionDescription,
           duration: 6000
@@ -2193,7 +2206,7 @@ export default function ChatInterface({
         description: errorMessage
       });
       console.error('Canvas execution error:', error);
-      
+
       // Add error to chat
       const errorAgentMessage: AgentMessage = {
         id: Date.now() + 1,
@@ -2232,7 +2245,7 @@ export default function ChatInterface({
           canvasActionData: { planId: plan.planId }
         })
       });
-      
+
       toast.info('Plan declined');
     } catch (error) {
       console.error('Error declining plan:', error);
@@ -2263,14 +2276,14 @@ export default function ChatInterface({
 
       if (result.executionResult?.success || result.success) {
         toast.success(result.message || 'Plan approved and execution started');
-        
+
         // Update the message to show the plan is now executing
         setMessages(prev => prev.map(m => {
           if (m.id === messageId && m.type === 'agent') {
             const agentMsg = m as AgentMessage;
             const currentPlan = agentMsg.meta?.planArtifact;
             if (!currentPlan) return m;
-            
+
             return {
               ...agentMsg,
               meta: {
@@ -2479,9 +2492,9 @@ export default function ChatInterface({
   }, [isEmailSelectionModalOpen]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-   const scrollContainerRef = useRef<HTMLDivElement>(null);
-   const [isActuallyAtBottom, setIsActuallyAtBottom] = useState(true);
-   const loadedConversationIdRef = useRef<string | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [isActuallyAtBottom, setIsActuallyAtBottom] = useState(true);
+  const loadedConversationIdRef = useRef<string | null>(null);
 
   // Load initial conversation if provided via URL
   useEffect(() => {
@@ -2521,16 +2534,16 @@ export default function ChatInterface({
     }
   }, [initialConversationId, isInitialMode]);
 
-   const handleScroll = () => {
-     if (scrollContainerRef.current) {
-       const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
-       const isNearBottom = scrollHeight - scrollTop - clientHeight < 200;
-       const isAtBottom = Math.abs(scrollHeight - scrollTop - clientHeight) < 10;
-       
-       setShowScrollButton(!isNearBottom);
-       setIsActuallyAtBottom(isAtBottom);
-     }
-   };
+  const handleScroll = () => {
+    if (scrollContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 200;
+      const isAtBottom = Math.abs(scrollHeight - scrollTop - clientHeight) < 10;
+
+      setShowScrollButton(!isNearBottom);
+      setIsActuallyAtBottom(isAtBottom);
+    }
+  };
 
   useEffect(() => {
     const container = scrollContainerRef.current;
@@ -2960,7 +2973,7 @@ export default function ChatInterface({
 
           <AnimatePresence>
             {showHistory && (
-              <motion.div 
+              <motion.div
                 initial={{ x: '110%', opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 exit={{ x: '110%', opacity: 0 }}
@@ -2968,7 +2981,7 @@ export default function ChatInterface({
                 className="fixed right-4 top-4 bottom-4 w-80 bg-[#111111] border border-white/[0.08] flex flex-col z-[100] shadow-2xl rounded-[32px] overflow-hidden"
               >
                 <div className="absolute top-6 right-6 z-[110]">
-                  <button 
+                  <button
                     onClick={() => setShowHistory(false)}
                     className="p-2 hover:bg-black/5 dark:bg-white/5 rounded-full transition-all text-black hover:text-black dark:text-white/60"
                   >
@@ -2989,8 +3002,8 @@ export default function ChatInterface({
             )}
           </AnimatePresence>
 
-          <HomeFeedSidebar 
-            className="z-50" 
+          <HomeFeedSidebar
+            className="z-50"
             onCollapse={(collapsed) => setIsSidebarCollapsed(collapsed)}
             onOpenSettings={() => setIsSettingsOpen(true)}
             onOpenHelp={() => setIsHelpOpen(true)}
@@ -3000,629 +3013,641 @@ export default function ChatInterface({
           />
 
           <LayoutGroup>
-          {/* Main Layout Wrapper - Absolute positioned to fill screen strictly */}
-          <div 
-            className={cn(
-              "absolute inset-0 transition-all duration-500 ease-in-out bg-white dark:bg-black overflow-hidden flex flex-col md:flex-row",
-              isSidebarCollapsed ? "md:left-20" : "md:left-64",
-              "left-0"
-            )} 
-            style={{ height: '100vh', maxHeight: '100vh' }}
-          >
-            {/* Chat Column (Order 1 - LEFT) - Premium Refinement */}
+            {/* Main Layout Wrapper - Absolute positioned to fill screen strictly */}
             <div
-              className="flex-1 flex flex-col relative h-full min-w-0 transition-all duration-500 order-1 bg-black backdrop-blur-3xl border-x border-t border-white/[0.05] rounded-t-[40px] shadow-[0_-20px_50px_-15px_rgba(0,0,0,0.5)] overflow-hidden"
-              style={{ display: 'flex', flexDirection: 'column', height: '100%', maxHeight: '100%' }}
+              className={cn(
+                "absolute inset-0 transition-all duration-500 ease-in-out bg-white dark:bg-black overflow-hidden flex flex-col md:flex-row",
+                isSidebarCollapsed ? "md:left-20" : "md:left-64",
+                "left-0"
+              )}
+              style={{ height: '100vh', maxHeight: '100vh' }}
             >
-              {/* Header - Glassmorphic fixed height */}
-              <div className="shrink-0 z-40 transition-all duration-300 bg-black/[0.02] dark:bg-black/40 backdrop-blur-md border-b border-neutral-200 dark:border-white/[0.03]" style={{ flexShrink: 0 }}>
-                <div className="relative px-8 py-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      {/* Mobile Menu Button */}
-                      <button 
-                        onClick={() => setIsMobileMenuOpen(true)}
-                        className="md:hidden p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors text-neutral-600 dark:text-neutral-400"
-                      >
-                        <PanelLeft className="w-5 h-5" />
-                      </button>
-                      
-                      {/* Leftmost: Title and Dropdown with refined Zinc styling */}
-                      {!isInitialMode && (
-                        <div className="relative" ref={titleMenuRef}>
-                          <div className="flex items-center bg-white/[0.03] border border-white/[0.08] rounded-xl overflow-hidden shadow-xl transition-all hover:border-white/15 group">
-                            <button
-                              onClick={() => setIsTitleMenuOpen(!isTitleMenuOpen)}
-                              className="pl-4 pr-3 py-2 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition-colors flex items-center gap-2.5 max-w-[280px]"
-                            >
-                              <span className="text-[13px] font-bold text-black dark:text-white/90 truncate tracking-tight lowercase">
-                                {chatTitle || 'new conversation'}
-                              </span>
-                            </button>
-                            <div className="w-[1px] h-4 bg-white/[0.12]" />
-                            <button
-                              onClick={() => setIsTitleMenuOpen(!isTitleMenuOpen)}
-                              className="px-3 py-2 hover:bg-black/[0.05] dark:bg-white/[0.05] transition-colors"
-                            >
-                              <ChevronDown className={`w-3.5 h-3.5 text-black dark:text-white/40 group-hover:text-black dark:group-hover:text-white/80 transition-transform duration-300 ease-out ${isTitleMenuOpen ? 'rotate-180' : ''}`} />
-                            </button>
-                          </div>
-                        </div>
-                      )}
+              {/* Chat Column (Order 1 - LEFT) - Premium Refinement */}
+              <div
+                className="flex-1 flex flex-col relative h-full min-w-0 transition-all duration-500 order-1 bg-black backdrop-blur-3xl border-x border-t border-white/[0.05] rounded-t-[40px] shadow-[0_-20px_50px_-15px_rgba(0,0,0,0.5)] overflow-hidden"
+                style={{ display: 'flex', flexDirection: 'column', height: '100%', maxHeight: '100%' }}
+              >
+                {/* Header - Glassmorphic fixed height */}
+                <div className="shrink-0 z-40 transition-all duration-300 bg-black/[0.02] dark:bg-black/40 backdrop-blur-md border-b border-neutral-200 dark:border-white/[0.03]" style={{ flexShrink: 0 }}>
+                  <div className="relative px-8 py-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        {/* Mobile Menu Button */}
+                        <button
+                          onClick={() => setIsMobileMenuOpen(true)}
+                          className="md:hidden p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors text-neutral-600 dark:text-neutral-400"
+                        >
+                          <PanelLeft className="w-5 h-5" />
+                        </button>
 
-                          {/* Dropdown Menu */}
-                          {isTitleMenuOpen && (
-                            <div className="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-[#1a1a1a] border border-white/[0.08] rounded-xl shadow-2xl py-1.5 z-[100] animate-in fade-in zoom-in-95 duration-200">
+                        {/* Leftmost: Title and Dropdown with refined Zinc styling */}
+                        {!isInitialMode && (
+                          <div className="relative" ref={titleMenuRef}>
+                            <div className="flex items-center bg-white/[0.03] border border-white/[0.08] rounded-xl overflow-hidden shadow-xl transition-all hover:border-white/15 group">
                               <button
-                                onClick={() => {
-                                  setIsStarred(!isStarred);
-                                  setIsTitleMenuOpen(false);
-                                  toast.success(isStarred ? 'Removed from favorites' : 'Added to favorites');
-                                }}
-                                className="w-full px-3 py-2 text-left text-sm text-black hover:text-black dark:text-white hover:bg-black/[0.05] dark:bg-white/[0.05] transition-colors flex items-center gap-2.5"
+                                onClick={() => setIsTitleMenuOpen(!isTitleMenuOpen)}
+                                className="pl-4 pr-3 py-2 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition-colors flex items-center gap-2.5 max-w-[280px]"
                               >
-                                <Sparkles className={`w-4 h-4 ${isStarred ? 'text-yellow-400 fill-yellow-400' : ''}`} />
-                                <span>{isStarred ? 'Unstar' : 'Star'}</span>
+                                <span className="text-[13px] font-bold text-black dark:text-white/90 truncate tracking-tight lowercase">
+                                  {chatTitle || 'new conversation'}
+                                </span>
                               </button>
+                              <div className="w-[1px] h-4 bg-white/[0.12]" />
                               <button
-                                onClick={() => {
-                                  const newTitle = prompt('Rename conversation:', chatTitle);
-                                  if (newTitle && newTitle !== chatTitle) {
-                                    setChatTitle(newTitle);
-                                    if (currentConversationId) {
-                                      localStorage.setItem(`conv_${currentConversationId}_title`, newTitle);
-                                      const raw = localStorage.getItem(`conversation_${currentConversationId}`);
-                                      if (raw) {
-                                        const data = JSON.parse(raw);
-                                        data.title = newTitle;
-                                        localStorage.setItem(`conversation_${currentConversationId}`, JSON.stringify(data));
-                                      }
-                                    }
-                                  }
-                                  setIsTitleMenuOpen(false);
-                                }}
-                                className="w-full px-3 py-2 text-left text-sm text-black hover:text-black dark:text-white hover:bg-black/[0.05] dark:bg-white/[0.05] transition-colors flex items-center gap-2.5"
+                                onClick={() => setIsTitleMenuOpen(!isTitleMenuOpen)}
+                                className="px-3 py-2 hover:bg-black/[0.05] dark:bg-white/[0.05] transition-colors"
                               >
-                                <PenTool className="w-4 h-4" />
-                                <span>Rename</span>
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setIsTitleMenuOpen(false);
-                                  toast.info('Projects integration coming soon');
-                                }}
-                                className="w-full px-3 py-2 text-left text-sm text-black hover:text-black dark:text-white hover:bg-black/[0.05] dark:bg-white/[0.05] transition-colors flex items-center gap-2.5"
-                              >
-                                <LayoutGrid className="w-4 h-4" />
-                                <span>Add to project</span>
-                              </button>
-                              <div className="h-[1px] bg-black/[0.05] dark:bg-white/[0.05] my-1" />
-                              <button
-                                onClick={() => {
-                                  if (currentConversationId && confirm('Delete this conversation?')) {
-                                    handleConversationDelete(currentConversationId);
-                                  }
-                                  setIsTitleMenuOpen(false);
-                                }}
-                                className="w-full px-3 py-2 text-left text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors flex items-center gap-2.5"
-                              >
-                                <HugeiconsIcon icon={Cancel01Icon} size={16} />
-                                <span>Delete</span>
+                                <ChevronDown className={`w-3.5 h-3.5 text-black dark:text-white/40 group-hover:text-black dark:group-hover:text-white/80 transition-transform duration-300 ease-out ${isTitleMenuOpen ? 'rotate-180' : ''}`} />
                               </button>
                             </div>
-                          )}
+                          </div>
+                        )}
 
-                      {/* Settings Icon (replaced New Chat/Edit) */}
-                      <Tooltip delayDuration={100}>
-                        <TooltipTrigger asChild>
-                          <button
-                            onClick={() => setIsPersonalityModalOpen(true)}
-                            className="p-2 hover:bg-black/5 dark:bg-white/5 rounded-lg transition-all text-black hover:text-black dark:text-white/60 focus:outline-none"
-                          >
-                            <Settings className="w-4 h-4" />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom">
-                          <span className="text-[10px]">Settings</span>
-                        </TooltipContent>
-                      </Tooltip>
-                    </div>
+                        {/* Dropdown Menu */}
+                        {isTitleMenuOpen && (
+                          <div className="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-[#1a1a1a] border border-white/[0.08] rounded-xl shadow-2xl py-1.5 z-[100] animate-in fade-in zoom-in-95 duration-200">
+                            <button
+                              onClick={() => {
+                                setIsStarred(!isStarred);
+                                setIsTitleMenuOpen(false);
+                                toast.success(isStarred ? 'Removed from favorites' : 'Added to favorites');
+                              }}
+                              className="w-full px-3 py-2 text-left text-sm text-black hover:text-black dark:text-white hover:bg-black/[0.05] dark:bg-white/[0.05] transition-colors flex items-center gap-2.5"
+                            >
+                              <Sparkles className={`w-4 h-4 ${isStarred ? 'text-yellow-400 fill-yellow-400' : ''}`} />
+                              <span>{isStarred ? 'Unstar' : 'Star'}</span>
+                            </button>
+                            <button
+                              onClick={() => {
+                                const newTitle = prompt('Rename conversation:', chatTitle);
+                                if (newTitle && newTitle !== chatTitle) {
+                                  setChatTitle(newTitle);
+                                  if (currentConversationId) {
+                                    localStorage.setItem(`conv_${currentConversationId}_title`, newTitle);
+                                    const raw = localStorage.getItem(`conversation_${currentConversationId}`);
+                                    if (raw) {
+                                      const data = JSON.parse(raw);
+                                      data.title = newTitle;
+                                      localStorage.setItem(`conversation_${currentConversationId}`, JSON.stringify(data));
+                                    }
+                                  }
+                                }
+                                setIsTitleMenuOpen(false);
+                              }}
+                              className="w-full px-3 py-2 text-left text-sm text-black hover:text-black dark:text-white hover:bg-black/[0.05] dark:bg-white/[0.05] transition-colors flex items-center gap-2.5"
+                            >
+                              <PenTool className="w-4 h-4" />
+                              <span>Rename</span>
+                            </button>
+                            <button
+                              onClick={() => {
+                                setIsTitleMenuOpen(false);
+                                toast.info('Projects integration coming soon');
+                              }}
+                              className="w-full px-3 py-2 text-left text-sm text-black hover:text-black dark:text-white hover:bg-black/[0.05] dark:bg-white/[0.05] transition-colors flex items-center gap-2.5"
+                            >
+                              <LayoutGrid className="w-4 h-4" />
+                              <span>Add to project</span>
+                            </button>
+                            <div className="h-[1px] bg-black/[0.05] dark:bg-white/[0.05] my-1" />
+                            <button
+                              onClick={() => {
+                                if (currentConversationId && confirm('Delete this conversation?')) {
+                                  handleConversationDelete(currentConversationId);
+                                }
+                                setIsTitleMenuOpen(false);
+                              }}
+                              className="w-full px-3 py-2 text-left text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors flex items-center gap-2.5"
+                            >
+                              <HugeiconsIcon icon={Cancel01Icon} size={16} />
+                              <span>Delete</span>
+                            </button>
+                          </div>
+                        )}
 
-                    {/* Right Side: New Chat and History */}
-                    <div className="flex items-center gap-3">
-                      {/* Subscription Badge */}
-                      {currentPlan !== 'pro' && (
-                        <div className="flex items-center gap-1.5 px-3 py-1 bg-white dark:bg-[#111111] border border-neutral-200 dark:border-white/10 rounded-full shadow-sm transition-all group-hover:border-neutral-300 dark:group-hover:border-white/20">
-                          <span className="text-[10px] text-neutral-500 dark:text-white/40 font-medium tracking-wide whitespace-nowrap group-hover:text-black dark:group-hover:text-white/60 transition-colors">Free plan</span>
-                          <span className="text-[10px] text-neutral-300 dark:text-white/10">•</span>
-                          <button 
-                            onClick={() => router.push('/pricing')}
-                            className="text-[10px] text-black dark:text-white transition-colors font-bold uppercase tracking-tight whitespace-nowrap hover:text-neutral-600 dark:hover:text-white"
-                          >
-                            Upgrade
-                          </button>
+                        {/* Settings Icon (replaced New Chat/Edit) */}
+                        <Tooltip delayDuration={100}>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={() => setIsPersonalityModalOpen(true)}
+                              className="p-2 hover:bg-black/5 dark:bg-white/5 rounded-lg transition-all text-black hover:text-black dark:text-white/60 focus:outline-none"
+                            >
+                              <Settings className="w-4 h-4" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom">
+                            <span className="text-[10px]">Settings</span>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+
+                      {/* Right Side: New Chat and History */}
+                      <div className="flex items-center gap-3">
+                        {/* Subscription Badge */}
+                        {currentPlan !== 'pro' && (
+                          <div className="flex items-center gap-1.5 px-3 py-1 bg-white dark:bg-[#111111] border border-neutral-200 dark:border-white/10 rounded-full shadow-sm transition-all group-hover:border-neutral-300 dark:group-hover:border-white/20">
+                            <span className="text-[10px] text-neutral-500 dark:text-white/40 font-medium tracking-wide whitespace-nowrap group-hover:text-black dark:group-hover:text-white/60 transition-colors">Free plan</span>
+                            <span className="text-[10px] text-neutral-300 dark:text-white/10">•</span>
+                            <button
+                              onClick={() => router.push('/pricing')}
+                              className="text-[10px] text-black dark:text-white transition-colors font-bold uppercase tracking-tight whitespace-nowrap hover:text-neutral-600 dark:hover:text-white"
+                            >
+                              Upgrade
+                            </button>
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-1">
+                          <Tooltip delayDuration={100}>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  startNewChat();
+                                }}
+                                className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-all text-black dark:text-white/60 focus:outline-none focus:ring-0"
+                              >
+                                <HugeiconsIcon icon={AddSquareIcon} size={20} />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom">
+                              <span className="text-[10px]">New Chat</span>
+                            </TooltipContent>
+                          </Tooltip>
+
+                          <Tooltip delayDuration={100}>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowHistory(!showHistory);
+                                }}
+                                className={`p-2 rounded-lg transition-all focus:outline-none focus:ring-0 ${showHistory ? 'bg-black/10 dark:bg-white/10 text-black dark:text-white' : 'hover:bg-black/5 dark:bg-white/5 text-black dark:text-white/60'}`}
+                              >
+                                <HugeiconsIcon icon={WorkHistoryIcon} size={20} />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom">
+                              <span className="text-[10px]">History</span>
+                            </TooltipContent>
+                          </Tooltip>
                         </div>
-                      )}
-                      
-                      <div className="flex items-center gap-1">
-                      <Tooltip delayDuration={100}>
-                        <TooltipTrigger asChild>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              startNewChat();
-                            }}
-                            className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-all text-black dark:text-white/60 focus:outline-none focus:ring-0"
-                          >
-                             <HugeiconsIcon icon={AddSquareIcon} size={20} />
-                           </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom">
-                          <span className="text-[10px]">New Chat</span>
-                        </TooltipContent>
-                      </Tooltip>
-
-                      <Tooltip delayDuration={100}>
-                        <TooltipTrigger asChild>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setShowHistory(!showHistory);
-                            }}
-                            className={`p-2 rounded-lg transition-all focus:outline-none focus:ring-0 ${showHistory ? 'bg-black/10 dark:bg-white/10 text-black dark:text-white' : 'hover:bg-black/5 dark:bg-white/5 text-black dark:text-white/60'}`}
-                          >
-                             <HugeiconsIcon icon={WorkHistoryIcon} size={20} />
-                           </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom">
-                          <span className="text-[10px]">History</span>
-                        </TooltipContent>
-                      </Tooltip>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            {/* Chat Body - Absolute Layout Rebuild to avoid displacement */}
-            <div
-              className="flex-1 relative z-20 min-h-0 min-w-0"
-              style={{ flex: '1 1 0%', minHeight: 0, overflow: 'hidden' }}
-            >
-              <div 
-                ref={scrollContainerRef}
-                className="absolute inset-0 overflow-y-auto px-6 py-4 scroll-smooth arcus-scrollbar"
-                style={{ paddingBottom: isInitialMode ? undefined : '140px' }}
-              >
-                  <div className="max-w-3xl mx-auto w-full">
-                    {isInitialMode ? (
-                      <div className="flex flex-col items-center justify-center min-h-[50vh] py-12 animate-fade-in relative">
-                        <div className="text-center mb-16">
-                          <div className="flex justify-center mb-8">
-                            <img
-                              src="/arcus-ai-icon.jpg"
-                              className="w-16 h-16 object-cover rounded-[24px] shadow-2xl grayscale brightness-110"
-                              alt="Arcus AI"
+                {/* Chat Body - Absolute Layout Rebuild to avoid displacement */}
+                <div
+                  className="flex-1 relative z-20 min-h-0 min-w-0"
+                  style={{ flex: '1 1 0%', minHeight: 0, overflow: 'hidden' }}
+                >
+                  <div
+                    ref={scrollContainerRef}
+                    className="absolute inset-0 overflow-y-auto px-6 py-4 scroll-smooth arcus-scrollbar"
+                    style={{ paddingBottom: isInitialMode ? undefined : '140px' }}
+                  >
+                    <div className="max-w-3xl mx-auto w-full">
+                      {isInitialMode ? (
+                        <div className="flex flex-col items-center justify-center min-h-[50vh] py-12 animate-fade-in relative">
+                          <div className="text-center mb-16">
+                            <div className="flex justify-center mb-8">
+                              <img
+                                src="/arcus-ai-icon.jpg"
+                                className="w-16 h-16 object-cover rounded-[24px] shadow-2xl grayscale brightness-110"
+                                alt="Arcus AI"
+                              />
+                            </div>
+                            <h1 className="text-4xl md:text-6xl font-medium text-black dark:text-white tracking-tighter" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                              Ask anything about your emails
+                            </h1>
+                          </div>
+
+                          {/* Centered Prompt Box for Initial Mode */}
+                          <div className="w-full relative group max-w-2xl mx-auto px-4 z-10">
+                            <PromptInputBox
+                              onSend={(msg, files, opts) => handleSend(msg, files, opts)}
+                              onStop={() => abortControllerRef.current?.abort()}
+                              isLoading={isLoading}
+                              placeholder="Assign a task or ask anything"
+                              onSearchClick={() => { }}
+                              onAttachEmailClick={() => setIsEmailSelectionModalOpen(true)}
+                              onPersonalityClick={() => setIsPersonalityModalOpen(true)}
+                              selectedEmailsCount={selectedEmails.length}
+                              suggestionInput={suggestionInput}
+                              showConnectBanner={true}
+                              onConnectClick={() => setIsIntegrationsModalOpen(true)}
+                              currentPlan={currentPlan || 'free'}
+                              onUpgradeClick={() => {
+                                setUsageLimitModalData({
+                                  featureName: 'Premium Models',
+                                  currentUsage: 0,
+                                  limit: 0,
+                                  period: 'monthly',
+                                  currentPlan: currentPlan || 'starter'
+                                });
+                                setIsUsageLimitModalOpen(true);
+                              }}
                             />
                           </div>
-                          <h1 className="text-4xl md:text-6xl font-medium text-black dark:text-white tracking-tighter" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                            Ask anything about your emails
-                          </h1>
-                        </div>
 
-                        {/* Centered Prompt Box for Initial Mode */}
-                        <div className="w-full relative group max-w-2xl mx-auto px-4 z-10">
-                          <PromptInputBox
-                            onSend={(msg, files, opts) => handleSend(msg, files, opts)}
-                            onStop={() => abortControllerRef.current?.abort()}
-                            isLoading={isLoading}
-                            placeholder="Assign a task or ask anything"
-                            onSearchClick={() => { }}
-                            onAttachEmailClick={() => setIsEmailSelectionModalOpen(true)}
-                            onPersonalityClick={() => setIsPersonalityModalOpen(true)}
-                            selectedEmailsCount={selectedEmails.length}
-                            suggestionInput={suggestionInput}
-                            showConnectBanner={true}
-                            onConnectClick={() => setIsIntegrationsModalOpen(true)}
-                            currentPlan={currentPlan || 'free'}
-                            onUpgradeClick={() => {
-                              setUsageLimitModalData({
-                                featureName: 'Premium Models',
-                                currentUsage: 0,
-                                limit: 0,
-                                period: 'monthly',
-                                currentPlan: currentPlan || 'starter'
-                              });
-                              setIsUsageLimitModalOpen(true);
-                            }}
-                          />
+                          {/* Pill-style Action Buttons - Now shifted BELOW */}
+                          <div className="flex flex-wrap justify-center gap-2.5 mt-10 max-w-2xl mx-auto">
+                            {[
+                              { label: 'Catch up', icon: Sparkles, text: "Please provide me with a comprehensive summary of my recent email correspondence from the last 24 hours. I am particularly interested in any urgent matters, action items directed at me, or important status updates that require my immediate attention." },
+                              { label: 'Summarize', icon: FileText, text: "Could you please analyze my current unread emails and synthesize the core information from each thread? I would like a breakdown that highlights the main subject of each conversation and identifies any deadlines or specific requests made by the senders." },
+                              { label: 'Draft reply', icon: PenTool, text: "I would like some assistance in drafting a professional response to my most recent email. Please ensure the reply is articulate, maintains a collaborative tone, and clearly addresses all the questions or points raised by the sender in their message." },
+                              { label: 'Schedule', icon: Calendar, text: "I need to facilitate a meeting for tomorrow based on my recent email threads. Could you please review any pending scheduling requests and compare them with my calendar to suggest the most optimal windows for a 30-minute discussion?" },
+                              { label: 'Analytics', icon: BarChart3, text: "Please perform an audit of my email engagement and activity over the past seven days. I am looking for a detailed overview of my top communication partners, peak activity times, and any trends in my response frequency or inbox growth." }
+                            ].map((btn) => (
+                              <button
+                                key={btn.label}
+                                onClick={() => setSuggestionInput({
+                                  text: btn.text,
+                                  id: Date.now()
+                                })}
+                                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-full text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-white/10 transition-all text-[13px] font-medium shadow-sm"
+                              >
+                                <btn.icon className="w-3.5 h-3.5" />
+                                {btn.label}
+                              </button>
+                            ))}
+                          </div>
                         </div>
-
-                        {/* Pill-style Action Buttons - Now shifted BELOW */}
-                        <div className="flex flex-wrap justify-center gap-2.5 mt-10 max-w-2xl mx-auto">
-                          {[
-                            { label: 'Catch up', icon: Sparkles, text: "Please provide me with a comprehensive summary of my recent email correspondence from the last 24 hours. I am particularly interested in any urgent matters, action items directed at me, or important status updates that require my immediate attention." },
-                            { label: 'Summarize', icon: FileText, text: "Could you please analyze my current unread emails and synthesize the core information from each thread? I would like a breakdown that highlights the main subject of each conversation and identifies any deadlines or specific requests made by the senders." },
-                            { label: 'Draft reply', icon: PenTool, text: "I would like some assistance in drafting a professional response to my most recent email. Please ensure the reply is articulate, maintains a collaborative tone, and clearly addresses all the questions or points raised by the sender in their message." },
-                            { label: 'Schedule', icon: Calendar, text: "I need to facilitate a meeting for tomorrow based on my recent email threads. Could you please review any pending scheduling requests and compare them with my calendar to suggest the most optimal windows for a 30-minute discussion?" },
-                            { label: 'Analytics', icon: BarChart3, text: "Please perform an audit of my email engagement and activity over the past seven days. I am looking for a detailed overview of my top communication partners, peak activity times, and any trends in my response frequency or inbox growth." }
-                          ].map((btn) => (
-                            <button
-                              key={btn.label}
-                              onClick={() => setSuggestionInput({
-                                text: btn.text,
-                                id: Date.now()
-                              })}
-                              className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-full text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-white/10 transition-all text-[13px] font-medium shadow-sm"
+                      ) : (
+                        <div className="space-y-4 pt-4">
+                          {activeMission && <MissionStatusHeader mission={activeMission} />}
+                          {messages.map((msg) => (
+                            <motion.div
+                              layout
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                              key={msg.id}
+                              className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
                             >
-                              <btn.icon className="w-3.5 h-3.5" />
-                              {btn.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-4 pt-4">
-                        {activeMission && <MissionStatusHeader mission={activeMission} />}
-                        {messages.map((msg) => (
-                          <motion.div 
-                            layout
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            key={msg.id} 
-                            className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
-                          >
-                            <div className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'} max-w-full items-start`}>
-                              {msg.role === 'user' && (
-                                <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center border overflow-hidden bg-[#2b2b2b] border-white/10">
-                                  <User2 className="w-4 h-4 text-white/50" />
-                                </div>
-                              )}
-                              <div className="flex flex-col max-w-[95%] group/msg">
-                                <div className={`transition-all relative ${msg.role === 'user' ? 'px-4 py-2 rounded-[22px] bg-[#111]/90 backdrop-blur-xl border border-white/[0.08] text-white shadow-2xl' : 'text-white/90 px-0 py-1'}`}>
-                                  {msg.role === 'user' && <UserMessageCopyButton msg={msg} />}
-                                  {msg.role === 'assistant' && msg.meta?.limitReached && (
-                                    <div className="flex items-center gap-2 mb-3 opacity-60">
-                                      <img src="/arcus-ai-icon.jpg" className="w-4 h-4 rounded-md grayscale" />
-                                      <span className="text-[12px] text-black dark:text-white/90 font-medium tracking-tight">Arcus AI</span>
-                                      <span className="px-1.5 py-0.5 bg-black/10 dark:bg-white/10 text-black dark:text-white/40 text-[9px] font-bold rounded uppercase tracking-widest leading-none">Lite</span>
-                                    </div>
-                                  )}
+                              <div className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'} max-w-full items-start`}>
+                                {msg.role === 'user' && (
+                                  <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center border overflow-hidden bg-[#2b2b2b] border-white/10">
+                                    <User2 className="w-4 h-4 text-white/50" />
+                                  </div>
+                                )}
+                                <div className="flex flex-col max-w-[95%] group/msg">
+                                  <div className={`transition-all relative ${msg.role === 'user' ? 'px-4 py-2 rounded-[22px] bg-[#111]/90 backdrop-blur-xl border border-white/[0.08] text-white shadow-2xl' : 'text-white/90 px-0 py-1'}`}>
+                                    {msg.role === 'user' && <UserMessageCopyButton msg={msg} />}
+                                    {msg.role === 'assistant' && msg.meta?.limitReached && (
+                                      <div className="flex items-center gap-2 mb-3 opacity-60">
+                                        <img src="/arcus-ai-icon.jpg" className="w-4 h-4 rounded-md grayscale" />
+                                        <span className="text-[12px] text-black dark:text-white/90 font-medium tracking-tight">Arcus AI</span>
+                                        <span className="px-1.5 py-0.5 bg-black/10 dark:bg-white/10 text-black dark:text-white/40 text-[9px] font-bold rounded uppercase tracking-widest leading-none">Lite</span>
+                                      </div>
+                                    )}
 
-                                  {((msg as AgentMessage).meta?.isStreaming !== true || (typeof msg.content === 'string' ? msg.content : msg.content.text).length > 0 || !isAgentLoopActive) && (
-                                    <MessageContent 
-                                      content={msg.content} 
-                                      isUser={msg.role === 'user'} 
-                                      isTyping={isLoading && msg.role === 'assistant' && msg.id === messages[messages.length - 1].id && (!isAgentLoopActive || (typeof msg.content === 'string' ? msg.content : msg.content.text).length > 0)}
-                                      isNewResponse={msg.role === 'assistant' && msg.id === messages[messages.length - 1].id && !isLoading}
-                                      hideLinks={msg.role === 'assistant' && (msg as AgentMessage).meta?.limitReached}
-                                    />
-                                  )}
+                                    {((msg as AgentMessage).meta?.isStreaming !== true || (typeof msg.content === 'string' ? msg.content : msg.content.text).length > 0 || !isAgentLoopActive) && (
+                                      <MessageContent
+                                        content={msg.content}
+                                        isUser={msg.role === 'user'}
+                                        isTyping={isLoading && msg.role === 'assistant' && msg.id === messages[messages.length - 1].id && (!isAgentLoopActive || (typeof msg.content === 'string' ? msg.content : msg.content.text).length > 0)}
+                                        isNewResponse={msg.role === 'assistant' && msg.id === messages[messages.length - 1].id && !isLoading}
+                                        hideLinks={msg.role === 'assistant' && (msg as AgentMessage).meta?.limitReached}
+                                      />
+                                    )}
 
-                                  {msg.role === 'user' && (msg as UserMessage).attachments && (msg as UserMessage).attachments!.length > 0 && (
-                                    <div className="mt-3 flex flex-wrap gap-2 pt-3 border-t border-neutral-200 dark:border-white/10">
-                                      {(msg as UserMessage).attachments!.map((file, idx) => (
-                                        <div key={idx} className="flex items-center gap-2 p-2 bg-black/5 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 max-w-[200px]">
-                                          {file.type.startsWith('image/') ? (
-                                            <div className="w-8 h-8 rounded-md overflow-hidden flex-shrink-0">
-                                              <img src={file.url} alt={file.name} className="w-full h-full object-cover" />
+                                    {msg.role === 'user' && (msg as UserMessage).attachments && (msg as UserMessage).attachments!.length > 0 && (
+                                      <div className="mt-3 flex flex-wrap gap-2 pt-3 border-t border-neutral-200 dark:border-white/10">
+                                        {(msg as UserMessage).attachments!.map((file, idx) => (
+                                          <div key={idx} className="flex items-center gap-2 p-2 bg-black/5 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 max-w-[200px]">
+                                            {file.type.startsWith('image/') ? (
+                                              <div className="w-8 h-8 rounded-md overflow-hidden flex-shrink-0">
+                                                <img src={file.url} alt={file.name} className="w-full h-full object-cover" />
+                                              </div>
+                                            ) : (
+                                              <div className="w-8 h-8 rounded-md bg-black/5 flex items-center justify-center flex-shrink-0">
+                                                <HugeiconsIcon icon={WorkHistoryIcon} size={16} className="text-black/40" />
+                                              </div>
+                                            )}
+                                            <div className="flex flex-col overflow-hidden">
+                                              <span className="text-[11px] font-medium truncate">{file.name}</span>
+                                              <span className="text-[9px] opacity-40">{(file.size / 1024).toFixed(0)} KB</span>
                                             </div>
-                                          ) : (
-                                            <div className="w-8 h-8 rounded-md bg-black/5 flex items-center justify-center flex-shrink-0">
-                                              <HugeiconsIcon icon={WorkHistoryIcon} size={16} className="text-black/40" />
-                                            </div>
-                                          )}
-                                          <div className="flex flex-col overflow-hidden">
-                                            <span className="text-[11px] font-medium truncate">{file.name}</span>
-                                            <span className="text-[9px] opacity-40">{(file.size / 1024).toFixed(0)} KB</span>
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )}
-                                  {msg.role === 'assistant' && msg.notes && msg.notes.length > 0 && (
-                                    <div className="mt-4 space-y-3 pt-4 border-t border-graphite-border/50">
-                                      <div className="grid grid-cols-1 gap-3">
-                                        {msg.notes.map((note: any, idx: number) => (
-                                          <div key={note.id || idx} className="bg-white/[0.04] border border-white/[0.08] rounded-xl p-4">
-                                            <div className="text-graphite-text font-medium leading-snug mb-1">{note.subject || '(No Subject)'}</div>
-                                            {note.content && <div className="text-graphite-muted text-sm line-clamp-2">{note.content}</div>}
                                           </div>
                                         ))}
                                       </div>
-                                    </div>
-                                  )}
-
-                                  {msg.role === 'assistant' && msg.meta?.internalThought && (
-                                    <details className="mt-4 border-t border-neutral-200 dark:border-white/5 pt-3 group/thought">
-                                      <summary className="flex items-center gap-2 cursor-pointer text-black hover:text-black dark:text-white/60 transition-colors list-none">
-                                        <BrainCircuit className="w-3.5 h-3.5" />
-                                        <span className="text-[11px] font-bold tracking-wide uppercase">Internal Reasoning</span>
-                                        <ChevronDown className="w-3 h-3 transition-transform group-open/thought:rotate-180" />
-                                      </summary>
-                                      <div className="mt-2 pl-4 border-l border-neutral-200 dark:border-white/10 py-2">
-                                        <p className="text-black dark:text-white/40 text-[12px] leading-relaxed whitespace-pre-wrap italic">
-                                          {msg.meta.internalThought}
-                                        </p>
+                                    )}
+                                    {msg.role === 'assistant' && msg.notes && msg.notes.length > 0 && (
+                                      <div className="mt-4 space-y-3 pt-4 border-t border-graphite-border/50">
+                                        <div className="grid grid-cols-1 gap-3">
+                                          {msg.notes.map((note: any, idx: number) => (
+                                            <div key={note.id || idx} className="bg-white/[0.04] border border-white/[0.08] rounded-xl p-4">
+                                              <div className="text-graphite-text font-medium leading-snug mb-1">{note.subject || '(No Subject)'}</div>
+                                              {note.content && <div className="text-graphite-muted text-sm line-clamp-2">{note.content}</div>}
+                                            </div>
+                                          ))}
+                                        </div>
                                       </div>
-                                    </details>
-                                  )}
+                                    )}
+
+                                    {msg.role === 'assistant' && msg.meta?.internalThought && (
+                                      <details className="mt-4 border-t border-neutral-200 dark:border-white/5 pt-3 group/thought">
+                                        <summary className="flex items-center gap-2 cursor-pointer text-black hover:text-black dark:text-white/60 transition-colors list-none">
+                                          <BrainCircuit className="w-3.5 h-3.5" />
+                                          <span className="text-[11px] font-bold tracking-wide uppercase">Internal Reasoning</span>
+                                          <ChevronDown className="w-3 h-3 transition-transform group-open/thought:rotate-180" />
+                                        </summary>
+                                        <div className="mt-2 pl-4 border-l border-neutral-200 dark:border-white/10 py-2">
+                                          <p className="text-black dark:text-white/40 text-[12px] leading-relaxed whitespace-pre-wrap italic">
+                                            {msg.meta.internalThought}
+                                          </p>
+                                        </div>
+                                      </details>
+                                    )}
 
 
-                                  {msg.role === 'assistant' && (msg as AgentMessage).meta?.liveThinking && (
-                                    <AgentThinkingSection 
-                                      content={(msg as AgentMessage).meta!.liveThinking!} 
-                                      isComplete={(msg as AgentMessage).meta?.isStreaming === false}
-                                    />
-                                  )}
-
-                                  {msg.role === 'assistant' && (msg as AgentMessage).meta?.agentSteps && (
-                                    <div className="flex flex-col gap-0.5 mb-4">
-                                      {(msg as AgentMessage).meta!.agentSteps!.filter(s => s.type === 'tool_call').map((step, idx) => (
-                                        <AgentTaskPill key={step.id || idx} step={step} />
-                                      ))}
-                                    </div>
-                                  )}
-
-                                  {/* Plan Canvas (Inline + Full-Screen Modal) */}
-                                  {msg.role === 'assistant' && (msg as AgentMessage).meta?.planArtifact && (
-                                    <div className="mt-4">
-                                      <PlanCanvas
-                                        plan={(msg as AgentMessage).meta!.planArtifact!}
-                                        onExecute={async (planId) => {
-                                          await handlePlanApprove(planId, msg.id as number);
-                                        }}
-                                        onDecline={async (planId) => {
-                                          await handleDeclinePlan((msg as AgentMessage).meta!.planArtifact!);
-                                        }}
-                                        isProcessing={isProcessingPlan}
+                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.liveThinking && (
+                                      <AgentThinkingSection
+                                        content={(msg as AgentMessage).meta!.liveThinking!}
+                                        isComplete={(msg as AgentMessage).meta?.isStreaming === false}
                                       />
-                                    </div>
-                                  )}
+                                    )}
 
-                                  {/* Phase 2: Canvas Expansion Prompt */}
-                                  {msg.role === 'assistant' && (msg as AgentMessage).meta?.canvasExpansion && (
-                                    <motion.div
-                                      initial={{ opacity: 0, y: 8 }}
-                                      animate={{ opacity: 1, y: 0 }}
-                                      className="mt-4 p-4 rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-black/[0.02] dark:bg-white/[0.02] backdrop-blur-sm"
-                                    >
-                                      <p className="text-[13px] text-black/50 dark:text-white/50 mb-3">
-                                        This content is quite rich. Would you like to expand it on the canvas for a better view?
-                                      </p>
-                                      <div className="flex items-center gap-2">
-                                        <button
-                                          onClick={() => setIsCanvasOpen(true)}
-                                          className="px-4 py-2 bg-black dark:bg-white text-white dark:text-black text-[12px] font-bold rounded-xl hover:bg-black/80 dark:hover:bg-neutral-200 transition-all active:scale-[0.98]"
-                                        >
-                                          Yes, open canvas
-                                        </button>
-                                        <button
-                                          onClick={() => {
-                                            // Remove the expansion prompt from this message
-                                            setMessages(prev => prev.map(m => {
-                                              if (m.id === msg.id && m.type === 'agent') {
-                                                return { ...m, meta: { ...(m as AgentMessage).meta, canvasExpansion: undefined } };
-                                              }
-                                              return m;
-                                            }));
-                                          }}
-                                          className="px-4 py-2 text-black/30 dark:text-white/30 hover:text-black/60 dark:hover:text-white/60 text-[12px] font-bold rounded-xl bg-black/[0.03] dark:bg-white/[0.03] hover:bg-black/[0.06] dark:hover:bg-white/[0.06] transition-all"
-                                        >
-                                          No, keep it here
-                                        </button>
+                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.agentSteps && (
+                                      <div className="flex flex-col gap-0.5 mb-4">
+                                        {(msg as AgentMessage).meta!.agentSteps!.filter(s => s.type === 'tool_call').map((step, idx) => (
+                                          <AgentTaskPill key={step.id || idx} step={step} />
+                                        ))}
                                       </div>
-                                    </motion.div>
-                                  )}
-                                  {/* Search Execution Panel (Phase 4) */}
-                                  {msg.role === 'assistant' && (msg as AgentMessage).meta?.searchExecution && (
-                                    <div className="mt-4">
-                                      <SearchExecutionPanel
-                                        mainQuery={(msg as AgentMessage).meta!.searchExecution!.mainQuery}
-                                        subQueries={(msg as AgentMessage).meta!.searchExecution!.subQueries}
-                                        isSearching={(msg as AgentMessage).meta!.searchExecution!.isSearching}
-                                        sources={(msg as AgentMessage).meta!.searchExecution!.sources}
-                                        answer={(msg as AgentMessage).meta!.searchExecution!.answer}
-                                        onSourceClick={(source) => {
-                                          if (source.url) {
-                                            window.open(source.url, '_blank');
+                                    )}
+
+                                    {/* Plan Canvas (Inline + Full-Screen Modal) */}
+                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.planArtifact && (
+                                      <div className="mt-4">
+                                        <PlanCanvas
+                                          plan={(msg as AgentMessage).meta!.planArtifact!}
+                                          onExecute={async (planId) => {
+                                            await handlePlanApprove(planId, msg.id as number);
+                                          }}
+                                          onDecline={async (planId) => {
+                                            await handleDeclinePlan((msg as AgentMessage).meta!.planArtifact!);
+                                          }}
+                                          isProcessing={isProcessingPlan}
+                                        />
+                                      </div>
+                                    )}
+
+                                    {/* Phase 2: Canvas Expansion Prompt */}
+                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.canvasExpansion && (
+                                      <motion.div
+                                        initial={{ opacity: 0, y: 8 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="mt-4 p-4 rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-black/[0.02] dark:bg-white/[0.02] backdrop-blur-sm"
+                                      >
+                                        <p className="text-[13px] text-black/50 dark:text-white/50 mb-3">
+                                          This content is quite rich. Would you like to expand it on the canvas for a better view?
+                                        </p>
+                                        <div className="flex items-center gap-2">
+                                          <button
+                                            onClick={() => setIsCanvasOpen(true)}
+                                            className="px-4 py-2 bg-black dark:bg-white text-white dark:text-black text-[12px] font-bold rounded-xl hover:bg-black/80 dark:hover:bg-neutral-200 transition-all active:scale-[0.98]"
+                                          >
+                                            Yes, open canvas
+                                          </button>
+                                          <button
+                                            onClick={() => {
+                                              // Remove the expansion prompt from this message
+                                              setMessages(prev => prev.map(m => {
+                                                if (m.id === msg.id && m.type === 'agent') {
+                                                  return { ...m, meta: { ...(m as AgentMessage).meta, canvasExpansion: undefined } };
+                                                }
+                                                return m;
+                                              }));
+                                            }}
+                                            className="px-4 py-2 text-black/30 dark:text-white/30 hover:text-black/60 dark:hover:text-white/60 text-[12px] font-bold rounded-xl bg-black/[0.03] dark:bg-white/[0.03] hover:bg-black/[0.06] dark:hover:bg-white/[0.06] transition-all"
+                                          >
+                                            No, keep it here
+                                          </button>
+                                        </div>
+                                      </motion.div>
+                                    )}
+                                    {/* Search Execution Panel (Phase 4) */}
+                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.searchExecution && (
+                                      <div className="mt-4">
+                                        <SearchExecutionPanel
+                                          mainQuery={(msg as AgentMessage).meta!.searchExecution!.mainQuery}
+                                          subQueries={(msg as AgentMessage).meta!.searchExecution!.subQueries}
+                                          isSearching={(msg as AgentMessage).meta!.searchExecution!.isSearching}
+                                          sources={(msg as AgentMessage).meta!.searchExecution!.sources}
+                                          answer={(msg as AgentMessage).meta!.searchExecution!.answer}
+                                          onSourceClick={(source) => {
+                                            if (source.url) {
+                                              window.open(source.url, '_blank');
+                                            }
+                                          }}
+                                        />
+                                      </div>
+                                    )}
+
+                                    {/* Action buttons — AFTER all cards */}
+                                    {msg.role === 'assistant' && !(msg as AgentMessage).meta?.limitReached && !(msg as AgentMessage).meta?.isStreaming && (
+                                      <MessageActionButtons
+                                        msg={msg}
+                                        isLoading={isLoading}
+                                        onFeedback={(type, id) => setFeedbackModal({ isOpen: true, type, msgId: id })}
+                                        onRegenerate={handleRegenerateClick}
+                                      />
+                                    )}
+
+                                    {msg.role === 'assistant' && msg.meta?.limitReached && (
+                                      <div className="flex flex-col gap-3 mt-4">
+                                        <div className="flex flex-col gap-1 px-1">
+                                          <p className="text-white/80 text-[14px] font-medium tracking-tight">
+                                            You don't have enough credits. Please upgrade via the below link to continue.
+                                          </p>
+                                          <a
+                                            href="/pricing"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-white/40 text-[13px] hover:text-white/60 underline underline-offset-4 transition-colors w-fit break-all"
+                                          >
+                                            https://mailient.xyz/pricing
+                                          </a>
+                                        </div>
+
+                                        <div className="group relative flex items-center justify-between gap-4 px-5 py-3 w-full max-w-[700px] bg-[#111] border border-white/[0.08] rounded-full transition-all duration-300 hover:border-white/20 shadow-2xl overflow-hidden mt-2">
+                                          <div className="absolute inset-0 bg-gradient-to-r from-white/[0.02] to-transparent pointer-events-none" />
+
+                                          <div className="flex items-center gap-3.5 z-10">
+                                            <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                                              <Sparkles className="w-4 h-4 text-white/40" />
+                                            </div>
+                                            <p className="text-white/90 text-[13.5px] font-medium tracking-tight">
+                                              {arcusCredits && (arcusCredits.remaining > 0 || arcusCredits.isUnlimited)
+                                                ? "Your credits have been updated. You can have Arcus continue working on this task."
+                                                : "Your credits have been used up. Please upgrade your plan for more credits."}
+                                            </p>
+                                          </div>
+
+                                          {arcusCredits && (arcusCredits.remaining > 0 || arcusCredits.isUnlimited) ? (
+                                            <button
+                                              disabled={msg.meta.continueClicked}
+                                              onClick={() => handleContinueWithCredits(msg.id as number)}
+                                              className="relative z-10 px-6 py-2 bg-white hover:bg-neutral-200 text-black font-bold text-[13px] tracking-tight rounded-full transition-all active:scale-95 shadow-lg shrink-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
+                                            >
+                                              {msg.meta.continueClicked ? 'Continued' : 'Continue'}
+                                            </button>
+                                          ) : (
+                                            <button
+                                              onClick={() => window.open('/pricing', '_blank')}
+                                              className="relative z-10 px-6 py-2 bg-white hover:bg-neutral-200 text-black font-bold text-[13px] tracking-tight rounded-full transition-all active:scale-95 shadow-lg shrink-0"
+                                            >
+                                              Upgrade
+                                            </button>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.canvasApproval && (
+                                      <div className="mt-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                                        <div className={cn(
+                                          "relative group overflow-hidden bg-white dark:bg-[#1a1a1a] border border-neutral-200 dark:border-white/5 rounded-2xl p-5 shadow-2xl transition-all",
+                                          (msg as AgentMessage).meta!.canvasApproval!.status !== 'pending' && "opacity-60"
+                                        )}>
+                                          <div className="flex items-start gap-3.5 relative z-10">
+                                            <div className="w-10 h-10 rounded-xl bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/10 flex items-center justify-center shrink-0">
+                                              <Sparkles className={cn("w-5 h-5", (msg as AgentMessage).meta!.canvasApproval!.status === 'accepted' ? "text-blue-400" : "text-black dark:text-white/40")} />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                              <h4 className="text-black dark:text-white font-bold text-[14px] tracking-tight mb-1">
+                                                {(msg as AgentMessage).meta!.canvasApproval!.title || 'Launch Arcus Mission?'}
+                                              </h4>
+                                              <p className="text-black dark:text-white/40 text-[12px] leading-relaxed line-clamp-2">
+                                                {(msg as AgentMessage).meta!.canvasApproval!.description || 'This request would be best handled in the specialized Arcus Workspace. Would you like to open it?'}
+                                              </p>
+                                            </div>
+                                          </div>
+
+                                          {(msg as AgentMessage).meta!.canvasApproval!.status === 'pending' ? (
+                                            <div className="flex items-center gap-2 mt-5 pt-4 border-t border-white/[0.03]">
+                                              <button
+                                                onClick={() => handleAcceptCanvas(msg.id as number)}
+                                                className="px-5 py-2 bg-white hover:bg-neutral-200 text-black font-bold text-[12px] rounded-full transition-all flex items-center gap-2 active:scale-95"
+                                              >
+                                                <CheckCircle2 className="w-4 h-4" />
+                                                <span>Yes, open Canvas</span>
+                                              </button>
+                                              <button
+                                                onClick={() => handleDeclineCanvas(msg.id as number)}
+                                                className="px-5 py-2 bg-black/5 hover:bg-black/10 dark:bg-white/10 text-black dark:text-white/60 font-medium text-[12px] rounded-full transition-all active:scale-95"
+                                              >
+                                                <span>No, stay here</span>
+                                              </button>
+                                            </div>
+                                          ) : (
+                                            <div className="flex items-center gap-2 mt-5 pt-4 border-t border-white/[0.03]">
+                                              <div className="flex items-center gap-2 px-3 py-1.5 bg-black/5 dark:bg-white/5 rounded-full border border-neutral-200 dark:border-white/5">
+                                                {(msg as AgentMessage).meta!.canvasApproval!.status === 'accepted' ? (
+                                                  <div className="flex items-center gap-2 text-blue-400 text-[12px] font-bold">
+                                                    <Check className="w-4 h-4" />
+                                                    <span>Mission Accepted</span>
+                                                  </div>
+                                                ) : (
+                                                  <div className="flex items-center gap-2 text-black dark:text-white/30 text-[12px] font-bold">
+                                                    <X className="w-4 h-4" />
+                                                    <span>Stayed in chat</span>
+                                                  </div>
+                                                )}
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.result && !(msg as AgentMessage).meta?.canvasApproval && (
+                                      <ResultCard
+                                        type={(msg as AgentMessage).meta!.result!.type}
+                                        title={(msg as AgentMessage).meta!.result!.title}
+                                        onView={() => {
+                                          if ((msg as AgentMessage).meta?.result) {
+                                            setCanvasData((msg as AgentMessage).meta!.result!.canvasData);
+                                            setIsCanvasOpen(true);
                                           }
                                         }}
                                       />
-                                    </div>
-                                  )}
-
-                                   {/* Action buttons — AFTER all cards */}
-                                   {msg.role === 'assistant' && !(msg as AgentMessage).meta?.limitReached && !(msg as AgentMessage).meta?.isStreaming && (
-                                     <MessageActionButtons 
-                                       msg={msg} 
-                                       isLoading={isLoading} 
-                                       onFeedback={(type, id) => setFeedbackModal({isOpen: true, type, msgId: id})} 
-                                       onRegenerate={handleRegenerateClick}
-                                     />
-                                   )}
-
-                                   {msg.role === 'assistant' && msg.meta?.limitReached && (
-                                     <div className="flex flex-col gap-3 mt-4">
-                                       <div className="flex flex-col gap-1 px-1">
-                                         <p className="text-white/80 text-[14px] font-medium tracking-tight">
-                                           You don't have enough credits. Please upgrade via the below link to continue.
-                                         </p>
-                                         <a 
-                                           href="/pricing" 
-                                           target="_blank" 
-                                           rel="noopener noreferrer"
-                                           className="text-white/40 text-[13px] hover:text-white/60 underline underline-offset-4 transition-colors w-fit break-all"
-                                         >
-                                           https://mailient.xyz/pricing
-                                         </a>
-                                       </div>
-
-                                       <div className="group relative flex items-center justify-between gap-4 px-5 py-3 w-full max-w-[700px] bg-[#111] border border-white/[0.08] rounded-full transition-all duration-300 hover:border-white/20 shadow-2xl overflow-hidden mt-2">
-                                         <div className="absolute inset-0 bg-gradient-to-r from-white/[0.02] to-transparent pointer-events-none" />
- 
-                                         <div className="flex items-center gap-3.5 z-10">
-                                           <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
-                                             <Sparkles className="w-4 h-4 text-white/40" />
-                                           </div>
-                                           <p className="text-white/90 text-[13.5px] font-medium tracking-tight">
-                                             Your credits have been used up. Please upgrade your plan for more credits.
-                                           </p>
-                                         </div>
- 
-                                         <button
-                                           onClick={() => window.open('/pricing', '_blank')}
-                                           className="relative z-10 px-6 py-2 bg-white hover:bg-neutral-200 text-black font-bold text-[13px] tracking-tight rounded-full transition-all active:scale-95 shadow-lg shrink-0"
-                                         >
-                                           Upgrade
-                                         </button>
-                                       </div>
-                                     </div>
-                                   )}
-
-                                  {msg.role === 'assistant' && (msg as AgentMessage).meta?.canvasApproval && (
-                                    <div className="mt-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                                      <div className={cn(
-                                        "relative group overflow-hidden bg-white dark:bg-[#1a1a1a] border border-neutral-200 dark:border-white/5 rounded-2xl p-5 shadow-2xl transition-all",
-                                        (msg as AgentMessage).meta!.canvasApproval!.status !== 'pending' && "opacity-60"
-                                      )}>
-                                        <div className="flex items-start gap-3.5 relative z-10">
-                                          <div className="w-10 h-10 rounded-xl bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/10 flex items-center justify-center shrink-0">
-                                            <Sparkles className={cn("w-5 h-5", (msg as AgentMessage).meta!.canvasApproval!.status === 'accepted' ? "text-blue-400" : "text-black dark:text-white/40")} />
-                                          </div>
-                                          <div className="flex-1 min-w-0">
-                                            <h4 className="text-black dark:text-white font-bold text-[14px] tracking-tight mb-1">
-                                              {(msg as AgentMessage).meta!.canvasApproval!.title || 'Launch Arcus Mission?'}
-                                            </h4>
-                                            <p className="text-black dark:text-white/40 text-[12px] leading-relaxed line-clamp-2">
-                                              {(msg as AgentMessage).meta!.canvasApproval!.description || 'This request would be best handled in the specialized Arcus Workspace. Would you like to open it?'}
-                                            </p>
-                                          </div>
-                                        </div>
-
-                                        {(msg as AgentMessage).meta!.canvasApproval!.status === 'pending' ? (
-                                          <div className="flex items-center gap-2 mt-5 pt-4 border-t border-white/[0.03]">
-                                            <button
-                                              onClick={() => handleAcceptCanvas(msg.id as number)}
-                                              className="px-5 py-2 bg-white hover:bg-neutral-200 text-black font-bold text-[12px] rounded-full transition-all flex items-center gap-2 active:scale-95"
-                                            >
-                                              <CheckCircle2 className="w-4 h-4" />
-                                              <span>Yes, open Canvas</span>
-                                            </button>
-                                            <button
-                                              onClick={() => handleDeclineCanvas(msg.id as number)}
-                                              className="px-5 py-2 bg-black/5 hover:bg-black/10 dark:bg-white/10 text-black dark:text-white/60 font-medium text-[12px] rounded-full transition-all active:scale-95"
-                                            >
-                                              <span>No, stay here</span>
-                                            </button>
-                                          </div>
-                                        ) : (
-                                          <div className="flex items-center gap-2 mt-5 pt-4 border-t border-white/[0.03]">
-                                            <div className="flex items-center gap-2 px-3 py-1.5 bg-black/5 dark:bg-white/5 rounded-full border border-neutral-200 dark:border-white/5">
-                                              {(msg as AgentMessage).meta!.canvasApproval!.status === 'accepted' ? (
-                                                <div className="flex items-center gap-2 text-blue-400 text-[12px] font-bold">
-                                                  <Check className="w-4 h-4" />
-                                                  <span>Mission Accepted</span>
-                                                </div>
-                                              ) : (
-                                                <div className="flex items-center gap-2 text-black dark:text-white/30 text-[12px] font-bold">
-                                                  <X className="w-4 h-4" />
-                                                  <span>Stayed in chat</span>
-                                                </div>
-                                              )}
-                                            </div>
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  )}
-
-                                  {msg.role === 'assistant' && (msg as AgentMessage).meta?.result && !(msg as AgentMessage).meta?.canvasApproval && (
-                                    <ResultCard
-                                      type={(msg as AgentMessage).meta!.result!.type}
-                                      title={(msg as AgentMessage).meta!.result!.title}
-                                      onView={() => {
-                                        if ((msg as AgentMessage).meta?.result) {
-                                          setCanvasData((msg as AgentMessage).meta!.result!.canvasData);
-                                          setIsCanvasOpen(true);
-                                        }
-                                      }}
-                                    />
-                                  )}
-                                </div>
-                                <div className={`mt-2 px-1 text-[10px] tracking-tight text-graphite-muted-2 opacity-60 ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
-                                  {msg.time}
+                                    )}
+                                  </div>
+                                  <div className={`mt-2 px-1 text-[10px] tracking-tight text-graphite-muted-2 opacity-60 ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
+                                    {msg.time}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          </motion.div>
-                        ))}
-                        {/* All processing animations removed per request */}
-                        <div ref={messagesEndRef} className="h-8" />
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Scroll to Bottom Button */}
-                <AnimatePresence>
-                  {showScrollButton && !isInitialMode && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10, scale: 0.9 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.9 }}
-                      className="absolute bottom-[110px] right-12 z-50"
-                    >
-                      <button
-                        onClick={() => scrollToBottom(false)}
-                        className="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center shadow-[0_10px_30px_rgba(255,255,255,0.2)] hover:scale-110 active:scale-95 transition-all group"
-                      >
-                        <ChevronDown className="w-6 h-6 group-hover:translate-y-0.5 transition-transform" />
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* Fixed Prompt Box for Conversation Mode */}
-                {!isInitialMode && (
-                  <div
-                    className="absolute bottom-0 left-0 right-0 z-50 bg-black"
-                    style={{ backgroundColor: '#000000' }}
-                  >
-                    {/* Shadow gradient to hide content as it scrolls under prompt box */}
-                    <div className="absolute bottom-full left-0 right-0 h-12 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none" />
-                    
-                    <div className="max-w-3xl mx-auto w-full px-6 py-6 relative">
-                       <PromptInputBox
-                         onSend={(msg, files, opts) => handleSend(msg, files, opts)}
-                         onStop={() => abortControllerRef.current?.abort()}
-                         isLoading={isLoading}
-                         placeholder="Ask follow-up..."
-                         onSearchClick={() => { }}
-                         onAttachEmailClick={() => setIsEmailSelectionModalOpen(true)}
-                         onPersonalityClick={() => setIsPersonalityModalOpen(true)}
-                         selectedEmailsCount={selectedEmails.length}
-                         suggestionInput={suggestionInput}
-                         onConnectClick={() => setIsIntegrationsModalOpen(true)}
-                         currentPlan={currentPlan || 'free'}
-                         hideShadow={isActuallyAtBottom}
-                         onUpgradeClick={() => {
-                          setUsageLimitModalData({
-                            featureName: 'Premium Models',
-                            currentUsage: 0,
-                            limit: 0,
-                            period: 'monthly',
-                            currentPlan: currentPlan || 'starter'
-                          });
-                          setIsUsageLimitModalOpen(true);
-                        }}
-                      />
+                            </motion.div>
+                          ))}
+                          {/* All processing animations removed per request */}
+                          <div ref={messagesEndRef} className="h-8" />
+                        </div>
+                      )}
                     </div>
                   </div>
-                )}
+
+                  {/* Scroll to Bottom Button */}
+                  <AnimatePresence>
+                    {showScrollButton && !isInitialMode && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.9 }}
+                        className="absolute bottom-[110px] right-12 z-50"
+                      >
+                        <button
+                          onClick={() => scrollToBottom(false)}
+                          className="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center shadow-[0_10px_30px_rgba(255,255,255,0.2)] hover:scale-110 active:scale-95 transition-all group"
+                        >
+                          <ChevronDown className="w-6 h-6 group-hover:translate-y-0.5 transition-transform" />
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Fixed Prompt Box for Conversation Mode */}
+                  {!isInitialMode && (
+                    <div
+                      className="absolute bottom-0 left-0 right-0 z-50 bg-black"
+                      style={{ backgroundColor: '#000000' }}
+                    >
+                      {/* Shadow gradient to hide content as it scrolls under prompt box */}
+                      <div className="absolute bottom-full left-0 right-0 h-12 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none" />
+
+                      <div className="max-w-3xl mx-auto w-full px-6 py-6 relative">
+                        <PromptInputBox
+                          onSend={(msg, files, opts) => handleSend(msg, files, opts)}
+                          onStop={() => abortControllerRef.current?.abort()}
+                          isLoading={isLoading}
+                          placeholder="Ask follow-up..."
+                          onSearchClick={() => { }}
+                          onAttachEmailClick={() => setIsEmailSelectionModalOpen(true)}
+                          onPersonalityClick={() => setIsPersonalityModalOpen(true)}
+                          selectedEmailsCount={selectedEmails.length}
+                          suggestionInput={suggestionInput}
+                          onConnectClick={() => setIsIntegrationsModalOpen(true)}
+                          currentPlan={currentPlan || 'free'}
+                          hideShadow={isActuallyAtBottom}
+                          onUpgradeClick={() => {
+                            setUsageLimitModalData({
+                              featureName: 'Premium Models',
+                              currentUsage: 0,
+                              limit: 0,
+                              period: 'monthly',
+                              currentPlan: currentPlan || 'starter'
+                            });
+                            setIsUsageLimitModalOpen(true);
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
 
               {/* Canvas Sidebar (Order 2 - RIGHT) - Properly Sibling to Chat Column */}
               <AnimatePresence>
@@ -3659,36 +3684,36 @@ export default function ChatInterface({
           }}
         />
         <PersonalitySettingsModal isOpen={isPersonalityModalOpen} onClose={() => setIsPersonalityModalOpen(false)} onSave={handleSavePersonality} initialPersonality={savedPersonality} />
-        
+
         {/* Global Modals for Sidebar Actions */}
         <AnimatePresence>
-            {isSettingsOpen && <SettingsCard onClose={() => setIsSettingsOpen(false)} />}
-            {isHelpOpen && <HelpCard onClose={() => setIsHelpOpen(false)} />}
-            {isRewardsOpen && (
-                <RewardsCard 
-                    onClose={() => setIsRewardsOpen(false)} 
-                    usageData={{
-                        planType: (arcusCredits?.isUnlimited ? 'pro' : 'starter'),
-                        features: {
-                            arcus_ai: {
-                                usage: arcusCredits?.usage ?? 0,
-                                limit: arcusCredits?.limit ?? 10,
-                                remaining: arcusCredits?.remaining ?? 10,
-                                period: arcusCredits?.period ?? 'daily',
-                                isUnlimited: !!arcusCredits?.isUnlimited
-                            },
-                            sift_ai: { usage: 0, limit: 5, remaining: 5, isUnlimited: false, period: 'daily' }
-                        }
-                    }} 
-                />
-            )}
+          {isSettingsOpen && <SettingsCard onClose={() => setIsSettingsOpen(false)} />}
+          {isHelpOpen && <HelpCard onClose={() => setIsHelpOpen(false)} />}
+          {isRewardsOpen && (
+            <RewardsCard
+              onClose={() => setIsRewardsOpen(false)}
+              usageData={{
+                planType: (arcusCredits?.isUnlimited ? 'pro' : 'starter'),
+                features: {
+                  arcus_ai: {
+                    usage: arcusCredits?.usage ?? 0,
+                    limit: arcusCredits?.limit ?? 10,
+                    remaining: arcusCredits?.remaining ?? 10,
+                    period: arcusCredits?.period ?? 'daily',
+                    isUnlimited: !!arcusCredits?.isUnlimited
+                  },
+                  sift_ai: { usage: 0, limit: 5, remaining: 5, isUnlimited: false, period: 'daily' }
+                }
+              }}
+            />
+          )}
         </AnimatePresence>
 
         {/* Feedback Modal for Like/Dislike */}
         <AnimatePresence>
           {feedbackModal.isOpen && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setFeedbackModal(prev => ({...prev, isOpen: false}))}>
-              <motion.div 
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setFeedbackModal(prev => ({ ...prev, isOpen: false }))}>
+              <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
@@ -3702,17 +3727,17 @@ export default function ChatInterface({
                   <p className="text-white/50 text-[13px] mb-4">
                     {feedbackModal.type === 'like' ? 'Your feedback helps Arcus learn your preferences and tailor future responses.' : 'Your feedback helps Arcus avoid mistakes and improve reasoning accuracy.'}
                   </p>
-                  <textarea 
+                  <textarea
                     className="w-full h-32 bg-black border border-white/10 rounded-xl p-4 text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 resize-none text-[13px]"
                     placeholder={feedbackModal.type === 'like' ? 'I liked how...' : 'It would be better if...'}
                     autoFocus
                   />
                 </div>
                 <div className="px-6 py-4 bg-[#0a0a0a] border-t border-white/5 flex items-center justify-end gap-3">
-                  <button onClick={() => setFeedbackModal(prev => ({...prev, isOpen: false}))} className="px-4 py-2 text-white/50 hover:text-white text-[13px] font-medium transition-colors">Cancel</button>
+                  <button onClick={() => setFeedbackModal(prev => ({ ...prev, isOpen: false }))} className="px-4 py-2 text-white/50 hover:text-white text-[13px] font-medium transition-colors">Cancel</button>
                   <button onClick={() => {
                     toast.success('Feedback submitted', { description: 'Thank you for helping improve Arcus AI.' });
-                    setFeedbackModal(prev => ({...prev, isOpen: false}));
+                    setFeedbackModal(prev => ({ ...prev, isOpen: false }));
                   }} className="px-5 py-2 bg-white text-black text-[13px] font-bold rounded-full hover:bg-neutral-200 transition-colors">Submit</button>
                 </div>
               </motion.div>
@@ -3723,7 +3748,7 @@ export default function ChatInterface({
         <AnimatePresence>
           {regenerateModal.isOpen && (
             <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setRegenerateModal({ isOpen: false, msgId: null })}>
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
