@@ -1475,7 +1475,7 @@ export default function ChatInterface({
 
     // ── Legacy path: canvas, plan mode, deep thinking, search ─────────
     // Create new abort controller for this request
-    if (abortControllerRef.current) abortControllerRef.current.abort();
+    abortControllerRef.current?.abort();
     abortControllerRef.current = new AbortController();
     const assistantMsgId = Date.now() + 1;
 
@@ -1577,7 +1577,7 @@ export default function ChatInterface({
             isSearch,
             isDeepThinking
           }),
-          signal: abortControllerRef.current.signal
+          signal: abortControllerRef.current!.signal
         });
         if (intentRes.ok) intentData = await intentRes.json();
       } catch (e) {
@@ -1702,7 +1702,7 @@ export default function ChatInterface({
           ...requestBody,
           intentAnalysis: intentData // Pass analysis to avoid backend re-processing
         }),
-        signal: abortControllerRef.current.signal
+        signal: abortControllerRef.current!.signal
       });
 
       if (!chatRes.ok) {
@@ -1906,7 +1906,7 @@ export default function ChatInterface({
 
       if (existingConversationRaw) {
         try {
-          const existingData = JSON.parse(existingConversationRaw);
+          const existingData = JSON.parse(existingConversationRaw!);
           existingTitle = existingData.title || '';
           existingMessages = existingData.messages || [];
 
