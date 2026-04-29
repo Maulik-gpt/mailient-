@@ -171,7 +171,7 @@ const MarkdownComponents = {
   // For Assistant (AI): Absolute raw output with zero structure or animation
   if (!isUser) {
     return (
-      <div className={`${textColorClass} w-full whitespace-pre-wrap font-mono text-[13px] leading-relaxed break-words`}>
+      <div className={`${textColorClass} w-full whitespace-pre-wrap text-[17px] leading-relaxed break-words`}>
         {textContent}
       </div>
     );
@@ -261,15 +261,25 @@ function extractSearchTerm(message: string): string {
   return message.trim();
 }
 
-function extractThought(message: string): { thought: string; cleanText: string } {
-  if (typeof message !== 'string') return { thought: '', cleanText: '' };
-  const thoughtMatch = message.match(/<thought>([\s\S]*?)<\/thought>/i);
-  if (thoughtMatch) {
-    const thought = thoughtMatch[1].trim();
-    const cleanText = message.replace(/<thought>[\s\S]*?<\/thought>/gi, '').trim();
-    return { thought, cleanText };
+function extractThinking(message: string): { thinking: string; cleanText: string } {
+  if (typeof message !== 'string') return { thinking: '', cleanText: '' };
+  
+  // Match <thinking>...</thinking>
+  const thinkingMatch = message.match(/<thinking>([\s\S]*?)<\/thinking>/i);
+  if (thinkingMatch) {
+    const thinking = thinkingMatch[1].trim();
+    const cleanText = message.replace(/<thinking>[\s\S]*?<\/thinking>/gi, '').trim();
+    return { thinking, cleanText };
   }
-  return { thought: '', cleanText: message.trim() };
+  
+  // Fallback for partial/streaming <thinking> tag
+  if (message.includes('<thinking>')) {
+    const parts = message.split('<thinking>');
+    const thinking = parts[1] || '';
+    return { thinking, cleanText: parts[0].trim() };
+  }
+
+  return { thinking: '', cleanText: message.trim() };
 }
 
 interface Email {
@@ -327,6 +337,7 @@ interface AgentMessage {
     recoveryHint?: any; // Phase 1: Error recovery guidance
     externalRefs?: any; // Phase 1: External references from execution
     requiresRetry?: boolean; // Phase 1: Whether retry is required
+    liveThinking?: string; // Real-time thoughts extracted from <thinking> tags
     searchExecution?: {
       mainQuery: string;
       subQueries: Array<{
@@ -442,6 +453,36 @@ const NoScrollbarStyles = () => (
     }
   `}</style>
 );
+
+const AgentThinkingSection = ({ content, isComplete }: { content: string, isComplete?: boolean }) => {
+  if (!content && isComplete) return null;
+  
+  return (
+    <div className="flex flex-col gap-3 mt-4 mb-6">
+      <div className="flex items-center gap-3">
+        <div className="relative w-4 h-4 flex-shrink-0">
+          <motion.div 
+            className="absolute inset-0 rounded-full bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.8)]"
+            animate={{ scale: [1, 1.25, 1], opacity: [0.5, 1, 0.5] }}
+            transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+          />
+          <div className="absolute inset-1 rounded-full bg-blue-400 border border-blue-200/40" />
+        </div>
+        <span className="text-[13px] font-bold text-white/40 tracking-wider uppercase">Thinking</span>
+      </div>
+      <motion.div 
+        initial={{ opacity: 0, x: -5 }}
+        animate={{ opacity: 1, x: 0 }}
+        className="pl-7 border-l border-white/5 py-1"
+      >
+        <p className="text-white/30 text-[14.5px] leading-relaxed italic font-medium tracking-tight">
+          {content}
+        </p>
+      </motion.div>
+    </div>
+  );
+};
+
 // --- Premium Components for Action Buttons ---
 const UserMessageCopyButton = ({ msg }: { msg: Message }) => {
   const [isCopied, setIsCopied] = useState(false);
@@ -1208,6 +1249,7 @@ export default function ChatInterface({
       let buffer = '';
       let currentEventType = '';
       let finalContent = '';
+      let rawOutput = '';
       let stepIndex = 0;
 
       while (true) {
@@ -1230,13 +1272,6 @@ export default function ChatInterface({
 
           switch (currentEventType) {
             case 'thinking':
-              if (data.step) {
-                finalContent += `${data.step}\n`;
-                setMessages(prev => prev.map(m => {
-                  if (m.id !== assistantMsgId || m.type !== 'agent') return m;
-                  return { ...m, content: { text: finalContent.trim(), list: [], footer: '' } };
-                }));
-              }
               setAgentSteps(prev => {
                 const steps = [...prev];
                 const active = steps.find(s => s.status === 'active');
@@ -1256,8 +1291,8 @@ export default function ChatInterface({
               });
               break;
 
-              // Tool calls are now silent in the chat stream unless they require approval.
-              // The AI narrates its process via the 'think' tool instead.
+            case 'tool_call':
+              stepIndex++;
               setAgentSteps(prev => {
                 const steps = prev.map(s => s.status === 'active' ? { ...s, status: 'completed' as const, completedAt: Date.now() } : s);
                 steps.push({
@@ -1282,11 +1317,6 @@ export default function ChatInterface({
               break;
 
             case 'tool_error':
-              finalContent += `Error: ${data.error}\n`;
-              setMessages(prev => prev.map(m => {
-                if (m.id !== assistantMsgId || m.type !== 'agent') return m;
-                return { ...m, content: { text: finalContent.trim(), list: [], footer: '' } };
-              }));
               setAgentSteps(prev => prev.map(s =>
                 s.status === 'active'
                   ? { ...s, status: 'error' as const, completedAt: Date.now(), summary: `Error: ${data.error}`, label: `Error: ${data.error}` }
@@ -1295,14 +1325,10 @@ export default function ChatInterface({
               break;
 
             case 'approval_required':
-              finalContent += data.meta?.actionPayload
-                ? `\nI've prepared this action for you. Please approve to proceed.`
-                : '\nThis action requires your approval.';
               setMessages(prev => prev.map(m => {
                 if (m.id !== assistantMsgId || m.type !== 'agent') return m;
                 return {
                   ...m,
-                  content: { text: finalContent.trim(), list: [], footer: '' },
                   meta: {
                     ...(m.meta || {}),
                     isStreaming: false,
@@ -1323,10 +1349,20 @@ export default function ChatInterface({
               break;
 
             case 'message':
-              finalContent += `\n${data.content || ''}`;
+              rawOutput += (data.content || '');
+              const { thinking, cleanText } = extractThinking(rawOutput);
+              finalContent = cleanText;
+
               setMessages(prev => prev.map(m => {
                 if (m.id !== assistantMsgId || m.type !== 'agent') return m;
-                return { ...m, content: { text: finalContent.trim(), list: [], footer: '' }, meta: { ...(m.meta || {}), isStreaming: false } };
+                return { 
+                  ...m, 
+                  content: { text: finalContent.trim(), list: [], footer: '' },
+                  meta: { 
+                    ...(m.meta || {}), 
+                    liveThinking: thinking || (m.meta as any)?.liveThinking 
+                  }
+                };
               }));
               break;
 
@@ -1339,15 +1375,13 @@ export default function ChatInterface({
               break;
 
             case 'done':
-              // Mark all agent steps complete
               setAgentSteps(prev => {
                 const finalSteps = prev.map(s =>
                   s.status === 'active' ? { ...s, status: 'completed' as const, completedAt: Date.now() } : s
                 );
-                // Embed timeline into the message for persistence
                 setMessages(msgs => msgs.map(m => {
                   if (m.id !== assistantMsgId || m.type !== 'agent') return m;
-                  return { ...m, meta: { ...(m.meta || {}), agentSteps: finalSteps, agentRunId: data.runId, agentDurationMs: data.durationMs } };
+                  return { ...m, meta: { ...(m.meta || {}), isStreaming: false, agentSteps: finalSteps, agentRunId: data.runId, agentDurationMs: data.durationMs } };
                 }));
                 return finalSteps;
               });
@@ -1361,7 +1395,6 @@ export default function ChatInterface({
 
       setNewMessageIds(prev => new Set(prev).add(assistantMsgId));
 
-      // Save to localStorage
       if (conversationIdToUse) {
         const existingRaw = localStorage.getItem(`conversation_${conversationIdToUse}`);
         const existing = existingRaw ? JSON.parse(existingRaw) : { id: conversationIdToUse, messages: [], title: messageText.split(' ').slice(0, 5).join(' '), lastUpdated: '', messageCount: 0 };
@@ -1379,7 +1412,6 @@ export default function ChatInterface({
         }
       }
 
-      // Notification
       if (finalContent && (notificationsEnabled || soundEnabled)) {
         NotificationService.notify('Arcus Response', finalContent.substring(0, 100), { soundType: 'notify', silent: !notificationsEnabled });
       }
@@ -1679,7 +1711,7 @@ export default function ChatInterface({
       const data = await chatRes.json();
 
       // Extract AI thought block (deep thinking mode)
-      const { thought: aiThought, cleanText: aiCleanText } = extractThought(data.message || '');
+      const { thinking: aiThought, cleanText: aiCleanText } = extractThinking(data.message || '');
       if (aiThought) {
         data.message = aiCleanText;
       }
@@ -3215,6 +3247,12 @@ export default function ChatInterface({
                                   )}
 
 
+                                  {msg.role === 'assistant' && (msg as AgentMessage).meta?.liveThinking && (
+                                    <AgentThinkingSection 
+                                      content={(msg as AgentMessage).meta!.liveThinking!} 
+                                      isComplete={(msg as AgentMessage).meta?.isStreaming === false}
+                                    />
+                                  )}
 
                                   {/* Plan Canvas (Inline + Full-Screen Modal) */}
                                   {msg.role === 'assistant' && (msg as AgentMessage).meta?.planArtifact && (
