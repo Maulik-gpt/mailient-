@@ -3224,14 +3224,15 @@ export default function ChatInterface({
                                     </div>
                                   )}
 
-                                   <MessageContent 
-                                     content={msg.content} 
-                                     isUser={msg.role === 'user'} 
-                                     isTyping={isLoading && msg.role === 'assistant' && msg.id === messages[messages.length - 1].id}
-                                     isNewResponse={msg.role === 'assistant' && msg.id === messages[messages.length - 1].id && !isLoading}
-                                     hideLinks={msg.role === 'assistant' && msg.meta?.limitReached}
-                                   />
-
+                                  {(!msg.meta?.isStreaming || msg.content.text.length > 0 || !isAgentLoopActive) && (
+                                    <MessageContent 
+                                      content={msg.content} 
+                                      isUser={msg.role === 'user'} 
+                                      isTyping={isLoading && msg.role === 'assistant' && msg.id === messages[messages.length - 1].id && (!isAgentLoopActive || msg.content.text.length > 0)}
+                                      isNewResponse={msg.role === 'assistant' && msg.id === messages[messages.length - 1].id && !isLoading}
+                                      hideLinks={msg.role === 'assistant' && msg.meta?.limitReached}
+                                    />
+                                  )}
 
                                   {msg.role === 'user' && (msg as UserMessage).attachments && (msg as UserMessage).attachments!.length > 0 && (
                                     <div className="mt-3 flex flex-wrap gap-2 pt-3 border-t border-neutral-200 dark:border-white/10">
@@ -3373,7 +3374,7 @@ export default function ChatInterface({
                                   )}
 
                                    {/* Action buttons — AFTER all cards */}
-                                   {msg.role === 'assistant' && !msg.meta?.limitReached && (
+                                   {msg.role === 'assistant' && !msg.meta?.limitReached && !msg.meta?.isStreaming && (
                                      <MessageActionButtons 
                                        msg={msg} 
                                        isLoading={isLoading} 
@@ -3509,13 +3510,15 @@ export default function ChatInterface({
                                 className="inline-flex items-center min-w-[170px] relative group/bubble"
                               >
                                 <div className="flex flex-col gap-2">
-                                  <RollingThinkingStatus
-                                    onToggle={() => setIsThinkingStepsOpen(!isThinkingStepsOpen)}
-                                    isOpen={isThinkingStepsOpen}
-                                    isDeepThinking={isDeepThinkingState}
-                                  />
+                                  {!isAgentLoopActive && (
+                                    <RollingThinkingStatus
+                                      onToggle={() => setIsThinkingStepsOpen(!isThinkingStepsOpen)}
+                                      isOpen={isThinkingStepsOpen}
+                                      isDeepThinking={isDeepThinkingState}
+                                    />
+                                  )}
 
-                                  {isSearchingState && (
+                                  {!isAgentLoopActive && isSearchingState && (
                                     <motion.div
                                       initial={{ opacity: 0, x: -10 }}
                                       animate={{ opacity: 1, x: 0 }}
@@ -3529,7 +3532,7 @@ export default function ChatInterface({
                               </motion.div>
 
                               <AnimatePresence mode="wait">
-                                {isThinkingStepsOpen && liveThinkingBlocks.length > 0 && (
+                                {isThinkingStepsOpen && liveThinkingBlocks.length > 0 && !isAgentLoopActive && (
                                   <motion.div
                                     initial={{ height: 0, opacity: 0, scale: 0.98 }}
                                     animate={{ height: 'auto', opacity: 1, scale: 1 }}

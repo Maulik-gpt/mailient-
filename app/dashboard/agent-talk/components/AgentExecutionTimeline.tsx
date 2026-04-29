@@ -67,24 +67,26 @@ const getToolIcon = (tool?: string) => {
 function GlowingDot({ active, error }: { active?: boolean, error?: boolean }) {
   if (error) {
     return (
-      <div className="relative flex h-3 w-3 items-center justify-center">
-        <div className="h-2.5 w-2.5 rounded-full bg-red-500" />
+      <div className="relative flex h-4 w-4 items-center justify-center">
+        <div className="absolute inset-0 bg-red-500/20 rounded-full blur-[2px]" />
+        <div className="h-2 w-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
       </div>
     );
   }
   
   if (active) {
     return (
-      <div className="relative flex h-3 w-3 items-center justify-center">
-        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
-        <span className="relative inline-flex h-2 w-2 rounded-full bg-blue-500"></span>
+      <div className="relative flex h-4 w-4 items-center justify-center">
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white/20 opacity-75 duration-1000"></span>
+        <div className="absolute inset-0 bg-white/20 rounded-full blur-[2px]" />
+        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white shadow-[0_0_10px_rgba(255,255,255,1)]"></span>
       </div>
     );
   }
   
   return (
-    <div className="relative flex h-3 w-3 items-center justify-center">
-      <CheckCircle2 className="h-3 w-3 text-neutral-500 dark:text-neutral-400" />
+    <div className="relative flex h-4 w-4 items-center justify-center bg-black/20 dark:bg-white/5 rounded-full border border-black/10 dark:border-white/10">
+      <CheckCircle2 className="h-2.5 w-2.5 text-black/40 dark:text-white/40" />
     </div>
   );
 }
@@ -120,16 +122,16 @@ export function AgentExecutionTimeline({
   const hasErrors = steps.some(s => s.status === 'error');
 
   return (
-    <div className="w-full mt-2 font-sans">
+    <div className="w-full mt-3 font-sans max-w-[500px]">
       <AnimatePresence>
         {isExpanded && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden"
+            className="overflow-hidden rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.05] dark:border-white/[0.05] p-5 backdrop-blur-md shadow-sm"
           >
-            <div className="flex flex-col space-y-4 pl-1 pb-2">
+            <div className="flex flex-col relative pb-2">
               {iterationEntries.map(([iterNum, iterSteps], iterIndex) => {
                 const isLastIteration = iterIndex === iterationEntries.length - 1;
                 const isIterActive = isActive && isLastIteration;
@@ -139,57 +141,87 @@ export function AgentExecutionTimeline({
                 const toolCalls = iterSteps.filter(s => s.type === 'tool_call' || s.type === 'tool_result');
                 const iterError = iterSteps.some(s => s.status === 'error');
 
-                // Determine the group heading (could be the first thought or a generic label)
-                const heading = thoughts.length > 0 ? 'Executing task loop' : `Step ${Number(iterNum) + 1}`;
+                // Determine the group heading
+                const heading = thoughts.length > 0 ? 'Analyzing Context & Strategy' : `Execution Phase ${Number(iterNum) + 1}`;
 
                 return (
-                  <div key={iterNum} className="relative flex flex-col gap-3">
+                  <div key={iterNum} className="relative flex flex-col gap-4 pb-6">
                     
                     {/* Vertical Connecting Line */}
                     {!isLastIteration && (
-                      <div className="absolute left-[5.5px] top-6 bottom-[-24px] w-[1px] bg-neutral-200 dark:bg-[#333]" />
+                      <div className="absolute left-[7px] top-6 bottom-[4px] w-[2px] bg-gradient-to-b from-black/10 to-black/5 dark:from-white/10 dark:to-white/5 rounded-full" />
                     )}
 
                     {/* Group Header */}
-                    <div className="flex items-center gap-3">
-                      <div className="z-10 bg-white dark:bg-[#1a1a1a] py-1">
-                        <GlowingDot active={isIterActive} error={iterError} />
+                    <div className="flex items-center gap-3.5">
+                      <div className="z-10 bg-[#f9f9f9] dark:bg-[#121212] rounded-full p-0.5 shadow-sm">
+                        <GlowingDot active={isIterActive && toolCalls.length === 0} error={iterError} />
                       </div>
-                      <span className="text-sm font-medium text-neutral-800 dark:text-neutral-200 flex items-center gap-1.5 cursor-pointer">
-                        {heading} <ChevronUp className="w-3.5 h-3.5 text-neutral-400" />
+                      <span className="text-[13px] font-bold tracking-tight text-neutral-800 dark:text-neutral-100 flex items-center gap-2">
+                        {heading} 
                       </span>
                     </div>
 
                     {/* Group Content */}
-                    <div className="pl-[26px] flex flex-col gap-3">
-                      {/* Tool Calls (Pills) */}
-                      {toolCalls.map((tc, tcIndex) => (
-                        <div key={tc.id} className="flex items-center">
-                          <div className={cn(
-                            "flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium",
-                            tc.status === 'active' 
-                              ? "bg-neutral-100 dark:bg-[#2c2c2c] border-neutral-200 dark:border-[#444] text-neutral-800 dark:text-neutral-300"
-                              : tc.status === 'error'
-                                ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400"
-                                : "bg-neutral-50 dark:bg-[#222] border-neutral-200 dark:border-[#333] text-neutral-600 dark:text-neutral-400"
-                          )}>
-                            <div className="text-neutral-500 dark:text-neutral-400">
-                              {getToolIcon(tc.tool)}
-                            </div>
-                            <span>{tc.label}</span>
-                          </div>
-                        </div>
-                      ))}
-
+                    <div className="pl-[28px] flex flex-col gap-3.5">
                       {/* Thoughts (Paragraphs) */}
                       {thoughts.map((thought, tIndex) => (
-                         // Only show thought if it has substantial content and isn't just "Reasoning..."
                          thought.label && thought.label !== 'Reasoning...' && thought.label !== 'Processing...' && (
-                           <div key={thought.id} className="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed pr-4">
+                           <div key={thought.id} className="text-[13px] text-neutral-600 dark:text-neutral-400 leading-relaxed font-medium">
                              {thought.label}
                            </div>
                          )
                       ))}
+
+                      {/* Tool Calls (Premium Cards) */}
+                      {toolCalls.length > 0 && (
+                        <div className="flex flex-col gap-2 mt-1">
+                          {toolCalls.map((tc, tcIndex) => (
+                            <motion.div 
+                              initial={{ opacity: 0, y: 5 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              key={tc.id} 
+                              className={cn(
+                                "flex items-center gap-3 px-3.5 py-2.5 rounded-xl border backdrop-blur-sm transition-all",
+                                tc.status === 'active' 
+                                  ? "bg-white dark:bg-white/5 border-black/10 dark:border-white/10 shadow-sm"
+                                  : tc.status === 'error'
+                                    ? "bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-900/30 text-red-600 dark:text-red-400"
+                                    : "bg-black/[0.02] dark:bg-white/[0.02] border-black/5 dark:border-white/5 text-neutral-500 dark:text-neutral-500"
+                              )}
+                            >
+                              <div className={cn(
+                                "flex items-center justify-center w-6 h-6 rounded-md",
+                                tc.status === 'active' ? "bg-black/5 dark:bg-white/10 text-black dark:text-white" : "bg-black/5 dark:bg-white/5 text-neutral-500"
+                              )}>
+                                {getToolIcon(tc.tool)}
+                              </div>
+                              <div className="flex flex-col">
+                                <span className={cn(
+                                  "text-[12px] font-bold tracking-tight",
+                                  tc.status === 'active' ? "text-neutral-900 dark:text-neutral-100" : "text-neutral-500"
+                                )}>
+                                  {tc.tool ? tc.tool.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'System Tool'}
+                                </span>
+                                {tc.label && tc.status === 'active' && (
+                                  <span className="text-[11px] text-neutral-500 font-medium line-clamp-1">{tc.label}</span>
+                                )}
+                              </div>
+                              
+                              {tc.status === 'active' && (
+                                <div className="ml-auto flex items-center">
+                                  <div className="w-3.5 h-3.5 rounded-full border-[1.5px] border-black/20 dark:border-white/20 border-t-black dark:border-t-white animate-spin" />
+                                </div>
+                              )}
+                              {tc.status === 'completed' && (
+                                <div className="ml-auto">
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-black/30 dark:text-white/30" />
+                                </div>
+                              )}
+                            </motion.div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -197,17 +229,17 @@ export function AgentExecutionTimeline({
 
               {/* Final active state ("Thinking") */}
               {isActive && (
-                <div className="relative flex items-center gap-3 pt-2">
-                  <div className="z-10 bg-white dark:bg-[#1a1a1a] py-1">
+                <div className="relative flex items-center gap-3.5 pt-1">
+                  <div className="z-10 bg-[#f9f9f9] dark:bg-[#121212] rounded-full p-0.5 shadow-sm">
                     <GlowingDot active={true} />
                   </div>
-                  <span className="text-sm font-medium text-neutral-800 dark:text-neutral-200">
-                    Thinking
+                  <span className="text-[13px] font-bold tracking-tight text-neutral-800 dark:text-neutral-100 animate-pulse">
+                    Synthesizing response...
                   </span>
                 </div>
               )}
 
-              <div ref={bottomRef} />
+              <div ref={bottomRef} className="h-2" />
             </div>
           </motion.div>
         )}
