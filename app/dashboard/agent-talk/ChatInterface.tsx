@@ -3224,13 +3224,13 @@ export default function ChatInterface({
                                     </div>
                                   )}
 
-                                  {(!msg.meta?.isStreaming || msg.content.text.length > 0 || !isAgentLoopActive) && (
+                                  {((msg as AgentMessage).meta?.isStreaming !== true || (typeof msg.content === 'string' ? msg.content : msg.content.text).length > 0 || !isAgentLoopActive) && (
                                     <MessageContent 
                                       content={msg.content} 
                                       isUser={msg.role === 'user'} 
-                                      isTyping={isLoading && msg.role === 'assistant' && msg.id === messages[messages.length - 1].id && (!isAgentLoopActive || msg.content.text.length > 0)}
+                                      isTyping={isLoading && msg.role === 'assistant' && msg.id === messages[messages.length - 1].id && (!isAgentLoopActive || (typeof msg.content === 'string' ? msg.content : msg.content.text).length > 0)}
                                       isNewResponse={msg.role === 'assistant' && msg.id === messages[messages.length - 1].id && !isLoading}
-                                      hideLinks={msg.role === 'assistant' && msg.meta?.limitReached}
+                                      hideLinks={msg.role === 'assistant' && (msg as AgentMessage).meta?.limitReached}
                                     />
                                   )}
 
@@ -3374,7 +3374,7 @@ export default function ChatInterface({
                                   )}
 
                                    {/* Action buttons — AFTER all cards */}
-                                   {msg.role === 'assistant' && !msg.meta?.limitReached && !msg.meta?.isStreaming && (
+                                   {msg.role === 'assistant' && !(msg as AgentMessage).meta?.limitReached && !(msg as AgentMessage).meta?.isStreaming && (
                                      <MessageActionButtons 
                                        msg={msg} 
                                        isLoading={isLoading} 
