@@ -520,10 +520,7 @@ const UserMessageCopyButton = ({ msg }: { msg: Message }) => {
     const text = typeof msg.content === 'string' ? msg.content : msg.content.text;
     navigator.clipboard.writeText(text);
     setIsCopied(true);
-    toast.success("Message copied to clipboard", {
-      className: "rounded-2xl bg-[#1a1a1a] border-white/10 text-white p-4",
-      icon: <Check className="w-4 h-4 text-green-400" />
-    });
+    toast.success("Message copied to clipboard");
     setTimeout(() => setIsCopied(false), 2000);
   };
 
@@ -560,10 +557,7 @@ const MessageActionButtons = ({ msg, onFeedback, onRegenerate, isLoading }: { ms
     const text = typeof msg.content === 'string' ? msg.content : msg.content.text;
     navigator.clipboard.writeText(text);
     setIsCopied(true);
-    toast.success("Content copied to clipboard", {
-      className: "rounded-2xl bg-[#1a1a1a] border-white/10 text-white p-4",
-      icon: <Check className="w-4 h-4 text-green-400" />
-    });
+    toast.success("Content copied to clipboard");
     setTimeout(() => setIsCopied(false), 2000);
   };
 
@@ -578,9 +572,7 @@ const MessageActionButtons = ({ msg, onFeedback, onRegenerate, isLoading }: { ms
         <p className="text-white/40 text-[11px]">Shared links can be viewed by anyone with the link.</p>
       </div>,
       {
-        duration: 4000,
-        className: "rounded-2xl bg-[#1a1a1a] border-white/10 text-white p-5 shadow-2xl",
-        icon: <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center border border-white/10"><Check className="w-4 h-4 text-white" /></div>
+        duration: 4000
       }
     );
     setTimeout(() => setIsShared(false), 3000);
