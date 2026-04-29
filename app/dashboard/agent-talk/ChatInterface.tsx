@@ -1301,6 +1301,13 @@ export default function ChatInterface({
 
           switch (currentEventType) {
             case 'thinking':
+              if (data.step) {
+                finalContent += `\n> 💭 ${data.step}\n\n`;
+                setMessages(prev => prev.map(m => {
+                  if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+                  return { ...m, content: { text: finalContent.trim(), list: [], footer: '' } };
+                }));
+              }
               setAgentSteps(prev => {
                 const steps = [...prev];
                 const active = steps.find(s => s.status === 'active');
@@ -1322,7 +1329,12 @@ export default function ChatInterface({
 
             case 'tool_call':
               stepIndex++;
-              // Complete any active steps, add new tool_call step
+              finalContent += `\n> 🛠️ Calling \`${data.tool}\`...\n\n`;
+              setMessages(prev => prev.map(m => {
+                if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+                return { ...m, content: { text: finalContent.trim(), list: [], footer: '' } };
+              }));
+              
               setAgentSteps(prev => {
                 const steps = prev.map(s => s.status === 'active' ? { ...s, status: 'completed' as const, completedAt: Date.now() } : s);
                 steps.push({
@@ -1339,6 +1351,13 @@ export default function ChatInterface({
               break;
 
             case 'tool_result':
+              if (data.summary) {
+                finalContent += `\n> ✅ Result: ${data.summary}\n\n`;
+                setMessages(prev => prev.map(m => {
+                  if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+                  return { ...m, content: { text: finalContent.trim(), list: [], footer: '' } };
+                }));
+              }
               setAgentSteps(prev => prev.map(s =>
                 s.status === 'active'
                   ? { ...s, status: 'completed' as const, completedAt: Date.now(), summary: data.summary || `${data.tool} done`, label: data.summary || s.label }
@@ -1347,6 +1366,11 @@ export default function ChatInterface({
               break;
 
             case 'tool_error':
+              finalContent += `\n> ❌ Error: ${data.error}\n\n`;
+              setMessages(prev => prev.map(m => {
+                if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+                return { ...m, content: { text: finalContent.trim(), list: [], footer: '' } };
+              }));
               setAgentSteps(prev => prev.map(s =>
                 s.status === 'active'
                   ? { ...s, status: 'error' as const, completedAt: Date.now(), summary: `Error: ${data.error}`, label: `Error: ${data.error}` }
@@ -1355,15 +1379,14 @@ export default function ChatInterface({
               break;
 
             case 'approval_required':
-              // Show approval message directly with canvasApproval structure
-              finalContent = data.meta?.actionPayload
-                ? `I've prepared this action for you. Please approve to proceed.`
-                : 'This action requires your approval.';
+              finalContent += data.meta?.actionPayload
+                ? `\n\nI've prepared this action for you. Please approve to proceed.`
+                : '\n\nThis action requires your approval.';
               setMessages(prev => prev.map(m => {
                 if (m.id !== assistantMsgId || m.type !== 'agent') return m;
                 return {
                   ...m,
-                  content: { text: finalContent, list: [], footer: '' },
+                  content: { text: finalContent.trim(), list: [], footer: '' },
                   meta: {
                     ...(m.meta || {}),
                     isStreaming: false,
@@ -1384,18 +1407,18 @@ export default function ChatInterface({
               break;
 
             case 'message':
-              finalContent = data.content || '';
+              finalContent += `\n\n${data.content || ''}`;
               setMessages(prev => prev.map(m => {
                 if (m.id !== assistantMsgId || m.type !== 'agent') return m;
-                return { ...m, content: { text: finalContent, list: [], footer: '' }, meta: { ...(m.meta || {}), isStreaming: false } };
+                return { ...m, content: { text: finalContent.trim(), list: [], footer: '' }, meta: { ...(m.meta || {}), isStreaming: false } };
               }));
               break;
 
             case 'error':
-              finalContent = data.message || 'Something went wrong.';
+              finalContent += `\n\n❌ Something went wrong: ${data.message}`;
               setMessages(prev => prev.map(m => {
                 if (m.id !== assistantMsgId || m.type !== 'agent') return m;
-                return { ...m, content: { text: finalContent, list: [], footer: '' }, meta: { ...(m.meta || {}), isStreaming: false } };
+                return { ...m, content: { text: finalContent.trim(), list: [], footer: '' }, meta: { ...(m.meta || {}), isStreaming: false } };
               }));
               break;
 
@@ -3479,92 +3502,7 @@ export default function ChatInterface({
                             </div>
                           </motion.div>
                         ))}
-                        {isLoading && (
-                          <div className="flex items-start gap-2.5 animate-fade-in group">
-                            <div className="w-7 h-7 rounded-lg bg-graphite-surface border border-graphite-border flex items-center justify-center overflow-hidden shrink-0 relative shadow-2xl">
-                              <motion.img
-                                src="/arcus-ai-icon.jpg"
-                                className="w-full h-full object-cover grayscale opacity-40"
-                                animate={{
-                                  rotate: [0, 90, 180, 270, 360],
-                                  scale: [1, 1.05, 1]
-                                }}
-                                transition={{
-                                  rotate: { duration: 8, repeat: Infinity, ease: "linear" },
-                                  scale: { duration: 3, repeat: Infinity, ease: "easeInOut" }
-                                }}
-                              />
-                              <div className="absolute inset-0 bg-black/5 dark:bg-white/5 animate-pulse" />
-                            </div>
-
-                            <div className="flex flex-col gap-2.5 max-w-full">
-                              <motion.div
-                                className="inline-flex items-center min-w-[170px] relative group/bubble"
-                              >
-                                <div className="flex flex-col gap-2">
-                                  {!isAgentLoopActive && (
-                                    <RollingThinkingStatus
-                                      onToggle={() => setIsThinkingStepsOpen(!isThinkingStepsOpen)}
-                                      isOpen={isThinkingStepsOpen}
-                                      isDeepThinking={isDeepThinkingState}
-                                    />
-                                  )}
-
-                                  {!isAgentLoopActive && isSearchingState && (
-                                    <motion.div
-                                      initial={{ opacity: 0, x: -10 }}
-                                      animate={{ opacity: 1, x: 0 }}
-                                      className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full w-fit"
-                                    >
-                                      <Search className="w-3.5 h-3.5 text-blue-400 animate-pulse" />
-                                      <TextShimmer className="text-[11px] text-blue-400 font-medium">Searching...</TextShimmer>
-                                    </motion.div>
-                                  )}
-                                </div>
-                              </motion.div>
-
-                              <AnimatePresence mode="wait">
-                                {isThinkingStepsOpen && liveThinkingBlocks.length > 0 && !isAgentLoopActive && (
-                                  <motion.div
-                                    initial={{ height: 0, opacity: 0, scale: 0.98 }}
-                                    animate={{ height: 'auto', opacity: 1, scale: 1 }}
-                                    exit={{ height: 0, opacity: 0, scale: 0.98 }}
-                                    transition={{
-                                      height: { duration: 0.5, ease: [0.16, 1, 0.3, 1] },
-                                      opacity: { duration: 0.3 }
-                                    }}
-                                    className="overflow-hidden px-1 ml-1"
-                                  >
-
-                                    <ThinkingLayer
-                                      blocks={liveThinkingBlocks}
-                                      isVisible={true}
-                                      isGenerating={isLoading}
-                                      currentThought={currentThought}
-                                      searchSessions={searchSessions}
-                                    />
-                                  </motion.div>
-                                )}
-                              </AnimatePresence>
-
-                              {/* Agent Loop Execution Timeline (Phase 2) */}
-                              {agentSteps.length > 0 && (
-                                <motion.div
-                                  initial={{ opacity: 0, y: 4 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  className="px-1 ml-1 mt-2"
-                                >
-                                  <AgentExecutionTimeline
-                                    steps={agentSteps}
-                                    isActive={isAgentLoopActive}
-                                    runId={agentRunMeta?.runId}
-                                    totalDurationMs={agentRunMeta?.totalDurationMs}
-                                  />
-                                </motion.div>
-                              )}
-                            </div>
-                          </div>
-                        )}
+                        {/* All processing animations removed per request */}
                         <div ref={messagesEndRef} className="h-8" />
                       </div>
                     )}

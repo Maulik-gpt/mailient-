@@ -8,6 +8,7 @@ import { getModelChain } from '@/lib/ai-constants.js';
  * Uses OPENROUTER_API_KEY3 with Gemini 2.0 Flash for fast, smart title generation
  */
 export async function POST(request) {
+    let parsedMessage = '';
     try {
         const session = await auth();
         if (!session?.user?.email) {
@@ -37,7 +38,9 @@ export async function POST(request) {
             }, { status: 403 });
         }
 
-        const { message } = await request.json();
+        const bodyData = await request.json();
+        const message = bodyData.message;
+        parsedMessage = message;
 
         if (!message || typeof message !== 'string' || message.trim().length < 2) {
             return NextResponse.json(
@@ -78,7 +81,7 @@ export async function POST(request) {
                     body: JSON.stringify({
                         model,
                         messages: [
-                            { role: 'system', content: systemPrompt },
+                            { role: 'system', content: 'You are a helpful assistant.' },
                             { role: 'user', content: `Generate a short title for a conversation that starts with: "${message}"` }
                         ],
                         temperature: 0.3,
@@ -135,18 +138,10 @@ export async function POST(request) {
         console.error('❌ Title generation error:', error);
 
         // Fallback: Try to use the message itself
-        try {
-            const { message } = await request.clone().json();
-            const fallbackTitle = (message || 'New Chat').trim().split(' ').slice(0, 5).join(' ');
-            return NextResponse.json({
-                title: fallbackTitle.length > 40 ? fallbackTitle.substring(0, 40) + '...' : fallbackTitle,
-                source: 'fallback'
-            });
-        } catch {
-            return NextResponse.json({
-                title: 'New Chat',
-                source: 'fallback'
-            });
-        }
+        const fallbackTitle = (parsedMessage || 'New Chat').trim().split(' ').slice(0, 5).join(' ');
+        return NextResponse.json({
+            title: fallbackTitle.length > 40 ? fallbackTitle.substring(0, 40) + '...' : fallbackTitle,
+            source: 'fallback'
+        });
     }
 }
