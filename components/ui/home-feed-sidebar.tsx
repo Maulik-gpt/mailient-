@@ -47,8 +47,19 @@ export function HomeFeedSidebar({
     const router = useRouter();
     const pathname = usePathname();
     const [isMoreOptionsOpen, setIsMoreOptionsOpen] = useState(false);
-    const [isCollapsed, setIsCollapsed] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('sidebar_collapsed');
+            return saved === 'true';
+        }
+        return false;
+    });
     const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+
+    // Persist sidebar state
+    useEffect(() => {
+        localStorage.setItem('sidebar_collapsed', isCollapsed.toString());
+    }, [isCollapsed]);
     const [userHandle, setUserHandle] = useState<string>('');
     const moreMenuRef = useRef<HTMLDivElement>(null);
 
