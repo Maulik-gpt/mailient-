@@ -1,6 +1,6 @@
 "use client";
 
-import { Send, Mail, Upload, User, User2, MessageCircle, DoorOpen, Bell, Mail as EmailIcon, MoreHorizontal, LogOut, Settings, ChevronRight, ChevronDown, CheckCircle2, Circle, Edit, History, LayoutGrid, Zap, Volume2, Sparkles, FileText, Calendar, BarChart3, PenTool, BrainCircuit, Search, Check, X, PanelLeft, Menu } from 'lucide-react';
+import { Send, Mail, Upload, User, User2, MessageCircle, DoorOpen, Bell, Mail as EmailIcon, MoreHorizontal, LogOut, Settings, ChevronRight, ChevronDown, CheckCircle2, Circle, Edit, History, LayoutGrid, Zap, Volume2, Sparkles, FileText, Calendar, BarChart3, PenTool, BrainCircuit, Search, Check, X, PanelLeft, Menu, Compass, Terminal } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
@@ -479,6 +479,60 @@ const AgentThinkingSection = ({ content, isComplete }: { content: string, isComp
           {content}
         </p>
       </motion.div>
+    </div>
+  );
+};
+
+const AgentTaskPill = ({ step }: { step: AgentStep }) => {
+  const getIcon = () => {
+    switch (step.tool) {
+      case 'search_inbox':
+      case 'search_web':
+      case 'search_notes':
+        return <Search className="w-3.5 h-3.5" />;
+      case 'read_email':
+      case 'read_browser_page':
+        return <Compass className="w-3.5 h-3.5" />;
+      case 'save_draft':
+      case 'send_email':
+        return <Mail className="w-3.5 h-3.5" />;
+      case 'schedule_meeting':
+        return <Calendar className="w-3.5 h-3.5" />;
+      default:
+        return <Terminal className="w-3.5 h-3.5" />;
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2.5 px-3 py-1.5 bg-white/[0.03] border border-white/[0.08] rounded-full w-fit mt-3 group/pill transition-all hover:bg-white/[0.05] hover:border-white/12">
+      <div className="flex items-center justify-center w-5 h-5 rounded-full bg-white/5 border border-white/10 text-white/40 group-hover/pill:text-white group-hover/pill:border-white/20 transition-all">
+        {getIcon()}
+      </div>
+      <span className="text-[13px] text-white/50 group-hover/pill:text-white/80 transition-colors tracking-tight font-medium">
+        {step.label}
+      </span>
+      {step.status === 'active' && (
+        <div className="flex items-center gap-1 ml-1">
+          <motion.div 
+            className="w-1 h-1 rounded-full bg-white/40"
+            animate={{ opacity: [0.3, 1, 0.3] }}
+            transition={{ repeat: Infinity, duration: 1.5, times: [0, 0.5, 1] }}
+          />
+          <motion.div 
+            className="w-1 h-1 rounded-full bg-white/40"
+            animate={{ opacity: [0.3, 1, 0.3] }}
+            transition={{ repeat: Infinity, duration: 1.5, delay: 0.3, times: [0, 0.5, 1] }}
+          />
+          <motion.div 
+            className="w-1 h-1 rounded-full bg-white/40"
+            animate={{ opacity: [0.3, 1, 0.3] }}
+            transition={{ repeat: Infinity, duration: 1.5, delay: 0.6, times: [0, 0.5, 1] }}
+          />
+        </div>
+      )}
+      {step.status === 'completed' && (
+        <Check className="w-3 h-3 text-green-400/50 ml-1" />
+      )}
     </div>
   );
 };
@@ -1293,13 +1347,31 @@ export default function ChatInterface({
 
             case 'tool_call':
               stepIndex++;
+              // Initial label in V3 form (or gerund if preferred for active state, but user asked for V3)
+              // We'll use "Executing..." for active and V3 for completed if that feels more natural, 
+              // but user specifically asked for V3 for the task pill.
+              const getV3Label = (tool: string, params: any) => {
+                switch (tool) {
+                  case 'search_inbox': return `Searched emails${params?.query ? ` for "${params.query}"` : ''}`;
+                  case 'search_web': return `Researched web${params?.query ? ` for "${params.query}"` : ''}`;
+                  case 'read_email': return 'Read email content';
+                  case 'read_browser_page': return `Visited ${params?.url || 'page'}`;
+                  case 'save_draft': return 'Drafted response';
+                  case 'send_email': return 'Sent email';
+                  case 'schedule_meeting': return 'Scheduled meeting';
+                  case 'create_note': return 'Created note';
+                  case 'search_notes': return 'Searched notes';
+                  default: return `Executed ${tool}`;
+                }
+              };
+
               setAgentSteps(prev => {
                 const steps = prev.map(s => s.status === 'active' ? { ...s, status: 'completed' as const, completedAt: Date.now() } : s);
                 steps.push({
                   id: `al-tool-${stepIndex}`,
                   type: 'tool_call',
                   tool: data.tool,
-                  label: `Executing ${data.tool}...`,
+                  label: getV3Label(data.tool, data.params),
                   status: 'active',
                   startedAt: Date.now(),
                   iteration: data.iteration
@@ -1311,7 +1383,7 @@ export default function ChatInterface({
             case 'tool_result':
               setAgentSteps(prev => prev.map(s =>
                 s.status === 'active'
-                  ? { ...s, status: 'completed' as const, completedAt: Date.now(), summary: data.summary || `${data.tool} done`, label: data.summary || s.label }
+                  ? { ...s, status: 'completed' as const, completedAt: Date.now(), summary: data.summary || `${data.tool} done` }
                   : s
               ));
               break;
@@ -3252,6 +3324,14 @@ export default function ChatInterface({
                                       content={(msg as AgentMessage).meta!.liveThinking!} 
                                       isComplete={(msg as AgentMessage).meta?.isStreaming === false}
                                     />
+                                  )}
+
+                                  {msg.role === 'assistant' && (msg as AgentMessage).meta?.agentSteps && (
+                                    <div className="flex flex-col gap-0.5 mb-4">
+                                      {(msg as AgentMessage).meta!.agentSteps!.filter(s => s.type === 'tool_call').map((step, idx) => (
+                                        <AgentTaskPill key={step.id || idx} step={step} />
+                                      ))}
+                                    </div>
                                   )}
 
                                   {/* Plan Canvas (Inline + Full-Screen Modal) */}
