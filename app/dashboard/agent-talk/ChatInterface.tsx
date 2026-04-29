@@ -374,6 +374,9 @@ interface AgentMessage {
     internalThought?: string;
     isStreaming?: boolean;
     actionHistory?: any[];
+    agentSteps?: AgentStep[];
+    agentRunId?: string;
+    agentDurationMs?: number;
     result?: {
       type: string;
       title: string;
@@ -3277,10 +3280,10 @@ export default function ChatInterface({
                                   {msg.role === 'assistant' && (msg as AgentMessage).meta?.agentSteps && (
                                     <div className="mt-2 px-1">
                                       <AgentExecutionTimeline
-                                        steps={(msg as AgentMessage).meta.agentSteps}
+                                        steps={(msg as AgentMessage).meta!.agentSteps!}
                                         isActive={false}
-                                        runId={(msg as AgentMessage).meta.agentRunId}
-                                        totalDurationMs={(msg as AgentMessage).meta.agentDurationMs}
+                                        runId={(msg as AgentMessage).meta?.agentRunId}
+                                        totalDurationMs={(msg as AgentMessage).meta?.agentDurationMs}
                                       />
                                     </div>
                                   )}
