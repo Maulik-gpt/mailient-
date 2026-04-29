@@ -3227,27 +3227,7 @@ export default function ChatInterface({
                                     </details>
                                   )}
 
-                                  {msg.role === 'assistant' && msg.meta?.thinkingBlocks && (
-                                    <div className="mt-2 px-1">
-                                      <ThinkingLayer
-                                        blocks={msg.meta.thinkingBlocks}
-                                        isVisible={true}
-                                        searchSessions={(msg.meta as any)?.searchSessions}
-                                      />
-                                    </div>
-                                  )}
 
-                                  {/* Agent Loop Timeline embedded in completed messages */}
-                                  {msg.role === 'assistant' && (msg as AgentMessage).meta?.agentSteps && (
-                                    <div className="mt-2 px-1">
-                                      <AgentExecutionTimeline
-                                        steps={(msg as AgentMessage).meta!.agentSteps!}
-                                        isActive={false}
-                                        runId={(msg as AgentMessage).meta?.agentRunId}
-                                        totalDurationMs={(msg as AgentMessage).meta?.agentDurationMs}
-                                      />
-                                    </div>
-                                  )}
 
                                   {/* Plan Canvas (Inline + Full-Screen Modal) */}
                                   {msg.role === 'assistant' && (msg as AgentMessage).meta?.planArtifact && (
