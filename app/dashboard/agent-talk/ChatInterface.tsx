@@ -166,100 +166,29 @@ const MarkdownComponents = {
 
  const MessageContent = ({ content, isUser, isTyping, isNewResponse, hideLinks }: { content: any, isUser?: boolean, isTyping?: boolean, isNewResponse?: boolean, hideLinks?: boolean }) => {
   const textColorClass = isUser ? "text-white" : "text-white/90";
-
   let textContent = typeof content === 'string' ? content : (content.text || '');
-  
-  if (isTyping) {
-    return (
-       <div className={`${textColorClass} w-full`}>
-         <ReactMarkdown 
-           remarkPlugins={[remarkGfm]} 
-           components={{
-             ...MarkdownComponents,
-             ...(hideLinks ? { a: ({ node, ...props }) => <span className="text-inherit underline underline-offset-2 opacity-50 cursor-default">{props.children}</span> } : {})
-           }}
-         >
-           {textContent + ' ▍'}
-         </ReactMarkdown>
-       </div>
-    );
-  }
 
-  // If it's a new AI response and not streaming, use typewriter
-  const useTypewriter = !isUser && isNewResponse;
-
-  if (typeof content === 'string') {
+  // For Assistant (AI): Absolute raw output with zero structure or animation
+  if (!isUser) {
     return (
-      <div className={`${textColorClass} w-full`}>
-          {useTypewriter ? (
-            <TypewriterMarkdown content={textContent} hideLinks={hideLinks} />
-          ) : (
-           <ReactMarkdown 
-             remarkPlugins={[remarkGfm]} 
-             components={{
-               ...MarkdownComponents,
-               ...(hideLinks ? { a: ({ node, ...props }) => <span className="text-inherit underline underline-offset-2 opacity-50 cursor-default">{props.children}</span> } : {})
-             }}
-           >
-             {textContent}
-           </ReactMarkdown>
-         )}
+      <div className={`${textColorClass} w-full whitespace-pre-wrap font-mono text-[13px] leading-relaxed break-words`}>
+        {textContent}
       </div>
     );
   }
-  
+
+  // For User: Keep standard markdown rendering
   return (
-    <div className={`space-y-4 ${textColorClass} w-full`}>
-        {useTypewriter ? (
-          <TypewriterMarkdown content={textContent} hideLinks={hideLinks} />
-        ) : (
-         <ReactMarkdown 
-           remarkPlugins={[remarkGfm]} 
-           components={{
-             ...MarkdownComponents,
-             ...(hideLinks ? { a: ({ node, ...props }) => <span className="text-inherit underline underline-offset-2 opacity-50 cursor-default">{props.children}</span> } : {})
-           }}
-         >
-           {textContent}
-         </ReactMarkdown>
-       )}
-      
-      {content.list && content.list.length > 0 && (
-        <ul className="space-y-2 my-4 list-none pl-2">
-          {content.list.map((item: string, i: number) => (
-            <li key={i} className="relative pl-5 text-[17px] text-white/90">
-              <span className="absolute left-0 top-2.5 w-1.5 h-1.5 bg-white/60 rounded-full" />
-                {useTypewriter ? (
-                  <TypewriterMarkdown content={item} speed={15} hideLinks={hideLinks} />
-                ) : (
-                 <ReactMarkdown 
-                   remarkPlugins={[remarkGfm]} 
-                   components={{
-                     ...MarkdownComponents,
-                     ...(hideLinks ? { a: ({ node, ...props }) => <span className="text-inherit underline underline-offset-2 opacity-50 cursor-default">{props.children}</span> } : {})
-                   }}
-                 >
-                   {item}
-                 </ReactMarkdown>
-               )}
-            </li>
-          ))}
-        </ul>
-      )}
-      
-      {content.footer && (
-        <div className="mt-6 italic opacity-60 text-sm border-t border-[#222] pt-4">
-         <ReactMarkdown 
-           remarkPlugins={[remarkGfm]} 
-           components={{
-             ...MarkdownComponents,
-             ...(hideLinks ? { a: ({ node, ...props }) => <span className="text-inherit underline underline-offset-2 opacity-50 cursor-default">{props.children}</span> } : {})
-           }}
-         >
-           {content.footer}
-         </ReactMarkdown>
-        </div>
-      )}
+    <div className={`${textColorClass} w-full`}>
+      <ReactMarkdown 
+        remarkPlugins={[remarkGfm]} 
+        components={{
+          ...MarkdownComponents,
+          ...(hideLinks ? { a: ({ node, ...props }) => <span className="text-inherit underline underline-offset-2 opacity-50 cursor-default">{props.children}</span> } : {})
+        }}
+      >
+        {textContent}
+      </ReactMarkdown>
     </div>
   );
 };
@@ -1302,7 +1231,7 @@ export default function ChatInterface({
           switch (currentEventType) {
             case 'thinking':
               if (data.step) {
-                finalContent += `\n> 💭 ${data.step}\n\n`;
+                finalContent += `${data.step}\n`;
                 setMessages(prev => prev.map(m => {
                   if (m.id !== assistantMsgId || m.type !== 'agent') return m;
                   return { ...m, content: { text: finalContent.trim(), list: [], footer: '' } };
@@ -1329,7 +1258,7 @@ export default function ChatInterface({
 
             case 'tool_call':
               stepIndex++;
-              finalContent += `\n> 🛠️ Calling \`${data.tool}\`...\n\n`;
+              finalContent += `Calling ${data.tool}...\n`;
               setMessages(prev => prev.map(m => {
                 if (m.id !== assistantMsgId || m.type !== 'agent') return m;
                 return { ...m, content: { text: finalContent.trim(), list: [], footer: '' } };
@@ -1352,7 +1281,7 @@ export default function ChatInterface({
 
             case 'tool_result':
               if (data.summary) {
-                finalContent += `\n> ✅ Result: ${data.summary}\n\n`;
+                finalContent += `Result: ${data.summary}\n`;
                 setMessages(prev => prev.map(m => {
                   if (m.id !== assistantMsgId || m.type !== 'agent') return m;
                   return { ...m, content: { text: finalContent.trim(), list: [], footer: '' } };
@@ -1366,7 +1295,7 @@ export default function ChatInterface({
               break;
 
             case 'tool_error':
-              finalContent += `\n> ❌ Error: ${data.error}\n\n`;
+              finalContent += `Error: ${data.error}\n`;
               setMessages(prev => prev.map(m => {
                 if (m.id !== assistantMsgId || m.type !== 'agent') return m;
                 return { ...m, content: { text: finalContent.trim(), list: [], footer: '' } };
@@ -1380,8 +1309,8 @@ export default function ChatInterface({
 
             case 'approval_required':
               finalContent += data.meta?.actionPayload
-                ? `\n\nI've prepared this action for you. Please approve to proceed.`
-                : '\n\nThis action requires your approval.';
+                ? `\nI've prepared this action for you. Please approve to proceed.`
+                : '\nThis action requires your approval.';
               setMessages(prev => prev.map(m => {
                 if (m.id !== assistantMsgId || m.type !== 'agent') return m;
                 return {
@@ -1407,7 +1336,7 @@ export default function ChatInterface({
               break;
 
             case 'message':
-              finalContent += `\n\n${data.content || ''}`;
+              finalContent += `\n${data.content || ''}`;
               setMessages(prev => prev.map(m => {
                 if (m.id !== assistantMsgId || m.type !== 'agent') return m;
                 return { ...m, content: { text: finalContent.trim(), list: [], footer: '' }, meta: { ...(m.meta || {}), isStreaming: false } };
@@ -1415,7 +1344,7 @@ export default function ChatInterface({
               break;
 
             case 'error':
-              finalContent += `\n\n❌ Something went wrong: ${data.message}`;
+              finalContent += `\nSomething went wrong: ${data.message}`;
               setMessages(prev => prev.map(m => {
                 if (m.id !== assistantMsgId || m.type !== 'agent') return m;
                 return { ...m, content: { text: finalContent.trim(), list: [], footer: '' }, meta: { ...(m.meta || {}), isStreaming: false } };
