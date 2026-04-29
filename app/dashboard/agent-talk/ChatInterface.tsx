@@ -40,6 +40,7 @@ import { cn } from "@/lib/utils";
 import { audioRuntime } from '@/lib/audio-runtime';
 import { NotificationService } from '@/lib/notification-service';
 import { GradientWave } from '@/components/ui/gradient-wave';
+import { useArcusAgentStream } from './hooks/useArcusAgentStream';
 
 // Detect and wrap URLs in plain text with premium styling for actions
 const linkify = (text: string, isUser: boolean = false): string => {
@@ -1217,7 +1218,225 @@ export default function ChatInterface({
     }).join('\\n');
   };
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // AGENT LOOP — SSE-based agentic processing (Phase 1)
+  // ═══════════════════════════════════════════════════════════════════════════
+  const processAgentLoopMessage = async (messageText: string, conversationIdToUse: string, isNew: boolean) => {
+    if (abortControllerRef.current) abortControllerRef.current.abort();
+    abortControllerRef.current = new AbortController();
+    const assistantMsgId = Date.now() + 1;
+
+    setIsLoading(true);
+    setLiveThinkingBlocks([{
+      id: 'agent-loop',
+      title: 'Arcus Agent Loop',
+      status: 'active' as const,
+      initialContext: 'Executing multi-step agentic reasoning...',
+      steps: [{ id: 'al-1', label: 'Analysing your request...', status: 'active' as const, type: 'think' as const }]
+    }]);
+
+    // Add placeholder assistant message
+    const placeholderMsg: AgentMessage = {
+      id: assistantMsgId,
+      type: 'agent',
+      role: 'assistant',
+      content: { text: '', list: [], footer: '' },
+      time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+      meta: { actionType: 'agent_loop', isStreaming: true }
+    };
+    setMessages(prev => [...prev, placeholderMsg]);
+
+    try {
+      const response = await fetch('/api/agent-talk/chat-arcus-v2', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: messageText,
+          conversationId: conversationIdToUse,
+          isNewConversation: isNew,
+          gmailAccessToken
+        }),
+        signal: abortControllerRef.current.signal
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        if (errData?.error === 'limit_reached') {
+          setUsageLimitModalData({ featureName: 'Ask AI', currentUsage: errData.usage || 0, limit: errData.limit || 0, period: errData.period || 'daily', currentPlan: errData.planType || 'starter' });
+          setIsUsageLimitModalOpen(true);
+        }
+        throw new Error(errData.message || `Request failed (${response.status})`);
+      }
+
+      if (!response.body) throw new Error('No stream body');
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let currentEventType = '';
+      let finalContent = '';
+      let stepIndex = 0;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('event: ')) {
+            currentEventType = line.slice(7).trim();
+            continue;
+          }
+          if (!line.startsWith('data: ') || !currentEventType) continue;
+
+          let data: any;
+          try { data = JSON.parse(line.slice(6).trim()); } catch { continue; }
+
+          switch (currentEventType) {
+            case 'thinking':
+              setLiveThinkingBlocks(prev => {
+                const blocks = [...prev];
+                const block = blocks[0];
+                if (!block) return prev;
+                // Update current step or add new one
+                const existingStep = block.steps.find(s => s.status === 'active');
+                if (existingStep) existingStep.label = data.step || 'Processing...';
+                return [{ ...block, steps: [...block.steps] }];
+              });
+              break;
+
+            case 'tool_call':
+              stepIndex++;
+              setLiveThinkingBlocks(prev => {
+                const blocks = [...prev];
+                const block = blocks[0];
+                if (!block) return prev;
+                // Mark previous steps complete, add new active step
+                const updatedSteps: ThinkingStep[] = block.steps.map(s => ({ ...s, status: 'completed' as const }));
+                updatedSteps.push({
+                  id: `al-tool-${stepIndex}`,
+                  label: `Calling ${data.tool}...`,
+                  status: 'active' as const,
+                  type: 'execute' as const
+                });
+                return [{ ...block, steps: updatedSteps }];
+              });
+              break;
+
+            case 'tool_result':
+              setLiveThinkingBlocks(prev => {
+                const blocks = [...prev];
+                const block = blocks[0];
+                if (!block) return prev;
+                const updatedSteps = block.steps.map(s =>
+                  s.status === 'active' ? { ...s, label: data.summary || `${data.tool} done`, status: 'completed' as const } : s
+                );
+                return [{ ...block, steps: updatedSteps }];
+              });
+              break;
+
+            case 'tool_error':
+              setLiveThinkingBlocks(prev => {
+                const blocks = [...prev];
+                const block = blocks[0];
+                if (!block) return prev;
+                const updatedSteps = block.steps.map(s =>
+                  s.status === 'active' ? { ...s, label: `Error: ${data.error}`, status: 'error' as const } : s
+                );
+                return [{ ...block, steps: updatedSteps }];
+              });
+              break;
+
+            case 'approval_required':
+              // Show approval message directly
+              finalContent = data.meta?.actionPayload
+                ? `I've prepared this action for you. Please approve to proceed.`
+                : 'This action requires your approval.';
+              setMessages(prev => prev.map(m => {
+                if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+                return { ...m, content: { text: finalContent, list: [], footer: '' }, meta: { ...(m.meta || {}), isStreaming: false, pendingApproval: true, actionType: data.tool, actionPayload: data.params } };
+              }));
+              break;
+
+            case 'message':
+              finalContent = data.content || '';
+              setMessages(prev => prev.map(m => {
+                if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+                return { ...m, content: { text: finalContent, list: [], footer: '' }, meta: { ...(m.meta || {}), isStreaming: false } };
+              }));
+              break;
+
+            case 'error':
+              finalContent = data.message || 'Something went wrong.';
+              setMessages(prev => prev.map(m => {
+                if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+                return { ...m, content: { text: finalContent, list: [], footer: '' }, meta: { ...(m.meta || {}), isStreaming: false } };
+              }));
+              break;
+
+            case 'done':
+              // Mark all steps complete
+              setLiveThinkingBlocks(prev => prev.map(b => ({
+                ...b,
+                status: 'completed' as const,
+                steps: b.steps.map(s => ({ ...s, status: 'completed' as const }))
+              })));
+              break;
+          }
+          currentEventType = '';
+        }
+      }
+
+      setNewMessageIds(prev => new Set(prev).add(assistantMsgId));
+
+      // Save to localStorage
+      if (conversationIdToUse) {
+        const existingRaw = localStorage.getItem(`conversation_${conversationIdToUse}`);
+        const existing = existingRaw ? JSON.parse(existingRaw) : { id: conversationIdToUse, messages: [], title: messageText.split(' ').slice(0, 5).join(' '), lastUpdated: '', messageCount: 0 };
+        const userMsg: UserMessage = { id: Date.now(), type: 'user', role: 'user', content: messageText, time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) };
+        const agentMsg: AgentMessage = { id: assistantMsgId, type: 'agent', role: 'assistant', content: { text: finalContent, list: [], footer: '' }, time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) };
+        const allMsgs = [...(existing.messages || []), userMsg, agentMsg];
+        const unique = allMsgs.filter((msg: any, idx: number, self: any[]) => idx === self.findIndex(t => t.id === msg.id));
+        localStorage.setItem(`conversation_${conversationIdToUse}`, JSON.stringify({ ...existing, messages: unique, lastUpdated: new Date().toISOString(), messageCount: unique.length }));
+
+        if (isNew) {
+          generateChatTitle(messageText).then(title => {
+            localStorage.setItem(`conv_${conversationIdToUse}_title`, title);
+            setChatTitle(title);
+          }).catch(() => {});
+        }
+      }
+
+      // Notification
+      if (finalContent && (notificationsEnabled || soundEnabled)) {
+        NotificationService.notify('Arcus Response', finalContent.substring(0, 100), { soundType: 'notify', silent: !notificationsEnabled });
+      }
+
+    } catch (err: any) {
+      if (err.name === 'AbortError') { setMessages(prev => prev.filter(m => m.id !== assistantMsgId)); return; }
+      console.error('[AgentLoop] Error:', err);
+      setMessages(prev => prev.map(m => {
+        if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+        return { ...m, content: { text: err.message || 'Something went wrong. Please try again.', list: [], footer: '' }, meta: { ...(m.meta || {}), isStreaming: false } };
+      }));
+    } finally {
+      setIsLoading(false);
+      setLiveThinkingBlocks([]);
+      setTimeout(() => scrollToBottom(true), 100);
+    }
+  };
+
   const processAIMessage = async (messageText: string, conversationIdToUse: string, isNew: boolean, attachments?: any[], options?: { isDeepThinking?: boolean; isCanvas?: boolean; isSearch?: boolean; isPlanMode?: boolean; modelId?: string }) => {
+    // ── Agent Loop routing: use SSE-based loop for simple queries ──────
+    const useAgentLoop = !options?.isCanvas && !options?.isPlanMode && !options?.isDeepThinking && !options?.isSearch && (!attachments || attachments.length === 0);
+    if (useAgentLoop) {
+      return processAgentLoopMessage(messageText, conversationIdToUse, isNew);
+    }
+
+    // ── Legacy path: canvas, plan mode, deep thinking, search ─────────
     // Create new abort controller for this request
     if (abortControllerRef.current) abortControllerRef.current.abort();
     abortControllerRef.current = new AbortController();
