@@ -463,12 +463,17 @@ const AgentThinkingSection = ({ content, isComplete }: { content: string, isComp
         <div className="relative w-4 h-4 flex-shrink-0">
           <motion.div 
             className="absolute inset-0 rounded-full bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.8)]"
-            animate={{ scale: [1, 1.25, 1], opacity: [0.5, 1, 0.5] }}
-            transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+            animate={{ scale: [1, 1.25, 1], opacity: [0.4, 0.8, 0.4] }}
+            transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
           />
-          <div className="absolute inset-1 rounded-full bg-blue-400 border border-blue-200/40" />
+          <div className="absolute inset-1 rounded-full bg-blue-400 border border-blue-200/40 shadow-inner" />
         </div>
-        <span className="text-[13px] font-bold text-white/40 tracking-wider uppercase">Thinking</span>
+        <TextShimmer 
+          className="text-[13px] font-bold text-white/40 tracking-wider uppercase select-none" 
+          duration={2.5}
+        >
+          Thinking
+        </TextShimmer>
       </div>
       <motion.div 
         initial={{ opacity: 0, x: -5 }}
