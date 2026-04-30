@@ -466,14 +466,14 @@ const NoScrollbarStyles = () => (
 );
 
 const AgentSkeletonLoader = () => (
-  <div className="flex flex-col gap-2.5 mt-2 mb-4 w-full max-w-[400px]">
-    <div className="h-3 w-full bg-white/[0.03] rounded-md relative overflow-hidden border border-white/[0.02]">
+  <div className="flex flex-col gap-3.5 mt-4 mb-6 w-full max-w-[500px] opacity-80">
+    <div className="h-[14px] w-full bg-white/[0.05] rounded-lg relative overflow-hidden border border-white/[0.03]">
       <div className="absolute inset-0 skeleton-shimmer" />
     </div>
-    <div className="h-3 w-[90%] bg-white/[0.03] rounded-md relative overflow-hidden border border-white/[0.02]">
+    <div className="h-[14px] w-[94%] bg-white/[0.05] rounded-lg relative overflow-hidden border border-white/[0.03]">
       <div className="absolute inset-0 skeleton-shimmer" />
     </div>
-    <div className="h-3 w-[65%] bg-white/[0.03] rounded-md relative overflow-hidden border border-white/[0.02]">
+    <div className="h-[14px] w-[65%] bg-white/[0.05] rounded-lg relative overflow-hidden border border-white/[0.03]">
       <div className="absolute inset-0 skeleton-shimmer" />
     </div>
   </div>
