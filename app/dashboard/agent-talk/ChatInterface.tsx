@@ -482,7 +482,14 @@ const AgentSkeletonLoader = () => (
 
 const AgentThinkingSection = ({ content, isComplete }: { content: string, isComplete?: boolean }) => {
   const [isOpen, setIsOpen] = useState(true);
-  if (isComplete) return null;
+
+  // Auto-collapse when finished thinking
+  useEffect(() => {
+    if (isComplete) {
+      setIsOpen(false);
+    }
+  }, [isComplete]);
+
   if (!content) return null;
 
   return (
@@ -492,52 +499,56 @@ const AgentThinkingSection = ({ content, isComplete }: { content: string, isComp
           onClick={() => setIsOpen(!isOpen)}
           className="flex items-center gap-3 group/think"
         >
-          <div className="relative w-5 h-5 flex-shrink-0">
-          {/* Inner Core */}
-          <motion.div
-            className="absolute inset-1 rounded-full bg-white z-20 shadow-inner"
-            animate={{ scale: [0.9, 1.1, 0.9] }}
-            transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-          />
-          {/* Middle Pulse */}
-          <motion.div
-            className="absolute inset-0 rounded-full bg-white/40 z-10"
-            animate={{ scale: [1, 1.5, 1], opacity: [0.3, 0.6, 0.3] }}
-            transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-          />
-          {/* Outer Glow */}
-          <motion.div
-            className="absolute -inset-2 rounded-full bg-white/10 blur-md z-0"
-            animate={{ opacity: [0.2, 0.5, 0.2] }}
-            transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-          />
-          {/* Shimmer Overlay on Orb */}
-          <div className="absolute inset-1 rounded-full overflow-hidden z-30 pointer-events-none">
+          {!isComplete && (
+            <div className="relative w-5 h-5 flex-shrink-0">
+              {/* Inner Core */}
+              <motion.div
+                className="absolute inset-1 rounded-full bg-white z-20 shadow-inner"
+                animate={{ scale: [0.9, 1.1, 0.9] }}
+                transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+              />
+              {/* Middle Pulse */}
+              <motion.div
+                className="absolute inset-0 rounded-full bg-white/40 z-10"
+                animate={{ scale: [1, 1.5, 1], opacity: [0.3, 0.6, 0.3] }}
+                transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+              />
+              {/* Outer Glow */}
+              <motion.div
+                className="absolute -inset-2 rounded-full bg-white/10 blur-md z-0"
+                animate={{ opacity: [0.2, 0.5, 0.2] }}
+                transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+              />
+              {/* Shimmer Overlay on Orb */}
+              <div className="absolute inset-1 rounded-full overflow-hidden z-30 pointer-events-none">
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent w-[200%]"
+                  animate={{ x: ['-100%', '100%'] }}
+                  transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                />
+              </div>
+            </div>
+          )}
+          
+          <div className="flex items-center gap-1.5 ml-0.5">
+            <TextShimmer
+              className="text-[13px] font-bold text-white/60 tracking-widest select-none drop-shadow-[0_0_5px_rgba(255,255,255,0.2)]"
+              duration={2}
+            >
+              {isComplete ? "Thought" : "Thinking"}
+            </TextShimmer>
             <motion.div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent w-[200%]"
-              animate={{ x: ['-100%', '100%'] }}
-              transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-            />
+              animate={{ rotate: isOpen ? 90 : 0 }}
+              className="text-white/20 group-hover/think:text-white/40 transition-colors"
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </motion.div>
           </div>
-        </div>        <div className="flex items-center gap-1.5 ml-0.5">
-          <TextShimmer
-            className="text-[13px] font-bold text-white/60 tracking-widest select-none drop-shadow-[0_0_5px_rgba(255,255,255,0.2)]"
-            duration={2}
-          >
-            Thinking
-          </TextShimmer>
+        </button>
+      </div>
+      <AnimatePresence>
+        {isOpen && (
           <motion.div
-            animate={{ rotate: isOpen ? 90 : 0 }}
-            className="text-white/20 group-hover/think:text-white/40 transition-colors"
-          >
-            <ChevronRight className="w-3.5 h-3.5" />
-          </motion.div>
-        </div>
-      </button>
-    </div>
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
           initial={{ height: 0, opacity: 0 }}
           animate={{ height: 'auto', opacity: 1 }}
           exit={{ height: 0, opacity: 0 }}

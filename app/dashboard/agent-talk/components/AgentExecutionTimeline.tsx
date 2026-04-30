@@ -58,6 +58,58 @@ const toolIcons: Record<string, React.ReactNode> = {
   default: <Globe className="w-3.5 h-3.5" />,
 };
 
+const formatToolLabel = (tool?: string, status?: string) => {
+  if (!tool) return 'Processing...';
+  const name = tool.replace(/_/g, ' ');
+  
+  if (status === 'active') {
+    if (name.endsWith('h')) return `Searching ${name.split(' ')[1] || ''}`.trim();
+    if (name.startsWith('read')) return 'Reading Email';
+    if (name.startsWith('send')) return 'Sending Email';
+    if (name.startsWith('save')) return 'Saving Draft';
+    if (name.startsWith('schedule')) return 'Scheduling Meeting';
+    if (name.startsWith('check')) return 'Checking Availability';
+    if (name.startsWith('create')) return 'Creating Task';
+    if (name.startsWith('notion create')) return 'Creating Page';
+    if (name.startsWith('notion search')) return 'Searching Notion';
+    return name.charAt(0).toUpperCase() + name.slice(1) + 'ing...';
+  }
+
+  if (status === 'completed') {
+    if (name.startsWith('search')) return 'Searched Inbox';
+    if (name.startsWith('read')) return 'Read Email';
+    if (name.startsWith('send')) return 'Sent Email';
+    if (name.startsWith('save')) return 'Saved Draft';
+    if (name.startsWith('schedule')) return 'Scheduled Meeting';
+    if (name.startsWith('check')) return 'Checked Availability';
+    if (name.startsWith('create')) return 'Created Task';
+    if (name.startsWith('notion create')) return 'Created Notion Page';
+    if (name.startsWith('notion search')) return 'Searched Notion';
+    return name.charAt(0).toUpperCase() + name.slice(1) + 'ed';
+  }
+
+  return name.charAt(0).toUpperCase() + name.slice(1);
+};
+
+const ShimmerStyles = () => (
+  <style jsx global>{`
+    .skeleton-shimmer {
+      background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.05) 50%,
+        rgba(255, 255, 255, 0) 100%
+      );
+      background-size: 200% 100%;
+      animation: skeleton-shimmer 2s infinite linear;
+    }
+    @keyframes skeleton-shimmer {
+      from { background-position: 200% 0; }
+      to { background-position: -200% 0; }
+    }
+  `}</style>
+);
+
 const getToolIcon = (tool?: string) => {
   if (!tool) return <BrainCircuit className="w-3.5 h-3.5" />;
   return toolIcons[tool] || toolIcons.default;
@@ -124,6 +176,7 @@ export function AgentExecutionTimeline({
 
   return (
     <div className="w-full mt-3 font-sans max-w-[500px]">
+      <ShimmerStyles />
       <AnimatePresence>
         {isExpanded && (
           <motion.div
@@ -185,24 +238,27 @@ export function AgentExecutionTimeline({
                               className={cn(
                                 "flex items-center gap-3 px-3.5 py-2.5 rounded-xl border backdrop-blur-sm transition-all",
                                 tc.status === 'active' 
-                                  ? "bg-white dark:bg-white/5 border-black/10 dark:border-white/10 shadow-sm"
+                                  ? "bg-white dark:bg-white/5 border-black/10 dark:border-white/10 shadow-sm overflow-hidden relative"
                                   : tc.status === 'error'
                                     ? "bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-900/30 text-red-600 dark:text-red-400"
                                     : "bg-black/[0.02] dark:bg-white/[0.02] border-black/5 dark:border-white/5 text-neutral-500 dark:text-neutral-500"
                               )}
                             >
+                              {tc.status === 'active' && (
+                                <div className="absolute inset-0 skeleton-shimmer z-0 opacity-40" />
+                              )}
                               <div className={cn(
-                                "flex items-center justify-center w-6 h-6 rounded-md",
+                                "flex items-center justify-center w-6 h-6 rounded-md relative z-10",
                                 tc.status === 'active' ? "bg-black/5 dark:bg-white/10 text-black dark:text-white" : "bg-black/5 dark:bg-white/5 text-neutral-500"
                               )}>
                                 {getToolIcon(tc.tool)}
                               </div>
-                              <div className="flex flex-col">
+                              <div className="flex flex-col relative z-10">
                                 <span className={cn(
                                   "text-[12px] font-bold tracking-tight",
                                   tc.status === 'active' ? "text-neutral-900 dark:text-neutral-100" : "text-neutral-500"
                                 )}>
-                                  {tc.tool ? tc.tool.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'System Tool'}
+                                  {formatToolLabel(tc.tool, tc.status)}
                                 </span>
                                 {tc.label && tc.status === 'active' && (
                                   <span className="text-[11px] text-neutral-500 font-medium line-clamp-1">{tc.label}</span>
@@ -210,12 +266,12 @@ export function AgentExecutionTimeline({
                               </div>
                               
                               {tc.status === 'active' && (
-                                <div className="ml-auto flex items-center">
+                                <div className="ml-auto flex items-center relative z-10">
                                   <div className="w-3.5 h-3.5 rounded-full border-[1.5px] border-black/20 dark:border-white/20 border-t-black dark:border-t-white animate-spin" />
                                 </div>
                               )}
                               {tc.status === 'completed' && (
-                                <div className="ml-auto">
+                                <div className="ml-auto relative z-10">
                                   <CheckCircle2 className="w-3.5 h-3.5 text-black/30 dark:text-white/30" />
                                 </div>
                               )}
