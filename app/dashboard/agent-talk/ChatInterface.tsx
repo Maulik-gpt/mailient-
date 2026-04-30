@@ -470,14 +470,14 @@ const NoScrollbarStyles = () => (
 
 function AgentSkeletonLoader() {
   return (
-    <div className="flex flex-col gap-3.5 mt-4 mb-6 w-full max-w-[500px] opacity-80">
-      <div className="h-[14px] w-full bg-white/[0.05] rounded-lg relative overflow-hidden border border-white/[0.03]">
+    <div className="flex flex-col gap-2.5 mt-2 mb-4 w-full max-w-[400px] opacity-40">
+      <div className="h-[4px] w-full bg-white/[0.05] rounded-full relative overflow-hidden">
         <div className="absolute inset-0 skeleton-shimmer" />
       </div>
-      <div className="h-[14px] w-[94%] bg-white/[0.05] rounded-lg relative overflow-hidden border border-white/[0.03]">
+      <div className="h-[4px] w-[90%] bg-white/[0.05] rounded-full relative overflow-hidden">
         <div className="absolute inset-0 skeleton-shimmer" />
       </div>
-      <div className="h-[14px] w-[65%] bg-white/[0.05] rounded-lg relative overflow-hidden border border-white/[0.03]">
+      <div className="h-[4px] w-[60%] bg-white/[0.05] rounded-full relative overflow-hidden">
         <div className="absolute inset-0 skeleton-shimmer" />
       </div>
     </div>
@@ -536,7 +536,7 @@ function AgentThinkingSection({ content, isComplete }: { content: string, isComp
           <div className="flex items-center gap-1.5 ml-0.5">
             {!isComplete ? (
               <TextShimmer
-                className="text-[13px] font-bold text-white/60 tracking-widest select-none drop-shadow-[0_0_5px_rgba(255,255,255,0.2)]"
+                className="text-[12px] font-medium text-white/50 tracking-wider select-none drop-shadow-[0_0_5px_rgba(255,255,255,0.1)] uppercase"
                 duration={2}
               >
                 Thinking
@@ -545,14 +545,14 @@ function AgentThinkingSection({ content, isComplete }: { content: string, isComp
               <motion.span 
                 initial={{ opacity: 0, x: -5 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="text-[13px] font-bold text-white/40 tracking-widest select-none uppercase"
+                className="text-[12px] font-medium text-white/30 tracking-wider select-none uppercase"
               >
                 Thought
               </motion.span>
             )}
             <button 
               onClick={() => setIsOpen(!isOpen)}
-              className="text-white/20 hover:text-white/40 transition-colors"
+              className="text-white/10 hover:text-white/30 transition-colors"
             >
               <motion.div animate={{ rotate: isOpen ? 90 : 0 }}>
                 <ChevronRight className="w-3.5 h-3.5" />
@@ -573,18 +573,18 @@ function AgentThinkingSection({ content, isComplete }: { content: string, isComp
               initial={{ opacity: 0, x: -5 }}
               animate={{ opacity: 1, x: 0 }}
               className={cn(
-                "pl-8 border-l border-white/5 py-1 transition-all",
-                isComplete ? "opacity-40 grayscale-[0.5]" : "opacity-100"
+                "pl-8 border-l border-white/[0.03] py-0.5 transition-all",
+                isComplete ? "opacity-30 grayscale-[0.5]" : "opacity-100"
               )}
             >
               {content === 'SKELETON' ? (
                 <AgentSkeletonLoader />
               ) : content.includes('...') && !isComplete ? (
-                <TextShimmer className="text-white/40 text-[14.5px] leading-relaxed italic font-medium tracking-tight" duration={3}>
+                <TextShimmer className="text-white/30 text-[13.5px] leading-relaxed italic font-normal tracking-tight" duration={3}>
                   {content}
                 </TextShimmer>
               ) : (
-                <p className="text-white/30 text-[14.5px] leading-relaxed italic font-medium tracking-tight">
+                <p className="text-white/20 text-[13.5px] leading-relaxed italic font-normal tracking-tight">
                   {content}
                 </p>
               )}
