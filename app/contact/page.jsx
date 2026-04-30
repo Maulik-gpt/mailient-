@@ -108,7 +108,7 @@ const contactMethods = [
 
 const socialLinks = [
   { icon: XIcon, href: "https://x.com/Maulik_055", label: "X" },
-  { icon: DiscordIcon, href: "#", label: "Discord" },
+  { icon: DiscordIcon, href: "https://discord.gg/Bh3DfpQNn", label: "Discord" },
   { icon: FoundrListIcon, href: "https://www.foundrlist.com/server/5788a18f-345c-434c-b2ad-1a58bf238faa", label: "FoundrList", external: true }
 ];
 

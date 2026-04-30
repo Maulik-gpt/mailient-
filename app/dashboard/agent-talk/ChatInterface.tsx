@@ -452,7 +452,30 @@ const NoScrollbarStyles = () => (
       -ms-overflow-style: none !important; /* IE and Edge */
       scrollbar-width: none !important; /* Firefox */
     }
+    .skeleton-shimmer {
+      background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.03) 50%, transparent 100%);
+      background-size: 200% 100%;
+      animation: shimmer 2s infinite linear;
+    }
+    @keyframes shimmer {
+      from { background-position: 200% 0; }
+      to { background-position: -200% 0; }
+    }
   `}</style>
+);
+
+const AgentSkeletonLoader = () => (
+  <div className="flex flex-col gap-2.5 mt-2 mb-4 w-full max-w-[400px]">
+    <div className="h-3 w-full bg-white/[0.03] rounded-md relative overflow-hidden border border-white/[0.02]">
+      <div className="absolute inset-0 skeleton-shimmer" />
+    </div>
+    <div className="h-3 w-[90%] bg-white/[0.03] rounded-md relative overflow-hidden border border-white/[0.02]">
+      <div className="absolute inset-0 skeleton-shimmer" />
+    </div>
+    <div className="h-3 w-[65%] bg-white/[0.03] rounded-md relative overflow-hidden border border-white/[0.02]">
+      <div className="absolute inset-0 skeleton-shimmer" />
+    </div>
+  </div>
 );
 
 const AgentThinkingSection = ({ content, isComplete }: { content: string, isComplete?: boolean }) => {
@@ -470,19 +493,19 @@ const AgentThinkingSection = ({ content, isComplete }: { content: string, isComp
           <div className="relative w-5 h-5 flex-shrink-0">
           {/* Inner Core */}
           <motion.div
-            className="absolute inset-1 rounded-full bg-blue-400 z-20 shadow-inner"
+            className="absolute inset-1 rounded-full bg-white z-20 shadow-inner"
             animate={{ scale: [0.9, 1.1, 0.9] }}
             transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
           />
           {/* Middle Pulse */}
           <motion.div
-            className="absolute inset-0 rounded-full bg-blue-500/40 z-10"
+            className="absolute inset-0 rounded-full bg-white/40 z-10"
             animate={{ scale: [1, 1.5, 1], opacity: [0.3, 0.6, 0.3] }}
             transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
           />
           {/* Outer Glow */}
           <motion.div
-            className="absolute -inset-2 rounded-full bg-blue-600/10 blur-md z-0"
+            className="absolute -inset-2 rounded-full bg-white/10 blur-md z-0"
             animate={{ opacity: [0.2, 0.5, 0.2] }}
             transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
           />
@@ -494,20 +517,19 @@ const AgentThinkingSection = ({ content, isComplete }: { content: string, isComp
               transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
             />
           </div>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <motion.div
-            animate={{ rotate: isOpen ? 90 : 0 }}
-            className="text-blue-400/40 group-hover/think:text-blue-400 transition-colors"
-          >
-            <ChevronRight className="w-3.5 h-3.5" />
-          </motion.div>
+        </div>        <div className="flex items-center gap-1.5 ml-0.5">
           <TextShimmer
-            className="text-[13px] font-bold text-blue-400/80 tracking-widest select-none drop-shadow-[0_0_5px_rgba(59,130,246,0.3)]"
+            className="text-[13px] font-bold text-white/60 tracking-widest select-none drop-shadow-[0_0_5px_rgba(255,255,255,0.2)]"
             duration={2}
           >
             Thinking
           </TextShimmer>
+          <motion.div
+            animate={{ rotate: isOpen ? 90 : 0 }}
+            className="text-white/20 group-hover/think:text-white/40 transition-colors"
+          >
+            <ChevronRight className="w-3.5 h-3.5" />
+          </motion.div>
         </div>
       </button>
     </div>
@@ -524,7 +546,9 @@ const AgentThinkingSection = ({ content, isComplete }: { content: string, isComp
             animate={{ opacity: 1, x: 0 }}
             className="pl-8 border-l border-white/5 py-1"
           >
-            {content.includes('...') ? (
+            {content === 'SKELETON' ? (
+              <AgentSkeletonLoader />
+            ) : content.includes('...') ? (
               <TextShimmer className="text-white/40 text-[14.5px] leading-relaxed italic font-medium tracking-tight" duration={3}>
                 {content}
               </TextShimmer>
@@ -578,7 +602,7 @@ const AgentTaskPill = ({ step }: { step: AgentStep }) => {
       <div className={cn(
         "flex items-center justify-center w-5 h-5 rounded-full border transition-all z-10 relative overflow-hidden",
         step.status === 'active' 
-          ? "bg-blue-500/20 border-blue-400/30 text-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.5)]" 
+          ? "bg-white/20 border-white/30 text-white shadow-[0_0_12px_rgba(255,255,255,0.4)]" 
           : "bg-white/5 border-white/10 text-white/40 group-hover/pill:text-white group-hover/pill:border-white/20"
       )}>
         {step.status === 'active' && (
@@ -1372,7 +1396,7 @@ export default function ChatInterface({
       role: 'assistant',
       content: { text: '', list: [], footer: '' },
       time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
-      meta: { actionType: 'agent_loop', isStreaming: true, liveThinking: 'Initializing Arcus...' }
+      meta: { actionType: 'agent_loop', isStreaming: true, liveThinking: 'SKELETON' }
     };
     setMessages(prev => [...prev, placeholderMsg]);
 
