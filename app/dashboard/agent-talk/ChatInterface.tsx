@@ -456,7 +456,8 @@ const NoScrollbarStyles = () => (
 );
 
 const AgentThinkingSection = ({ content, isComplete }: { content: string, isComplete?: boolean }) => {
-  if (!content && isComplete) return null;
+  if (isComplete) return null;
+  if (!content) return null;
 
   return (
     <div className="flex flex-col gap-3 mt-4 mb-6">
@@ -529,7 +530,12 @@ const AgentTaskPill = ({ step }: { step: AgentStep }) => {
           transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
         />
       )}
-      <div className="flex items-center justify-center w-5 h-5 rounded-full bg-white/5 border border-white/10 text-white/40 group-hover/pill:text-white group-hover/pill:border-white/20 transition-all z-10">
+      <div className={cn(
+        "flex items-center justify-center w-5 h-5 rounded-full border transition-all z-10",
+        step.status === 'active' 
+          ? "bg-blue-500/20 border-blue-400/30 text-blue-400 shadow-[0_0_8px_rgba(59,130,246,0.4)]" 
+          : "bg-white/5 border-white/10 text-white/40 group-hover/pill:text-white group-hover/pill:border-white/20"
+      )}>
         {getIcon()}
       </div>
       <div className="z-10">
@@ -1314,7 +1320,7 @@ export default function ChatInterface({
       role: 'assistant',
       content: { text: '', list: [], footer: '' },
       time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
-      meta: { actionType: 'agent_loop', isStreaming: true }
+      meta: { actionType: 'agent_loop', isStreaming: true, liveThinking: 'Initializing Arcus...' }
     };
     setMessages(prev => [...prev, placeholderMsg]);
 
@@ -1387,6 +1393,10 @@ export default function ChatInterface({
                 }
                 return steps;
               });
+              setMessages(msgs => msgs.map(m => {
+                if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+                return { ...m, meta: { ...(m.meta || {}), liveThinking: data.step || 'Reasoning...' } };
+              }));
               break;
 
             case 'tool_call':
@@ -1497,7 +1507,7 @@ export default function ChatInterface({
                 );
                 setMessages(msgs => msgs.map(m => {
                   if (m.id !== assistantMsgId || m.type !== 'agent') return m;
-                  return { ...m, meta: { ...(m.meta || {}), isStreaming: false, agentSteps: finalSteps, agentRunId: data.runId, agentDurationMs: data.durationMs } };
+                  return { ...m, meta: { ...(m.meta || {}), isStreaming: false, agentSteps: finalSteps, agentRunId: data?.runId, agentDurationMs: data?.durationMs, liveThinking: '' } };
                 }));
                 return finalSteps;
               });
@@ -1537,7 +1547,11 @@ export default function ChatInterface({
       console.error('[AgentLoop] Error:', err);
       setMessages(prev => prev.map(m => {
         if (m.id !== assistantMsgId || m.type !== 'agent') return m;
-        return { ...m, content: { text: err.message || 'Something went wrong. Please try again.', list: [], footer: '' }, meta: { ...(m.meta || {}), isStreaming: false } };
+        const isLimitError = err.message?.toLowerCase().includes('limit') || 
+                            err.message?.toLowerCase().includes('credits') || 
+                            err.message?.toLowerCase().includes('quota') ||
+                            err.message?.toLowerCase().includes('403');
+        return { ...m, content: { text: err.message || 'Something went wrong. Please try again.', list: [], footer: '' }, meta: { ...(m.meta || {}), isStreaming: false, limitReached: isLimitError, liveThinking: '' } };
       }));
     } finally {
       setIsLoading(false);
@@ -3363,14 +3377,14 @@ export default function ChatInterface({
                                     )}
 
 
-                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.liveThinking && (
+                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.liveThinking && !(msg as AgentMessage).meta?.limitReached && (
                                       <AgentThinkingSection
                                         content={(msg as AgentMessage).meta!.liveThinking!}
                                         isComplete={(msg as AgentMessage).meta?.isStreaming === false}
                                       />
                                     )}
 
-                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.agentSteps && (
+                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.agentSteps && !(msg as AgentMessage).meta?.limitReached && (
                                       <div className="flex flex-col gap-0.5 mb-4">
                                         {(msg as AgentMessage).meta!.agentSteps!.filter(s => s.type === 'tool_call').map((step, idx) => (
                                           <AgentTaskPill key={step.id || idx} step={step} />
