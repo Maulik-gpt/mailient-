@@ -584,14 +584,35 @@ function AgentThinkingSection({ content, isComplete }: { content: string, isComp
             >
               {content === 'SKELETON' ? (
                 <AgentSkeletonLoader />
-              ) : content.includes('...') && !isComplete ? (
-                <TextShimmer className="text-white/30 text-[13.5px] leading-relaxed italic font-normal tracking-tight" duration={3}>
-                  {content}
-                </TextShimmer>
               ) : (
-                <p className="text-white/20 text-[13.5px] leading-relaxed italic font-normal tracking-tight">
-                  {content}
-                </p>
+                <div className={cn(
+                  "text-[13.5px] leading-relaxed italic font-normal tracking-tight markdown-thought",
+                  isComplete ? "text-white/30" : "text-white/50"
+                )}>
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      ...MarkdownComponents,
+                      // Override some components for a more subtle "thought" look
+                      h1: ({ children }: any) => <h1 className="text-base font-bold text-white/60 mb-2 mt-4 first:mt-0 uppercase tracking-widest">{children}</h1>,
+                      h2: ({ children }: any) => <h2 className="text-sm font-bold text-white/50 mb-1.5 mt-3">{children}</h2>,
+                      h3: ({ children }: any) => <h3 className="text-xs font-bold text-white/40 mb-1 mt-2">{children}</h3>,
+                      p: ({ children }: any) => <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>,
+                      ul: ({ children }: any) => <ul className="list-disc pl-4 mb-2 space-y-1 text-white/40">{children}</ul>,
+                      ol: ({ children }: any) => <ol className="list-decimal pl-4 mb-2 space-y-1 text-white/40">{children}</ol>,
+                      hr: () => <hr className="my-4 border-0 h-px bg-white/[0.05]" />,
+                      table: ({ children }: any) => (
+                        <div className="my-4 w-full overflow-hidden rounded-xl border border-white/[0.05] bg-white/[0.01]">
+                          <table className="w-full border-collapse text-[12px] text-left">
+                            {children}
+                          </table>
+                        </div>
+                      ),
+                    }}
+                  >
+                    {content}
+                  </ReactMarkdown>
+                </div>
               )}
             </motion.div>
           </motion.div>
