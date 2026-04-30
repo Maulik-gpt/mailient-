@@ -739,6 +739,14 @@ export function GradientWave({
 
     return () => {
       gradientRef.current?.stop();
+      
+      // Explicitly lose WebGL context to free up resources and prevent context leaks
+      if (gradientRef.current?.minigl?.gl) {
+        const gl = gradientRef.current.minigl.gl;
+        const loseContext = gl.getExtension('WEBGL_lose_context');
+        if (loseContext) loseContext.loseContext();
+      }
+
       if (containerRef.current?.contains(canvas)) {
         containerRef.current.removeChild(canvas);
       }

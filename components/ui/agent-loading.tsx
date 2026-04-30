@@ -1,39 +1,48 @@
 "use client";
 
 import { HomeFeedSidebar } from "@/components/ui/home-feed-sidebar";
-import { TextShimmer } from "@/components/ui/text-shimmer";
+import { motion } from "framer-motion";
 
 export function AgentLoading() {
     return (
-        <div className="flex h-screen w-full bg-[#000000] text-white">
+        <div className="flex h-screen w-full bg-[#000000] text-white overflow-hidden">
             <HomeFeedSidebar />
-            <div className="flex flex-1 flex-col items-center justify-center pl-16">
-                <div className="relative flex items-center justify-center">
-                    {/* Centered smooth grey ripples */}
-                    <div className="absolute h-1 w-1 bg-neutral-500 rounded-full animate-[ripple_3s_infinite]" />
-                    <div className="absolute h-1 w-1 bg-neutral-500 rounded-full animate-[ripple_3s_infinite_1s]" />
-                    <div className="absolute h-1 w-1 bg-neutral-500 rounded-full animate-[ripple_3s_infinite_2s]" />
-
-                    {/* Minimalist center dot */}
-                    <div className="relative z-10 h-2 w-2 bg-neutral-400 rounded-full shadow-[0_0_15px_rgba(163,163,163,0.5)]" />
+            <div className="flex flex-1 flex-col items-start justify-center pl-32 max-w-[800px]">
+                <div className="flex flex-col gap-4 w-full">
+                    {/* Header Skeleton */}
+                    <div className="h-4 w-48 bg-white/5 rounded-full relative overflow-hidden mb-8 border border-white/[0.03]">
+                        <motion.div
+                            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.05] to-transparent w-[200%]"
+                            animate={{ x: ['-100%', '100%'] }}
+                            transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+                        />
+                    </div>
+                    
+                    {/* Content Skeletons */}
+                    <div className="flex flex-col gap-3 w-full">
+                        <div className="h-3 w-full bg-white/[0.03] rounded-md relative overflow-hidden border border-white/[0.02]">
+                            <motion.div
+                                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.03] to-transparent w-[200%]"
+                                animate={{ x: ['-100%', '100%'] }}
+                                transition={{ repeat: Infinity, duration: 2.5, ease: "linear" }}
+                            />
+                        </div>
+                        <div className="h-3 w-[92%] bg-white/[0.03] rounded-md relative overflow-hidden border border-white/[0.02]">
+                            <motion.div
+                                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.03] to-transparent w-[200%]"
+                                animate={{ x: ['-100%', '100%'] }}
+                                transition={{ repeat: Infinity, duration: 2.5, ease: "linear", delay: 0.2 }}
+                            />
+                        </div>
+                        <div className="h-3 w-[70%] bg-white/[0.03] rounded-md relative overflow-hidden border border-white/[0.02]">
+                            <motion.div
+                                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.03] to-transparent w-[200%]"
+                                animate={{ x: ['-100%', '100%'] }}
+                                transition={{ repeat: Infinity, duration: 2.5, ease: "linear", delay: 0.4 }}
+                            />
+                        </div>
+                    </div>
                 </div>
-
-                <TextShimmer className="mt-12 text-sm font-light tracking-[0.2em] uppercase" duration={2.5}>
-                    Synchronizing Arcus
-                </TextShimmer>
-
-                <style jsx>{`
-                    @keyframes ripple {
-                        0% {
-                            transform: scale(0);
-                            opacity: 0.8;
-                        }
-                        100% {
-                            transform: scale(60);
-                            opacity: 0;
-                        }
-                    }
-                `}</style>
             </div>
         </div>
     );

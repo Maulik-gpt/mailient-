@@ -163,6 +163,7 @@ const TypewriterMarkdown = ({ content, speed = 4, hideLinks }: { content: string
     </ReactMarkdown>
   );
 };
+const GRA_DEFORM = { incline: 0.3, noiseAmp: 150, noiseFlow: 2 };
 
 const MessageContent = ({ content, isUser, isTyping, isNewResponse, hideLinks }: { content: any, isUser?: boolean, isTyping?: boolean, isNewResponse?: boolean, hideLinks?: boolean }) => {
   const textColorClass = isUser ? "text-white" : "text-white/90";
@@ -1579,13 +1580,35 @@ export default function ChatInterface({
               break;
 
             case 'done':
+              // Fallback: If no text was generated but tools were called, synthesize a summary
+              let finalProcessedText = finalContent.trim();
+              if (!finalProcessedText && stepIndex > 0) {
+                const completedSteps = agentSteps.filter(s => s.status === 'completed');
+                if (completedSteps.length > 0) {
+                  finalProcessedText = `I've finished executing the plan. Successfully completed ${completedSteps.length} action(s).`;
+                } else {
+                  finalProcessedText = "I've completed the initialization, but haven't found a reason to provide a detailed text response yet.";
+                }
+              }
+
               setAgentSteps(prev => {
                 const finalSteps = prev.map(s =>
                   s.status === 'active' ? { ...s, status: 'completed' as const, completedAt: Date.now() } : s
                 );
                 setMessages(msgs => msgs.map(m => {
-                  if (m.id !== assistantMsgId || m.type !== 'agent') return m;
-                  return { ...m, meta: { ...(m.meta || {}), isStreaming: false, agentSteps: finalSteps, agentRunId: data?.runId, agentDurationMs: data?.durationMs, liveThinking: '' } };
+                  if (m.id !== assistantMsgId || m.role !== 'assistant') return m;
+                  return { 
+                    ...m, 
+                    content: { text: finalProcessedText, list: [], footer: '' },
+                    meta: { 
+                      ...(m.meta || {}), 
+                      isStreaming: false, 
+                      agentSteps: finalSteps, 
+                      agentRunId: data?.runId, 
+                      agentDurationMs: data?.durationMs, 
+                      liveThinking: '' 
+                    } 
+                  };
                 }));
                 return finalSteps;
               });
@@ -1623,13 +1646,32 @@ export default function ChatInterface({
     } catch (err: any) {
       if (err.name === 'AbortError') { setMessages(prev => prev.filter(m => m.id !== assistantMsgId)); return; }
       console.error('[AgentLoop] Error:', err);
+      
       setMessages(prev => prev.map(m => {
-        if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+        if (m.id !== assistantMsgId || m.role !== 'assistant') return m;
+        
         const isLimitError = err.message?.toLowerCase().includes('limit') || 
                             err.message?.toLowerCase().includes('credits') || 
                             err.message?.toLowerCase().includes('quota') ||
                             err.message?.toLowerCase().includes('403');
-        return { ...m, content: { text: err.message || 'Something went wrong. Please try again.', list: [], footer: '' }, meta: { ...(m.meta || {}), isStreaming: false, limitReached: isLimitError, liveThinking: '' } };
+
+        // Ensure we don't leave the user with a blank message
+        const currentText = (m.content as any).text || '';
+        const errorMessage = err.message || 'The connection was lost during processing.';
+        const finalText = currentText 
+          ? `${currentText}\n\n---\n*The process was interrupted: ${errorMessage}*`
+          : `I encountered an issue: ${errorMessage}. Please try again.`;
+
+        return { 
+          ...m, 
+          content: { text: finalText, list: [], footer: '' }, 
+          meta: { 
+            ...(m.meta || {}), 
+            isStreaming: false, 
+            limitReached: isLimitError, 
+            liveThinking: '' 
+          } 
+        };
       }));
     } finally {
       setIsLoading(false);
@@ -3051,7 +3093,7 @@ export default function ChatInterface({
             <GradientWave
               colors={isDark ? ["#000000", "#111111", "#080808", "#111111"] : ["#F9FAFB", "#F3F4F6", "#E5E7EB", "#F9FAFB"]}
               className={isDark ? "opacity-100" : "opacity-40"}
-              deform={{ incline: 0.3, noiseAmp: 150, noiseFlow: 2 }}
+              deform={GRA_DEFORM}
             />
             <div className={cn(
               "absolute -top-[10%] -right-[10%] w-[60%] h-[60%] rounded-full blur-[140px]",
