@@ -31,6 +31,7 @@ export interface AgentStep {
   startedAt: number;
   completedAt?: number;
   iteration: number;
+  params?: any;
 }
 
 interface AgentExecutionTimelineProps {

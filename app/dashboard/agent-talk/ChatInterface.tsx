@@ -456,44 +456,89 @@ const NoScrollbarStyles = () => (
 );
 
 const AgentThinkingSection = ({ content, isComplete }: { content: string, isComplete?: boolean }) => {
+  const [isOpen, setIsOpen] = useState(true);
   if (isComplete) return null;
   if (!content) return null;
 
   return (
-    <div className="flex flex-col gap-3 mt-4 mb-6">
+    <div className="flex flex-col gap-3 mt-4 mb-6 relative">
       <div className="flex items-center gap-3">
-        <div className="relative w-4 h-4 flex-shrink-0">
+        <button 
+          onClick={() => setIsOpen(!isOpen)}
+          className="flex items-center gap-3 group/think"
+        >
+          <div className="relative w-5 h-5 flex-shrink-0">
+          {/* Inner Core */}
           <motion.div
-            className="absolute inset-0 rounded-full bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.8)]"
-            animate={{ scale: [1, 1.25, 1], opacity: [0.4, 0.8, 0.4] }}
+            className="absolute inset-1 rounded-full bg-blue-400 z-20 shadow-inner"
+            animate={{ scale: [0.9, 1.1, 0.9] }}
+            transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+          />
+          {/* Middle Pulse */}
+          <motion.div
+            className="absolute inset-0 rounded-full bg-blue-500/40 z-10"
+            animate={{ scale: [1, 1.5, 1], opacity: [0.3, 0.6, 0.3] }}
+            transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+          />
+          {/* Outer Glow */}
+          <motion.div
+            className="absolute -inset-2 rounded-full bg-blue-600/10 blur-md z-0"
+            animate={{ opacity: [0.2, 0.5, 0.2] }}
             transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
           />
-          <div className="absolute inset-1 rounded-full bg-blue-400 border border-blue-200/40 shadow-inner overflow-hidden">
+          {/* Shimmer Overlay on Orb */}
+          <div className="absolute inset-1 rounded-full overflow-hidden z-30 pointer-events-none">
             <motion.div
               className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent w-[200%]"
               animate={{ x: ['-100%', '100%'] }}
-              transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+              transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
             />
           </div>
         </div>
-        <TextShimmer
-          className="text-[13px] font-bold text-white/40 tracking-wider uppercase select-none"
-          duration={2.5}
-        >
-          Thinking
-        </TextShimmer>
-      </div>
-      <motion.div
-        initial={{ opacity: 0, x: -5 }}
-        animate={{ opacity: 1, x: 0 }}
-        className="pl-7 border-l border-white/5 py-1"
-      >
-        <p className="text-white/30 text-[14.5px] leading-relaxed italic font-medium tracking-tight">
-          {content}
-        </p>
-      </motion.div>
+        <div className="flex items-center gap-1.5">
+          <motion.div
+            animate={{ rotate: isOpen ? 90 : 0 }}
+            className="text-blue-400/40 group-hover/think:text-blue-400 transition-colors"
+          >
+            <ChevronRight className="w-3.5 h-3.5" />
+          </motion.div>
+          <TextShimmer
+            className="text-[13px] font-bold text-blue-400/80 tracking-widest select-none drop-shadow-[0_0_5px_rgba(59,130,246,0.3)]"
+            duration={2}
+          >
+            Thinking
+          </TextShimmer>
+        </div>
+      </button>
     </div>
-  );
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: 'auto', opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          className="overflow-hidden"
+        >
+          <motion.div
+            initial={{ opacity: 0, x: -5 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="pl-8 border-l border-white/5 py-1"
+          >
+            {content.includes('...') ? (
+              <TextShimmer className="text-white/40 text-[14.5px] leading-relaxed italic font-medium tracking-tight" duration={3}>
+                {content}
+              </TextShimmer>
+            ) : (
+              <p className="text-white/30 text-[14.5px] leading-relaxed italic font-medium tracking-tight">
+                {content}
+              </p>
+            )}
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  </div>
+);
 };
 
 const AgentTaskPill = ({ step }: { step: AgentStep }) => {
@@ -531,11 +576,18 @@ const AgentTaskPill = ({ step }: { step: AgentStep }) => {
         />
       )}
       <div className={cn(
-        "flex items-center justify-center w-5 h-5 rounded-full border transition-all z-10",
+        "flex items-center justify-center w-5 h-5 rounded-full border transition-all z-10 relative overflow-hidden",
         step.status === 'active' 
-          ? "bg-blue-500/20 border-blue-400/30 text-blue-400 shadow-[0_0_8px_rgba(59,130,246,0.4)]" 
+          ? "bg-blue-500/20 border-blue-400/30 text-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.5)]" 
           : "bg-white/5 border-white/10 text-white/40 group-hover/pill:text-white group-hover/pill:border-white/20"
       )}>
+        {step.status === 'active' && (
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent w-[200%]"
+            animate={{ x: ['-100%', '100%'] }}
+            transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+          />
+        )}
         {getIcon()}
       </div>
       <div className="z-10">
@@ -1404,31 +1456,33 @@ export default function ChatInterface({
               // Initial label in V3 form (or gerund if preferred for active state, but user asked for V3)
               // We'll use "Executing..." for active and V3 for completed if that feels more natural, 
               // but user specifically asked for V3 for the task pill.
-              const getV3Label = (tool: string, params: any) => {
+              const getStepLabel = (tool: string, params: any, status: 'active' | 'completed' | 'error') => {
+                const isActive = status === 'active';
                 switch (tool) {
-                  case 'search_inbox': return `Searched emails${params?.query ? ` for "${params.query}"` : ''}`;
-                  case 'search_web': return `Researched web${params?.query ? ` for "${params.query}"` : ''}`;
-                  case 'read_email': return 'Read email content';
-                  case 'read_browser_page': return `Visited ${params?.url || 'page'}`;
-                  case 'save_draft': return 'Drafted response';
-                  case 'send_email': return 'Sent email';
-                  case 'schedule_meeting': return 'Scheduled meeting';
-                  case 'create_note': return 'Created note';
-                  case 'search_notes': return 'Searched notes';
-                  default: return `Executed ${tool}`;
+                  case 'search_inbox': return isActive ? `Searching emails${params?.query ? ` for "${params.query}"` : '...'}` : `Searched emails${params?.query ? ` for "${params.query}"` : ''}`;
+                  case 'search_web': return isActive ? `Researching web${params?.query ? ` for "${params.query}"` : '...'}` : `Researched web${params?.query ? ` for "${params.query}"` : ''}`;
+                  case 'read_email': return isActive ? 'Reading email content...' : 'Read email content';
+                  case 'read_browser_page': return isActive ? `Visiting ${params?.url || 'page'}...` : `Visited ${params?.url || 'page'}`;
+                  case 'save_draft': return isActive ? 'Drafting response...' : 'Drafted response';
+                  case 'send_email': return isActive ? 'Sending email...' : 'Sent email';
+                  case 'schedule_meeting': return isActive ? 'Scheduling meeting...' : 'Scheduled meeting';
+                  case 'create_note': return isActive ? 'Creating note...' : 'Created note';
+                  case 'search_notes': return isActive ? 'Searching notes...' : 'Searched notes';
+                  default: return isActive ? `Executing ${tool}...` : `Executed ${tool}`;
                 }
               };
 
               setAgentSteps(prev => {
-                const steps = prev.map(s => s.status === 'active' ? { ...s, status: 'completed' as const, completedAt: Date.now() } : s);
+                const steps = prev.map(s => s.status === 'active' ? { ...s, status: 'completed' as const, completedAt: Date.now(), label: getStepLabel(s.tool || '', s.params || {}, 'completed') } : s);
                 steps.push({
                   id: `al-tool-${stepIndex}`,
                   type: 'tool_call',
                   tool: data.tool,
-                  label: getV3Label(data.tool, data.params),
+                  label: getStepLabel(data.tool, data.params, 'active'),
                   status: 'active',
                   startedAt: Date.now(),
-                  iteration: data.iteration
+                  iteration: data.iteration,
+                  params: data.params
                 });
                 return steps;
               });
@@ -1437,7 +1491,7 @@ export default function ChatInterface({
             case 'tool_result':
               setAgentSteps(prev => prev.map(s =>
                 s.status === 'active'
-                  ? { ...s, status: 'completed' as const, completedAt: Date.now(), summary: data.summary || `${data.tool} done` }
+                  ? { ...s, status: 'completed' as const, completedAt: Date.now(), summary: data.summary || `${data.tool} done`, label: getStepLabel(s.tool || '', s.params || {}, 'completed') }
                   : s
               ));
               break;
@@ -3486,12 +3540,23 @@ export default function ChatInterface({
                                           </a>
                                         </div>
 
-                                        <div className="group relative flex items-center justify-between gap-4 px-5 py-3 w-full max-w-[700px] bg-[#111] border border-white/[0.08] rounded-full transition-all duration-300 hover:border-white/20 shadow-2xl overflow-hidden mt-2">
-                                          <div className="absolute inset-0 bg-gradient-to-r from-white/[0.02] to-transparent pointer-events-none" />
+                                        <div className="group relative flex items-center justify-between gap-4 px-6 py-4 w-full max-w-[700px] bg-[#0a0a0a] border border-white/[0.08] rounded-2xl transition-all duration-500 hover:border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden mt-4">
+                                          {/* Premium Sweep Animation */}
+                                          <motion.div 
+                                            className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/[0.05] to-transparent w-[200%]"
+                                            animate={{ x: ['-100%', '100%'] }}
+                                            transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+                                          />
+                                          <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
 
                                           <div className="flex items-center gap-3.5 z-10">
-                                            <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
-                                              <Sparkles className="w-4 h-4 text-white/40" />
+                                            <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0 relative overflow-hidden">
+                                              <motion.div
+                                                className="absolute inset-0 bg-gradient-to-tr from-blue-500/20 to-transparent"
+                                                animate={{ opacity: [0.3, 0.6, 0.3] }}
+                                                transition={{ repeat: Infinity, duration: 2 }}
+                                              />
+                                              <Sparkles className="w-5 h-5 text-blue-400 z-10" />
                                             </div>
                                             <p className="text-white/90 text-[13.5px] font-medium tracking-tight">
                                               {arcusCredits && (arcusCredits.remaining > 0 || arcusCredits.isUnlimited)
