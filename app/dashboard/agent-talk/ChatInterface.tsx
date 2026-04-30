@@ -339,6 +339,8 @@ interface AgentMessage {
     externalRefs?: any; // Phase 1: External references from execution
     requiresRetry?: boolean; // Phase 1: Whether retry is required
     liveThinking?: string; // Real-time thoughts extracted from <thinking> tags
+    thinkingComplete?: boolean; // Whether the current thinking step is finished
+    continueClicked?: boolean; // Whether the user clicked continue
     searchExecution?: {
       mainQuery: string;
       subQueries: Array<{
