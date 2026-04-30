@@ -43,6 +43,8 @@ import { NotificationService } from '@/lib/notification-service';
 import { GradientWave } from '@/components/ui/gradient-wave';
 import { useArcusAgentStream } from './hooks/useArcusAgentStream';
 
+const GRA_DEFORM = { incline: 0.3, noiseAmp: 150, noiseFlow: 2 };
+
 // Detect and wrap URLs in plain text with premium styling for actions
 const linkify = (text: string, isUser: boolean = false): string => {
   if (!text) return '';
@@ -163,7 +165,6 @@ const TypewriterMarkdown = ({ content, speed = 4, hideLinks }: { content: string
     </ReactMarkdown>
   );
 };
-const GRA_DEFORM = { incline: 0.3, noiseAmp: 150, noiseFlow: 2 };
 
 const MessageContent = ({ content, isUser, isTyping, isNewResponse, hideLinks }: { content: any, isUser?: boolean, isTyping?: boolean, isNewResponse?: boolean, hideLinks?: boolean }) => {
   const textColorClass = isUser ? "text-white" : "text-white/90";
