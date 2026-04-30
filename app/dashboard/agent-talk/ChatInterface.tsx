@@ -117,37 +117,47 @@ const linkify = (text: string, isUser: boolean = false): string => {
   });
 };
 
-const MarkdownComponents = {
-  h1: ({ node, ...props }: any) => <h1 className="text-2xl font-bold text-white mt-8 mb-4 tracking-tight leading-tight" {...props} />,
-  h2: ({ node, ...props }: any) => <h2 className="text-xl font-bold text-white mt-6 mb-3 tracking-tight leading-tight" {...props} />,
-  h3: ({ node, ...props }: any) => <h3 className="text-lg font-bold text-white mt-5 mb-2 tracking-tight leading-tight" {...props} />,
-  h4: ({ node, ...props }: any) => <h4 className="text-base font-bold text-white mt-4 mb-2 tracking-tight leading-tight" {...props} />,
-  h5: ({ node, ...props }: any) => <h5 className="text-[16px] font-bold text-white mt-3 mb-2 tracking-tight leading-tight" {...props} />,
-  h6: ({ node, ...props }: any) => <h6 className="text-[15px] font-bold text-white mt-3 mb-2 tracking-tight leading-tight" {...props} />,
-  p: ({ node, ...props }: any) => <p className="mb-4 last:mb-0 leading-[1.7] text-[17px] text-white/90" {...props} />,
-  ul: ({ node, ...props }: any) => <ul className="space-y-2 my-4 list-none pl-2" {...props} />,
-  ol: ({ node, ...props }: any) => <ol className="space-y-2 my-4 list-decimal pl-6 text-white/90" {...props} />,
-  li: ({ node, ...props }: any) => (
-    <li className="relative pl-5 text-[17px] text-white/90">
-      <span className="absolute left-0 top-2.5 w-1.5 h-1.5 bg-white/60 rounded-full" />
-      {props.children}
-    </li>
-  ),
-  strong: ({ node, ...props }: any) => <strong className="font-bold text-white" {...props} />,
-  hr: ({ node, ...props }: any) => <hr className="my-8 border-t border-[#222]" {...props} />,
-  table: ({ node, ...props }: any) => (
-    <div className="overflow-x-auto my-8">
-      <table className="w-full text-left text-[14px] border-collapse" {...props} />
+const MarkdownComponents: any = {
+  h1: ({ children }: any) => <h1 className="text-2xl font-bold text-white mb-4 mt-6 first:mt-0 tracking-tight">{children}</h1>,
+  h2: ({ children }: any) => <h2 className="text-xl font-bold text-white/90 mb-3 mt-5 tracking-tight">{children}</h2>,
+  h3: ({ children }: any) => <h3 className="text-lg font-bold text-white/80 mb-2 mt-4 tracking-tight">{children}</h3>,
+  h4: ({ children }: any) => <h4 className="text-base font-bold text-white/70 mb-2 mt-3">{children}</h4>,
+  h5: ({ children }: any) => <h5 className="text-sm font-bold text-white/60 mb-1 mt-2">{children}</h5>,
+  h6: ({ children }: any) => <h6 className="text-xs font-bold text-white/50 mb-1 mt-2 uppercase tracking-widest">{children}</h6>,
+  p: ({ children }: any) => <p className="mb-4 last:mb-0 leading-relaxed text-[16px] text-white/80">{children}</p>,
+  ul: ({ children }: any) => <ul className="list-disc pl-6 mb-4 space-y-1.5 text-white/70">{children}</ul>,
+  ol: ({ children }: any) => <ol className="list-decimal pl-6 mb-4 space-y-1.5 text-white/70">{children}</ol>,
+  li: ({ children }: any) => <li className="pl-1">{children}</li>,
+  table: ({ children }: any) => (
+    <div className="my-6 w-full overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm shadow-xl">
+      <table className="w-full border-collapse text-sm text-left">
+        {children}
+      </table>
     </div>
   ),
-  thead: ({ node, ...props }: any) => <thead className="text-white/60 font-medium border-b border-[#333]" {...props} />,
-  th: ({ node, ...props }: any) => <th className="px-4 py-3 font-semibold whitespace-nowrap" {...props} />,
-  td: ({ node, ...props }: any) => <td className="px-4 py-3 border-b border-[#222] text-white/90" {...props} />,
-  a: ({ node, ...props }: any) => <a className="text-blue-400 hover:text-blue-300 underline underline-offset-4 decoration-blue-400/30 hover:decoration-blue-400" target="_blank" rel="noopener noreferrer" {...props} />,
-  code: ({ node, inline, ...props }: any) =>
-    inline
-      ? <code className="px-1.5 py-0.5 bg-[#222] rounded-md text-[13px] font-mono text-white/90" {...props} />
-      : <code className="block p-5 bg-[#111] text-white/90 rounded-xl my-6 text-[14px] font-mono overflow-x-auto border border-[#222]" {...props} />,
+  thead: ({ children }: any) => <thead className="bg-white/[0.05] border-b border-white/[0.1]">{children}</thead>,
+  th: ({ children }: any) => <th className="px-5 py-3.5 font-bold text-white/90 uppercase tracking-wider text-[11px]">{children}</th>,
+  td: ({ children }: any) => <td className="px-5 py-3 text-white/60 border-b border-white/[0.03] last:border-0">{children}</td>,
+  tr: ({ children }: any) => <tr className="hover:bg-white/[0.02] transition-colors">{children}</tr>,
+  hr: () => <hr className="my-8 border-0 h-px bg-gradient-to-r from-transparent via-white/[0.15] to-transparent" />,
+  blockquote: ({ children }: any) => <blockquote className="border-l-4 border-white/20 pl-4 py-1 italic text-white/60 my-6 bg-white/[0.02] rounded-r-xl pr-4">{children}</blockquote>,
+  code: ({ node, inline, className, children, ...props }: any) => (
+    <code className={cn(
+      "px-1.5 py-0.5 rounded-md text-sm font-mono",
+      inline ? "bg-white/[0.08] text-white/90" : "block p-4 bg-[#0d0d0d] border border-white/10 text-white/80 my-4 overflow-x-auto",
+      className
+    )} {...props}>
+      {children}
+    </code>
+  ),
+  a: ({ node, ...props }: any) => (
+    <a 
+      className="text-white underline underline-offset-4 decoration-white/20 hover:decoration-white/60 transition-all font-medium" 
+      target="_blank" 
+      rel="noopener noreferrer" 
+      {...props} 
+    />
+  )
 };
 
 const TypewriterMarkdown = ({ content, speed = 4, hideLinks }: { content: string, speed?: number, hideLinks?: boolean }) => {
@@ -197,22 +207,17 @@ const TypewriterMarkdown = ({ content, speed = 4, hideLinks }: { content: string
   );
 };
 
+
 const MessageContent = ({ content, isUser, isTyping, isNewResponse, hideLinks }: { content: any, isUser?: boolean, isTyping?: boolean, isNewResponse?: boolean, hideLinks?: boolean }) => {
   const textColorClass = isUser ? "text-white" : "text-white/90";
   let textContent = typeof content === 'string' ? content : (content.text || '');
 
-  // For Assistant (AI): Absolute raw output with zero structure or animation
-  if (!isUser) {
-    return (
-      <div className={`${textColorClass} w-full whitespace-pre-wrap text-[17px] leading-relaxed break-words`}>
-        {textContent}
-      </div>
-    );
-  }
-
-  // For User: Keep standard markdown rendering
   return (
-    <div className={`${textColorClass} w-full`}>
+    <div className={cn(
+      "w-full",
+      textColorClass,
+      !isUser && "max-w-none prose prose-invert prose-headings:mb-4 prose-p:mb-4 prose-li:mb-1 prose-table:my-6"
+    )}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
