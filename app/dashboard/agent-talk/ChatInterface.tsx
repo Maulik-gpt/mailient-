@@ -266,22 +266,21 @@ function extractSearchTerm(message: string): string {
 function extractThinking(message: string): { thinking: string; cleanText: string } {
   if (typeof message !== 'string') return { thinking: '', cleanText: '' };
 
-  // Match <thinking>...</thinking>
-  const thinkingMatch = message.match(/<thinking>([\s\S]*?)<\/thinking>/i);
-  if (thinkingMatch) {
-    const thinking = thinkingMatch[1].trim();
-    const cleanText = message.replace(/<thinking>[\s\S]*?<\/thinking>/gi, '').trim();
-    return { thinking, cleanText };
+  // 1. Remove all fully closed thinking blocks from the clean text
+  let cleanText = message.replace(/<thinking>[\s\S]*?<\/thinking>/gi, '').trim();
+  
+  // 2. Check for a currently open/streaming thinking tag at the end
+  let thinking = '';
+  if (cleanText.includes('<thinking>')) {
+    const parts = cleanText.split('<thinking>');
+    thinking = parts[parts.length - 1].trim();
+    // The clean text is everything before the last <thinking> tag
+    cleanText = parts.slice(0, -1).join('<thinking>').trim();
+    // If we have previous closed blocks that were stripped, cleanText might still contain 
+    // tags if we used split. But replace already handled closed ones.
   }
 
-  // Fallback for partial/streaming <thinking> tag
-  if (message.includes('<thinking>')) {
-    const parts = message.split('<thinking>');
-    const thinking = parts[1] || '';
-    return { thinking, cleanText: parts[0].trim() };
-  }
-
-  return { thinking: '', cleanText: message.trim() };
+  return { thinking, cleanText };
 }
 
 interface Email {
@@ -1523,6 +1522,11 @@ export default function ChatInterface({
                 });
                 return steps;
               });
+              // Mark thinking as complete for the UI since we moved to execution
+              setMessages(msgs => msgs.map(m => {
+                if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+                return { ...m, meta: { ...(m.meta || {}), thinkingComplete: true } };
+              }));
               break;
 
             case 'tool_result':
@@ -1567,8 +1571,8 @@ export default function ChatInterface({
 
             case 'message':
               rawOutput += (data.content || '');
-              const { thinking, cleanText } = extractThinking(rawOutput);
-              finalContent = cleanText;
+              const { thinking: liveThinkingText, cleanText: roadmapText } = extractThinking(rawOutput);
+              finalContent = roadmapText;
 
               setMessages(prev => prev.map(m => {
                 if (m.id !== assistantMsgId || m.type !== 'agent') return m;
@@ -1577,7 +1581,9 @@ export default function ChatInterface({
                   content: { text: finalContent.trim(), list: [], footer: '' },
                   meta: {
                     ...(m.meta || {}),
-                    liveThinking: thinking || (m.meta as any)?.liveThinking
+                    liveThinking: liveThinkingText || (m.meta as any)?.liveThinking,
+                    // If we have clean text (roadmap), thinking is effectively complete for this phase
+                    thinkingComplete: finalContent.trim().length > 0 ? true : (m.meta as any)?.thinkingComplete
                   }
                 };
               }));
@@ -3512,7 +3518,7 @@ export default function ChatInterface({
                                     {msg.role === 'assistant' && (msg as AgentMessage).meta?.liveThinking && !(msg as AgentMessage).meta?.limitReached && (
                                       <AgentThinkingSection
                                         content={(msg as AgentMessage).meta!.liveThinking!}
-                                        isComplete={(msg as AgentMessage).meta?.isStreaming === false}
+                                        isComplete={(msg as AgentMessage).meta?.thinkingComplete || (msg as AgentMessage).meta?.isStreaming === false}
                                       />
                                     )}
 
