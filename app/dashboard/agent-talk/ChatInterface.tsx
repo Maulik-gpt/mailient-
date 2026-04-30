@@ -45,6 +45,37 @@ import { useArcusAgentStream } from './hooks/useArcusAgentStream';
 
 const GRA_DEFORM = { incline: 0.3, noiseAmp: 150, noiseFlow: 2 };
 
+const THINKING_MESSAGES = ["Thinking", "Processing", "Analyzing", "Synthesizing", "Organizing", "Reviewing", "Refining", "Checking", "Polishing"];
+
+const DEEP_THINKING_MESSAGES = ["Thinking deep", "Reasoning", "Simulating outcomes", "Analyzing layers", "Synthesizing deep context", "Architecting solution", "Deeply processing", "Refining logic"];
+
+function RollingThinkingStatus({ onToggle, isOpen, isDeepThinking }: { onToggle: () => void, isOpen: boolean, isDeepThinking?: boolean }) {
+  const [index, setIndex] = useState(0);
+  const messages = isDeepThinking ? DEEP_THINKING_MESSAGES : THINKING_MESSAGES;
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIndex((prev) => (prev + 1) % messages.length);
+    }, index === 0 ? (isDeepThinking ? 8000 : 5000) : (isDeepThinking ? 4000 : 2500));
+    return () => clearTimeout(timer);
+  }, [index, isDeepThinking, messages.length]);
+
+  return (
+    <div className="flex items-center gap-2 group/status cursor-pointer select-none py-1" onClick={onToggle}>
+      <motion.span
+        className="text-[14px] font-bold tracking-tight bg-[linear-gradient(110deg,#666,35%,#fff,50%,#666,75%,#666)] bg-[length:200%_100%] bg-clip-text text-transparent"
+        initial={{ backgroundPosition: "200% 0" }}
+        animate={{ backgroundPosition: "-200% 0" }}
+        transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+      >
+        {messages[index]}
+      </motion.span>
+      <ChevronDown className={cn("w-3.5 h-3.5 text-black/20 dark:text-white/20 transition-transform duration-500", isOpen ? "rotate-180" : "")} />
+    </div>
+  );
+}
+
+
 // Detect and wrap URLs in plain text with premium styling for actions
 const linkify = (text: string, isUser: boolean = false): string => {
   if (!text) return '';
@@ -383,35 +414,6 @@ interface UserMessage {
 
 type Message = AgentMessage | UserMessage;
 
-const THINKING_MESSAGES = ["Thinking", "Processing", "Analyzing", "Synthesizing", "Organizing", "Reviewing", "Refining", "Checking", "Polishing"];
-
-const DEEP_THINKING_MESSAGES = ["Thinking deep", "Reasoning", "Simulating outcomes", "Analyzing layers", "Synthesizing deep context", "Architecting solution", "Deeply processing", "Refining logic"];
-
-function RollingThinkingStatus({ onToggle, isOpen, isDeepThinking }: { onToggle: () => void, isOpen: boolean, isDeepThinking?: boolean }) {
-  const [index, setIndex] = useState(0);
-  const messages = isDeepThinking ? DEEP_THINKING_MESSAGES : THINKING_MESSAGES;
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIndex((prev) => (prev + 1) % messages.length);
-    }, index === 0 ? (isDeepThinking ? 8000 : 5000) : (isDeepThinking ? 4000 : 2500));
-    return () => clearTimeout(timer);
-  }, [index, isDeepThinking, messages.length]);
-
-  return (
-    <div className="flex items-center gap-2 group/status cursor-pointer select-none py-1" onClick={onToggle}>
-      <motion.span
-        className="text-[14px] font-bold tracking-tight bg-[linear-gradient(110deg,#666,35%,#fff,50%,#666,75%,#666)] bg-[length:200%_100%] bg-clip-text text-transparent"
-        initial={{ backgroundPosition: "200% 0" }}
-        animate={{ backgroundPosition: "-200% 0" }}
-        transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
-      >
-        {messages[index]}
-      </motion.span>
-      <ChevronDown className={cn("w-3.5 h-3.5 text-black/20 dark:text-white/20 transition-transform duration-500", isOpen ? "rotate-180" : "")} />
-    </div>
-  );
-}
 
 
 interface ChatInterfaceProps {
@@ -466,21 +468,24 @@ const NoScrollbarStyles = () => (
   `}</style>
 );
 
-const AgentSkeletonLoader = () => (
-  <div className="flex flex-col gap-3.5 mt-4 mb-6 w-full max-w-[500px] opacity-80">
-    <div className="h-[14px] w-full bg-white/[0.05] rounded-lg relative overflow-hidden border border-white/[0.03]">
-      <div className="absolute inset-0 skeleton-shimmer" />
+function AgentSkeletonLoader() {
+  return (
+    <div className="flex flex-col gap-3.5 mt-4 mb-6 w-full max-w-[500px] opacity-80">
+      <div className="h-[14px] w-full bg-white/[0.05] rounded-lg relative overflow-hidden border border-white/[0.03]">
+        <div className="absolute inset-0 skeleton-shimmer" />
+      </div>
+      <div className="h-[14px] w-[94%] bg-white/[0.05] rounded-lg relative overflow-hidden border border-white/[0.03]">
+        <div className="absolute inset-0 skeleton-shimmer" />
+      </div>
+      <div className="h-[14px] w-[65%] bg-white/[0.05] rounded-lg relative overflow-hidden border border-white/[0.03]">
+        <div className="absolute inset-0 skeleton-shimmer" />
+      </div>
     </div>
-    <div className="h-[14px] w-[94%] bg-white/[0.05] rounded-lg relative overflow-hidden border border-white/[0.03]">
-      <div className="absolute inset-0 skeleton-shimmer" />
-    </div>
-    <div className="h-[14px] w-[65%] bg-white/[0.05] rounded-lg relative overflow-hidden border border-white/[0.03]">
-      <div className="absolute inset-0 skeleton-shimmer" />
-    </div>
-  </div>
-);
+  );
+}
 
-const AgentThinkingSection = ({ content, isComplete }: { content: string, isComplete?: boolean }) => {
+
+function AgentThinkingSection({ content, isComplete }: { content: string, isComplete?: boolean }) {
   const [isOpen, setIsOpen] = useState(true);
 
   // Auto-collapse when finished thinking
@@ -574,11 +579,12 @@ const AgentThinkingSection = ({ content, isComplete }: { content: string, isComp
         </motion.div>
       )}
     </AnimatePresence>
-  </div>
-);
-};
+    </div>
+  );
+}
 
-const AgentTaskPill = ({ step }: { step: AgentStep }) => {
+
+function AgentTaskPill({ step }: { step: AgentStep }) {
   const getIcon = () => {
     switch (step.tool) {
       case 'search_inbox':
@@ -662,7 +668,7 @@ const AgentTaskPill = ({ step }: { step: AgentStep }) => {
       )}
     </div>
   );
-};
+}
 
 // --- Premium Components for Action Buttons ---
 const UserMessageCopyButton = ({ msg }: { msg: Message }) => {
