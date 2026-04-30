@@ -487,24 +487,14 @@ function AgentSkeletonLoader() {
 
 function AgentThinkingSection({ content, isComplete }: { content: string, isComplete?: boolean }) {
   const [isOpen, setIsOpen] = useState(true);
-
-  // Auto-collapse when finished thinking
-  useEffect(() => {
-    if (isComplete) {
-      setIsOpen(false);
-    }
-  }, [isComplete]);
-
+  
   if (!content) return null;
 
   return (
-    <div className="flex flex-col gap-3 mt-4 mb-6 relative">
+    <div className="flex flex-col gap-3 mt-4 mb-2 relative">
       <div className="flex items-center gap-3">
-        <button 
-          onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-3 group/think"
-        >
-          {!isComplete && (
+        <div className="flex items-center gap-3">
+          {!isComplete ? (
             <div className="relative w-5 h-5 flex-shrink-0">
               {/* Inner Core */}
               <motion.div
@@ -533,52 +523,75 @@ function AgentThinkingSection({ content, isComplete }: { content: string, isComp
                 />
               </div>
             </div>
+          ) : (
+            <motion.div 
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="w-5 h-5 rounded-full bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0"
+            >
+              <CheckCircle2 className="w-3 h-3 text-white/40" />
+            </motion.div>
           )}
           
           <div className="flex items-center gap-1.5 ml-0.5">
-            <TextShimmer
-              className="text-[13px] font-bold text-white/60 tracking-widest select-none drop-shadow-[0_0_5px_rgba(255,255,255,0.2)]"
-              duration={2}
+            {!isComplete ? (
+              <TextShimmer
+                className="text-[13px] font-bold text-white/60 tracking-widest select-none drop-shadow-[0_0_5px_rgba(255,255,255,0.2)]"
+                duration={2}
+              >
+                Thinking
+              </TextShimmer>
+            ) : (
+              <motion.span 
+                initial={{ opacity: 0, x: -5 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="text-[13px] font-bold text-white/40 tracking-widest select-none uppercase"
+              >
+                Thought
+              </motion.span>
+            )}
+            <button 
+              onClick={() => setIsOpen(!isOpen)}
+              className="text-white/20 hover:text-white/40 transition-colors"
             >
-              {isComplete ? "Thought" : "Thinking"}
-            </TextShimmer>
-            <motion.div
-              animate={{ rotate: isOpen ? 90 : 0 }}
-              className="text-white/20 group-hover/think:text-white/40 transition-colors"
-            >
-              <ChevronRight className="w-3.5 h-3.5" />
-            </motion.div>
+              <motion.div animate={{ rotate: isOpen ? 90 : 0 }}>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </motion.div>
+            </button>
           </div>
-        </button>
+        </div>
       </div>
       <AnimatePresence>
         {isOpen && (
           <motion.div
-          initial={{ height: 0, opacity: 0 }}
-          animate={{ height: 'auto', opacity: 1 }}
-          exit={{ height: 0, opacity: 0 }}
-          className="overflow-hidden"
-        >
-          <motion.div
-            initial={{ opacity: 0, x: -5 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="pl-8 border-l border-white/5 py-1"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden"
           >
-            {content === 'SKELETON' ? (
-              <AgentSkeletonLoader />
-            ) : content.includes('...') ? (
-              <TextShimmer className="text-white/40 text-[14.5px] leading-relaxed italic font-medium tracking-tight" duration={3}>
-                {content}
-              </TextShimmer>
-            ) : (
-              <p className="text-white/30 text-[14.5px] leading-relaxed italic font-medium tracking-tight">
-                {content}
-              </p>
-            )}
+            <motion.div
+              initial={{ opacity: 0, x: -5 }}
+              animate={{ opacity: 1, x: 0 }}
+              className={cn(
+                "pl-8 border-l border-white/5 py-1 transition-all",
+                isComplete ? "opacity-40 grayscale-[0.5]" : "opacity-100"
+              )}
+            >
+              {content === 'SKELETON' ? (
+                <AgentSkeletonLoader />
+              ) : content.includes('...') && !isComplete ? (
+                <TextShimmer className="text-white/40 text-[14.5px] leading-relaxed italic font-medium tracking-tight" duration={3}>
+                  {content}
+                </TextShimmer>
+              ) : (
+                <p className="text-white/30 text-[14.5px] leading-relaxed italic font-medium tracking-tight">
+                  {content}
+                </p>
+              )}
+            </motion.div>
           </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -3530,11 +3543,16 @@ export default function ChatInterface({
                                     )}
 
                                     {msg.role === 'assistant' && (msg as AgentMessage).meta?.agentSteps && !(msg as AgentMessage).meta?.limitReached && (
-                                      <div className="flex flex-col gap-0.5 mb-4">
+                                      <motion.div 
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.2 }}
+                                        className="flex flex-col gap-0.5 mb-4 border-t border-white/[0.03] pt-2"
+                                      >
                                         {(msg as AgentMessage).meta!.agentSteps!.filter(s => s.type === 'tool_call').map((step, idx) => (
                                           <AgentTaskPill key={step.id || idx} step={step} />
                                         ))}
-                                      </div>
+                                      </motion.div>
                                     )}
 
                                     {/* Plan Canvas (Inline + Full-Screen Modal) */}
