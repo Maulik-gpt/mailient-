@@ -7,7 +7,7 @@ import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service.j
 import { decrypt } from '@/lib/crypto.js';
 import { isFeatureEnabled } from '@/lib/feature-flags.js';
 
-export const maxDuration = 60;
+export const maxDuration = 90;
 
 /**
  * Arcus Agent Loop — SSE Endpoint
@@ -159,6 +159,8 @@ export async function POST(request) {
         'Cache-Control': 'no-cache, no-transform',
         'Connection': 'keep-alive',
         'X-Accel-Buffering': 'no',
+        'X-Content-Type-Options': 'nosniff',
+        'Transfer-Encoding': 'chunked',
         'X-Conversation-Id': currentConversationId || ''
       }
     });
