@@ -335,7 +335,7 @@
   margin: 2em 0 !important;
   box-shadow: 0 8px 24px rgba(255, 255, 255, 0.4) !important;
   transition: all 0.3s ease !important;
-  cursor: pointer !important;
+  cursor: var(--custom-cursor) !important;
 }
 
 .email-content-wrapper img:hover {
@@ -522,7 +522,7 @@
     inset 0 1px 0 rgba(0, 0, 0, 0.2) !important;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
   border: none !important;
-  cursor: pointer !important;
+  cursor: var(--custom-cursor) !important;
   text-transform: none !important;
   letter-spacing: 0.025em !important;
   position: relative !important;

@@ -475,15 +475,46 @@ const NoScrollbarStyles = () => (
 
 function AgentSkeletonLoader() {
   return (
-    <div className="flex flex-col gap-2.5 mt-2 mb-4 w-full max-w-[400px] opacity-40">
-      <div className="h-[4px] w-full bg-white/[0.05] rounded-full relative overflow-hidden">
-        <div className="absolute inset-0 skeleton-shimmer" />
+    <div className="fixed inset-0 z-[100] flex flex-col pointer-events-none px-6 py-4 bg-black/5 backdrop-blur-[2px]">
+      {/* Top Bar Skeleton Shadow */}
+      <div className="flex items-center justify-between w-full h-14 opacity-20 mb-8">
+        <div className="w-24 h-6 bg-white/5 rounded-lg relative overflow-hidden">
+          <div className="absolute inset-0 skeleton-shimmer" />
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-white/5 relative overflow-hidden"><div className="absolute inset-0 skeleton-shimmer" /></div>
+          <div className="w-8 h-8 rounded-full bg-white/5 relative overflow-hidden"><div className="absolute inset-0 skeleton-shimmer" /></div>
+          <div className="w-8 h-8 rounded-full bg-white/5 relative overflow-hidden"><div className="absolute inset-0 skeleton-shimmer" /></div>
+          <div className="w-20 h-8 rounded-lg bg-white/5 relative overflow-hidden"><div className="absolute inset-0 skeleton-shimmer" /></div>
+        </div>
       </div>
-      <div className="h-[4px] w-[90%] bg-white/[0.05] rounded-full relative overflow-hidden">
-        <div className="absolute inset-0 skeleton-shimmer" />
+
+      {/* Main Content Skeleton Shadow */}
+      <div className="flex flex-col gap-5 w-full max-w-3xl mx-auto opacity-20">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-5 h-5 rounded-md bg-white/10 relative overflow-hidden"><div className="absolute inset-0 skeleton-shimmer" /></div>
+          <div className="w-16 h-4 bg-white/10 rounded-full relative overflow-hidden"><div className="absolute inset-0 skeleton-shimmer" /></div>
+        </div>
+        <div className="h-2.5 w-full bg-white/5 rounded-full relative overflow-hidden"><div className="absolute inset-0 skeleton-shimmer" /></div>
+        <div className="h-2.5 w-full bg-white/5 rounded-full relative overflow-hidden"><div className="absolute inset-0 skeleton-shimmer" /></div>
+        <div className="h-2.5 w-[85%] bg-white/5 rounded-full relative overflow-hidden"><div className="absolute inset-0 skeleton-shimmer" /></div>
+        <div className="h-2.5 w-[40%] bg-white/5 rounded-full relative overflow-hidden"><div className="absolute inset-0 skeleton-shimmer" /></div>
       </div>
-      <div className="h-[4px] w-[60%] bg-white/[0.05] rounded-full relative overflow-hidden">
-        <div className="absolute inset-0 skeleton-shimmer" />
+
+      {/* Bottom Prompt Box Skeleton Shadow */}
+      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-full max-w-3xl px-6 opacity-20">
+        <div className="h-16 w-full bg-white/5 rounded-[22px] border border-white/[0.03] relative overflow-hidden flex items-center justify-between px-5">
+          <div className="absolute inset-0 skeleton-shimmer opacity-30" />
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-full bg-white/10" />
+            <div className="w-7 h-7 rounded-full bg-white/10" />
+          </div>
+          <div className="h-2 w-32 bg-white/10 rounded-full" />
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-full bg-white/10" />
+            <div className="w-7 h-7 rounded-full bg-white/10" />
+          </div>
+        </div>
       </div>
     </div>
   );

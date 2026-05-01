@@ -3,13 +3,23 @@
 @import "tw-animate-css";
 
 /* --- Premium Interactive Polish --- */
+:root {
+  --custom-cursor: url('/macos-cursor.svg') 14 2, pointer;
+}
+
 button, 
 [role="button"],
 a,
 input[type="submit"],
+input[type="button"],
+input[type="reset"],
+label,
+select,
+summary,
+[tabindex]:not([tabindex="-1"]),
 .interactive-card,
 .clickable-item {
-  cursor: pointer !important;
+  cursor: var(--custom-cursor) !important;
 }
 
 /* Subtle physical feedback on click */
@@ -300,7 +310,7 @@ html, body, #__next, *, ::before, ::after,
   border: 1.5px solid rgba(255, 255, 255, 0.1);
   border-radius: 0.5rem;
   background: rgba(255, 255, 255, 0.05);
-  cursor: pointer;
+  cursor: var(--custom-cursor);
   position: relative;
   transition: all 0.2s ease;
 }
@@ -1140,7 +1150,7 @@ textarea,
 .video-bubble-container {
   position: absolute;
   transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: pointer;
+  cursor: var(--custom-cursor);
 }
 
 .video-bubble-container:hover {
@@ -2645,7 +2655,7 @@ textarea,
   text-decoration: none;
   border-bottom: 1px solid transparent;
   transition: all 0.2s ease;
-  cursor: pointer !important;
+  cursor: var(--custom-cursor) !important;
   position: relative;
   z-index: 10;
 }
@@ -2659,7 +2669,7 @@ textarea,
 .traditional-email-content button,
 .traditional-email-content [role="button"],
 .traditional-email-content table a {
-  cursor: pointer !important;
+  cursor: var(--custom-cursor) !important;
   pointer-events: auto !important;
 }
 

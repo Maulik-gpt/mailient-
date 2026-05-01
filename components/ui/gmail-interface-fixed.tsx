@@ -869,7 +869,7 @@ export function GmailInterfaceFixed() {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session?.accessToken || ''}`
+                    'Authorization': `Bearer ${(session as any)?.accessToken || ''}`
                 },
                 body: JSON.stringify({
                     emailId,
@@ -3270,7 +3270,7 @@ export function GmailInterfaceFixed() {
                 .traditional-email-content [href] {
                     color: #3b82f6 !important;
                     text-decoration: underline !important;
-                    cursor: pointer !important;
+                    cursor: var(--custom-cursor) !important;
                     pointer-events: auto !important;
                     display: inline-block !important;
                 }
@@ -3296,7 +3296,7 @@ export function GmailInterfaceFixed() {
                 }
 
                 .clickable-link {
-                    cursor: pointer !important;
+                    cursor: var(--custom-cursor) !important;
                     pointer-events: auto !important;
                 }
 

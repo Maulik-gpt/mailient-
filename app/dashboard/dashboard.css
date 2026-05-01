@@ -594,7 +594,7 @@ input:focus-visible {
   border: none;
   border-radius: 50%;
   color: white;
-  cursor: pointer;
+  cursor: var(--custom-cursor);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1039,7 +1039,7 @@ input:focus-visible {
   position: relative;
   overflow: hidden;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: pointer;
+  cursor: var(--custom-cursor);
 }
 
 .chat-item::before {
