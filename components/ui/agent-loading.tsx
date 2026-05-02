@@ -9,14 +9,14 @@ export function AgentLoading() {
             <HomeFeedSidebar />
             
             {/* High-Fidelity Page Shadow Skeleton */}
-            <div className="flex-1 flex flex-col px-12 py-6 relative">
+            <div className="flex-1 flex flex-col pl-48 pr-12 py-6 relative">
                 {/* Top Bar Skeleton Shadow */}
                 <div className="flex items-center justify-between w-full h-14 opacity-20 mb-12">
                     <div className="w-28 h-6 bg-white/10 rounded-lg relative overflow-hidden">
                         <motion.div
                             className="absolute inset-0 w-[200%]"
                             style={{
-                                background: 'linear-gradient(110deg, rgba(255,255,255,0) 20%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0) 80%)'
+                                background: 'linear-gradient(110deg, rgba(255,255,255,0) 10%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0) 90%)'
                             }}
                             animate={{ x: ['-100%', '100%'] }}
                             transition={{ repeat: Infinity, duration: 1.5, ease: [0.4, 0, 0.6, 1] }}
@@ -40,7 +40,7 @@ export function AgentLoading() {
                          <motion.div
                             className="absolute inset-0 w-[200%]"
                             style={{
-                                background: 'linear-gradient(110deg, rgba(255,255,255,0) 20%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0) 80%)'
+                                background: 'linear-gradient(110deg, rgba(255,255,255,0) 10%, rgba(255,255,255,0.18) 50%, rgba(255,255,255,0) 90%)'
                             }}
                             animate={{ x: ['-100%', '100%'] }}
                             transition={{ repeat: Infinity, duration: 1.5, ease: [0.4, 0, 0.6, 1] }}

@@ -464,9 +464,9 @@ const NoScrollbarStyles = () => (
     .skeleton-shimmer {
       background: linear-gradient(
         110deg,
-        rgba(255, 255, 255, 0) 20%,
-        rgba(255, 255, 255, 0.05) 50%,
-        rgba(255, 255, 255, 0) 80%
+        rgba(255, 255, 255, 0) 15%,
+        rgba(255, 255, 255, 0.15) 50%,
+        rgba(255, 255, 255, 0) 85%
       );
       background-size: 200% 100%;
       animation: shimmer 1.5s infinite cubic-bezier(0.4, 0, 0.6, 1);
