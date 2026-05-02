@@ -751,7 +751,7 @@ const UserMessageCopyButton = ({ msg }: { msg: Message }) => {
   return (
     <button
       onClick={handleCopy}
-      className="absolute -left-10 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full bg-[#1a1a1a] border border-white/10 text-white/40 hover:text-white hover:bg-white/10 opacity-0 group-hover/msg:opacity-100 transition-all shadow-lg"
+      className="absolute top-2 right-2 z-20 w-8 h-8 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-white/40 hover:text-white hover:bg-white/10 opacity-0 group-hover/msg:opacity-100 transition-all shadow-lg backdrop-blur-md"
       title="Copy message"
     >
       <AnimatePresence mode="wait">
