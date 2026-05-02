@@ -2,28 +2,26 @@
 
 /**
  * AgentExecutionTimeline — Phase 2: Live Execution Visualisation
- *
- * Shows real-time agentic steps as they stream from the SSE endpoint:
- *   thinking → tool_call → tool_result → thinking → respond
- *
- * Design: monochrome, minimal, matches the existing ThinkingLayer aesthetic.
- * After completion, collapses into a compact summary the user can expand.
+ * 
+ * Implements the 7-step Arcus Thinking & Agentic Process:
+ * 1. Clarify | 2. Reason | 3. Plan | 4. Tool Usage | 5. Execute Safely | 6. Deliver Value | 7. Reflect & Iterate
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   Search, Mail, Calendar, FileText, Database, ListTodo,
-  CheckCircle2, ChevronDown, ChevronRight, Zap, BrainCircuit,
-  AlertCircle, Clock, Send, PenTool, Globe, ChevronUp
+  CheckCircle2, ChevronDown, BrainCircuit,
+  Zap, ShieldCheck, BarChart3, RefreshCcw, ClipboardList,
+  Sparkles, MousePointer2, Settings2, Info, Clock
 } from 'lucide-react';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 export interface AgentStep {
   id: string;
-  type: 'thinking' | 'tool_call' | 'tool_result' | 'tool_error' | 'approval' | 'respond';
+  type: 'thinking' | 'tool_call' | 'tool_result' | 'tool_error' | 'approval' | 'respond' | 'message';
   tool?: string;
   label: string;
   status: 'active' | 'completed' | 'error';
@@ -41,105 +39,103 @@ interface AgentExecutionTimelineProps {
   totalDurationMs?: number;
 }
 
-// ─── Tool Icon Map ──────────────────────────────────────────────────────────
+// ─── Constants ─────────────────────────────────────────────────────────────
+
+const PHASES = [
+  { id: 1, name: 'Clarify', icon: <Sparkles className="w-3.5 h-3.5" />, desc: 'Understanding intent' },
+  { id: 2, name: 'Reason', icon: <BrainCircuit className="w-3.5 h-3.5" />, desc: 'Context analysis' },
+  { id: 3, name: 'Plan', icon: <ClipboardList className="w-3.5 h-3.5" />, desc: 'Strategy mapping' },
+  { id: 4, name: 'Tool Usage', icon: <Settings2 className="w-3.5 h-3.5" />, desc: 'Fetching real data' },
+  { id: 5, name: 'Execute Safely', icon: <ShieldCheck className="w-3.5 h-3.5" />, desc: 'Securing actions' },
+  { id: 6, name: 'Deliver Value', icon: <Zap className="w-3.5 h-3.5" />, desc: 'Final response' },
+  { id: 7, name: 'Reflect', icon: <RefreshCcw className="w-3.5 h-3.5" />, desc: 'Post-run iteration' },
+];
 
 const toolIcons: Record<string, React.ReactNode> = {
   search_inbox: <Search className="w-3.5 h-3.5" />,
   read_email: <Mail className="w-3.5 h-3.5" />,
-  send_email: <Send className="w-3.5 h-3.5" />,
-  save_draft: <PenTool className="w-3.5 h-3.5" />,
+  send_email: <Zap className="w-3.5 h-3.5" />,
+  save_draft: <FileText className="w-3.5 h-3.5" />,
   schedule_meeting: <Calendar className="w-3.5 h-3.5" />,
   check_availability: <Calendar className="w-3.5 h-3.5" />,
   create_task: <ListTodo className="w-3.5 h-3.5" />,
   notion_create_page: <Database className="w-3.5 h-3.5" />,
   notion_search: <Database className="w-3.5 h-3.5" />,
   think: <BrainCircuit className="w-3.5 h-3.5" />,
-  respond: <Zap className="w-3.5 h-3.5" />,
-  default: <Globe className="w-3.5 h-3.5" />,
+  respond: <Sparkles className="w-3.5 h-3.5" />,
 };
+
+// ─── Helpers ───────────────────────────────────────────────────────────────
 
 const formatToolLabel = (tool?: string, status?: string) => {
   if (!tool) return 'Processing...';
   const name = tool.replace(/_/g, ' ');
   
   if (status === 'active') {
-    if (name.endsWith('h')) return `Searching ${name.split(' ')[1] || ''}`.trim();
+    if (name.includes('search')) return `Searching ${name.split(' ')[1] || 'Inbox'}`;
     if (name.startsWith('read')) return 'Reading Email';
     if (name.startsWith('send')) return 'Sending Email';
     if (name.startsWith('save')) return 'Saving Draft';
     if (name.startsWith('schedule')) return 'Scheduling Meeting';
     if (name.startsWith('check')) return 'Checking Availability';
     if (name.startsWith('create')) return 'Creating Task';
-    if (name.startsWith('notion create')) return 'Creating Page';
-    if (name.startsWith('notion search')) return 'Searching Notion';
     return name.charAt(0).toUpperCase() + name.slice(1) + 'ing...';
   }
 
   if (status === 'completed') {
-    if (name.startsWith('search')) return 'Searched Inbox';
+    if (name.includes('search')) return 'Searched Inbox';
     if (name.startsWith('read')) return 'Read Email';
     if (name.startsWith('send')) return 'Sent Email';
     if (name.startsWith('save')) return 'Saved Draft';
     if (name.startsWith('schedule')) return 'Scheduled Meeting';
     if (name.startsWith('check')) return 'Checked Availability';
     if (name.startsWith('create')) return 'Created Task';
-    if (name.startsWith('notion create')) return 'Created Notion Page';
-    if (name.startsWith('notion search')) return 'Searched Notion';
     return name.charAt(0).toUpperCase() + name.slice(1) + 'ed';
   }
 
   return name.charAt(0).toUpperCase() + name.slice(1);
 };
 
-const ShimmerStyles = () => (
-  <style jsx global>{`
-    .skeleton-shimmer {
-      background: linear-gradient(
-        90deg,
-        rgba(255, 255, 255, 0) 0%,
-        rgba(255, 255, 255, 0.05) 50%,
-        rgba(255, 255, 255, 0) 100%
-      );
-      background-size: 200% 100%;
-      animation: skeleton-shimmer 2s infinite linear;
-    }
-    @keyframes skeleton-shimmer {
-      from { background-position: 200% 0; }
-      to { background-position: -200% 0; }
-    }
-  `}</style>
-);
+// ─── Sub-Components ─────────────────────────────────────────────────────────
 
-const getToolIcon = (tool?: string) => {
-  if (!tool) return <BrainCircuit className="w-3.5 h-3.5" />;
-  return toolIcons[tool] || toolIcons.default;
-};
-
-// ─── Glowing Dot ────────────────────────────────────────────────────────────
-
-function GlowingDot({ active, error }: { active?: boolean, error?: boolean }) {
-  if (error) {
-    return (
-      <div className="relative flex h-4 w-4 items-center justify-center">
-        <div className="absolute inset-0 bg-red-500/20 rounded-full blur-[2px]" />
-        <div className="h-2 w-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
-      </div>
-    );
-  }
-  
-  if (active) {
-    return (
-      <div className="relative flex h-4 w-4 items-center justify-center">
-        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white/20 opacity-75 duration-1000"></span>
-        <div className="absolute inset-0 bg-white/20 rounded-full blur-[2px]" />
-        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white shadow-[0_0_10px_rgba(255,255,255,1)]"></span>
-      </div>
-    );
-  }
-  
+function PhaseIndicator({ currentPhase, completedPhases }: { currentPhase: number, completedPhases: number[] }) {
   return (
-    <div className="relative flex h-4 w-4 items-center justify-center bg-black/20 dark:bg-white/5 rounded-full border border-black/10 dark:border-white/10">
-      <CheckCircle2 className="h-2.5 w-2.5 text-black/40 dark:text-white/40" />
+    <div className="flex items-center justify-between w-full mb-6 px-1">
+      {PHASES.map((phase, idx) => {
+        const isCompleted = completedPhases.includes(phase.id);
+        const isActive = currentPhase === phase.id;
+        
+        return (
+          <div key={phase.id} className="flex flex-col items-center gap-2 group relative">
+            <div className={cn(
+              "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-500 border",
+              isActive 
+                ? "bg-black dark:bg-white text-white dark:text-black border-black dark:border-white shadow-[0_0_15px_rgba(255,255,255,0.3)] scale-110 z-10" 
+                : isCompleted
+                  ? "bg-black/5 dark:bg-white/10 text-black/40 dark:text-white/40 border-black/5 dark:border-white/10"
+                  : "bg-transparent text-black/20 dark:text-white/10 border-black/10 dark:border-white/5"
+            )}>
+              {isCompleted ? <CheckCircle2 className="w-4 h-4" /> : phase.icon}
+            </div>
+            
+            {/* Tooltip on hover */}
+            <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-black text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
+              {phase.name}: {phase.desc}
+            </div>
+
+            {/* Connecting Line */}
+            {idx < PHASES.length - 1 && (
+              <div className="absolute left-[28px] top-4 w-[calc(100%-24px)] h-[1px] bg-black/5 dark:bg-white/5 -z-10">
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: isCompleted ? '100%' : '0%' }}
+                  className="h-full bg-black/20 dark:bg-white/20"
+                />
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -155,6 +151,31 @@ export function AgentExecutionTimeline({
   const [isExpanded, setIsExpanded] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  // Derive Current Phase
+  const currentPhase = useMemo(() => {
+    if (!isActive && steps.length > 0) return 6; // Deliver Value / Reflect
+    
+    const lastStep = steps[steps.length - 1];
+    if (!lastStep) return 1;
+
+    if (lastStep.type === 'approval') return 5;
+    if (lastStep.type === 'tool_call' || lastStep.type === 'tool_result') return 4;
+    
+    // First iteration usually clarify/reason/plan
+    if (lastStep.iteration === 1) {
+      if (steps.length === 1) return 1; // Clarify
+      return 2; // Reason
+    }
+    
+    if (lastStep.iteration === 2) return 3; // Plan
+    
+    return 4; // Tool Usage
+  }, [steps, isActive]);
+
+  const completedPhases = useMemo(() => {
+    return Array.from({ length: currentPhase - 1 }, (_, i) => i + 1);
+  }, [currentPhase]);
+
   useEffect(() => {
     if (isActive && bottomRef.current) {
       bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -163,155 +184,159 @@ export function AgentExecutionTimeline({
 
   if (steps.length === 0) return null;
 
-  // Group steps by iteration
-  const iterations = steps.reduce((acc, step) => {
-    const iter = step.iteration;
-    if (!acc[iter]) acc[iter] = [];
-    acc[iter].push(step);
-    return acc;
-  }, {} as Record<number, AgentStep[]>);
-
-  const iterationEntries = Object.entries(iterations).sort(([a], [b]) => Number(a) - Number(b));
-  const hasErrors = steps.some(s => s.status === 'error');
-
   return (
-    <div className="w-full mt-3 font-sans max-w-[500px]">
-      <ShimmerStyles />
+    <div className="w-full mt-6 font-sans max-w-full">
       <AnimatePresence>
         {isExpanded && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.05] dark:border-white/[0.05] p-5 backdrop-blur-md shadow-sm"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="overflow-hidden rounded-[32px] bg-white dark:bg-[#0A0A0A] border border-neutral-200 dark:border-white/10 p-6 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] relative"
           >
-            <div className="flex flex-col relative pb-2">
-              {iterationEntries.map(([iterNum, iterSteps], iterIndex) => {
-                const isLastIteration = iterIndex === iterationEntries.length - 1;
-                const isIterActive = isActive && isLastIteration;
-                
-                // Find thought and tool calls within this iteration
-                const thoughts = iterSteps.filter(s => s.type === 'thinking');
-                const toolCalls = iterSteps.filter(s => s.type === 'tool_call' || s.type === 'tool_result');
-                const iterError = iterSteps.some(s => s.status === 'error');
+            {/* Apple-style background gradient */}
+            <div className="absolute inset-0 bg-gradient-to-br from-neutral-50/50 to-transparent dark:from-white/[0.03] dark:to-transparent pointer-events-none" />
 
-                // Determine the group heading
-                const heading = thoughts.length > 0 ? 'Analyzing Context & Strategy' : `Execution Phase ${Number(iterNum) + 1}`;
+            {/* Header / Phase Indicator */}
+            <div className="relative z-10 flex flex-col gap-1 mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-col">
+                  <h3 className="text-base font-bold tracking-tight text-black dark:text-white">Arcus Thinking Process</h3>
+                  <p className="text-[11px] text-neutral-500 dark:text-white/40 font-medium">Phase {currentPhase}: {PHASES[currentPhase - 1]?.name}</p>
+                </div>
+                {isActive && (
+                  <div className="flex items-center gap-2 px-3 py-1 bg-black/5 dark:bg-white/5 rounded-full border border-black/5 dark:border-white/5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                    <span className="text-[10px] font-bold text-neutral-600 dark:text-white/60 uppercase tracking-widest">Live</span>
+                  </div>
+                )}
+              </div>
+              
+              <PhaseIndicator currentPhase={currentPhase} completedPhases={completedPhases} />
+            </div>
+
+            {/* Steps Timeline */}
+            <div className="relative z-10 flex flex-col gap-4">
+              {steps.map((step, idx) => {
+                const isTool = step.type === 'tool_call' || step.type === 'tool_result';
+                const isThinking = step.type === 'thinking';
+                const isLast = idx === steps.length - 1;
+                
+                if (isThinking && !step.label) return null;
+                if (isThinking && (step.label === 'Reasoning...' || step.label === 'Processing...')) return null;
 
                 return (
-                  <div key={iterNum} className="relative flex flex-col gap-4 pb-6">
-                    
-                    {/* Vertical Connecting Line */}
-                    {!isLastIteration && (
-                      <div className="absolute left-[7px] top-6 bottom-[4px] w-[2px] bg-gradient-to-b from-black/10 to-black/5 dark:from-white/10 dark:to-white/5 rounded-full" />
+                  <motion.div 
+                    key={step.id}
+                    initial={{ opacity: 0, x: -5 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: idx * 0.05 }}
+                    className={cn(
+                      "flex gap-4 group",
+                      !isLast && "pb-4"
                     )}
-
-                    {/* Group Header */}
-                    <div className="flex items-center gap-3.5">
-                      <div className="z-10 bg-[#f9f9f9] dark:bg-[#121212] rounded-full p-0.5 shadow-sm">
-                        <GlowingDot active={isIterActive && toolCalls.length === 0} error={iterError} />
+                  >
+                    {/* Left Connector Icon */}
+                    <div className="flex flex-col items-center">
+                      <div className={cn(
+                        "w-6 h-6 rounded-lg flex items-center justify-center transition-all duration-300",
+                        step.status === 'active' 
+                          ? "bg-black dark:bg-white text-white dark:text-black shadow-lg" 
+                          : "bg-neutral-100 dark:bg-white/5 text-neutral-400 dark:text-white/30 border border-neutral-200 dark:border-white/5"
+                      )}>
+                        {isTool ? toolIcons[step.tool || 'default'] : <BrainCircuit className="w-3 h-3" />}
                       </div>
-                      <span className="text-[13px] font-bold tracking-tight text-neutral-800 dark:text-neutral-100 flex items-center gap-2">
-                        {heading} 
-                      </span>
+                      {!isLast && (
+                        <div className="w-[1px] flex-1 bg-neutral-200 dark:bg-white/5 mt-2 rounded-full" />
+                      )}
                     </div>
 
-                    {/* Group Content */}
-                    <div className="pl-[28px] flex flex-col gap-3.5">
-                      {/* Thoughts (Paragraphs) */}
-                      {thoughts.map((thought, tIndex) => (
-                         thought.label && thought.label !== 'Reasoning...' && thought.label !== 'Processing...' && (
-                           <div key={thought.id} className="text-[13px] text-neutral-600 dark:text-neutral-400 leading-relaxed font-medium">
-                             {thought.label}
-                           </div>
-                         )
-                      ))}
+                    {/* Content Card */}
+                    <div className="flex-1 min-w-0 pt-0.5">
+                      <div className="flex items-center justify-between gap-4 mb-1">
+                        <span className={cn(
+                          "text-[13px] font-bold tracking-tight transition-colors",
+                          step.status === 'active' ? "text-black dark:text-white" : "text-neutral-500 dark:text-white/40"
+                        )}>
+                          {isTool ? formatToolLabel(step.tool, step.status) : PHASES[currentPhase - 1]?.name}
+                        </span>
+                        {step.status === 'active' && (
+                          <span className="flex items-center gap-1">
+                             <motion.span 
+                               animate={{ opacity: [0.4, 1, 0.4] }} 
+                               transition={{ repeat: Infinity, duration: 1.5 }}
+                               className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter"
+                             >
+                               Executing
+                             </motion.span>
+                          </span>
+                        )}
+                      </div>
+                      
+                      {step.label && (
+                        <p className={cn(
+                          "text-[12px] leading-relaxed line-clamp-2 transition-all",
+                          step.status === 'active' 
+                            ? "text-neutral-600 dark:text-white/70 font-medium" 
+                            : "text-neutral-400 dark:text-white/20"
+                        )}>
+                          {step.label}
+                        </p>
+                      )}
 
-                      {/* Tool Calls (Premium Cards) */}
-                      {toolCalls.length > 0 && (
-                        <div className="flex flex-col gap-2 mt-1">
-                          {toolCalls.map((tc, tcIndex) => (
-                            <motion.div 
-                              initial={{ opacity: 0, y: 5 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              key={tc.id} 
-                              className={cn(
-                                "flex items-center gap-3 px-3.5 py-2.5 rounded-xl border backdrop-blur-sm transition-all",
-                                tc.status === 'active' 
-                                  ? "bg-white dark:bg-white/5 border-black/10 dark:border-white/10 shadow-sm overflow-hidden relative"
-                                  : tc.status === 'error'
-                                    ? "bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-900/30 text-red-600 dark:text-red-400"
-                                    : "bg-black/[0.02] dark:bg-white/[0.02] border-black/5 dark:border-white/5 text-neutral-500 dark:text-neutral-500"
-                              )}
-                            >
-                              {tc.status === 'active' && (
-                                <div className="absolute inset-0 skeleton-shimmer z-0 opacity-40" />
-                              )}
-                              <div className={cn(
-                                "flex items-center justify-center w-6 h-6 rounded-md relative z-10",
-                                tc.status === 'active' ? "bg-black/5 dark:bg-white/10 text-black dark:text-white" : "bg-black/5 dark:bg-white/5 text-neutral-500"
-                              )}>
-                                {getToolIcon(tc.tool)}
-                              </div>
-                              <div className="flex flex-col relative z-10">
-                                <span className={cn(
-                                  "text-[12px] font-bold tracking-tight",
-                                  tc.status === 'active' ? "text-neutral-900 dark:text-neutral-100" : "text-neutral-500"
-                                )}>
-                                  {formatToolLabel(tc.tool, tc.status)}
-                                </span>
-                                {tc.label && tc.status === 'active' && (
-                                  <span className="text-[11px] text-neutral-500 font-medium line-clamp-1">{tc.label}</span>
-                                )}
-                              </div>
-                              
-                              {tc.status === 'active' && (
-                                <div className="ml-auto flex items-center relative z-10">
-                                  <div className="w-3.5 h-3.5 rounded-full border-[1.5px] border-black/20 dark:border-white/20 border-t-black dark:border-t-white animate-spin" />
-                                </div>
-                              )}
-                              {tc.status === 'completed' && (
-                                <div className="ml-auto relative z-10">
-                                  <CheckCircle2 className="w-3.5 h-3.5 text-black/30 dark:text-white/30" />
-                                </div>
-                              )}
-                            </motion.div>
-                          ))}
+                      {step.summary && (
+                        <div className="mt-2 p-2.5 rounded-xl bg-neutral-50 dark:bg-white/[0.03] border border-neutral-200 dark:border-white/5">
+                          <p className="text-[11px] text-neutral-500 dark:text-white/40 leading-relaxed italic">
+                            {step.summary}
+                          </p>
                         </div>
                       )}
                     </div>
-                  </div>
+                  </motion.div>
                 );
               })}
-
-              {/* Final active state ("Thinking") */}
-              {isActive && (
-                <div className="relative flex items-center gap-3.5 pt-1">
-                  <div className="z-10 bg-[#f9f9f9] dark:bg-[#121212] rounded-full p-0.5 shadow-sm">
-                    <GlowingDot active={true} />
-                  </div>
-                  <span className="text-[13px] font-bold tracking-tight text-neutral-800 dark:text-neutral-100 animate-pulse">
-                    Synthesizing response...
-                  </span>
-                </div>
-              )}
-
               <div ref={bottomRef} className="h-2" />
             </div>
+
+            {/* Duration / Footer */}
+            {!isActive && totalDurationMs && (
+              <div className="relative z-10 mt-6 pt-6 border-t border-neutral-100 dark:border-white/5 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-3 h-3 text-neutral-400" />
+                  <span className="text-[11px] font-medium text-neutral-400">Mission completed in {(totalDurationMs / 1000).toFixed(1)}s</span>
+                </div>
+                <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-green-500/10 text-green-600 dark:text-green-400 text-[10px] font-bold uppercase tracking-widest">
+                  Success
+                </div>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Collapse/Expand Toggle (for completed states) */}
-      {!isActive && (
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="flex items-center gap-2 py-2 w-fit group text-xs font-medium text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200 transition-colors"
-        >
-          {isExpanded ? 'Collapse timeline' : 'Show timeline'}
-          <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-200", !isExpanded && "-rotate-90")} />
-        </button>
-      )}
+      {/* Control Bar */}
+      <div className="flex items-center justify-between px-2 mt-3">
+         <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="flex items-center gap-2 text-[10px] font-bold text-neutral-400 hover:text-black dark:hover:text-white uppercase tracking-widest transition-colors"
+          >
+            {isExpanded ? 'Minimize Analysis' : 'Show Thinking Loop'}
+            <ChevronDown className={cn("w-3 h-3 transition-transform duration-300", !isExpanded && "-rotate-90")} />
+          </button>
+          
+          {isActive && (
+            <div className="flex items-center gap-4">
+              <div className="h-1 w-24 bg-neutral-100 dark:bg-white/5 rounded-full overflow-hidden">
+                <motion.div 
+                  initial={{ x: '-100%' }}
+                  animate={{ x: '100%' }}
+                  transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+                  className="h-full w-1/2 bg-neutral-900 dark:bg-white rounded-full shadow-[0_0_8px_rgba(255,255,255,0.5)]"
+                />
+              </div>
+            </div>
+          )}
+      </div>
     </div>
   );
 }

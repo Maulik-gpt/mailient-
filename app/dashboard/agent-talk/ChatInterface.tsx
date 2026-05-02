@@ -45,9 +45,9 @@ import { useArcusAgentStream } from './hooks/useArcusAgentStream';
 
 const GRA_DEFORM = { incline: 0.3, noiseAmp: 150, noiseFlow: 2 };
 
-const THINKING_MESSAGES = ["Scanning", "Retrieving", "Analyzing", "Processing", "Executing", "Optimizing", "Verifying", "Delivering"];
+const THINKING_MESSAGES = ["Clarifying Intent", "Reasoning Context", "Architecting Plan", "Executing Tools", "Securing Action", "Delivering Value", "Iterating Results"];
 
-const DEEP_THINKING_MESSAGES = ["Deep scanning", "Processing signals", "Analyzing patterns", "Synthesizing intelligence", "Architecting response", "Executing workflow", "Finalizing deliverables"];
+const DEEP_THINKING_MESSAGES = ["Deep Clarification", "Strategic Reasoning", "Workflow Planning", "Complex Execution", "Safety Verification", "Intelligence Synthesis", "Outcome Optimization"];
 
 function RollingThinkingStatus({ onToggle, isOpen, isDeepThinking }: { onToggle: () => void, isOpen: boolean, isDeepThinking?: boolean }) {
   const [index, setIndex] = useState(0);
