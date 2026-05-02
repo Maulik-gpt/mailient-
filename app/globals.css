@@ -4,10 +4,10 @@
 
 /* --- Premium Interactive Polish --- */
 :root {
-  --custom-cursor: url('/macos-cursor.svg') 14 2, pointer;
+  --custom-cursor: url('/macos-cursor.png') 24 4, pointer;
 }
 
-button, 
+button,
 [role="button"],
 a,
 input[type="submit"],
@@ -23,7 +23,7 @@ summary,
 }
 
 /* Subtle physical feedback on click */
-button:active, 
+button:active,
 .interactive-card:active {
   transform: scale(0.985);
   transition: transform 0.1s cubic-bezier(0.16, 1, 0.3, 1);
@@ -37,10 +37,10 @@ button:active,
   box-shadow: none !important;
 }
 
-input, 
-textarea, 
-button, 
-select, 
+input,
+textarea,
+button,
+select,
 [contenteditable="true"] {
   outline: none !important;
   box-shadow: none !important;
@@ -53,6 +53,7 @@ select,
   0% {
     background-position: 0% 0%;
   }
+
   100% {
     background-position: 400% 400%;
   }
@@ -71,6 +72,7 @@ html {
   * {
     border-color: var(--border);
   }
+
   body {
     background-color: var(--background);
     color: var(--foreground);
@@ -83,14 +85,26 @@ html {
    DO NOT add manual @font-face blocks pointing to the CSS URL — they will silently fail. */
 
 
-html, body, #__next, *, ::before, ::after,
-[class*="font-"], [class*="text-"],
-.font-sans, .font-serif, .font-mono, .satoshi-app, .arcus-typography {
+html,
+body,
+#__next,
+*,
+::before,
+::after,
+[class*="font-"],
+[class*="text-"],
+.font-sans,
+.font-serif,
+.font-mono,
+.satoshi-app,
+.arcus-typography {
   font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
 }
 
 /* Ensure inherit works for pseudo-elements */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   font-family: inherit !important;
 }
 
@@ -102,7 +116,7 @@ html, body, #__next, *, ::before, ::after,
   --font-sans: "Satoshi", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-serif: "Satoshi", serif;
   --font-mono: "Satoshi", monospace;
-  
+
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -177,7 +191,7 @@ html, body, #__next, *, ::before, ::after,
   --color-graphite-text: #FFFFFF;
   --color-graphite-muted: rgba(255, 255, 255, 0.6);
   --color-graphite-muted-2: rgba(255, 255, 255, 0.4);
-  
+
   /* Arcus Typography */
   --letter-spacing-arcus: -0.02em;
 
@@ -196,7 +210,7 @@ html, body, #__next, *, ::before, ::after,
   background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 
+  box-shadow:
     0 4px 24px -1px rgba(0, 0, 0, 0.2),
     inset 0 0 12px rgba(255, 255, 255, 0.05);
   transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
@@ -207,12 +221,10 @@ html, body, #__next, *, ::before, ::after,
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    120deg,
-    transparent,
-    rgba(255, 255, 255, 0.1),
-    transparent
-  );
+  background: linear-gradient(120deg,
+      transparent,
+      rgba(255, 255, 255, 0.1),
+      transparent);
   transform: translateX(-100%);
   transition: transform 0.6s ease;
 }
@@ -220,7 +232,7 @@ html, body, #__next, *, ::before, ::after,
 .btn-liquid-glass:hover {
   background: rgba(255, 255, 255, 0.07);
   border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 
+  box-shadow:
     0 12px 40px -4px rgba(0, 0, 0, 0.4),
     inset 0 0 20px rgba(255, 255, 255, 0.1);
   transform: translateY(-2px);
@@ -242,6 +254,7 @@ html, body, #__next, *, ::before, ::after,
     filter: blur(10px);
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     filter: blur(0px);
@@ -255,6 +268,7 @@ html, body, #__next, *, ::before, ::after,
     filter: blur(10px);
     transform: translateX(40px);
   }
+
   to {
     opacity: 1;
     filter: blur(0px);
@@ -268,6 +282,7 @@ html, body, #__next, *, ::before, ::after,
     filter: blur(10px);
     transform: translateY(40px) scale(0.95);
   }
+
   to {
     opacity: 1;
     filter: blur(0px);
@@ -290,18 +305,53 @@ html, body, #__next, *, ::before, ::after,
   animation: var(--animate-testimonial);
 }
 
-.animate-delay-100 { animation-delay: 0.1s; }
-.animate-delay-200 { animation-delay: 0.2s; }
-.animate-delay-300 { animation-delay: 0.3s; }
-.animate-delay-400 { animation-delay: 0.4s; }
-.animate-delay-500 { animation-delay: 0.5s; }
-.animate-delay-600 { animation-delay: 0.6s; }
-.animate-delay-700 { animation-delay: 0.7s; }
-.animate-delay-800 { animation-delay: 0.8s; }
-.animate-delay-900 { animation-delay: 0.9s; }
-.animate-delay-1000 { animation-delay: 1s; }
-.animate-delay-1200 { animation-delay: 1.2s; }
-.animate-delay-1400 { animation-delay: 1.4s; }
+.animate-delay-100 {
+  animation-delay: 0.1s;
+}
+
+.animate-delay-200 {
+  animation-delay: 0.2s;
+}
+
+.animate-delay-300 {
+  animation-delay: 0.3s;
+}
+
+.animate-delay-400 {
+  animation-delay: 0.4s;
+}
+
+.animate-delay-500 {
+  animation-delay: 0.5s;
+}
+
+.animate-delay-600 {
+  animation-delay: 0.6s;
+}
+
+.animate-delay-700 {
+  animation-delay: 0.7s;
+}
+
+.animate-delay-800 {
+  animation-delay: 0.8s;
+}
+
+.animate-delay-900 {
+  animation-delay: 0.9s;
+}
+
+.animate-delay-1000 {
+  animation-delay: 1s;
+}
+
+.animate-delay-1200 {
+  animation-delay: 1.2s;
+}
+
+.animate-delay-1400 {
+  animation-delay: 1.4s;
+}
 
 .custom-checkbox {
   appearance: none;
@@ -335,6 +385,7 @@ html, body, #__next, *, ::before, ::after,
   from {
     height: 0;
   }
+
   to {
     height: var(--radix-accordion-content-height);
   }
@@ -344,6 +395,7 @@ html, body, #__next, *, ::before, ::after,
   from {
     height: var(--radix-accordion-content-height);
   }
+
   to {
     height: 0;
   }
@@ -538,6 +590,7 @@ html, body, #__next, *, ::before, ::after,
     transform: translateX(100%);
     opacity: 0.5;
   }
+
   to {
     transform: translateX(0);
     opacity: 1;
@@ -2748,6 +2801,7 @@ textarea,
     border-radius: 20px !important;
   }
 }
+
 @keyframes arcus-slide-in {
   from {
     transform: translateX(100%) scale(0.98);
