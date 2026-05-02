@@ -271,6 +271,32 @@ const MessageContent = ({ content, isUser, isTyping, isNewResponse, hideLinks }:
       textColorClass,
       !isUser && "max-w-none prose prose-invert prose-headings:mb-4 prose-p:mb-4 prose-li:mb-1 prose-table:my-6"
     )}>
+      {isTyping && !textContent && (
+        <div className="flex flex-col gap-3 py-2 opacity-20">
+          <motion.div 
+            className="h-3 w-full bg-white/40 rounded-full relative overflow-hidden"
+            animate={{ opacity: [0.3, 0.6, 0.3] }}
+            transition={{ repeat: Infinity, duration: 1.5 }}
+          >
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent w-[200%]"
+              animate={{ x: ['-100%', '100%'] }}
+              transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+            />
+          </motion.div>
+          <motion.div 
+            className="h-3 w-[90%] bg-white/40 rounded-full relative overflow-hidden"
+            animate={{ opacity: [0.3, 0.6, 0.3] }}
+            transition={{ repeat: Infinity, duration: 1.5, delay: 0.2 }}
+          >
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent w-[200%]"
+              animate={{ x: ['-100%', '100%'] }}
+              transition={{ repeat: Infinity, duration: 1.5, ease: "linear", delay: 0.2 }}
+            />
+          </motion.div>
+        </div>
+      )}
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
@@ -280,6 +306,13 @@ const MessageContent = ({ content, isUser, isTyping, isNewResponse, hideLinks }:
       >
         {textContent}
       </ReactMarkdown>
+      {isTyping && textContent && (
+        <motion.span
+          className="inline-block w-1.5 h-4 ml-1 bg-white/40 rounded-sm"
+          animate={{ opacity: [0, 1, 0] }}
+          transition={{ repeat: Infinity, duration: 0.8 }}
+        />
+      )}
     </div>
   );
 };

@@ -754,6 +754,13 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
           className
         )}
       >
+        {isLoading && (
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.02] to-transparent w-[200%] pointer-events-none z-0"
+            animate={{ x: ['-100%', '100%'] }}
+            transition={{ repeat: Infinity, duration: 3, ease: "linear" }}
+          />
+        )}
         <AnimatePresence>
           {files.length > 0 && !isRecording && (
             <motion.div
