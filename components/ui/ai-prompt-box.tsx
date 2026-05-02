@@ -1,10 +1,10 @@
 import React, { forwardRef, useState, useEffect, useRef, useCallback, createContext, useContext, TextareaHTMLAttributes, ElementRef, ComponentPropsWithoutRef } from "react";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { ArrowUp, Paperclip, Square, X, StopCircle, Mic, BrainCog, Monitor, FileText, Film, Music, Globe, Mail, Search, Infinity, Workflow, Bug, MessageSquare, Check, ChevronDown, Plus, Plug, Database, Calendar, Layout, Sparkles } from "lucide-react";
+import { ArrowUp, Paperclip, Square, X, StopCircle, Mic, BrainCog, Monitor, FileText, Film, Music, Globe, Mail, Search, Infinity as InfinityIcon, Workflow, Bug, MessageSquare, Check, ChevronDown, Plus, Plug, Database, Calendar, Layout, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ConnectorsModal } from './connectors-modal';
-import { DropdownMenu } from './dropdown-menu';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from './dropdown-menu';
 import { toast } from 'sonner';
 
 // Utility function for className merging
@@ -353,13 +353,14 @@ const PromptInput = forwardRef<HTMLDivElement, PromptInputProps>(
             <motion.div 
               className="absolute inset-0 bg-gradient-to-br from-blue-500/[0.03] via-transparent to-transparent pointer-events-none"
               animate={{ opacity: [0.2, 0.4, 0.2] }}
-              transition={{ repeat: Infinity, duration: 8, ease: "easeInOut" }}
+              transition={{ repeat: Number.POSITIVE_INFINITY, duration: 8, ease: "easeInOut" }}
             />
             <div className="relative z-10">
               {children}
             </div>
           </div>
         </PromptInputContext.Provider>
+      </TooltipProvider>
     );
   }
 );
@@ -484,7 +485,7 @@ interface PromptInputBoxProps {
 }
 
 const MODES = [
-  { id: 'agent', label: 'Agent', icon: Infinity, description: 'Autonomous agent for complex workflows' },
+  { id: 'agent', label: 'Agent', icon: InfinityIcon, description: 'Autonomous agent for complex workflows' },
   { id: 'plan', label: 'Plan', icon: Workflow, description: 'Create detailed plans for accomplishing tasks' },
 ] as const;
 
@@ -945,43 +946,53 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
           <div className="flex items-center gap-2">
             {/* Redesigned Model Selector */}
             <PromptInputAction tooltip="Change the Model">
-              <DropdownMenu
-                align="right"
-                side="top"
-                hideChevron={true}
-                triggerClassName="bg-[#2a2a2a] hover:bg-[#333333] border-none shadow-none px-4 py-1.5 rounded-full h-8 min-w-[70px] flex items-center justify-center transition-all duration-300"
-                options={AI_MODELS.map(model => {
-                  const isLocked = 
-                    (model.tier !== 'free' && (props.currentPlan === 'free' || !props.currentPlan)) || 
-                    (model.tier === 'pro' && props.currentPlan === 'starter');
-                  
-                  return {
-                    label: model.name,
-                    active: activeModelId === model.id,
-                    Icon: <model.icon className={cn("w-4 h-4", isLocked && "opacity-40 grayscale")} />,
-                    onClick: () => {
-                      if (isLocked) {
-                        toast('Unlock Premium Models', {
-                          description: 'Upgrade your plan to access premium AI models.',
-                          action: {
-                            label: 'Upgrade',
-                            onClick: () => window.location.href = '/pricing'
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="bg-[#2a2a2a] hover:bg-[#333333] border-none shadow-none px-4 py-1.5 rounded-full h-8 min-w-[70px] flex items-center justify-center transition-all duration-300 outline-none">
+                    <div className="flex items-center gap-1.5">
+                      {activeModelId !== 'auto' && React.createElement(AI_MODELS.find(m => m.id === activeModelId)?.icon || AutoLogo, { className: "w-3.5 h-3.5" })}
+                      <span className="text-[13px] font-semibold text-white/90">
+                        {activeModelId === 'auto' ? 'Auto' : AI_MODELS.find(m => m.id === activeModelId)?.name}
+                      </span>
+                    </div>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="right" side="top" className="w-56 bg-neutral-900 border-white/10 text-white">
+                  {AI_MODELS.map(model => {
+                    const isLocked = 
+                      (model.tier !== 'free' && (props.currentPlan === 'free' || !props.currentPlan)) || 
+                      (model.tier === 'pro' && props.currentPlan === 'starter');
+                    
+                    return (
+                      <DropdownMenuItem
+                        key={model.id}
+                        onClick={() => {
+                          if (isLocked) {
+                            toast('Unlock Premium Models', {
+                              description: 'Upgrade your plan to access premium AI models.',
+                              action: {
+                                label: 'Upgrade',
+                                onClick: () => window.location.href = '/pricing'
+                              }
+                            });
+                          } else {
+                            setActiveModelId(model.id);
                           }
-                        });
-                      } else {
-                        setActiveModelId(model.id);
-                      }
-                    }
-                  };
-                })}
-                className="p-0 border-none bg-transparent shadow-none"
-              >
-                <div className="flex items-center gap-1.5">
-                  {activeModelId !== 'auto' && React.createElement(AI_MODELS.find(m => m.id === activeModelId)?.icon || AutoLogo, { className: "w-3.5 h-3.5" })}
-                  <span className="text-[13px] font-semibold text-white/90">
-                    {activeModelId === 'auto' ? 'Auto' : AI_MODELS.find(m => m.id === activeModelId)?.name}
-                  </span>
-                </div>
+                        }}
+                        className={cn(
+                          "flex items-center justify-between gap-2 px-3 py-2 cursor-pointer",
+                          activeModelId === model.id && "bg-white/10"
+                        )}
+                      >
+                        <div className="flex items-center gap-2">
+                          <model.icon className={cn("w-4 h-4", isLocked && "opacity-40 grayscale")} />
+                          <span className="text-sm font-medium">{model.name}</span>
+                        </div>
+                        {activeModelId === model.id && <Check className="w-3.5 h-3.5" />}
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuContent>
               </DropdownMenu>
             </PromptInputAction>
 
@@ -1062,7 +1073,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                   </div>
                   {/* Slack */}
                   <div className="w-5 h-5 rounded-full bg-black/5 dark:bg-white/10 border border-black/5 dark:border-white/5 flex items-center justify-center backdrop-blur-md overflow-hidden">
-                    <svg className="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><path d="M27.255 80.719c0 7.33-5.978 13.317-13.309 13.317C6.616 94.036.63 88.049.63 80.719s5.987-13.317 13.317-13.317h13.309zm6.709 0c0-7.33 5.987-13.317 13.317-13.317s13.317 5.986 13.317 13.317v33.335c0 7.33-5.986 13.317-13.317 13.317-7.33 0-13.317-5.987-13.317-13.317zm0 0" fill="#de1c59"/><path d="M47.281 27.255c-7.33 0-13.317-5.978-13.317-13.309C33.964 6.616 39.951.63 47.281.63s13.317 5.987 13.317 13.317v13.309zm0 6.709c7.33 0 13.317 5.987 13.317 13.317s-5.986 13.317-13.317 13.317H13.946C6.616 60.598.63 54.612.63 47.281c0-7.33 5.987-13.317 13.317-13.317zm0 0" fill="#35c5f0"/><path d="M100.745 47.281c0-7.33 5.978-13.317 13.309-13.317 7.33 0 13.317 5.987 13.317 13.317s-5.987 13.317-13.317 13.317h-13.309zm-6.709 0c0 7.33-5.987 13.317-13.317 13.317s-13.317-5.986-13.317-13.317V13.946C67.402 6.616 73.388.63 80.719.63c7.33 0 13.317 5.987 13.317 13.317zm0 0" fill="#2eb57d"/><path d="M80.719 100.745c7.33 0 13.317 5.978 13.317 13.309 0 7.33-5.987 13.317-13.317 13.317s-13.317-5.987-13.317-13.317v-13.309zm0-6.709c-7.33 0-13.317-5.987-13.317-13.317s5.986-13.317 13.317-13.317h33.335c7.33 0 13.317 5.986 13.317 13.317 0 7.33-5.987 13.317-13.317 13.317zm0 0" fill="#ebb02e"/></svg>
+                    <svg className="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><path d="M27.255 80.719c0 7.33-5.978 13.317-13.309 13.317C6.616 94.036.63 88.049.63 80.719s5.987-13.317 13.317-13.317h13.309zm6.709 0c0-7.33 5.987-13.317 13.317-13.317s13.317 5.986 13.317 13.317v33.335c0 7.33-5.986 13.317-13.317 13.317-7.33 0-13.317-5.987-13.317-13.317zm0 0" fill="#de1c59"/><path d="M47.281 27.255c-7.33 0-13.317-5.978-13.317-13.309C33.964 6.616 39.951.63 47.281.63s13.317 5.987 13.317 13.317v13.309zm0 6.709c7.33 0 13.317 5.987 13.317 13.317s-5.986 13.317-13.317 13.317H13.946C6.616 60.598.63 54.612.63 47.281c0-7.33 5.987-13.317 13.317-13.317zm0 0" fill="#35c5f0"/><path d="M100.745 47.281c0-7.33 5.978-13.317 13.309-13.317 7.33 0 13.317 5.987 13.317 13.317s-5.987 13.317-13.317 13.317h-13.309zm-6.709 0c0 7.33-5.987-13.317-13.317 13.317s-13.317-5.986-13.317-13.317V13.946C67.402 6.616 73.388.63 80.719.63c7.33 0 13.317 5.987 13.317 13.317zm0 0" fill="#2eb57d"/><path d="M80.719 100.745c7.33 0 13.317 5.978 13.317 13.309 0 7.33-5.987 13.317-13.317 13.317s-13.317-5.987-13.317-13.317v-13.309zm0-6.709c-7.33 0-13.317-5.987-13.317-13.317s5.986-13.317 13.317-13.317h33.335c7.33 0 13.317 5.986 13.317 13.317 0 7.33-5.987 13.317-13.317 13.317zm0 0" fill="#ebb02e"/></svg>
                   </div>
                   {/* Cal.com */}
                   <div className="w-5 h-5 rounded-full bg-white border border-black/5 dark:border-white/5 flex items-center justify-center backdrop-blur-md overflow-hidden">
