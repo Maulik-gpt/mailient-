@@ -45,9 +45,9 @@ import { useArcusAgentStream } from './hooks/useArcusAgentStream';
 
 const GRA_DEFORM = { incline: 0.3, noiseAmp: 150, noiseFlow: 2 };
 
-const THINKING_MESSAGES = ["Thinking", "Processing", "Analyzing", "Synthesizing", "Organizing", "Reviewing", "Refining", "Checking", "Polishing"];
+const THINKING_MESSAGES = ["Scanning", "Retrieving", "Analyzing", "Processing", "Executing", "Optimizing", "Verifying", "Delivering"];
 
-const DEEP_THINKING_MESSAGES = ["Thinking deep", "Reasoning", "Simulating outcomes", "Analyzing layers", "Synthesizing deep context", "Architecting solution", "Deeply processing", "Refining logic"];
+const DEEP_THINKING_MESSAGES = ["Deep scanning", "Processing signals", "Analyzing patterns", "Synthesizing intelligence", "Architecting response", "Executing workflow", "Finalizing deliverables"];
 
 function RollingThinkingStatus({ onToggle, isOpen, isDeepThinking }: { onToggle: () => void, isOpen: boolean, isDeepThinking?: boolean }) {
   const [index, setIndex] = useState(0);
@@ -118,46 +118,91 @@ const linkify = (text: string, isUser: boolean = false): string => {
 };
 
 const MarkdownComponents: any = {
-  h1: ({ children }: any) => <h1 className="text-2xl font-bold text-white mb-4 mt-6 first:mt-0 tracking-tight">{children}</h1>,
-  h2: ({ children }: any) => <h2 className="text-xl font-bold text-white/90 mb-3 mt-5 tracking-tight">{children}</h2>,
+  h1: ({ children }: any) => <h1 className="text-2xl font-bold text-white mb-4 mt-6 first:mt-0 tracking-tight border-b border-white/10 pb-2">{children}</h1>,
+  h2: ({ children }: any) => <h2 className="text-xl font-bold text-white/90 mb-3 mt-5 tracking-tight flex items-center gap-2">{children}</h2>,
   h3: ({ children }: any) => <h3 className="text-lg font-bold text-white/80 mb-2 mt-4 tracking-tight">{children}</h3>,
   h4: ({ children }: any) => <h4 className="text-base font-bold text-white/70 mb-2 mt-3">{children}</h4>,
   h5: ({ children }: any) => <h5 className="text-sm font-bold text-white/60 mb-1 mt-2">{children}</h5>,
   h6: ({ children }: any) => <h6 className="text-xs font-bold text-white/50 mb-1 mt-2 uppercase tracking-widest">{children}</h6>,
   p: ({ children }: any) => <p className="mb-4 last:mb-0 leading-relaxed text-[16px] text-white/80">{children}</p>,
-  ul: ({ children }: any) => <ul className="list-disc pl-6 mb-4 space-y-1.5 text-white/70">{children}</ul>,
+  ul: ({ children }: any) => <ul className="list-none pl-0 mb-4 space-y-2 text-white/70">{children}</ul>,
   ol: ({ children }: any) => <ol className="list-decimal pl-6 mb-4 space-y-1.5 text-white/70">{children}</ol>,
-  li: ({ children }: any) => <li className="pl-1">{children}</li>,
+  li: ({ children }: any) => {
+    // Check if this is a main bullet (starts with ◆) or sub bullet (starts with •)
+    const text = typeof children === 'string' ? children : '';
+    const isMainBullet = text.toString().startsWith('◆');
+    const isActionItem = text.toString().includes('⚠️') || text.toString().includes('✅') || text.toString().includes('❌');
+    return (
+      <li className={cn(
+        "flex items-start gap-2",
+        isMainBullet && "font-medium text-white/90",
+        isActionItem && "bg-white/[0.03] rounded-lg px-3 py-2 -mx-3"
+      )}>
+        <span className={cn(
+          "mt-1.5 flex-shrink-0",
+          isMainBullet ? "w-1.5 h-1.5 bg-white/60 rounded-full" : "w-1 h-1 bg-white/30 rounded-full"
+        )} />
+        <span className="flex-1">{children}</span>
+      </li>
+    );
+  },
   table: ({ children }: any) => (
-    <div className="my-6 w-full overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm shadow-xl">
+    <div className="my-6 w-full overflow-hidden rounded-xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm">
       <table className="w-full border-collapse text-sm text-left">
         {children}
       </table>
     </div>
   ),
-  thead: ({ children }: any) => <thead className="bg-white/[0.05] border-b border-white/[0.1]">{children}</thead>,
-  th: ({ children }: any) => <th className="px-5 py-3.5 font-bold text-white/90 uppercase tracking-wider text-[11px]">{children}</th>,
-  td: ({ children }: any) => <td className="px-5 py-3 text-white/60 border-b border-white/[0.03] last:border-0">{children}</td>,
+  thead: ({ children }: any) => <thead className="bg-white/[0.06] border-b border-white/[0.1]">{children}</thead>,
+  th: ({ children }: any) => <th className="px-4 py-3 font-bold text-white/90 uppercase tracking-wider text-[11px]">{children}</th>,
+  td: ({ children }: any) => {
+    // Highlight status symbols in table cells
+    const text = typeof children === 'string' ? children : '';
+    const hasStatus = /[✅❌⚠️⏳💰🚀🔥⚡📊📈]/.test(text.toString());
+    return (
+      <td className={cn(
+        "px-4 py-2.5 text-white/70 border-b border-white/[0.03] last:border-0",
+        hasStatus && "font-medium"
+      )}>{children}</td>
+    );
+  },
   tr: ({ children }: any) => <tr className="hover:bg-white/[0.02] transition-colors">{children}</tr>,
-  hr: () => <hr className="my-8 border-0 h-px bg-gradient-to-r from-transparent via-white/[0.15] to-transparent" />,
-  blockquote: ({ children }: any) => <blockquote className="border-l-4 border-white/20 pl-4 py-1 italic text-white/60 my-6 bg-white/[0.02] rounded-r-xl pr-4">{children}</blockquote>,
-  code: ({ node, inline, className, children, ...props }: any) => (
-    <code className={cn(
-      "px-1.5 py-0.5 rounded-md text-sm font-mono",
-      inline ? "bg-white/[0.08] text-white/90" : "block p-4 bg-[#0d0d0d] border border-white/10 text-white/80 my-4 overflow-x-auto",
-      className
-    )} {...props}>
+  hr: () => <div className="my-6 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />,
+  blockquote: ({ children }: any) => (
+    <blockquote className="border-l-2 border-white/30 pl-4 py-2 my-4 bg-white/[0.02] rounded-r-lg">
+      <p className="text-white/70 italic text-sm">{children}</p>
+    </blockquote>
+  ),
+  code: ({ node, inline, className, children, ...props }: any) => {
+    const match = /language-(\w+)/.exec(className || '');
+    const lang = match ? match[1] : '';
+    return (
+      <code className={cn(
+        "font-mono text-sm",
+        inline 
+          ? "px-1.5 py-0.5 rounded bg-white/[0.08] text-white/90" 
+          : "block p-4 bg-[#0a0a0a] border border-white/[0.08] rounded-lg text-white/80 my-4 overflow-x-auto",
+        className
+      )} {...props}>
+        {children}
+      </code>
+    );
+  },
+  pre: ({ children }: any) => (
+    <pre className="block my-4 bg-[#0a0a0a] border border-white/[0.08] rounded-lg overflow-hidden">
       {children}
-    </code>
+    </pre>
   ),
   a: ({ node, ...props }: any) => (
     <a 
-      className="text-white underline underline-offset-4 decoration-white/20 hover:decoration-white/60 transition-all font-medium" 
+      className="text-white/90 underline underline-offset-4 decoration-white/30 hover:decoration-white/70 transition-all font-medium hover:text-white" 
       target="_blank" 
       rel="noopener noreferrer" 
       {...props} 
     />
-  )
+  ),
+  strong: ({ children }: any) => <strong className="font-bold text-white">{children}</strong>,
+  em: ({ children }: any) => <em className="italic text-white/80">{children}</em>
 };
 
 const TypewriterMarkdown = ({ content, speed = 4, hideLinks }: { content: string, speed?: number, hideLinks?: boolean }) => {
@@ -1010,7 +1055,7 @@ export default function ChatInterface({
   const [isIntegrationsModalOpen, setIsIntegrationsModalOpen] = useState<boolean>(false);
   const [isEmailSelectionModalOpen, setIsEmailSelectionModalOpen] = useState<boolean>(false);
   const [isMoreOptionsOpen, setIsMoreOptionsOpen] = useState<boolean>(false);
-  const [isPersonalityModalOpen, setIsPersonalityModalOpen] = useState<boolean>(false);
+  const [isPersonalityModalOpen, setIsPersonalityModalOpen] = useState(false);
   const [savedPersonality, setSavedPersonality] = useState<string>('');
   const [gmailAccessToken, setGmailAccessToken] = useState<string | null>(null);
   const [gmailTokenSource, setGmailTokenSource] = useState<string | null>(null);
@@ -1102,8 +1147,16 @@ export default function ChatInterface({
   };
 
   // Global Click Sound Listener
+  const isMountedRef = useRef(false);
   useEffect(() => {
+    // Small delay to prevent sounds on initial mount/auto-navigation
+    const timer = setTimeout(() => {
+      isMountedRef.current = true;
+    }, 500);
+
     const handleGlobalClick = (e: MouseEvent) => {
+      if (!isMountedRef.current) return;
+      
       const target = e.target as HTMLElement;
       // Play sound if clicking a button, link, or role="button"
       if (
@@ -1117,7 +1170,10 @@ export default function ChatInterface({
     };
 
     window.addEventListener('click', handleGlobalClick);
-    return () => window.removeEventListener('click', handleGlobalClick);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('click', handleGlobalClick);
+    };
   }, [soundEnabled]);
 
   const [arcusCredits, setArcusCredits] = useState<{
@@ -1746,33 +1802,59 @@ export default function ChatInterface({
     } catch (err: any) {
       if (err.name === 'AbortError') { setMessages(prev => prev.filter(m => m.id !== assistantMsgId)); return; }
       console.error('[AgentLoop] Error:', err);
-      
+
+      const isLimitError = err.message?.toLowerCase().includes('limit') ||
+                          err.message?.toLowerCase().includes('credits') ||
+                          err.message?.toLowerCase().includes('quota') ||
+                          err.message?.toLowerCase().includes('403');
+
       setMessages(prev => prev.map(m => {
         if (m.id !== assistantMsgId || m.role !== 'assistant') return m;
-        
-        const isLimitError = err.message?.toLowerCase().includes('limit') || 
-                            err.message?.toLowerCase().includes('credits') || 
-                            err.message?.toLowerCase().includes('quota') ||
-                            err.message?.toLowerCase().includes('403');
 
         // Ensure we don't leave the user with a blank message
         const currentText = (m.content as any).text || '';
         const errorMessage = err.message || 'The connection was lost during processing.';
-        const finalText = currentText 
+        const finalText = currentText
           ? `${currentText}\n\n---\n*The process was interrupted: ${errorMessage}*`
-          : `I encountered an issue: ${errorMessage}. Please try again.`;
+          : `${errorMessage}. Please try again.`;
 
-        return { 
-          ...m, 
-          content: { text: finalText, list: [], footer: '' }, 
-          meta: { 
-            ...(m.meta || {}), 
-            isStreaming: false, 
-            limitReached: isLimitError, 
-            liveThinking: '' 
-          } 
+        return {
+          ...m,
+          content: { text: finalText, list: [], footer: '' },
+          meta: {
+            ...(m.meta || {}),
+            isStreaming: false,
+            limitReached: isLimitError,
+            liveThinking: ''
+          }
         };
       }));
+
+      // Save error message to localStorage so it persists on reload
+      if (conversationIdToUse) {
+        const existingRaw = localStorage.getItem(`conversation_${conversationIdToUse}`);
+        const existing = existingRaw ? JSON.parse(existingRaw) : { id: conversationIdToUse, messages: [], title: messageText.split(' ').slice(0, 5).join(' '), lastUpdated: '', messageCount: 0 };
+        const userMsg: UserMessage = { id: Date.now(), type: 'user', role: 'user', content: messageText, time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) };
+        const errorContentText = `${err.message || 'The connection was lost during processing.'}. Please try again.`;
+        const agentMsg: AgentMessage = {
+          id: assistantMsgId,
+          type: 'agent',
+          role: 'assistant',
+          content: { text: errorContentText, list: [], footer: '' },
+          time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+          meta: { limitReached: isLimitError }
+        };
+        const allMsgs = [...(existing.messages || []), userMsg, agentMsg];
+        const unique = allMsgs.filter((msg: any, idx: number, self: any[]) => idx === self.findIndex(t => t.id === msg.id));
+        localStorage.setItem(`conversation_${conversationIdToUse}`, JSON.stringify({ ...existing, messages: unique, lastUpdated: new Date().toISOString(), messageCount: unique.length }));
+
+        if (isNew) {
+          generateChatTitle(messageText).then(title => {
+            localStorage.setItem(`conv_${conversationIdToUse}_title`, title);
+            setChatTitle(title);
+          }).catch(() => { });
+        }
+      }
     } finally {
       setIsLoading(false);
       setIsAgentLoopActive(false);
@@ -2320,7 +2402,7 @@ export default function ChatInterface({
         role: 'assistant',
         notes: [],
         content: {
-          text: error instanceof Error ? error.message : "I encountered an issue. Let me try that again or let me know if you need help with something else!",
+          text: error instanceof Error ? error.message : "Something went wrong. Let me try that again or let me know if you need help with something else!",
           list: [],
           footer: ""
         },
@@ -2993,7 +3075,7 @@ export default function ChatInterface({
 
 
   const saveConversation = async () => {
-    if (messages.length === 0) return;
+    if (messages.length > 0) return;
 
     try {
       // Group messages into user-agent pairs and save
@@ -3175,19 +3257,11 @@ export default function ChatInterface({
   return (
     <TooltipProvider>
       <>
-        <AnimatePresence>
-          {showFullPageSkeleton && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="fixed inset-0 z-[200]"
-            >
-              <AgentSkeletonLoader />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {showFullPageSkeleton && (
+          <div className="fixed inset-0 z-[200]">
+            <AgentSkeletonLoader />
+          </div>
+        )}
         <UsageLimitModal
           isOpen={isUsageLimitModalOpen}
           onClose={() => setIsUsageLimitModalOpen(false)}
@@ -3264,7 +3338,7 @@ export default function ChatInterface({
             {/* Main Layout Wrapper - Absolute positioned to fill screen strictly */}
             <div
               className={cn(
-                "absolute inset-0 transition-all duration-500 ease-in-out bg-white dark:bg-black overflow-hidden flex flex-col md:flex-row",
+                "absolute inset-0 bg-white dark:bg-black overflow-hidden flex flex-col md:flex-row",
                 isSidebarCollapsed ? "md:left-20" : "md:left-64",
                 "left-0"
               )}
@@ -3272,11 +3346,11 @@ export default function ChatInterface({
             >
               {/* Chat Column (Order 1 - LEFT) - Premium Refinement */}
               <div
-                className="flex-1 flex flex-col relative h-full min-w-0 transition-all duration-500 order-1 bg-black backdrop-blur-3xl border-x border-t border-white/[0.05] rounded-t-[40px] shadow-[0_-20px_50px_-15px_rgba(0,0,0,0.5)] overflow-hidden"
+                className="flex-1 flex flex-col relative h-full min-w-0 order-1 bg-black backdrop-blur-3xl border-x border-t border-white/[0.05] rounded-t-[40px] shadow-[0_-20px_50px_-15px_rgba(0,0,0,0.5)] overflow-hidden"
                 style={{ display: 'flex', flexDirection: 'column', height: '100%', maxHeight: '100%' }}
               >
                 {/* Header - Glassmorphic fixed height */}
-                <div className="shrink-0 z-40 transition-all duration-300 bg-black/[0.02] dark:bg-black/40 backdrop-blur-md border-b border-neutral-200 dark:border-white/[0.03]" style={{ flexShrink: 0 }}>
+                <div className="shrink-0 z-40 bg-black/[0.02] dark:bg-black/40 backdrop-blur-md border-b border-neutral-200 dark:border-white/[0.03]" style={{ flexShrink: 0 }}>
                   <div className="relative px-8 py-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -3526,11 +3600,7 @@ export default function ChatInterface({
                         <div className="space-y-4 pt-4">
                           {activeMission && <MissionStatusHeader mission={activeMission} />}
                           {messages.map((msg) => (
-                            <motion.div
-                              layout
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                            <div
                               key={msg.id}
                               className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
                             >
@@ -3619,16 +3689,13 @@ export default function ChatInterface({
                                     )}
 
                                     {msg.role === 'assistant' && (msg as AgentMessage).meta?.agentSteps && !(msg as AgentMessage).meta?.limitReached && (
-                                      <motion.div 
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: 0.2 }}
+                                      <div 
                                         className="flex flex-col gap-0.5 mb-4 border-t border-white/[0.03] pt-2"
                                       >
                                         {(msg as AgentMessage).meta!.agentSteps!.filter(s => s.type === 'tool_call').map((step, idx) => (
                                           <AgentTaskPill key={step.id || idx} step={step} />
                                         ))}
-                                      </motion.div>
+                                      </div>
                                     )}
 
                                     {/* Plan Canvas (Inline + Full-Screen Modal) */}
@@ -3649,9 +3716,7 @@ export default function ChatInterface({
 
                                     {/* Phase 2: Canvas Expansion Prompt */}
                                     {msg.role === 'assistant' && (msg as AgentMessage).meta?.canvasExpansion && (
-                                      <motion.div
-                                        initial={{ opacity: 0, y: 8 }}
-                                        animate={{ opacity: 1, y: 0 }}
+                                      <div
                                         className="mt-4 p-4 rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-black/[0.02] dark:bg-white/[0.02] backdrop-blur-sm"
                                       >
                                         <p className="text-[13px] text-black/50 dark:text-white/50 mb-3">
@@ -3660,7 +3725,7 @@ export default function ChatInterface({
                                         <div className="flex items-center gap-2">
                                           <button
                                             onClick={() => setIsCanvasOpen(true)}
-                                            className="px-4 py-2 bg-black dark:bg-white text-white dark:text-black text-[12px] font-bold rounded-xl hover:bg-black/80 dark:hover:bg-neutral-200 transition-all active:scale-[0.98]"
+                                            className="px-4 py-2 bg-black dark:bg-white text-white dark:text-black text-[12px] font-bold rounded-xl hover:bg-black/80 dark:hover:bg-neutral-200 transition-all"
                                           >
                                             Yes, open canvas
                                           </button>
@@ -3679,7 +3744,7 @@ export default function ChatInterface({
                                             No, keep it here
                                           </button>
                                         </div>
-                                      </motion.div>
+                                      </div>
                                     )}
                                     {/* Search Execution Panel (Phase 4) */}
                                     {msg.role === 'assistant' && (msg as AgentMessage).meta?.searchExecution && (
@@ -3845,7 +3910,7 @@ export default function ChatInterface({
                                   </div>
                                 </div>
                               </div>
-                            </motion.div>
+                            </div>
                           ))}
                           {/* All processing animations removed per request */}
                           <div ref={messagesEndRef} className="h-8" />

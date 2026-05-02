@@ -224,8 +224,6 @@ export function HomeFeedSidebar({
                                             <motion.button
                                                 layout
                                                 initial={false}
-                                                whileHover={{ x: isCollapsed ? 0 : 4, backgroundColor: 'rgba(0,0,0,0.02)' }}
-                                                whileTap={{ scale: 0.98 }}
                                                 onClick={() => router.push(item.route)}
                                                 className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3 px-3'} py-2.5 rounded-xl transition-all duration-200 group relative ${
                                                     isActive 
@@ -276,8 +274,6 @@ export function HomeFeedSidebar({
                                     <TooltipTrigger asChild>
                                         <motion.button
                                             layout
-                                            whileHover={{ x: isCollapsed ? 0 : 4, backgroundColor: 'rgba(0,0,0,0.02)' }}
-                                            whileTap={{ scale: 0.98 }}
                                             onClick={() => {
                                                 if (item.onClick) {
                                                     item.onClick();
