@@ -26,6 +26,7 @@ export interface AgentStep {
   type: 'thinking' | 'tool_call' | 'tool_result' | 'tool_error' | 'approval' | 'respond' | 'message';
   tool?: string;
   label: string;
+  context?: string; // Detailed context (e.g. search query, internal thought)
   status: 'active' | 'completed' | 'error';
   summary?: string;
   startedAt: number;
@@ -150,14 +151,32 @@ export function AgentExecutionTimeline({
                   )}
                 </div>
 
-                {/* Step Text */}
+                {/* Step Text & Context */}
                 <div className="flex-1 min-w-0">
                   {isActiveStep ? (
-                    <ShiningText text={displayLabel} />
+                    <div className="flex flex-col gap-0.5">
+                      <ShiningText text={displayLabel} />
+                      {step.context && (
+                        <motion.p 
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="text-[12px] text-neutral-400 dark:text-white/20 italic line-clamp-1"
+                        >
+                          {step.context}
+                        </motion.p>
+                      )}
+                    </div>
                   ) : (
-                    <span className="text-[14px] font-medium text-neutral-500 dark:text-white/40">
-                      {displayLabel}
-                    </span>
+                    <div className="flex flex-col">
+                      <span className="text-[14px] font-medium text-neutral-500 dark:text-white/40">
+                        {displayLabel}
+                      </span>
+                      {step.context && (
+                        <span className="text-[11px] text-neutral-400/60 dark:text-white/10 italic line-clamp-1">
+                          {step.context}
+                        </span>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>

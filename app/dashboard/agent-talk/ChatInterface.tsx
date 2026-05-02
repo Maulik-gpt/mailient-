@@ -1577,12 +1577,14 @@ export default function ChatInterface({
               const nextThinkingSteps = [...currentAgentSteps];
               const activeThink = nextThinkingSteps.find(s => s.status === 'active');
               if (activeThink) {
-                activeThink.label = data.step || 'Processing...';
+                activeThink.label = 'Reasoning...';
+                activeThink.context = data.step || '';
               } else {
                 nextThinkingSteps.push({
                   id: `al-think-${data.iteration}`,
                   type: 'thinking',
-                  label: data.step || 'Reasoning...',
+                  label: 'Reasoning...',
+                  context: data.step || '',
                   status: 'active',
                   startedAt: Date.now(),
                   iteration: data.iteration
@@ -1613,6 +1615,7 @@ export default function ChatInterface({
                 type: 'tool_call',
                 tool: data.tool,
                 label: getStepLabel(data.tool, data.params, 'active'),
+                context: data.params?.query || data.params?.message || data.params?.summary || '',
                 status: 'active',
                 startedAt: Date.now(),
                 iteration: data.iteration,
@@ -1785,7 +1788,18 @@ export default function ChatInterface({
         const existingRaw = localStorage.getItem(`conversation_${conversationIdToUse}`);
         const existing = existingRaw ? JSON.parse(existingRaw) : { id: conversationIdToUse, messages: [], title: messageText.split(' ').slice(0, 5).join(' '), lastUpdated: '', messageCount: 0 };
         const userMsg: UserMessage = { id: Date.now(), type: 'user', role: 'user', content: messageText, time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) };
-        const agentMsg: AgentMessage = { id: assistantMsgId, type: 'agent', role: 'assistant', content: { text: finalContent, list: [], footer: '' }, time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) };
+        
+        // Use synthesized content if available, fallback to finalContent
+        const finalPersistedText = finalProcessedText || finalContent;
+        const agentMsg: AgentMessage = { 
+          id: assistantMsgId, 
+          type: 'agent', 
+          role: 'assistant', 
+          content: { text: finalPersistedText, list: [], footer: '' }, 
+          time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+          meta: { agentSteps: currentAgentSteps }
+        };
+        
         const allMsgs = [...(existing.messages || []), userMsg, agentMsg];
         const unique = allMsgs.filter((msg: any, idx: number, self: any[]) => idx === self.findIndex(t => t.id === msg.id));
         localStorage.setItem(`conversation_${conversationIdToUse}`, JSON.stringify({ ...existing, messages: unique, lastUpdated: new Date().toISOString(), messageCount: unique.length }));
