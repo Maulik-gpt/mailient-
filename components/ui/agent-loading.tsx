@@ -14,9 +14,12 @@ export function AgentLoading() {
                 <div className="flex items-center justify-between w-full h-14 opacity-20 mb-12">
                     <div className="w-28 h-6 bg-white/10 rounded-lg relative overflow-hidden">
                         <motion.div
-                            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.1] to-transparent w-[200%]"
+                            className="absolute inset-0 w-[200%]"
+                            style={{
+                                background: 'linear-gradient(110deg, rgba(255,255,255,0) 20%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0) 80%)'
+                            }}
                             animate={{ x: ['-100%', '100%'] }}
-                            transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+                            transition={{ repeat: Infinity, duration: 1.5, ease: [0.4, 0, 0.6, 1] }}
                         />
                     </div>
                     <div className="flex items-center gap-4">
@@ -34,10 +37,13 @@ export function AgentLoading() {
                         <div className="w-20 h-4 bg-white/10 rounded-full" />
                     </div>
                     <div className="h-3 w-full bg-white/5 rounded-full relative overflow-hidden">
-                        <motion.div
-                            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.05] to-transparent w-[200%]"
+                         <motion.div
+                            className="absolute inset-0 w-[200%]"
+                            style={{
+                                background: 'linear-gradient(110deg, rgba(255,255,255,0) 20%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0) 80%)'
+                            }}
                             animate={{ x: ['-100%', '100%'] }}
-                            transition={{ repeat: Infinity, duration: 2.5, ease: "linear" }}
+                            transition={{ repeat: Infinity, duration: 1.5, ease: [0.4, 0, 0.6, 1] }}
                         />
                     </div>
                     <div className="h-3 w-full bg-white/5 rounded-full relative overflow-hidden">

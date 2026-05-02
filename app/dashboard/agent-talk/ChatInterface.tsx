@@ -462,13 +462,18 @@ const NoScrollbarStyles = () => (
       scrollbar-width: none !important; /* Firefox */
     }
     .skeleton-shimmer {
-      background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.03) 50%, transparent 100%);
+      background: linear-gradient(
+        110deg,
+        rgba(255, 255, 255, 0) 20%,
+        rgba(255, 255, 255, 0.05) 50%,
+        rgba(255, 255, 255, 0) 80%
+      );
       background-size: 200% 100%;
-      animation: shimmer 2s infinite linear;
+      animation: shimmer 1.5s infinite cubic-bezier(0.4, 0, 0.6, 1);
     }
     @keyframes shimmer {
-      from { background-position: 200% 0; }
-      to { background-position: -200% 0; }
+      from { background-position: 100% 0; }
+      to { background-position: -100% 0; }
     }
   `}</style>
 );
