@@ -3157,15 +3157,22 @@ export default function ChatInterface({
                                       </div>
                                     )}
 
-                                    {((msg as AgentMessage).meta?.isStreaming !== true || (typeof msg.content === 'string' ? msg.content : msg.content.text).length > 0 || !isAgentLoopActive) && (
-                                      <MessageContent
-                                        content={msg.content}
-                                        isUser={msg.role === 'user'}
-                                        isTyping={isLoading && msg.role === 'assistant' && msg.id === messages[messages.length - 1].id && (!isAgentLoopActive || (typeof msg.content === 'string' ? msg.content : msg.content.text).length > 0)}
-                                        isNewResponse={msg.role === 'assistant' && msg.id === messages[messages.length - 1].id && !isLoading}
-                                        hideLinks={msg.role === 'assistant' && (msg as AgentMessage).meta?.limitReached}
-                                      />
-                                    )}
+                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.liveThinking && (
+                                       <AgentThinkingSection 
+                                         content={(msg as AgentMessage).meta!.liveThinking!} 
+                                         isComplete={(msg as AgentMessage).meta?.thinkingComplete}
+                                       />
+                                     )}
+
+                                     {((msg as AgentMessage).meta?.isStreaming !== true || (typeof msg.content === 'string' ? msg.content : msg.content.text).length > 0 || !isAgentLoopActive) && (
+                                       <MessageContent
+                                         content={msg.content}
+                                         isUser={msg.role === 'user'}
+                                         isTyping={isLoading && msg.role === 'assistant' && msg.id === messages[messages.length - 1].id && (!isAgentLoopActive || (typeof msg.content === 'string' ? msg.content : msg.content.text).length > 0)}
+                                         isNewResponse={msg.role === 'assistant' && msg.id === messages[messages.length - 1].id && !isLoading}
+                                         hideLinks={msg.role === 'assistant' && (msg as AgentMessage).meta?.limitReached}
+                                       />
+                                     )}
 
                                     {msg.role === 'user' && (msg as UserMessage).attachments && (msg as UserMessage).attachments!.length > 0 && (
                                       <div className="mt-3 flex flex-wrap gap-2 pt-3 border-t border-neutral-200 dark:border-white/10">
