@@ -1542,6 +1542,7 @@ export default function ChatInterface({
       let buffer = '';
       let currentEventType = '';
       let finalContent = '';
+      let finalProcessedText = '';
       let rawOutput = '';
       let stepIndex = 0;
       let streamFinishedNormally = false;
@@ -1720,7 +1721,7 @@ export default function ChatInterface({
 
             case 'done':
               streamFinishedNormally = true;
-              let finalProcessedText = finalContent.trim();
+              finalProcessedText = finalContent.trim();
               if (!finalProcessedText && stepIndex > 0) {
                 const completedSteps = currentAgentSteps.filter(s => s.status === 'completed');
                 if (completedSteps.length > 0) {
