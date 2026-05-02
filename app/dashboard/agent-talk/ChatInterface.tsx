@@ -61,16 +61,24 @@ function RollingThinkingStatus({ onToggle, isOpen, isDeepThinking }: { onToggle:
   }, [index, isDeepThinking, messages.length]);
 
   return (
-    <div className="flex items-center gap-2 group/status cursor-pointer select-none py-1" onClick={onToggle}>
-      <motion.span
-        className="text-[14px] font-bold tracking-tight bg-[linear-gradient(110deg,#666,35%,#fff,50%,#666,75%,#666)] bg-[length:200%_100%] bg-clip-text text-transparent"
-        initial={{ backgroundPosition: "200% 0" }}
-        animate={{ backgroundPosition: "-200% 0" }}
-        transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
-      >
-        {messages[index]}
-      </motion.span>
-      <ChevronDown className={cn("w-3.5 h-3.5 text-black/20 dark:text-white/20 transition-transform duration-500", isOpen ? "rotate-180" : "")} />
+    <div className="flex items-center gap-2 group/status cursor-pointer select-none py-1.5" onClick={onToggle}>
+      <div className="relative">
+        <motion.span
+          className="text-[14px] font-bold tracking-tight bg-[linear-gradient(110deg,#666,35%,#fff,50%,#666,75%,#666)] bg-[length:250%_100%] bg-clip-text text-transparent drop-shadow-[0_0_8px_rgba(255,255,255,0.15)]"
+          initial={{ backgroundPosition: "200% 0" }}
+          animate={{ backgroundPosition: ["200% 0", "-200% 0"] }}
+          transition={{ repeat: Infinity, duration: 2.5, ease: "linear" }}
+        >
+          {messages[index]}
+        </motion.span>
+        {/* Subtle Liquid Wave Overlay */}
+        <motion.div 
+          className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/10 to-transparent w-[200%] pointer-events-none"
+          animate={{ x: ['-100%', '100%'] }}
+          transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+        />
+      </div>
+      <ChevronDown className={cn("w-3.5 h-3.5 text-black/20 dark:text-white/20 transition-all duration-700 group-hover/status:text-white/40", isOpen ? "rotate-180" : "")} />
     </div>
   );
 }
@@ -179,8 +187,8 @@ const MarkdownComponents: any = {
     return (
       <code className={cn(
         "font-mono text-sm",
-        inline 
-          ? "px-1.5 py-0.5 rounded bg-white/[0.08] text-white/90" 
+        inline
+          ? "px-1.5 py-0.5 rounded bg-white/[0.08] text-white/90"
           : "block p-4 bg-[#0a0a0a] border border-white/[0.08] rounded-lg text-white/80 my-4 overflow-x-auto",
         className
       )} {...props}>
@@ -194,11 +202,11 @@ const MarkdownComponents: any = {
     </pre>
   ),
   a: ({ node, ...props }: any) => (
-    <a 
-      className="text-white/90 underline underline-offset-4 decoration-white/30 hover:decoration-white/70 transition-all font-medium hover:text-white" 
-      target="_blank" 
-      rel="noopener noreferrer" 
-      {...props} 
+    <a
+      className="text-white/90 underline underline-offset-4 decoration-white/30 hover:decoration-white/70 transition-all font-medium hover:text-white"
+      target="_blank"
+      rel="noopener noreferrer"
+      {...props}
     />
   ),
   strong: ({ children }: any) => <strong className="font-bold text-white">{children}</strong>,
@@ -349,7 +357,7 @@ function extractThinking(message: string): { thinking: string; cleanText: string
 
   // 1. Remove all fully closed thinking blocks from the clean text
   let cleanText = message.replace(/<thinking>[\s\S]*?<\/thinking>/gi, '').trim();
-  
+
   // 2. Check for a currently open/streaming thinking tag at the end
   let thinking = '';
   if (cleanText.includes('<thinking>')) {
@@ -506,74 +514,13 @@ const NoScrollbarStyles = () => (
       -ms-overflow-style: none !important; /* IE and Edge */
       scrollbar-width: none !important; /* Firefox */
     }
-    .skeleton-shimmer {
-      background: linear-gradient(
-        110deg,
-        rgba(255, 255, 255, 0) 15%,
-        rgba(255, 255, 255, 0.15) 50%,
-        rgba(255, 255, 255, 0) 85%
-      );
-      background-size: 200% 100%;
-      animation: shimmer 1.5s infinite cubic-bezier(0.4, 0, 0.6, 1);
-    }
-    @keyframes shimmer {
-      from { background-position: 100% 0; }
-      to { background-position: -100% 0; }
-    }
   `}</style>
 );
-
-function AgentSkeletonLoader() {
-  return (
-    <div className="fixed inset-0 z-[100] flex flex-col pointer-events-none px-6 py-4 bg-black/5 backdrop-blur-[2px]">
-      {/* Top Bar Skeleton Shadow */}
-      <div className="flex items-center justify-between w-full h-14 opacity-20 mb-8">
-        <div className="w-24 h-6 bg-white/5 rounded-lg relative overflow-hidden">
-          <div className="absolute inset-0 skeleton-shimmer" />
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-white/5 relative overflow-hidden"><div className="absolute inset-0 skeleton-shimmer" /></div>
-          <div className="w-8 h-8 rounded-full bg-white/5 relative overflow-hidden"><div className="absolute inset-0 skeleton-shimmer" /></div>
-          <div className="w-8 h-8 rounded-full bg-white/5 relative overflow-hidden"><div className="absolute inset-0 skeleton-shimmer" /></div>
-          <div className="w-20 h-8 rounded-lg bg-white/5 relative overflow-hidden"><div className="absolute inset-0 skeleton-shimmer" /></div>
-        </div>
-      </div>
-
-      {/* Main Content Skeleton Shadow */}
-      <div className="flex flex-col gap-5 w-full max-w-3xl mx-auto opacity-20">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-5 h-5 rounded-md bg-white/10 relative overflow-hidden"><div className="absolute inset-0 skeleton-shimmer" /></div>
-          <div className="w-16 h-4 bg-white/10 rounded-full relative overflow-hidden"><div className="absolute inset-0 skeleton-shimmer" /></div>
-        </div>
-        <div className="h-2.5 w-full bg-white/5 rounded-full relative overflow-hidden"><div className="absolute inset-0 skeleton-shimmer" /></div>
-        <div className="h-2.5 w-full bg-white/5 rounded-full relative overflow-hidden"><div className="absolute inset-0 skeleton-shimmer" /></div>
-        <div className="h-2.5 w-[85%] bg-white/5 rounded-full relative overflow-hidden"><div className="absolute inset-0 skeleton-shimmer" /></div>
-        <div className="h-2.5 w-[40%] bg-white/5 rounded-full relative overflow-hidden"><div className="absolute inset-0 skeleton-shimmer" /></div>
-      </div>
-
-      {/* Bottom Prompt Box Skeleton Shadow */}
-      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-full max-w-3xl px-6 opacity-20">
-        <div className="h-16 w-full bg-white/5 rounded-[22px] border border-white/[0.03] relative overflow-hidden flex items-center justify-between px-5">
-          <div className="absolute inset-0 skeleton-shimmer opacity-30" />
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-full bg-white/10" />
-            <div className="w-7 h-7 rounded-full bg-white/10" />
-          </div>
-          <div className="h-2 w-32 bg-white/10 rounded-full" />
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-full bg-white/10" />
-            <div className="w-7 h-7 rounded-full bg-white/10" />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 
 function AgentThinkingSection({ content, isComplete }: { content: string, isComplete?: boolean }) {
   const [isOpen, setIsOpen] = useState(true);
-  
+
   if (!content) return null;
 
   return (
@@ -591,26 +538,26 @@ function AgentThinkingSection({ content, isComplete }: { content: string, isComp
               {/* Middle Pulse */}
               <motion.div
                 className="absolute inset-0 rounded-full bg-white/40 z-10"
-                animate={{ scale: [1, 1.5, 1], opacity: [0.3, 0.6, 0.3] }}
-                transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                animate={{ scale: [1, 1.4, 1], opacity: [0.2, 0.5, 0.2] }}
+                transition={{ repeat: Infinity, duration: 2.8, ease: "easeInOut" }}
               />
               {/* Outer Glow */}
               <motion.div
                 className="absolute -inset-2 rounded-full bg-white/10 blur-md z-0"
-                animate={{ opacity: [0.2, 0.5, 0.2] }}
-                transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+                animate={{ opacity: [0.1, 0.4, 0.1], scale: [0.9, 1.2, 0.9] }}
+                transition={{ repeat: Infinity, duration: 4.2, ease: "easeInOut" }}
               />
               {/* Shimmer Overlay on Orb */}
               <div className="absolute inset-1 rounded-full overflow-hidden z-30 pointer-events-none">
                 <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent w-[200%]"
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent w-[200%]"
                   animate={{ x: ['-100%', '100%'] }}
-                  transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                  transition={{ repeat: Infinity, duration: 2.2, ease: "linear" }}
                 />
               </div>
             </div>
           ) : (
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               className="w-5 h-5 rounded-full bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0"
@@ -618,17 +565,17 @@ function AgentThinkingSection({ content, isComplete }: { content: string, isComp
               <CheckCircle2 className="w-3 h-3 text-white/40" />
             </motion.div>
           )}
-          
+
           <div className="flex items-center gap-1.5 ml-0.5">
             {!isComplete ? (
               <TextShimmer
-                className="text-[12px] font-medium text-white/50 tracking-wider select-none drop-shadow-[0_0_5px_rgba(255,255,255,0.1)] uppercase"
+                className="text-[12px] font-medium text-white/90 tracking-wider select-none drop-shadow-[0_0_5px_rgba(255,255,255,0.2)] uppercase"
                 duration={2}
               >
                 Thinking
               </TextShimmer>
             ) : (
-              <motion.span 
+              <motion.span
                 initial={{ opacity: 0, x: -5 }}
                 animate={{ opacity: 1, x: 0 }}
                 className="text-[12px] font-medium text-white/30 tracking-wider select-none uppercase"
@@ -636,7 +583,7 @@ function AgentThinkingSection({ content, isComplete }: { content: string, isComp
                 Thought
               </motion.span>
             )}
-            <button 
+            <button
               onClick={() => setIsOpen(!isOpen)}
               className="text-white/10 hover:text-white/30 transition-colors"
             >
@@ -664,7 +611,7 @@ function AgentThinkingSection({ content, isComplete }: { content: string, isComp
               )}
             >
               {content === 'SKELETON' ? (
-                <div className="py-4" />
+                <div className="py-2" />
               ) : (
                 <div className={cn(
                   "text-[13.5px] leading-relaxed italic font-normal tracking-tight markdown-thought",
@@ -740,8 +687,8 @@ function AgentTaskPill({ step }: { step: AgentStep }) {
       )}
       <div className={cn(
         "flex items-center justify-center w-5 h-5 rounded-full border transition-all z-10 relative overflow-hidden",
-        step.status === 'active' 
-          ? "bg-white/20 border-white/30 text-white shadow-[0_0_12px_rgba(255,255,255,0.4)]" 
+        step.status === 'active'
+          ? "bg-white/20 border-white/30 text-white shadow-[0_0_12px_rgba(255,255,255,0.4)]"
           : "bg-white/5 border-white/10 text-white/40 group-hover/pill:text-white group-hover/pill:border-white/20"
       )}>
         {step.status === 'active' && (
@@ -1071,7 +1018,6 @@ export default function ChatInterface({
   const [pendingReplyProposal, setPendingReplyProposal] = useState<any>(null);
 
   // Live thinking state (AI-generated, shown during loading)
-  const [showFullPageSkeleton, setShowFullPageSkeleton] = useState(false);
   const [searchSessions, setSearchSessions] = useState<SearchSession[]>([]);
 
   // ... (inside the component)
@@ -1156,7 +1102,7 @@ export default function ChatInterface({
 
     const handleGlobalClick = (e: MouseEvent) => {
       if (!isMountedRef.current) return;
-      
+
       const target = e.target as HTMLElement;
       // Play sound if clicking a button, link, or role="button"
       if (
@@ -1546,7 +1492,6 @@ export default function ChatInterface({
 
     setIsLoading(true);
     setIsAgentLoopActive(true);
-    setShowFullPageSkeleton(true);
     setAgentSteps([{
       id: 'al-init',
       type: 'thinking',
@@ -1564,7 +1509,7 @@ export default function ChatInterface({
       role: 'assistant',
       content: { text: '', list: [], footer: '' },
       time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
-      meta: { actionType: 'agent_loop', isStreaming: true, liveThinking: 'SKELETON' }
+      meta: { actionType: 'agent_loop', isStreaming: true, liveThinking: 'Thinking...' }
     };
     setMessages(prev => [...prev, placeholderMsg]);
 
@@ -1753,17 +1698,17 @@ export default function ChatInterface({
                 );
                 setMessages(msgs => msgs.map(m => {
                   if (m.id !== assistantMsgId || m.role !== 'assistant') return m;
-                  return { 
-                    ...m, 
+                  return {
+                    ...m,
                     content: { text: finalProcessedText, list: [], footer: '' },
-                    meta: { 
-                      ...(m.meta || {}), 
-                      isStreaming: false, 
-                      agentSteps: finalSteps, 
-                      agentRunId: data?.runId, 
-                      agentDurationMs: data?.durationMs, 
-                      liveThinking: '' 
-                    } 
+                    meta: {
+                      ...(m.meta || {}),
+                      isStreaming: false,
+                      agentSteps: finalSteps,
+                      agentRunId: data?.runId,
+                      agentDurationMs: data?.durationMs,
+                      liveThinking: ''
+                    }
                   };
                 }));
                 return finalSteps;
@@ -1804,9 +1749,9 @@ export default function ChatInterface({
       console.error('[AgentLoop] Error:', err);
 
       const isLimitError = err.message?.toLowerCase().includes('limit') ||
-                          err.message?.toLowerCase().includes('credits') ||
-                          err.message?.toLowerCase().includes('quota') ||
-                          err.message?.toLowerCase().includes('403');
+        err.message?.toLowerCase().includes('credits') ||
+        err.message?.toLowerCase().includes('quota') ||
+        err.message?.toLowerCase().includes('403');
 
       setMessages(prev => prev.map(m => {
         if (m.id !== assistantMsgId || m.role !== 'assistant') return m;
@@ -1868,555 +1813,6 @@ export default function ChatInterface({
     // The AI will now autonomously decide to use search, canvas, or plan tools.
     return processAgentLoopMessage(messageText, conversationIdToUse, isNew);
 
-    // ── Legacy path: canvas, plan mode, deep thinking, search ─────────
-    // Create new abort controller for this request
-    abortControllerRef.current?.abort();
-    abortControllerRef.current = new AbortController();
-    const assistantMsgId = Date.now() + 1;
-
-    try {
-      setIsLoading(true);
-
-      const isDeepThinking = options?.isDeepThinking || false;
-      const isCanvas = options?.isCanvas || false;
-      const isSearch = options?.isSearch || false;
-      const isPlanMode = options?.isPlanMode || false;
-
-      setIsDeepThinkingState(isDeepThinking);
-      setIsSearchingState(isSearch);
-
-      if (isDeepThinking && !isPlanMode) {
-        setLiveThinkingBlocks([{
-          id: 'deep-block',
-          title: 'Deep Reasoning Process',
-          status: 'active',
-          initialContext: 'Initializing multi-path logical analysis...',
-          steps: [
-            { id: 'deep-analyze', label: 'Analyzing request for deep reasoning...', status: 'active', type: 'think' },
-            { id: 'deep-context', label: 'Performing comprehensive context retrieval...', status: 'pending', type: 'search' },
-            { id: 'deep-reasoning', label: 'Processing logical pathways and edge cases...', status: 'pending', type: 'think' },
-            { id: 'deep-synthesis', label: 'Synthesizing final high-quality resolution...', status: 'pending', type: 'analyze' }
-          ]
-        }]);
-      } else if (isPlanMode) {
-        setLiveThinkingBlocks([{
-          id: 'plan-block',
-          title: 'Strategic Plan Architecture',
-          status: 'active',
-          initialContext: 'Architecting a comprehensive plan...',
-          steps: [
-            { id: 'plan-understand', label: 'Understanding objectives and constraints...', status: 'active', type: 'think' },
-            { id: 'plan-research', label: 'Gathering relevant context and data...', status: 'pending', type: 'search' },
-            { id: 'plan-structure', label: 'Structuring execution steps...', status: 'pending', type: 'analyze' },
-            { id: 'plan-validate', label: 'Validating plan feasibility...', status: 'pending', type: 'think' },
-            { id: 'plan-finalize', label: 'Finalizing plan with success criteria...', status: 'pending', type: 'draft' }
-          ]
-        }]);
-      } else if (isSearch) {
-        setLiveThinkingBlocks([{
-          id: 'search-block',
-          title: 'Advanced Search',
-          status: 'active',
-          initialContext: 'Configuring deep search parameters...',
-          steps: [
-            { id: 'search-intent', label: 'Identifying search parameters...', status: 'active', type: 'analyze' },
-            { id: 'search-exec', label: 'Executing deep email search...', status: 'pending', type: 'search' },
-            { id: 'search-process', label: 'Processing search results...', status: 'pending', type: 'analyze' }
-          ]
-        }]);
-      } else {
-        setLiveThinkingBlocks(buildFallbackThinkingBlocks(messageText));
-      }
-
-      // Detect query types
-      const notesQuery = isNotesRelatedQuery(messageText);
-      setIsNotesQuery(notesQuery);
-      let extractedQuery = '';
-      if (notesQuery) {
-        extractedQuery = extractSearchTerm(messageText);
-        setNotesSearchQuery(extractedQuery);
-      }
-
-      const requestRunId = 'run_client_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
-
-      const requestBody = {
-        message: messageText,
-        conversationId: conversationIdToUse,
-        isNewConversation: isNew,
-        gmailAccessToken,
-        isNotesQuery: notesQuery,
-        notesSearchQuery: extractedQuery,
-        activeMission,
-        runId: requestRunId,
-        attachments: attachments || [],
-        isDeepThinking,
-        isCanvas,
-        isSearch,
-        isPlanMode,
-        modelId: options?.modelId
-      };
-
-      // --- PHASE I: Fast Intent Analysis (AI-Driven Assessment) ---
-      let intentData: any = null;
-      try {
-        const intentRes = await fetch('/api/agent-talk/chat-arcus/intent', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            message: messageText,
-            conversationId: conversationIdToUse,
-            runId: requestRunId,
-            attachments: attachments || [],
-            isPlanMode,
-            isCanvas,
-            isSearch,
-            isDeepThinking
-          }),
-          signal: abortControllerRef.current!.signal
-        });
-        if (intentRes.ok) intentData = await intentRes.json();
-      } catch (e) {
-        console.warn('Intent analysis failed:', e);
-      }
-
-      // Auto-request notifications on first interaction if not yet decided
-      if (typeof window !== 'undefined' && NotificationService.permission === 'default' && !notificationsEnabled) {
-        toggleNotifications();
-      }
-
-      // --- PHASE II: Immediate AI Assessment ---
-      // Plan Mode: Show elegant acknowledgment paragraph
-      const planAcknowledgment = isPlanMode
-        ? `I've deeply understood your request. I'm now architecting a comprehensive plan to bring this to life — analyzing objectives, structuring execution steps, and defining clear success criteria.`
-        : null;
-
-      if (intentData?.initialResponse || planAcknowledgment) {
-        const initialMessage: AgentMessage = {
-          id: assistantMsgId,
-          type: 'agent',
-          role: 'assistant',
-          content: {
-            text: planAcknowledgment || intentData.initialResponse,
-            list: [],
-            footer: ''
-          },
-          time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
-          meta: {
-            actionType: isPlanMode ? 'plan' : 'thought',
-            isStreaming: true,
-            canvasApproval: ((intentData?.needsCanvas === true || isCanvas) && !isPlanMode) ? {
-              status: 'pending' as const,
-              title: intentData.canvasTitle || 'Launch Arcus Mission?',
-              description: intentData.canvasDescription || intentData.initialResponse || 'This request would be best handled in the specialized Arcus Workspace.',
-              canvasType: intentData.canvasType || 'none',
-              canvasData: null
-            } : undefined
-          }
-        };
-        setMessages(prev => [...prev, initialMessage]);
-      }
-
-      if (intentData) {
-        // --- Sequential Managed Blocks ---
-        const rawBlocks = (intentData.thinkingBlocks && intentData.thinkingBlocks.length > 0)
-          ? intentData.thinkingBlocks
-          : buildFallbackThinkingBlocks(messageText);
-
-        if (rawBlocks && rawBlocks.length > 0) {
-          const blocks = rawBlocks.map((b: any) => ({
-            ...b,
-            status: 'active' as const,
-            steps: b.steps.map((s: any, idx: number) => ({
-              ...s,
-              id: `${b.id}-step-${idx}`,
-              label: s.action || s.label,
-              status: idx === 0 ? 'active' as const : 'pending' as const,
-              type: s.type || 'think'
-            }))
-          }));
-
-          setLiveThinkingBlocks(blocks);
-
-          // --- Trigger Arcus Workspace Approval Step (Agent mode only, NOT Plan mode) ---
-          let userApprovedCanvas = isCanvas;
-
-          if (!isPlanMode && (intentData.needsCanvas === true || isCanvas)) {
-            const canvasInitialData = {
-              type: 'workflow' as const,
-              title: intentData.canvasTitle || "Arcus's Computer",
-              content: {
-                steps: blocks.map((b: any) => ({
-                  id: b.id,
-                  title: b.title,
-                  status: 'pending' as const
-                }))
-              }
-            };
-
-            setMessages(prev => prev.map(m => {
-              if (m.id === assistantMsgId && m.type === 'agent') {
-                return {
-                  ...m,
-                  meta: {
-                    ...m.meta,
-                    canvasApproval: {
-                      status: 'pending' as const,
-                      canvasData: canvasInitialData,
-                      title: intentData.canvasTitle || "Launch Arcus Mission?",
-                      description: intentData.canvasDescription || "This request would be best handled in the Arcus Workspace. Would you like to open it?"
-                    }
-                  }
-                };
-              }
-              return m;
-            }));
-
-            if (!isCanvas && !isPlanMode) {
-              setIsLoading(false);
-              userApprovedCanvas = await new Promise<boolean>((resolve) => {
-                canvasResolversRef.current[assistantMsgId] = resolve;
-              });
-              setIsLoading(true);
-            }
-          }
-
-          // Attach the approval state to requestBody for Phase II
-          requestBody.isCanvas = requestBody.isCanvas || userApprovedCanvas;
-        }
-
-      }
-
-      // --- THROTTLE: Prevent bursting back-to-back AI calls to respect OpenRouter rate limits ---
-      await new Promise(r => setTimeout(r, 1200));
-
-      // --- PHASE II: Main Execution & Chat Result ---
-      const chatRes = await fetch('/api/agent-talk/chat-arcus', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...requestBody,
-          intentAnalysis: intentData // Pass analysis to avoid backend re-processing
-        }),
-        signal: abortControllerRef.current!.signal
-      });
-
-      if (!chatRes.ok) {
-        const errorData = await chatRes.json().catch(() => ({}));
-        setMessages(prev => prev.filter(m => m.id !== assistantMsgId));
-
-        if (errorData?.error === 'limit_reached') {
-          setUsageLimitModalData({
-            featureName: 'Ask AI',
-            currentUsage: errorData.usage || 0,
-            limit: errorData.limit || 0,
-            period: errorData.period || 'daily',
-            currentPlan: errorData.planType || 'starter'
-          });
-          setIsUsageLimitModalOpen(true);
-
-          const limitMessage: AgentMessage = {
-            id: Date.now() + 2,
-            type: 'agent',
-            role: 'assistant',
-            content: {
-              text: "You've reached your AI limit for your current plan. To keep using Arcus AI and other premium features, you'll need more credits.",
-              list: [
-                "Unlock unlimited Arcus AI tasks",
-                "Priority processing for faster results",
-                "Advanced email analytics and search"
-              ],
-              footer: ""
-            },
-            time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
-            meta: { limitReached: true, actionType: 'limit' }
-          };
-          setMessages(prev => [...prev, limitMessage]);
-          setIsLoading(false);
-          setIsSearchingState(false);
-          setIsDeepThinkingState(false);
-          scrollToBottom(true);
-          return;
-        }
-        throw new Error(errorData.message || `Failed to send message (${chatRes.status})`);
-      }
-
-      const data = await chatRes.json();
-
-      // Extract AI thought block (deep thinking mode)
-      const { thinking: aiThought, cleanText: aiCleanText } = extractThinking(data.message || '');
-      if (aiThought) {
-        data.message = aiCleanText;
-      }
-
-      if (data?.run?.runId) {
-        setActiveRun({
-          runId: data.run.runId,
-          status: data.run.status,
-          phase: data.run.phase
-        });
-      }
-
-      // Mark all live blocks and steps as completed
-      setLiveThinkingBlocks(prev => prev.map(b => ({
-        ...b,
-        status: 'completed',
-        steps: b.steps.map(s => ({ ...s, status: 'completed' }))
-      })));
-      await new Promise(r => setTimeout(r, 300));
-
-      // Canvas data handling (Agent mode only — Plan mode uses PlanCanvas card)
-      const hasCanvas = Boolean(!isPlanMode && data.canvasData && (data.canvasData.content || data.execution?.requiresApproval));
-      if (hasCanvas) {
-        setCanvasData(data.canvasData);
-        // Automatically open canvas for complex tasks or explicit canvas requests
-        if (isCanvas || data.complexity === 'complex' || data.canvasType === 'action_plan') {
-          setIsCanvasOpen(true);
-        }
-      }
-
-      // --- PHASE 2: Canvas Expansion Prompting (Agent Mode only) ---
-      // Detect if the canvas content is complex enough to suggest expansion
-      const canvasContentLength = JSON.stringify(data.canvasData?.content || '').length;
-      const canvasSectionCount = data.canvasData?.sections?.length || 0;
-      const isCanvasComplex = hasCanvas && !isPlanMode && !isCanvas && (
-        canvasSectionCount >= 5 || canvasContentLength > 2000
-      );
-      // Store expansion suggestion flag on the message for inline rendering
-      const shouldSuggestExpansion = isCanvasComplex && !isCanvasOpen;
-
-      await refreshArcusCredits(true);
-
-      if (data.conversationId && data.conversationId !== conversationIdToUse) {
-        setCurrentConversationId(data.conversationId);
-        conversationIdToUse = data.conversationId;
-      }
-
-      if (data.integrations) setIntegrations(data.integrations);
-
-      // Store search sessions for transparency
-      if (data.searchSessions && data.searchSessions.length > 0) {
-        setSearchSessions(data.searchSessions);
-      }
-
-      // Final Thinking & Artifact Metadata
-      const aiThinkingProcess = (data.thinkingSteps && data.thinkingSteps.length > 0)
-        ? data.thinkingSteps.map((s: any, i: number) => ({
-          id: `step-${s.id || s.step || i}`,
-          label: s.description || s.action || '',
-          expandedContent: s.detail || '',
-          status: 'completed' as const,
-          type: (s.type || 'think') as any
-        }))
-        : undefined;
-
-      const aiResult = hasCanvas
-        ? {
-          type: data.canvasData.type,
-          title: data.canvasData.title || data.canvasData.content?.title || data.canvasData.content?.subject || intentData?.canvasType || 'Result',
-          canvasData: data.canvasData,
-        }
-        : undefined;
-
-      // Extract suggestions if any (mocking them if backend doesn't provide yet)
-      const suggestions = data.suggestions || (isPlanMode ? [
-        "Execute this plan now",
-        "Refine the plan steps",
-        "Add more detail to the plan"
-      ] : isInitialMode ? [
-        "How can I help with this further?",
-        "Tell me more about this.",
-        "Execute next steps"
-      ] : [
-        "What else can you do?",
-        "Show me more details",
-        "Fine-tune this result"
-      ]);
-
-      // --- PHASE III: Update the acknowledgment message with final content ---
-      const finalAgentMessage: AgentMessage = {
-        id: assistantMsgId,
-        type: 'agent',
-        role: 'assistant',
-        notes: data.notesResult?.notes || [],
-        content: {
-          text: data.message,
-          list: [],
-          footer: ''
-        },
-        time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
-        meta: {
-          actionHistory: data.actionHistory || [],
-          // thinkingBlocks intentionally omitted — only shown during live streaming, not after completion
-          result: aiResult,
-          actionType: data.actionType || 'chat',
-          isStreaming: false,
-          notesResult: data.notesResult,
-          emailResult: data.emailResult,
-          internalThought: aiThought || undefined,
-          searchSessions: data.searchSessions || undefined,
-          planArtifact: data.planArtifact || undefined, // Phase 2: Include plan artifact
-          suggestions: suggestions, // Add suggestions
-          canvasExpansion: shouldSuggestExpansion || undefined // Phase 2: Canvas expansion prompt
-        }
-      };
-
-      setMessages(prev => {
-        const index = prev.findIndex(m => m.id === assistantMsgId);
-        if (index !== -1) {
-          const newMessages = [...prev];
-          newMessages[index] = finalAgentMessage;
-          return newMessages;
-        }
-        return [...prev, finalAgentMessage];
-      });
-
-      setNewMessageIds(prev => new Set(prev).add(assistantMsgId));
-
-      // First stop loading to show the message
-      setIsLoading(false);
-      setIsSearchingState(false);
-      setIsDeepThinkingState(false);
-
-      // Trigger high-fidelity notification & sound (always for AI responses in this function)
-      if (data.message) {
-        if (notificationsEnabled || soundEnabled) {
-          const preview = data.message.substring(0, 100) + (data.message.length > 100 ? '...' : '');
-          NotificationService.notify('Arcus Response', preview, {
-            soundType: hasCanvas ? 'success' : 'notify',
-            silent: !notificationsEnabled
-          });
-        }
-      }
-
-      // Force scroll after state update
-      requestAnimationFrame(() => {
-        scrollToBottom(true);
-      });
-
-      // Get existing conversation data from localStorage to preserve title
-      const existingConversationRaw = localStorage.getItem(`conversation_${conversationIdToUse}`);
-      let existingTitle = '';
-      let existingMessages: Message[] = [];
-      let shouldGenerateTitle = false;
-
-      if (existingConversationRaw) {
-        try {
-          const existingData = JSON.parse(existingConversationRaw!);
-          existingTitle = existingData.title || '';
-          existingMessages = existingData.messages || [];
-
-          // If this is the first message pair (only 1 user message exists or no title yet)
-          // then we should generate an AI title
-          const userMessageCount = existingMessages.filter(m => m.type === 'user').length;
-          shouldGenerateTitle = !existingTitle || userMessageCount <= 1;
-        } catch (e) {
-          console.error('Error parsing existing conversation:', e);
-          shouldGenerateTitle = true;
-        }
-      } else {
-        shouldGenerateTitle = true;
-      }
-
-      // Use temporary title first (non-blocking), then update with AI title
-      if (!existingTitle) {
-        existingTitle = messageText.trim().split(' ').slice(0, 5).join(' ');
-      }
-
-      // Generate AI title asynchronously (non-blocking) for new conversations
-      if (shouldGenerateTitle && isNew) {
-        generateChatTitle(messageText).then((aiTitle) => {
-          console.log('🏷️ Generated title for new conversation:', aiTitle);
-          // Update localStorage with AI-generated title
-          const currentDataRaw = localStorage.getItem(`conversation_${conversationIdToUse}`);
-          if (currentDataRaw) {
-            try {
-              const currentData = JSON.parse(currentDataRaw);
-              currentData.title = aiTitle;
-              setChatTitle(aiTitle);
-              localStorage.setItem(`conversation_${conversationIdToUse}`, JSON.stringify(currentData));
-              localStorage.setItem(`conv_${conversationIdToUse}_title`, aiTitle);
-            } catch (e) {
-              console.error('Error updating title:', e);
-            }
-          }
-        }).catch((titleError) => {
-          console.error('Failed to generate AI title:', titleError);
-        });
-      }
-
-      // If we still don't have a title, use the message
-      if (!existingTitle) {
-        existingTitle = messageText.trim().split(' ').slice(0, 5).join(' ');
-      }
-
-      // Build the updated messages list
-      const userMessage: UserMessage = {
-        id: Date.now(),
-        type: 'user',
-        role: 'user',
-        notes: [],
-        content: messageText,
-        time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
-      };
-
-      // Filter out duplicates and combine with existing messages
-      const allMessages = [...existingMessages];
-
-      // Check if user message already exists (by content match)
-      const userMsgExists = allMessages.some(m => m.type === 'user' && m.content === messageText);
-      if (!userMsgExists) {
-        allMessages.push(userMessage);
-      }
-      allMessages.push(finalAgentMessage);
-
-      // Remove duplicates by ID
-      const uniqueMessages = allMessages.filter((msg, index, self) =>
-        index === self.findIndex((t) => t.id === msg.id)
-      );
-
-      const finalConversationData = {
-        id: conversationIdToUse,
-        messages: uniqueMessages,
-        title: existingTitle,
-        lastUpdated: new Date().toISOString(),
-        messageCount: uniqueMessages.length
-      };
-      localStorage.setItem(`conversation_${conversationIdToUse}`, JSON.stringify(finalConversationData));
-      localStorage.setItem(`conv_${conversationIdToUse}_title`, existingTitle);
-
-      // Update conversations state
-      setConversations(prev => ({
-        ...prev,
-        [conversationIdToUse]: uniqueMessages
-      }));
-
-    } catch (error: any) {
-      if (error.name === 'AbortError') {
-        setMessages(prev => prev.filter(m => m.id !== assistantMsgId));
-        return;
-      }
-      console.error('Error in processAIMessage:', error);
-      const errorAgentMessage: AgentMessage = {
-        id: Date.now() + 1,
-        type: 'agent',
-        role: 'assistant',
-        notes: [],
-        content: {
-          text: error instanceof Error ? error.message : "Something went wrong. Let me try that again or let me know if you need help with something else!",
-          list: [],
-          footer: ""
-        },
-        time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
-      };
-      setMessages(prev => [...prev, errorAgentMessage]);
-    } finally {
-      setIsLoading(false);
-      setShowFullPageSkeleton(false);
-      setIsDeepThinkingState(false);
-      setLiveThinkingBlocks([]);
-      setShowNotesFetching(false);
-      setTimeout(() => scrollToBottom(true), 100);
-    }
   };
 
   // Canvas execution handler - Phase 1: Integrated with Execution Gateway
@@ -2700,6 +2096,12 @@ export default function ChatInterface({
             });
             setMessages(formattedMessages);
             setConversations(prev => ({ ...prev, [conversationId]: formattedMessages }));
+            
+            // Give it a tiny bit of transition time
+            setTimeout(() => {
+              router.push(`/dashboard/agent-talk/${conversationId}`);
+            }, 50);
+
             setCurrentConversationId(conversationId);
             setIsInitialMode(false);
             setIsNewConversation(false);
@@ -3257,11 +2659,6 @@ export default function ChatInterface({
   return (
     <TooltipProvider>
       <>
-        {showFullPageSkeleton && (
-          <div className="fixed inset-0 z-[200]">
-            <AgentSkeletonLoader />
-          </div>
-        )}
         <UsageLimitModal
           isOpen={isUsageLimitModalOpen}
           onClose={() => setIsUsageLimitModalOpen(false)}
@@ -3588,9 +2985,9 @@ export default function ChatInterface({
                                   text: btn.text,
                                   id: Date.now()
                                 })}
-                                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-full text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-white/10 transition-all text-[13px] font-medium shadow-sm"
+                                className="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-white/[0.03] border border-neutral-200 dark:border-white/[0.08] rounded-full text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-white/[0.06] hover:border-blue-500/30 dark:hover:border-blue-500/40 transition-all text-[13px] font-medium shadow-sm active:scale-95 group/btn"
                               >
-                                <btn.icon className="w-3.5 h-3.5" />
+                                <btn.icon className="w-3.5 h-3.5 text-neutral-400 group-hover/btn:text-blue-500 transition-colors" />
                                 {btn.label}
                               </button>
                             ))}
@@ -3611,7 +3008,14 @@ export default function ChatInterface({
                                   </div>
                                 )}
                                 <div className="flex flex-col max-w-[95%] group/msg">
-                                  <div className={`transition-all relative ${msg.role === 'user' ? 'px-4 py-2 rounded-[22px] bg-[#111]/90 backdrop-blur-xl border border-white/[0.08] text-white shadow-2xl' : 'text-white/90 px-0 py-1'}`}>
+                                  <div className={`transition-all relative overflow-hidden ${msg.role === 'user' ? 'px-5 py-3 rounded-[24px] bg-[#111]/95 backdrop-blur-2xl border border-white/[0.12] text-white shadow-2xl ring-1 ring-white/5' : 'text-white/90 px-0 py-1'}`}>
+                                    {msg.role === 'user' && (
+                                      <motion.div 
+                                        className="absolute inset-0 bg-gradient-to-br from-blue-500/[0.04] via-transparent to-transparent pointer-events-none"
+                                        animate={{ opacity: [0.3, 0.6, 0.3] }}
+                                        transition={{ repeat: Infinity, duration: 5, ease: "easeInOut" }}
+                                      />
+                                    )}
                                     {msg.role === 'user' && <UserMessageCopyButton msg={msg} />}
                                     {msg.role === 'assistant' && msg.meta?.limitReached && (
                                       <div className="flex items-center gap-2 mb-3 opacity-60">
@@ -3689,7 +3093,7 @@ export default function ChatInterface({
                                     )}
 
                                     {msg.role === 'assistant' && (msg as AgentMessage).meta?.agentSteps && !(msg as AgentMessage).meta?.limitReached && (
-                                      <div 
+                                      <div
                                         className="flex flex-col gap-0.5 mb-4 border-t border-white/[0.03] pt-2"
                                       >
                                         {(msg as AgentMessage).meta!.agentSteps!.filter(s => s.type === 'tool_call').map((step, idx) => (
@@ -3792,7 +3196,7 @@ export default function ChatInterface({
 
                                         <div className="group relative flex items-center justify-between gap-4 px-6 py-4 w-full max-w-[700px] bg-[#0a0a0a] border border-white/[0.08] rounded-2xl transition-all duration-500 hover:border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden mt-4">
                                           {/* Premium Sweep Animation */}
-                                          <motion.div 
+                                          <motion.div
                                             className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/[0.05] to-transparent w-[200%]"
                                             animate={{ x: ['-100%', '100%'] }}
                                             transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}

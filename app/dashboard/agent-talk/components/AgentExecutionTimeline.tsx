@@ -331,7 +331,7 @@ export function AgentExecutionTimeline({
                   initial={{ x: '-100%' }}
                   animate={{ x: '100%' }}
                   transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
-                  className="h-full w-1/2 bg-neutral-900 dark:bg-white rounded-full shadow-[0_0_8px_rgba(255,255,255,0.5)]"
+                  className="h-full w-1/2 bg-neutral-900 dark:bg-white rounded-full shadow-[0_0_12px_rgba(255,255,255,1)]"
                 />
               </div>
             </div>

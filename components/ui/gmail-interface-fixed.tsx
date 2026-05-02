@@ -18,7 +18,6 @@ import { SchedulingModal } from './scheduling-modal';
 import { UsageLimitModal } from './usage-limit-modal';
 import { UsageBadge } from './bubble-button';
 import { TokenExpiryAlert } from './token-expiry-alert';
-import { ArcusTerminalLoader } from './arcus-terminal-loader';
 import { VoiceProfileModal } from './voice-profile-modal';
 import { triggerSuccessConfetti } from '@/lib/confetti';
 import { useDashboardSettings } from '@/lib/DashboardSettingsContext';
@@ -276,15 +275,6 @@ export function GmailInterfaceFixed() {
         showNotification
     } = useDashboardSettings();
 
-    const [isEmailArcusOpen, setIsEmailArcusOpen] = useState(false);
-    const [isArcusMinimized, setIsArcusMinimized] = useState(false);
-    const [arcusEmailId, setArcusEmailId] = useState<string | null>(null);
-    const [arcusEmailSubject, setArcusEmailSubject] = useState('');
-    const [arcusQuery, setArcusQuery] = useState('What is this email about?');
-    const [arcusMessages, setArcusMessages] = useState<any[]>([]);
-    const [isArcusLoading, setIsArcusLoading] = useState(false);
-    const [arcusConversationId, setArcusConversationId] = useState<string | null>(null);
-    const [arcusPanelHeight, setArcusPanelHeight] = useState(800);
     const [showSettings, setShowSettings] = useState(false);
     const [showHelp, setShowHelp] = useState(false);
     const [showRewards, setShowRewards] = useState(false);
@@ -337,8 +327,6 @@ export function GmailInterfaceFixed() {
         }
     };
 
-    const arcusDragControls = useDragControls();
-    const arcusPanelAnimControls = useAnimation();
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     // --- Debouncing for API calls ---
@@ -548,76 +536,24 @@ export function GmailInterfaceFixed() {
     }, [forceFetchUsage]);
 
 
-    useEffect(() => {
-        if (messagesEndRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-        }
-    }, [arcusMessages]);
 
     useEffect(() => {
         setMounted(true);
-        const computeHeight = () => {
-            const h = window.innerHeight;
-            setArcusPanelHeight(Math.max(h - 48, 520));
-            setIsMobile(window.innerWidth < 768);
-        };
-        computeHeight();
-        window.addEventListener('resize', computeHeight);
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
 
         // Cleanup fetch timeout on unmount
         return () => {
-            window.removeEventListener('resize', computeHeight);
+            window.removeEventListener('resize', checkMobile);
             if (fetchTimeoutRef.current) {
                 clearTimeout(fetchTimeoutRef.current);
             }
         };
     }, []);
 
-    useEffect(() => {
-        if (!isEmailArcusOpen || isArcusMinimized) return;
-        arcusPanelAnimControls.set({ opacity: 0, y: 18, scale: 0.985 });
-        arcusPanelAnimControls.start({
-            opacity: 1,
-            y: 0,
-            scale: 1,
-            transition: { type: 'spring', damping: 28, stiffness: 320 }
-        });
-    }, [isEmailArcusOpen, isArcusMinimized, arcusPanelAnimControls]);
 
-    const minimizeArcus = useCallback(() => {
-        setIsArcusMinimized(true);
-    }, []);
 
-    const restoreArcus = useCallback(() => {
-        setIsArcusMinimized(false);
-    }, []);
-
-    const closeArcus = useCallback(() => {
-        setIsEmailArcusOpen(false);
-        setIsArcusMinimized(false);
-    }, []);
-
-    const handleArcusDragEnd = useCallback((_: unknown, info: PanInfo) => {
-        const shouldMinimize = info.offset.y > 140 || info.velocity.y > 900;
-        if (shouldMinimize) {
-            setIsArcusMinimized(true);
-            return;
-        }
-        arcusPanelAnimControls.start({ y: 0, transition: { type: 'spring', damping: 30, stiffness: 380 } });
-    }, [arcusPanelAnimControls]);
-
-    useEffect(() => {
-        if (!isEmailArcusOpen) return;
-
-        const onKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') {
-                closeArcus();
-            }
-        };
-
-        window.addEventListener('keydown', onKeyDown);
-        return () => window.removeEventListener('keydown', onKeyDown);
-    }, [isEmailArcusOpen, closeArcus]);
 
     // Reset email selection when closing panel or changing insight
     useEffect(() => {
@@ -941,100 +877,27 @@ export function GmailInterfaceFixed() {
         }
     };
 
-    const saveToLocalStorage = (convId: string, messages: any[], title: string) => {
-        try {
-            const conversationData = {
-                id: convId,
-                messages: messages.map(m => ({
-                    role: m.role,
-                    content: m.content,
-                    timestamp: m.timestamp
-                })),
-                title: title,
-                lastUpdated: new Date().toISOString(),
-                messageCount: messages.length
-            };
-            localStorage.setItem(`conversation_${convId}`, JSON.stringify(conversationData));
-            localStorage.setItem(`conv_${convId}_title`, title);
-        } catch (e) {
-            console.error('Failed to save Arcus chat to localStorage:', e);
+
+    const handleSendAskAI = async (forcedQuery?: string, context?: { emailId?: string; subject?: string }) => {
+        const queryToSend = forcedQuery || 'What is this about?';
+        
+        // Save the pending message and context to localStorage for handover
+        localStorage.setItem('pending_arcus_message', queryToSend);
+        
+        if (context?.emailId) {
+            localStorage.setItem('pending_arcus_options', JSON.stringify({
+                emailId: context.emailId,
+                subject: context.subject,
+                source: 'gmail_interface'
+            }));
         }
-    };
 
-    const handleSendAskAI = async (forcedQuery?: string) => {
-        const queryToSend = forcedQuery || arcusQuery;
-        if (!arcusEmailId || !queryToSend.trim() || isArcusLoading) return;
-
-        // Add user message to UI
-        const userMsg = {
-            id: Date.now().toString(),
-            role: 'user',
-            content: queryToSend,
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        };
-
-        setArcusMessages(prev => {
-            const updated = [...prev, userMsg];
-            if (arcusConversationId) {
-                saveToLocalStorage(arcusConversationId, updated, arcusEmailSubject);
-            }
-            return updated;
+        toast.info('Opening Arcus Agentic Interface...', {
+            description: 'Your request is being routed to the high-performance agent loop.'
         });
-        setIsArcusLoading(true);
-        setArcusQuery(''); // Clear input
 
-        try {
-            // Using the real Arcus Chat API for "connected" experience
-            const response = await fetch('/api/agent-talk/chat-arcus', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    message: queryToSend,
-                    selectedEmailId: arcusEmailId,
-                    conversationId: arcusConversationId,
-                    isNewConversation: !arcusConversationId
-                })
-            });
-
-            const data = await response.json().catch(() => ({}));
-            if (!response.ok) {
-                if (data?.error === 'limit_reached') {
-                    setUsageLimitModalData({
-                        featureName: 'Ask AI',
-                        currentUsage: data.usage || 0,
-                        limit: data.limit || 0,
-                        period: data.period || 'daily',
-                        currentPlan: data.planType || 'starter'
-                    });
-                    setIsUsageLimitModalOpen(true);
-                    return;
-                }
-                throw new Error(data.message || 'Failed to get answer');
-            }
-
-            if (data.conversationId) setArcusConversationId(data.conversationId);
-
-            const assistantMsg = {
-                id: (Date.now() + 1).toString(),
-                role: 'assistant',
-                content: data.message,
-                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            };
-            setArcusMessages(prev => [...prev, assistantMsg]);
-            setArcusQuery('');
-            forceFetchUsage();
-        } catch (error) {
-            console.error('Error asking AI:', error);
-            const errorMsg = {
-                id: (Date.now() + 1).toString(),
-                role: 'assistant',
-                content: error instanceof Error ? error.message : 'Sorry, I encountered an error. Please try again.',
-                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            };
-            setArcusMessages(prev => [...prev, errorMsg]);
-        } finally {
-            setIsArcusLoading(false);
-        }
+        // Redirect to the agent-talk dashboard
+        router.push('/dashboard/agent-talk');
     };
 
     // --- Sift Refinement Logic ---
@@ -2130,22 +1993,10 @@ export function GmailInterfaceFixed() {
                                                                 <button
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
-                                                                        setArcusEmailId(email.id);
-                                                                        setArcusEmailSubject(email.subject);
-                                                                        setArcusQuery('What is this email about?');
-                                                                        setArcusConversationId(null);
-                                                                        const initMsg = {
-                                                                            id: 'init',
-                                                                            role: 'assistant',
-                                                                            content: `I've connected to the email: **${email.subject}**. Ask me anything about it.`,
-                                                                            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                                                                        };
-                                                                        setArcusMessages([initMsg]);
-                                                                        setIsArcusMinimized(false);
-                                                                        setIsEmailArcusOpen(true);
+                                                                        handleSendAskAI('What is this email about?', { emailId: email.id, subject: email.subject });
                                                                     }}
                                                                     className="w-9 h-9 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-blue-500/20 rounded-xl text-black dark:text-white/30 hover:text-black dark:hover:text-blue-400 transition-all border border-neutral-200 dark:border-white/5 group/ai flex items-center justify-center overflow-hidden"
-                                                                    title="Ask Arcus AI"
+                                                                    title="Ask AI"
                                                                 >
                                                                     <img src="/arcus-ai-icon.jpg" alt="Ask AI" className="w-full h-full object-cover brightness-90 group-hover:brightness-110 transition-all grayscale" />
                                                                 </button>
@@ -2227,8 +2078,20 @@ export function GmailInterfaceFixed() {
                                         </div>
                                     </div>
                                 ) : loading ? (
-                                    <div className="py-12 md:py-20 animate-in fade-in duration-1000">
-                                        <ArcusTerminalLoader loading={loading} />
+                                    <div className="py-12 md:py-32 flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-1000">
+                                        <div className="relative mb-8">
+                                            <div className="w-16 h-16 rounded-full border-2 border-white/5 border-t-blue-500/50 animate-spin" />
+                                            <Sparkles className="absolute inset-0 m-auto w-6 h-6 text-blue-400 animate-pulse" />
+                                            <div className="absolute inset-0 bg-blue-500/10 blur-2xl rounded-full animate-pulse" />
+                                        </div>
+                                        <p className="text-xl font-light tracking-[0.2em] text-neutral-400 dark:text-neutral-500 uppercase animate-pulse">
+                                            Distilling Intelligence
+                                        </p>
+                                        <div className="mt-4 flex gap-1">
+                                            {[0, 1, 2].map((i) => (
+                                                <div key={i} className="w-1 h-1 rounded-full bg-blue-500/30 animate-bounce" style={{ animationDelay: `${i * 0.2}s` }} />
+                                            ))}
+                                        </div>
                                     </div>
                                 ) : hasInitialLoad ? (
                                     insights.length > 0 ? (
@@ -3132,134 +2995,6 @@ export function GmailInterfaceFixed() {
                     />
                 )}
 
-                {/* Arcus AI Panel */}
-                <AnimatePresence>
-                    {isEmailArcusOpen && !isArcusMinimized && (
-                        <motion.div
-                            className="arcus-panel arcus-panel-motion"
-                            style={{ height: arcusPanelHeight }}
-                            drag="y"
-                            dragControls={arcusDragControls}
-                            dragListener={false}
-                            dragConstraints={{ top: 0, bottom: arcusPanelHeight }}
-                            dragElastic={0.06}
-                            onDragEnd={handleArcusDragEnd}
-                            animate={arcusPanelAnimControls}
-                            initial={false}
-                            exit={{ opacity: 0, y: arcusPanelHeight * 0.55, scale: 0.985, transition: { duration: 0.18 } }}
-                        >
-                            <div
-                                className="arcus-header"
-                                style={{ touchAction: 'none' }}
-                                onPointerDown={(e) => arcusDragControls.start(e)}
-                                onDoubleClick={minimizeArcus}
-                            >
-                                <div className="w-full">
-                                    <div className="flex justify-center">
-                                        <div className="h-1 w-12 rounded-full bg-black/10 dark:bg-white/10" />
-                                    </div>
-                                    <div className="mt-4 flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-neutral-800 flex items-center justify-center border border-neutral-200 dark:border-white/10 transition-all flex-shrink-0 overflow-hidden">
-                                                <img src="/arcus-ai-icon.jpg" alt="Arcus" className="w-full h-full object-cover" />
-                                            </div>
-                                            <div>
-                                                <h4 className="text-xs font-bold text-black dark:text-white uppercase tracking-widest leading-none mb-1 font-sans">Arcus Intelligence</h4>
-                                                <p className="text-[10px] text-neutral-600 dark:text-neutral-500 truncate max-w-[250px] font-medium font-sans">{arcusEmailSubject}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); minimizeArcus(); }}
-                                                className="p-2 hover:bg-black/5 dark:bg-white/5 rounded-full text-black hover:text-black dark:text-white transition-all"
-                                                aria-label="Minimize Arcus"
-                                                type="button"
-                                            >
-                                                <ChevronDown className="w-5 h-5" />
-                                            </button>
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); closeArcus(); }}
-                                                className="p-2 hover:bg-black/5 dark:bg-white/5 rounded-full text-black hover:text-black dark:text-white transition-all"
-                                                aria-label="Close Arcus"
-                                                type="button"
-                                            >
-                                                <X className="w-5 h-5" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="arcus-content custom-scrollbar">
-                                {arcusMessages.map((msg) => (
-                                    <div key={msg.id} className={msg.role === 'user' ? 'arcus-message-user' : 'arcus-message-agent'}>
-                                        <div className="prose prose-invert prose-sm">
-                                            <div dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }} />
-                                        </div>
-                                        <div className={`text-[10px] mt-2 font-medium ${msg.role === 'user' ? 'text-black/40' : 'text-black dark:text-white/20'}`}>
-                                            {msg.timestamp}
-                                        </div>
-                                    </div>
-                                ))}
-
-                                {isArcusLoading && (
-                                    <div className="arcus-message-agent flex items-center gap-3">
-                                        <div className="w-2.5 h-2.5 rounded-full bg-white animate-[arcus-dot-pulse_1s_ease-in-out_infinite]" />
-                                        <span className="text-sm text-black dark:text-white/70 font-medium">Thinking...</span>
-                                    </div>
-                                )}
-                                <div ref={messagesEndRef} />
-                            </div>
-
-                            <div className="arcus-input-container">
-                                <div className="arcus-input-wrapper">
-                                    <input
-                                        type="text"
-                                        className="arcus-input"
-                                        value={arcusQuery}
-                                        placeholder="Ask Arcus anything..."
-                                        onChange={(e) => setArcusQuery(e.target.value)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                                handleSendAskAI();
-                                            }
-                                        }}
-                                        autoFocus
-                                    />
-                                    <button
-                                        onClick={() => handleSendAskAI()}
-                                        disabled={isArcusLoading || !arcusQuery.trim()}
-                                        className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-white text-black hover:bg-neutral-200 rounded-xl disabled:opacity-30 transition-all shadow-lg"
-                                        type="button"
-                                    >
-                                        <Zap className={`w-4 h-4 ${isArcusLoading ? 'animate-pulse' : 'fill-black'}`} />
-                                    </button>
-                                </div>
-                                <p className="text-[10px] text-neutral-600 text-center mt-4 font-medium uppercase tracking-tighter italic">
-                                    Connected to Arcus Agent Intelligence
-                                </p>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-
-                <AnimatePresence>
-                    {isEmailArcusOpen && isArcusMinimized && (
-                        <motion.button
-                            type="button"
-                            className="arcus-minimized-tab"
-                            onClick={restoreArcus}
-                            initial={{ opacity: 0, y: 14, scale: 0.98 }}
-                            animate={{ opacity: 1, y: 0, scale: 1, transition: { type: 'spring', damping: 26, stiffness: 340 } }}
-                            exit={{ opacity: 0, y: 14, scale: 0.98, transition: { duration: 0.14 } }}
-                            aria-label="Restore Arcus"
-                        >
-                            <span className="arcus-minimized-dot" aria-hidden="true" />
-                            <span className="arcus-minimized-title">Ask AI</span>
-                            <span className="arcus-minimized-subject">{arcusEmailSubject || 'Conversation'}</span>
-                        </motion.button>
-                    )}
-                </AnimatePresence>
 
 
 
