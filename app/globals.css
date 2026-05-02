@@ -4,7 +4,7 @@
 
 /* --- Premium Interactive Polish --- */
 :root {
-  --custom-cursor: url('/macos-cursor.svg') 90 42, pointer;
+  --custom-cursor: url('/macos-cursor.svg') 22 10, pointer;
 }
 
 button,
