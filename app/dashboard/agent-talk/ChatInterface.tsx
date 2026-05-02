@@ -3155,7 +3155,6 @@ export default function ChatInterface({
                                       </div>
                                     )}
 
-,ReplacementContent:
                                     {/* Plan Canvas (Inline + Full-Screen Modal) */}
                                     {msg.role === 'assistant' && (msg as AgentMessage).meta?.planArtifact && (
                                       <div className="mt-4">
