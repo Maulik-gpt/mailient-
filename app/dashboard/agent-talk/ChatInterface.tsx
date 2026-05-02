@@ -1,6 +1,6 @@
 "use client";
 
-import { Send, Mail, Upload, User, User2, MessageCircle, DoorOpen, Bell, Mail as EmailIcon, MoreHorizontal, LogOut, Settings, ChevronRight, ChevronDown, CheckCircle2, Circle, Edit, History, LayoutGrid, Zap, Volume2, Sparkles, FileText, Calendar, BarChart3, PenTool, BrainCircuit, Search, Check, X, PanelLeft, Menu, Compass, Terminal } from 'lucide-react';
+import { Send, Mail, Upload, User, User2, MessageCircle, DoorOpen, Bell, Mail as EmailIcon, MoreHorizontal, LogOut, Settings, ChevronRight, ChevronDown, CheckCircle2, Circle, Edit, History, LayoutGrid, Zap, Volume2, Sparkles, FileText, Calendar, BarChart3, PenTool, BrainCircuit, Search, Check, X, PanelLeft, Menu, Compass, Terminal, Share2 } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
@@ -1060,7 +1060,7 @@ export default function ChatInterface({
 
   // Subscription state - to hide upgrade button for Pro users
   const [currentPlan, setCurrentPlan] = useState<'free' | 'starter' | 'pro' | 'none' | null>(null);
-
+  const [isSharingGlobal, setIsSharingGlobal] = useState(false);
   // Audio & Notification State
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -1427,6 +1427,43 @@ export default function ChatInterface({
     // Fallback: Use first words of message
     const fallbackTitle = userMessage.trim().split(' ').slice(0, 5).join(' ');
     return fallbackTitle.length > 40 ? fallbackTitle.substring(0, 40) + '...' : fallbackTitle;
+  };
+
+  const handleGlobalShare = async () => {
+    if (messages.length === 0) {
+      toast.error("Nothing to share yet. Start a conversation first!");
+      return;
+    }
+
+    setIsSharingGlobal(true);
+    try {
+      const response = await fetch('/api/agent-talk/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          conversationId: currentConversationId,
+          messages: messages,
+          title: chatTitle
+        })
+      });
+
+      if (!response.ok) throw new Error("Failed to generate share link");
+
+      const data = await response.json();
+      const shareUrl = data.shareUrl;
+
+      // Copy to clipboard
+      await navigator.clipboard.writeText(shareUrl);
+      
+      toast.success("Share link copied!", {
+        description: "Anyone with this link can view this conversation."
+      });
+    } catch (error) {
+      console.error('Share error:', error);
+      toast.error("Could not generate share link. Please try again.");
+    } finally {
+      setIsSharingGlobal(false);
+    }
   };
 
   const buildFallbackThinkingBlocks = (messageText: string): ThinkingBlock[] => {
@@ -2981,6 +3018,28 @@ export default function ChatInterface({
                             </TooltipTrigger>
                             <TooltipContent side="bottom">
                               <span className="text-[10px]">History</span>
+                            </TooltipContent>
+                          </Tooltip>
+
+                          <Tooltip delayDuration={100}>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleGlobalShare();
+                                }}
+                                disabled={isSharingGlobal}
+                                className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-all text-black dark:text-white/60 focus:outline-none focus:ring-0 disabled:opacity-50"
+                              >
+                                {isSharingGlobal ? (
+                                  <div className="w-5 h-5 border-2 border-black/20 dark:border-white/20 border-t-black dark:border-t-white rounded-full animate-spin" />
+                                ) : (
+                                  <Share2 className="w-5 h-5" />
+                                )}
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom">
+                              <span className="text-[10px]">Share Chat</span>
                             </TooltipContent>
                           </Tooltip>
                         </div>

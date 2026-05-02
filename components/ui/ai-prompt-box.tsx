@@ -341,8 +341,8 @@ const PromptInput = forwardRef<HTMLDivElement, PromptInputProps>(
             onFocus={onFocus}
              onBlur={onBlur}
              className={cn(
-               "rounded-3xl border border-white/10 bg-white dark:bg-[#2b2b2b] p-2 transition-all duration-300",
-               !hideShadow && "shadow-[0_8px_30px_rgba(0,0,0,0.3)]",
+               "rounded-[32px] border border-white/[0.08] bg-white dark:bg-[#0B0A09]/80 backdrop-blur-3xl p-2 transition-all duration-300 relative overflow-hidden ring-1 ring-white/5",
+               !hideShadow && "shadow-[0_20px_50px_rgba(0,0,0,0.5)]",
                isLoading && "border-red-500/70",
                className
              )}
@@ -350,10 +350,16 @@ const PromptInput = forwardRef<HTMLDivElement, PromptInputProps>(
             onDragLeave={onDragLeave}
             onDrop={onDrop}
           >
-            {children}
+            <motion.div 
+              className="absolute inset-0 bg-gradient-to-br from-blue-500/[0.03] via-transparent to-transparent pointer-events-none"
+              animate={{ opacity: [0.2, 0.4, 0.2] }}
+              transition={{ repeat: Infinity, duration: 8, ease: "easeInOut" }}
+            />
+            <div className="relative z-10">
+              {children}
+            </div>
           </div>
         </PromptInputContext.Provider>
-      </TooltipProvider>
     );
   }
 );
@@ -740,9 +746,9 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
         onDrop={handleDrop}
          onFocus={() => setIsFocused(true)}
          onBlur={() => setIsFocused(false)}
-         hideShadow={props.hideShadow}
          className={cn(
-          "w-full bg-white dark:bg-[#2b2b2b] border border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.3)] transition-all duration-300 ease-in-out focus:ring-0 focus:outline-none focus-within:ring-0 focus-within:outline-none",
+          "w-full bg-white dark:bg-[#0B0A09]/80 backdrop-blur-3xl border border-white/[0.08] ring-1 ring-white/5 transition-all duration-300 ease-in-out focus:ring-0 focus:outline-none focus-within:ring-0 focus-within:outline-none",
+          !props.hideShadow && "shadow-[0_20px_50px_rgba(0,0,0,0.5)]",
           isRecording && "border-red-500/70",
           className
         )}
