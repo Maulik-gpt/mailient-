@@ -957,7 +957,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                     </div>
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="right" side="top" className="w-56 bg-neutral-900 border-white/10 text-white">
+                <DropdownMenuContent align="end" side="top" className="w-56 bg-neutral-900 border-white/10 text-white">
                   {AI_MODELS.map(model => {
                     const isLocked = 
                       (model.tier !== 'free' && (props.currentPlan === 'free' || !props.currentPlan)) || 
