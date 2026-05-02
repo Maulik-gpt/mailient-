@@ -1544,6 +1544,15 @@ export default function ChatInterface({
       let finalContent = '';
       let rawOutput = '';
       let stepIndex = 0;
+      let streamFinishedNormally = false;
+      let currentAgentSteps: AgentStep[] = [{
+        id: 'al-init',
+        type: 'thinking',
+        label: 'Analysing your request...',
+        status: 'active',
+        startedAt: Date.now(),
+        iteration: 0
+      }];
 
       while (true) {
         const { done, value } = await reader.read();
@@ -1565,67 +1574,92 @@ export default function ChatInterface({
 
           switch (currentEventType) {
             case 'thinking':
-              setAgentSteps(prev => {
-                const steps = [...prev];
-                const active = steps.find(s => s.status === 'active');
-                if (active) {
-                  active.label = data.step || 'Processing...';
-                } else {
-                  steps.push({
-                    id: `al-think-${data.iteration}`,
-                    type: 'thinking',
-                    label: data.step || 'Reasoning...',
-                    status: 'active',
-                    startedAt: Date.now(),
-                    iteration: data.iteration
-                  });
-                }
-                return steps;
-              });
+              const nextThinkingSteps = [...currentAgentSteps];
+              const activeThink = nextThinkingSteps.find(s => s.status === 'active');
+              if (activeThink) {
+                activeThink.label = data.step || 'Processing...';
+              } else {
+                nextThinkingSteps.push({
+                  id: `al-think-${data.iteration}`,
+                  type: 'thinking',
+                  label: data.step || 'Reasoning...',
+                  status: 'active',
+                  startedAt: Date.now(),
+                  iteration: data.iteration
+                });
+              }
+              currentAgentSteps = nextThinkingSteps;
+              setAgentSteps(nextThinkingSteps);
               setMessages(msgs => msgs.map(m => {
                 if (m.id !== assistantMsgId || m.type !== 'agent') return m;
-                return { ...m, meta: { ...(m.meta || {}), liveThinking: data.step || 'Reasoning...' } };
+                return { 
+                  ...m, 
+                  meta: { 
+                    ...(m.meta || {}), 
+                    liveThinking: data.step || 'Reasoning...',
+                    agentSteps: nextThinkingSteps 
+                  } 
+                };
               }));
               break;
 
             case 'tool_call':
               stepIndex++;
-
-              setAgentSteps(prev => {
-                const steps = prev.map(s => s.status === 'active' ? { ...s, status: 'completed' as const, completedAt: Date.now(), label: getStepLabel(s.tool || '', s.params || {}, 'completed') } : s);
-                steps.push({
-                  id: `al-tool-${stepIndex}`,
-                  type: 'tool_call',
-                  tool: data.tool,
-                  label: getStepLabel(data.tool, data.params, 'active'),
-                  status: 'active',
-                  startedAt: Date.now(),
-                  iteration: data.iteration,
-                  params: data.params
-                });
-                return steps;
+              const nextToolCallSteps = currentAgentSteps.map(s => 
+                s.status === 'active' ? { ...s, status: 'completed' as const, completedAt: Date.now(), label: getStepLabel(s.tool || '', s.params || {}, 'completed') } : s
+              );
+              nextToolCallSteps.push({
+                id: `al-tool-${stepIndex}`,
+                type: 'tool_call',
+                tool: data.tool,
+                label: getStepLabel(data.tool, data.params, 'active'),
+                status: 'active',
+                startedAt: Date.now(),
+                iteration: data.iteration,
+                params: data.params
               });
-              // Mark thinking as complete for the UI since we moved to execution
+              currentAgentSteps = nextToolCallSteps;
+              setAgentSteps(nextToolCallSteps);
+              
               setMessages(msgs => msgs.map(m => {
                 if (m.id !== assistantMsgId || m.type !== 'agent') return m;
-                return { ...m, meta: { ...(m.meta || {}), thinkingComplete: true } };
+                return { 
+                  ...m, 
+                  meta: { 
+                    ...(m.meta || {}), 
+                    thinkingComplete: true,
+                    agentSteps: nextToolCallSteps 
+                  } 
+                };
               }));
               break;
 
             case 'tool_result':
-              setAgentSteps(prev => prev.map(s =>
+              const nextResultSteps = currentAgentSteps.map(s =>
                 s.status === 'active'
                   ? { ...s, status: 'completed' as const, completedAt: Date.now(), summary: data.summary || `${data.tool} done`, label: getStepLabel(s.tool || '', s.params || {}, 'completed') }
                   : s
-              ));
+              );
+              currentAgentSteps = nextResultSteps;
+              setAgentSteps(nextResultSteps);
+              setMessages(msgs => msgs.map(m => {
+                if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+                return { ...m, meta: { ...(m.meta || {}), agentSteps: nextResultSteps } };
+              }));
               break;
 
             case 'tool_error':
-              setAgentSteps(prev => prev.map(s =>
+              const nextErrorSteps = currentAgentSteps.map(s =>
                 s.status === 'active'
                   ? { ...s, status: 'error' as const, completedAt: Date.now(), summary: `Error: ${data.error}`, label: `Error: ${data.error}` }
                   : s
-              ));
+              );
+              currentAgentSteps = nextErrorSteps;
+              setAgentSteps(nextErrorSteps);
+              setMessages(msgs => msgs.map(m => {
+                if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+                return { ...m, meta: { ...(m.meta || {}), agentSteps: nextErrorSteps } };
+              }));
               break;
 
             case 'approval_required':
@@ -1646,7 +1680,8 @@ export default function ChatInterface({
                       }
                     },
                     actionType: data.tool,
-                    actionPayload: data.params
+                    actionPayload: data.params,
+                    agentSteps: currentAgentSteps
                   }
                 };
               }));
@@ -1665,8 +1700,8 @@ export default function ChatInterface({
                   meta: {
                     ...(m.meta || {}),
                     liveThinking: liveThinkingText || (m.meta as any)?.liveThinking,
-                    // If we have clean text (roadmap), thinking is effectively complete for this phase
-                    thinkingComplete: finalContent.trim().length > 0 ? true : (m.meta as any)?.thinkingComplete
+                    thinkingComplete: finalContent.trim().length > 0 ? true : (m.meta as any)?.thinkingComplete,
+                    agentSteps: currentAgentSteps
                   }
                 };
               }));
@@ -1676,15 +1711,15 @@ export default function ChatInterface({
               finalContent += `\nSomething went wrong: ${data.message}`;
               setMessages(prev => prev.map(m => {
                 if (m.id !== assistantMsgId || m.type !== 'agent') return m;
-                return { ...m, content: { text: finalContent.trim(), list: [], footer: '' }, meta: { ...(m.meta || {}), isStreaming: false } };
+                return { ...m, content: { text: finalContent.trim(), list: [], footer: '' }, meta: { ...(m.meta || {}), isStreaming: false, agentSteps: currentAgentSteps } };
               }));
               break;
 
             case 'done':
-              // Fallback: If no text was generated but tools were called, synthesize a summary
+              streamFinishedNormally = true;
               let finalProcessedText = finalContent.trim();
               if (!finalProcessedText && stepIndex > 0) {
-                const completedSteps = agentSteps.filter(s => s.status === 'completed');
+                const completedSteps = currentAgentSteps.filter(s => s.status === 'completed');
                 if (completedSteps.length > 0) {
                   finalProcessedText = `I've finished executing the plan. Successfully completed ${completedSteps.length} action(s).`;
                 } else {
@@ -1692,33 +1727,56 @@ export default function ChatInterface({
                 }
               }
 
-              setAgentSteps(prev => {
-                const finalSteps = prev.map(s =>
-                  s.status === 'active' ? { ...s, status: 'completed' as const, completedAt: Date.now() } : s
-                );
-                setMessages(msgs => msgs.map(m => {
-                  if (m.id !== assistantMsgId || m.role !== 'assistant') return m;
-                  return {
-                    ...m,
-                    content: { text: finalProcessedText, list: [], footer: '' },
-                    meta: {
-                      ...(m.meta || {}),
-                      isStreaming: false,
-                      agentSteps: finalSteps,
-                      agentRunId: data?.runId,
-                      agentDurationMs: data?.durationMs,
-                      liveThinking: ''
-                    }
-                  };
-                }));
-                return finalSteps;
-              });
+              const finalSteps = currentAgentSteps.map(s =>
+                s.status === 'active' ? { ...s, status: 'completed' as const, completedAt: Date.now() } : s
+              );
+              
+              setMessages(msgs => msgs.map(m => {
+                if (m.id !== assistantMsgId || m.role !== 'assistant') return m;
+                return {
+                  ...m,
+                  content: { text: finalProcessedText, list: [], footer: '' },
+                  meta: {
+                    ...(m.meta || {}),
+                    isStreaming: false,
+                    agentSteps: finalSteps,
+                    agentRunId: data?.runId,
+                    agentDurationMs: data?.durationMs,
+                    liveThinking: ''
+                  }
+                };
+              }));
+              
+              setAgentSteps(finalSteps);
               setIsAgentLoopActive(false);
               setAgentRunMeta({ runId: data.runId, totalDurationMs: data.durationMs });
               break;
           }
           currentEventType = '';
         }
+      }
+
+      // Check if the stream closed without a 'done' event (e.g. timeout or sudden disconnect)
+      if (!streamFinishedNormally) {
+        console.warn('⚠️ Stream finished unexpectedly without DONE event. Finalizing state.');
+        
+        const autoCompletedSteps = currentAgentSteps.map(s =>
+          s.status === 'active' ? { ...s, status: 'completed' as const, completedAt: Date.now() } : s
+        );
+
+        setMessages(msgs => msgs.map(m => {
+          if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+          return {
+            ...m,
+            meta: {
+              ...(m.meta || {}),
+              isStreaming: false,
+              agentSteps: autoCompletedSteps,
+              liveThinking: ''
+            }
+          };
+        }));
+        setAgentSteps(autoCompletedSteps);
       }
 
       setNewMessageIds(prev => new Set(prev).add(assistantMsgId));
@@ -3085,23 +3143,19 @@ export default function ChatInterface({
                                     )}
 
 
-                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.liveThinking && !(msg as AgentMessage).meta?.limitReached && (
-                                      <AgentThinkingSection
-                                        content={(msg as AgentMessage).meta!.liveThinking!}
-                                        isComplete={(msg as AgentMessage).meta?.thinkingComplete || (msg as AgentMessage).meta?.isStreaming === false}
-                                      />
-                                    )}
-
+                                    {/* Advanced Agent Execution Timeline (Parallel Thinking & Execution) */}
                                     {msg.role === 'assistant' && (msg as AgentMessage).meta?.agentSteps && !(msg as AgentMessage).meta?.limitReached && (
-                                      <div
-                                        className="flex flex-col gap-0.5 mb-4 border-t border-white/[0.03] pt-2"
-                                      >
-                                        {(msg as AgentMessage).meta!.agentSteps!.filter(s => s.type === 'tool_call').map((step, idx) => (
-                                          <AgentTaskPill key={step.id || idx} step={step} />
-                                        ))}
+                                      <div className="mb-6">
+                                        <AgentExecutionTimeline
+                                          steps={(msg as AgentMessage).meta!.agentSteps!}
+                                          isActive={(msg as AgentMessage).meta?.isStreaming !== false}
+                                          runId={(msg as AgentMessage).meta?.agentRunId}
+                                          totalDurationMs={(msg as AgentMessage).meta?.agentDurationMs}
+                                        />
                                       </div>
                                     )}
 
+,ReplacementContent:
                                     {/* Plan Canvas (Inline + Full-Screen Modal) */}
                                     {msg.role === 'assistant' && (msg as AgentMessage).meta?.planArtifact && (
                                       <div className="mt-4">
