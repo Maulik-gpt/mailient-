@@ -197,22 +197,15 @@ export function AgentExecutionTimeline({
             {/* Apple-style background gradient */}
             <div className="absolute inset-0 bg-gradient-to-br from-neutral-50/50 to-transparent dark:from-white/[0.03] dark:to-transparent pointer-events-none" />
 
-            {/* Header / Phase Indicator */}
-            <div className="relative z-10 flex flex-col gap-1 mb-8">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex flex-col">
-                  <h3 className="text-base font-bold tracking-tight text-black dark:text-white">Arcus Thinking Process</h3>
-                  <p className="text-[11px] text-neutral-500 dark:text-white/40 font-medium">Phase {currentPhase}: {PHASES[currentPhase - 1]?.name}</p>
-                </div>
-                {isActive && (
-                  <div className="flex items-center gap-2 px-3 py-1 bg-black/5 dark:bg-white/5 rounded-full border border-black/5 dark:border-white/5">
-                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
-                    <span className="text-[10px] font-bold text-neutral-600 dark:text-white/60 uppercase tracking-widest">Live</span>
-                  </div>
-                )}
+            {/* Header - Minimal Version */}
+            <div className="relative z-10 flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                <h3 className="text-[11px] font-bold tracking-widest text-neutral-400 uppercase">Execution Steps</h3>
               </div>
-              
-              <PhaseIndicator currentPhase={currentPhase} completedPhases={completedPhases} />
+              {isActive && (
+                 <span className="text-[10px] font-bold text-neutral-500/50 uppercase tracking-tighter">Live Syncing</span>
+              )}
             </div>
 
             {/* Steps Timeline */}
