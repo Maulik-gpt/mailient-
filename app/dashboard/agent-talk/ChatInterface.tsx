@@ -1459,6 +1459,22 @@ export default function ChatInterface({
     }).join('\\n');
   };
 
+  const getStepLabel = (tool: string, params: any, status: 'active' | 'completed' | 'error') => {
+    const isActive = status === 'active';
+    switch (tool) {
+      case 'search_inbox': return isActive ? `Searching emails${params?.query ? ` for "${params.query}"` : '...'}` : `Searched emails${params?.query ? ` for "${params.query}"` : ''}`;
+      case 'search_web': return isActive ? `Researching web${params?.query ? ` for "${params.query}"` : '...'}` : `Researched web${params?.query ? ` for "${params.query}"` : ''}`;
+      case 'read_email': return isActive ? 'Reading email content...' : 'Read email content';
+      case 'read_browser_page': return isActive ? `Visiting ${params?.url || 'page'}...` : `Visited ${params?.url || 'page'}`;
+      case 'save_draft': return isActive ? 'Drafting response...' : 'Drafted response';
+      case 'send_email': return isActive ? 'Sending email...' : 'Sent email';
+      case 'schedule_meeting': return isActive ? 'Scheduling meeting...' : 'Scheduled meeting';
+      case 'create_note': return isActive ? 'Creating note...' : 'Created note';
+      case 'search_notes': return isActive ? 'Searching notes...' : 'Searched notes';
+      default: return isActive ? `Executing ${tool}...` : `Executed ${tool}`;
+    }
+  };
+
   // ═══════════════════════════════════════════════════════════════════════════
   // AGENT LOOP — SSE-based agentic processing (Phase 1)
   // ═══════════════════════════════════════════════════════════════════════════
@@ -1568,24 +1584,6 @@ export default function ChatInterface({
 
             case 'tool_call':
               stepIndex++;
-              // Initial label in V3 form (or gerund if preferred for active state, but user asked for V3)
-              // We'll use "Executing..." for active and V3 for completed if that feels more natural, 
-              // but user specifically asked for V3 for the task pill.
-              const getStepLabel = (tool: string, params: any, status: 'active' | 'completed' | 'error') => {
-                const isActive = status === 'active';
-                switch (tool) {
-                  case 'search_inbox': return isActive ? `Searching emails${params?.query ? ` for "${params.query}"` : '...'}` : `Searched emails${params?.query ? ` for "${params.query}"` : ''}`;
-                  case 'search_web': return isActive ? `Researching web${params?.query ? ` for "${params.query}"` : '...'}` : `Researched web${params?.query ? ` for "${params.query}"` : ''}`;
-                  case 'read_email': return isActive ? 'Reading email content...' : 'Read email content';
-                  case 'read_browser_page': return isActive ? `Visiting ${params?.url || 'page'}...` : `Visited ${params?.url || 'page'}`;
-                  case 'save_draft': return isActive ? 'Drafting response...' : 'Drafted response';
-                  case 'send_email': return isActive ? 'Sending email...' : 'Sent email';
-                  case 'schedule_meeting': return isActive ? 'Scheduling meeting...' : 'Scheduled meeting';
-                  case 'create_note': return isActive ? 'Creating note...' : 'Created note';
-                  case 'search_notes': return isActive ? 'Searching notes...' : 'Searched notes';
-                  default: return isActive ? `Executing ${tool}...` : `Executed ${tool}`;
-                }
-              };
 
               setAgentSteps(prev => {
                 const steps = prev.map(s => s.status === 'active' ? { ...s, status: 'completed' as const, completedAt: Date.now(), label: getStepLabel(s.tool || '', s.params || {}, 'completed') } : s);
