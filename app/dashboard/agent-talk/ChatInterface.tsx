@@ -614,7 +614,7 @@ function AgentThinkingSection({ content, isComplete }: { content: string, isComp
               )}
             >
               {content === 'SKELETON' ? (
-                <AgentSkeletonLoader />
+                <div className="py-4" />
               ) : (
                 <div className={cn(
                   "text-[13.5px] leading-relaxed italic font-normal tracking-tight markdown-thought",
@@ -1021,6 +1021,7 @@ export default function ChatInterface({
   const [pendingReplyProposal, setPendingReplyProposal] = useState<any>(null);
 
   // Live thinking state (AI-generated, shown during loading)
+  const [showFullPageSkeleton, setShowFullPageSkeleton] = useState(false);
   const [searchSessions, setSearchSessions] = useState<SearchSession[]>([]);
 
   // ... (inside the component)
@@ -1468,6 +1469,7 @@ export default function ChatInterface({
 
     setIsLoading(true);
     setIsAgentLoopActive(true);
+    setShowFullPageSkeleton(true);
     setAgentSteps([{
       id: 'al-init',
       type: 'thinking',
@@ -2324,6 +2326,7 @@ export default function ChatInterface({
       setMessages(prev => [...prev, errorAgentMessage]);
     } finally {
       setIsLoading(false);
+      setShowFullPageSkeleton(false);
       setIsDeepThinkingState(false);
       setLiveThinkingBlocks([]);
       setShowNotesFetching(false);
@@ -3169,6 +3172,19 @@ export default function ChatInterface({
   return (
     <TooltipProvider>
       <>
+        <AnimatePresence>
+          {showFullPageSkeleton && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="fixed inset-0 z-[200]"
+            >
+              <AgentSkeletonLoader />
+            </motion.div>
+          )}
+        </AnimatePresence>
         <UsageLimitModal
           isOpen={isUsageLimitModalOpen}
           onClose={() => setIsUsageLimitModalOpen(false)}
