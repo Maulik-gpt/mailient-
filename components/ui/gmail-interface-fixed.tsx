@@ -178,6 +178,11 @@ interface SiftInsightsResponse {
 export function GmailInterfaceFixed() {
     const { data: session } = useSession();
     const router = useRouter();
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
     const [insights, setInsights] = useState<SiftInsight[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -2094,20 +2099,11 @@ export function GmailInterfaceFixed() {
                                         </div>
                                     </div>
                                 ) : loading ? (
-                                    <div className="py-12 md:py-32 flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-1000">
-                                        <div className="relative mb-8">
-                                            <div className="w-16 h-16 rounded-full border-2 border-white/5 border-t-blue-500/50 animate-spin" />
-                                            <Sparkles className="absolute inset-0 m-auto w-6 h-6 text-blue-400 animate-pulse" />
-                                            <div className="absolute inset-0 bg-blue-500/10 blur-2xl rounded-full animate-pulse" />
-                                        </div>
-                                        <p className="text-xl font-light tracking-[0.2em] text-neutral-400 dark:text-neutral-500 uppercase animate-pulse">
-                                            Distilling Intelligence
+                                    <div className="py-24 md:py-48 flex flex-col items-center justify-center">
+                                        <Loader2 className="w-8 h-8 text-neutral-400 animate-spin mb-4" />
+                                        <p className="text-sm font-medium tracking-tight text-neutral-500 uppercase">
+                                            Analyzing...
                                         </p>
-                                        <div className="mt-4 flex gap-1">
-                                            {[0, 1, 2].map((i) => (
-                                                <div key={i} className="w-1 h-1 rounded-full bg-blue-500/30 animate-bounce" style={{ animationDelay: `${i * 0.2}s` }} />
-                                            ))}
-                                        </div>
                                     </div>
                                 ) : hasInitialLoad ? (
                                     insights.length > 0 ? (
@@ -2523,8 +2519,10 @@ export function GmailInterfaceFixed() {
                                                                         ref={draftContentEditorRef}
                                                                         contentEditable
                                                                         suppressContentEditableWarning
+                                                                        suppressHydrationWarning
                                                                         className="w-full h-full text-zinc-100 focus:outline-none leading-[1.8] font-[400] text-[15px] selection:bg-blue-500/30 font-sans [&_a]:text-[#60a5fa] [&_a]:underline [&_a]:cursor-pointer [&_b]:font-bold [&_strong]:font-bold [&_i]:italic [&_em]:italic [&_p]:mb-4 [&_p:last-child]:mb-0"
                                                                         onInput={(e) => setDraftContent(e.currentTarget.innerHTML)}
+                                                                        dangerouslySetInnerHTML={{ __html: isMounted ? draftContent : '' }}
                                                                         style={{ minHeight: '200px' }}
                                                                     />
                                                                     {/* Attachment chips */}
