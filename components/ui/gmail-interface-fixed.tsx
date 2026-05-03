@@ -2111,7 +2111,7 @@ export function GmailInterfaceFixed() {
                                 ) : loading ? (
                                     <div className="py-24 md:py-48 flex flex-col items-center justify-center">
                                         <Loader2 className="w-8 h-8 text-neutral-400 animate-spin mb-4" />
-                                        <p className="text-sm font-medium tracking-tight text-neutral-500 uppercase">
+                                        <p className="text-sm font-medium tracking-tight text-neutral-500">
                                             Analyzing...
                                         </p>
                                     </div>
@@ -2119,7 +2119,7 @@ export function GmailInterfaceFixed() {
                                     insights.length > 0 ? (
                                         <div>
                                             <div className="flex items-center justify-between mb-8">
-                                                <h2 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                                                <h2 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 tracking-wider">
                                                     Insights
                                                 </h2>
                                                 <div className="flex items-center gap-3">
@@ -2260,7 +2260,7 @@ export function GmailInterfaceFixed() {
                                                                         )}
                                                                         <div>
                                                                             {!selectedEmailId && (
-                                                                                <Badge variant="outline" className="mb-4 border-neutral-700 text-neutral-500 dark:text-neutral-400 px-3 py-1 rounded-full text-xs uppercase tracking-wider">
+                                                                                <Badge variant="outline" className="mb-4 border-neutral-700 text-neutral-500 dark:text-neutral-400 px-3 py-1 rounded-full text-xs tracking-wider">
                                                                                     {selectedInsight.type.replace('-', ' ')}
                                                                                 </Badge>
                                                                             )}
@@ -2357,7 +2357,7 @@ export function GmailInterfaceFixed() {
                                                                                 {/* AI Summary Card */}
                                                                                 <div className="bg-neutral-50 dark:bg-neutral-800/40 rounded-[2rem] p-8 border border-neutral-200 dark:border-neutral-800/50 shadow-2xl relative overflow-hidden">
                                                                                     <div className="flex items-center gap-3 mb-6">
-                                                                                        <h3 className="text-xs font-medium text-neutral-500 uppercase tracking-widest">
+                                                                                        <h3 className="text-xs font-medium text-neutral-500 tracking-widest">
                                                                                             AI Intelligence Summary
                                                                                         </h3>
                                                                                     </div>
@@ -2421,7 +2421,7 @@ export function GmailInterfaceFixed() {
 
                                                                                 {/* Original Email Content (Optional context) */}
                                                                                 <div className="pt-10 border-t border-neutral-200 dark:border-neutral-800/50">
-                                                                                    <h4 className="text-xs font-medium text-neutral-600 uppercase tracking-widest mb-6">Original Message Snippet</h4>
+                                                                                    <h4 className="text-xs font-medium text-neutral-600 tracking-widest mb-6">Original Message Snippet</h4>
                                                                                     <div className="bg-neutral-900/30 rounded-2xl p-8 text-neutral-500 dark:text-neutral-400 text-base leading-relaxed font-light border border-neutral-200 dark:border-neutral-800/30">
                                                                                         {selectedInsight.source_emails?.find(e => e.id === selectedEmailId)?.snippet}
                                                                                         ...
@@ -2518,7 +2518,7 @@ export function GmailInterfaceFixed() {
                                                             {isDrafting ? (
                                                                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                                                                     <Loader2 className="w-6 h-6 text-neutral-500 animate-spin mb-3" />
-                                                                    <p className="text-xs font-medium text-zinc-500 tracking-tight uppercase">Crafting...</p>
+                                                                    <p className="text-xs font-medium text-zinc-500 tracking-tight">Crafting...</p>
                                                                 </div>
                                                             ) : (
                                                                 <>
