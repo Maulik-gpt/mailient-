@@ -9,7 +9,7 @@ import { Button } from './button';
 import { SettingsCard } from './settings-card';
 import { Badge } from './badge';
 import { HomeFeedSidebar } from './home-feed-sidebar';
-import { RefreshCw, AlertCircle, TrendingUp, Clock, Target, Zap, Mail, Home, X, User, Sparkles, ArrowLeft, LayoutList, Inbox, ExternalLink, Download, FilePlus, ChevronDown, ChevronRight, Plus, Users, Building, Phone, Loader2, MessageCircle, Send, ArrowUp, CornerDownLeft, Menu, Shield, Activity, PanelLeft, Mic, Copy, Link as LinkIcon, Bold, Italic, Paperclip, Check } from 'lucide-react';
+import { RefreshCw, AlertCircle, TrendingUp, Clock, Target, Zap, Mail, Home, X, User, Sparkles, ArrowLeft, LayoutList, Inbox, ExternalLink, Download, FilePlus, ChevronDown, ChevronRight, Plus, Users, Building, Phone, Loader2, MessageCircle, Send, ArrowUp, CornerDownLeft, Menu, Shield, Activity, PanelLeft, Mic, Copy, Link as LinkIcon, Bold, Italic, Paperclip, Check, Calendar, AlertTriangle, FileText } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './avatar';
 import { toast } from 'sonner';
 import { HelpCard } from './help-card';
@@ -2444,6 +2444,30 @@ export function GmailInterfaceFixed() {
                                                         <div className="flex justify-between items-center px-8 py-5">
                                                             <span className="text-zinc-400 font-medium tracking-wide">Email</span>
                                                             <div className="flex items-center gap-2">
+                                                                {/* Executive Tools Integration */}
+                                                                <div className="flex items-center gap-1.5 mr-4 px-3 py-1 bg-white/[0.03] rounded-xl border border-white/[0.05]">
+                                                                   <button 
+                                                                       onClick={() => selectedEmailId && handleScheduleCall(selectedEmailId)}
+                                                                       className="p-2 hover:bg-neutral-800 rounded-lg text-white/40 hover:text-blue-400 transition-all"
+                                                                       title="Schedule Meeting"
+                                                                   >
+                                                                       <Calendar className="w-4 h-4" />
+                                                                   </button>
+                                                                   <button 
+                                                                       onClick={() => selectedEmailId && handleEscalate(selectedEmailId)}
+                                                                       className="p-2 hover:bg-neutral-800 rounded-lg text-white/40 hover:text-orange-400 transition-all"
+                                                                       title="Escalate / Task"
+                                                                   >
+                                                                       <AlertTriangle className="w-4 h-4" />
+                                                                   </button>
+                                                                   <button 
+                                                                       onClick={() => selectedEmailId && handleAddNote(selectedEmailId)}
+                                                                       className="p-2 hover:bg-neutral-800 rounded-lg text-white/40 hover:text-emerald-400 transition-all"
+                                                                       title="Add AI Note"
+                                                                   >
+                                                                       <FileText className="w-4 h-4" />
+                                                                   </button>
+                                                                </div>
                                                                 {/* Attachment Picker */}
                                                                 <input
                                                                     ref={attachmentInputRef}
