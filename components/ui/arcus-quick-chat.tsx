@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, X, Send, Loader2, Bot, User, BrainCircuit, Zap } from 'lucide-react';
+import { Sparkles, X, Send, Loader2, Bot, User, BrainCircuit, Zap, FileText, ListTodo } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
