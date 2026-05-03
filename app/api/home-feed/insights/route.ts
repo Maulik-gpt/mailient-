@@ -211,12 +211,12 @@ export async function GET(request: Request) {
 
     // Only fetch INBOX emails (exclude sent, drafts, etc.)
     // 'in:inbox' ensures we only analyze emails received by the user, not ones they sent
-    const recentEmails = await gmailService.getEmails(50, 'in:inbox newer_than:60d', pageToken as any);
+    const recentEmails = await gmailService.getEmails(30, 'in:inbox newer_than:60d', pageToken as any);
     const allMessages = recentEmails.messages || [];
     const nextPageToken = recentEmails.nextPageToken;
 
     // Get new email IDs (up to 50)
-    const newEmailIds: string[] = allMessages.slice(0, 50).map((m: any) => m.id);
+    const newEmailIds: string[] = allMessages.slice(0, 30).map((m: any) => m.id);
     
     // Combine with previous emails (for load more) and deduplicate
     const combinedIds = [...new Set([...previousEmailIds, ...newEmailIds])];
@@ -230,7 +230,7 @@ export async function GET(request: Request) {
     });
 
     // Use combined IDs for analysis (limit to 50 for speed unless loading more)
-    const uniqueIds = combinedIds.slice(0, isLoadMore ? 100 : 50);
+    const uniqueIds = combinedIds.slice(0, isLoadMore ? 60 : 30);
 
     console.log(`📬 Fetching details for ${uniqueIds.length} emails in parallel...`);
     const gmailStartTime = Date.now();

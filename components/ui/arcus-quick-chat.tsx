@@ -133,8 +133,14 @@ export const ArcusQuickChat: React.FC<ArcusQuickChatProps> = ({ isOpen, onClose,
                 const content = data.content || data.message;
                 const isDraft = data.meta?.isDraft || false;
                 const draftData = data.meta?.draftData || null;
+                const isStreaming = data.meta?.isStreaming || false;
                 
-                assistantContent += content;
+                if (isStreaming) {
+                  assistantContent += content;
+                } else {
+                  // Final message replaces accumulated chunks with cleaned content
+                  assistantContent = content;
+                }
                 
                 if (!hasAddedAssistantMessage) {
                   setMessages(prev => [...prev, { 
@@ -147,11 +153,12 @@ export const ArcusQuickChat: React.FC<ArcusQuickChatProps> = ({ isOpen, onClose,
                 } else {
                   setMessages(prev => {
                     const newMessages = [...prev];
+                    const lastMessage = newMessages[newMessages.length - 1];
                     newMessages[newMessages.length - 1] = { 
                       role: 'assistant', 
                       content: assistantContent,
-                      isDraft,
-                      draftData
+                      isDraft: isDraft || lastMessage.isDraft,
+                      draftData: draftData || lastMessage.draftData
                     };
                     return newMessages;
                   });

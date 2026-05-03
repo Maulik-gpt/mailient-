@@ -198,6 +198,8 @@ export function GmailInterfaceFixed() {
     const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
     const [isSummarizing, setIsSummarizing] = useState(false);
     const [emailSummary, setEmailSummary] = useState<string | null>(null);
+    const [fullEmailBody, setFullEmailBody] = useState<string | null>(null);
+    const [isLoadingFullEmail, setIsLoadingFullEmail] = useState(false);
 
     const [isDrafting, setIsDrafting] = useState(false);
     const [draftContent, setDraftContent] = useState<string>('');
@@ -568,6 +570,7 @@ export function GmailInterfaceFixed() {
         if (!selectedInsight) {
             setSelectedEmailId(null);
             setEmailSummary(null);
+            setFullEmailBody(null);
             setIsSummarizing(false);
             setShowDraftEditor(false);
             setDraftContent('');
@@ -701,6 +704,28 @@ export function GmailInterfaceFixed() {
         }
     }, [mounted]);
 
+    // Fetch the full email body for "Read Directly" feature
+    const fetchFullEmailBody = async (emailId: string) => {
+        setIsLoadingFullEmail(true);
+        try {
+            const response = await fetch(`/api/gmail/messages/${emailId}`);
+            if (response.ok) {
+                const data = await response.json();
+                setFullEmailBody(data.body || data.snippet || 'No content available.');
+            } else {
+                // Fallback to snippet from source emails
+                const snippet = selectedInsight?.source_emails?.find(e => e.id === emailId)?.snippet;
+                setFullEmailBody(snippet || 'Could not load email content.');
+            }
+        } catch (error) {
+            console.error('Error fetching full email:', error);
+            const snippet = selectedInsight?.source_emails?.find(e => e.id === emailId)?.snippet;
+            setFullEmailBody(snippet || 'Could not load email content.');
+        } finally {
+            setIsLoadingFullEmail(false);
+        }
+    };
+
     const handleEmailClick = async (emailId: string) => {
         // Cancel any pending summary request
         if (summaryAbortControllerRef.current) {
@@ -710,6 +735,7 @@ export function GmailInterfaceFixed() {
         setSelectedEmailId(emailId);
         setIsSummarizing(true);
         setEmailSummary(null);
+        setFullEmailBody(null);
 
         const controller = new AbortController();
         summaryAbortControllerRef.current = controller;
@@ -914,11 +940,19 @@ export function GmailInterfaceFixed() {
                     }
                 }
             }
+
+            // If stream completed but no content was produced, show fallback
+            if (accumulated.trim().length === 0) {
+                setDraftContent('<p>The AI was unable to generate a draft. Please try again.</p>');
+                setIsDrafting(false);
+            }
             
             forceFetchUsage();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error generating draft:', error);
-            toast.error('Failed to generate draft');
+            toast.error('Failed to generate draft reply. Please try again.');
+            // Show error in draft editor instead of blank screen
+            setDraftContent('<p>Failed to generate draft. Please close and try again.</p>');
         } finally {
             setIsDrafting(false);
         }
@@ -2246,7 +2280,7 @@ export function GmailInterfaceFixed() {
                                                     onClick={() => setSelectedInsight(null)}
                                                 >
                                                     {/* Texture Overlay */}
-                                                    <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'url("https://grainy-gradients.vercel.app/noise.svg")' }} />
+                                                    <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ background: 'radial-gradient(circle at 50% 50%, rgba(255,255,255,0.03) 0%, transparent 70%)' }} />
                                                 </div>
 
                                                 {/* Details Modal */}
@@ -2376,6 +2410,10 @@ export function GmailInterfaceFixed() {
                                                                                             summaryAbortControllerRef.current.abort();
                                                                                         }
                                                                                         setIsSummarizing(false);
+                                                                                        // Fetch and show the full email body
+                                                                                        if (selectedEmailId) {
+                                                                                            fetchFullEmailBody(selectedEmailId);
+                                                                                        }
                                                                                     }}
                                                                                     className="h-11 px-8 border-neutral-800 hover:bg-neutral-900 text-neutral-400 rounded-xl transition-all font-medium group"
                                                                                 >
@@ -2386,6 +2424,64 @@ export function GmailInterfaceFixed() {
                                                                                 <div className="mt-12 flex items-center gap-2 text-[10px] text-neutral-600 uppercase tracking-[0.2em] font-bold">
                                                                                     <Shield className="w-3 h-3" />
                                                                                     <span>Analyzing via Nvidia Nemotron 3</span>
+                                                                                </div>
+                                                                            </div>
+                                                                        ) : isLoadingFullEmail ? (
+                                                                            <div className="flex flex-col items-center justify-center py-40">
+                                                                                <Loader2 className="w-6 h-6 text-neutral-500 animate-spin mb-4" />
+                                                                                <p className="text-sm text-neutral-500">Loading email...</p>
+                                                                            </div>
+                                                                        ) : fullEmailBody && !emailSummary ? (
+                                                                            /* Full Email Content View (Read Directly) */
+                                                                            <div className="space-y-8">
+                                                                                {/* Email Header */}
+                                                                                {(() => {
+                                                                                    const email = selectedInsight.source_emails?.find(e => e.id === selectedEmailId);
+                                                                                    return email ? (
+                                                                                        <div className="pb-6 border-b border-neutral-200 dark:border-neutral-800/50">
+                                                                                            <div className="flex items-start gap-4 mb-4">
+                                                                                                {email.sender.avatar ? (
+                                                                                                    <img src={email.sender.avatar} alt={email.sender.name} className="w-12 h-12 rounded-full object-cover border border-neutral-700" />
+                                                                                                ) : (
+                                                                                                    <div className="w-12 h-12 rounded-full bg-neutral-800 flex items-center justify-center border border-neutral-700">
+                                                                                                        <User className="w-6 h-6 text-neutral-500" />
+                                                                                                    </div>
+                                                                                                )}
+                                                                                                <div className="flex-1">
+                                                                                                    <p className="text-lg font-semibold text-black dark:text-white">{email.sender.name}</p>
+                                                                                                    <p className="text-sm text-neutral-500 font-light">{email.sender.email}</p>
+                                                                                                    <p className="text-xs text-neutral-600 mt-1">{formatDate(email.receivedAt)}</p>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    ) : null;
+                                                                                })()}
+
+                                                                                {/* Email Body */}
+                                                                                <div 
+                                                                                    className="email-content-view text-neutral-800 dark:text-neutral-200 leading-relaxed text-base font-light"
+                                                                                    dangerouslySetInnerHTML={{ __html: fullEmailBody }}
+                                                                                />
+
+                                                                                {/* Action Buttons */}
+                                                                                <div className="grid grid-cols-2 gap-6 pt-6 border-t border-neutral-200 dark:border-neutral-800/50">
+                                                                                    {getActionButtons(selectedInsight).map((label, index) => (
+                                                                                        <Button
+                                                                                            key={index}
+                                                                                            onClick={() => {
+                                                                                                if ((label === 'Draft Reply' || label === 'Reply Now') && selectedEmailId) {
+                                                                                                    handleDraftReply(selectedEmailId, selectedInsight.type);
+                                                                                                } else if (label === 'Repair Reply' && selectedEmailId) {
+                                                                                                    handleRepairReply(selectedEmailId, selectedInsight.type);
+                                                                                                } else if (label.toLowerCase().includes('call') && selectedEmailId) {
+                                                                                                    handleScheduleCall(selectedEmailId);
+                                                                                                }
+                                                                                            }}
+                                                                                            className="h-14 md:h-16 bg-gradient-to-r from-neutral-900 to-neutral-700 hover:from-neutral-800 hover:to-neutral-600 text-[#fafafa] border border-neutral-600 rounded-2xl transition-all duration-300 font-medium text-base md:text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                                                                                        >
+                                                                                            {label}
+                                                                                        </Button>
+                                                                                    ))}
                                                                                 </div>
                                                                             </div>
                                                                         ) : (
