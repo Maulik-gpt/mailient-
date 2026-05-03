@@ -861,8 +861,8 @@ export function GmailInterfaceFixed() {
             // Stream response
             const reader = response.body?.getReader();
             const decoder = new TextDecoder();
-            let fullContent = '';
-            let isInsideEmail = false;
+            let accumulated = '';
+            let hasShownFirstContent = false;
 
             if (reader) {
                 while (true) {
@@ -870,19 +870,15 @@ export function GmailInterfaceFixed() {
                     if (done) break;
 
                     const chunk = decoder.decode(value, { stream: true });
-                    fullContent += chunk;
+                    accumulated += chunk;
+                    
+                    // Update content immediately
+                    setDraftContent(renderMarkdown(decodeEntities(accumulated)));
 
-                    // Extremely fast parsing for <email> tags
-                    if (fullContent.includes('<email>')) {
-                        isInsideEmail = true;
-                        let displayContent = fullContent.split('<email>')[1] || '';
-                        if (displayContent.includes('</email>')) {
-                            displayContent = displayContent.split('</email>')[0];
-                        }
-                        setDraftContent(renderMarkdown(decodeEntities(displayContent)));
-                    } else if (!fullContent.includes('<think>') && fullContent.length > 5) {
-                        // Fallback if no tags but content is coming
-                        setDraftContent(renderMarkdown(decodeEntities(fullContent)));
+                    // Hide "Crafting" overlay once we have real content to show
+                    if (!hasShownFirstContent && accumulated.trim().length > 0) {
+                        setIsDrafting(false);
+                        hasShownFirstContent = true;
                     }
                 }
             }
