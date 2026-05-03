@@ -512,6 +512,7 @@ interface ChatInterfaceProps {
   onConversationSelect?: (conversationId: string) => void;
   onNewChat?: () => void;
   onConversationDelete?: (conversationId: string) => void;
+  isEmbedded?: boolean;
 }
 
 // Global styles for custom scrollbar and typography
@@ -985,7 +986,8 @@ export default function ChatInterface({
   initialConversationId = null,
   onConversationSelect,
   onNewChat,
-  onConversationDelete
+  onConversationDelete,
+  isEmbedded = false
 }: ChatInterfaceProps) {
   type LiveThinkingStep = {
     id: string;
@@ -2864,25 +2866,27 @@ export default function ChatInterface({
             )}
           </AnimatePresence>
 
-          <HomeFeedSidebar
-            className="z-50"
-            onCollapse={(collapsed) => setIsSidebarCollapsed(collapsed)}
-            onOpenSettings={() => setIsSettingsOpen(true)}
-            onOpenHelp={() => setIsHelpOpen(true)}
-            onOpenRewards={() => setIsRewardsOpen(true)}
-            isOpen={isMobileMenuOpen}
-            onClose={() => setIsMobileMenuOpen(false)}
-          />
+          {!isEmbedded && (
+            <HomeFeedSidebar
+              className="z-50"
+              onCollapse={(collapsed) => setIsSidebarCollapsed(collapsed)}
+              onOpenSettings={() => setIsSettingsOpen(true)}
+              onOpenHelp={() => setIsHelpOpen(true)}
+              onOpenRewards={() => setIsRewardsOpen(true)}
+              isOpen={isMobileMenuOpen}
+              onClose={() => setIsMobileMenuOpen(false)}
+            />
+          )}
 
           <LayoutGroup>
             {/* Main Layout Wrapper - Absolute positioned to fill screen strictly */}
             <div
               className={cn(
                 "absolute inset-0 bg-white dark:bg-black overflow-hidden flex flex-col md:flex-row",
-                isSidebarCollapsed ? "md:left-20" : "md:left-64",
+                !isEmbedded ? (isSidebarCollapsed ? "md:left-20" : "md:left-64") : "left-0",
                 "left-0"
               )}
-              style={{ height: '100vh', maxHeight: '100vh' }}
+              style={{ height: isEmbedded ? '100%' : '100vh', maxHeight: isEmbedded ? '100%' : '100vh' }}
             >
               {/* Chat Column (Order 1 - LEFT) - Premium Refinement */}
               <div
@@ -2895,12 +2899,14 @@ export default function ChatInterface({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         {/* Mobile Menu Button */}
-                        <button
-                          onClick={() => setIsMobileMenuOpen(true)}
-                          className="md:hidden p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors text-neutral-600 dark:text-neutral-400"
-                        >
-                          <PanelLeft className="w-5 h-5" />
-                        </button>
+                        {!isEmbedded && (
+                          <button
+                            onClick={() => setIsMobileMenuOpen(true)}
+                            className="md:hidden p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors text-neutral-600 dark:text-neutral-400"
+                          >
+                            <PanelLeft className="w-5 h-5" />
+                          </button>
+                        )}
 
                         {/* Leftmost: Title and Dropdown with refined Zinc styling */}
                         {!isInitialMode && (
