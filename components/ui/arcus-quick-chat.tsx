@@ -50,8 +50,7 @@ export const ArcusQuickChat: React.FC<ArcusQuickChatProps> = ({ isOpen, onClose,
     setIsThinking(true);
 
     try {
-      // Simulate real AI logic with a slight delay for "Thinking" animation
-      const response = await fetch('/api/agent-talk/chat-arcus', {
+      const response = await fetch('/api/agent-talk/chat-arcus-v2', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -59,20 +58,64 @@ export const ArcusQuickChat: React.FC<ArcusQuickChatProps> = ({ isOpen, onClose,
           selectedEmailId: context?.emailId,
           conversationId: conversationId,
           isNewConversation: messages.length === 0,
-          history: messages
         })
       });
 
       if (!response.ok) throw new Error('Failed to fetch');
       
-      const data = await response.json();
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let assistantContent = '';
+      let hasAddedAssistantMessage = false;
+
+      while (true) {
+        const { done, value } = await reader?.read() || { done: true };
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('event: ')) {
+            const eventType = line.replace('event: ', '').trim();
+            if (eventType === 'thinking') {
+              setIsThinking(true);
+            }
+          }
+          
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.replace('data: ', '').trim());
+              
+              if (data.content) {
+                setIsThinking(false);
+                assistantContent += data.content;
+                
+                if (!hasAddedAssistantMessage) {
+                  setMessages(prev => [...prev, { role: 'assistant', content: assistantContent }]);
+                  hasAddedAssistantMessage = true;
+                } else {
+                  setMessages(prev => {
+                    const newMessages = [...prev];
+                    newMessages[newMessages.length - 1] = { role: 'assistant', content: assistantContent };
+                    return newMessages;
+                  });
+                }
+              }
+              
+              if (data.step) {
+                // Update thinking state with specific step info if we want, 
+                // but for now keeping it simple.
+              }
+            } catch (e) {
+              // Ignore parse errors for partial chunks
+            }
+          }
+        }
+      }
       
-      // Delay response slightly to show off the premium thinking animation
-      setTimeout(() => {
-        setIsThinking(false);
-        setMessages(prev => [...prev, { role: 'assistant', content: data.response || data.message || "I've analyzed the email. What else would you like to know?" }]);
-        setIsLoading(false);
-      }, 1500);
+      setIsLoading(false);
+      setIsThinking(false);
 
     } catch (error) {
       console.error('Quick Chat Error:', error);

@@ -26,6 +26,7 @@ export async function POST(request) {
       conversationId,
       isNewConversation,
       gmailAccessToken,
+      selectedEmailId,
       modelId
     } = body;
 
@@ -138,7 +139,8 @@ export async function POST(request) {
       conversationHistory,
       gmailAccessToken,
       privacyMode,
-      memoryContext
+      memoryContext,
+      selectedEmailId
     });
 
     // ── Run the loop as an SSE stream ─────────────────────────────────────
