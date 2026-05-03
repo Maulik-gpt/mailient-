@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, X, Send, Loader2, Bot, User, BrainCircuit, Zap, FileText, ListTodo } from 'lucide-react';
+import { Sparkles, X, Send, Loader2, Bot, User, BrainCircuit, Zap, FileText, ListTodo, CheckCircle2, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
@@ -42,6 +42,11 @@ export const ArcusQuickChat: React.FC<ArcusQuickChatProps> = ({ isOpen, onClose,
   }, [isOpen, context]);
 
   const [currentStep, setCurrentStep] = useState<string>('');
+  const [pendingApproval, setPendingApproval] = useState<{
+    tool: string;
+    params: any;
+    message: string;
+  } | null>(null);
 
   const handleSend = async (forcedInput?: string) => {
     const text = forcedInput || input;
@@ -52,6 +57,7 @@ export const ArcusQuickChat: React.FC<ArcusQuickChatProps> = ({ isOpen, onClose,
     setInput('');
     setIsLoading(true);
     setIsThinking(true);
+    setPendingApproval(null);
     setCurrentStep('Initializing Arcus...');
 
     try {
@@ -86,6 +92,9 @@ export const ArcusQuickChat: React.FC<ArcusQuickChatProps> = ({ isOpen, onClose,
             if (eventType === 'thinking' || eventType === 'tool_call') {
               setIsThinking(true);
             }
+            if (eventType === 'approval_required') {
+              // Approval needed, handle in the data block
+            }
           }
           
           if (line.startsWith('data: ')) {
@@ -103,7 +112,17 @@ export const ArcusQuickChat: React.FC<ArcusQuickChatProps> = ({ isOpen, onClose,
                 setCurrentStep(`Arcus: ${toolName}...`);
               }
 
-              if (data.content || data.message) {
+              // Handle approvals
+              if (data.message && (data.tool === 'send_email' || data.tool === 'save_draft' || data.tool === 'schedule_meeting')) {
+                 setPendingApproval({
+                   tool: data.tool,
+                   params: data.params,
+                   message: data.message
+                 });
+                 setIsThinking(false);
+              }
+
+              if (data.content || (data.message && !data.tool)) {
                 setIsThinking(false);
                 const content = data.content || data.message;
                 assistantContent += content;
@@ -136,6 +155,26 @@ export const ArcusQuickChat: React.FC<ArcusQuickChatProps> = ({ isOpen, onClose,
       setIsLoading(false);
       setCurrentStep('');
       toast.error('AI was unable to process this request.');
+    }
+  };
+
+  const handleApprove = async () => {
+    if (!pendingApproval) return;
+    
+    setIsLoading(true);
+    setIsThinking(true);
+    setCurrentStep(`Executing ${pendingApproval.tool}...`);
+    
+    try {
+      // For now, we simulate the approval execution by sending a follow-up message to Arcus
+      // In a full implementation, we'd call a dedicated 'approve-tool' endpoint
+      const approvalMsg = `APPROVED: ${pendingApproval.tool}. Go ahead.`;
+      setPendingApproval(null);
+      await handleSend(approvalMsg);
+    } catch (error) {
+      toast.error('Failed to execute action.');
+      setIsLoading(false);
+      setIsThinking(false);
     }
   };
 
@@ -294,6 +333,38 @@ export const ArcusQuickChat: React.FC<ArcusQuickChatProps> = ({ isOpen, onClose,
                     </span>
                   </div>
                 </div>
+              )}
+
+              {pendingApproval && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  className="ml-13 mr-4 p-5 rounded-[2rem] bg-white/[0.03] border border-white/10 shadow-2xl space-y-4"
+                >
+                  <div className="flex items-center gap-3 text-white/90">
+                    <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+                      <CheckCircle2 className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="text-sm font-semibold tracking-tight">Execution Approval Required</span>
+                  </div>
+                  
+                  <div className="text-[13px] text-white/50 leading-relaxed font-light bg-white/[0.02] p-4 rounded-2xl border border-white/5 italic">
+                    {pendingApproval.message}
+                  </div>
+
+                  <button
+                    onClick={handleApprove}
+                    disabled={isLoading}
+                    className="w-full py-3 rounded-2xl bg-white text-black text-sm font-bold flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_0_25px_rgba(255,255,255,0.2)]"
+                  >
+                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+                      <>
+                        Execute Action
+                        <ChevronRight className="w-4 h-4" />
+                      </>
+                    )}
+                  </button>
+                </motion.div>
               )}
             </div>
 
