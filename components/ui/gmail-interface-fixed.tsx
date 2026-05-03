@@ -229,6 +229,7 @@ export function GmailInterfaceFixed() {
     const [selection, setSelection] = useState<{ text: string; rect: DOMRect; start: number; end: number; range?: globalThis.Range } | null>(null);
     const [isRefinementActive, setIsRefinementActive] = useState(false);
     const hasFetchedInitialDataRef = useRef(false);
+    const summaryAbortControllerRef = useRef<AbortController | null>(null);
 
     // Sync state for contentEditable
     useEffect(() => {
@@ -701,15 +702,24 @@ export function GmailInterfaceFixed() {
     }, [mounted]);
 
     const handleEmailClick = async (emailId: string) => {
+        // Cancel any pending summary request
+        if (summaryAbortControllerRef.current) {
+            summaryAbortControllerRef.current.abort();
+        }
+
         setSelectedEmailId(emailId);
         setIsSummarizing(true);
         setEmailSummary(null);
+
+        const controller = new AbortController();
+        summaryAbortControllerRef.current = controller;
 
         try {
             const response = await fetch('/api/email/summary', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ emailId })
+                body: JSON.stringify({ emailId }),
+                signal: controller.signal
             });
 
             const data = await response.json().catch(() => ({}));
@@ -729,11 +739,18 @@ export function GmailInterfaceFixed() {
             }
             setEmailSummary(decodeEntities(data.summary));
             forceFetchUsage();
-        } catch (error) {
+        } catch (error: any) {
+            if (error.name === 'AbortError') {
+                console.log('Summary request cancelled by user');
+                return;
+            }
             console.error('Error fetching summary:', error);
             setEmailSummary("Failed to generate summary. Please try again.");
         } finally {
-            setIsSummarizing(false);
+            if (summaryAbortControllerRef.current === controller) {
+                setIsSummarizing(false);
+                summaryAbortControllerRef.current = null;
+            }
         }
     };
 
@@ -2348,9 +2365,28 @@ export function GmailInterfaceFixed() {
                                                                         {isSummarizing ? (
                                                                             <div className="flex flex-col items-center justify-center py-40">
                                                                                 <Loader2 className="w-8 h-8 text-neutral-400 animate-spin mb-4" />
-                                                                                <p className="text-neutral-500 font-medium tracking-tight text-sm">
-                                                                                    Analyzing...
+                                                                                <p className="text-sm font-medium tracking-tight text-neutral-500 mb-8">
+                                                                                    Generating Intelligence Summary...
                                                                                 </p>
+                                                                                
+                                                                                <Button
+                                                                                    variant="outline"
+                                                                                    onClick={() => {
+                                                                                        if (summaryAbortControllerRef.current) {
+                                                                                            summaryAbortControllerRef.current.abort();
+                                                                                        }
+                                                                                        setIsSummarizing(false);
+                                                                                    }}
+                                                                                    className="h-11 px-8 border-neutral-800 hover:bg-neutral-900 text-neutral-400 rounded-xl transition-all font-medium group"
+                                                                                >
+                                                                                    Read the email directly
+                                                                                    <ExternalLink className="w-4 h-4 ml-2 opacity-40 group-hover:opacity-100 transition-opacity" />
+                                                                                </Button>
+                                                                                
+                                                                                <div className="mt-12 flex items-center gap-2 text-[10px] text-neutral-600 uppercase tracking-[0.2em] font-bold">
+                                                                                    <Shield className="w-3 h-3" />
+                                                                                    <span>Analyzing via Qwen 2.5 72B</span>
+                                                                                </div>
                                                                             </div>
                                                                         ) : (
                                                                             <div className="space-y-10">
