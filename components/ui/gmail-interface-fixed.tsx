@@ -591,6 +591,16 @@ export function GmailInterfaceFixed() {
         };
     }, [showDraftEditor, showSchedulingModal, isUsageLimitModalOpen, isVoiceProfileModalOpen, showSettings, showHelp, showRewards, isTraditionalModalOpen]);
 
+    // Sync draftContent to editor ref (more robust than dangerouslySetInnerHTML for contentEditable)
+    useEffect(() => {
+        if (draftContentEditorRef.current && isMounted) {
+            // Only update if content actually differs to avoid cursor jump issues
+            if (draftContentEditorRef.current.innerHTML !== draftContent) {
+                draftContentEditorRef.current.innerHTML = draftContent;
+            }
+        }
+    }, [draftContent, isMounted, showDraftEditor]);
+
     // AI Text Formatting Utility
     const decodeEntities = useCallback((text: string | null) => {
         if (!text) return '';
@@ -2507,11 +2517,8 @@ export function GmailInterfaceFixed() {
                                                         >
                                                             {isDrafting ? (
                                                                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                                                    <div className="relative mb-6">
-                                                                        <Sparkles className="w-8 h-8 text-blue-400 animate-pulse" />
-                                                                        <div className="absolute inset-0 bg-blue-400/20 blur-xl rounded-full animate-pulse" />
-                                                                    </div>
-                                                                    <p className="text-zinc-500 font-medium tracking-wide animate-pulse">Crafting reply...</p>
+                                                                    <Loader2 className="w-6 h-6 text-neutral-500 animate-spin mb-3" />
+                                                                    <p className="text-xs font-medium text-zinc-500 tracking-tight uppercase">Crafting...</p>
                                                                 </div>
                                                             ) : (
                                                                 <>
@@ -2519,10 +2526,8 @@ export function GmailInterfaceFixed() {
                                                                         ref={draftContentEditorRef}
                                                                         contentEditable
                                                                         suppressContentEditableWarning
-                                                                        suppressHydrationWarning
                                                                         className="w-full h-full text-zinc-100 focus:outline-none leading-[1.8] font-[400] text-[15px] selection:bg-blue-500/30 font-sans [&_a]:text-[#60a5fa] [&_a]:underline [&_a]:cursor-pointer [&_b]:font-bold [&_strong]:font-bold [&_i]:italic [&_em]:italic [&_p]:mb-4 [&_p:last-child]:mb-0"
                                                                         onInput={(e) => setDraftContent(e.currentTarget.innerHTML)}
-                                                                        dangerouslySetInnerHTML={{ __html: isMounted ? draftContent : '' }}
                                                                         style={{ minHeight: '200px' }}
                                                                     />
                                                                     {/* Attachment chips */}
