@@ -22,6 +22,7 @@ import { VoiceProfileModal } from './voice-profile-modal';
 import { triggerSuccessConfetti } from '@/lib/confetti';
 import { useDashboardSettings } from '@/lib/DashboardSettingsContext';
 import ChatInterface from '../../app/dashboard/agent-talk/ChatInterface';
+import { ArcusQuickChat } from './arcus-quick-chat';
 
 // Simple markdown renderer for bold text
 const renderMarkdown = (text: string): string => {
@@ -879,7 +880,8 @@ export function GmailInterfaceFixed() {
     };
 
 
-    const [isArcusChatOpen, setIsArcusChatOpen] = useState(false);
+    const [isArcusQuickChatOpen, setIsArcusQuickChatOpen] = useState(false);
+    const [quickChatContext, setQuickChatContext] = useState<{ emailId?: string; subject?: string } | null>(null);
 
     const handleSendAskAI = async (forcedQuery?: string, context?: { emailId?: string; subject?: string }) => {
         const queryToSend = forcedQuery || 'What is this about?';
@@ -895,13 +897,10 @@ export function GmailInterfaceFixed() {
             }));
         }
 
-        toast.info('Opening Arcus Agentic Interface...', {
-            description: 'Your request is being routed to the high-performance agent loop.'
-        });
-
-        // Redirect to the agent-talk dashboard
-        // Open Arcus Chat Panel instead of redirecting
-        setIsArcusChatOpen(true);
+        if (context) {
+            setQuickChatContext(context);
+        }
+        setIsArcusQuickChatOpen(true);
     };
 
     // --- Sift Refinement Logic ---
@@ -1464,7 +1463,7 @@ export function GmailInterfaceFixed() {
     }, []);
 
     const setIsArcusOpen = (open: boolean) => {
-        setIsArcusChatOpen(open);
+        setIsArcusQuickChatOpen(open);
     };
 
     return (
@@ -3055,41 +3054,12 @@ export function GmailInterfaceFixed() {
                     onReAnalyze={handleCreateVoiceProfile}
                     isAnalyzing={isAnalyzingVoice}
                 />
-                {/* Arcus Chat Side Panel */}
-                <AnimatePresence>
-                    {isArcusChatOpen && (
-                        <motion.div
-                            initial={{ x: '100%', opacity: 0 }}
-                            animate={{ x: 0, opacity: 1 }}
-                            exit={{ x: '100%', opacity: 0 }}
-                            transition={{ type: "spring", damping: 30, stiffness: 300, mass: 0.8 }}
-                            className="fixed top-0 right-0 h-screen w-full md:w-[500px] bg-[#0B0A09]/90 backdrop-blur-[32px] z-[2000] shadow-[-20px_0_80px_rgba(0,0,0,0.8)] border-l border-white/10 flex flex-col overflow-hidden"
-                        >
-                            <div className="flex items-center justify-between px-8 py-6 border-b border-white/[0.08] bg-white/[0.02]">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-600/20 flex items-center justify-center border border-amber-500/30 shadow-[0_0_20px_rgba(245,158,11,0.1)]">
-                                        <Sparkles className="w-5 h-5 text-amber-500" />
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <span className="font-bold text-[11px] tracking-[0.2em] text-amber-500 uppercase">Intelligence</span>
-                                        <span className="font-bold text-lg tracking-tight text-white">Arcus AI</span>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => setIsArcusChatOpen(false)}
-                                    className="p-3 hover:bg-white/10 rounded-2xl transition-all text-white/30 hover:text-white hover:rotate-90 group"
-                                >
-                                    <X className="w-5 h-5" />
-                                </button>
-                            </div>
-                            <div className="flex-1 relative overflow-hidden bg-black/40">
-                                <ChatInterface isEmbedded={true} />
-                            </div>
-                            {/* Subtle liquid accent */}
-                            <div className="absolute top-0 left-0 w-[2px] h-full bg-gradient-to-b from-transparent via-white/10 to-transparent" />
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                {/* Arcus Quick Chat Replacement */}
+                <ArcusQuickChat 
+                    isOpen={isArcusQuickChatOpen}
+                    onClose={() => setIsArcusQuickChatOpen(false)}
+                    context={quickChatContext}
+                />
             </div>
         </LayoutGroup>
     );
