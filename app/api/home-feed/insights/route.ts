@@ -71,29 +71,30 @@ function createEmailHash(email: EmailDetail): string {
 }
 
 // Helper: Process array with concurrency limit
+// Helper: Process array with concurrency limit
 async function processWithConcurrency<T, R>(
   items: T[],
   processor: (item: T) => Promise<R>,
   limit: number
 ): Promise<R[]> {
-  const results: R[] = [];
-  const executing: Promise<void>[] = [];
+  const results: R[] = new Array(items.length);
+  const pool = new Set<Promise<void>>();
   
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
-    const promise = processor(item).then(result => {
-      results[i] = result;
-    });
+    const promise = (async (index: number) => {
+      results[index] = await processor(item);
+    })(i);
     
-    executing.push(promise);
+    pool.add(promise);
+    promise.finally(() => pool.delete(promise));
     
-    if (executing.length >= limit) {
-      await Promise.race(executing);
-      executing.splice(executing.findIndex(p => p === promise), 1);
+    if (pool.size >= limit) {
+      await Promise.race(pool);
     }
   }
   
-  await Promise.all(executing);
+  await Promise.all(pool);
   return results;
 }
 
@@ -228,10 +229,11 @@ export async function GET(request: Request) {
       timestamp: Date.now() 
     });
 
-    // Use combined IDs for analysis (limit to most recent 100 for performance)
-    const uniqueIds = combinedIds.slice(0, 100);
+    // Use combined IDs for analysis (limit to 50 for speed unless loading more)
+    const uniqueIds = combinedIds.slice(0, isLoadMore ? 100 : 50);
 
     console.log(`📬 Fetching details for ${uniqueIds.length} emails in parallel...`);
+    const gmailStartTime = Date.now();
 
     // Fetch all email details in parallel with concurrency limit
     const emailDetails = await processWithConcurrency(
@@ -256,12 +258,13 @@ export async function GET(request: Request) {
           return null;
         }
       },
-      CONCURRENCY_LIMIT
+      50 // High concurrency for metadata-only requests (Gmail API is fast for these)
     );
 
+    const gmailDuration = (Date.now() - gmailStartTime) / 1000;
     const filteredEmails = emailDetails.filter((d): d is EmailDetail => d !== null);
 
-    console.log(`✅ Successfully fetched ${filteredEmails.length} email details`);
+    console.log(`✅ Fetched ${filteredEmails.length} emails in ${gmailDuration.toFixed(2)}s`);
 
     if (filteredEmails.length === 0) {
       return NextResponse.json({
@@ -328,7 +331,10 @@ export async function GET(request: Request) {
       console.log(`🤖 Analyzing ${uncachedEmails.length} new emails with AI...`);
       const startTime = Date.now();
       
+      const aiStartTime = Date.now();
       const aiData = await aiService.generateInboxIntelligence(uncachedEmails, privacyMode);
+      const aiDuration = (Date.now() - aiStartTime) / 1000;
+      console.log(`🤖 AI Analysis completed in ${aiDuration.toFixed(2)}s for ${uncachedEmails.length} emails`);
       
       // Robust mapping: handle both flat array and category-keyed dictionary responses
       const newInsights: any[] = [];
@@ -337,15 +343,16 @@ export async function GET(request: Request) {
       } else {
         const categories = ['opportunity', 'urgent', 'lead', 'risk', 'follow_up', 'important'];
         categories.forEach(cat => {
-          if (aiData[cat] && aiData[cat].ids && aiData[cat].ids.length > 0) {
+          const categoryData = (aiData as any)[cat];
+          if (categoryData && categoryData.ids && categoryData.ids.length > 0) {
             newInsights.push({
               type: cat,
-              title: aiData[cat].title || cat,
-              content: aiData[cat].summary || '',
+              title: categoryData.title || cat,
+              content: categoryData.summary || '',
               metadata: {
                 category: cat,
-                priority: aiData[cat].relevance >= 8 ? 'high' : 'medium',
-                emails_involved: aiData[cat].ids
+                priority: (categoryData.relevance || 0) >= 8 ? 'high' : 'medium',
+                emails_involved: categoryData.ids
               }
             });
           }

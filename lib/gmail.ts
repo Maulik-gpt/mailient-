@@ -22,7 +22,7 @@ export class GmailService {
     // Circuit breaker thresholds
     this.MAX_CONSECUTIVE_ERRORS = 3;
     this.CIRCUIT_BREAKER_TIMEOUT = 30000; // 30 seconds
-    this.MIN_REQUEST_INTERVAL = 100; // Reduced from 1000 to allow faster parallel bursts
+    this.MIN_REQUEST_INTERVAL = 10; // Reduced from 100 to allow faster parallel bursts for metadata
   }
 
   /**
