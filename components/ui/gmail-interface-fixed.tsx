@@ -2327,26 +2327,18 @@ export function GmailInterfaceFixed() {
                                                                     /* Email Detail & AI Summary View */
                                                                     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                                                                         {isSummarizing ? (
-                                                                            <div className="flex flex-col items-center justify-center py-32">
-                                                                                <div className="relative">
-                                                                                    <Sparkles className="w-16 h-16 text-black dark:text-white animate-pulse" strokeWidth={1} />
-                                                                                    <div className="absolute inset-0 bg-black/10 dark:bg-white/10 blur-3xl rounded-full animate-pulse" />
-                                                                                </div>
-                                                                                <p className="mt-8 text-neutral-600 dark:text-neutral-500 font-light text-xl animate-pulse">
-                                                                                    Sift AI is analyzing the conversation...
+                                                                            <div className="flex flex-col items-center justify-center py-40">
+                                                                                <Loader2 className="w-8 h-8 text-neutral-400 animate-spin mb-4" />
+                                                                                <p className="text-neutral-500 font-medium tracking-tight text-sm">
+                                                                                    Analyzing...
                                                                                 </p>
                                                                             </div>
                                                                         ) : (
                                                                             <div className="space-y-10">
                                                                                 {/* AI Summary Card */}
                                                                                 <div className="bg-neutral-50 dark:bg-neutral-800/40 rounded-[2rem] p-8 border border-neutral-200 dark:border-neutral-800/50 shadow-2xl relative overflow-hidden">
-                                                                                    <div className="absolute top-0 right-0 p-8 opacity-5">
-                                                                                        <Sparkles className="w-32 h-32 text-black dark:text-white" />
-                                                                                    </div>
-
                                                                                     <div className="flex items-center gap-3 mb-6">
-                                                                                        <Sparkles className="w-5 h-5 text-yellow-500" />
-                                                                                        <h3 className="text-xs font-medium text-yellow-600 uppercase tracking-widest">
+                                                                                        <h3 className="text-xs font-medium text-neutral-500 uppercase tracking-widest">
                                                                                             AI Intelligence Summary
                                                                                         </h3>
                                                                                     </div>
