@@ -305,7 +305,7 @@ export function UnifiedSidebar({
                   aria-label="More Options"
                 >
                   <img
-                    src={session?.user?.image || "/user-avatar.png?v=2"}
+                    src={(session?.user?.image?.startsWith('http') || session?.user?.image?.startsWith('/')) ? session.user.image : "/user-avatar.png?v=2"}
                     alt="User"
                     className="w-full h-full object-cover grayscale opacity-80"
                   />
@@ -322,7 +322,7 @@ export function UnifiedSidebar({
                 <div className="px-3 py-3 mb-2 border-b border-white/5 flex items-center gap-2.5">
                   <div className="w-7 h-7 rounded-full overflow-hidden bg-white/5">
                     <img
-                      src={session?.user?.image || "/user-avatar.png?v=2"}
+                      src={(session?.user?.image?.startsWith('http') || session?.user?.image?.startsWith('/')) ? session.user.image : "/user-avatar.png?v=2"}
                       alt="User"
                       className="w-full h-full object-cover grayscale opacity-80"
                     />

@@ -2423,7 +2423,7 @@ export function GmailInterfaceFixed() {
                                                                                 
                                                                                 <div className="mt-12 flex items-center gap-2 text-[10px] text-neutral-600 uppercase tracking-[0.2em] font-bold">
                                                                                     <Shield className="w-3 h-3" />
-                                                                                    <span>Analyzing via Nvidia Nemotron 3</span>
+                                                                                    <span>Analyzing via Arcus AI Engine</span>
                                                                                 </div>
                                                                             </div>
                                                                         ) : isLoadingFullEmail ? (

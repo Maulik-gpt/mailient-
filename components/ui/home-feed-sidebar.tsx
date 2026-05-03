@@ -332,7 +332,7 @@ export function HomeFeedSidebar({
                                             className="w-7 h-7 rounded-full overflow-hidden border border-[#EBE9E2] dark:border-white/10 bg-white dark:bg-black shrink-0"
                                         >
                                             <img
-                                                src={session?.user?.image || "/user-avatar.png?v=2"}
+                                                src={(session?.user?.image?.startsWith('http') || session?.user?.image?.startsWith('/')) ? session.user.image : "/user-avatar.png?v=2"}
                                                 alt="User"
                                                 className="w-full h-full object-cover"
                                             />
@@ -393,7 +393,7 @@ export function HomeFeedSidebar({
                                         onClick={() => setIsCollapsed(false)}
                                     >
                                         <img
-                                            src={session?.user?.image || "/user-avatar.png?v=2"}
+                                            src={(session?.user?.image?.startsWith('http') || session?.user?.image?.startsWith('/')) ? session.user.image : "/user-avatar.png?v=2"}
                                             alt="User"
                                             className="w-full h-full object-cover grayscale opacity-80"
                                         />
