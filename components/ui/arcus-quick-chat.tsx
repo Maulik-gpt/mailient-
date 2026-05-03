@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, X, Send, Loader2, Bot, User, BrainCircuit, Zap, FileText, ListTodo } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -215,12 +217,52 @@ export const ArcusQuickChat: React.FC<ArcusQuickChatProps> = ({ isOpen, onClose,
                     {msg.role === 'user' ? <User className="w-5 h-5 text-white/40" /> : <Bot className="w-5 h-5 text-white/80" />}
                   </div>
                   <div className={cn(
-                    "max-w-[85%] rounded-[1.5rem] px-5 py-3.5 text-[15px] leading-relaxed shadow-xl",
+                    "max-w-[88%] rounded-[1.8rem] px-6 py-4 text-[15px] leading-relaxed shadow-xl",
                     msg.role === 'user'
                       ? "bg-white/5 text-white/90 rounded-tr-none border border-white/5"
-                      : "bg-white/[0.08] text-white border border-white/10 rounded-tl-none font-light"
+                      : "bg-white/[0.08] text-white border border-white/10 rounded-tl-none font-light prose prose-invert prose-sm max-w-none"
                   )}>
-                    {msg.content}
+                    {msg.role === 'user' ? (
+                      msg.content
+                    ) : (
+                      <ReactMarkdown 
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          h1: ({node, ...props}) => <h1 className="text-lg font-bold text-white mb-3 mt-1 tracking-tight" {...props} />,
+                          h2: ({node, ...props}) => <h2 className="text-base font-bold text-white/90 mb-2 mt-4 tracking-tight border-b border-white/5 pb-1" {...props} />,
+                          h3: ({node, ...props}) => <h3 className="text-sm font-bold text-white/80 mb-2 mt-3" {...props} />,
+                          p: ({node, ...props}) => <p className="mb-4 last:mb-0 text-white/80 leading-relaxed" {...props} />,
+                          ul: ({node, ...props}) => <ul className="list-none space-y-2 mb-4 pl-1" {...props} />,
+                          li: ({node, ...props}) => (
+                            <li className="flex gap-2 text-white/70">
+                              <span className="text-white/30 mt-1.5 shrink-0">◆</span>
+                              <span>{props.children}</span>
+                            </li>
+                          ),
+                          ol: ({node, ...props}) => <ol className="list-decimal pl-6 mb-4 space-y-2 text-white/70" {...props} />,
+                          table: ({node, ...props}) => (
+                            <div className="my-6 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
+                              <table className="w-full text-sm text-left border-collapse" {...props} />
+                            </div>
+                          ),
+                          thead: ({node, ...props}) => <thead className="bg-white/5 text-white font-medium" {...props} />,
+                          th: ({node, ...props}) => <th className="px-4 py-3 border-b border-white/10" {...props} />,
+                          td: ({node, ...props}) => <td className="px-4 py-3 border-b border-white/[0.05] text-white/60" {...props} />,
+                          code: ({node, className, children, ...props}) => (
+                            <code className="bg-white/10 px-1.5 py-0.5 rounded-md text-[13px] text-white/90 font-mono" {...props}>
+                              {children}
+                            </code>
+                          ),
+                          blockquote: ({node, ...props}) => (
+                            <blockquote className="border-l-2 border-white/20 pl-4 py-1 italic text-white/50 my-4" {...props} />
+                          ),
+                          strong: ({node, ...props}) => <strong className="font-bold text-white" {...props} />,
+                          hr: ({node, ...props}) => <hr className="my-6 border-white/10" {...props} />
+                        }}
+                      >
+                        {msg.content}
+                      </ReactMarkdown>
+                    )}
                   </div>
                 </motion.div>
               ))}
