@@ -39,6 +39,8 @@ export const ArcusQuickChat: React.FC<ArcusQuickChatProps> = ({ isOpen, onClose,
     }
   }, [isOpen, context]);
 
+  const [currentStep, setCurrentStep] = useState<string>('');
+
   const handleSend = async (forcedInput?: string) => {
     const text = forcedInput || input;
     if (!text.trim() || isLoading) return;
@@ -48,6 +50,7 @@ export const ArcusQuickChat: React.FC<ArcusQuickChatProps> = ({ isOpen, onClose,
     setInput('');
     setIsLoading(true);
     setIsThinking(true);
+    setCurrentStep('Initializing Arcus...');
 
     try {
       const response = await fetch('/api/agent-talk/chat-arcus-v2', {
@@ -78,7 +81,7 @@ export const ArcusQuickChat: React.FC<ArcusQuickChatProps> = ({ isOpen, onClose,
         for (const line of lines) {
           if (line.startsWith('event: ')) {
             const eventType = line.replace('event: ', '').trim();
-            if (eventType === 'thinking') {
+            if (eventType === 'thinking' || eventType === 'tool_call') {
               setIsThinking(true);
             }
           }
@@ -87,9 +90,21 @@ export const ArcusQuickChat: React.FC<ArcusQuickChatProps> = ({ isOpen, onClose,
             try {
               const data = JSON.parse(line.replace('data: ', '').trim());
               
-              if (data.content) {
+              // Handle reasoning/thoughts
+              if (data.step) {
+                setCurrentStep(data.step);
+              }
+              
+              // Handle tool calls
+              if (data.tool) {
+                const toolName = data.tool.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
+                setCurrentStep(`Arcus: ${toolName}...`);
+              }
+
+              if (data.content || data.message) {
                 setIsThinking(false);
-                assistantContent += data.content;
+                const content = data.content || data.message;
+                assistantContent += content;
                 
                 if (!hasAddedAssistantMessage) {
                   setMessages(prev => [...prev, { role: 'assistant', content: assistantContent }]);
@@ -102,13 +117,8 @@ export const ArcusQuickChat: React.FC<ArcusQuickChatProps> = ({ isOpen, onClose,
                   });
                 }
               }
-              
-              if (data.step) {
-                // Update thinking state with specific step info if we want, 
-                // but for now keeping it simple.
-              }
             } catch (e) {
-              // Ignore parse errors for partial chunks
+              // Ignore partial JSON
             }
           }
         }
@@ -116,11 +126,13 @@ export const ArcusQuickChat: React.FC<ArcusQuickChatProps> = ({ isOpen, onClose,
       
       setIsLoading(false);
       setIsThinking(false);
+      setCurrentStep('');
 
     } catch (error) {
       console.error('Quick Chat Error:', error);
       setIsThinking(false);
       setIsLoading(false);
+      setCurrentStep('');
       toast.error('AI was unable to process this request.');
     }
   };
@@ -218,21 +230,26 @@ export const ArcusQuickChat: React.FC<ArcusQuickChatProps> = ({ isOpen, onClose,
                   <div className="shrink-0 w-9 h-9 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center shadow-[0_0_20px_rgba(255,255,255,0.05)]">
                     <Bot className="w-5 h-5 text-white animate-pulse" />
                   </div>
-                  <div className="bg-white/[0.04] border border-white/10 rounded-3xl rounded-tl-none px-6 py-4 space-y-3 w-[180px] shadow-2xl">
-                    <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden relative">
-                      <motion.div 
-                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
-                        animate={{ x: ['-100%', '100%'] }}
-                        transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-                      />
+                  <div className="flex flex-col gap-2">
+                    <div className="bg-white/[0.04] border border-white/10 rounded-3xl rounded-tl-none px-6 py-4 space-y-3 w-[180px] shadow-2xl">
+                      <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden relative">
+                        <motion.div 
+                          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
+                          animate={{ x: ['-100%', '100%'] }}
+                          transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                        />
+                      </div>
+                      <div className="h-1.5 w-3/4 bg-white/5 rounded-full overflow-hidden relative">
+                        <motion.div 
+                          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
+                          animate={{ x: ['-100%', '100%'] }}
+                          transition={{ duration: 1.5, repeat: Infinity, ease: "linear", delay: 0.2 }}
+                        />
+                      </div>
                     </div>
-                    <div className="h-1.5 w-3/4 bg-white/5 rounded-full overflow-hidden relative">
-                      <motion.div 
-                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
-                        animate={{ x: ['-100%', '100%'] }}
-                        transition={{ duration: 1.5, repeat: Infinity, ease: "linear", delay: 0.2 }}
-                      />
-                    </div>
+                    <span className="text-[10px] text-white/30 font-medium ml-2 animate-pulse tracking-wider uppercase">
+                      {currentStep || 'Thinking...'}
+                    </span>
                   </div>
                 </div>
               )}
