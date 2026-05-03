@@ -11,6 +11,12 @@ import remarkGfm from 'remark-gfm';
 interface Message {
   role: 'user' | 'assistant';
   content: string;
+  isDraft?: boolean;
+  draftData?: {
+    content: string;
+    subject: string;
+    recipientEmail: string;
+  };
 }
 
 interface ArcusQuickChatProps {
@@ -86,15 +92,14 @@ export const ArcusQuickChat: React.FC<ArcusQuickChatProps> = ({ isOpen, onClose,
         const chunk = decoder.decode(value);
         const lines = chunk.split('\n');
 
+        let currentEventType = '';
         for (const line of lines) {
           if (line.startsWith('event: ')) {
-            const eventType = line.replace('event: ', '').trim();
-            if (eventType === 'thinking' || eventType === 'tool_call') {
+            currentEventType = line.replace('event: ', '').trim();
+            if (currentEventType === 'thinking' || currentEventType === 'tool_call') {
               setIsThinking(true);
             }
-            if (eventType === 'approval_required') {
-              // Approval needed, handle in the data block
-            }
+            continue;
           }
           
           if (line.startsWith('data: ')) {
@@ -113,7 +118,7 @@ export const ArcusQuickChat: React.FC<ArcusQuickChatProps> = ({ isOpen, onClose,
               }
 
               // Handle approvals
-              if (data.message && (data.tool === 'send_email' || data.tool === 'save_draft' || data.tool === 'schedule_meeting')) {
+              if (currentEventType === 'approval_required' && data.message) {
                  setPendingApproval({
                    tool: data.tool,
                    params: data.params,
@@ -122,18 +127,32 @@ export const ArcusQuickChat: React.FC<ArcusQuickChatProps> = ({ isOpen, onClose,
                  setIsThinking(false);
               }
 
-              if (data.content || (data.message && !data.tool)) {
+              // Only handle assistant messages from 'message' events
+              if (currentEventType === 'message' && (data.content || data.message)) {
                 setIsThinking(false);
                 const content = data.content || data.message;
+                const isDraft = data.meta?.isDraft || false;
+                const draftData = data.meta?.draftData || null;
+                
                 assistantContent += content;
                 
                 if (!hasAddedAssistantMessage) {
-                  setMessages(prev => [...prev, { role: 'assistant', content: assistantContent }]);
+                  setMessages(prev => [...prev, { 
+                    role: 'assistant', 
+                    content: assistantContent,
+                    isDraft,
+                    draftData
+                  }]);
                   hasAddedAssistantMessage = true;
                 } else {
                   setMessages(prev => {
                     const newMessages = [...prev];
-                    newMessages[newMessages.length - 1] = { role: 'assistant', content: assistantContent };
+                    newMessages[newMessages.length - 1] = { 
+                      role: 'assistant', 
+                      content: assistantContent,
+                      isDraft,
+                      draftData
+                    };
                     return newMessages;
                   });
                 }
@@ -141,6 +160,7 @@ export const ArcusQuickChat: React.FC<ArcusQuickChatProps> = ({ isOpen, onClose,
             } catch (e) {
               // Ignore partial JSON
             }
+            // Do NOT reset currentEventType here if you expect data to follow event
           }
         }
       }
@@ -187,10 +207,10 @@ export const ArcusQuickChat: React.FC<ArcusQuickChatProps> = ({ isOpen, onClose,
           exit={{ opacity: 0, y: 20, scale: 0.98, filter: 'blur(10px)' }}
           transition={{ 
             type: "spring", 
-            damping: 20, 
-            stiffness: 150,
-            opacity: { duration: 0.2 },
-            filter: { duration: 0.2 }
+            damping: 25, 
+            stiffness: 200,
+            opacity: { duration: 0.3 },
+            scale: { duration: 0.4, ease: [0.16, 1, 0.3, 1] }
           }}
           className="fixed bottom-6 right-6 z-[3000] w-[450px] h-[80vh] flex flex-col origin-bottom-right"
         >
@@ -264,48 +284,104 @@ export const ArcusQuickChat: React.FC<ArcusQuickChatProps> = ({ isOpen, onClose,
                     {msg.role === 'user' ? (
                       msg.content
                     ) : (
-                      <ReactMarkdown 
-                        remarkPlugins={[remarkGfm]}
-                        components={{
-                          h1: ({node, ...props}) => <h1 className="text-lg font-bold text-white mb-3 mt-1 tracking-tight" {...props} />,
-                          h2: ({node, ...props}) => <h2 className="text-base font-bold text-white/90 mb-2 mt-4 tracking-tight border-b border-white/5 pb-1" {...props} />,
-                          h3: ({node, ...props}) => <h3 className="text-sm font-bold text-white/80 mb-2 mt-3" {...props} />,
-                          p: ({node, ...props}) => <p className="mb-4 last:mb-0 text-white/80 leading-relaxed" {...props} />,
-                          ul: ({node, ...props}) => <ul className="list-none space-y-2 mb-4 pl-1" {...props} />,
-                          li: ({node, ...props}) => (
-                            <li className="flex gap-2 text-white/70">
-                              <span className="text-white/30 mt-1.5 shrink-0">◆</span>
-                              <span>{props.children}</span>
-                            </li>
-                          ),
-                          ol: ({node, ...props}) => <ol className="list-decimal pl-6 mb-4 space-y-2 text-white/70" {...props} />,
-                          table: ({node, ...props}) => (
-                            <div className="my-6 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
-                              <table className="w-full text-sm text-left border-collapse" {...props} />
+                      <div className="space-y-4">
+                        <ReactMarkdown 
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            h1: ({node, ...props}) => <h1 className="text-lg font-bold text-white mb-3 mt-1 tracking-tight" {...props} />,
+                            h2: ({node, ...props}) => <h2 className="text-base font-bold text-white/90 mb-2 mt-4 tracking-tight border-b border-white/5 pb-1" {...props} />,
+                            h3: ({node, ...props}) => <h3 className="text-sm font-bold text-white/80 mb-2 mt-3" {...props} />,
+                            p: ({node, ...props}) => <p className="mb-4 last:mb-0 text-white/80 leading-relaxed" {...props} />,
+                            ul: ({node, ...props}) => <ul className="list-none space-y-2 mb-4 pl-1" {...props} />,
+                            li: ({node, ...props}) => (
+                              <li className="flex gap-2 text-white/70">
+                                <span className="text-white/30 mt-1.5 shrink-0">◆</span>
+                                <span>{props.children}</span>
+                              </li>
+                            ),
+                            ol: ({node, ...props}) => <ol className="list-decimal pl-6 mb-4 space-y-2 text-white/70" {...props} />,
+                            table: ({node, ...props}) => (
+                              <div className="my-6 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
+                                <table className="w-full text-sm text-left border-collapse" {...props} />
+                              </div>
+                            ),
+                            thead: ({node, ...props}) => <thead className="bg-white/5 text-white font-medium" {...props} />,
+                            th: ({node, ...props}) => <th className="px-4 py-3 border-b border-white/10" {...props} />,
+                            td: ({node, ...props}) => <td className="px-4 py-3 border-b border-white/[0.05] text-white/60" {...props} />,
+                            code: ({node, className, children, ...props}) => (
+                              <code className="bg-white/10 px-1.5 py-0.5 rounded-md text-[13px] text-white/90 font-mono" {...props}>
+                                {children}
+                              </code>
+                            ),
+                            blockquote: ({node, ...props}) => (
+                              <blockquote className="border-l-2 border-white/20 pl-4 py-1 italic text-white/50 my-4" {...props} />
+                            ),
+                            strong: ({node, ...props}) => <strong className="font-bold text-white" {...props} />,
+                            hr: ({node, ...props}) => <hr className="my-6 border-white/10" {...props} />
+                          }}
+                        >
+                          {msg.content}
+                        </ReactMarkdown>
+
+                        {msg.isDraft && msg.draftData && (
+                          <motion.div 
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="mt-4 p-4 rounded-2xl bg-white/[0.03] border border-white/10 space-y-3"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2 text-[10px] text-white/40 uppercase tracking-widest font-bold">
+                                <FileText className="w-3 h-3" />
+                                Ready to Send
+                              </div>
+                              <div className="text-[10px] text-blue-400 font-bold px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20">
+                                AI Draft
+                              </div>
                             </div>
-                          ),
-                          thead: ({node, ...props}) => <thead className="bg-white/5 text-white font-medium" {...props} />,
-                          th: ({node, ...props}) => <th className="px-4 py-3 border-b border-white/10" {...props} />,
-                          td: ({node, ...props}) => <td className="px-4 py-3 border-b border-white/[0.05] text-white/60" {...props} />,
-                          code: ({node, className, children, ...props}) => (
-                            <code className="bg-white/10 px-1.5 py-0.5 rounded-md text-[13px] text-white/90 font-mono" {...props}>
-                              {children}
-                            </code>
-                          ),
-                          blockquote: ({node, ...props}) => (
-                            <blockquote className="border-l-2 border-white/20 pl-4 py-1 italic text-white/50 my-4" {...props} />
-                          ),
-                          strong: ({node, ...props}) => <strong className="font-bold text-white" {...props} />,
-                          hr: ({node, ...props}) => <hr className="my-6 border-white/10" {...props} />
-                        }}
-                      >
-                        {msg.content}
-                      </ReactMarkdown>
+                            
+                            <div className="p-3 rounded-xl bg-black/40 border border-white/5 text-xs text-white/60 line-clamp-3 font-light italic">
+                              {msg.draftData.content.substring(0, 150)}...
+                            </div>
+
+                            <button
+                              onClick={async () => {
+                                if (!msg.draftData) return;
+                                setIsLoading(true);
+                                try {
+                                  const res = await fetch('/api/gmail/send', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                      to: msg.draftData.recipientEmail || '',
+                                      subject: msg.draftData.subject || 'Re: Message',
+                                      body: msg.draftData.content,
+                                      threadId: context?.emailId
+                                    })
+                                  });
+                                  if (res.ok) {
+                                    toast.success('Email sent successfully!');
+                                    setMessages(prev => [...prev, { role: 'assistant', content: '✅ Email sent successfully.' }]);
+                                  } else {
+                                    throw new Error('Failed to send');
+                                  }
+                                } catch (err) {
+                                  toast.error('Failed to send email.');
+                                } finally {
+                                  setIsLoading(false);
+                                }
+                              }}
+                              className="w-full py-3 rounded-xl bg-white text-black text-xs font-bold flex items-center justify-center gap-2 hover:bg-zinc-200 transition-colors shadow-lg"
+                            >
+                              <Send className="w-3.5 h-3.5" />
+                              Send this Reply
+                            </button>
+                          </motion.div>
+                        )}
+                      </div>
                     )}
                   </div>
                 </motion.div>
               ))}
-
               {isThinking && (
                 <div className="flex gap-4">
                   <div className="shrink-0 w-9 h-9 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center shadow-[0_0_20px_rgba(255,255,255,0.05)]">
