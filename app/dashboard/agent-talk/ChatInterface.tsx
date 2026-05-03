@@ -388,18 +388,23 @@ function extractSearchTerm(message: string): string {
 function extractThinking(message: string): { thinking: string; cleanText: string } {
   if (typeof message !== 'string') return { thinking: '', cleanText: '' };
 
-  // 1. Remove all fully closed thinking blocks from the clean text
-  let cleanText = message.replace(/<thinking>[\s\S]*?<\/thinking>/gi, '').trim();
+  // 1. Remove all fully closed thinking and tool_call blocks from the clean text
+  let cleanText = message
+    .replace(/<thinking>[\s\S]*?<\/thinking>/gi, '')
+    .replace(/<tool_call>[\s\S]*?<\/tool_call>/gi, '')
+    .trim();
 
-  // 2. Check for a currently open/streaming thinking tag at the end
+  // 2. Check for a currently open/streaming thinking tag
   let thinking = '';
   if (cleanText.includes('<thinking>')) {
     const parts = cleanText.split('<thinking>');
     thinking = parts[parts.length - 1].trim();
-    // The clean text is everything before the last <thinking> tag
     cleanText = parts.slice(0, -1).join('<thinking>').trim();
-    // If we have previous closed blocks that were stripped, cleanText might still contain 
-    // tags if we used split. But replace already handled closed ones.
+  }
+
+  // 3. Check for a currently open/streaming tool_call tag and hide it
+  if (cleanText.includes('<tool_call>')) {
+    cleanText = cleanText.split('<tool_call>')[0].trim();
   }
 
   return { thinking, cleanText };
