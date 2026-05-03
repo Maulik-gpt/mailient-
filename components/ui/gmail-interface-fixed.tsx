@@ -569,6 +569,23 @@ export function GmailInterfaceFixed() {
         }
     }, [selectedInsight]);
 
+    // Freeze background when modals are open
+    useEffect(() => {
+        const anyModalOpen = showDraftEditor || showSchedulingModal || isUsageLimitModalOpen || 
+                            isVoiceProfileModalOpen || showSettings || showHelp || showRewards || 
+                            isTraditionalModalOpen;
+        
+        if (anyModalOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [showDraftEditor, showSchedulingModal, isUsageLimitModalOpen, isVoiceProfileModalOpen, showSettings, showHelp, showRewards, isTraditionalModalOpen]);
+
     // AI Text Formatting Utility
     const decodeEntities = useCallback((text: string | null) => {
         if (!text) return '';
@@ -2436,30 +2453,6 @@ export function GmailInterfaceFixed() {
                                                         <div className="flex justify-between items-center px-8 py-5">
                                                             <span className="text-zinc-400 font-medium tracking-wide">Email</span>
                                                             <div className="flex items-center gap-2">
-                                                                {/* Executive Tools Integration */}
-                                                                <div className="flex items-center gap-1.5 mr-4 px-3 py-1 bg-white/[0.03] rounded-xl border border-white/[0.05]">
-                                                                   <button 
-                                                                       onClick={() => selectedEmailId && handleScheduleCall(selectedEmailId)}
-                                                                       className="p-2 hover:bg-neutral-800 rounded-lg text-white/40 hover:text-blue-400 transition-all"
-                                                                       title="Schedule Meeting"
-                                                                   >
-                                                                       <Calendar className="w-4 h-4" />
-                                                                   </button>
-                                                                   <button 
-                                                                       onClick={() => selectedEmailId && handleEscalate(selectedEmailId)}
-                                                                       className="p-2 hover:bg-neutral-800 rounded-lg text-white/40 hover:text-orange-400 transition-all"
-                                                                       title="Escalate / Task"
-                                                                   >
-                                                                       <AlertTriangle className="w-4 h-4" />
-                                                                   </button>
-                                                                   <button 
-                                                                       onClick={() => selectedEmailId && handleAddNote(selectedEmailId)}
-                                                                       className="p-2 hover:bg-neutral-800 rounded-lg text-white/40 hover:text-emerald-400 transition-all"
-                                                                       title="Add AI Note"
-                                                                   >
-                                                                       <FileText className="w-4 h-4" />
-                                                                   </button>
-                                                                </div>
                                                                 {/* Attachment Picker */}
                                                                 <input
                                                                     ref={attachmentInputRef}
