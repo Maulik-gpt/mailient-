@@ -272,9 +272,9 @@ const MessageContent = ({ content, isUser, isTyping, isNewResponse, hideLinks }:
       !isUser && "max-w-none prose prose-invert prose-headings:mb-4 prose-p:mb-4 prose-li:mb-1 prose-table:my-6"
     )}>
       {isTyping && !textContent && (
-        <div className="flex flex-col gap-3 py-2 opacity-20">
+        <div className="flex flex-col gap-3 py-2 opacity-60">
           <motion.div 
-            className="h-3 w-full bg-white/40 rounded-full relative overflow-hidden"
+            className="h-3 w-full bg-white/20 rounded-full relative overflow-hidden"
             animate={{ opacity: [0.3, 0.6, 0.3] }}
             transition={{ repeat: Infinity, duration: 1.5 }}
           >
@@ -285,7 +285,7 @@ const MessageContent = ({ content, isUser, isTyping, isNewResponse, hideLinks }:
             />
           </motion.div>
           <motion.div 
-            className="h-3 w-[90%] bg-white/40 rounded-full relative overflow-hidden"
+            className="h-3 w-[90%] bg-white/20 rounded-full relative overflow-hidden"
             animate={{ opacity: [0.3, 0.6, 0.3] }}
             transition={{ repeat: Infinity, duration: 1.5, delay: 0.2 }}
           >
@@ -1579,7 +1579,7 @@ export default function ChatInterface({
       role: 'assistant',
       content: { text: '', list: [], footer: '' },
       time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
-      meta: { actionType: 'agent_loop', isStreaming: true, liveThinking: 'Thinking...' }
+      meta: { actionType: 'agent_loop', isStreaming: true, liveThinking: 'Thinking...', agentSteps }
     };
     setMessages(prev => [...prev, placeholderMsg]);
 
@@ -3197,11 +3197,11 @@ export default function ChatInterface({
                                        />
                                      )}
 
-                                     {((msg as AgentMessage).meta?.isStreaming !== true || (typeof msg.content === 'string' ? msg.content : msg.content.text).length > 0 || !isAgentLoopActive) && (
+                                     {((msg as AgentMessage).meta?.isStreaming !== true || (typeof msg.content === 'string' ? msg.content : msg.content.text).length > 0 || isAgentLoopActive) && (
                                        <MessageContent
                                          content={msg.content}
                                          isUser={msg.role === 'user'}
-                                         isTyping={isLoading && msg.role === 'assistant' && msg.id === messages[messages.length - 1].id && (!isAgentLoopActive || (typeof msg.content === 'string' ? msg.content : msg.content.text).length > 0)}
+                                         isTyping={isLoading && msg.role === 'assistant' && msg.id === messages[messages.length - 1].id}
                                          isNewResponse={msg.role === 'assistant' && msg.id === messages[messages.length - 1].id && !isLoading}
                                          hideLinks={msg.role === 'assistant' && (msg as AgentMessage).meta?.limitReached}
                                        />
