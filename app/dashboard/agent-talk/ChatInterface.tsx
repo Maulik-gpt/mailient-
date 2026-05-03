@@ -3180,11 +3180,18 @@ export default function ChatInterface({
                                 )}
                                 <div className="flex flex-col max-w-[95%] group/msg">
                                   <div className={`transition-all relative overflow-hidden ${msg.role === 'user' ? 'px-5 py-3 rounded-[24px] bg-[#111]/95 backdrop-blur-2xl border border-white/[0.12] text-white shadow-2xl ring-1 ring-white/5' : 'text-white/90 px-0 py-1'}`}>
+                                    {msg.role === 'user' && isLoading && msg.id === messages.filter(m => m.role === 'user').pop()?.id && (
+                                      <motion.div 
+                                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.08] to-transparent w-[200%] pointer-events-none"
+                                        animate={{ x: ['-100%', '100%'] }}
+                                        transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+                                      />
+                                    )}
                                     {msg.role === 'user' && (
                                       <motion.div 
-                                        className="absolute inset-0 bg-gradient-to-br from-blue-500/[0.04] via-transparent to-transparent pointer-events-none"
+                                        className="absolute inset-0 bg-gradient-to-br from-blue-500/[0.06] via-transparent to-transparent pointer-events-none"
                                         animate={{ opacity: [0.3, 0.6, 0.3] }}
-                                        transition={{ repeat: Infinity, duration: 5, ease: "easeInOut" }}
+                                        transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
                                       />
                                     )}
                                     {msg.role === 'user' && <UserMessageCopyButton msg={msg} />}
