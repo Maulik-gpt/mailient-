@@ -50,7 +50,9 @@ export async function POST(request) {
     const userName = session?.user?.name || 'User';
 
     // ── Subscription check ────────────────────────────────────────────────
+    let currentPlan = 'free';
     if (userEmail) {
+      currentPlan = await subscriptionService.getUserPlanType(userEmail);
       const canUse = await subscriptionService.canUseFeature(userEmail, FEATURE_TYPES.ARCUS_AI);
       if (!canUse) {
         const usage = await subscriptionService.getFeatureUsage(userEmail, FEATURE_TYPES.ARCUS_AI);
@@ -63,6 +65,24 @@ export async function POST(request) {
           limit: usage.limit,
           upgradeUrl: '/pricing'
         }, { status: 403 });
+      }
+    }
+
+    // ── Model Tier Enforcement ───────────────────────────────────────────
+    let finalModelId = modelId;
+    if (modelId && modelId !== 'auto') {
+      const { PREMIUM_MODELS } = await import('@/lib/ai-constants.js');
+      const modelInfo = PREMIUM_MODELS.find(m => m.id === modelId);
+      
+      if (modelInfo) {
+        const isRestricted = 
+          (modelInfo.tier === 'starter' && currentPlan === 'free') ||
+          (modelInfo.tier === 'pro' && (currentPlan === 'free' || currentPlan === 'starter'));
+          
+        if (isRestricted) {
+          console.warn(`⚠️ [SECURITY] User ${userEmail} attempted to use restricted model ${modelId} on plan ${currentPlan}. Falling back to default.`);
+          finalModelId = null; // Let ArcusAIService use the default free model
+        }
       }
     }
 
@@ -122,7 +142,7 @@ export async function POST(request) {
     }
 
     // ── Supermemory context ───────────────────────────────────────────────
-    const arcusAI = new ArcusAIService({ modelId });
+    const arcusAI = new ArcusAIService({ modelId: finalModelId });
     let memoryContext = null;
     try {
       memoryContext = await arcusAI.getSupermemoryContext(userEmail, message);

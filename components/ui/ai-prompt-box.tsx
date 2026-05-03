@@ -1,7 +1,7 @@
 import React, { forwardRef, useState, useEffect, useRef, useCallback, createContext, useContext, TextareaHTMLAttributes, ElementRef, ComponentPropsWithoutRef } from "react";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { ArrowUp, Paperclip, Square, X, StopCircle, Mic, BrainCog, Monitor, FileText, Film, Music, Globe, Mail, Search, Infinity as InfinityIcon, Workflow, Bug, MessageSquare, Check, ChevronDown, Plus, Plug, Database, Calendar, Layout, Sparkles } from "lucide-react";
+import { ArrowUp, Paperclip, Square, X, StopCircle, Mic, BrainCog, Monitor, FileText, Film, Music, Globe, Mail, Search, Infinity as InfinityIcon, Workflow, Bug, MessageSquare, Check, Lock, ChevronDown, Plus, Plug, Database, Calendar, Layout, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ConnectorsModal } from './connectors-modal';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from './dropdown-menu';
@@ -967,7 +967,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                 <DropdownMenuContent align="end" side="top" className="w-56 bg-neutral-900 border-white/10 text-white">
                   {AI_MODELS.map(model => {
                     const isLocked = 
-                      (model.tier !== 'free' && (props.currentPlan === 'free' || !props.currentPlan)) || 
+                      (model.tier !== 'free' && (props.currentPlan === 'free' || props.currentPlan === 'none' || !props.currentPlan)) || 
                       (model.tier === 'pro' && props.currentPlan === 'starter');
                     
                     return (
@@ -988,14 +988,28 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                         }}
                         className={cn(
                           "flex items-center justify-between gap-2 px-3 py-2 cursor-pointer",
-                          activeModelId === model.id && "bg-white/10"
+                          activeModelId === model.id && "bg-white/10",
+                          isLocked && "hover:bg-transparent"
                         )}
                       >
                         <div className="flex items-center gap-2">
-                          <model.icon className={cn("w-4 h-4", isLocked && "opacity-40 grayscale")} />
-                          <span className="text-sm font-medium">{model.name}</span>
+                          <model.icon className={cn("w-4 h-4", isLocked ? "text-white/20" : "text-white/60")} />
+                          <div className="flex flex-col">
+                            <span className={cn("text-sm font-medium", isLocked ? "text-white/30" : "text-white/90")}>
+                              {model.name}
+                            </span>
+                            {isLocked && (
+                              <span className="text-[9px] text-amber-500/60 font-bold uppercase tracking-wider">
+                                {model.tier === 'pro' ? 'Pro Plan' : 'Starter Plan'}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        {activeModelId === model.id && <Check className="w-3.5 h-3.5" />}
+                        {isLocked ? (
+                          <Lock className="w-3.5 h-3.5 text-white/20" />
+                        ) : (
+                          activeModelId === model.id && <Check className="w-3.5 h-3.5 text-blue-400" />
+                        )}
                       </DropdownMenuItem>
                     );
                   })}

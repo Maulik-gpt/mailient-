@@ -131,6 +131,24 @@ export async function POST(request) {
       }
     }
 
+    // ── Model Tier Enforcement ───────────────────────────────────────────
+    let finalModelId = modelId;
+    if (modelId && modelId !== 'auto') {
+      const { PREMIUM_MODELS } = await import('@/lib/ai-constants.js');
+      const modelInfo = PREMIUM_MODELS.find(m => m.id === modelId);
+      
+      if (modelInfo) {
+        const isRestricted = 
+          (modelInfo.tier === 'starter' && userPlanType === 'free') ||
+          (modelInfo.tier === 'pro' && (userPlanType === 'free' || userPlanType === 'starter'));
+          
+        if (isRestricted) {
+          console.warn(`⚠️ [SECURITY] User ${userEmail} attempted to use restricted model ${modelId} on plan ${userPlanType}. Falling back to default.`);
+          finalModelId = null;
+        }
+      }
+    }
+
     // Get user's profile and privacy mode preference
     let profile = null;
     let privacyMode = false;
@@ -158,7 +176,7 @@ export async function POST(request) {
     console.log('📝 Loaded conversation history:', conversationHistory.length, 'messages');
 
     // Initialize AI Services
-    const arcusAI = new ArcusAIService({ modelId });
+    const arcusAI = new ArcusAIService({ modelId: finalModelId });
     const operatorRuntime = new ArcusOperatorRuntime({ db, arcusAI, userEmail });
     const planModeEngine = new PlanModeEngine({ arcusAI, db, userEmail });
     const operatorRuntimeEnabled = isFeatureEnabled('arcusOperatorRuntimeV2');
