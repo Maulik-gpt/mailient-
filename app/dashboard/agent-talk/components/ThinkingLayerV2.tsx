@@ -566,10 +566,10 @@ export function ResultCard({ type, title, onView }: ResultCardProps) {
             </div>
 
             <div className="flex flex-col items-start gap-0.5 flex-1 min-w-0">
-                <span className="text-black/90 dark:text-white/90 text-[14px] font-bold tracking-tight truncate group-hover:text-black dark:group-hover:text-white transition-colors">>
+                <span className="text-black/90 dark:text-white/90 text-[14px] font-bold tracking-tight truncate group-hover:text-black dark:group-hover:text-white transition-colors">
                     {title || label}
                 </span>
-                <span className="text-[10px] font-bold tracking-widest uppercase text-black/20 dark:text-white/20 group-hover:text-black/40 dark:group-hover:text-white/40 transition-colors">>
+                <span className="text-[10px] font-bold tracking-widest uppercase text-black/20 dark:text-white/20 group-hover:text-black/40 dark:group-hover:text-white/40 transition-colors">
                     {label}
                 </span>
             </div>
