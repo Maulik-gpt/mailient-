@@ -8,6 +8,8 @@ import { AIConfig } from '@/lib/ai-config.js';
 import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service';
 import crypto from 'crypto';
 
+export const maxDuration = 60; // Increase to 60s for deep AI analysis
+
 interface EmailDetail {
   id: string;
   from: string;
@@ -209,9 +211,8 @@ export async function GET(request: Request) {
       cumulativeEmailStore.delete(storeKey);
     }
 
-    // Only fetch INBOX emails (exclude sent, drafts, etc.)
-    // 'in:inbox' ensures we only analyze emails received by the user, not ones they sent
-    const recentEmails = await gmailService.getEmails(30, 'in:inbox newer_than:60d', pageToken as any);
+    // Phase 1: Fetch recent emails for analysis - reduced to 20 for faster initial load
+    const recentEmails = await gmailService.getEmails(20, 'in:inbox newer_than:60d', pageToken as any);
     const allMessages = recentEmails.messages || [];
     const nextPageToken = recentEmails.nextPageToken;
 
@@ -258,7 +259,7 @@ export async function GET(request: Request) {
           return null;
         }
       },
-      50 // High concurrency for metadata-only requests (Gmail API is fast for these)
+      15 // Lowered concurrency to avoid Google API throttling and connection drops
     );
 
     const gmailDuration = (Date.now() - gmailStartTime) / 1000;
