@@ -175,6 +175,24 @@ interface SiftInsightsResponse {
     fallback?: any;
 }
 
+const LoadingTimer = () => {
+    const [seconds, setSeconds] = React.useState(30);
+
+    React.useEffect(() => {
+        const timer = setInterval(() => {
+            setSeconds(prev => (prev > 0 ? prev - 1 : 0));
+        }, 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    return (
+        <span className="ml-1.5 text-[10px] font-mono opacity-50 bg-white/5 px-1.5 py-0.5 rounded-md border border-white/5 inline-flex items-center gap-1">
+            <Clock className="w-2.5 h-2.5" />
+            {seconds}s
+        </span>
+    );
+};
+
 export function GmailInterfaceFixed() {
     const { data: session } = useSession();
     const router = useRouter();
@@ -2162,8 +2180,9 @@ export function GmailInterfaceFixed() {
                                 ) : loading ? (
                                     <div className="py-24 md:py-48 flex flex-col items-center justify-center">
                                         <Loader2 className="w-8 h-8 text-neutral-400 animate-spin mb-4" />
-                                        <p className="text-sm font-medium tracking-tight text-neutral-500">
+                                        <p className="text-sm font-medium tracking-tight text-neutral-500 flex items-center">
                                             Analyzing...
+                                            <LoadingTimer />
                                         </p>
                                     </div>
                                 ) : hasInitialLoad ? (
@@ -2227,6 +2246,7 @@ export function GmailInterfaceFixed() {
                                                     <>
                                                         <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
                                                         Analyzing
+                                                        <LoadingTimer />
                                                     </>
                                                 ) : (
                                                     'Load Insights'
@@ -2252,6 +2272,7 @@ export function GmailInterfaceFixed() {
                                                 <>
                                                     <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
                                                     Analyzing
+                                                    <LoadingTimer />
                                                 </>
                                             ) : (
                                                 'Start Analysis'
@@ -2423,7 +2444,10 @@ export function GmailInterfaceFixed() {
                                                                                 
                                                                                 <div className="mt-12 flex items-center gap-2 text-[10px] text-neutral-600 uppercase tracking-[0.2em] font-bold">
                                                                                     <Shield className="w-3 h-3" />
-                                                                                    <span>Analyzing via Arcus AI Engine</span>
+                                                                                    <span className="flex items-center">
+                                                                                        Analyzing via Arcus AI Engine
+                                                                                        <LoadingTimer />
+                                                                                    </span>
                                                                                 </div>
                                                                             </div>
                                                                         ) : isLoadingFullEmail ? (

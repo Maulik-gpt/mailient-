@@ -1,9 +1,27 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronRight, ChevronDown, Binary, Sparkles, BrainCircuit, Mail, FileText, Search, Zap, Calendar, BarChart3, Pencil, Terminal, CheckCircle2, Globe, Database, ListTodo, ExternalLink, Loader2, AlertTriangle, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from "@/lib/utils";
+
+const LoadingTimer = () => {
+    const [seconds, setSeconds] = useState(30);
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setSeconds(prev => (prev > 0 ? prev - 1 : 0));
+        }, 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    return (
+        <span className="ml-1.5 text-[10px] font-mono opacity-50 bg-black/[0.03] dark:bg-white/5 px-1 py-0.5 rounded-md border border-black/5 dark:border-white/5 inline-flex items-center gap-1">
+            <Clock className="w-2.5 h-2.5" />
+            {seconds}s
+        </span>
+    );
+};
 
 export type ThinkingStep = {
     id: string;
@@ -93,12 +111,12 @@ const sourceTypeConfig: Record<string, { icon: any; label: string; color: string
 };
 
 const todoStatusConfig: Record<TodoGraphStatus, { label: string; color: string; bgColor: string; icon: any }> = {
-    pending: { label: 'Pending', color: 'text-black/30 dark:text-white/30', bgColor: 'bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5', icon: Clock },
+    pending: { label: 'Pending', color: 'text-black/30 dark:text-white/30', bgColor: 'bg-black/[0.03] dark:bg-white/5', icon: Clock },
     ready: { label: 'Ready', color: 'text-blue-400', bgColor: 'bg-blue-500/10', icon: CheckCircle2 },
     running: { label: 'Running', color: 'text-amber-400', bgColor: 'bg-amber-500/10', icon: Loader2 },
     completed: { label: 'Done', color: 'text-emerald-400', bgColor: 'bg-emerald-500/10', icon: CheckCircle2 },
     failed: { label: 'Failed', color: 'text-red-400', bgColor: 'bg-red-500/10', icon: AlertTriangle },
-  skipped: { label: 'Skipped', color: 'text-neutral-600 dark:text-neutral-600 dark:text-neutral-400', bgColor: 'bg-neutral-500/10', icon: CheckCircle2 },
+  skipped: { label: 'Skipped', color: 'text-neutral-600 dark:text-neutral-400', bgColor: 'bg-neutral-500/10', icon: CheckCircle2 },
     blocked_approval: { label: 'Blocked', color: 'text-orange-400', bgColor: 'bg-orange-500/10', icon: AlertTriangle }
 };
 
@@ -117,7 +135,7 @@ function SearchTransparencyPanel({ sessions }: { sessions: SearchSession[] }) {
         <div className="w-full mb-6 relative">
             <button
                 onClick={() => setExpanded(!expanded)}
-                className="flex items-center gap-2 py-1 px-1 text-[13px] font-medium text-black/5 dark:text-black/50 dark:text-white/50 hover:text-black/80 dark:text-white/80 transition-colors"
+                className="flex items-center gap-2 py-1 px-1 text-[13px] font-medium text-black/40 dark:text-white/40 hover:text-black/80 dark:hover:text-white/80 transition-colors"
             >
                 {isAllComplete ? `Completed ${completedCount} step${completedCount !== 1 ? 's' : ''}` : `Executing ${sessions.length} step${sessions.length !== 1 ? 's' : ''}...`}
                 <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", !expanded && "-rotate-90")} />
@@ -152,7 +170,12 @@ function SearchTransparencyPanel({ sessions }: { sessions: SearchSession[] }) {
                                         </div>
                                         <div className="flex-1">
                                             <p className={cn("text-[14px] font-medium tracking-tight", isSearching ? "text-black/90 dark:text-white/90 animate-pulse" : "text-black/70 dark:text-white/70")}>
-                                                {isSearching ? `Scanning ${config.label} for matches...` : `Analyzing ${config.label} data for requested insights`}
+                                                {isSearching ? `Scanning ${config.label} for matches...` : (
+                                                    <span className="flex items-center">
+                                                        {`Analyzing ${config.label} data for requested insights`}
+                                                        <LoadingTimer />
+                                                    </span>
+                                                )}
                                             </p>
                                         </div>
                                     </div>
@@ -191,7 +214,7 @@ function SearchTransparencyPanel({ sessions }: { sessions: SearchSession[] }) {
                                             })}
                                             {session.resultCount && session.resultCount > session.selectedSnippets.length && (
                                                 <div className="pt-1">
-                                                    <span className="text-[12px] text-black/30 dark:text-white/30 font-medium hover:text-black/60 dark:text-white/60 cursor-pointer">
+                                                    <span className="text-[12px] text-black/30 dark:text-white/30 font-medium hover:text-black/60 dark:hover:text-white/60 cursor-pointer">
                                                         +{session.resultCount - session.selectedSnippets.length} more
                                                     </span>
                                                 </div>
@@ -231,7 +254,7 @@ function TodoGraphPanel({ graph }: { graph: TodoGraph }) {
                         "w-8 h-8 rounded-lg flex items-center justify-center",
                         isExecuting ? 'bg-blue-500/10 border border-blue-500/20' :
                         graph.status === 'completed' ? 'bg-emerald-500/10 border border-emerald-500/20' :
-                        'bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 border border-neutral-200 dark:border-white/10'
+                        'bg-black/[0.03] dark:bg-white/5 border border-neutral-200 dark:border-white/10'
                     )}>
                         <ListTodo className={cn(
                             "w-4 h-4",
@@ -270,7 +293,7 @@ function TodoGraphPanel({ graph }: { graph: TodoGraph }) {
                         {/* Progress Bar */}
                         {isExecuting && (
                             <div className="px-4 py-3 border-b border-neutral-200 dark:border-white/5">
-                                <div className="h-1.5 bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 rounded-full overflow-hidden">
+                                <div className="h-1.5 bg-black/[0.03] dark:bg-white/5 rounded-full overflow-hidden">
                                     <motion.div
                                         initial={{ width: 0 }}
                                         animate={{ width: `${progress}%` }}
@@ -311,7 +334,7 @@ function TodoItemRow({ todo, index }: { todo: TodoGraphItem; index: number }) {
                 isCompleted ? "bg-emerald-500/5 border-emerald-500/10" :
                 todo.status === 'failed' ? "bg-red-500/5 border-red-500/20" :
                 todo.status === 'blocked_approval' ? "bg-orange-500/5 border-orange-500/20" :
-                "bg-white/[0.02] border-neutral-200 dark:border-white/5 hover:border-neutral-200 dark:border-white/10"
+                "bg-white/[0.02] border-neutral-200 dark:border-white/5 hover:border-neutral-200 dark:hover:border-white/10"
             )}
         >
             <div className={cn(
@@ -395,8 +418,8 @@ export function ThinkingLayer({
                             <div className={cn(
                                 "mt-1 flex items-center justify-center w-4 h-4 rounded-full border shrink-0 transition-all duration-700",
                                 block.status === 'completed' 
-                                    ? "bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 border-neutral-300 dark:border-white/20 text-black/5 dark:text-black/50 dark:text-white/50" 
-                                    : "bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 border-neutral-200 dark:border-white/10 text-black/20 dark:text-white/20 ring-1 ring-white/10 ring-offset-0"
+                                    ? "bg-black/[0.05] dark:bg-white/10 border-neutral-300 dark:border-white/20 text-black/40 dark:text-white/40" 
+                                    : "bg-black/[0.03] dark:bg-white/5 border-neutral-200 dark:border-white/10 text-black/20 dark:text-white/20 ring-1 ring-white/10 ring-offset-0"
                             )}>
                                 {block.status === 'completed' ? (
                                     <CheckCircle2 className="w-2.5 h-2.5" />
@@ -417,7 +440,7 @@ export function ThinkingLayer({
                             <motion.p 
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
-                                className="pl-6.5 text-[14px] text-black/5 dark:text-black/50 dark:text-white/50 leading-relaxed tracking-tight max-w-[95%] font-medium"
+                                className="pl-6.5 text-[14px] text-black/50 dark:text-white/50 leading-relaxed tracking-tight max-w-[95%] font-medium"
                             >
                                 {block.initialContext}
                             </motion.p>
@@ -455,7 +478,7 @@ export function ThinkingLayer({
                             <motion.p 
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
-                                className="pl-6.5 text-[14px] text-black/5 dark:text-black/50 dark:text-white/50 leading-relaxed tracking-tight max-w-[95%] font-medium"
+                                className="pl-6.5 text-[14px] text-black/50 dark:text-white/50 leading-relaxed tracking-tight max-w-[95%] font-medium"
                             >
                                 {block.interimConclusion} {block.nextActionContext}
                             </motion.p>
@@ -464,10 +487,10 @@ export function ThinkingLayer({
                         {/* Preview (Small Data Square) */}
                         {block.isPreviewable && block.previewData && (
                             <div className="pl-6.5 mt-1">
-                                <div className="w-12 h-12 bg-white/[0.02] border border-neutral-200 dark:border-white/10 rounded-lg flex flex-col items-center justify-center p-2 group hover:bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 transition-all cursor-pointer">
-                                    <div className="w-full h-0.5 bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 rounded-full mb-1" />
-                                    <div className="w-3/4 h-0.5 bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 rounded-full mb-1" />
-                                    <div className="w-full h-0.5 bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 rounded-full" />
+                                <div className="w-12 h-12 bg-white/[0.02] border border-neutral-200 dark:border-white/10 rounded-lg flex flex-col items-center justify-center p-2 group hover:bg-black/[0.03] dark:hover:bg-white/5 transition-all cursor-pointer">
+                                    <div className="w-full h-0.5 bg-black/[0.05] dark:bg-white/10 rounded-full mb-1" />
+                                    <div className="w-3/4 h-0.5 bg-black/[0.05] dark:bg-white/10 rounded-full mb-1" />
+                                    <div className="w-full h-0.5 bg-black/[0.05] dark:bg-white/10 rounded-full" />
                                     <span className="text-[6px] text-black/20 dark:text-white/20 mt-1 uppercase font-black tracking-tighter">PREVIEW</span>
                                 </div>
                             </div>
@@ -484,7 +507,7 @@ export function ThinkingLayer({
                     className="pl-6.5 py-1"
                 >
                     <p className="text-[13px] text-black/40 dark:text-white/40 italic font-medium tracking-tight leading-relaxed flex items-center gap-2">
-                        <span className="w-1 h-3 bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 rounded-full animate-pulse" />
+                        <span className="w-1 h-3 bg-black/[0.05] dark:bg-white/10 rounded-full animate-pulse" />
                         {currentThought}
                     </p>
                 </motion.div>
@@ -536,22 +559,22 @@ export function ResultCard({ type, title, onView }: ResultCardProps) {
             whileHover={{ y: -1 }}
             whileTap={{ scale: 0.98 }}
             onClick={onView}
-            className="group relative flex items-center gap-4 p-5 mt-4 mb-4 w-full max-w-[400px] bg-neutral-50 dark:bg-[#111111] border border-neutral-200 dark:border-white/5 rounded-2xl transition-all hover:bg-neutral-100 dark:bg-[#161616] hover:border-neutral-200 dark:border-white/10"
+            className="group relative flex items-center gap-4 p-5 mt-4 mb-4 w-full max-w-[400px] bg-neutral-50 dark:bg-[#111111] border border-neutral-200 dark:border-white/5 rounded-2xl transition-all hover:bg-neutral-100 dark:hover:bg-[#161616] hover:border-neutral-200 dark:hover:border-white/10"
         >
-            <div className="w-10 h-10 rounded-xl bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 flex items-center justify-center shrink-0 border border-neutral-200 dark:border-white/5 group-hover:border-neutral-200 dark:border-white/10 group-hover:bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 transition-all text-black/40 dark:text-white/40 group-hover:text-black/80 dark:text-white/80">
+            <div className="w-10 h-10 rounded-xl bg-black/[0.03] dark:bg-white/5 flex items-center justify-center shrink-0 border border-neutral-200 dark:border-white/5 group-hover:border-neutral-200 dark:group-hover:border-white/10 group-hover:bg-black/[0.05] dark:group-hover:bg-white/10 transition-all text-black/40 dark:text-white/40 group-hover:text-black/80 dark:group-hover:text-white/80">
                 {resultIcons[type] || <Sparkles className="w-4 h-4" />}
             </div>
 
             <div className="flex flex-col items-start gap-0.5 flex-1 min-w-0">
-                <span className="text-black/90 dark:text-white/90 text-[14px] font-bold tracking-tight truncate group-hover:text-black dark:text-white transition-colors">
+                <span className="text-black/90 dark:text-white/90 text-[14px] font-bold tracking-tight truncate group-hover:text-black dark:group-hover:text-white transition-colors">>
                     {title || label}
                 </span>
-                <span className="text-[10px] font-bold tracking-widest uppercase text-black/20 dark:text-white/20 group-hover:text-black/40 dark:text-white/40 transition-colors">
+                <span className="text-[10px] font-bold tracking-widest uppercase text-black/20 dark:text-white/20 group-hover:text-black/40 dark:group-hover:text-white/40 transition-colors">>
                     {label}
                 </span>
             </div>
 
-            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 text-black/10 dark:text-white/10 group-hover:text-black/40 dark:text-white/40 transition-all">
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-black/[0.03] dark:bg-white/5 text-black/10 dark:text-white/10 group-hover:text-black/40 dark:group-hover:text-white/40 transition-all">
                 <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
             </div>
         </motion.button>

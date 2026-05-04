@@ -1562,7 +1562,7 @@ export default function ChatInterface({
   // ═══════════════════════════════════════════════════════════════════════════
   // AGENT LOOP — SSE-based agentic processing (Phase 1)
   // ═══════════════════════════════════════════════════════════════════════════
-  const processAgentLoopMessage = async (messageText: string, conversationIdToUse: string, isNew: boolean) => {
+  const processAgentLoopMessage = async (messageText: string, conversationIdToUse: string, isNew: boolean, options: any = {}) => {
     if (abortControllerRef.current) abortControllerRef.current.abort();
     abortControllerRef.current = new AbortController();
     const assistantMsgId = Date.now() + 1;
@@ -1598,7 +1598,8 @@ export default function ChatInterface({
           message: messageText,
           conversationId: conversationIdToUse,
           isNewConversation: isNew,
-          gmailAccessToken
+          gmailAccessToken,
+          modelId: options?.modelId
         }),
         signal: abortControllerRef.current.signal
       });
@@ -1958,10 +1959,10 @@ export default function ChatInterface({
     }
   };
 
-  async function processAIMessage(messageText: string, conversationIdToUse: string, isNew: boolean, attachments?: any[], options?: { isDeepThinking?: boolean; isCanvas?: boolean; isSearch?: boolean; isPlanMode?: boolean; modelId?: string }) {
+  async function processAIMessage(messageText: string, conversationIdToUse: string, isNew: boolean, attachments?: any[], options: any = {}) {
     // ── Agent Loop routing: Use the new autonomous SSE loop for ALL queries ──────
     // The AI will now autonomously decide to use search, canvas, or plan tools.
-    return processAgentLoopMessage(messageText, conversationIdToUse, isNew);
+    return processAgentLoopMessage(messageText, conversationIdToUse, isNew, options);
 
   };
 
@@ -2214,19 +2215,22 @@ export default function ChatInterface({
           const pendingMsg = localStorage.getItem('pending_arcus_message');
           const pendingOptionsRaw = localStorage.getItem('pending_arcus_options');
 
-          localStorage.removeItem('pending_arcus_id');
-          localStorage.removeItem('pending_arcus_message');
-          localStorage.removeItem('pending_arcus_options');
-
-          if (pendingMsg) {
-            console.log('Resuming pending AI call for new conversation:', conversationId);
-            let options = {};
-            try {
-              if (pendingOptionsRaw) options = JSON.parse(pendingOptionsRaw);
-            } catch (e) {
-              console.error('Error parsing pending options:', e);
+          try {
+            if (pendingMsg) {
+              console.log('Resuming pending AI call for new conversation:', conversationId);
+              let options = {};
+              try {
+                if (pendingOptionsRaw) options = JSON.parse(pendingOptionsRaw);
+              } catch (e) {
+                console.error('Error parsing pending options:', e);
+              }
+              processAIMessage(pendingMsg, conversationId, true, [], options);
             }
-            processAIMessage(pendingMsg, conversationId, true, [], options);
+          } finally {
+            // Explicitly clear pending state to prevent cross-contamination
+            localStorage.removeItem('pending_arcus_id');
+            localStorage.removeItem('pending_arcus_message');
+            localStorage.removeItem('pending_arcus_options');
           }
         }
       } catch (error) {

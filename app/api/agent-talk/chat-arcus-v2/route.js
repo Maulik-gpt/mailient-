@@ -164,7 +164,7 @@ export async function POST(request) {
     });
 
     // ── Run the loop as an SSE stream ─────────────────────────────────────
-    const stream = agentLoop.createStream(message);
+    const stream = agentLoop.createStream(message, { modelId: finalModelId });
 
     // Increment usage (fire-and-forget)
     if (userEmail) {
