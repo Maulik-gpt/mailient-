@@ -211,8 +211,8 @@ export async function GET(request: Request) {
       cumulativeEmailStore.delete(storeKey);
     }
 
-    // Phase 1: Fetch recent emails for analysis - reduced to 20 for faster initial load
-    const recentEmails = await gmailService.getEmails(20, 'in:inbox newer_than:60d', pageToken as any);
+    // Phase 1: Fetch recent emails for analysis - increased to 50 as requested
+    const recentEmails = await gmailService.getEmails(50, 'in:inbox newer_than:60d', pageToken as any);
     const allMessages = recentEmails.messages || [];
     const nextPageToken = recentEmails.nextPageToken;
 
@@ -231,7 +231,7 @@ export async function GET(request: Request) {
     });
 
     // Use combined IDs for analysis (limit to 50 for speed unless loading more)
-    const uniqueIds = combinedIds.slice(0, isLoadMore ? 60 : 30);
+    const uniqueIds = combinedIds.slice(0, isLoadMore ? 100 : 50);
 
     console.log(`📬 Fetching details for ${uniqueIds.length} emails in parallel...`);
     const gmailStartTime = Date.now();

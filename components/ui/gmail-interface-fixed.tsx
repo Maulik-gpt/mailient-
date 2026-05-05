@@ -2619,8 +2619,14 @@ export function GmailInterfaceFixed() {
                                                                     className="hidden"
                                                                     onChange={(e) => {
                                                                         if (e.target.files) {
-                                                                            setDraftAttachments(prev => [...prev, ...Array.from(e.target.files!)]);
-                                                                            toast.success(`${e.target.files.length} file(s) attached`);
+                                                                            const newFiles = Array.from(e.target.files);
+                                                                            const tooLarge = newFiles.some(f => f.size > 15 * 1024 * 1024);
+                                                                            if (tooLarge) {
+                                                                                toast.error("File size limit is 15MB. Please choose a smaller file.", { id: 'large-file' });
+                                                                                return;
+                                                                            }
+                                                                            setDraftAttachments(prev => [...prev, ...newFiles]);
+                                                                            toast.success(`${newFiles.length} file(s) attached`);
                                                                         }
                                                                     }}
                                                                 />

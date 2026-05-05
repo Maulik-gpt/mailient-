@@ -641,10 +641,10 @@ export class GmailService {
 
     if (isMultipart) {
       const parts = [];
-      headers.push(''); // blank line after headers
+      // Combine headers into the first part
       parts.push(headers.join('\r\n'));
-
-      // Body part
+      // Exactly one blank line before the first boundary
+      parts.push(''); 
       parts.push(`--${boundary}`);
       parts.push(`Content-Type: ${isHtml ? 'text/html' : 'text/plain'}; charset=UTF-8`);
       parts.push(''); // blank line before content
@@ -658,10 +658,10 @@ export class GmailService {
         parts.push(`Content-Transfer-Encoding: base64`);
         parts.push(''); // blank line before content
         
-        // Chunk the base64 content to standard 76 chars per line
+        // Chunk the base64 content to standard 76 chars per line efficiently
         const b64 = attachment.content;
-        const chunks = b64.match(/.{1,76}/g) || [];
-        parts.push(chunks.join('\r\n'));
+        // Use replace instead of match+join for much better performance on large files (videos)
+        parts.push(b64.replace(/(.{76})/g, "$1\r\n"));
       }
 
       parts.push(`--${boundary}--`);

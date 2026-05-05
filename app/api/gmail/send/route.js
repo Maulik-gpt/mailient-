@@ -1,5 +1,6 @@
 import { GmailService } from '@/lib/gmail';
 import { auth } from '@/lib/auth.js';
+export const maxDuration = 60; // Increase to 60s for large attachments
 
 export async function POST(request) {
   try {
