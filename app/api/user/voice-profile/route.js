@@ -29,6 +29,9 @@ export async function GET() {
     }
 }
 
+/**
+ * POST — Run email analysis (Method 2) to bootstrap/refresh the profile
+ */
 export async function POST() {
     try {
         const session = await auth();
@@ -69,6 +72,58 @@ export async function POST() {
         return Response.json({ success: true, profile });
     } catch (error) {
         console.error('Error re-analyzing voice profile:', error);
+        return Response.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
+    }
+}
+
+/**
+ * PUT — Save manual profile settings (Method 1: tone sliders, habits, custom instructions)
+ */
+export async function PUT(request) {
+    try {
+        const session = await auth();
+        if (!session?.user?.email) {
+            return Response.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const userId = session.user.email;
+        const body = await request.json();
+        const { tone, habits, customInstructions, learning, activeProfile } = body;
+
+        // Fetch existing profile or create new one
+        const existing = await voiceProfileService.getVoiceProfile(userId);
+        const profile = existing || voiceProfileService.getDefaultVoiceProfile();
+
+        // Merge manual settings into profile — v2 schema
+        profile.manual_settings = {
+            tone: {
+                formality: tone?.formality ?? 50,     // 0=Casual, 100=Formal
+                detail: tone?.detail ?? 40,           // 0=Brief, 100=Detailed
+                warmth: tone?.warmth ?? 50,           // 0=Warm, 100=Direct
+                confidence: tone?.confidence ?? 30,   // 0=Reserved, 100=Confident
+            },
+            habits: Array.isArray(habits) ? habits : [],
+            customInstructions: typeof customInstructions === 'string' ? customInstructions : '',
+            activeProfile: activeProfile || 'work',
+        };
+
+        // Learning preferences
+        profile.learning = {
+            autoImprove: learning?.autoImprove ?? true,
+            lastAnalysis: profile.learning?.lastAnalysis || null,
+        };
+
+        // Rebuild prompt fragment to incorporate manual settings
+        profile.prompt_fragment = voiceProfileService.buildManualPromptFragment(profile.manual_settings, profile);
+
+        profile.status = profile.status === 'default' ? 'manual' : profile.status;
+        profile.updated_at = new Date().toISOString();
+
+        await voiceProfileService.saveVoiceProfile(userId, profile);
+
+        return Response.json({ success: true, profile });
+    } catch (error) {
+        console.error('Error saving manual voice profile:', error);
         return Response.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
     }
 }

@@ -266,6 +266,7 @@ export function GmailInterfaceFixed() {
     const [linkInputUrl, setLinkInputUrl] = useState('');
     const [draftAttachments, setDraftAttachments] = useState<File[]>([]);
     const attachmentInputRef = useRef<HTMLInputElement>(null);
+    const originalAiDraftRef = useRef<string>('');
 
     // --- All State Hooks ---
 
@@ -950,6 +951,8 @@ export function GmailInterfaceFixed() {
                     
                     // Update content immediately
                     setDraftContent(renderMarkdown(decodeEntities(accumulated)));
+                    // Save original AI draft for continuous learning
+                    originalAiDraftRef.current = renderMarkdown(decodeEntities(accumulated));
 
                     // Hide "Crafting" overlay once we have real content to show
                     if (!hasShownFirstContent && accumulated.trim().length > 0) {
@@ -1490,6 +1493,22 @@ export function GmailInterfaceFixed() {
                 console.log('✅ Email sent successfully:', data);
                 toast.success('Email sent successfully!', { id: toastId });
                 triggerSuccessConfetti(); // Dopamine boost!
+
+                // Method 3: Continuous Learning — diff AI draft vs user's final version
+                if (originalAiDraftRef.current && editorHtml) {
+                    try {
+                        fetch('/api/user/voice-profile/learn', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                aiDraft: originalAiDraftRef.current,
+                                userFinal: editorHtml,
+                            })
+                        }).catch(() => {}); // Fire-and-forget
+                    } catch (e) { /* non-blocking */ }
+                }
+                originalAiDraftRef.current = '';
+
                 setShowDraftEditor(false);
                 setDraftContent('');
                 setDraftAttachments([]);
@@ -2707,6 +2726,16 @@ export function GmailInterfaceFixed() {
                                                                             ))}
                                                                         </div>
                                                                     )}
+                                                                    {/* Voice Profile Link */}
+                                                                    <div className="mt-4 pt-3 border-t border-white/[0.04]">
+                                                                        <button
+                                                                            onClick={() => setIsVoiceProfileModalOpen(true)}
+                                                                            className="text-[13px] text-white/30 underline underline-offset-2 decoration-white/15 hover:text-white/60 hover:decoration-white/30 transition-all font-medium flex items-center gap-1.5"
+                                                                        >
+                                                                            <Mic className="w-3 h-3" />
+                                                                            Voice Profile
+                                                                        </button>
+                                                                    </div>
                                                                 </>
                                                             )}
 
@@ -3223,6 +3252,7 @@ export function GmailInterfaceFixed() {
                     onCreate={handleCreateVoiceProfile}
                     onReAnalyze={handleCreateVoiceProfile}
                     isAnalyzing={isAnalyzingVoice}
+                    onProfileUpdated={(p: any) => setUserVoiceProfile(p)}
                 />
                 {/* Arcus Quick Chat Replacement */}
                 <ArcusQuickChat 
