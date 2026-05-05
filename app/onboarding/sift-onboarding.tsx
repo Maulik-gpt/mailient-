@@ -150,6 +150,11 @@ export default function SiftOnboardingPage() {
   const [strategyMode, setStrategyMode] = useState<string | null>(null);
   const [focusArea, setFocusArea] = useState<string | null>(null);
 
+  // Voice Profile Manual Setup State
+  const [vpFormality, setVpFormality] = useState<number>(50);
+  const [vpHabits, setVpHabits] = useState<string[]>([]);
+  const [vpSignOff, setVpSignOff] = useState<string>("");
+
   // Profile state
   const [profileName, setProfileName] = useState("");
   const [username, setUsername] = useState("");
@@ -262,7 +267,7 @@ export default function SiftOnboardingPage() {
 
   // Step 2 Logic: Advances through sub-steps
   const handleIdentityNext = () => {
-    if (identityStep < 6) {
+    if (identityStep < 9) {
       setIdentityStep(prev => prev + 1);
     } else {
       handleNext();
@@ -396,6 +401,24 @@ export default function SiftOnboardingPage() {
       if (!response.ok) throw new Error("Failed");
 
       localStorage.setItem('onboarding_completed', 'true');
+      
+      // Save manual voice profile settings
+      try {
+        await fetch("/api/user/voice-profile", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tone: { formality: vpFormality, detail: 50, warmth: 50, confidence: 50 },
+            habits: [...vpHabits, vpSignOff ? `Signs off with "${vpSignOff}"` : ''].filter(Boolean),
+            customInstructions: customInstruction,
+            learning: { autoImprove: true },
+            activeProfile: 'work'
+          })
+        });
+      } catch (e) {
+        console.error("Failed to save voice profile:", e);
+      }
+
       if (plan === 'free') {
         router.push('/home-feed');
         return;
@@ -642,7 +665,97 @@ export default function SiftOnboardingPage() {
                       className="w-full p-6 bg-zinc-950/50 border border-white/10 rounded-[2rem] text-white text-lg min-h-[160px] focus:outline-none focus:border-white/30 transition-all placeholder:text-zinc-700"
                     />
                     <LiquidButton onClick={handleIdentityNext} className="w-full h-14 text-white font-bold">
-                      Complete Setup
+                      Next
+                    </LiquidButton>
+                  </div>
+                </motion.div>
+              )}
+
+              {identityStep === 7 && (
+                <motion.div key="q8" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-10">
+                  <div className="space-y-2">
+                    <span className="text-xs uppercase tracking-widest text-[#7db4f5] font-bold">Voice Profile Setup (1/3)</span>
+                    <h2 className="text-4xl font-medium text-white">How formal are you at work?</h2>
+                    <p className="text-zinc-500">This sets the baseline tone for AI drafts.</p>
+                  </div>
+                  <div className="space-y-12 py-10">
+                    <div className="relative">
+                      <input
+                        type="range" min="0" max="100" step="1"
+                        value={vpFormality}
+                        onChange={(e) => setVpFormality(parseInt(e.target.value))}
+                        className="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-[#7db4f5]"
+                      />
+                      <div className="flex justify-between mt-6 text-zinc-500 text-sm">
+                        <span>Very Casual</span>
+                        <span>Professional</span>
+                        <span>Highly Formal</span>
+                      </div>
+                    </div>
+                  </div>
+                  <LiquidButton onClick={handleIdentityNext} className="w-full h-14 text-white font-bold">
+                    Next
+                  </LiquidButton>
+                </motion.div>
+              )}
+
+              {identityStep === 8 && (
+                <motion.div key="q9" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-10">
+                  <div className="space-y-2">
+                    <span className="text-xs uppercase tracking-widest text-[#7db4f5] font-bold">Voice Profile Setup (2/3)</span>
+                    <h2 className="text-4xl font-medium text-white">What are your writing habits?</h2>
+                    <p className="text-zinc-500">Select any formatting quirks you typically use.</p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {[
+                      "Uses bullet points often",
+                      "Starts with pleasantries",
+                      "Gets straight to the point",
+                      "Uses emojis sparingly",
+                      "Keeps it strictly under 5 sentences"
+                    ].map((habit) => (
+                      <button
+                        key={habit}
+                        onClick={() => {
+                          setVpHabits(prev => prev.includes(habit) ? prev.filter(h => h !== habit) : [...prev, habit]);
+                        }}
+                        className={cn(
+                          "group p-4 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between",
+                          vpHabits.includes(habit)
+                            ? "bg-white/10 border-white/40 text-white"
+                            : "bg-zinc-950/20 border-white/5 text-zinc-400 hover:border-white/10"
+                        )}
+                      >
+                        <span className="text-sm">{habit}</span>
+                        {vpHabits.includes(habit) && <Check className="w-4 h-4" />}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="pt-4">
+                    <LiquidButton onClick={handleIdentityNext} className="w-full h-14 text-white font-bold">
+                      Next
+                    </LiquidButton>
+                  </div>
+                </motion.div>
+              )}
+
+              {identityStep === 9 && (
+                <motion.div key="q10" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-10">
+                  <div className="space-y-2">
+                    <span className="text-xs uppercase tracking-widest text-[#7db4f5] font-bold">Voice Profile Setup (3/3)</span>
+                    <h2 className="text-4xl font-medium text-white">What's your typical sign-off?</h2>
+                    <p className="text-zinc-500">e.g. "Best,", "Cheers,", "Thanks,"</p>
+                  </div>
+                  <div className="space-y-6">
+                    <input
+                      type="text"
+                      value={vpSignOff}
+                      onChange={(e) => setVpSignOff(e.target.value)}
+                      placeholder="e.g. Best,"
+                      className="w-full p-6 bg-zinc-950/50 border border-white/10 rounded-[2rem] text-white text-xl focus:outline-none focus:border-white/30 transition-all placeholder:text-zinc-700"
+                    />
+                    <LiquidButton onClick={handleIdentityNext} className="w-full h-14 text-white font-bold">
+                      Complete Identity Setup
                     </LiquidButton>
                   </div>
                 </motion.div>
