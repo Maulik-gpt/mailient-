@@ -230,8 +230,8 @@ export async function GET(request: Request) {
       timestamp: Date.now() 
     });
 
-    // Use combined IDs for analysis (limit to 50 for speed unless loading more)
-    const uniqueIds = combinedIds.slice(0, isLoadMore ? 100 : 50);
+    // Use combined IDs for analysis (Strict 45 limit to match Sift mission)
+    const uniqueIds = combinedIds.slice(0, 45);
 
     console.log(`📬 Fetching details for ${uniqueIds.length} emails in parallel...`);
     const gmailStartTime = Date.now();
