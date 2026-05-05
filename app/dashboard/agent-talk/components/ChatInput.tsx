@@ -899,7 +899,7 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
                 className="absolute -top-9 left-6 px-3 py-1.5 bg-[#0a0a0b]/80 border border-neutral-200 dark:border-white/10 rounded-xl flex items-center gap-2.5 backdrop-blur-xl z-20"
               >
                 <div className="relative flex items-center justify-center w-2 h-2">
-                  <div className={`absolute inset-0 rounded-full blur-[2px] ${recordingState === 'recording' ? 'bg-black/[0.03] dark:bg-black/[0.025] dark:bg-black/[0.03] dark:bg-white/50 animate-pulse' : 'bg-black/[0.010] dark:bg-white/20'}`} />
+                  <div className={`absolute inset-0 rounded-full blur-[2px] ${recordingState === 'recording' ? 'bg-black/[0.03] dark:bg-white/50 animate-pulse' : 'bg-black/[0.010] dark:bg-white/20'}`} />
                   <div className={`w-2 h-2 rounded-full ${recordingState === 'recording' ? 'bg-white animate-pulse' : 'bg-black/[0.020] dark:bg-white/40'}`} />
                 </div>
                 <span className="text-[10px] uppercase tracking-widest text-black/60 dark:text-white/60">
@@ -923,7 +923,7 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
                   </span>
                   <button
                     onClick={() => removeSelectedEmail(email.id)}
-                    className="ml-2.5 p-1 hover:bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 rounded-lg text-black/20 dark:text-white/20 hover:text-black dark:text-white transition-all"
+                    className="ml-2.5 p-1 hover:bg-black/[0.03] hover:dark:bg-white/5 rounded-lg text-black/20 dark:text-white/20 hover:text-black hover:dark:text-white transition-all"
                   >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
@@ -942,7 +942,7 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
                   <TooltipTrigger asChild>
                     <button
                       onClick={() => onModalStateChange?.(true)}
-                      className="w-9 h-9 flex items-center justify-center text-black/20 dark:text-white/20 hover:text-black dark:text-white hover:bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 rounded-xl transition-all outline-none border-none"
+                      className="w-9 h-9 flex items-center justify-center text-black/20 dark:text-white/20 hover:text-black hover:dark:text-white hover:bg-black/[0.03] hover:dark:bg-white/5 rounded-xl transition-all outline-none border-none"
                     >
                       <Plus className="w-4.5 h-4.5" />
                     </button>
@@ -958,7 +958,7 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
                   <TooltipTrigger asChild>
                     <button
                       onClick={() => onEmailModalStateChange?.(true)}
-                      className="w-9 h-9 flex items-center justify-center text-black/20 dark:text-white/20 hover:text-black dark:text-white hover:bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 rounded-xl transition-all relative outline-none border-none"
+                      className="w-9 h-9 flex items-center justify-center text-black/20 dark:text-white/20 hover:text-black hover:dark:text-white hover:bg-black/[0.03] hover:dark:bg-white/5 rounded-xl transition-all relative outline-none border-none"
                     >
                       <EmailIcon className="w-4 h-4" />
                       <div className="absolute top-2 right-2 w-1.5 h-1.5 bg-black/[0.020] dark:bg-white/40 rounded-full blur-[1px]"></div>
@@ -980,7 +980,7 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
                 onKeyDown={handleKeyDown}
                 placeholder={placeholderText}
                 disabled={disabled}
-                className="w-full resize-none bg-transparent text-black dark:text-white placeholder:text-black/20 dark:text-white/20 focus:outline-none border-none p-0 min-h-[24px] max-h-40 text-[14px] leading-relaxed selection:bg-white selection:text-black"
+                className="w-full resize-none bg-transparent text-black dark:text-white placeholder:text-black/20 dark:placeholder:text-white/20 focus:outline-none border-none p-0 min-h-[24px] max-h-40 text-[14px] leading-relaxed selection:bg-white selection:text-black"
                 rows={1}
               />
             </div>
@@ -988,10 +988,10 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
             {/* Controls (Right) */}
             <div className="flex items-center gap-1.5 mb-1.5 flex-shrink-0">
               {recordingState !== 'idle' ? (
-                <div className="flex items-center gap-1 bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 rounded-2xl p-1">
+                <div className="flex items-center gap-1 bg-black/[0.03] dark:bg-white/5 rounded-2xl p-1">
                   <button
                     onClick={cancelRecording}
-                    className="w-8 h-8 flex items-center justify-center text-black/40 dark:text-white/40 hover:text-black dark:text-white hover:bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 rounded-xl transition-all"
+                    className="w-8 h-8 flex items-center justify-center text-black/40 dark:text-white/40 hover:text-black hover:dark:text-white hover:bg-black/[0.05] hover:dark:bg-white/10 rounded-xl transition-all"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
@@ -1018,7 +1018,7 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
                       <button
                         onClick={startRecording}
                         disabled={disabled}
-                        className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all outline-none border-none ${isListening ? 'text-black dark:text-white bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10' : 'text-black/20 dark:text-white/20 hover:text-black dark:text-white hover:bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5'}`}
+                        className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all outline-none border-none ${isListening ? 'text-black dark:text-white bg-black/[0.05] dark:bg-white/10' : 'text-black/20 dark:text-white/20 hover:text-black hover:dark:text-white hover:bg-black/[0.03] hover:dark:bg-white/5'}`}
                       >
                         {isListening ? (
                           <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
@@ -1044,6 +1044,9 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
             </div>
           </div>
         </div>
+      </div>
+      <div className="mt-3 text-center text-[11px] text-white/50 tracking-wide">
+        AI is training. Please do not upload any personal, confidential, or sensitive information
       </div>
       <style jsx>{`
         textarea:focus, textarea:active, textarea:focus-visible {

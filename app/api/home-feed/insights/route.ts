@@ -211,13 +211,13 @@ export async function GET(request: Request) {
       cumulativeEmailStore.delete(storeKey);
     }
 
-    // Phase 1: Fetch recent emails for analysis - increased to 50 as requested
-    const recentEmails = await gmailService.getEmails(50, 'in:inbox newer_than:60d', pageToken as any);
+    // Phase 1: Fetch recent emails for analysis - fixed to 45 as requested
+    const recentEmails = await gmailService.getEmails(45, 'in:inbox newer_than:60d', pageToken as any);
     const allMessages = recentEmails.messages || [];
     const nextPageToken = recentEmails.nextPageToken;
 
-    // Get new email IDs (up to 50)
-    const newEmailIds: string[] = allMessages.slice(0, 30).map((m: any) => m.id);
+    // Get new email IDs (fixed to 45)
+    const newEmailIds: string[] = allMessages.slice(0, 45).map((m: any) => m.id);
     
     // Combine with previous emails (for load more) and deduplicate
     const combinedIds = [...new Set([...previousEmailIds, ...newEmailIds])];
