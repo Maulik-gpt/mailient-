@@ -850,7 +850,7 @@ export default function SiftOnboardingPage() {
           </motion.div>
         );
 
-      case 6: // CONTROL & TRUST
+      case 5: // CONTROL & TRUST
         return (
           <motion.div key="step-5" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="max-w-3xl mx-auto px-6 text-center space-y-12">
             <div className="space-y-6">
