@@ -9,7 +9,7 @@ import { Button } from './button';
 import { SettingsCard } from './settings-card';
 import { Badge } from './badge';
 import { HomeFeedSidebar } from './home-feed-sidebar';
-import { RefreshCw, AlertCircle, TrendingUp, Clock, Target, Zap, Mail, Home, X, User, Sparkles, ArrowLeft, LayoutList, Inbox, ExternalLink, Download, FilePlus, ChevronDown, ChevronRight, Plus, Users, Building, Phone, Loader2, MessageCircle, Send, ArrowUp, CornerDownLeft, Menu, Shield, Activity, PanelLeft, Mic, Copy, Link as LinkIcon, Bold, Italic, Paperclip, Check, Calendar, AlertTriangle, FileText } from 'lucide-react';
+import { RefreshCw, AlertCircle, TrendingUp, Clock, Target, Zap, Mail, Home, X, User, Sparkles, ArrowLeft, LayoutList, Inbox, ExternalLink, Download, FilePlus, ChevronDown, ChevronRight, Plus, Users, Building, Phone, Loader2, MessageCircle, Send, ArrowUp, CornerDownLeft, Menu, Shield, Activity, PanelLeft, Mic, Copy, Link as LinkIcon, Bold, Italic, Paperclip, Check, Calendar, AlertTriangle, FileText, PenTool } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './avatar';
 import { toast } from 'sonner';
 import { HelpCard } from './help-card';
@@ -880,6 +880,66 @@ export function GmailInterfaceFixed() {
     const [draftSubject, setDraftSubject] = useState('');
     const [draftTo, setDraftTo] = useState('');
     const [draftOriginalEmailBody, setDraftOriginalEmailBody] = useState('');
+    const handleTraditionalDraftReply = async (email: any) => {
+        setIsDrafting(true);
+        setShowDraftEditor(true);
+        setDraftContent('');
+        
+        setDraftTo(email.from?.match(/<(.+)>/)?.[1] || email.from);
+        setDraftSubject(`Re: ${email.subject}`);
+        setDraftOriginalEmailBody(email.body || email.snippet || '');
+        
+        try {
+            const response = await fetch('/api/email/draft-reply?stream=true', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${(session as any)?.accessToken || ''}`
+                },
+                body: JSON.stringify({
+                    emailId: email.id,
+                    category: 'general',
+                    tone: settings.aiTone,
+                    aiProtection: settings.aiProtection,
+                    privacyMode: settings.privacyMode,
+                    voiceProfile: userVoiceProfile,
+                    emailContent: email.body || email.snippet || '',
+                    emailSubject: email.subject || 'Re:',
+                    emailFrom: email.from || '',
+                    emailSnippet: email.snippet || ''
+                })
+            });
+
+            if (!response.ok) throw new Error('Failed to generate draft');
+
+            const reader = response.body?.getReader();
+            const decoder = new TextDecoder();
+            let accumulated = '';
+            let hasShownFirstContent = false;
+            
+            if (reader) {
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    accumulated += decoder.decode(value, { stream: true });
+                    
+                    const processed = renderMarkdown(decodeEntities(accumulated));
+                    setDraftContent(processed);
+                    originalAiDraftRef.current = processed;
+
+                    if (!hasShownFirstContent && accumulated.trim().length > 0) {
+                        setIsDrafting(false);
+                        hasShownFirstContent = true;
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error drafting traditional reply:', error);
+            toast.error('Failed to generate AI draft');
+        } finally {
+            setIsDrafting(false);
+        }
+    };
 
     // ... (keep existing handleEmailClick)
 
@@ -2128,6 +2188,16 @@ export function GmailInterfaceFixed() {
                                                                 >
                                                                     <img src="/arcus-ai-icon.jpg" alt="Ask AI" className="w-full h-full object-cover brightness-90 group-hover:brightness-110 transition-all grayscale" />
                                                                 </button>
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleTraditionalDraftReply(email);
+                                                                    }}
+                                                                    className="w-9 h-9 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-emerald-500/20 rounded-xl text-black dark:text-white/30 hover:text-black dark:hover:text-emerald-400 transition-all border border-neutral-200 dark:border-white/5 flex items-center justify-center"
+                                                                    title="AI Draft Reply"
+                                                                >
+                                                                    <PenTool className="w-4 h-4" />
+                                                                </button>
                                                                 <ChevronRight className="w-4 h-4 text-neutral-400 group-hover:translate-x-1 transition-transform" />
                                                             </div>
                                                             <div className="absolute inset-y-0 left-0 w-1 bg-black dark:bg-white scale-y-0 group-hover:scale-y-100 transition-transform origin-center" />
@@ -3182,9 +3252,16 @@ export function GmailInterfaceFixed() {
                                                             <div className="flex items-center gap-4">
                                                                 <button
                                                                     onClick={() => { setDraftTo(selectedTraditionalEmail.from?.match(/<(.+)>/)?.[1] || selectedTraditionalEmail.from); setDraftSubject(`Re: ${selectedTraditionalEmail.subject}`); setDraftContent(''); setShowDraftEditor(true); }}
-                                                                    className="px-10 py-4 bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/10 hover:border-white/20 rounded-2xl text-base font-medium text-black hover:text-black dark:text-white transition-all"
+                                                                    className="px-8 py-4 bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/10 hover:border-white/20 rounded-2xl text-base font-medium text-black hover:text-black dark:text-white transition-all"
                                                                 >
                                                                     Reply
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleTraditionalDraftReply(selectedTraditionalEmail)}
+                                                                    className="px-8 py-4 bg-emerald-500/10 dark:bg-emerald-500/5 border border-emerald-500/20 hover:border-emerald-500/40 rounded-2xl text-base font-medium text-emerald-600 dark:text-emerald-400 transition-all flex items-center gap-3"
+                                                                >
+                                                                    <PenTool className="w-5 h-5" />
+                                                                    AI Reply
                                                                 </button>
                                                                 <button
                                                                     onClick={() => window.open(`https://mail.google.com/mail/u/0/#inbox/${selectedTraditionalEmail.id}`, '_blank')}
