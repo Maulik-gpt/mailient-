@@ -907,7 +907,7 @@ export function GmailInterfaceFixed() {
                     aiProtection: settings.aiProtection,
                     privacyMode: settings.privacyMode,
                     voiceProfile: userVoiceProfile,
-                    emailContent: email.body || email.snippet || '',
+                    emailContent: (email.body || email.snippet || '').substring(0, 3000),
                     emailSubject: email.subject || 'Re:',
                     emailFrom: email.from || '',
                     emailSnippet: email.snippet || ''
