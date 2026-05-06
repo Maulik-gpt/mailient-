@@ -1830,11 +1830,20 @@ export function GmailInterfaceFixed() {
                                             </a>
                                         </div>
                                     ) : (
-                                        <div className="p-4 border border-neutral-200 dark:border-zinc-800 rounded-xl bg-zinc-900/30">
+                                        <div className="p-4 border border-neutral-200 dark:border-zinc-800 rounded-xl bg-zinc-900/30 flex items-center justify-between">
                                             <div className="flex items-center gap-3">
                                                 <AlertCircle className="h-4 w-4 text-neutral-600 dark:text-zinc-500" />
                                                 <p className="text-sm text-neutral-600 dark:text-zinc-400 font-light">{error}</p>
                                             </div>
+                                            {(error.toLowerCase().includes('refresh token') || error.toLowerCase().includes('expired')) && (
+                                                <Button
+                                                    onClick={handleSignOut}
+                                                    variant="outline"
+                                                    className="h-8 px-4 text-xs bg-transparent hover:bg-white/5 text-neutral-300 border-neutral-700/50 flex-shrink-0"
+                                                >
+                                                    Sign In Again
+                                                </Button>
+                                            )}
                                         </div>
                                     )}
                                 </div>
