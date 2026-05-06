@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { AnimatePresence, motion, type PanInfo, useAnimation, useDragControls, LayoutGroup } from 'framer-motion';
-import { useSession, signIn } from 'next-auth/react';
+import { useSession, signIn, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { SiftCard } from './sift-card';
 import { Button } from './button';
@@ -1837,7 +1837,7 @@ export function GmailInterfaceFixed() {
                                             </div>
                                             {(error.toLowerCase().includes('refresh token') || error.toLowerCase().includes('expired')) && (
                                                 <Button
-                                                    onClick={handleSignOut}
+                                                    onClick={() => signOut({ callbackUrl: '/' })}
                                                     variant="outline"
                                                     className="h-8 px-4 text-xs bg-transparent hover:bg-white/5 text-neutral-300 border-neutral-700/50 flex-shrink-0"
                                                 >
