@@ -29,9 +29,7 @@ import {
     Filter,
     ChevronDown,
     Quote,
-    ArrowRightLeft,
-    Instagram,
-    Twitter
+    ArrowRightLeft
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -39,7 +37,9 @@ import { BackgroundShaders } from "@/components/ui/background-paper-shaders"
 import { PricingSection } from "@/components/ui/pricing"
 import { useRouter } from "next/navigation"
 import { useSession, signIn } from "next-auth/react"
+import { HeroGeometric } from "@/components/ui/shape-landing-hero"
 import { LiquidButton } from "@/components/ui/liquid-glass-button"
+import { CTASection } from "@/components/ui/hero-dithering-card"
 import { useSmoothScroll } from "@/hooks/use-smooth-scroll"
 
 declare global {
@@ -123,103 +123,6 @@ export function LinearLanding() {
     const [activeStep, setActiveStep] = useState(0)
     const containerRef = useRef<HTMLDivElement>(null)
 
-    const videoRef = useRef<HTMLVideoElement>(null)
-    const fadeAnimIdRef = useRef<number | null>(null)
-    const fadingOutRef = useRef<boolean>(false)
-    const hasStartedRef = useRef<boolean>(false)
-    const timeoutRef = useRef<any>(null)
-
-    const fadeTo = (targetOpacity: number, duration: number) => {
-        if (fadeAnimIdRef.current !== null) {
-            cancelAnimationFrame(fadeAnimIdRef.current)
-        }
-        const startTime = performance.now()
-        const startOpacity = parseFloat(videoRef.current?.style.opacity || "0")
-
-        const animate = (now: number) => {
-            const elapsed = now - startTime
-            const progress = Math.min(elapsed / duration, 1)
-            const currentOpacity = startOpacity + (targetOpacity - startOpacity) * progress
-
-            if (videoRef.current) {
-                videoRef.current.style.opacity = currentOpacity.toString()
-            }
-
-            if (progress < 1) {
-                fadeAnimIdRef.current = requestAnimationFrame(animate)
-            } else {
-                fadeAnimIdRef.current = null
-            }
-        }
-
-        fadeAnimIdRef.current = requestAnimationFrame(animate)
-    }
-
-    const handleTimeUpdate = () => {
-        const video = videoRef.current
-        if (!video) return
-
-        const remainingTime = video.duration - video.currentTime
-        if (remainingTime <= 0.55 && !fadingOutRef.current) {
-            fadingOutRef.current = true
-            fadeTo(0, 500)
-        }
-    }
-
-    const handleEnded = () => {
-        const video = videoRef.current
-        if (!video) return
-
-        if (fadeAnimIdRef.current !== null) {
-            cancelAnimationFrame(fadeAnimIdRef.current)
-            fadeAnimIdRef.current = null
-        }
-        video.style.opacity = "0"
-
-        timeoutRef.current = setTimeout(() => {
-            video.currentTime = 0
-            video.play()
-                .then(() => {
-                    fadingOutRef.current = false
-                    fadeTo(1, 500)
-                })
-                .catch((err) => console.log("Video play error on ended:", err))
-        }, 100)
-    }
-
-    const handleCanPlay = () => {
-        if (!hasStartedRef.current) {
-            hasStartedRef.current = true
-            videoRef.current?.play()
-                .then(() => {
-                    fadeTo(1, 500)
-                })
-                .catch((err) => console.log("Video play error on play:", err))
-        }
-    }
-
-    useEffect(() => {
-        const video = videoRef.current
-        if (video) {
-            video.play()
-                .then(() => {
-                    hasStartedRef.current = true
-                    fadeTo(1, 500)
-                })
-                .catch((err) => {
-                    console.log("Auto-play blocked, waiting for canplay or interaction:", err)
-                })
-        }
-        return () => {
-            if (fadeAnimIdRef.current !== null) {
-                cancelAnimationFrame(fadeAnimIdRef.current)
-            }
-            if (timeoutRef.current !== null) {
-                clearTimeout(timeoutRef.current)
-            }
-        }
-    }, [])
-
     // Google One Tap Login Initialization
     useEffect(() => {
         // Only trigger for unauthenticated guest users
@@ -288,183 +191,112 @@ export function LinearLanding() {
 
     return (
         <div ref={containerRef} className="relative min-h-screen bg-black text-white selection:bg-white selection:text-black font-satoshi overflow-x-hidden scroll-smooth">
-            {/* Global style for Instrument Serif and Liquid Glass styling */}
-            <style dangerouslySetInnerHTML={{ __html: `
-                @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap');
-                
-                .liquid-glass {
-                    background: rgba(255, 255, 255, 0.01);
-                    background-blend-mode: luminosity;
-                    backdrop-filter: blur(4px);
-                    -webkit-backdrop-filter: blur(4px);
-                    border: none;
-                    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
-                    position: relative;
-                    overflow: hidden;
-                }
+            {/* Background Layer - Optimized */}
+            <div className="fixed inset-0 z-0 pointer-events-none select-none" style={{ willChange: "transform" }}>
+                <BackgroundShaders />
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
+            </div>
 
-                .liquid-glass::before {
-                    content: "";
-                    position: absolute;
-                    inset: 0;
-                    border-radius: inherit;
-                    padding: 1.4px;
-                    background: linear-gradient(180deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.15) 20%, rgba(255,255,255,0) 40%, rgba(255,255,255,0) 60%, rgba(255,255,255,0.15) 80%, rgba(255,255,255,0.45) 100%);
-                    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-                    -webkit-mask-composite: xor;
-                    mask-composite: exclude;
-                    pointer-events: none;
-                }
-            ` }} />
-
-            {/* Cinematic Full-Screen Hero Section */}
-            <header className="relative min-h-screen w-full bg-black flex flex-col overflow-hidden">
-                {/* Background Video */}
-                <video
-                    ref={videoRef}
-                    src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260328_115001_bcdaa3b4-03de-47e7-ad63-ae3e392c32d4.mp4"
-                    muted
-                    autoPlay
-                    playsInline
-                    onTimeUpdate={handleTimeUpdate}
-                    onEnded={handleEnded}
-                    onCanPlay={handleCanPlay}
-                    className="absolute inset-0 w-full h-full object-cover translate-y-[17%] pointer-events-none z-0"
-                    style={{ opacity: 0 }}
-                />
-                
-                {/* Dark Vignette Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/80 pointer-events-none z-[1]" />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/40 pointer-events-none z-[1]" />
-
-                {/* Navigation Bar */}
-                <nav className="relative z-20 px-6 py-6 w-full">
-                    <div className="liquid-glass rounded-full px-6 py-3 flex items-center justify-between max-w-5xl mx-auto w-full">
-                        {/* Left Side: Brand Logo & Name */}
+            {/* Navigation */}
+            <motion.nav
+                initial={false}
+                animate={scrolled ? "scrolled" : "top"}
+                variants={{
+                    top: {
+                        width: "95%",
+                        maxWidth: "1280px",
+                        backgroundColor: "rgba(0, 0, 0, 0)",
+                        backdropFilter: "blur(0px)",
+                        borderRadius: "0px",
+                        paddingTop: "24px",
+                        paddingBottom: "24px",
+                        y: 0,
+                        borderWidth: "1px",
+                        borderColor: "rgba(255, 255, 255, 0)",
+                    },
+                    scrolled: {
+                        width: "85%",
+                        maxWidth: "1024px",
+                        backgroundColor: "rgba(0, 0, 0, 0.4)",
+                        backdropFilter: "blur(16px)",
+                        borderRadius: "32px",
+                        paddingTop: "12px",
+                        paddingBottom: "12px",
+                        y: 12,
+                        borderWidth: "1px",
+                        borderColor: "rgba(255, 255, 255, 0.08)",
+                        boxShadow: "0 20px 40px -15px rgba(0, 0, 0, 0.9), 0 0 40px 10px rgba(255, 255, 255, 0.08)",
+                    }
+                }}
+                transition={{
+                    type: "spring",
+                    stiffness: 400,
+                    damping: 40,
+                    mass: 1
+                }}
+                style={{ willChange: "transform, width, padding" }}
+                className="fixed top-0 left-1/2 -translate-x-1/2 z-50 overflow-hidden"
+            >
+                <div className="w-full px-4 md:px-8 flex items-center justify-between">
+                    <div className="flex items-center gap-4 md:gap-8">
                         <div className="flex items-center gap-2 group cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-                            <div className="w-7 h-7 rounded flex items-center justify-center group-hover:rotate-6 transition-transform overflow-hidden relative">
+                            <div className="w-7 h-7 md:w-8 md:h-8 rounded flex items-center justify-center group-hover:rotate-6 transition-transform overflow-hidden relative">
                                 <img
                                     src="/mailient-logo-v3.png"
                                     alt="Mailient Logo"
                                     className="w-full h-full object-cover"
                                 />
                             </div>
-                            <span className="font-bold tracking-tight text-lg text-white">Mailient</span>
+                            <span className="font-bold tracking-tight text-lg md:text-xl">Mailient</span>
                         </div>
 
-                        {/* Right Side: Sign Up and Login */}
-                        <div className="flex items-center gap-4">
-                            {status === "authenticated" ? (
-                                <button
-                                    onClick={() => router.push('/home-feed?welcome=true')}
-                                    className="liquid-glass rounded-full px-6 py-2 text-white text-sm font-medium hover:bg-white/5 transition-all"
-                                >
-                                    Dashboard
-                                </button>
-                            ) : (
-                                <>
-                                    <button 
-                                        onClick={() => router.push('/auth/signup')} 
-                                        className="text-white text-sm font-medium hover:opacity-80 transition-opacity"
-                                    >
-                                        Sign Up
-                                    </button>
-                                    <button 
-                                        onClick={() => router.push('/auth/signin')} 
-                                        className="liquid-glass rounded-full px-6 py-2 text-white text-sm font-medium hover:bg-white/5 transition-all"
-                                    >
-                                        Login
-                                    </button>
-                                </>
-                            )}
+                        <div className="hidden md:flex items-center gap-6 text-sm font-medium text-zinc-500">
+                            <a href="#benefits" onClick={(e) => handleClick(e, 'benefits')} className="hover:text-white transition-colors">Benefits</a>
+                            <a href="#features" onClick={(e) => handleClick(e, 'features')} className="hover:text-white transition-colors">Features</a>
+                            <a href="#integration" onClick={(e) => handleClick(e, 'integration')} className="hover:text-white transition-colors">Security</a>
+
+                            <a href="/workspace-setup" className="hover:text-white transition-colors">Setup</a>
+                            <a href="#pricing" onClick={(e) => handleClick(e, 'pricing')} className="hover:text-white transition-colors">Pricing</a>
+                            <a href="#faq" onClick={(e) => handleClick(e, 'faq')} className="hover:text-white transition-colors">FAQ</a>
                         </div>
                     </div>
-                </nav>
 
-                {/* Hero Content Area */}
-                <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 py-12 text-center -translate-y-[10%] sm:-translate-y-[15%] md:-translate-y-[20%]">
-                    {/* Heading */}
-                    <h1 
-                        className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-medium tracking-tight text-white mb-6 leading-[1.05] max-w-4xl font-serif"
-                        style={{ fontFamily: "'Instrument Serif', serif" }}
-                    >
-                        Email That Thinks <br />
-                        <span className="italic text-white/90">Like You Do.</span>
-                    </h1>
-
-                    {/* Below the heading, max-w-xl container */}
-                    <div className="max-w-xl w-full space-y-4">
-                        {/* Unlock the Inbox Button (Email Sign Up Input Form) */}
-                        <form 
-                            onSubmit={(e) => {
-                                e.preventDefault();
-                                router.push('/auth/signup');
-                            }}
-                            className="liquid-glass rounded-full pl-6 pr-2 py-2 flex items-center gap-3 w-full"
-                        >
-                            <input 
-                                type="email" 
-                                placeholder="Unlock the Inbox..." 
-                                required
-                                className="bg-transparent border-none outline-none text-white placeholder:text-white/40 text-base flex-1 pl-4"
-                            />
-                            <button 
-                                type="submit" 
-                                className="bg-white rounded-full p-3 text-black shrink-0 hover:scale-105 transition-transform flex items-center justify-center"
-                                aria-label="Submit email to unlock inbox"
-                            >
-                                <ArrowRight size={20} />
-                            </button>
-                        </form>
-
-                        {/* Subtitle text */}
-                        <p className="text-white text-sm leading-relaxed px-4 opacity-80">
-                            Stop triaging. Mailient identifies revenue opportunities, surfaces urgent threads, and drafts replies in your voice—automatically.
-                        </p>
-
-                        {/* Centered Liquid Glass Button */}
-                        <div className="flex justify-center pt-2">
-                            <button 
-                                onClick={() => router.push('/auth/signup')}
-                                className="liquid-glass rounded-full px-8 py-3 text-white text-sm font-medium hover:bg-white/5 transition-colors"
-                            >
-                                Unlock My Inbox
-                            </button>
-                        </div>
+                    <div className="flex items-center gap-2 md:gap-4">
+                        {status === "authenticated" ? (
+                            <Button variant="secondary" onClick={() => router.push('/home-feed?welcome=true')} className="bg-white/10 hover:bg-white/20 text-white border-none rounded-full px-4 md:px-6 text-sm md:text-base">
+                                Dashboard
+                            </Button>
+                        ) : (
+                            <>
+                                <button onClick={() => router.push('/auth/signin')} className="hidden sm:block text-sm font-medium text-zinc-500 hover:text-white transition-colors">Log in</button>
+                                <LiquidButton onClick={() => router.push('/auth/signup')} size="default" className="text-white">
+                                    Unlock My Inbox
+                                </LiquidButton>
+                            </>
+                        )}
                     </div>
                 </div>
+            </motion.nav>
 
-                {/* Social Icons Footer */}
-                <div className="relative z-10 flex justify-center gap-4 pb-12">
-                    <a 
-                        href="https://instagram.com" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="liquid-glass rounded-full p-4 text-white/80 hover:text-white hover:bg-white/5 transition-all flex items-center justify-center"
-                        aria-label="Instagram"
-                    >
-                        <Instagram size={20} />
-                    </a>
-                    <a 
-                        href="https://twitter.com/Maulik_055" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="liquid-glass rounded-full p-4 text-white/80 hover:text-white hover:bg-white/5 transition-all flex items-center justify-center"
-                        aria-label="Twitter"
-                    >
-                        <Twitter size={20} />
-                    </a>
-                    <a 
-                        href="https://mailient.xyz" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="liquid-glass rounded-full p-4 text-white/80 hover:text-white hover:bg-white/5 transition-all flex items-center justify-center"
-                        aria-label="Website"
-                    >
-                        <Globe size={20} />
-                    </a>
+            <CTASection />
+
+            <div className="relative z-10 pb-20">
+                <div className="text-center px-4">
+
+                    {/* Hero Video */}
+                    <div className="relative w-full max-w-5xl mx-auto aspect-video rounded-2xl border border-white/10 bg-zinc-900/50 backdrop-blur-sm overflow-hidden group shadow-[0_0_50px_-12px_rgba(255,255,255,0.1)] mb-12">
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none z-10" />
+                        <iframe
+                            src="https://cap.so/embed/rpter2vmzaz3vyk?autoplay=1&muted=1&controls=1&loop=1&playsinline=1"
+                            title="Mailient Product Demo"
+                            className="absolute inset-0 w-full h-full"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            allowFullScreen
+                            loading="lazy"
+                        />
+                    </div>
                 </div>
-            </header>
+            </div>
 
             {/* Pain Section - The Consequences */}
             <section className="py-20 md:py-32 px-6 z-10 relative overflow-hidden bg-black">
