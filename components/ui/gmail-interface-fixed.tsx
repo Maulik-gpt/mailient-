@@ -914,7 +914,22 @@ export function GmailInterfaceFixed() {
                 })
             });
 
-            if (!response.ok) throw new Error('Failed to generate draft');
+            if (!response.ok) {
+                const data = await response.json().catch(() => ({}));
+                if (data?.error === 'limit_reached') {
+                    setUsageLimitModalData({
+                        featureName: 'Draft Reply',
+                        currentUsage: data.usage || 0,
+                        limit: data.limit || 0,
+                        period: data.period || 'monthly',
+                        currentPlan: data.planType || 'starter'
+                    });
+                    setIsUsageLimitModalOpen(true);
+                    setShowDraftEditor(false);
+                    return;
+                }
+                throw new Error(data?.error || 'Failed to generate draft');
+            }
 
             const reader = response.body?.getReader();
             const decoder = new TextDecoder();
@@ -937,9 +952,9 @@ export function GmailInterfaceFixed() {
                     }
                 }
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error drafting traditional reply:', error);
-            toast.error('Failed to generate AI draft');
+            toast.error(error.message || 'Failed to generate AI draft');
         } finally {
             setIsDrafting(false);
         }
