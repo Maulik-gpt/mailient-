@@ -953,15 +953,9 @@ export function GmailInterfaceFixed() {
                 }
             }
 
-            // If stream completed but no content was produced, show fallback
-            if (accumulated.trim().length === 0) {
-                setDraftContent('<p>The AI was unable to generate a draft for this specific email. Please try writing a manual reply or try again later.</p>');
-                setIsDrafting(false);
-            }
         } catch (error: any) {
             console.error('Error drafting traditional reply:', error);
             toast.error(error.message || 'Failed to generate AI draft');
-            setDraftContent('<p>Failed to generate draft. Please close and try again.</p>');
         } finally {
             setIsDrafting(false);
         }
