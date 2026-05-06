@@ -481,8 +481,12 @@ export async function GET(request: Request) {
 
     console.log(`✨ Returning ${enrichedInsights.length} enriched insights`);
 
-    // Increment usage after successful analysis
-    await subscriptionService.incrementFeatureUsage(userEmail, FEATURE_TYPES.SIFT_ANALYSIS);
+    // Increment usage after successful analysis (non-blocking — don't let this kill the response)
+    try {
+      await subscriptionService.incrementFeatureUsage(userEmail, FEATURE_TYPES.SIFT_ANALYSIS);
+    } catch (usageErr) {
+      console.warn('⚠️ Failed to increment usage, but insights are ready:', usageErr);
+    }
 
     return NextResponse.json({
       success: true,
@@ -494,10 +498,11 @@ export async function GET(request: Request) {
     });
 
   } catch (error: any) {
-    console.error('💥 Insights API Error:', error);
+    console.error('💥 Insights API Error:', error?.message || error, error?.stack?.split('\n').slice(0, 3).join('\n'));
+    const errorMsg = error?.message || (typeof error === 'string' ? error : 'Failed to generate insights — please try again');
     return NextResponse.json({
       success: false,
-      error: error.message || 'Failed to generate insights',
+      error: errorMsg,
       insights: [],
       sift_intelligence_summary: {
         opportunities_detected: 0,

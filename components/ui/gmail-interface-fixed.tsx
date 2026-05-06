@@ -405,7 +405,7 @@ export function GmailInterfaceFixed() {
                 if (timerInterval) clearInterval(timerInterval);
                     return;
                 }
-                throw new Error(errorData.error || `Failed to fetch insights: ${response.statusText}`);
+                throw new Error(errorData.error || `Sift AI encountered an issue (${response.status}). Please try again.`);
             }
 
             const data: SiftInsightsResponse = await response.json();
