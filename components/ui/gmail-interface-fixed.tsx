@@ -2792,7 +2792,7 @@ export function GmailInterfaceFixed() {
                                                         {/* Content Area */}
                                                         <div 
                                                             ref={draftContainerRef} 
-                                                            className="px-8 py-6 flex-1 min-h-[350px] relative overflow-y-auto"
+                                                            className="px-8 py-6 flex-1 min-h-[350px] relative overflow-y-auto draft-editor-scrollbar"
                                                             onMouseUp={handleSiftMouseUp}
                                                         >
                                                             {isDrafting ? (
