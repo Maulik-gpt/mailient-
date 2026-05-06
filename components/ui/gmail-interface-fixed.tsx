@@ -622,7 +622,7 @@ export function GmailInterfaceFixed() {
                 draftContentEditorRef.current.innerHTML = draftContent;
             }
         }
-    }, [draftContent, isMounted, showDraftEditor]);
+    }, [draftContent, isMounted, showDraftEditor, isDrafting]);
 
     // AI Text Formatting Utility
     const decodeEntities = useCallback((text: string | null) => {
@@ -884,6 +884,10 @@ export function GmailInterfaceFixed() {
         setIsDrafting(true);
         setShowDraftEditor(true);
         setDraftContent('');
+        setDraftAttachments([]);
+        setSelection(null);
+        setIsRefinementActive(false);
+        setProposedRefinement('');
         
         setDraftTo(email.from?.match(/<(.+)>/)?.[1] || email.from);
         setDraftSubject(`Re: ${email.subject}`);
