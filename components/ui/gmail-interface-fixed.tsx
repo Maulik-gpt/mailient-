@@ -2725,8 +2725,9 @@ export function GmailInterfaceFixed() {
                                                     
                                                     {/* Editor Container */}
                                                     <div 
-                                                        className="bg-[#1C1C1C] rounded-[24px] w-full max-w-3xl flex flex-col shadow-2xl relative z-10 mx-auto"
+                                                        className="bg-[#1C1C1C] rounded-[24px] w-full max-w-3xl flex flex-col shadow-2xl relative z-10 mx-auto overflow-hidden"
                                                         style={{ 
+                                                            maxHeight: '85vh',
                                                             transform: showDraftEditor ? 'scale(1) translateY(0)' : 'scale(0.95) translateY(20px)',
                                                             transition: 'all 0.5s cubic-bezier(0.32, 0.72, 0, 1)'
                                                         }}
