@@ -220,6 +220,7 @@ export function GmailInterfaceFixed() {
     const [isLoadingFullEmail, setIsLoadingFullEmail] = useState(false);
 
     const [isDrafting, setIsDrafting] = useState(false);
+    const [isGenerating, setIsGenerating] = useState(false);
     const [draftContent, setDraftContent] = useState<string>('');
     const [showDraftEditor, setShowDraftEditor] = useState(false);
 
@@ -882,6 +883,7 @@ export function GmailInterfaceFixed() {
     const [draftOriginalEmailBody, setDraftOriginalEmailBody] = useState('');
     const handleTraditionalDraftReply = async (email: any) => {
         setIsDrafting(true);
+        setIsGenerating(true);
         setShowDraftEditor(true);
         setDraftContent('');
         setDraftAttachments([]);
@@ -958,6 +960,7 @@ export function GmailInterfaceFixed() {
             toast.error(error.message || 'Failed to generate AI draft');
         } finally {
             setIsDrafting(false);
+            setIsGenerating(false);
         }
     };
 
@@ -965,6 +968,7 @@ export function GmailInterfaceFixed() {
 
     const handleDraftReply = async (emailId: string, category: string) => {
         setIsDrafting(true);
+        setIsGenerating(true);
         setShowDraftEditor(true);
         setDraftContent('');
 
@@ -1056,6 +1060,7 @@ export function GmailInterfaceFixed() {
             setDraftContent('<p>Failed to generate draft. Please close and try again.</p>');
         } finally {
             setIsDrafting(false);
+            setIsGenerating(false);
         }
     };
 
@@ -1332,6 +1337,7 @@ export function GmailInterfaceFixed() {
             setDraftContent(renderMarkdown("Dear there,\n\nThank you for reaching out. I appreciate your message and will respond shortly.\n\nWith gratitude,\n" + (session?.user?.name || 'User')));
         } finally {
             setIsDrafting(false);
+            setIsGenerating(false);
         }
     };
 
@@ -2810,6 +2816,12 @@ export function GmailInterfaceFixed() {
                                                                         onInput={(e) => setDraftContent(e.currentTarget.innerHTML)}
                                                                         style={{ minHeight: '200px' }}
                                                                     />
+                                                                    {isGenerating && (
+                                                                        <div className="flex items-center gap-2 mt-4 px-1">
+                                                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-[arcus-dot-pulse_1.5s_infinite]" />
+                                                                            <span className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Arcus Generating...</span>
+                                                                        </div>
+                                                                    )}
                                                                     {/* Attachment chips */}
                                                                     {draftAttachments.length > 0 && (
                                                                         <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-white/[0.06]">
@@ -3370,3 +3382,4 @@ export function GmailInterfaceFixed() {
         </LayoutGroup>
     );
 }
+
