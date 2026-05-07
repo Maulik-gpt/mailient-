@@ -211,13 +211,13 @@ export async function GET(request: Request) {
       cumulativeEmailStore.delete(storeKey);
     }
 
-    // Phase 1: Fetch recent emails for analysis - fixed to 35 for broader inbox intelligence
-    const recentEmails = await gmailService.getEmails(35, 'in:inbox newer_than:60d', pageToken as any);
+    // Phase 1: Fetch recent emails for analysis - increased to 50 for buffer to ensure 40+ analyzed
+    const recentEmails = await gmailService.getEmails(50, 'in:inbox newer_than:60d', pageToken as any);
     const allMessages = recentEmails.messages || [];
     const nextPageToken = recentEmails.nextPageToken;
 
-    // Get new email IDs (fixed to 35)
-    const newEmailIds: string[] = allMessages.slice(0, 35).map((m: any) => m.id);
+    // Get new email IDs (buffer up to 50)
+    const newEmailIds: string[] = allMessages.slice(0, 50).map((m: any) => m.id);
     
     // Combine with previous emails (for load more) and deduplicate
     const combinedIds = [...new Set([...previousEmailIds, ...newEmailIds])];
@@ -230,8 +230,8 @@ export async function GET(request: Request) {
       timestamp: Date.now() 
     });
 
-    // Use combined IDs for analysis (Optimized 35 limit for speed and stability)
-    const uniqueIds = combinedIds.slice(0, 35);
+    // Use combined IDs for analysis (Targeting 40 emails for intelligence)
+    const uniqueIds = combinedIds.slice(0, 40);
 
     console.log(`📬 Fetching details for ${uniqueIds.length} emails in parallel...`);
     const gmailStartTime = Date.now();
