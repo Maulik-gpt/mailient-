@@ -3121,7 +3121,7 @@ export function GmailInterfaceFixed() {
 
                                                 {/* Traditional Email Detailed View Modal */}
                                                 <div
-                                                    className={`fixed top-1/2 left-1/2 bg-black rounded-[2.5rem] shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-[1200] flex flex-col border border-neutral-200 dark:border-white/10`}
+                                                    className={`fixed top-1/2 left-1/2 bg-black rounded-[2.5rem] shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-[1400] flex flex-col border border-neutral-200 dark:border-white/10`}
                                                     style={{
                                                         width: '75%',
                                                         height: '90vh',
