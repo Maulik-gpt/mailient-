@@ -10,6 +10,9 @@ import crypto from 'crypto';
 
 export const maxDuration = 60; // Increase to 60s for deep AI analysis
 
+// Global timeout for the entire pipeline — returns partial results instead of 504
+const PIPELINE_TIMEOUT_MS = 50000; // 50s hard cap, leaves 10s buffer before serverless timeout
+
 interface EmailDetail {
   id: string;
   from: string;
@@ -197,6 +200,62 @@ export async function GET(request: Request) {
     gmailService.setUserEmail(userEmail); // Enable token refresh persistence
 
     console.log('📧 Fetching emails for analysis...', { isLoadMore, pageToken });
+
+    // Wrap entire pipeline in a timeout to prevent 504 errors
+    const pipelineResult: any = await Promise.race([
+      (async () => {
+        try {
+          return await generateSiftInsights(gmailService, userEmail, privacyMode, isLoadMore, pageToken, db);
+        } catch (error: any) {
+          return { error: error?.message || 'Pipeline failed', partial: true };
+        }
+      })(),
+      new Promise((resolve) =>
+        setTimeout(() => resolve({ 
+          error: 'Analysis timed out — showing partial results', 
+          partial: true,
+          insights: [],
+          sift_intelligence_summary: { opportunities_detected: 0, urgent_action_required: 0, hot_leads_heating_up: 0, conversations_at_risk: 0, missed_follow_ups: 0, unread_but_important: 0 }
+        }), PIPELINE_TIMEOUT_MS)
+      )
+    ]);
+
+    if (pipelineResult?.partial) {
+      console.warn('⚠️ Sift pipeline timed out or failed, returning partial results:', pipelineResult.error);
+      return NextResponse.json({
+        success: false,
+        error: pipelineResult.error,
+        insights: pipelineResult.insights || [],
+        sift_intelligence_summary: pipelineResult.sift_intelligence_summary || { opportunities_detected: 0, urgent_action_required: 0, hot_leads_heating_up: 0, conversations_at_risk: 0, missed_follow_ups: 0, unread_but_important: 0 },
+        timestamp: new Date().toISOString(),
+        userEmail
+      }, { status: 504 });
+    }
+
+    return pipelineResult;
+
+  } catch (error: any) {
+    console.error('💥 Insights API Error:', error?.message || error, error?.stack?.split('\n').slice(0, 3).join('\n'));
+    const errorMsg = error?.message || (typeof error === 'string' ? error : 'Failed to generate insights — please try again');
+    return NextResponse.json({
+      success: false,
+      error: errorMsg,
+      insights: [],
+      sift_intelligence_summary: {
+        opportunities_detected: 0,
+        urgent_action_required: 0,
+        hot_leads_heating_up: 0,
+        conversations_at_risk: 0,
+        missed_follow_ups: 0,
+        unread_but_important: 0
+      }
+    }, { status: 500 });
+  }
+}
+
+// Separated pipeline logic for timeout wrapping
+async function generateSiftInsights(gmailService: any, userEmail: string, privacyMode: boolean, isLoadMore: boolean, pageToken: string | null, db: DatabaseService) {
+  try {
 
     // Get previously stored email IDs for this user
     const storeKey = `sift_${userEmail}`;
