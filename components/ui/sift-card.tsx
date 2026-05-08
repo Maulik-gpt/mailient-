@@ -112,39 +112,28 @@ export const SiftCard: React.FC<SiftCardProps> = ({
 
   return (
     <div
-      className={`group bg-white dark:bg-neutral-900/40 border border-neutral-200 dark:border-white/5 hover:border-neutral-300 dark:hover:border-white/10 ${borderColor} border-l-4 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden relative`}
+      onClick={onClick}
+      className={`group bg-white/5 dark:bg-neutral-900/40 border border-neutral-200 dark:border-white/5 ${borderColor} border-l-2 rounded-xl transition-colors cursor-pointer overflow-hidden relative`}
       style={{ fontFamily: "'Satoshi', -apple-system, BlinkMacSystemFont, sans-serif" }}
     >
-      <div className="absolute inset-0 bg-gradient-to-br from-white/50 to-transparent dark:from-white/5 dark:to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
       <div className="p-5">
         <div className="flex items-start justify-between gap-6">
           <div className="flex items-start gap-4 flex-1 min-w-0">
-            <div className={`flex-shrink-0 ${accentColor}`}>
+            <div className="flex-shrink-0 text-neutral-500">
               {icon}
             </div>
-
-            <div className="flex-1 min-w-0 space-y-2">
-              <h3 className={`text-sm font-medium ${accentColor}`}>
+            <div className="flex-1 min-w-0 space-y-1">
+              <h3 className="text-sm font-medium text-neutral-900 dark:text-neutral-200">
                 {title}
               </h3>
-              <p className="text-sm text-neutral-600 dark:text-neutral-500 leading-relaxed font-light">
+              <p className="text-sm text-neutral-500 dark:text-neutral-500 leading-relaxed font-light">
                 {content}
               </p>
             </div>
           </div>
-
-          <Button
-            onClick={(e) => {
-              e.stopPropagation();
-              if (onClick) onClick();
-            }}
-            variant="ghost"
-            size="sm"
-            className="flex-shrink-0 h-8 px-3 bg-transparent hover:bg-neutral-100 dark:hover:bg-neutral-800 border border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700 text-neutral-600 dark:text-neutral-500 hover:text-black dark:hover:text-[#fafafa] rounded-md transition-colors text-xs font-light"
-          >
-            Details
-            <ArrowRight className="w-3 h-3 ml-1.5" />
-          </Button>
+          <div className="flex-shrink-0 text-neutral-400 group-hover:text-neutral-900 dark:group-hover:text-white transition-colors">
+            <ArrowRight className="w-4 h-4" />
+          </div>
         </div>
       </div>
     </div>

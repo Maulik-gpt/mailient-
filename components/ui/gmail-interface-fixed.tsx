@@ -1835,74 +1835,64 @@ export function GmailInterfaceFixed() {
 
                             {/* Stats Grid */}
                             {summary && (
-                                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-12 md:mb-16">
-                                    {/* Opportunities */}
-                                    <div className="bg-white/40 dark:bg-white/[0.02] backdrop-blur-md border border-white/20 dark:border-white/5 rounded-2xl p-6 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_50px_rgba(0,0,0,0.1)] group/card">
-                                        <div className="flex items-center gap-3 mb-4">
-                                            <div className="p-2 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 group-hover/card:scale-110 transition-transform">
-                                                <Target className="h-4 w-4" strokeWidth={2} />
-                                            </div>
-                                        </div>
-                                        <p className="text-2xl font-semibold text-black dark:text-white mb-1">{summary.opportunities_detected || 0}</p>
-                                        <p className="text-xs text-neutral-500 dark:text-neutral-400 font-medium uppercase tracking-wider">Opportunities</p>
-                                    </div>
+                                <div className="mb-12 md:mb-16 overflow-hidden rounded-2xl border border-white/5 bg-[#111111] shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-y divide-white/5 lg:divide-y-0">
+                                         {/* Opportunities */}
+                                         <div className="p-6 transition-colors bg-transparent">
+                                             <div className="flex items-center gap-3 mb-4">
+                                                 <Target className="h-4 w-4 text-neutral-500" strokeWidth={1} />
+                                             </div>
+                                             <p className="text-2xl font-light text-white mb-1">{summary.opportunities_detected || 0}</p>
+                                             <p className="text-xs text-neutral-500 font-light tracking-tight">Opportunities</p>
+                                         </div>
 
-                                    {/* Urgent */}
-                                    <div className="bg-white/40 dark:bg-white/[0.02] backdrop-blur-md border border-white/20 dark:border-white/5 rounded-2xl p-6 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_50px_rgba(0,0,0,0.1)] group/card">
-                                        <div className="flex items-center gap-3 mb-4">
-                                            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 group-hover/card:scale-110 transition-transform">
-                                                <Zap className="h-4 w-4" strokeWidth={2} />
-                                            </div>
-                                        </div>
-                                        <p className="text-2xl font-semibold text-black dark:text-white mb-1">{summary.urgent_action_required || 0}</p>
-                                        <p className="text-xs text-neutral-500 dark:text-neutral-400 font-medium uppercase tracking-wider">Urgent</p>
-                                    </div>
+                                         {/* Urgent */}
+                                         <div className="p-6 transition-colors bg-transparent">
+                                             <div className="flex items-center gap-3 mb-4">
+                                                 <Zap className="h-4 w-4 text-neutral-500" strokeWidth={1} />
+                                             </div>
+                                             <p className="text-2xl font-light text-white mb-1">{summary.urgent_action_required || 0}</p>
+                                             <p className="text-xs text-neutral-500 font-light tracking-tight">Urgent</p>
+                                         </div>
 
-                                    {/* Hot Leads */}
-                                    <div className="bg-white/40 dark:bg-white/[0.02] backdrop-blur-md border border-white/20 dark:border-white/5 rounded-2xl p-6 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_50px_rgba(0,0,0,0.1)] group/card">
-                                        <div className="flex items-center gap-3 mb-4">
-                                            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 group-hover/card:scale-110 transition-transform">
-                                                <TrendingUp className="h-4 w-4" strokeWidth={2} />
-                                            </div>
-                                        </div>
-                                        <p className="text-2xl font-semibold text-black dark:text-white mb-1">{summary.hot_leads_heating_up || 0}</p>
-                                        <p className="text-xs text-neutral-500 dark:text-neutral-400 font-medium uppercase tracking-wider">Hot Leads</p>
-                                    </div>
+                                         {/* Hot Leads */}
+                                         <div className="p-6 transition-colors bg-transparent">
+                                             <div className="flex items-center gap-3 mb-4">
+                                                 <TrendingUp className="h-4 w-4 text-neutral-500" strokeWidth={1} />
+                                             </div>
+                                             <p className="text-2xl font-light text-white mb-1">{summary.hot_leads_heating_up || 0}</p>
+                                             <p className="text-xs text-neutral-500 font-light tracking-tight">Hot Leads</p>
+                                         </div>
 
-                                    {/* At Risk */}
-                                    <div className="bg-white/40 dark:bg-white/[0.02] backdrop-blur-md border border-white/20 dark:border-white/5 rounded-2xl p-6 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_50px_rgba(0,0,0,0.1)] group/card">
-                                        <div className="flex items-center gap-3 mb-4">
-                                            <div className="p-2 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 group-hover/card:scale-110 transition-transform">
-                                                <AlertCircle className="h-4 w-4" strokeWidth={2} />
-                                            </div>
-                                        </div>
-                                        <p className="text-2xl font-semibold text-black dark:text-white mb-1">{summary.conversations_at_risk || 0}</p>
-                                        <p className="text-xs text-neutral-500 dark:text-neutral-400 font-medium uppercase tracking-wider">At Risk</p>
-                                    </div>
+                                         {/* At Risk */}
+                                         <div className="p-6 transition-colors bg-transparent">
+                                             <div className="flex items-center gap-3 mb-4">
+                                                 <AlertCircle className="h-4 w-4 text-neutral-500" strokeWidth={1} />
+                                             </div>
+                                             <p className="text-2xl font-light text-white mb-1">{summary.conversations_at_risk || 0}</p>
+                                             <p className="text-xs text-neutral-500 font-light tracking-tight">At Risk</p>
+                                         </div>
 
-                                    {/* Follow-ups */}
-                                    <div className="bg-white/40 dark:bg-white/[0.02] backdrop-blur-md border border-white/20 dark:border-white/5 rounded-2xl p-6 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_50px_rgba(0,0,0,0.1)] group/card">
-                                        <div className="flex items-center gap-3 mb-4">
-                                            <div className="p-2 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 group-hover/card:scale-110 transition-transform">
-                                                <Clock className="h-4 w-4" strokeWidth={2} />
-                                            </div>
-                                        </div>
-                                        <p className="text-2xl font-semibold text-black dark:text-white mb-1">{summary.missed_follow_ups || 0}</p>
-                                        <p className="text-xs text-neutral-500 dark:text-neutral-400 font-medium uppercase tracking-wider">Follow-ups</p>
-                                    </div>
+                                         {/* Follow-ups */}
+                                         <div className="p-6 transition-colors bg-transparent">
+                                             <div className="flex items-center gap-3 mb-4">
+                                                 <Clock className="h-4 w-4 text-neutral-500" strokeWidth={1} />
+                                             </div>
+                                             <p className="text-2xl font-light text-white mb-1">{summary.missed_follow_ups || 0}</p>
+                                             <p className="text-xs text-neutral-500 font-light tracking-tight">Follow-ups</p>
+                                         </div>
 
-                                    {/* Important */}
-                                    <div className="bg-white/40 dark:bg-white/[0.02] backdrop-blur-md border border-white/20 dark:border-white/5 rounded-2xl p-6 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_50px_rgba(0,0,0,0.1)] group/card">
-                                        <div className="flex items-center gap-3 mb-4">
-                                            <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 group-hover/card:scale-110 transition-transform">
-                                                <Mail className="h-4 w-4" strokeWidth={2} />
-                                            </div>
-                                        </div>
-                                        <p className="text-2xl font-semibold text-black dark:text-white mb-1">{summary.unread_but_important || 0}</p>
-                                        <p className="text-xs text-neutral-500 dark:text-neutral-400 font-medium uppercase tracking-wider">Important</p>
-                                    </div>
-                                </div>
-                            )}
+                                         {/* Important */}
+                                         <div className="p-6 transition-colors bg-transparent">
+                                             <div className="flex items-center gap-3 mb-4">
+                                                 <Mail className="h-4 w-4 text-neutral-500" strokeWidth={1} />
+                                             </div>
+                                             <p className="text-2xl font-light text-white mb-1">{summary.unread_but_important || 0}</p>
+                                             <p className="text-xs text-neutral-500 font-light tracking-tight">Important</p>
+                                         </div>
+                                     </div>
+                                 </div>
+                             )}
 
 
                             {/* Error & Limit Reached States */}
