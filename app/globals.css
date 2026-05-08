@@ -573,44 +573,6 @@ body,
   --context-card-border: hsla(0, 0%, 18%, 1);
   --ds-blue-100: oklch(22.17% 0.069 259.89);
   --ds-blue-200: oklch(25.45% 0.0811 255.8);
-  --ds-blue-400: oklch(34.1% 0.121 254.74);
-  --ds-blue-700: oklch(57.61% 0.2321 258.23);
-  --ds-blue-900: oklch(71.7% 0.1648 250.79360374054167);
-  --ds-blue-1000: oklch(96.75% 0.0179 242.4234217368056);
-  --ds-red-100: oklch(22.1% 0.0657 15.11);
-  --ds-red-200: oklch(25.93% 0.0834 19.02);
-  --ds-red-400: oklch(35.27% 0.1273 21.23);
-  --ds-red-800: oklch(58.01% 0.227 25.12);
-  --ds-red-900: oklch(69.96% 0.2136 22.03);
-  --ds-red-1000: oklch(95.6% 0.0293 6.61);
-  --ds-amber-100: oklch(22.46% 0.0538 76.04);
-  --ds-amber-200: oklch(24.95% 0.0642 64.78);
-  --ds-amber-400: oklch(35.53% 0.0903 66.29707162673735);
-  --ds-amber-900: oklch(77.21% 0.1991 64.28);
-  --ds-amber-1000: oklch(96.7% 0.0418 84.59);
-  --ds-teal-100: oklch(22.1% 0.0544 178.74);
-  --ds-teal-200: oklch(25.06% 0.062 178.76);
-  --ds-teal-400: oklch(32.43% 0.0763 180.13);
-  --ds-teal-900: oklch(74.56% 0.1765 182.8);
-  --ds-teal-1000: oklch(96.46% 0.056 180.29);
-  --ds-purple-100: oklch(22.34% 0.0779 316.87);
-  --ds-purple-200: oklch(25.91% 0.0921 314.41);
-  --ds-purple-400: oklch(35.93% 0.1504 309.78);
-  --ds-purple-900: oklch(69.87% 0.2037 309.51);
-  --ds-purple-1000: oklch(96.1% 0.0304 316.46);
-  --ds-gray-100: hsla(0, 0%, 10%, 1);
-  --ds-gray-400: hsla(0, 0%, 18%, 1);
-  --ds-gray-700: hsla(0, 0%, 56%, 1);
-  --ds-gray-900: hsla(0, 0%, 63%, 1);
-  --ds-gray-1000: hsla(0, 0%, 93%, 1);
-  --ds-gray-alpha-200: hsla(0, 0%, 100%, 0.09);
-  --ds-gray-alpha-400: hsla(0, 0%, 100%, 0.14);
-  --ds-amber-800: oklch(77.21% 0.1991 64.28);
-  --ds-gray-1000-h: hsl(0, 0%, 80%);
-  --ds-background-100: hsla(0, 0%, 4%, 1);
-  --ds-shadow-border: 0 0 0 1px rgba(255, 255, 255, 0.145);
-  --ds-shadow-small: 0px 1px 2px rgba(0, 0, 0, 0.16);
-  --ds-shadow-border-small: var(--ds-shadow-border), 0px 1px 2px rgba(0, 0, 0, 0.16);
 }
 
 .bg-grain {
@@ -707,46 +669,6 @@ body,
 .arcus-typography {
   letter-spacing: -0.02em;
   font-family: var(--font-satoshi);
-}
-
-  --ds-blue-400: oklch(34.1% 0.121 254.74);
-  --ds-blue-700: oklch(57.61% 0.2321 258.23);
-  --ds-blue-900: oklch(71.7% 0.1648 250.79360374054167);
-  --ds-blue-1000: oklch(96.75% 0.0179 242.4234217368056);
-  --ds-red-100: oklch(22.1% 0.0657 15.11);
-  --ds-red-200: oklch(25.93% 0.0834 19.02);
-  --ds-red-400: oklch(35.27% 0.1273 21.23);
-  --ds-red-800: oklch(58.01% 0.227 25.12);
-  --ds-red-900: oklch(69.96% 0.2136 22.03);
-  --ds-red-1000: oklch(95.6% 0.0293 6.61);
-  --ds-amber-100: oklch(22.46% 0.0538 76.04);
-  --ds-amber-200: oklch(24.95% 0.0642 64.78);
-  --ds-amber-400: oklch(35.53% 0.0903 66.29707162673735);
-  --ds-amber-900: oklch(77.21% 0.1991 64.28);
-  --ds-amber-1000: oklch(96.7% 0.0418 84.59);
-  --ds-teal-100: oklch(22.1% 0.0544 178.74);
-  --ds-teal-200: oklch(25.06% 0.062 178.76);
-  --ds-teal-400: oklch(32.43% 0.0763 180.13);
-  --ds-teal-900: oklch(74.56% 0.1765 182.8);
-  --ds-teal-1000: oklch(96.46% 0.056 180.29);
-  --ds-purple-100: oklch(22.34% 0.0779 316.87);
-  --ds-purple-200: oklch(25.91% 0.0921 314.41);
-  --ds-purple-400: oklch(35.93% 0.1504 309.78);
-  --ds-purple-900: oklch(69.87% 0.2037 309.51);
-  --ds-purple-1000: oklch(96.1% 0.0304 316.46);
-  --ds-gray-100: hsla(0, 0%, 10%, 1);
-  --ds-gray-400: hsla(0, 0%, 18%, 1);
-  --ds-gray-700: hsla(0, 0%, 56%, 1);
-  --ds-gray-900: hsla(0, 0%, 63%, 1);
-  --ds-gray-1000: hsla(0, 0%, 93%, 1);
-  --ds-gray-alpha-200: hsla(0, 0%, 100%, 0.09);
-  --ds-gray-alpha-400: hsla(0, 0%, 100%, 0.14);
-  --ds-amber-800: oklch(77.21% 0.1991 64.28);
-  --ds-gray-1000-h: hsl(0, 0%, 80%);
-  --ds-background-100: hsla(0, 0%, 4%, 1);
-  --ds-shadow-border: 0 0 0 1px rgba(255, 255, 255, 0.145);
-  --ds-shadow-small: 0px 1px 2px rgba(0, 0, 0, 0.16);
-  --ds-shadow-border-small: var(--ds-shadow-border), 0px 1px 2px rgba(0, 0, 0, 0.16);
 }
 
 /* Sidebar color variables are defined above in :root and .dark selectors */
