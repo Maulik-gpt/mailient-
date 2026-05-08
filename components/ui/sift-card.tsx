@@ -110,6 +110,7 @@ export const SiftCard: React.FC<SiftCardProps> = ({
 
   const { icon, accentColor, borderColor } = getCardConfig();
 
+  return (
     <div
       className={`group bg-white dark:bg-neutral-900/40 border border-neutral-200 dark:border-white/5 hover:border-neutral-300 dark:hover:border-white/10 ${borderColor} border-l-4 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden relative`}
       style={{ fontFamily: "'Satoshi', -apple-system, BlinkMacSystemFont, sans-serif" }}
