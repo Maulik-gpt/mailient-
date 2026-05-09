@@ -85,6 +85,7 @@ export async function POST(request: Request) {
       gmailAccessToken: tokens?.encrypted_access_token ? decrypt(tokens.encrypted_access_token) : null,
       privacyMode,
       selectedEmailId,
+      memoryContext: null,
       integrations: {
         gmail: !!tokens?.encrypted_access_token,
         google_calendar: !!tokens?.encrypted_access_token, // Usually same token
