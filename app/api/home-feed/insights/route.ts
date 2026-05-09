@@ -554,18 +554,25 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
     // Find unassigned emails and add to Important
     const unassignedIds = Array.from(emailMap.keys()).filter(id => !assignedIds.has(id));
     if (unassignedIds.length > 0) {
+      console.log(`⚠️ [Insights API] Found ${unassignedIds.length} unassigned emails. Moving them to 'Important'. Assigned count: ${assignedIds.size}`);
       const importantGroup = groupedInsights.find(g => g.metadata.category === 'important');
       if (importantGroup) {
-        unassignedIds.forEach(id => importantGroup.metadata.emails_involved.push(id));
+        unassignedIds.forEach(id => {
+          if (!importantGroup.metadata.emails_involved.includes(id)) {
+             importantGroup.metadata.emails_involved.push(id);
+          }
+        });
         
         // Update the title to reflect the new count
         const mainTitle = 'Important';
         importantGroup.title = `${mainTitle} (${importantGroup.metadata.emails_involved.length})`;
         
-        if (importantGroup.content === 'No items identified.') {
+        if (importantGroup.content === 'No items identified.' || !importantGroup.content) {
           importantGroup.content = categoryDescriptions['important'];
         }
       }
+    } else {
+      console.log(`✅ [Insights API] All ${assignedIds.size} emails successfully assigned to AI categories.`);
     }
 
     // Calculate stats from grouped insights
@@ -672,13 +679,16 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
       console.warn('⚠️ Failed to increment usage, but insights are ready:', usageErr);
     }
 
+    console.log(`✅ [Insights API] Returning results for ${userEmail}. Stats:`, stats);
+
     return NextResponse.json({
       success: true,
       insights: enrichedInsights,
       sift_intelligence_summary: stats,
       nextPageToken,
       timestamp: new Date().toISOString(),
-      userEmail
+      userEmail,
+      ai_version: '3.0-agentic-sift'
     });
 
   } catch (error: any) {

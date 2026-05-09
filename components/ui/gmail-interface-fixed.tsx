@@ -410,6 +410,10 @@ export function GmailInterfaceFixed() {
             }
 
             const data: SiftInsightsResponse = await response.json();
+            console.log('📡 [Sift AI] Dashboard data received:', data);
+            if (data.sift_intelligence_summary) {
+                console.log('📊 [Sift AI] Summary stats:', data.sift_intelligence_summary);
+            }
 
             if (data.success) {
                 const unsubscribedResponse = await fetch('/api/email/unsubscribe/list', {
