@@ -408,7 +408,7 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
             newInsights.push({
               type: cat,
               title: categoryData.title || cat,
-              content: categoryData.summary || '',
+              content: categoryData.description || categoryData.summary || '',
               metadata: {
                 category: cat,
                 priority: (categoryData.relevance || 0) >= 8 ? 'high' : 'medium',
