@@ -126,7 +126,7 @@ export const SiftCard: React.FC<SiftCardProps> = ({
               <h3 className="text-sm font-medium text-neutral-900 dark:text-neutral-200">
                 {title}
               </h3>
-              <p className="text-sm text-neutral-500 dark:text-neutral-500 leading-relaxed font-light">
+              <p className="text-sm text-neutral-500 dark:text-neutral-500 leading-relaxed font-light whitespace-pre-wrap">
                 {content}
               </p>
             </div>
