@@ -7,6 +7,8 @@ import { DatabaseService } from '@/lib/supabase';
 import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service';
 import { AIPolicyCompliance } from '@/lib/ai-policy-compliance';
 
+export const maxDuration = 60;
+
 export async function POST(request) {
     try {
         const session = await auth();
@@ -117,7 +119,21 @@ export async function POST(request) {
         }
 
         console.log('🤖 [Summary API] Generating email summary with AI...');
-        let summary = await aiService.generateEmailSummary(emailContent, complianceConfig.privacyMode, context);
+        
+        let summary;
+        try {
+            // Wrap in a 20s timeout race to prevent serverless 504 timeouts
+            summary = await Promise.race([
+                aiService.generateEmailSummary(emailContent, complianceConfig.privacyMode, context),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('AI Request Timed Out')), 20000))
+            ]);
+        } catch (timeoutError) {
+            console.warn('⚠️ [Summary API] AI timeout or failure, using fallback summary:', timeoutError.message);
+            const subject = parsedEmail.subject || 'an email';
+            const from = parsedEmail.from?.split('<')[0]?.trim().replace(/"/g, '') || 'Someone';
+            summary = `Email from ${from} regarding "${subject}".`;
+        }
+        
         console.log('✅ [Summary API] Summary generated:', summary?.substring(0, 50));
 
         // Ensure we always have a non-empty summary
