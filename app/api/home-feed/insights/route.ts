@@ -479,12 +479,18 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
       const emails = insight.metadata?.emails_involved || [];
       emails.forEach((e: string) => group.metadata.emails_involved.add(e));
       
-      // Update content if it's meaningful and we don't have one yet
+      // Update content if it's meaningful
       if (insight.content && 
           insight.content !== 'Scanning...' && 
-          insight.content !== 'No items identified.' && 
-          !group.content) {
-        group.content = insight.content;
+          insight.content !== 'No items identified.') {
+        
+        const isNewContentFallback = Object.values(categoryDescriptions).includes(insight.content);
+        const isExistingContentFallback = Object.values(categoryDescriptions).includes(group.content);
+        
+        // Use the new content if we don't have any yet, OR if the current one is a fallback and the new one is an actual AI description
+        if (!group.content || (isExistingContentFallback && !isNewContentFallback)) {
+          group.content = insight.content;
+        }
       }
       
       // Update title if it's meaningful
