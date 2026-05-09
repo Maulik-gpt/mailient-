@@ -513,9 +513,14 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
       const group = mergedInsights.get(cat)!;
       const emailsArray = Array.from(group.metadata.emails_involved);
       
-      // Format Title with correct count
+      // Format Title: Use AI title if available, otherwise fallback to generic
       const mainTitle = cat.charAt(0).toUpperCase() + cat.slice(1).replace('_', '-');
-      group.title = `${mainTitle} (${emailsArray.length})`;
+      if (!group.title || group.title === '' || group.title === mainTitle) {
+        group.title = `${mainTitle} (${emailsArray.length})`;
+      } else if (!group.title.includes('(')) {
+        // Add the count to the AI title if it's missing
+        group.title = `${group.title} (${emailsArray.length})`;
+      }
       
       // Fallback description
       if (!group.content || group.content === '') {
