@@ -443,10 +443,113 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
       console.log('✅ All emails cached - instant response!');
     }
     
-    // Calculate stats from all insights by counting involved emails
+    // Group all raw insights into exactly 6 categories to prevent duplicate items and fix the "36 insights" bug
+    const categoryDescriptions: Record<string, string> = {
+      opportunity: 'Potential business opportunities, partnerships, and growth prospects found in your inbox.',
+      urgent: 'Time-sensitive messages that require immediate attention or have approaching deadlines.',
+      lead: 'New leads, inquiries, and potential customer conversations detected.',
+      risk: 'Conversations that may need damage control or show signs of dissatisfaction.',
+      follow_up: 'Threads that are waiting for your response or need a follow-up action.',
+      important: 'High-priority messages including confirmations, reports, and security alerts.'
+    };
+    
+    const categoriesList = ['opportunity', 'urgent', 'lead', 'risk', 'follow_up', 'important'];
+    const mergedInsights = new Map<string, any>();
+    
+    categoriesList.forEach(cat => {
+      mergedInsights.set(cat, {
+        type: cat,
+        title: '',
+        content: '',
+        metadata: {
+          category: cat,
+          priority: 'medium',
+          emails_involved: new Set<string>()
+        }
+      });
+    });
+
+    for (const insight of rawInsights) {
+      const cat = insight.metadata?.category || insight.type || 'important';
+      if (!mergedInsights.has(cat)) continue;
+      
+      const group = mergedInsights.get(cat)!;
+      
+      // Merge emails
+      const emails = insight.metadata?.emails_involved || [];
+      emails.forEach((e: string) => group.metadata.emails_involved.add(e));
+      
+      // Update content if it's meaningful and we don't have one yet
+      if (insight.content && 
+          insight.content !== 'Scanning...' && 
+          insight.content !== 'No items identified.' && 
+          !group.content) {
+        group.content = insight.content;
+      }
+      
+      // Update title if it's meaningful
+      if (insight.title && 
+          !insight.title.includes('cached-') && 
+          !insight.title.match(/.*\(\d+\)$/) && 
+          !group.title) {
+         group.title = insight.title;
+      }
+      
+      if (insight.metadata?.priority === 'high') {
+        group.metadata.priority = 'high';
+      }
+    }
+
+    // Convert Set back to array and build the final grouped array
+    const groupedInsights: any[] = [];
+    for (const cat of categoriesList) {
+      const group = mergedInsights.get(cat)!;
+      const emailsArray = Array.from(group.metadata.emails_involved);
+      
+      // Format Title with correct count
+      const mainTitle = cat.charAt(0).toUpperCase() + cat.slice(1).replace('_', '-');
+      group.title = `${mainTitle} (${emailsArray.length})`;
+      
+      // Fallback description
+      if (!group.content || group.content === '') {
+        group.content = emailsArray.length > 0 ? categoryDescriptions[cat] : 'No items identified.';
+      } else if (emailsArray.length === 0) {
+        group.content = 'No items identified.';
+      }
+      
+      group.metadata.emails_involved = emailsArray;
+      group.id = `insight-${cat}-${Date.now()}`;
+      
+      groupedInsights.push(group);
+    }
+
+    // Ensure all fetched emails are included in at least one category to fix missing items
+    const assignedIds = new Set<string>();
+    for (const group of groupedInsights) {
+      group.metadata.emails_involved.forEach((id: string) => assignedIds.add(id));
+    }
+    
+    // Find unassigned emails and add to Important
+    const unassignedIds = Array.from(emailMap.keys()).filter(id => !assignedIds.has(id));
+    if (unassignedIds.length > 0) {
+      const importantGroup = groupedInsights.find(g => g.metadata.category === 'important');
+      if (importantGroup) {
+        unassignedIds.forEach(id => importantGroup.metadata.emails_involved.push(id));
+        
+        // Update the title to reflect the new count
+        const mainTitle = 'Important';
+        importantGroup.title = `${mainTitle} (${importantGroup.metadata.emails_involved.length})`;
+        
+        if (importantGroup.content === 'No items identified.') {
+          importantGroup.content = categoryDescriptions['important'];
+        }
+      }
+    }
+
+    // Calculate stats from grouped insights
     const getEmailCount = (category: string) => {
-      const insights = rawInsights.filter(i => i.metadata?.category === category);
-      return insights.reduce((total, insight) => total + (insight.metadata?.emails_involved?.length || 0), 0);
+      const group = groupedInsights.find(i => i.metadata?.category === category);
+      return group?.metadata.emails_involved.length || 0;
     };
 
     const stats = {
@@ -469,7 +572,7 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
     };
 
     // Enrich insights with real email data
-    const enrichedInsights = rawInsights.map((insight: any, idx: number) => {
+    const enrichedInsights = groupedInsights.map((insight: any, idx: number) => {
       const category = insight.metadata?.category || insight.type || 'important';
       const involvedIds: string[] = insight.metadata?.emails_involved || [];
 
