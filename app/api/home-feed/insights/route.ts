@@ -244,11 +244,19 @@ export async function GET(request: Request) {
     return pipelineResult;
 
   } catch (error: any) {
-    console.error('💥 Insights API Error:', error?.message || error, error?.stack?.split('\n').slice(0, 3).join('\n'));
-    const errorMsg = error?.message || (typeof error === 'string' ? error : 'Failed to generate insights — please try again');
+    console.error('💥 Sift AI Analysis Failed:', error?.message || error, error?.stack?.split('\n').slice(0, 3).join('\n'));
+    
+    // Show actual error details to user
+    const errorMsg = error?.message || (typeof error === 'string' ? error : 'Sift AI analysis failed');
+    
     return NextResponse.json({
       success: false,
       error: errorMsg,
+      details: {
+        type: 'analysis_error',
+        cause: error?.message || 'Unknown error',
+        suggestion: 'Please check your internet connection and try again'
+      },
       insights: [],
       sift_intelligence_summary: {
         opportunities_detected: 0,
