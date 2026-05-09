@@ -13,6 +13,15 @@ export const maxDuration = 60; // Increase to 60s for deep AI analysis
 // Global timeout for the entire pipeline — returns partial results instead of 504
 const PIPELINE_TIMEOUT_MS = 50000; // 50s hard cap, leaves 10s buffer before serverless timeout
 
+const categoryDescriptions: Record<string, string> = {
+  opportunity: 'Potential business opportunities, partnerships, and growth prospects found in your inbox.',
+  urgent: 'Time-sensitive messages that require immediate attention or have approaching deadlines.',
+  lead: 'New leads, inquiries, and potential customer conversations detected.',
+  risk: 'Conversations that may need damage control or show signs of dissatisfaction.',
+  follow_up: 'Threads that are waiting for your response or need a follow-up action.',
+  important: 'High-priority messages including confirmations, reports, and security alerts.'
+};
+
 interface EmailDetail {
   id: string;
   from: string;
@@ -352,8 +361,11 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
     const cachedInsights: Map<string, CachedInsight> = new Map();
     
     for (const email of filteredEmails) {
-      if (email.hash && analysisCache.has(email.hash)) {
-        cachedInsights.set(email.id, analysisCache.get(email.hash)!);
+      const cached = email.hash ? analysisCache.get(email.hash) : null;
+      const isFallback = cached && Object.values(categoryDescriptions).some(desc => cached.content.trim() === desc.trim());
+
+      if (cached && !isFallback) {
+        cachedInsights.set(email.id, cached);
       } else {
         uncachedEmails.push(email);
       }
@@ -442,16 +454,6 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
     } else {
       console.log('✅ All emails cached - instant response!');
     }
-    
-    // Group all raw insights into exactly 6 categories to prevent duplicate items and fix the "36 insights" bug
-    const categoryDescriptions: Record<string, string> = {
-      opportunity: 'Potential business opportunities, partnerships, and growth prospects found in your inbox.',
-      urgent: 'Time-sensitive messages that require immediate attention or have approaching deadlines.',
-      lead: 'New leads, inquiries, and potential customer conversations detected.',
-      risk: 'Conversations that may need damage control or show signs of dissatisfaction.',
-      follow_up: 'Threads that are waiting for your response or need a follow-up action.',
-      important: 'High-priority messages including confirmations, reports, and security alerts.'
-    };
     
     const categoriesList = ['opportunity', 'urgent', 'lead', 'risk', 'follow_up', 'important'];
     const mergedInsights = new Map<string, any>();
