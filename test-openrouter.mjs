@@ -1,5 +1,6 @@
 import fetch from 'node-fetch';
-import 'dotenv/config';
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
 
 async function test() {
   const prompt = `Categorize these 2 emails.
@@ -31,7 +32,7 @@ ID: 2 | From: spam@test.com | Subject: Buy this | Content: 50% off`;
   const duration = Date.now() - startTime;
   console.log(`Duration: ${duration}ms`);
   console.log("Raw Response:");
-  console.log(json.choices[0].message.content);
+  console.log(JSON.stringify(json, null, 2));
 }
 
 test().catch(console.error);
