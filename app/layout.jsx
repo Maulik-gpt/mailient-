@@ -42,6 +42,27 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function() {
+            window.addEventListener('error', function(e) {
+              const target = e.target;
+              if (target && target.tagName === 'SCRIPT' && target.src && (target.src.indexOf('/_next/static/') !== -1 || target.src.indexOf('/chunks/') !== -1)) {
+                console.warn('Chunk loading failed:', target.src);
+                window.location.reload();
+              }
+              if (e.message && (e.message.indexOf('ChunkLoadError') !== -1 || e.message.indexOf('loading chunk') !== -1)) {
+                console.warn('ChunkLoadError caught:', e.message);
+                window.location.reload();
+              }
+            }, true);
+            window.addEventListener('unhandledrejection', function(e) {
+              if (e.reason && (e.reason.name === 'ChunkLoadError' || (e.reason.message && (e.reason.message.indexOf('ChunkLoadError') !== -1 || e.reason.message.indexOf('loading chunk') !== -1)))) {
+                console.warn('Unhandled ChunkLoadError caught:', e.reason);
+                window.location.reload();
+              }
+            });
+          })();
+        ` }} />
         <Script
           async
           src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID || 'G-M03D6M49N8'}`}
