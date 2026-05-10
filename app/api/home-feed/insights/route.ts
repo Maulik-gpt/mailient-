@@ -370,7 +370,13 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
     
     for (const email of filteredEmails) {
       const cached = email.hash ? analysisCache.get(email.hash) : null;
-      const isFallback = cached && Object.values(categoryDescriptions).some(desc => cached.content.trim() === desc.trim());
+      // Invalidate cache if it contains generic/local fallback text so they get re-analyzed using the working Sift AI
+      const isFallback = cached && (
+        Object.values(categoryDescriptions).some(desc => cached.content.trim() === desc.trim()) ||
+        cached.content.includes('Contains keyword:') ||
+        cached.content.includes('detected via local filters') ||
+        cached.content.includes('Significant activity detected')
+      );
 
       if (cached && !isFallback) {
         cachedInsights.set(email.id, cached);
@@ -378,7 +384,6 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
         uncachedEmails.push(email);
       }
     }
-    
     console.log(`📊 Cache status: ${cachedInsights.size} cached, ${uncachedEmails.length} new emails to analyze`);
 
     // Initialize AI service
