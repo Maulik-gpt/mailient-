@@ -350,7 +350,25 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
 
     console.log(`✅ Fetched ${filteredEmails.length} emails in ${gmailDuration.toFixed(2)}s`);
 
-    if (filteredEmails.length === 0) {
+    // Initialize AI service
+    const aiConfig = new AIConfig();
+    const aiService = aiConfig.getService();
+    if (!aiService) {
+      throw new Error('AI Service not available');
+    }
+
+    // Filter out newsletters and promotional noise before separation and mapping
+    const cleanEmails = filteredEmails.filter(email => {
+      const isPromo = aiService.isNewsletterOrPromo ? aiService.isNewsletterOrPromo(email) : false;
+      if (isPromo) {
+        console.log(`🚫 [Insights Route] Excluding newsletter/promotional email: ${email.from} | ${email.subject}`);
+      }
+      return !isPromo;
+    });
+
+    console.log(`✅ Filtered out newsletter noise. Clean emails count: ${cleanEmails.length} (Excluded ${filteredEmails.length - cleanEmails.length})`);
+
+    if (cleanEmails.length === 0) {
       return NextResponse.json({
         success: true,
         insights: [],
@@ -369,13 +387,13 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
 
     // Create email lookup map for fast access
     const emailMap = new Map<string, EmailDetail>();
-    filteredEmails.forEach(email => emailMap.set(email.id, email));
+    cleanEmails.forEach(email => emailMap.set(email.id, email));
 
     // Separate emails into cached and uncached
     const uncachedEmails: EmailDetail[] = [];
     const cachedInsights: Map<string, CachedInsight> = new Map();
     
-    for (const email of filteredEmails) {
+    for (const email of cleanEmails) {
       const cached = email.hash ? analysisCache.get(email.hash) : null;
       // Invalidate cache if it contains generic/local fallback text so they get re-analyzed using the working Sift AI
       const isFallback = cached && (
@@ -392,13 +410,6 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
       }
     }
     console.log(`📊 Cache status: ${cachedInsights.size} cached, ${uncachedEmails.length} new emails to analyze`);
-
-    // Initialize AI service
-    const aiConfig = new AIConfig();
-    const aiService = aiConfig.getService();
-    if (!aiService) {
-      throw new Error('AI Service not available');
-    }
 
     // Combine cached and new insights
     let rawInsights: any[] = [];
@@ -576,35 +587,13 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
       groupedInsights.push(group);
     }
 
-    // Ensure all fetched emails are included in at least one category to fix missing items
+    // Ensure accurate logging of assigned versus unassigned business emails
     const assignedIds = new Set<string>();
     for (const group of groupedInsights) {
       group.metadata.emails_involved.forEach((id: string) => assignedIds.add(id));
     }
-    
-    // Find unassigned emails and add to Important
     const unassignedIds = Array.from(emailMap.keys()).filter(id => !assignedIds.has(id));
-    if (unassignedIds.length > 0) {
-      console.log(`⚠️ [Insights API] Found ${unassignedIds.length} unassigned emails. Moving them to 'Important'. Assigned count: ${assignedIds.size}`);
-      const importantGroup = groupedInsights.find(g => g.metadata.category === 'important');
-      if (importantGroup) {
-        unassignedIds.forEach(id => {
-          if (!importantGroup.metadata.emails_involved.includes(id)) {
-             importantGroup.metadata.emails_involved.push(id);
-          }
-        });
-        
-        // Update the title to reflect the new count
-        const mainTitle = 'Important';
-        importantGroup.title = `${mainTitle} (${importantGroup.metadata.emails_involved.length})`;
-        
-        if (importantGroup.content === 'No items identified.' || !importantGroup.content) {
-          importantGroup.content = categoryDescriptions['important'];
-        }
-      }
-    } else {
-      console.log(`✅ [Insights API] All ${assignedIds.size} emails successfully assigned to AI categories.`);
-    }
+    console.log(`📊 [Insights API Log] Categorization summary: ${assignedIds.size} emails assigned to AI categories. ${unassignedIds.length} business emails remaining unassigned.`);
 
     // Calculate stats from grouped insights
     const getEmailCount = (category: string) => {

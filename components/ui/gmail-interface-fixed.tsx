@@ -2492,12 +2492,7 @@ export function GmailInterfaceFixed() {
                                                     </motion.div>
                                                 ))}
                                             </motion.div>
-
-                                            {/* Beautiful Divider */}
-                                            <div className="h-px bg-gradient-to-r from-transparent via-neutral-200 dark:via-neutral-800/60 to-transparent my-10" />
-
-                                            {/* One-Click Inbox Command Center */}
-                                            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-550">
+                                            <div className="hidden">
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-8 h-8 rounded-xl bg-neutral-100 dark:bg-neutral-800/80 flex items-center justify-center border border-neutral-200 dark:border-neutral-700/50">
