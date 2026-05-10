@@ -41,6 +41,9 @@ interface EnrichedEmail {
     email: string;
   };
   receivedAt: string;
+  reason?: string;
+  draft?: string;
+  threadId?: string;
 }
 
 interface CachedInsight {
@@ -49,6 +52,8 @@ interface CachedInsight {
   title: string;
   content: string;
   priority: string;
+  reason?: string;
+  draft?: string;
   timestamp: number;
 }
 
@@ -406,7 +411,13 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
         metadata: {
           category: cached.category,
           priority: cached.priority,
-          emails_involved: [emailId]
+          emails_involved: [emailId],
+          email_details: {
+            [emailId]: {
+              reason: (cached as any).reason || '',
+              draft: (cached as any).draft || ''
+            }
+          }
         }
       });
     }
@@ -447,15 +458,19 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
       // Cache new insights by email hash
       for (const insight of newInsights) {
         const involvedIds: string[] = insight.metadata?.emails_involved || [];
+        const detailsMap = insight.metadata?.email_details || {};
         for (const emailId of involvedIds) {
           const email = emailMap.get(emailId);
           if (email?.hash) {
+            const details = detailsMap[emailId] || {};
             analysisCache.set(email.hash, {
               emailHash: email.hash,
               category: insight.metadata?.category || 'important',
               title: insight.title || 'Insight',
               content: insight.content || '',
               priority: insight.metadata?.priority || 'medium',
+              reason: details.reason || '',
+              draft: details.draft || '',
               timestamp: Date.now()
             });
           }
@@ -493,6 +508,15 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
       // Merge emails
       const emails = insight.metadata?.emails_involved || [];
       emails.forEach((e: string) => group.metadata.emails_involved.add(e));
+      
+      // Merge email_details
+      if (!group.metadata.email_details) {
+        group.metadata.email_details = {};
+      }
+      const details = insight.metadata?.email_details || {};
+      for (const [eId, eDetails] of Object.entries(details)) {
+        group.metadata.email_details[eId] = eDetails;
+      }
       
       // Update content if it's meaningful
       if (insight.content && 
@@ -620,12 +644,16 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
             const email = emailMap.get(id);
             if (email) {
               const sender = parseSender(email.from);
+              const details = insight.metadata?.email_details?.[email.id] || {};
               return {
                 id: email.id,
                 subject: email.subject,
                 snippet: email.snippet,
                 sender,
-                receivedAt: email.timestamp
+                receivedAt: email.timestamp,
+                reason: details.reason || '',
+                draft: details.draft || '',
+                threadId: email.threadId || null
               };
             }
             return null;

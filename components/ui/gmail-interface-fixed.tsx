@@ -2352,7 +2352,7 @@ export function GmailInterfaceFixed() {
                                                 animate={{ opacity: 1, y: 0 }}
                                                 exit={{ opacity: 0, scale: 0.95 }}
                                                 transition={{ type: "spring", stiffness: 260, damping: 25 }}
-                                                className="space-y-3"
+                                                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-10"
                                             >
                                                 {insights.map((insight, index) => (
                                                     <motion.div
@@ -2374,6 +2374,244 @@ export function GmailInterfaceFixed() {
                                                     </motion.div>
                                                 ))}
                                             </motion.div>
+
+                                            {/* Beautiful Divider */}
+                                            <div className="h-px bg-gradient-to-r from-transparent via-neutral-200 dark:via-neutral-800/60 to-transparent my-10" />
+
+                                            {/* One-Click Inbox Command Center */}
+                                            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-550">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-8 h-8 rounded-xl bg-neutral-100 dark:bg-neutral-800/80 flex items-center justify-center border border-neutral-200 dark:border-neutral-700/50">
+                                                            <Sparkles className="w-4 h-4 text-black dark:text-neutral-300 animate-pulse" />
+                                                        </div>
+                                                        <div>
+                                                            <h3 className="text-base font-bold text-black dark:text-white tracking-tight">
+                                                                One-Click Action Feed
+                                                            </h3>
+                                                            <p className="text-xs text-neutral-500 dark:text-neutral-400 font-light">
+                                                                Zero-wait, one-click draft syncing and message archival
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <span className="px-3 py-1 rounded-full text-[10px] font-semibold tracking-wider uppercase bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700/50">
+                                                        {allActionableEmails.length} Action{allActionableEmails.length !== 1 ? 's' : ''} Pending
+                                                    </span>
+                                                </div>
+
+                                                {allActionableEmails.length > 0 ? (
+                                                    <div className="space-y-3.5">
+                                                        {allActionableEmails.map((email) => {
+                                                            const emailKey = email.uniqueKey;
+                                                            const isExpanded = expandedEmailKey === emailKey;
+                                                            const syncState = syncingStates[emailKey] || 'idle';
+                                                            const archiveState = archivingStates[emailKey] || 'idle';
+                                                            const editedDraft = draftEdits[emailKey] !== undefined ? draftEdits[emailKey] : (email.draft || '');
+
+                                                            // Tailor icons and colors based on category
+                                                            const categoryConfig: { [key: string]: { label: string, colorClass: string, icon: any, bg: string, border: string } } = {
+                                                                opportunity: { label: 'Opportunity', colorClass: 'text-purple-600 dark:text-purple-400', icon: Target, bg: 'bg-purple-50 dark:bg-purple-950/20', border: 'border-purple-200/50 dark:border-purple-900/30' },
+                                                                urgent: { label: 'Urgent', colorClass: 'text-rose-600 dark:text-rose-400', icon: AlertTriangle, bg: 'bg-rose-50 dark:bg-rose-950/20', border: 'border-rose-200/50 dark:border-rose-900/30' },
+                                                                lead: { label: 'Lead', colorClass: 'text-emerald-600 dark:text-emerald-400', icon: Activity, bg: 'bg-emerald-50 dark:bg-emerald-950/20', border: 'border-emerald-200/50 dark:border-emerald-900/30' },
+                                                                risk: { label: 'At Risk', colorClass: 'text-red-600 dark:text-red-400', icon: AlertCircle, bg: 'bg-red-50 dark:bg-red-950/20', border: 'border-red-200/50 dark:border-red-900/30' },
+                                                                follow_up: { label: 'Follow Up', colorClass: 'text-amber-600 dark:text-amber-400', icon: Clock, bg: 'bg-amber-50 dark:bg-amber-950/15', border: 'border-amber-200/50 dark:border-amber-900/30' },
+                                                                important: { label: 'Important', colorClass: 'text-blue-600 dark:text-blue-400', icon: Shield, bg: 'bg-blue-50 dark:bg-blue-950/20', border: 'border-blue-200/50 dark:border-blue-900/30' }
+                                                            };
+
+                                                            const cfg = categoryConfig[email.category] || categoryConfig.important;
+                                                            const CatIcon = cfg.icon;
+
+                                                            return (
+                                                                <motion.div
+                                                                    key={emailKey}
+                                                                    layout
+                                                                    initial={{ opacity: 0, y: 10 }}
+                                                                    animate={{ opacity: 1, y: 0 }}
+                                                                    exit={{ opacity: 0, scale: 0.95 }}
+                                                                    className="group border border-neutral-200 dark:border-neutral-800/80 rounded-2xl bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300"
+                                                                >
+                                                                    {/* Card Header (Visible) */}
+                                                                    <div 
+                                                                        onClick={() => setExpandedEmailKey(isExpanded ? null : emailKey)}
+                                                                        className="flex items-start md:items-center justify-between p-5 cursor-pointer hover:bg-neutral-50/50 dark:hover:bg-neutral-850/30 transition-colors gap-4"
+                                                                    >
+                                                                        <div className="flex items-start gap-4 min-w-0 flex-1">
+                                                                            {/* Category Icon Column */}
+                                                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${cfg.bg} ${cfg.border} ${cfg.colorClass} flex-shrink-0 mt-0.5 md:mt-0`}>
+                                                                                <CatIcon className="w-4 h-4" />
+                                                                            </div>
+
+                                                                            {/* Content Column */}
+                                                                            <div className="min-w-0 flex-1">
+                                                                                <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 mb-1">
+                                                                                    <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 truncate max-w-[180px]">
+                                                                                        {email.sender?.name || 'Unknown'}
+                                                                                    </span>
+                                                                                    <span className="text-[10px] text-neutral-400 dark:text-neutral-500">•</span>
+                                                                                    <span className={`text-[9px] font-bold tracking-wider uppercase ${cfg.colorClass}`}>
+                                                                                        {cfg.label}
+                                                                                    </span>
+                                                                                    <span className="text-[10px] text-neutral-400 dark:text-neutral-500 hidden md:inline">•</span>
+                                                                                    <span className="text-[10px] text-neutral-500 dark:text-neutral-550 hidden md:inline">
+                                                                                        {mounted ? new Date(email.receivedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
+                                                                                    </span>
+                                                                                </div>
+                                                                                <h4 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 truncate mb-1">
+                                                                                    {email.subject}
+                                                                                </h4>
+                                                                                
+                                                                                {/* "Why this matters" (AI-generated reason) - directly visible on the card */}
+                                                                                {email.reason && (
+                                                                                    <p className="text-xs text-neutral-600 dark:text-neutral-400 font-medium line-clamp-1 italic bg-neutral-50 dark:bg-neutral-850/30 py-1 px-2.5 rounded-lg inline-block border border-neutral-150 dark:border-neutral-800/40 mt-1 max-w-full">
+                                                                                        <span className="font-bold text-neutral-700 dark:text-neutral-300 not-italic mr-1.5">Sift Reason:</span>
+                                                                                        {email.reason}
+                                                                                    </p>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {/* Chevron column */}
+                                                                        <div className="flex items-center gap-3">
+                                                                            <span className="text-[10px] text-neutral-500 dark:text-neutral-500 md:hidden">
+                                                                                {mounted ? new Date(email.receivedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : ''}
+                                                                            </span>
+                                                                            <div className="text-neutral-400 dark:text-neutral-500 p-1 bg-neutral-100 dark:bg-neutral-800 rounded-lg group-hover:bg-neutral-200 dark:group-hover:bg-neutral-700/60 transition-colors">
+                                                                                {isExpanded ? <ChevronDown className="w-4 h-4 transform rotate-180 transition-transform duration-300" /> : <ChevronDown className="w-4 h-4 transition-transform duration-300" />}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {/* Expandable Accordion Body */}
+                                                                    <AnimatePresence initial={false}>
+                                                                        {isExpanded && (
+                                                                            <motion.div
+                                                                                initial={{ height: 0, opacity: 0 }}
+                                                                                animate={{ height: "auto", opacity: 1 }}
+                                                                                exit={{ height: 0, opacity: 0 }}
+                                                                                transition={{ duration: 0.25, ease: "easeInOut" }}
+                                                                                className="border-t border-neutral-150 dark:border-neutral-850/40 bg-neutral-50/20 dark:bg-neutral-900/40"
+                                                                            >
+                                                                                <div className="p-5 space-y-4">
+                                                                                    {/* Email Snippet / Summary block */}
+                                                                                    <div className="bg-neutral-100/50 dark:bg-neutral-850/40 border border-neutral-200/50 dark:border-neutral-800/60 rounded-xl p-3.5">
+                                                                                        <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5 mb-1.5">
+                                                                                            <Mail className="w-3.5 h-3.5" /> Received Email
+                                                                                        </span>
+                                                                                        <p className="text-xs text-neutral-700 dark:text-neutral-300 font-light leading-relaxed">
+                                                                                            {email.snippet}
+                                                                                        </p>
+                                                                                    </div>
+
+                                                                                    {/* Pre-Generated Draft Area */}
+                                                                                    {email.draft ? (
+                                                                                        <div className="space-y-1.5">
+                                                                                            <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5">
+                                                                                                <Sparkles className="w-3.5 h-3.5 text-neutral-600 dark:text-neutral-450" /> 
+                                                                                                Pre-Drafted Response (Click to Edit)
+                                                                                            </label>
+                                                                                            <div className="relative group/editor border border-neutral-200 dark:border-neutral-800 rounded-xl bg-white dark:bg-neutral-950 overflow-hidden shadow-inner focus-within:border-black/30 dark:focus-within:border-white/20 transition-all">
+                                                                                                <textarea
+                                                                                                    value={editedDraft}
+                                                                                                    onChange={(e) => setDraftEdits(prev => ({ ...prev, [emailKey]: e.target.value }))}
+                                                                                                    className="w-full min-h-[90px] p-4 text-xs font-normal text-neutral-900 dark:text-neutral-100 bg-transparent resize-y border-none focus:outline-none focus:ring-0 leading-relaxed font-sans"
+                                                                                                    placeholder="Modify the pre-drafted response..."
+                                                                                                />
+                                                                                                <div className="absolute right-3 bottom-3 flex items-center gap-1 opacity-0 group-focus-within/editor:opacity-100 group-hover/editor:opacity-60 transition-opacity">
+                                                                                                    <span className="text-[9px] uppercase tracking-wider text-neutral-400 dark:text-neutral-500 font-semibold flex items-center gap-1 bg-neutral-100 dark:bg-neutral-805 px-2 py-1 rounded">
+                                                                                                        <PenTool className="w-2.5 h-2.5" /> Editable
+                                                                                                    </span>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    ) : (
+                                                                                        <div className="text-center py-5 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-xl bg-neutral-50/50 dark:bg-neutral-950/20">
+                                                                                            <p className="text-xs text-neutral-500 dark:text-neutral-400 font-light">
+                                                                                                This email is purely informational and doesn't require an action reply.
+                                                                                            </p>
+                                                                                        </div>
+                                                                                    )}
+
+                                                                                    {/* Quick Execution Action Bar */}
+                                                                                    <div className="flex flex-wrap items-center justify-between pt-2 border-t border-neutral-150 dark:border-neutral-800/60 gap-3">
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            {email.draft && (
+                                                                                                <Button
+                                                                                                    onClick={() => handleSyncDraftCommand(email)}
+                                                                                                    disabled={syncState === 'syncing' || syncState === 'success' || archiveState === 'archiving'}
+                                                                                                    className={`h-9 px-4 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
+                                                                                                        syncState === 'success' 
+                                                                                                            ? 'bg-emerald-600 hover:bg-emerald-600 text-white shadow-[0_4px_12px_rgba(16,185,129,0.2)]' 
+                                                                                                            : syncState === 'error'
+                                                                                                            ? 'bg-red-600 hover:bg-red-500 text-white'
+                                                                                                            : 'bg-black hover:bg-neutral-800 dark:bg-neutral-100 dark:hover:bg-neutral-200 text-white dark:text-black shadow-sm'
+                                                                                                    }`}
+                                                                                                >
+                                                                                                    {syncState === 'syncing' ? (
+                                                                                                        <>
+                                                                                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                                                                            <span>Syncing to Gmail...</span>
+                                                                                                        </>
+                                                                                                    ) : syncState === 'success' ? (
+                                                                                                        <>
+                                                                                                            <Check className="w-3.5 h-3.5" />
+                                                                                                            <span>Synced to Drafts!</span>
+                                                                                                        </>
+                                                                                                    ) : syncState === 'error' ? (
+                                                                                                        <span>Retry Sync</span>
+                                                                                                    ) : (
+                                                                                                        <>
+                                                                                                            <Sparkles className="w-3.5 h-3.5" />
+                                                                                                            <span>Sync Draft to Gmail</span>
+                                                                                                        </>
+                                                                                                    )}
+                                                                                                </Button>
+                                                                                            )}
+                                                                                        </div>
+
+                                                                                        <Button
+                                                                                            variant="outline"
+                                                                                            onClick={() => handleArchiveEmailCommand(email)}
+                                                                                            disabled={archiveState === 'archiving' || archiveState === 'success' || syncState === 'syncing'}
+                                                                                            className="h-9 px-4 rounded-xl text-xs font-semibold hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-red-650 dark:hover:text-red-400 border-neutral-200 dark:border-neutral-800 flex items-center gap-1.5 text-neutral-600 dark:text-neutral-400 transition-colors"
+                                                                                        >
+                                                                                            {archiveState === 'archiving' ? (
+                                                                                                <>
+                                                                                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                                                                    <span>Archiving...</span>
+                                                                                                </>
+                                                                                            ) : archiveState === 'success' ? (
+                                                                                                <>
+                                                                                                    <Check className="w-3.5 h-3.5 text-emerald-500" />
+                                                                                                    <span>Archived!</span>
+                                                                                                </>
+                                                                                            ) : (
+                                                                                                <>
+                                                                                                    <Inbox className="w-3.5 h-3.5" />
+                                                                                                    <span>Archive Message</span>
+                                                                                                </>
+                                                                                            )}
+                                                                                        </Button>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </motion.div>
+                                                                        )}
+                                                                    </AnimatePresence>
+                                                                </motion.div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-center py-12 md:py-16 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-2xl bg-neutral-50/30 dark:bg-neutral-900/10">
+                                                        <Inbox className="h-7 w-7 mx-auto text-neutral-400 mb-3" strokeWidth={1.5} />
+                                                        <h4 className="text-sm font-medium text-neutral-900 dark:text-neutral-300 mb-1">
+                                                            Inbox Zero Achieved
+                                                        </h4>
+                                                        <p className="text-xs text-neutral-500 dark:text-neutral-500 max-w-xs mx-auto font-light leading-relaxed">
+                                                            All analyzed communications are complete or archived. There are no pending actionable items.
+                                                        </p>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     ) : (
                                         <div className="text-center py-24">
