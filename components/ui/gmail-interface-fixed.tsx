@@ -428,7 +428,22 @@ export function GmailInterfaceFixed() {
                     let sourceEmails: any[] = insight.source_emails || [];
                     if (sourceEmails.length === 0 && insight.metadata) {
                         const meta = insight.metadata;
-                        sourceEmails = meta.opportunityDetails || meta.urgentItems || meta.hotLeads || meta.atRiskConversations || meta.missedFollowUps || meta.unreadImportantEmails || [];
+                        const category = meta.category || insight.type;
+                        if (category === 'opportunity') {
+                            sourceEmails = meta.opportunityDetails || [];
+                        } else if (category === 'urgent' || category === 'urgent-action') {
+                            sourceEmails = meta.urgentItems || [];
+                        } else if (category === 'lead' || category === 'hot-leads') {
+                            sourceEmails = meta.hotLeads || [];
+                        } else if (category === 'risk' || category === 'at-risk') {
+                            sourceEmails = meta.atRiskConversations || [];
+                        } else if (category === 'follow_up' || category === 'missed-followups') {
+                            sourceEmails = meta.missedFollowUps || [];
+                        } else if (category === 'important' || category === 'unread-important') {
+                            sourceEmails = meta.unreadImportantEmails || [];
+                        } else {
+                            sourceEmails = [];
+                        }
                     }
                     const filteredEmails = sourceEmails.filter(email => !unsubscribedEmailIds.includes(email.id));
                     let processedEmails = filteredEmails.map(email => ({ ...email, key: `${email.id}-${insight.type}` }));
