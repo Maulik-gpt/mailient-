@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { AnimatePresence, motion, type PanInfo, useAnimation, useDragControls, LayoutGroup } from 'framer-motion';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -251,6 +251,124 @@ export function GmailInterfaceFixed() {
     const [isRefinementActive, setIsRefinementActive] = useState(false);
     const hasFetchedInitialDataRef = useRef(false);
     const summaryAbortControllerRef = useRef<AbortController | null>(null);
+
+    // Sift AI Action Feed state
+    const [expandedEmailKey, setExpandedEmailKey] = useState<string | null>(null);
+    const [syncingStates, setSyncingStates] = useState<Record<string, 'idle' | 'syncing' | 'success' | 'error'>>({});
+    const [archivingStates, setArchivingStates] = useState<Record<string, 'idle' | 'archiving' | 'success' | 'error'>>({});
+    const [draftEdits, setDraftEdits] = useState<Record<string, string>>({});
+
+    // Process insights to extract all actionable emails with drafts or insights reasons
+    const allActionableEmails = useMemo(() => {
+        if (!insights || insights.length === 0) return [];
+        
+        const emails: any[] = [];
+        const seenKeys = new Set<string>();
+
+        insights.forEach((insight: any) => {
+            const category = insight.metadata?.category || insight.type;
+            // Map the API card types back to standard keys if necessary
+            let standardCategory = category;
+            if (category === 'urgent-action') standardCategory = 'urgent';
+            else if (category === 'hot-leads') standardCategory = 'lead';
+            else if (category === 'at-risk') standardCategory = 'risk';
+            else if (category === 'missed-followups') standardCategory = 'follow_up';
+            else if (category === 'unread-important') standardCategory = 'important';
+
+            const list = insight.source_emails || [];
+            list.forEach((email: any) => {
+                const uniqueKey = `${standardCategory}-${email.id}`;
+                if (seenKeys.has(uniqueKey)) return;
+                seenKeys.add(uniqueKey);
+
+                emails.push({
+                    ...email,
+                    category: standardCategory,
+                    uniqueKey
+                });
+            });
+        });
+
+        // Sort by category priority, then by date (most recent first)
+        const categoryPriority: Record<string, number> = {
+            urgent: 1,
+            risk: 2,
+            opportunity: 3,
+            lead: 4,
+            follow_up: 5,
+            important: 6
+        };
+
+        return emails.sort((a, b) => {
+            const pA = categoryPriority[a.category] || 10;
+            const pB = categoryPriority[b.category] || 10;
+            if (pA !== pB) return pA - pB;
+            return new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime();
+        });
+    }, [insights]);
+
+    const handleSyncDraftCommand = async (email: any) => {
+        const emailKey = email.uniqueKey;
+        setSyncingStates(prev => ({ ...prev, [emailKey]: 'syncing' }));
+
+        try {
+            const draftBody = draftEdits[emailKey] !== undefined ? draftEdits[emailKey] : (email.draft || '');
+            const response = await fetch('/api/gmail/drafts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    threadId: email.threadId || email.id,
+                    recipient: email.sender?.email,
+                    subject: email.subject,
+                    body: draftBody
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to sync draft');
+            }
+
+            setSyncingStates(prev => ({ ...prev, [emailKey]: 'success' }));
+        } catch (error) {
+            console.error('Error syncing draft:', error);
+            setSyncingStates(prev => ({ ...prev, [emailKey]: 'error' }));
+        }
+    };
+
+    const handleArchiveEmailCommand = async (email: any) => {
+        const emailKey = email.uniqueKey;
+        setArchivingStates(prev => ({ ...prev, [emailKey]: 'archiving' }));
+
+        try {
+            const response = await fetch(`/api/gmail/messages/${email.id}/archive`, {
+                method: 'POST'
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to archive email');
+            }
+
+            setArchivingStates(prev => ({ ...prev, [emailKey]: 'success' }));
+            
+            // Seamlessly remove the email from insights list on success to animate it out
+            setTimeout(() => {
+                setInsights(currentInsights => {
+                    return currentInsights.map(insight => {
+                        if (!insight.source_emails) return insight;
+                        const updatedEmails = insight.source_emails.filter((e: any) => e.id !== email.id);
+                        return {
+                            ...insight,
+                            source_emails: updatedEmails,
+                            title: insight.title.replace(/\(\d+\)$/, `(${updatedEmails.length})`)
+                        };
+                    });
+                });
+            }, 800);
+        } catch (error) {
+            console.error('Error archiving email:', error);
+            setArchivingStates(prev => ({ ...prev, [emailKey]: 'error' }));
+        }
+    };
 
     // Sync state for contentEditable
     useEffect(() => {
@@ -2401,7 +2519,7 @@ export function GmailInterfaceFixed() {
 
                                                 {allActionableEmails.length > 0 ? (
                                                     <div className="space-y-3.5">
-                                                        {allActionableEmails.map((email) => {
+                                                        {allActionableEmails.map((email: any) => {
                                                             const emailKey = email.uniqueKey;
                                                             const isExpanded = expandedEmailKey === emailKey;
                                                             const syncState = syncingStates[emailKey] || 'idle';

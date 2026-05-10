@@ -30,6 +30,7 @@ interface EmailDetail {
   body: string;
   timestamp: string;
   hash?: string; // Content hash for caching
+  threadId?: string;
 }
 
 interface EnrichedEmail {
@@ -331,7 +332,8 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
             subject: parsed.subject || '(No Subject)',
             snippet: parsed.snippet || '',
             body: (parsed.body || '').substring(0, 400),
-            timestamp: parsed.date || new Date().toISOString()
+            timestamp: parsed.date || new Date().toISOString(),
+            threadId: parsed.threadId || parsed.id
           };
           email.hash = createEmailHash(email);
           return email;
@@ -639,13 +641,13 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
 
       if (involvedIds.length > 0) {
         // Try to match by provided IDs
-        enrichedEmails = involvedIds
+        enrichedEmails = (involvedIds
           .map((id: string) => {
             const email = emailMap.get(id);
             if (email) {
               const sender = parseSender(email.from);
               const details = insight.metadata?.email_details?.[email.id] || {};
-              return {
+              const enriched: EnrichedEmail = {
                 id: email.id,
                 subject: email.subject,
                 snippet: email.snippet,
@@ -653,12 +655,13 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
                 receivedAt: email.timestamp,
                 reason: details.reason || '',
                 draft: details.draft || '',
-                threadId: email.threadId || null
+                threadId: email.threadId || undefined
               };
+              return enriched;
             }
             return null;
           })
-          .filter((e): e is EnrichedEmail => e !== null);
+          .filter((e): e is EnrichedEmail => e !== null));
       }
 
       // If no emails found by ID, we do not assign random emails anymore.
