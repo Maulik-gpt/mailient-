@@ -22,7 +22,7 @@ ID: 2 | From: spam@test.com | Subject: Buy this | Content: 50% off`;
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      model: 'openrouter/free',
+      model: 'google/gemini-2.5-flash',
       messages: [{role: 'user', content: prompt}],
       temperature: 0.0,
       max_tokens: 500
