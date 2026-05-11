@@ -785,7 +785,7 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
       success: true,
       insights: enrichedInsights,
       sift_intelligence_summary: stats,
-      nextPageToken,
+      nextPageToken: currentPageToken,
       timestamp: new Date().toISOString(),
       userEmail,
       ai_version: '3.0-agentic-sift'
