@@ -310,13 +310,13 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
       cumulativeEmailStore.delete(storeKey);
     }
 
-    // Phase 1: Fetch recent emails for analysis - Optimized to 40 for optimal depth and speed balance
-    const recentEmails = await gmailService.getEmails(40, 'in:inbox newer_than:60d', pageToken as any);
+    // Phase 1: Fetch recent emails for analysis - Increased to 100 to ensure we have at least 35 clean business emails after filtering out promotions
+    const recentEmails = await gmailService.getEmails(100, 'in:inbox newer_than:60d', pageToken as any);
     const allMessages = recentEmails.messages || [];
     const nextPageToken = recentEmails.nextPageToken;
 
-    // Get new email IDs (optimized to 40)
-    const newEmailIds: string[] = allMessages.slice(0, 40).map((m: any) => m.id);
+    // Get new email IDs (optimized to 100)
+    const newEmailIds: string[] = allMessages.slice(0, 100).map((m: any) => m.id);
     
     // Combine with previous emails (for load more) and deduplicate
     const combinedIds = [...new Set([...previousEmailIds, ...newEmailIds])];
@@ -329,8 +329,8 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
       timestamp: Date.now() 
     });
 
-    // Use combined IDs for analysis (40 limit for speed and depth balance)
-    const uniqueIds = combinedIds.slice(0, 40);
+    // Use combined IDs for analysis (up to 100 items)
+    const uniqueIds = combinedIds.slice(0, 100);
 
     console.log(`📬 Fetching details for ${uniqueIds.length} emails in parallel...`);
     const gmailStartTime = Date.now();
@@ -381,7 +381,7 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
         console.log(`🚫 [Insights Route] Excluding newsletter/promotional email: ${email.from} | ${email.subject}`);
       }
       return !isPromo;
-    });
+    }).slice(0, 35);
 
     console.log(`✅ Filtered out newsletter noise. Clean emails count: ${cleanEmails.length} (Excluded ${filteredEmails.length - cleanEmails.length})`);
 
