@@ -19,7 +19,7 @@ const categoryDescriptions: Record<string, string> = {
   lead: 'New leads, inquiries, and potential customer conversations detected.',
   risk: 'Conversations that may need damage control or show signs of dissatisfaction.',
   follow_up: 'Threads that are waiting for your response or need a follow-up action.',
-  important: 'High-priority messages including confirmations, reports, and security alerts.'
+  newsletters: 'Newsletters, automated digests, product updates, and promotional communications.'
 };
 
 interface EmailDetail {
@@ -319,17 +319,16 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
 
     let currentPageToken: string | null = pageToken as string | null;
 
-    // Use Gmail's native category indexing to filter out noise on the server side instantly.
-    // Negating promotions, social updates, and forums leaves purely primary high-value business/personal conversations.
-    const query = 'in:inbox newer_than:60d -category:promotions -category:social -category:updates -category:forums';
-    console.log(`📡 Fetching high-value business emails with query: "${query}"...`);
+    // Fetch the absolute most recent emails in the inbox (including newsletters and promotional content)
+    const query = 'in:inbox';
+    console.log(`📡 Fetching the absolute latest 35 emails with query: "${query}"...`);
     
-    const recentEmails = await gmailService.getEmails(45, query, currentPageToken as any);
+    const recentEmails = await gmailService.getEmails(35, query, currentPageToken as any);
     const messages = recentEmails.messages || [];
     currentPageToken = recentEmails.nextPageToken || null;
 
     if (messages.length === 0) {
-      console.log('ℹ️ No primary business emails found in the inbox.');
+      console.log('ℹ️ No recent emails found in your inbox.');
       return NextResponse.json({
         success: true,
         insights: [],
@@ -346,8 +345,8 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
       });
     }
 
-    const uniqueIds = messages.slice(0, 40).map((m: any) => m.id);
-    console.log(`📬 Fetching details for ${uniqueIds.length} primary emails in parallel...`);
+    const uniqueIds = messages.slice(0, 35).map((m: any) => m.id);
+    console.log(`📬 Fetching details for the ${uniqueIds.length} most recent emails in parallel...`);
     const gmailStartTime = Date.now();
 
     // Fetch details in parallel with concurrency limit
@@ -378,17 +377,11 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
 
     const validDetails = emailDetails.filter((d): d is EmailDetail => d !== null);
 
-    // Double-check with local newsletter/promotional filter to guarantee pristine quality
-    const cleanEmails = validDetails.filter(email => {
-      const isPromo = aiService.isNewsletterOrPromo ? aiService.isNewsletterOrPromo(email) : false;
-      if (isPromo) {
-        console.log(`🚫 [Insights Route Filter] Excluding promo/newsletter: ${email.from} | ${email.subject}`);
-      }
-      return !isPromo;
-    }).slice(0, 35);
+    // Keep all latest 35 emails (including newsletters which will be classified under 'newsletters')
+    const cleanEmails = validDetails.slice(0, 35);
 
     const gmailDuration = (Date.now() - gmailStartTime) / 1000;
-    console.log(`✅ Finalized clean business email pool: ${cleanEmails.length} items fetched and verified in ${gmailDuration.toFixed(2)}s`);
+    console.log(`✅ Finalized pristine email pool of ${cleanEmails.length} items in ${gmailDuration.toFixed(2)}s`);
 
     // Combine with previous cumulative emails for state updates
     const newEmailIds = cleanEmails.map(e => e.id);
@@ -532,7 +525,7 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
       console.log('✅ All emails cached - instant response!');
     }
     
-    const categoriesList = ['opportunity', 'urgent', 'lead', 'risk', 'follow_up', 'important'];
+    const categoriesList = ['opportunity', 'urgent', 'lead', 'risk', 'follow_up', 'newsletters'];
     const mergedInsights = new Map<string, any>();
     
     categoriesList.forEach(cat => {
@@ -549,7 +542,7 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
     });
 
     for (const insight of rawInsights) {
-      const cat = insight.metadata?.category || insight.type || 'important';
+      const cat = insight.metadata?.category || insight.type || 'newsletters';
       if (!mergedInsights.has(cat)) continue;
       
       const group = mergedInsights.get(cat)!;
@@ -643,8 +636,10 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
               dynamicDesc = `We identified potential communication or relationship risks from ${senders.slice(0, 2).join(' and ')}. Check these threads to address concerns and maintain strong alignment.`;
             } else if (cat === 'follow_up') {
               dynamicDesc = `Missed follow-ups or pending action-items were detected with ${senders.slice(0, 2).join(' and ')}. Reconnecting on "${subjects[0] || 'previous topics'}" will keep momentum high.`;
+            } else if (cat === 'newsletters') {
+              dynamicDesc = `Recent newsletters, promotional updates, and automated summaries from ${senders.slice(0, 2).join(' and ')}. Scan these to stay updated with your subscriptions.`;
             } else {
-              dynamicDesc = `Important, high-priority updates from ${senders.slice(0, 2).join(' and ')} are ready for review. Keep up to date on "${subjects[0] || 'key matters'}" to stay ahead.`;
+              dynamicDesc = `Important, high-priority updates from ${senders.slice(0, 2).join(' and ')} are ready for review. Keep up to date on "${subjects[0] || 'key matters'}".`;
             }
             group.content = dynamicDesc;
           } else {
@@ -683,13 +678,13 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
       hot_leads_heating_up: getEmailCount('lead'),
       conversations_at_risk: getEmailCount('risk'),
       missed_follow_ups: getEmailCount('follow_up'),
-      unread_but_important: getEmailCount('important')
+      unread_but_important: getEmailCount('newsletters')
     };
 
 
     // Enrich insights with real email data
     const enrichedInsights = groupedInsights.map((insight: any, idx: number) => {
-      const category = insight.metadata?.category || insight.type || 'important';
+      const category = insight.metadata?.category || insight.type || 'newsletters';
       const involvedIds: string[] = insight.metadata?.emails_involved || [];
 
       // Find matching emails - either by ID or by best effort matching
