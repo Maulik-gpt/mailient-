@@ -90,7 +90,7 @@ export async function POST(request: Request) {
         setTimeout(() => resolve({ subject: finalSubject, content: finalContent, timedOut: true }), 6000);
       });
 
-      const aiPromise = ai.enhanceNote(finalSubject, finalContent).then(result => ({ ...result, timedOut: false }));
+      const aiPromise = ai.enhanceNote(finalSubject, finalContent).then((result: any) => ({ ...result, timedOut: false }));
 
       const result = await Promise.race([aiPromise, timeoutPromise]) as { subject: string; content: string; timedOut: boolean };
 

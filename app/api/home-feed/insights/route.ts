@@ -729,11 +729,13 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
         case 'lead': cardType = 'hot-leads'; break;
         case 'risk': cardType = 'at-risk'; break;
         case 'follow_up': cardType = 'missed-followups'; break;
-        case 'important': cardType = 'unread-important'; break;
+        case 'important':
+        case 'newsletters': cardType = 'unread-important'; break;
       }
 
       // Create structured metadata with source emails for each category
-      const createCategoryEmails = (cat: string) => cat === category ? enrichedEmails : [];
+      const createCategoryEmails = (cat: string) => 
+        (cat === category || (cat === 'important' && category === 'newsletters')) ? enrichedEmails : [];
 
       return {
         id: insight.id || `insight-${Date.now()}-${idx}`,
