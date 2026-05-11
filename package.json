@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
+    "dev": "next dev --webpack",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint"
   },
@@ -33,6 +33,7 @@
     "@whop/sdk": "^0.0.26",
     "autoprefixer": "^10.4.21",
     "bytez.js": "^3.0.0",
+    "caniuse-lite": "^1.0.30001792",
     "canvas-confetti": "^1.9.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

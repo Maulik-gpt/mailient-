@@ -1,7 +1,8 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ['@supabase/supabase-js'],
+  serverExternalPackages: ['@supabase/supabase-js', 'resend', 'svix'],
+  transpilePackages: ['recharts', 'd3-array', 'd3-scale', 'victory-vendor'],
   images: {
     remotePatterns: [
       {
