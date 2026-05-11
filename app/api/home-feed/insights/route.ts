@@ -140,6 +140,14 @@ export async function GET(request: Request) {
 
     const userEmail = session.user.email;
 
+    const { searchParams } = new URL(request.url);
+    const forceRefresh = searchParams.get('refresh') === 'true';
+    if (forceRefresh) {
+      console.log('🔄 [Insights API] Force refresh requested. Clearing cache...');
+      analysisCache.clear();
+      cumulativeEmailStore.clear();
+    }
+
     // Check subscription and feature usage for Sift AI (5/day for Starter)
     const canUse = await subscriptionService.canUseFeature(userEmail, FEATURE_TYPES.SIFT_ANALYSIS);
     if (!canUse) {
@@ -400,7 +408,13 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
         Object.values(categoryDescriptions).some(desc => cached.content.trim() === desc.trim()) ||
         cached.content.includes('Contains keyword:') ||
         cached.content.includes('detected via local filters') ||
-        cached.content.includes('Significant activity detected')
+        cached.content.includes('Significant activity detected') ||
+        cached.content.includes('relevant item') ||
+        cached.content.includes('important message') ||
+        cached.content.includes('We detected') ||
+        cached.content.includes('You have') ||
+        cached.content.includes('No items identified') ||
+        cached.content.length < 15
       );
 
       if (cached && !isFallback) {

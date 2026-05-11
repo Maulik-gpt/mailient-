@@ -486,7 +486,7 @@ export function GmailInterfaceFixed() {
 
 
 
-    const fetchSiftInsights = useCallback(async (isLoadMore: boolean = false) => {
+    const fetchSiftInsights = useCallback(async (isLoadMore: boolean = false, forceRefresh: boolean = false) => {
         let timerInterval: any;
         try {
             setLoading(true);
@@ -498,6 +498,9 @@ export function GmailInterfaceFixed() {
                 if (nextPageToken) {
                     params.set('pageToken', nextPageToken);
                 }
+            }
+            if (forceRefresh) {
+                params.set('refresh', 'true');
             }
             
             const url = params.toString() 
@@ -1959,7 +1962,7 @@ export function GmailInterfaceFixed() {
                                         <span>{loading || isLoadingTraditional ? 'Sifting...' : 'Load More'}</span>
                                     </Button>
                                     <Button
-                                        onClick={() => isTraditionalView ? fetchTraditionalEmails() : fetchSiftInsights(false)}
+                                        onClick={() => isTraditionalView ? fetchTraditionalEmails() : fetchSiftInsights(false, true)}
                                         disabled={loading || isLoadingTraditional}
                                         className="h-9 px-4 bg-transparent hover:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:border-neutral-700 text-neutral-500 dark:text-neutral-400 hover:text-[#fafafa] rounded-lg transition-colors flex items-center gap-2"
                                         size="sm"
