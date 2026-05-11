@@ -300,13 +300,13 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
       cumulativeEmailStore.delete(storeKey);
     }
 
-    // Phase 1: Fetch recent emails for analysis - Increased to 60 for deeper SIFT intelligence
-    const recentEmails = await gmailService.getEmails(60, 'in:inbox newer_than:60d', pageToken as any);
+    // Phase 1: Fetch recent emails for analysis - Optimized to 20 for lightning-fast real-time insights
+    const recentEmails = await gmailService.getEmails(20, 'in:inbox newer_than:60d', pageToken as any);
     const allMessages = recentEmails.messages || [];
     const nextPageToken = recentEmails.nextPageToken;
 
-    // Get new email IDs (optimized to 60)
-    const newEmailIds: string[] = allMessages.slice(0, 60).map((m: any) => m.id);
+    // Get new email IDs (optimized to 20)
+    const newEmailIds: string[] = allMessages.slice(0, 20).map((m: any) => m.id);
     
     // Combine with previous emails (for load more) and deduplicate
     const combinedIds = [...new Set([...previousEmailIds, ...newEmailIds])];
@@ -319,8 +319,8 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
       timestamp: Date.now() 
     });
 
-    // Use combined IDs for analysis (60 limit for depth)
-    const uniqueIds = combinedIds.slice(0, 60);
+    // Use combined IDs for analysis (20 limit for speed and depth balance)
+    const uniqueIds = combinedIds.slice(0, 20);
 
     console.log(`📬 Fetching details for ${uniqueIds.length} emails in parallel...`);
     const gmailStartTime = Date.now();
