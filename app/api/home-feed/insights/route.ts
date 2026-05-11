@@ -587,9 +587,49 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
         group.title = `${group.title} (${emailsArray.length})`;
       }
       
-      // Fallback description
-      if (!group.content || group.content === '') {
-        group.content = emailsArray.length > 0 ? categoryDescriptions[cat] : 'No items identified.';
+      // Comprehensive check to catch and override any default/generic/empty placeholder descriptions
+      const isFallbackDesc = !group.content || 
+                             group.content === '' || 
+                             Object.values(categoryDescriptions).some(desc => group.content.trim() === desc.trim()) ||
+                             group.content.includes('relevant item') ||
+                             group.content.includes('important message') ||
+                             group.content.includes('We detected') ||
+                             group.content.includes('You have') ||
+                             group.content.includes('No items identified') ||
+                             group.content.length < 15;
+
+      // Premium Fallback description: Parse senders and subjects dynamically if AI description fails or is generic
+      if (isFallbackDesc) {
+        if (emailsArray.length > 0) {
+          const resolvedEmails = emailsArray.map(id => emailMap.get(id)).filter(Boolean) as EmailDetail[];
+          if (resolvedEmails.length > 0) {
+            const senders = Array.from(new Set(resolvedEmails.map(e => {
+              const parsed = parseSender(e.from);
+              return parsed.name || parsed.email.split('@')[0];
+            })));
+            const subjects = resolvedEmails.map(e => e.subject.replace(/^(re|fwd|fw):\s*/i, '')).filter(Boolean);
+            
+            let dynamicDesc = '';
+            if (cat === 'opportunity') {
+              dynamicDesc = `We detected high-value business opportunities from ${senders.slice(0, 2).join(' and ')} regarding "${subjects[0] || 'proposals'}". Review these active conversations to capture potential partnerships and growth.`;
+            } else if (cat === 'urgent') {
+              dynamicDesc = `Critical matters from ${senders.slice(0, 2).join(' and ')} require immediate attention. Topics include "${subjects[0] || 'urgent alerts'}". Respond promptly to resolve these issues.`;
+            } else if (cat === 'lead') {
+              dynamicDesc = `Inbound leads and demo inquiries are heating up from ${senders.slice(0, 2).join(' and ')} regarding "${subjects[0] || 'services'}". Engagement is recommended to drive potential conversions.`;
+            } else if (cat === 'risk') {
+              dynamicDesc = `We identified potential communication or relationship risks from ${senders.slice(0, 2).join(' and ')}. Check these threads to address concerns and maintain strong alignment.`;
+            } else if (cat === 'follow_up') {
+              dynamicDesc = `Missed follow-ups or pending action-items were detected with ${senders.slice(0, 2).join(' and ')}. Reconnecting on "${subjects[0] || 'previous topics'}" will keep momentum high.`;
+            } else {
+              dynamicDesc = `Important, high-priority updates from ${senders.slice(0, 2).join(' and ')} are ready for review. Keep up to date on "${subjects[0] || 'key matters'}" to stay ahead.`;
+            }
+            group.content = dynamicDesc;
+          } else {
+            group.content = emailsArray.length > 0 ? categoryDescriptions[cat] : 'No items identified.';
+          }
+        } else {
+          group.content = 'No items identified.';
+        }
       } else if (emailsArray.length === 0) {
         group.content = 'No items identified.';
       }
