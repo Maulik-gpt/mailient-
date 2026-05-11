@@ -2028,7 +2028,7 @@ export function GmailInterfaceFixed() {
                                                  <Mail className="h-4 w-4 text-neutral-500" strokeWidth={1} />
                                              </div>
                                              <p className="text-2xl font-light text-white mb-1">{summary.unread_but_important || 0}</p>
-                                             <p className="text-xs text-neutral-500 font-light tracking-tight">Important</p>
+                                             <p className="text-xs text-neutral-500 font-light tracking-tight">Newsletters</p>
                                          </div>
                                      </div>
                                  </div>
@@ -2531,10 +2531,11 @@ export function GmailInterfaceFixed() {
                                                                 lead: { label: 'Lead', colorClass: 'text-emerald-600 dark:text-emerald-400', icon: Activity, bg: 'bg-emerald-50 dark:bg-emerald-950/20', border: 'border-emerald-200/50 dark:border-emerald-900/30' },
                                                                 risk: { label: 'At Risk', colorClass: 'text-red-600 dark:text-red-400', icon: AlertCircle, bg: 'bg-red-50 dark:bg-red-950/20', border: 'border-red-200/50 dark:border-red-900/30' },
                                                                 follow_up: { label: 'Follow Up', colorClass: 'text-amber-600 dark:text-amber-400', icon: Clock, bg: 'bg-amber-50 dark:bg-amber-950/15', border: 'border-amber-200/50 dark:border-amber-900/30' },
+                                                                newsletters: { label: 'Newsletters', colorClass: 'text-blue-600 dark:text-blue-400', icon: Mail, bg: 'bg-blue-50 dark:bg-blue-950/20', border: 'border-blue-200/50 dark:border-blue-900/30' },
                                                                 important: { label: 'Important', colorClass: 'text-blue-600 dark:text-blue-400', icon: Shield, bg: 'bg-blue-50 dark:bg-blue-950/20', border: 'border-blue-200/50 dark:border-blue-900/30' }
                                                             };
 
-                                                            const cfg = categoryConfig[email.category] || categoryConfig.important;
+                                                            const cfg = categoryConfig[email.category] || categoryConfig.newsletters || categoryConfig.important;
                                                             const CatIcon = cfg.icon;
 
                                                             return (
