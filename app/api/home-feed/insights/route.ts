@@ -317,86 +317,78 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
       throw new Error('AI Service not available');
     }
 
-    let allCleanEmails: EmailDetail[] = [];
     let currentPageToken: string | null = pageToken as string | null;
-    let fetchAttempts = 0;
-    const maxFetchAttempts = 4;
-    const batchFetchSize = 40; // Quick batch size for ultra-responsive fetching
-    const targetCleanCount = 35;
-    const processedIdsSet = new Set<string>();
 
-    while (allCleanEmails.length < targetCleanCount && fetchAttempts < maxFetchAttempts) {
-      fetchAttempts++;
-      console.log(`📡 Sift AI Fetch Attempt ${fetchAttempts} (Targeting ${targetCleanCount} clean items)...`);
-      
-      const recentEmails = await gmailService.getEmails(batchFetchSize, 'in:inbox newer_than:60d', currentPageToken as any);
-      const messages = recentEmails.messages || [];
-      currentPageToken = recentEmails.nextPageToken || null;
+    // Use Gmail's native category indexing to filter out noise on the server side instantly.
+    // Negating promotions, social updates, and forums leaves purely primary high-value business/personal conversations.
+    const query = 'in:inbox newer_than:60d -category:promotions -category:social -category:updates -category:forums';
+    console.log(`📡 Fetching high-value business emails with query: "${query}"...`);
+    
+    const recentEmails = await gmailService.getEmails(45, query, currentPageToken as any);
+    const messages = recentEmails.messages || [];
+    currentPageToken = recentEmails.nextPageToken || null;
 
-      if (messages.length === 0) {
-        console.log(`ℹ️ No more messages returned from Gmail.`);
-        break;
-      }
-
-      // Filter out already processed IDs to avoid infinite loops/duplicates
-      const newMessages = messages.filter((m: any) => !processedIdsSet.has(m.id));
-      if (newMessages.length === 0) {
-        if (!currentPageToken) break;
-        continue;
-      }
-      newMessages.forEach((m: any) => processedIdsSet.add(m.id));
-
-      const batchIds = newMessages.map((m: any) => m.id);
-      
-      // Fetch details in parallel with concurrency limit
-      const emailDetails = await processWithConcurrency(
-        batchIds,
-        async (id: string): Promise<EmailDetail | null> => {
-          try {
-            const details = await gmailService.getEmailDetails(id, 'metadata');
-            const parsed = gmailService.parseEmailData(details);
-            const email: EmailDetail = {
-              id: parsed.id,
-              from: parsed.from || '',
-              subject: parsed.subject || '(No Subject)',
-              snippet: parsed.snippet || '',
-              body: (parsed.body || '').substring(0, 400),
-              timestamp: parsed.date || new Date().toISOString(),
-              threadId: parsed.threadId || parsed.id
-            };
-            email.hash = createEmailHash(email);
-            return email;
-          } catch (e) {
-            console.error(`Failed to fetch details for email ${id}:`, e);
-            return null;
-          }
+    if (messages.length === 0) {
+      console.log('ℹ️ No primary business emails found in the inbox.');
+      return NextResponse.json({
+        success: true,
+        insights: [],
+        sift_intelligence_summary: {
+          opportunities_detected: 0,
+          urgent_action_required: 0,
+          hot_leads_heating_up: 0,
+          conversations_at_risk: 0,
+          missed_follow_ups: 0,
+          unread_but_important: 0
         },
-        15
-      );
-
-      const validDetails = emailDetails.filter((d): d is EmailDetail => d !== null);
-
-      // Filter out newsletters and promotional noise instantly
-      const batchClean = validDetails.filter(email => {
-        const isPromo = aiService.isNewsletterOrPromo ? aiService.isNewsletterOrPromo(email) : false;
-        if (isPromo) {
-          console.log(`🚫 [Insights Route Filter] Excluding newsletter/promotional email: ${email.from} | ${email.subject}`);
-        }
-        return !isPromo;
+        timestamp: new Date().toISOString(),
+        userEmail
       });
-
-      allCleanEmails = [...allCleanEmails, ...batchClean];
-      console.log(`📊 Sift AI Fetch Attempt ${fetchAttempts} Complete: Found ${batchClean.length} clean, worth-noticing business emails. Total clean so far: ${allCleanEmails.length}/${targetCleanCount}`);
-
-      if (!currentPageToken) {
-        console.log(`ℹ️ No further page tokens returned from Gmail. Finalizing with ${allCleanEmails.length} clean emails.`);
-        break;
-      }
     }
 
-    // Keep exactly 35 clean emails
-    const cleanEmails = allCleanEmails.slice(0, targetCleanCount);
-    console.log(`✅ Sift AI finalized clean business emails pool: ${cleanEmails.length} items`);
+    const uniqueIds = messages.slice(0, 40).map((m: any) => m.id);
+    console.log(`📬 Fetching details for ${uniqueIds.length} primary emails in parallel...`);
+    const gmailStartTime = Date.now();
+
+    // Fetch details in parallel with concurrency limit
+    const emailDetails = await processWithConcurrency(
+      uniqueIds,
+      async (id: string): Promise<EmailDetail | null> => {
+        try {
+          const details = await gmailService.getEmailDetails(id, 'metadata');
+          const parsed = gmailService.parseEmailData(details);
+          const email: EmailDetail = {
+            id: parsed.id,
+            from: parsed.from || '',
+            subject: parsed.subject || '(No Subject)',
+            snippet: parsed.snippet || '',
+            body: (parsed.body || '').substring(0, 400),
+            timestamp: parsed.date || new Date().toISOString(),
+            threadId: parsed.threadId || parsed.id
+          };
+          email.hash = createEmailHash(email);
+          return email;
+        } catch (e) {
+          console.error(`Failed to fetch details for email ${id}:`, e);
+          return null;
+        }
+      },
+      15
+    );
+
+    const validDetails = emailDetails.filter((d): d is EmailDetail => d !== null);
+
+    // Double-check with local newsletter/promotional filter to guarantee pristine quality
+    const cleanEmails = validDetails.filter(email => {
+      const isPromo = aiService.isNewsletterOrPromo ? aiService.isNewsletterOrPromo(email) : false;
+      if (isPromo) {
+        console.log(`🚫 [Insights Route Filter] Excluding promo/newsletter: ${email.from} | ${email.subject}`);
+      }
+      return !isPromo;
+    }).slice(0, 35);
+
+    const gmailDuration = (Date.now() - gmailStartTime) / 1000;
+    console.log(`✅ Finalized clean business email pool: ${cleanEmails.length} items fetched and verified in ${gmailDuration.toFixed(2)}s`);
 
     // Combine with previous cumulative emails for state updates
     const newEmailIds = cleanEmails.map(e => e.id);
