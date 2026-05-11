@@ -215,7 +215,6 @@ export async function GET(request: Request) {
       });
     }
 
-    const { searchParams } = new URL(request.url);
     const pageToken = searchParams.get('pageToken') as string | null;
     const isLoadMore = searchParams.get('loadMore') === 'true';
 
