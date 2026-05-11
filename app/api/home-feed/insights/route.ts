@@ -601,7 +601,7 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
       // Premium Fallback description: Parse senders and subjects dynamically if AI description fails or is generic
       if (isFallbackDesc) {
         if (emailsArray.length > 0) {
-          const resolvedEmails = emailsArray.map(id => emailMap.get(id)).filter(Boolean) as EmailDetail[];
+          const resolvedEmails = (emailsArray as string[]).map(id => emailMap.get(id)).filter(Boolean) as EmailDetail[];
           if (resolvedEmails.length > 0) {
             const senders = Array.from(new Set(resolvedEmails.map(e => {
               const parsed = parseSender(e.from);
