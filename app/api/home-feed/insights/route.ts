@@ -90,6 +90,16 @@ function createEmailHash(email: EmailDetail): string {
   return crypto.createHash('md5').update(content).digest('hex');
 }
 
+// Helper: Parse sender from "From" header
+function parseSender(fromHeader: string): { name: string; email: string } {
+  const match = fromHeader.match(/^(.+?)\s*<(.+)>$/);
+  if (match) {
+    return { name: match[1].trim().replace(/"/g, ''), email: match[2].trim() };
+  }
+  // If no angle brackets, treat entire string as email
+  return { name: fromHeader.split('@')[0] || 'Unknown', email: fromHeader };
+}
+
 // Helper: Process array with concurrency limit
 // Helper: Process array with concurrency limit
 async function processWithConcurrency<T, R>(
@@ -663,15 +673,6 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
       unread_but_important: getEmailCount('important')
     };
 
-    // Helper function to parse sender from "From" header
-    const parseSender = (fromHeader: string): { name: string; email: string } => {
-      const match = fromHeader.match(/^(.+?)\s*<(.+)>$/);
-      if (match) {
-        return { name: match[1].trim().replace(/"/g, ''), email: match[2].trim() };
-      }
-      // If no angle brackets, treat entire string as email
-      return { name: fromHeader.split('@')[0] || 'Unknown', email: fromHeader };
-    };
 
     // Enrich insights with real email data
     const enrichedInsights = groupedInsights.map((insight: any, idx: number) => {
