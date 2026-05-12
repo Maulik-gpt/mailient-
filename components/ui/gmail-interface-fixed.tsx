@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, type PanInfo, useAnimation, useDragControls, LayoutGroup } from 'framer-motion';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -3519,217 +3520,227 @@ export function GmailInterfaceFixed() {
                                                     emailId={schedulingEmailId || ''}
                                                 />
 
-                                                {/* Traditional Email Detailed View Modal */}
-                                                <div
-                                                    className={`fixed bg-black shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-[1400] flex flex-col border border-neutral-200 dark:border-white/10`}
-                                                    style={{
-                                                        top: isModalExpanded ? '0' : '50%',
-                                                        left: isModalExpanded ? '0' : '50%',
-                                                        width: isModalExpanded ? '100vw' : '75%',
-                                                        height: isModalExpanded ? '100vh' : '90vh',
-                                                        transform: isTraditionalModalOpen 
-                                                            ? (isModalExpanded ? 'translate(0, 0) scale(1)' : 'translate(-50%, -50%) scale(1)') 
-                                                            : (isModalExpanded ? 'translate(0, 5%) scale(0.95)' : 'translate(-50%, -45%) scale(0.95)'),
-                                                        opacity: isTraditionalModalOpen ? 1 : 0,
-                                                        pointerEvents: isTraditionalModalOpen ? 'auto' : 'none',
-                                                        borderRadius: isModalExpanded ? '0px' : '2.5rem'
-                                                    }}
-                                                >
-                                                    {/* Header */}
-                                                    <div className="p-10 border-b border-neutral-200 dark:border-white/5 flex items-start justify-between">
-                                                        <div className="flex-1 min-w-0 pr-10">
-                                                            {isSummarizing ? (
-                                                                <div className="space-y-3">
-                                                                    <div className="h-7 w-2/3 bg-black/5 dark:bg-white/5 rounded-lg animate-pulse" />
-                                                                    <div className="h-4 w-1/3 bg-black/5 dark:bg-white/5 rounded-lg animate-pulse" />
-                                                                </div>
-                                                            ) : selectedTraditionalEmail ? (
-                                                                <div className="space-y-4">
-                                                                    <h2 className="text-3xl font-semibold text-black dark:text-white tracking-tight leading-tight">
-                                                                        {selectedTraditionalEmail.subject}
-                                                                    </h2>
-                                                                    <div className="flex flex-wrap items-center gap-5">
-                                                                        <div className="flex items-center gap-3 px-4 py-2 bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-full">
-                                                                            <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-black dark:text-white/40 text-sm font-bold">
-                                                                                {selectedTraditionalEmail.from?.[0]?.toUpperCase() || 'U'}
-                                                                            </div>
-                                                                            <div className="flex flex-col">
-                                                                                <span className="text-sm text-black dark:text-white font-medium">
-                                                                                    {selectedTraditionalEmail.from?.split('<')[0]?.trim() || 'Sender'}
-                                                                                </span>
-                                                                                <span className="text-[10px] text-neutral-600 dark:text-neutral-500 font-light truncate max-w-[200px]">
-                                                                                    {selectedTraditionalEmail.from?.match(/<(.+)>/)?.[1] || selectedTraditionalEmail.from}
-                                                                                </span>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-500">
-                                                                            <Clock className="w-4 h-4" />
-                                                                            <span className="text-sm font-light">
-                                                                                {formatDate(selectedTraditionalEmail.date, { dateStyle: 'long', timeStyle: 'short' })}
-                                                                            </span>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            ) : null}
-                                                        </div>
-                                                        <div className="flex items-center gap-4">
-                                                            <TooltipProvider>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger asChild>
-                                                                        <button
-                                                                            onClick={() => setIsModalExpanded(!isModalExpanded)}
-                                                                            className="p-3 bg-black/5 hover:bg-black/10 dark:bg-white/10 border border-neutral-200 dark:border-white/10 rounded-full text-black hover:text-black dark:text-white transition-all shadow-lg flex items-center justify-center"
-                                                                            aria-label={isModalExpanded ? 'Exit Fullscreen' : 'Expand to Fullscreen'}
-                                                                        >
-                                                                            {isModalExpanded ? (
-                                                                                <HugeiconsIcon icon={Minimize01Icon} className="w-7 h-7" />
-                                                                            ) : (
-                                                                                <HugeiconsIcon icon={Maximize01Icon} className="w-7 h-7" />
-                                                                            )}
-                                                                        </button>
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent side="bottom" className="bg-neutral-900 text-white border border-neutral-800 px-3 py-1.5 rounded-lg text-xs font-medium shadow-xl z-[1500]">
-                                                                        {isModalExpanded ? 'Exit Fullscreen' : 'Expand to Fullscreen'}
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
+                                                 {isMounted && typeof window !== 'undefined' && isTraditionalModalOpen && createPortal(
+                                                     <>
+                                                         {/* Traditional Backdrop */}
+                                                         <div
+                                                             className="fixed inset-0 bg-black/90 backdrop-blur-2xl transition-opacity duration-300"
+                                                             style={{
+                                                                 zIndex: isModalExpanded ? 9998 : 1300,
+                                                                 opacity: isModalExpanded ? 0 : 1,
+                                                                 pointerEvents: isModalExpanded ? 'none' : 'auto'
+                                                             }}
+                                                             onClick={() => setIsTraditionalModalOpen(false)}
+                                                         />
 
-                                                            <button
-                                                                onClick={() => setIsTraditionalModalOpen(false)}
-                                                                className="p-3 bg-black/5 hover:bg-black/10 dark:bg-white/10 border border-neutral-200 dark:border-white/10 rounded-full text-black hover:text-black dark:text-white transition-all shadow-lg"
-                                                            >
-                                                                <X className="w-7 h-7" />
-                                                            </button>
-                                                        </div>
-                                                    </div>
+                                                         {/* Traditional Email Detailed View Modal */}
+                                                         <div
+                                                             className={`fixed transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) flex flex-col ${
+                                                                 isModalExpanded 
+                                                                     ? 'inset-0 bg-black w-screen h-screen rounded-none border-none' 
+                                                                     : 'top-1/2 left-1/2 bg-black rounded-[2.5rem] border border-neutral-200 dark:border-white/10 shadow-2xl'
+                                                             }`}
+                                                             style={{
+                                                                 width: isModalExpanded ? '100vw' : '75%',
+                                                                 height: isModalExpanded ? '100vh' : '90vh',
+                                                                 transform: isTraditionalModalOpen 
+                                                                     ? (isModalExpanded ? 'translate(0px, 0px) scale(1)' : 'translate(-50%, -50%) scale(1)') 
+                                                                     : (isModalExpanded ? 'translate(0px, 5%) scale(0.95)' : 'translate(-50%, -45%) scale(0.95)'),
+                                                                 opacity: isTraditionalModalOpen ? 1 : 0,
+                                                                 pointerEvents: isTraditionalModalOpen ? 'auto' : 'none',
+                                                                 zIndex: isModalExpanded ? 9999 : 1400
+                                                             }}
+                                                         >
+                                                             {/* Header */}
+                                                             <div className="p-10 border-b border-neutral-200 dark:border-white/5 flex items-start justify-between">
+                                                                 <div className="flex-1 min-w-0 pr-10">
+                                                                     {isSummarizing ? (
+                                                                         <div className="space-y-3">
+                                                                             <div className="h-7 w-2/3 bg-black/5 dark:bg-white/5 rounded-lg animate-pulse" />
+                                                                             <div className="h-4 w-1/3 bg-black/5 dark:bg-white/5 rounded-lg animate-pulse" />
+                                                                         </div>
+                                                                     ) : selectedTraditionalEmail ? (
+                                                                         <div className="space-y-4">
+                                                                             <h2 className="text-3xl font-semibold text-black dark:text-white tracking-tight leading-tight">
+                                                                                 {selectedTraditionalEmail.subject}
+                                                                             </h2>
+                                                                             <div className="flex flex-wrap items-center gap-5">
+                                                                                 <div className="flex items-center gap-3 px-4 py-2 bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-full">
+                                                                                     <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-black dark:text-white/40 text-sm font-bold">
+                                                                                         {selectedTraditionalEmail.from?.[0]?.toUpperCase() || 'U'}
+                                                                                     </div>
+                                                                                     <div className="flex flex-col">
+                                                                                         <span className="text-sm text-black dark:text-white font-medium">
+                                                                                             {selectedTraditionalEmail.from?.split('<')[0]?.trim() || 'Sender'}
+                                                                                         </span>
+                                                                                         <span className="text-[10px] text-neutral-600 dark:text-neutral-500 font-light truncate max-w-[200px]">
+                                                                                             {selectedTraditionalEmail.from?.match(/<(.+)>/)?.[1] || selectedTraditionalEmail.from}
+                                                                                         </span>
+                                                                                     </div>
+                                                                                 </div>
+                                                                                 <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-500">
+                                                                                     <Clock className="w-4 h-4" />
+                                                                                     <span className="text-sm font-light">
+                                                                                         {formatDate(selectedTraditionalEmail.date, { dateStyle: 'long', timeStyle: 'short' })}
+                                                                                     </span>
+                                                                                 </div>
+                                                                             </div>
+                                                                         </div>
+                                                                     ) : null}
+                                                                 </div>
+                                                                 <div className="flex items-center gap-4">
+                                                                     <TooltipProvider>
+                                                                         <Tooltip>
+                                                                             <TooltipTrigger asChild>
+                                                                                 <button
+                                                                                     onClick={() => setIsModalExpanded(!isModalExpanded)}
+                                                                                     className="p-3 bg-black/5 hover:bg-black/10 dark:bg-white/10 border border-neutral-200 dark:border-white/10 rounded-full text-black hover:text-black dark:text-white transition-all shadow-lg flex items-center justify-center"
+                                                                                     aria-label={isModalExpanded ? 'Exit Fullscreen' : 'Expand to Fullscreen'}
+                                                                                 >
+                                                                                     {isModalExpanded ? (
+                                                                                         <HugeiconsIcon icon={Minimize01Icon} className="w-7 h-7" />
+                                                                                     ) : (
+                                                                                         <HugeiconsIcon icon={Maximize01Icon} className="w-7 h-7" />
+                                                                                     )}
+                                                                                 </button>
+                                                                             </TooltipTrigger>
+                                                                             <TooltipContent side="bottom" className="bg-neutral-900 text-white border border-neutral-800 px-3 py-1.5 rounded-lg text-xs font-medium shadow-xl z-[1500]">
+                                                                                 {isModalExpanded ? 'Exit Fullscreen' : 'Expand to Fullscreen'}
+                                                                             </TooltipContent>
+                                                                         </Tooltip>
+                                                                     </TooltipProvider>
 
-                                                    {/* Body Content */}
-                                                    <div className="flex-1 overflow-y-auto p-12 custom-scrollbar">
-                                                        {isSummarizing ? (
-                                                            <div className="flex flex-col items-center justify-center h-full">
-                                                                <RefreshCw className="w-10 h-10 text-black dark:text-white/20 animate-spin mb-6" />
-                                                                <p className="text-black dark:text-white/40 font-light text-xl">Opening message...</p>
-                                                            </div>
-                                                        ) : selectedTraditionalEmail ? (
-                                                            <div className={`mx-auto space-y-12 pb-20 transition-all duration-500 ${isModalExpanded ? 'max-w-6xl' : 'max-w-4xl'}`}>
-                                                                <div className="traditional-email-content font-sans text-lg">
-                                                                    {selectedTraditionalEmail.isHtml ? (
-                                                                        <div className="bg-white dark:bg-white/95 rounded-xl overflow-hidden shadow-inner border border-neutral-200 dark:border-white/10 ring-1 ring-black/5 flex">
-                                                                            <iframe
-                                                                                title="Email Content"
-                                                                                srcDoc={selectedTraditionalEmail.body}
-                                                                                className={`w-full border-none bg-transparent transition-all duration-500 ${isModalExpanded ? 'min-h-[75vh]' : 'min-h-[60vh]'}`}
-                                                                                sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin"
-                                                                                style={{ backgroundColor: 'transparent', colorSchemes: 'light dark' } as any}
-                                                                                onLoad={(e) => {
-                                                                                    const iframe = e.target as HTMLIFrameElement;
-                                                                                    if (iframe.contentWindow) {
-                                                                                        // Add base target blank so all links open in new tab
-                                                                                        const base = iframe.contentDocument?.createElement('base');
-                                                                                        if (base) {
-                                                                                            base.target = '_blank';
-                                                                                            iframe.contentDocument?.head.appendChild(base);
-                                                                                        }
-                                                                                        // Auto-resize height based on content
-                                                                                        try {
-                                                                                            const height = iframe.contentWindow.document.documentElement.scrollHeight;
-                                                                                            if (height > 0) iframe.style.height = `${height}px`;
-                                                                                        } catch (err) { }
-                                                                                    }
-                                                                                }}
-                                                                            />
-                                                                        </div>
-                                                                    ) : (
-                                                                        <div
-                                                                            className="whitespace-pre-wrap selection:bg-blue-500/30 text-black dark:text-neutral-300 font-light leading-relaxed p-6 bg-black/5 dark:bg-white/5 rounded-2xl font-mono text-sm"
-                                                                            dangerouslySetInnerHTML={{ __html: linkify(selectedTraditionalEmail.body) }}
-                                                                        />
-                                                                    )}
-                                                                </div>
+                                                                     <button
+                                                                         onClick={() => setIsTraditionalModalOpen(false)}
+                                                                         className="p-3 bg-black/5 hover:bg-black/10 dark:bg-white/10 border border-neutral-200 dark:border-white/10 rounded-full text-black hover:text-black dark:text-white transition-all shadow-lg"
+                                                                     >
+                                                                         <X className="w-7 h-7" />
+                                                                     </button>
+                                                                 </div>
+                                                             </div>
 
-                                                                {/* Attachments Section */}
-                                                                {selectedTraditionalEmail.attachments?.length > 0 && (
-                                                                    <div className="space-y-6 pt-12 border-t border-neutral-200 dark:border-white/5">
-                                                                        <div className="flex items-center gap-2 text-black dark:text-white/40 text-[10px] uppercase tracking-[0.2em] font-bold">
-                                                                            <Download className="w-3.5 h-3.5" />
-                                                                            Attachments
-                                                                        </div>
-                                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                                                            {selectedTraditionalEmail.attachments.map((att: any, i: number) => (
-                                                                                <div key={i} className="flex items-center gap-4 p-4 bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-2xl group hover:border-white/20 transition-all">
-                                                                                    <div className="p-3 bg-black/5 dark:bg-white/5 rounded-xl text-black dark:text-white/40">
-                                                                                        {att.mimeType?.startsWith('image/') ? <Sparkles className="w-5 h-5" /> : <Inbox className="w-5 h-5" />}
-                                                                                    </div>
-                                                                                    <div className="flex-1 min-w-0">
-                                                                                        <p className="text-sm font-medium text-black dark:text-white truncate">{att.filename}</p>
-                                                                                        <p className="text-xs text-neutral-600 dark:text-neutral-500 font-light mt-0.5">{(att.size / 1024).toFixed(0)} KB</p>
-                                                                                    </div>
-                                                                                    <button
-                                                                                        onClick={() => {
-                                                                                            window.open(`/api/attachments/download?messageId=${selectedTraditionalEmail.id}&attachmentId=${att.attachmentId}&filename=${encodeURIComponent(att.filename)}`, '_blank');
-                                                                                            toast.success('Downloading...', { description: att.filename });
-                                                                                        }}
-                                                                                        className="p-2.5 bg-black/5 hover:bg-black/10 dark:bg-white/10 rounded-xl text-black hover:text-black dark:text-white transition-all shadow-sm"
-                                                                                    >
-                                                                                        <Download className="w-4 h-4" />
-                                                                                    </button>
-                                                                                    <button
-                                                                                        onClick={(e) => { e.stopPropagation(); setNoteEmailId(selectedTraditionalEmail.id); setNoteSubject(`Note: ${att.filename}`); setNoteContent(`Reference to document "${att.filename}" in email "${selectedTraditionalEmail.subject}"`); setShowNoteEditor(true); }}
-                                                                                        className="p-2.5 bg-black/5 hover:bg-black/10 dark:bg-white/10 border border-neutral-200 dark:border-white/10 rounded-xl text-black hover:text-black dark:text-white transition-all"
-                                                                                    >
-                                                                                        <FilePlus className="w-4 h-4" />
-                                                                                    </button>
-                                                                                </div>
-                                                                            ))}
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        ) : null}
-                                                    </div>
+                                                             {/* Body Content */}
+                                                             <div className="flex-1 overflow-y-auto p-12 custom-scrollbar">
+                                                                 {isSummarizing ? (
+                                                                     <div className="flex flex-col items-center justify-center h-full">
+                                                                         <RefreshCw className="w-10 h-10 text-black dark:text-white/20 animate-spin mb-6" />
+                                                                         <p className="text-black dark:text-white/40 font-light text-xl">Opening message...</p>
+                                                                     </div>
+                                                                 ) : selectedTraditionalEmail ? (
+                                                                     <div className={`mx-auto space-y-12 pb-20 transition-all duration-500 ${isModalExpanded ? 'max-w-6xl' : 'max-w-4xl'}`}>
+                                                                         <div className="traditional-email-content font-sans text-lg">
+                                                                             {selectedTraditionalEmail.isHtml ? (
+                                                                                 <div className="bg-white dark:bg-white/95 rounded-xl overflow-hidden shadow-inner border border-neutral-200 dark:border-white/10 ring-1 ring-black/5 flex">
+                                                                                     <iframe
+                                                                                         title="Email Content"
+                                                                                         srcDoc={selectedTraditionalEmail.body}
+                                                                                         className={`w-full border-none bg-transparent transition-all duration-500 ${isModalExpanded ? 'min-h-[80vh]' : 'min-h-[60vh]'}`}
+                                                                                         sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin"
+                                                                                         style={{ backgroundColor: 'transparent', colorSchemes: 'light dark' } as any}
+                                                                                         onLoad={(e) => {
+                                                                                             const iframe = e.target as HTMLIFrameElement;
+                                                                                             if (iframe.contentWindow) {
+                                                                                                 // Add base target blank so all links open in new tab
+                                                                                                 const base = iframe.contentDocument?.createElement('base');
+                                                                                                 if (base) {
+                                                                                                     base.target = '_blank';
+                                                                                                     iframe.contentDocument?.head.appendChild(base);
+                                                                                                 }
+                                                                                                 // Auto-resize height based on content
+                                                                                                 try {
+                                                                                                     const height = iframe.contentWindow.document.documentElement.scrollHeight;
+                                                                                                     if (height > 0) iframe.style.height = `${height}px`;
+                                                                                                 } catch (err) { }
+                                                                                             }
+                                                                                         }}
+                                                                                     />
+                                                                                 </div>
+                                                                             ) : (
+                                                                                 <div
+                                                                                     className="whitespace-pre-wrap selection:bg-blue-500/30 text-black dark:text-neutral-300 font-light leading-relaxed p-6 bg-black/5 dark:bg-white/5 rounded-2xl font-mono text-sm"
+                                                                                     dangerouslySetInnerHTML={{ __html: linkify(selectedTraditionalEmail.body) }}
+                                                                                 />
+                                                                             )}
+                                                                         </div>
 
-                                                    {/* Footer Controls */}
-                                                    {!isSummarizing && selectedTraditionalEmail && (
-                                                        <div className="p-10 border-t border-neutral-200 dark:border-white/5 bg-white/[0.01] flex items-center justify-between">
-                                                            <button
-                                                                onClick={() => setIsTraditionalModalOpen(false)}
-                                                                className="px-10 py-4 bg-black/5 hover:bg-black/10 dark:bg-white/10 border border-neutral-200 dark:border-white/10 rounded-2xl text-base font-medium text-black transition-all hover:text-black dark:text-white"
-                                                            >
-                                                                Close Viewer
-                                                            </button>
-                                                            <div className="flex items-center gap-4">
-                                                                <button
-                                                                    onClick={() => { setDraftTo(selectedTraditionalEmail.from?.match(/<(.+)>/)?.[1] || selectedTraditionalEmail.from); setDraftSubject(`Re: ${selectedTraditionalEmail.subject}`); setDraftContent(''); setShowDraftEditor(true); }}
-                                                                    className="px-8 py-4 bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/10 hover:border-white/20 rounded-2xl text-base font-medium text-black hover:text-black dark:text-white transition-all"
-                                                                >
-                                                                    Reply
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => handleTraditionalDraftReply(selectedTraditionalEmail)}
-                                                                    className="px-8 py-4 bg-emerald-500/10 dark:bg-emerald-500/5 border border-emerald-500/20 hover:border-emerald-500/40 rounded-2xl text-base font-medium text-emerald-600 dark:text-emerald-400 transition-all flex items-center gap-3"
-                                                                >
-                                                                    <PenTool className="w-5 h-5" />
-                                                                    AI Reply
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => window.open(`https://mail.google.com/mail/u/0/#inbox/${selectedTraditionalEmail.id}`, '_blank')}
-                                                                    className="flex items-center gap-3 px-10 py-4 bg-white text-black hover:bg-neutral-200 rounded-2xl text-base font-bold transition-all shadow-2xl active:scale-95"
-                                                                >
-                                                                    <ExternalLink className="w-5 h-5" />
-                                                                    Open in Gmail
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
+                                                                         {/* Attachments Section */}
+                                                                         {selectedTraditionalEmail.attachments?.length > 0 && (
+                                                                             <div className="space-y-6 pt-12 border-t border-neutral-200 dark:border-white/5">
+                                                                                 <div className="flex items-center gap-2 text-black dark:text-white/40 text-[10px] uppercase tracking-[0.2em] font-bold">
+                                                                                     <Download className="w-3.5 h-3.5" />
+                                                                                     Attachments
+                                                                                 </div>
+                                                                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                                                     {selectedTraditionalEmail.attachments.map((att: any, i: number) => (
+                                                                                         <div key={i} className="flex items-center gap-4 p-4 bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-2xl group hover:border-white/20 transition-all">
+                                                                                             <div className="p-3 bg-black/5 dark:bg-white/5 rounded-xl text-black dark:text-white/40">
+                                                                                                 {att.mimeType?.startsWith('image/') ? <Sparkles className="w-5 h-5" /> : <Inbox className="w-5 h-5" />}
+                                                                                             </div>
+                                                                                             <div className="flex-1 min-w-0">
+                                                                                                 <p className="text-sm font-medium text-black dark:text-white truncate">{att.filename}</p>
+                                                                                                 <p className="text-xs text-neutral-600 dark:text-neutral-500 font-light mt-0.5">{(att.size / 1024).toFixed(0)} KB</p>
+                                                                                             </div>
+                                                                                             <button
+                                                                                                 onClick={() => {
+                                                                                                     window.open(`/api/attachments/download?messageId=${selectedTraditionalEmail.id}&attachmentId=${att.attachmentId}&filename=${encodeURIComponent(att.filename)}`, '_blank');
+                                                                                                     toast.success('Downloading...', { description: att.filename });
+                                                                                                 }}
+                                                                                                 className="p-2.5 bg-black/5 hover:bg-black/10 dark:bg-white/10 rounded-xl text-black hover:text-black dark:text-white transition-all shadow-sm"
+                                                                                             >
+                                                                                                 <Download className="w-4 h-4" />
+                                                                                             </button>
+                                                                                             <button
+                                                                                                 onClick={(e) => { e.stopPropagation(); setNoteEmailId(selectedTraditionalEmail.id); setNoteSubject(`Note: ${att.filename}`); setNoteContent(`Reference to document "${att.filename}" in email "${selectedTraditionalEmail.subject}"`); setShowNoteEditor(true); }}
+                                                                                                 className="p-2.5 bg-black/5 hover:bg-black/10 dark:bg-white/10 border border-neutral-200 dark:border-white/10 rounded-xl text-black hover:text-black dark:text-white transition-all"
+                                                                                             >
+                                                                                                 <FilePlus className="w-4 h-4" />
+                                                                                             </button>
+                                                                                         </div>
+                                                                                     ))}
+                                                                                 </div>
+                                                                             </div>
+                                                                         )}
+                                                                     </div>
+                                                                 ) : null}
+                                                             </div>
 
-                {/* Traditional Backdrop */}
-                {isTraditionalModalOpen && (
-                    <div
-                        className="fixed inset-0 bg-black/90 backdrop-blur-2xl z-[1300] transition-opacity duration-300"
-                        onClick={() => setIsTraditionalModalOpen(false)}
-                    />
-                )}
+                                                             {/* Footer Controls */}
+                                                             {!isSummarizing && selectedTraditionalEmail && (
+                                                                 <div className="p-10 border-t border-neutral-200 dark:border-white/5 bg-white/[0.01] flex items-center justify-between">
+                                                                     <button
+                                                                         onClick={() => setIsTraditionalModalOpen(false)}
+                                                                         className="px-10 py-4 bg-black/5 hover:bg-black/10 dark:bg-white/10 border border-neutral-200 dark:border-white/10 rounded-2xl text-base font-medium text-black transition-all hover:text-black dark:text-white"
+                                                                     >
+                                                                         Close Viewer
+                                                                     </button>
+                                                                     <div className="flex items-center gap-4">
+                                                                         <button
+                                                                             onClick={() => { setDraftTo(selectedTraditionalEmail.from?.match(/<(.+)>/)?.[1] || selectedTraditionalEmail.from); setDraftSubject(`Re: ${selectedTraditionalEmail.subject}`); setDraftContent(''); setShowDraftEditor(true); }}
+                                                                             className="px-8 py-4 bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/10 hover:border-white/20 rounded-2xl text-base font-medium text-black hover:text-black dark:text-white transition-all"
+                                                                         >
+                                                                             Reply
+                                                                         </button>
+                                                                         <button
+                                                                             onClick={() => handleTraditionalDraftReply(selectedTraditionalEmail)}
+                                                                             className="px-8 py-4 bg-emerald-500/10 dark:bg-emerald-500/5 border border-emerald-500/20 hover:border-emerald-500/40 rounded-2xl text-base font-medium text-emerald-600 dark:text-emerald-400 transition-all flex items-center gap-3"
+                                                                         >
+                                                                             <PenTool className="w-5 h-5" />
+                                                                             AI Reply
+                                                                         </button>
+                                                                         <button
+                                                                             onClick={() => window.open(`https://mail.google.com/mail/u/0/#inbox/${selectedTraditionalEmail.id}`, '_blank')}
+                                                                             className="flex items-center gap-3 px-10 py-4 bg-white text-black hover:bg-neutral-200 rounded-2xl text-base font-bold transition-all shadow-2xl active:scale-95"
+                                                                         >
+                                                                             <ExternalLink className="w-5 h-5" />
+                                                                             Open in Gmail
+                                                                         </button>
+                                                                     </div>
+                                                                 </div>
+                                                             )}
+                                                         </div>
+                                                     </>,
+                                                     document.body
+                                                 )}
 
 
 
