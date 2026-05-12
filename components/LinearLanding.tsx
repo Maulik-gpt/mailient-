@@ -982,31 +982,108 @@ export function LinearLanding() {
             {/* Comparison Section */}
             <ComparisonSection />
 
-            {/* Security Section */}
-            <section id="integration" className="py-32 px-6 bg-zinc-950/30 z-10 relative">
-                <div className="max-w-4xl mx-auto text-center mb-24">
-                    <Badge variant="outline" className="rounded-full mb-6 border-white/10 text-zinc-400">Security & Privacy</Badge>
-                    <h2 className="text-5xl md:text-7xl font-bold mb-8 tracking-tighter">Zero-Knowledge Security.</h2>
-                    <p className="text-xl text-zinc-400 leading-relaxed italic">
-                        Your privacy is hardcoded. Mailient uses decentralised AES-256 encryption combined with enterprise Google OAuth 2.0 to ensure your communications remain untraceable to outsiders—and even to us.
+            {/* Security Section — Redesigned for Maximum Trust & Engagement */}
+            <section id="integration" className="py-32 px-6 bg-zinc-950/50 z-10 relative overflow-hidden">
+                {/* Subtle background glow effect */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-white/[0.01] blur-[150px] pointer-events-none rounded-full" />
+
+                <div className="max-w-4xl mx-auto text-center mb-20 relative z-10">
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.08] mb-6">
+                        <ShieldCheck className="h-4 w-4 text-white" />
+                        <span className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-400">Military-Grade Core</span>
+                    </div>
+                    <h2 className="text-5xl md:text-7xl font-bold mb-6 tracking-tighter bg-gradient-to-b from-white via-white to-zinc-500 bg-clip-text text-transparent">
+                        We literally cannot read your emails.
+                    </h2>
+                    <p className="text-lg md:text-xl text-zinc-400 leading-relaxed max-w-3xl mx-auto">
+                        We don't just promise privacy — <strong className="text-white font-semibold">we hardcoded it.</strong> Mailient uses a Zero-Knowledge architecture, meaning your personal data is locked with keys that stay on your physical device. 
                     </p>
                 </div>
-                <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <SecurityCard
-                        icon={<ShieldCheck className="w-10 h-10" />}
-                        title="OAuth 2.0 Verified"
-                        desc="Authenticated directly through Google. We never see, touch, or store your passwords."
-                    />
-                    <SecurityCard
-                        icon={<Lock className="w-10 h-10" />}
-                        title="Zero-Knowledge Storage"
-                        desc="Sensitive metadata is encrypted on your device. We store only encrypted blobs we cannot read."
-                    />
-                    <SecurityCard
-                        icon={<Globe className="w-10 h-10" />}
-                        title="End-to-End AES-256"
-                        desc="Military-grade encryption. Your decryption keys stay in your browser, never reaching our servers."
-                    />
+
+                <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
+                    {/* Big Dopamine Card: Zero-Knowledge Browser Vault */}
+                    <div className="group p-8 md:p-10 rounded-[2.5rem] border border-white/5 bg-white/[0.01] backdrop-blur-md hover:border-white/10 transition-all duration-500 flex flex-col justify-between overflow-hidden relative">
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                        
+                        <div>
+                            <div className="mb-8 p-4 bg-white/5 rounded-2xl w-fit border border-white/10 text-white shadow-[0_0_20px_rgba(255,255,255,0.05)] group-hover:scale-110 transition-transform">
+                                <Lock className="w-8 h-8" />
+                            </div>
+                            <h3 className="text-2xl md:text-3xl font-bold mb-4 tracking-tight">Zero-Knowledge Browser Vault</h3>
+                            <p className="text-zinc-400 text-base leading-relaxed mb-6">
+                                Your device acts as a hardware key. We encrypt your emails directly inside your browser <strong className="text-zinc-200">before they ever touch our servers</strong> using AES-256-GCM — the same encryption standard used by the NSA for top-secret documents. 
+                            </p>
+                        </div>
+                        
+                        <div className="flex flex-wrap gap-2.5 mt-4 pt-4 border-t border-white/[0.05]">
+                            <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-white tracking-wider uppercase">Local Encryption</span>
+                            <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-white tracking-wider uppercase">AES-256-GCM</span>
+                            <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-white tracking-wider uppercase">Zero Server-Sight</span>
+                        </div>
+                    </div>
+
+                    {/* AI Data Redaction Proxy */}
+                    <div className="group p-8 md:p-10 rounded-[2.5rem] border border-white/5 bg-white/[0.01] backdrop-blur-md hover:border-white/10 transition-all duration-500 flex flex-col justify-between overflow-hidden relative">
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                        
+                        <div>
+                            <div className="mb-8 p-4 bg-white/5 rounded-2xl w-fit border border-white/10 text-white shadow-[0_0_20px_rgba(255,255,255,0.05)] group-hover:scale-110 transition-transform">
+                                <Cpu className="w-8 h-8" />
+                            </div>
+                            <h3 className="text-2xl md:text-3xl font-bold mb-4 tracking-tight">AI Privacy Shield</h3>
+                            <p className="text-zinc-400 text-base leading-relaxed mb-6">
+                                Your identity is safe from third parties. Before your content is processed by our AI models, our sanitization engine automatically <strong className="text-zinc-200">strips all personal data</strong>. Your name, email, phone, and card numbers are replaced with clean placeholders. The AI only sees context.
+                            </p>
+                        </div>
+                        
+                        <div className="flex flex-wrap gap-2.5 mt-4 pt-4 border-t border-white/[0.05]">
+                            <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-white tracking-wider uppercase">PII Redaction</span>
+                            <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-white tracking-wider uppercase">No AI Training</span>
+                            <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-white tracking-wider uppercase">Anonymized Context</span>
+                        </div>
+                    </div>
+
+                    {/* Tamper-Proof Audit Logging */}
+                    <div className="group p-8 md:p-10 rounded-[2.5rem] border border-white/5 bg-white/[0.01] backdrop-blur-md hover:border-white/10 transition-all duration-500 flex flex-col justify-between overflow-hidden relative">
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                        
+                        <div>
+                            <div className="mb-8 p-4 bg-white/5 rounded-2xl w-fit border border-white/10 text-white shadow-[0_0_20px_rgba(255,255,255,0.05)] group-hover:scale-110 transition-transform">
+                                <Activity className="w-8 h-8" />
+                            </div>
+                            <h3 className="text-2xl md:text-3xl font-bold mb-4 tracking-tight">Tamper-Proof Audit Logs</h3>
+                            <p className="text-zinc-400 text-base leading-relaxed mb-6">
+                                Total transparency, completely immutable. Every login, email access, or AI draft is written to an append-only security log. Each entry is digitally signed using <strong className="text-zinc-200">HMAC-SHA256 signatures</strong>. If a record is tampered with, the cryptographic signature breaks instantly.
+                            </p>
+                        </div>
+                        
+                        <div className="flex flex-wrap gap-2.5 mt-4 pt-4 border-t border-white/[0.05]">
+                            <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-white tracking-wider uppercase">Append-Only Logs</span>
+                            <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-white tracking-wider uppercase">Tamper Detection</span>
+                            <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-white tracking-wider uppercase">My Activity Page</span>
+                        </div>
+                    </div>
+
+                    {/* Session Binding Fingerprints */}
+                    <div className="group p-8 md:p-10 rounded-[2.5rem] border border-white/5 bg-white/[0.01] backdrop-blur-md hover:border-white/10 transition-all duration-500 flex flex-col justify-between overflow-hidden relative">
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                        
+                        <div>
+                            <div className="mb-8 p-4 bg-white/5 rounded-2xl w-fit border border-white/10 text-white shadow-[0_0_20px_rgba(255,255,255,0.05)] group-hover:scale-110 transition-transform">
+                                <Zap className="w-8 h-8" />
+                            </div>
+                            <h3 className="text-2xl md:text-3xl font-bold mb-4 tracking-tight">Physical Session Binding</h3>
+                            <p className="text-zinc-400 text-base leading-relaxed mb-6">
+                                Hijacking is mathematically impossible. We lock your active session to your physical device fingerprint — combining your IP address and browser signature. If a malicious attacker steals your access token and tries to use it from anywhere else, <strong className="text-zinc-200">they are instantly kicked out</strong>.
+                            </p>
+                        </div>
+                        
+                        <div className="flex flex-wrap gap-2.5 mt-4 pt-4 border-t border-white/[0.05]">
+                            <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-white tracking-wider uppercase">IP + UA Binding</span>
+                            <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-white tracking-wider uppercase">Silent Guard</span>
+                            <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-white tracking-wider uppercase">Token Rotation</span>
+                        </div>
+                    </div>
                 </div>
             </section>
 

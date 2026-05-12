@@ -1,0 +1,37 @@
+Contact: mailto:security@mailient.xyz
+Expires: 2027-12-31T23:59:59.000Z
+Preferred-Languages: en
+Canonical: https://mailient.xyz/.well-known/security.txt
+Policy: https://mailient.xyz/privacy-policy
+
+# Mailient Security Disclosure Policy
+#
+# If you discover a security vulnerability in Mailient, we ask that you:
+#
+# 1. Email security@mailient.xyz with details of the vulnerability
+# 2. Do not publicly disclose the issue until we've had time to address it
+# 3. Do not access or modify user data without explicit permission
+# 4. Provide sufficient information to reproduce the issue
+#
+# We commit to:
+# - Acknowledging your report within 48 hours
+# - Providing an estimated timeline for a fix
+# - Notifying you when the issue is resolved
+# - Crediting you (if desired) in our security acknowledgments
+#
+# Scope:
+# - mailient.xyz and all subdomains
+# - Mailient API endpoints
+# - Authentication and session management
+# - Data encryption and storage
+#
+# Out of Scope:
+# - Third-party services (Supabase, OpenRouter, Google OAuth)
+# - Denial of service attacks
+# - Social engineering
+#
+# Encryption Architecture:
+# - Client-side: AES-256-GCM via Web Crypto API (zero-knowledge)
+# - Server-side: AES-256-CBC with scrypt key derivation
+# - Transport: TLS 1.3 with HSTS preloading
+# - All AI processing uses PII-stripped data

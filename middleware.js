@@ -17,19 +17,62 @@ export async function middleware(request) {
     if (ref) {
       const response = NextResponse.next();
       response.cookies.set('mailient_referral', ref, { maxAge: 60 * 60 * 24 * 30, path: '/' }); // 30 days
+      addSecurityHeaders(response);
       return response;
     }
-    return NextResponse.next();
+    const response = NextResponse.next();
+    addSecurityHeaders(response);
+    return response;
   }
 
   if (ref) {
     const response = NextResponse.next();
     response.cookies.set('mailient_referral', ref, { maxAge: 60 * 60 * 24 * 30, path: '/' });
+    addSecurityHeaders(response);
     return response;
   }
 
   // All other routes pass through - auth checks happen at page level
-  return NextResponse.next();
+  const response = NextResponse.next();
+  addSecurityHeaders(response);
+  return response;
+}
+
+/**
+ * Add military-grade security headers to every response.
+ * These headers are visible in browser dev tools and security scanners.
+ */
+function addSecurityHeaders(response) {
+  // Prevent clickjacking
+  response.headers.set('X-Frame-Options', 'SAMEORIGIN');
+
+  // Prevent MIME-type sniffing
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+
+  // XSS protection (legacy browsers)
+  response.headers.set('X-XSS-Protection', '1; mode=block');
+
+  // Permissions Policy — restrict browser features
+  response.headers.set('Permissions-Policy',
+    'camera=(), microphone=(self), geolocation=(), interest-cohort=(), ' +
+    'browsing-topics=(), payment=(self), usb=(), magnetometer=(), ' +
+    'accelerometer=(), gyroscope=()'
+  );
+
+  // Cross-domain policy
+  response.headers.set('X-Permitted-Cross-Domain-Policies', 'none');
+
+  // Download options (IE)
+  response.headers.set('X-Download-Options', 'noopen');
+
+  // Referrer Policy — don't leak full URL to third parties
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+  // Cache control for sensitive pages
+  response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  response.headers.set('Pragma', 'no-cache');
+
+  return response;
 }
 
 // Configure which routes to run middleware on

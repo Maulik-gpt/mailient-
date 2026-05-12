@@ -70,7 +70,23 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.posthog.com https://*.google.com https://*.googleapis.com https://*.stripe.com https://www.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com https://datafa.st https://*.cal.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://api.fontshare.com; img-src 'self' data: https: https://*.googleusercontent.com https://*.githubusercontent.com https://*.posthog.com https://*.cloudinary.com https://*.google-analytics.com; font-src 'self' https://fonts.gstatic.com data: https://api.fontshare.com https://cdn.fontshare.com; connect-src 'self' https://*.supabase.co https://*.openai.com https://*.openrouter.ai https://*.posthog.com https://*.stripe.com https://*.cal.com https://*.google-analytics.com https://*.analytics.google.com https://*.google.com https://*.datafa.st https://datafa.st; frame-src 'self' https://*.stripe.com https://*.google.com https://cap.so https://*.cal.com; worker-src 'self' blob:;"
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.posthog.com https://*.google.com https://*.googleapis.com https://*.stripe.com https://www.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com https://datafa.st https://*.cal.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://api.fontshare.com; img-src 'self' data: https: https://*.googleusercontent.com https://*.githubusercontent.com https://*.posthog.com https://*.cloudinary.com https://*.google-analytics.com; font-src 'self' https://fonts.gstatic.com data: https://api.fontshare.com https://cdn.fontshare.com; connect-src 'self' https://*.supabase.co https://*.openai.com https://*.openrouter.ai https://*.posthog.com https://*.stripe.com https://*.cal.com https://*.google-analytics.com https://*.analytics.google.com https://*.google.com https://*.datafa.st https://datafa.st; frame-src 'self' https://*.stripe.com https://*.google.com https://cap.so https://*.cal.com; worker-src 'self' blob:; base-uri 'self'; form-action 'self' https://*.google.com https://*.stripe.com;"
+          },
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(self), geolocation=(), interest-cohort=(), browsing-topics=(), payment=(self), usb=(), magnetometer=(), accelerometer=(), gyroscope=()'
+          },
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block'
+          },
+          {
+            key: 'X-Download-Options',
+            value: 'noopen'
+          },
+          {
+            key: 'X-Permitted-Cross-Domain-Policies',
+            value: 'none'
           }
         ],
       },
