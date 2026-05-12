@@ -23,6 +23,9 @@ import { triggerSuccessConfetti } from '@/lib/confetti';
 import { useDashboardSettings } from '@/lib/DashboardSettingsContext';
 import ChatInterface from '../../app/dashboard/agent-talk/ChatInterface';
 import { ArcusQuickChat } from './arcus-quick-chat';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { Maximize01Icon, Minimize01Icon } from '@hugeicons/core-free-icons';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from './tooltip';
 
 // Simple markdown renderer for bold text
 const renderMarkdown = (text: string): string => {
@@ -404,6 +407,7 @@ export function GmailInterfaceFixed() {
     const [isLoadingTraditional, setIsLoadingTraditional] = useState(false);
     const [selectedTraditionalEmail, setSelectedTraditionalEmail] = useState<any | null>(null);
     const [isTraditionalModalOpen, setIsTraditionalModalOpen] = useState(false);
+    const [isModalExpanded, setIsModalExpanded] = useState(false);
     const [isTraditionalLoadingError, setIsTraditionalLoadingError] = useState(false);
     const [traditionalNextPageToken, setTraditionalNextPageToken] = useState<string | null>(null);
     const [isLoadingMoreTraditional, setIsLoadingMoreTraditional] = useState(false);
@@ -737,6 +741,13 @@ export function GmailInterfaceFixed() {
             setIsDrafting(false);
         }
     }, [selectedInsight]);
+
+    // Reset modal expansion state when traditional modal is closed
+    useEffect(() => {
+        if (!isTraditionalModalOpen) {
+            setIsModalExpanded(false);
+        }
+    }, [isTraditionalModalOpen]);
 
     // Freeze background when modals are open
     useEffect(() => {
@@ -3510,13 +3521,18 @@ export function GmailInterfaceFixed() {
 
                                                 {/* Traditional Email Detailed View Modal */}
                                                 <div
-                                                    className={`fixed top-1/2 left-1/2 bg-black rounded-[2.5rem] shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-[1400] flex flex-col border border-neutral-200 dark:border-white/10`}
+                                                    className={`fixed bg-black shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-[1400] flex flex-col border border-neutral-200 dark:border-white/10`}
                                                     style={{
-                                                        width: '75%',
-                                                        height: '90vh',
-                                                        transform: isTraditionalModalOpen ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -45%) scale(0.95)',
+                                                        top: isModalExpanded ? '0' : '50%',
+                                                        left: isModalExpanded ? '0' : '50%',
+                                                        width: isModalExpanded ? '100vw' : '75%',
+                                                        height: isModalExpanded ? '100vh' : '90vh',
+                                                        transform: isTraditionalModalOpen 
+                                                            ? (isModalExpanded ? 'translate(0, 0) scale(1)' : 'translate(-50%, -50%) scale(1)') 
+                                                            : (isModalExpanded ? 'translate(0, 5%) scale(0.95)' : 'translate(-50%, -45%) scale(0.95)'),
                                                         opacity: isTraditionalModalOpen ? 1 : 0,
-                                                        pointerEvents: isTraditionalModalOpen ? 'auto' : 'none'
+                                                        pointerEvents: isTraditionalModalOpen ? 'auto' : 'none',
+                                                        borderRadius: isModalExpanded ? '0px' : '2.5rem'
                                                     }}
                                                 >
                                                     {/* Header */}
@@ -3556,12 +3572,35 @@ export function GmailInterfaceFixed() {
                                                                 </div>
                                                             ) : null}
                                                         </div>
-                                                        <button
-                                                            onClick={() => setIsTraditionalModalOpen(false)}
-                                                            className="p-3 bg-black/5 hover:bg-black/10 dark:bg-white/10 border border-neutral-200 dark:border-white/10 rounded-full text-black hover:text-black dark:text-white transition-all shadow-lg"
-                                                        >
-                                                            <X className="w-7 h-7" />
-                                                        </button>
+                                                        <div className="flex items-center gap-4">
+                                                            <TooltipProvider>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger asChild>
+                                                                        <button
+                                                                            onClick={() => setIsModalExpanded(!isModalExpanded)}
+                                                                            className="p-3 bg-black/5 hover:bg-black/10 dark:bg-white/10 border border-neutral-200 dark:border-white/10 rounded-full text-black hover:text-black dark:text-white transition-all shadow-lg flex items-center justify-center"
+                                                                            aria-label={isModalExpanded ? 'Exit Fullscreen' : 'Expand to Fullscreen'}
+                                                                        >
+                                                                            {isModalExpanded ? (
+                                                                                <HugeiconsIcon icon={Minimize01Icon} className="w-7 h-7" />
+                                                                            ) : (
+                                                                                <HugeiconsIcon icon={Maximize01Icon} className="w-7 h-7" />
+                                                                            )}
+                                                                        </button>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent side="bottom" className="bg-neutral-900 text-white border border-neutral-800 px-3 py-1.5 rounded-lg text-xs font-medium shadow-xl z-[1500]">
+                                                                        {isModalExpanded ? 'Exit Fullscreen' : 'Expand to Fullscreen'}
+                                                                    </TooltipContent>
+                                                                </Tooltip>
+                                                            </TooltipProvider>
+
+                                                            <button
+                                                                onClick={() => setIsTraditionalModalOpen(false)}
+                                                                className="p-3 bg-black/5 hover:bg-black/10 dark:bg-white/10 border border-neutral-200 dark:border-white/10 rounded-full text-black hover:text-black dark:text-white transition-all shadow-lg"
+                                                            >
+                                                                <X className="w-7 h-7" />
+                                                            </button>
+                                                        </div>
                                                     </div>
 
                                                     {/* Body Content */}
@@ -3572,14 +3611,14 @@ export function GmailInterfaceFixed() {
                                                                 <p className="text-black dark:text-white/40 font-light text-xl">Opening message...</p>
                                                             </div>
                                                         ) : selectedTraditionalEmail ? (
-                                                            <div className="max-w-4xl mx-auto space-y-12 pb-20">
+                                                            <div className={`mx-auto space-y-12 pb-20 transition-all duration-500 ${isModalExpanded ? 'max-w-6xl' : 'max-w-4xl'}`}>
                                                                 <div className="traditional-email-content font-sans text-lg">
                                                                     {selectedTraditionalEmail.isHtml ? (
                                                                         <div className="bg-white dark:bg-white/95 rounded-xl overflow-hidden shadow-inner border border-neutral-200 dark:border-white/10 ring-1 ring-black/5 flex">
                                                                             <iframe
                                                                                 title="Email Content"
                                                                                 srcDoc={selectedTraditionalEmail.body}
-                                                                                className="w-full min-h-[60vh] border-none bg-transparent"
+                                                                                className={`w-full border-none bg-transparent transition-all duration-500 ${isModalExpanded ? 'min-h-[75vh]' : 'min-h-[60vh]'}`}
                                                                                 sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin"
                                                                                 style={{ backgroundColor: 'transparent', colorSchemes: 'light dark' } as any}
                                                                                 onLoad={(e) => {
