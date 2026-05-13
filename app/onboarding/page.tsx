@@ -182,7 +182,7 @@ export default function OnboardingPage() {
               onClick={() => {
                 // Pre-fill Tally form with the verified email
                 const email = session?.user?.email || "";
-                const tallyUrl = `https://tally.so/r/n0pE_placeholder?email=${encodeURIComponent(email)}`;
+                const tallyUrl = `https://tally.so/r/b5KpB6?email=${encodeURIComponent(email)}`;
                 window.location.href = tallyUrl;
               }}
               className="group w-full h-16 bg-white text-black rounded-2xl font-bold text-lg hover:bg-[#F5F5F5] hover:scale-[1.02] transition-all flex items-center justify-center gap-3 shadow-[0_20px_40px_rgba(255,255,255,0.1)] active:scale-95"
