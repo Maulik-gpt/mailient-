@@ -11,11 +11,6 @@ import { gcalHandler } from './handlers/gcal';
 import { slackHandler } from './handlers/slack';
 import { notionHandler } from './handlers/notion';
 import { calcomHandler } from './handlers/calcom';
-
-/**
- * Execute a single step by dispatching to the appropriate handler.
- * Fetches decrypted tokens for the given app + user.
- */
 export async function executeStep(
   step: { app: string; action: string; params: Record<string, unknown> },
   userId: string

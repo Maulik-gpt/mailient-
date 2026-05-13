@@ -11,7 +11,7 @@ import { getSupabaseAdmin } from '../../../../../lib/supabase.js';
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
+    const session = await (auth as any)();
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

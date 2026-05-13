@@ -12,21 +12,22 @@ export async function calcomHandler(
   apiKey: string,
   action: string,
   params: any
-): Promise<{ success: boolean; data?: any; error?: string }> {
+): Promise<void> {
   const baseUrl = 'https://api.cal.com/v1';
 
   try {
     switch (action) {
       case 'cancel_booking':
-        return await cancelBooking(baseUrl, apiKey, params);
+        await cancelBooking(baseUrl, apiKey, params);
+        return;
       case 'reschedule_booking':
-        return await rescheduleBooking(baseUrl, apiKey, params);
+        await rescheduleBooking(baseUrl, apiKey, params);
+        return;
       default:
-        return { success: false, error: `Unsupported Cal.com action: ${action}` };
+        throw new Error(`Unsupported Cal.com action: ${action}`);
     }
   } catch (err: any) {
-    console.error(`[Arcus V3] Cal.com handler error (${action}):`, err.message);
-    return { success: false, error: err.message };
+    throw new Error(`Cal.com handler error (${action}): ${err.message}`);
   }
 }
 

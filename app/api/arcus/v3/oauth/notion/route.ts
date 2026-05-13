@@ -14,7 +14,7 @@ import { auth } from '../../../../../../lib/auth.js';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth();
+    const session = await (auth as any)();
     if (!session?.user?.email) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
