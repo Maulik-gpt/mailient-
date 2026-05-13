@@ -7,13 +7,13 @@
  */
 
 import { getSupabaseAdmin } from '../supabase.js';
-import { buildContext } from '../context-builder';
-import { runAgenticReasoning, runPlanModeReasoning } from '../reasoning';
-import { emitSSEToUser } from '../sse';
+import { buildContext } from './context-builder';
+import { runAgenticReasoning, runPlanModeReasoning } from './reasoning';
+import { emitSSEToUser } from './sse';
 import { auditLogger } from '../audit-logger.js';
 import type { ArcusJob, ArcusEvent } from '../types';
-import { normalizeGCalEvent } from '../normalizers/gcal';
-import { normalizeSlackMessage } from '../normalizers/slack';
+import { normalizeGCalEvent } from './normalizers/gcal';
+import { normalizeSlackMessage } from './normalizers/slack';
 import crypto from 'crypto';
 
 // In-memory lock to prevent concurrent processing for the same user
