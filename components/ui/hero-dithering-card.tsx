@@ -1,7 +1,7 @@
 import { ArrowRight, ShieldCheck, Lock, Zap, ArrowUpRight } from "lucide-react"
 import { useState, Suspense, lazy } from "react"
 import { useRouter } from "next/navigation"
-import { useSession } from "next-auth/react"
+import { useSession, signIn } from "next-auth/react"
 import { Announcement, AnnouncementTag, AnnouncementTitle } from "@/components/ui/announcement"
 
 const Dithering = lazy(() =>
@@ -12,9 +12,25 @@ export function CTASection() {
     const [isHovered, setIsHovered] = useState(false)
     const router = useRouter()
     const { data: session, status } = useSession()
+    const [email, setEmail] = useState("")
+
+    const handleJoinWaitlist = async () => {
+        if (!email || !email.includes("@")) {
+            // Basic validation
+            return;
+        }
+
+        // Redirect to Google Sign-in to capture verified Gmail ID
+        // After success, it will redirect to onboarding with waitlist param
+        await signIn("google", {
+            callbackUrl: "/onboarding?waitlist=true",
+            login_hint: email.toLowerCase().trim()
+        });
+    };
 
     return (
         <section
+            id="waitlist"
             className="relative w-full min-h-[85vh] flex flex-col items-center justify-center overflow-hidden pt-32 pb-20 px-4 md:px-6"
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
@@ -57,16 +73,28 @@ export function CTASection() {
                     Stop triaging. Mailient identifies revenue opportunities, surfaces urgent threads, and drafts replies in your voice—automatically.
                 </p>
 
-                {/* Button */}
-                <button
-                    onClick={() => status === "authenticated" ? router.push('/home-feed?welcome=true') : router.push('/auth/signin')}
-                    className="group relative inline-flex h-14 items-center justify-center gap-3 overflow-hidden rounded-full bg-white px-12 text-base font-medium text-black transition-all duration-300 hover:scale-105 active:scale-95"
-                >
-                    <span className="relative z-10">
-                        {status === "authenticated" ? "Go to Dashboard" : "Unlock My Inbox"}
-                    </span>
-                    <ArrowRight className="h-5 w-5 relative z-10 transition-transform duration-300 group-hover:translate-x-1" />
-                </button>
+                {/* Waitlist Input and Button */}
+                <div className="flex flex-col sm:flex-row items-center gap-4 w-full max-w-lg mb-12 animate-element animate-delay-500">
+                    <div className="relative w-full group">
+                        <div className="absolute inset-0 bg-white/5 rounded-2xl blur-xl group-hover:bg-white/10 transition-colors pointer-events-none" />
+                        <input
+                            type="email"
+                            placeholder="Enter your Gmail address..."
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="relative w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-6 text-white placeholder:text-zinc-500 focus:outline-none focus:border-white/20 focus:bg-white/10 transition-all text-base font-medium"
+                        />
+                    </div>
+                    <button
+                        onClick={handleJoinWaitlist}
+                        className="group relative inline-flex h-14 items-center justify-center gap-3 overflow-hidden rounded-2xl bg-white px-8 text-base font-bold text-black transition-all duration-300 hover:scale-[1.02] active:scale-95 whitespace-nowrap shadow-[0_20px_40px_rgba(255,255,255,0.1)]"
+                    >
+                        <span className="relative z-10">
+                            Join Waitlist
+                        </span>
+                        <ArrowRight className="h-5 w-5 relative z-10 transition-transform duration-300 group-hover:translate-x-1" />
+                    </button>
+                </div>
 
 
                 {/* Trust Signals */}

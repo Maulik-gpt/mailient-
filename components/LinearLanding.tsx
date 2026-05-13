@@ -82,7 +82,7 @@ const plans = [
             { text: "Secure Google OAuth" },
             { text: "Basic Relationship Tracking" }
         ],
-        btn: { text: "Start Free", href: "/auth/signup" }
+        btn: { text: "Join Waitlist", href: "#waitlist" }
     },
     {
         name: "Starter",
@@ -95,7 +95,7 @@ const plans = [
             { text: "30 Email Summaries per day" },
             { text: "Standard Relationship Tracking" }
         ],
-        btn: { text: "Get Started", href: "/auth/signup" },
+        btn: { text: "Join Waitlist", href: "#waitlist" },
         highlighted: true
     },
     {
@@ -110,7 +110,7 @@ const plans = [
             { text: "Priority Support" },
             { text: "Unlimited Draft Replies" }
         ],
-        btn: { text: "Go Pro", href: "/auth/signup" }
+        btn: { text: "Join Waitlist", href: "#waitlist" }
     }
 ];
 
@@ -269,8 +269,8 @@ export function LinearLanding() {
                         ) : (
                             <>
                                 <button onClick={() => router.push('/auth/signin')} className="hidden sm:block text-sm font-medium text-zinc-500 hover:text-white transition-colors">Log in</button>
-                                <LiquidButton onClick={() => router.push('/auth/signup')} size="default" className="text-white">
-                                    Unlock My Inbox
+                                <LiquidButton onClick={(e) => handleClick(e, 'waitlist')} size="default" className="text-white">
+                                    Join Waitlist
                                 </LiquidButton>
                             </>
                         )}
@@ -557,11 +557,11 @@ export function LinearLanding() {
                                         <p className="text-zinc-400">Join founders who transformed their inbox.</p>
                                     </div>
                                     <LiquidButton
-                                        onClick={() => router.push('/auth/signup')}
+                                        onClick={(e) => handleClick(e, 'waitlist')}
                                         size="xxl"
                                         className="text-white"
                                     >
-                                        Unlock My Inbox
+                                        Join Waitlist
                                         <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                     </LiquidButton>
                                 </div>
@@ -962,11 +962,11 @@ export function LinearLanding() {
 
                     <div className="flex flex-col sm:flex-row justify-center gap-4 mt-20">
                         <LiquidButton
-                            onClick={() => router.push('/auth/signup')}
+                            onClick={(e) => handleClick(e, 'waitlist')}
                             size="xxl"
                             className="text-white"
                         >
-                            Unlock My Inbox
+                            Join Waitlist
                             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                         </LiquidButton>
                         <Button
@@ -1231,10 +1231,10 @@ export function LinearLanding() {
 
                             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10">
                                 <LiquidButton
-                                    onClick={() => router.push('/auth/signup')}
+                                    onClick={(e) => handleClick(e, 'waitlist')}
                                     size="xxl"
                                 >
-                                    Unlock My Inbox
+                                    Join Waitlist
                                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                 </LiquidButton>
                                 <Button
@@ -1464,6 +1464,7 @@ function SecurityCard({ icon, title, desc }: { icon: React.ReactNode, title: str
 
 
 function ComparisonSection() {
+    const { handleClick } = useSmoothScroll();
     const mailientFeatures = [
         "Automated AI workflows",
         "Personalized neural voice strategies",
@@ -1564,12 +1565,10 @@ function ComparisonSection() {
 
                         <Button
                             className="w-full bg-white text-black hover:bg-zinc-200 rounded-2xl py-6 text-base font-bold group/btn shadow-[0_20px_40px_-15px_rgba(255,255,255,0.15)]"
-                            asChild
+                            onClick={(e) => handleClick(e, 'waitlist')}
                         >
-                            <a href="/auth/signup">
-                                Get Started
-                                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                            </a>
+                            Join Waitlist
+                            <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                         </Button>
                     </motion.div>
 
