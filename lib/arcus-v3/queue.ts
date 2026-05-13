@@ -11,7 +11,7 @@ import { buildContext } from './context-builder';
 import { runAgenticReasoning, runPlanModeReasoning } from './reasoning';
 import { emitSSEToUser } from './sse';
 import { auditLogger } from '../audit-logger.js';
-import type { ArcusJob, ArcusEvent } from '../types';
+import type { ArcusJob, ArcusEvent } from './types';
 import { normalizeGCalEvent } from './normalizers/gcal';
 import { normalizeSlackMessage } from './normalizers/slack';
 import crypto from 'crypto';
