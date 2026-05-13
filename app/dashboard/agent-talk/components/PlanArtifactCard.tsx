@@ -1,792 +1,287 @@
 'use client';
-
 /**
- * PlanArtifactCard — 4-State Machine
- *
- * States: detected → plan_built → executing → completed
- *
- * This component is the primary surface for Arcus reactive plans.
- * It uses the liquid glass design system from arcus-tokens.css.
- * All four states share the same outer glass shell — only the interior changes.
+ * Arcus V3 — Plan Artifact Card
+ * 
+ * State machine component with exactly 4 states:
+ * detected → plan_built → executing → completed
+ * 
+ * Shared glass shell, editorial typography (Fraunces), 
+ * and liquid interaction language.
  */
-
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '@/lib/utils';
+import React, { useState, useCallback } from 'react';
+import { useRelativeTime } from '../hooks/useRelativeTime';
+import { usePlanSSE, type SSEEvent } from '../hooks/usePlanSSE';
 import '../arcus-tokens.css';
 
-// ─── Types ──────────────────────────────────────────────────────────────────
-
-export type PlanStatus = 'detected' | 'plan_built' | 'executing' | 'completed' | 'failed' | 'dismissed';
-
-export type StepStatus = 'pending' | 'executing' | 'completed' | 'failed';
-
-export type PlanStep = {
-  id: string;
-  app: 'gcal' | 'slack' | 'notion' | 'calcom';
-  action: string;
-  params: Record<string, unknown>;
-  humanReadable: string;
-  irreversible: boolean;
-  status: StepStatus;
-  error?: string;
-  position: number;
-};
-
-export type PlanOption = {
-  label: string;
-  effort: 'low' | 'medium' | 'high';
-  tradeoff: string;
-  irreversible: boolean;
-  steps: Array<{
-    app: string;
-    action: string;
-    params: Record<string, unknown>;
-    humanReadable: string;
-  }>;
-};
-
-export type Finding = {
+interface Finding {
   id: string;
   headline: string;
   impact: string;
-  options: PlanOption[];
+  options: Array<{
+    label: string;
+    effort: string;
+    tradeoff: string;
+    irreversible: boolean;
+    steps: Array<{
+      app: string;
+      action: string;
+      params: Record<string, unknown>;
+      humanReadable: string;
+    }>;
+  }>;
   recommended: number;
-};
+}
 
-export type PlanArtifact = {
-  planId: string;
-  status: PlanStatus;
-  severity: 'low' | 'medium' | 'high';
+interface PlanStep {
+  id: string;
+  position: number;
+  app: string;
+  action: string;
+  params: Record<string, unknown>;
+  human_readable: string;
+  irreversible: boolean;
+  status: string;
+  error: string | null;
+}
+
+interface PlanData {
+  id: string;
+  mode: string;
+  status: string;
+  severity: string | null;
+  headline: string | null;
+  impact: string | null;
   findings: Finding[];
   steps: PlanStep[];
-  sources: string[];       // e.g. ['gcal', 'slack']
-  createdAt: string;
-  completedAt?: string;
-  selectedOption?: number;
-  // Legacy compat fields (used by existing ChatInterface)
-  title: string;
-  objective: string;
-  assumptions: string[];
-  questionsAnswered: string[];
-  acceptanceCriteria: string[];
-  version: number;
-  locked: boolean;
-  complexity: 'simple' | 'complex';
-  intent: string;
-  canvasType: string;
-  todos: any[];
-  approvedAt?: string;
-  runId?: string;
-};
-
-// ─── Props ──────────────────────────────────────────────────────────────────
+  created_at: string;
+  completed_at: string | null;
+  source: string | null;
+}
 
 interface PlanArtifactCardProps {
-  plan: PlanArtifact;
-  onApprove: (planId: string) => Promise<void>;
-  onReject?: (planId: string) => void;
-  onBuildPlan?: (planId: string, optionIndex: number) => Promise<void>;
-  onExecute?: (planId: string) => Promise<void>;
-  onStepUpdate?: (planId: string, stepId: string, status: StepStatus) => void;
-  isProcessing?: boolean;
-  compact?: boolean;
-  isNew?: boolean;  // triggers entrance animation
+  plan: any; // Using any for compatibility with legacy data structures
+  isNew?: boolean;
+  onUpdate?: () => void;
 }
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
-const SEVERITY_CONFIG = {
-  low:    { label: 'Low Priority',    className: 'arcus-badge-low' },
-  medium: { label: 'Needs Attention', className: 'arcus-badge-medium' },
-  high:   { label: 'Action Required', className: 'arcus-badge-high' },
+const SEVERITY_MAP: Record<string, { label: string; color: string }> = {
+  low: { label: 'Low Priority', color: 'blue' },
+  medium: { label: 'Needs Attention', color: 'amber' },
+  high: { label: 'Action Required', color: 'red' },
 };
 
-const EFFORT_LABELS: Record<string, string> = {
-  low: 'Low effort',
-  medium: 'Medium effort',
-  high: 'High effort',
-};
+export default function PlanArtifactCard({ plan, isNew, onUpdate }: PlanArtifactCardProps) {
+  // Normalize plan data for internal use
+  const normalizedPlan: PlanData = {
+    id: plan.planId || plan.id,
+    mode: plan.mode || 'agentic',
+    status: plan.status,
+    severity: plan.severity || 'low',
+    headline: plan.headline || plan.title,
+    impact: plan.impact || plan.objective,
+    findings: plan.findings || [],
+    steps: plan.steps || [],
+    created_at: plan.createdAt || plan.created_at,
+    completed_at: plan.completedAt || plan.completed_at,
+    source: plan.source || (plan.sources ? plan.sources.join(', ') : null),
+  };
 
-const APP_ICONS: Record<string, string> = {
-  gcal: '📅',
-  slack: '💬',
-  notion: '📝',
-  calcom: '🗓️',
-};
-
-const DEEP_LINKS: Record<string, string> = {
-  gcal: 'https://calendar.google.com',
-  slack: 'https://app.slack.com',
-  notion: 'https://notion.so',
-  calcom: 'https://app.cal.com',
-};
-
-function useRelativeTime(dateStr: string) {
-  const [relative, setRelative] = useState('');
-  useEffect(() => {
-    const update = () => {
-      const diff = Date.now() - new Date(dateStr).getTime();
-      const mins = Math.floor(diff / 60000);
-      if (mins < 1) setRelative('Just now');
-      else if (mins < 60) setRelative(`${mins} min ago`);
-      else if (mins < 1440) setRelative(`${Math.floor(mins / 60)}h ago`);
-      else setRelative(`${Math.floor(mins / 1440)}d ago`);
-    };
-    update();
-    const t = setInterval(update, 60000);
-    return () => clearInterval(t);
-  }, [dateStr]);
-  return relative;
-}
-
-// ─── Component ──────────────────────────────────────────────────────────────
-
-export function PlanArtifactCard({
-  plan,
-  onApprove,
-  onReject,
-  onBuildPlan,
-  onExecute,
-  isProcessing,
-  compact,
-  isNew,
-}: PlanArtifactCardProps) {
-  const relativeTime = useRelativeTime(plan.createdAt);
+  const [status, setStatus] = useState(normalizedPlan.status);
+  const [steps, setSteps] = useState<PlanStep[]>(normalizedPlan.steps);
   const [selectedOption, setSelectedOption] = useState(
-    plan.findings?.[0]?.recommended ?? 0
+    normalizedPlan.findings?.[0]?.recommended ?? 0
   );
-  const [isBuilding, setIsBuilding] = useState(false);
-  const [isExecuting, setIsExecuting] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const relativeTime = useRelativeTime(normalizedPlan.created_at);
 
-  const finding = plan.findings?.[0];
-  const severity = SEVERITY_CONFIG[plan.severity] || SEVERITY_CONFIG.low;
-  const isCompleted = plan.status === 'completed';
+  // SSE for real-time execution feedback
+  usePlanSSE({
+    planId: normalizedPlan.id,
+    enabled: status === 'executing' || status === 'approved',
+    onEvent: useCallback((event: SSEEvent) => {
+      if (event.type === 'step:start' && event.stepId) {
+        setSteps(prev => prev.map(s => s.id === event.stepId ? { ...s, status: 'executing' } : s));
+      }
+      if (event.type === 'step:done' && event.stepId) {
+        setSteps(prev => prev.map(s => s.id === event.stepId ? { ...s, status: 'completed' } : s));
+      }
+      if (event.type === 'step:failed' && event.stepId) {
+        setSteps(prev => prev.map(s => s.id === event.stepId ? { ...s, status: 'failed', error: event.error || 'Execution failed' } : s));
+        setStatus('failed');
+      }
+      if (event.type === 'plan:completed') {
+        setStatus('completed');
+      }
+    }, [])
+  });
 
-  // ─── State: completed — collapsed row ───
-  if (isCompleted) {
+  // ─── Actions ──────────────────────────────────────────────────────────────
+
+  async function handleBuildPlan() {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/arcus/v3/plans/${normalizedPlan.id}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ selectedOption }),
+      });
+      if (res.ok) {
+        const planRes = await fetch(`/api/arcus/v3/plans/${normalizedPlan.id}`);
+        if (planRes.ok) {
+          const updated = await planRes.json();
+          setSteps(updated.steps || []);
+          setStatus('approved');
+        }
+      }
+    } catch (err) {
+      console.error('Build plan failed:', err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleExecute() {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/arcus/v3/plans/${normalizedPlan.id}/execute`, { method: 'POST' });
+      if (res.ok) setStatus('executing');
+    } catch (err) {
+      console.error('Execution trigger failed:', err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleDismiss() {
+    try {
+      await fetch(`/api/arcus/v3/plans/${normalizedPlan.id}/dismiss`, { method: 'POST' });
+      setStatus('dismissed');
+      onUpdate?.();
+    } catch (err) {
+      console.error('Dismiss failed:', err);
+    }
+  }
+
+  // ─── Rendering ──────────────────────────────────────────────────────────────
+
+  if (status === 'dismissed') return null;
+
+  // State: Completed (Collapsed)
+  if (status === 'completed') {
     return (
-      <div
-        className="arcus-glass"
-        style={{
-          padding: '16px 24px',
-          opacity: 0.6,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          minHeight: 56,
-        }}
-      >
-        <span style={{
-          fontFamily: 'var(--font-ui)',
-          fontSize: 'var(--text-sm)',
-          color: 'var(--text-on-dark-secondary)',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-          maxWidth: '60%',
-        }}>
-          {finding?.headline || plan.title || 'Plan completed'}
+      <div className="glass-surface" style={{ padding: 'var(--space-4) var(--space-6)', opacity: 0.6, height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-4)' }}>
+        <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-on-dark-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '70%', fontFamily: 'var(--font-ui)' }}>
+          {normalizedPlan.findings?.[0]?.headline || normalizedPlan.headline}
         </span>
-        <span style={{
-          fontFamily: 'var(--font-ui)',
-          fontSize: 'var(--text-xs)',
-          color: 'var(--text-on-dark-tertiary)',
-        }}>
-          Completed · {plan.completedAt
-            ? new Date(plan.completedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            : relativeTime}
+        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-on-dark-tertiary)', fontFamily: 'var(--font-ui)' }}>
+          Completed · {useRelativeTime(normalizedPlan.completed_at)}
         </span>
       </div>
     );
   }
 
-  // ─── Outer glass shell (all non-completed states) ───
+  const severity = SEVERITY_MAP[normalizedPlan.severity || 'low'];
+  const finding = normalizedPlan.findings?.[0];
+
   return (
-    <div
-      className={cn('arcus-glass', isNew && 'arcus-card-enter')}
-      style={{ padding: 'var(--space-6)' }}
-    >
-      {/* ─── Header: severity + timestamp ─── */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 'var(--space-4)',
-      }}>
-        <span className={cn('arcus-badge', severity.className)}>
+    <div className={`glass-surface ${isNew ? 'arcus-card-enter' : ''}`} style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-4)' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
+        <span className={`arcus-badge arcus-badge-${normalizedPlan.severity || 'low'}`}>
           {severity.label}
         </span>
-        <span style={{
-          fontFamily: 'var(--font-ui)',
-          fontSize: 'var(--text-xs)',
-          color: 'var(--text-on-dark-tertiary)',
-        }}>
+        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-on-dark-tertiary)', fontFamily: 'var(--font-ui)' }}>
           {relativeTime}
         </span>
       </div>
 
-      {/* ─── State: detected ─── */}
-      {plan.status === 'detected' && finding && (
-        <StateDetected
-          finding={finding}
-          sources={plan.sources}
-          selectedOption={selectedOption}
-          onSelectOption={setSelectedOption}
-          isBuilding={isBuilding}
-          onBuildPlan={async () => {
-            setIsBuilding(true);
-            try {
-              if (onBuildPlan) {
-                await onBuildPlan(plan.planId, selectedOption);
-              } else {
-                // Fallback: approve = build plan
-                await onApprove(plan.planId);
-              }
-            } finally {
-              setIsBuilding(false);
-            }
-          }}
-        />
-      )}
-
-      {/* ─── State: plan_built ─── */}
-      {plan.status === 'plan_built' && (
-        <StatePlanBuilt
-          finding={finding}
-          steps={plan.steps}
-          isExecuting={isExecuting}
-          onExecute={async () => {
-            setIsExecuting(true);
-            try {
-              if (onExecute) await onExecute(plan.planId);
-              else await onApprove(plan.planId);
-            } finally {
-              setIsExecuting(false);
-            }
-          }}
-          onDismiss={() => onReject?.(plan.planId)}
-        />
-      )}
-
-      {/* ─── State: executing ─── */}
-      {plan.status === 'executing' && (
-        <StateExecuting
-          finding={finding}
-          steps={plan.steps}
-        />
-      )}
-
-      {/* ─── State: failed ─── */}
-      {plan.status === 'failed' && (
-        <StateExecuting
-          finding={finding}
-          steps={plan.steps}
-        />
-      )}
-    </div>
-  );
-}
-
-// ─── State: Detected ────────────────────────────────────────────────────────
-
-function StateDetected({
-  finding,
-  sources,
-  selectedOption,
-  onSelectOption,
-  isBuilding,
-  onBuildPlan,
-}: {
-  finding: Finding;
-  sources: string[];
-  selectedOption: number;
-  onSelectOption: (i: number) => void;
-  isBuilding: boolean;
-  onBuildPlan: () => void;
-}) {
-  return (
-    <>
-      {/* Headline — Fraunces serif */}
-      <h3 style={{
-        fontFamily: 'var(--font-content)',
-        fontSize: 'var(--text-md)',
-        fontWeight: 'var(--weight-medium)' as any,
-        color: 'var(--text-on-dark-primary)',
-        lineHeight: 'var(--leading-tight)' as any,
-        margin: '0 0 var(--space-2) 0',
-      }}>
-        {finding.headline}
+      {/* Headline & Impact */}
+      <h3 style={{ fontFamily: 'var(--font-content)', fontSize: 'var(--text-md)', fontWeight: 500, color: 'var(--text-on-dark-primary)', lineHeight: 1.3, marginBottom: 'var(--space-2)' }}>
+        {finding?.headline || normalizedPlan.headline}
       </h3>
-
-      {/* Impact */}
-      <p style={{
-        fontFamily: 'var(--font-ui)',
-        fontSize: 'var(--text-sm)',
-        color: 'var(--text-on-dark-secondary)',
-        lineHeight: 'var(--leading-normal)' as any,
-        margin: '0 0 var(--space-3) 0',
-      }}>
-        {finding.impact}
+      <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-on-dark-secondary)', lineHeight: 1.6, marginBottom: 'var(--space-3)', fontFamily: 'var(--font-ui)' }}>
+        {finding?.impact || normalizedPlan.impact}
       </p>
 
-      {/* Source attribution */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '6px',
-        marginBottom: 'var(--space-4)',
-      }}>
-        {sources.map(s => (
-          <span key={s} style={{ fontSize: '14px' }}>{APP_ICONS[s] || '📎'}</span>
-        ))}
-        <span style={{
-          fontFamily: 'var(--font-ui)',
-          fontSize: 'var(--text-xs)',
-          color: 'var(--text-on-dark-tertiary)',
-        }}>
-          Detected from {sources.map(s =>
-            s === 'gcal' ? 'Google Calendar' : s.charAt(0).toUpperCase() + s.slice(1)
-          ).join(' + ')}
-        </span>
-      </div>
-
-      {/* Options */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
-        {finding.options.map((opt, idx) => {
-          const isSelected = idx === selectedOption;
-          return (
-            <button
-              key={idx}
-              onClick={() => onSelectOption(idx)}
-              style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: 'var(--space-3)',
-                padding: 'var(--space-3)',
-                background: isSelected ? 'rgba(255,255,255,0.06)' : 'transparent',
-                border: isSelected ? '0.5px solid rgba(255,255,255,0.20)' : '0.5px solid transparent',
-                borderRadius: 'var(--radius-md)',
-                cursor: 'pointer',
-                textAlign: 'left',
-                transition: 'background var(--duration-fast) var(--ease-out)',
-                width: '100%',
-              }}
-            >
-              {/* Radio dot */}
-              <div style={{
-                width: 16, height: 16,
-                borderRadius: '50%',
-                border: `2px solid ${isSelected ? '#FFFFFF' : 'rgba(255,255,255,0.25)'}`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-                marginTop: 2,
-              }}>
-                {isSelected && (
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: 'spring', damping: 15, stiffness: 400 }}
-                    style={{
-                      width: 8, height: 8,
-                      borderRadius: '50%',
-                      background: '#FFFFFF',
-                    }}
-                  />
-                )}
-              </div>
-
-              {/* Content */}
-              <div style={{ flex: 1 }}>
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}>
-                  <span style={{
-                    fontFamily: 'var(--font-ui)',
-                    fontSize: 'var(--text-sm)',
-                    fontWeight: 'var(--weight-medium)' as any,
-                    color: 'var(--text-on-dark-primary)',
-                  }}>
-                    {opt.label}
-                  </span>
-                  <span className={cn(
-                    'arcus-badge',
-                    opt.effort === 'low' ? 'arcus-badge-low' :
-                    opt.effort === 'medium' ? 'arcus-badge-medium' : 'arcus-badge-high'
-                  )} style={{ fontSize: 10 }}>
-                    {EFFORT_LABELS[opt.effort]}
-                  </span>
-                </div>
-                <span style={{
-                  fontFamily: 'var(--font-ui)',
-                  fontSize: 'var(--text-xs)',
-                  color: opt.irreversible ? 'var(--color-warning)' : 'var(--text-on-dark-tertiary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  marginTop: 4,
-                }}>
-                  {opt.irreversible && <span>⚠️</span>}
-                  {opt.tradeoff}
-                </span>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Build Plan button */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-        <button
-          className="arcus-btn-primary"
-          onClick={onBuildPlan}
-          disabled={isBuilding}
-        >
-          {isBuilding ? (
-            <span className="arcus-loading-dots"><span /><span /><span /></span>
-          ) : 'Build Plan'}
-        </button>
-      </div>
-    </>
-  );
-}
-
-// ─── State: Plan Built ──────────────────────────────────────────────────────
-
-function StatePlanBuilt({
-  finding,
-  steps,
-  isExecuting,
-  onExecute,
-  onDismiss,
-}: {
-  finding?: Finding;
-  steps: PlanStep[];
-  isExecuting: boolean;
-  onExecute: () => void;
-  onDismiss?: () => void;
-}) {
-  return (
-    <>
-      {finding && (
-        <h3 style={{
-          fontFamily: 'var(--font-content)',
-          fontSize: 'var(--text-md)',
-          fontWeight: 'var(--weight-medium)' as any,
-          color: 'var(--text-on-dark-primary)',
-          lineHeight: 'var(--leading-tight)' as any,
-          margin: '0 0 var(--space-4) 0',
-        }}>
-          {finding.headline}
-        </h3>
-      )}
-
-      {/* Step checklist */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', marginBottom: 'var(--space-5)' }}>
-        {steps.map((step, idx) => (
-          <div
-            key={step.id}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 'var(--space-3)',
-              padding: 'var(--space-2) var(--space-3)',
-              background: step.irreversible ? 'var(--color-warning-bg)' : 'transparent',
-              borderRadius: 'var(--radius-md)',
-            }}
-          >
-            {/* Step number circle */}
-            <div style={{
-              width: 20, height: 20,
-              borderRadius: '50%',
-              background: 'rgba(255,255,255,0.08)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-            }}>
-              <span style={{
-                fontFamily: 'var(--font-ui)',
-                fontSize: 'var(--text-xs)',
-                fontWeight: 'var(--weight-medium)' as any,
-                color: 'var(--text-on-dark-secondary)',
-              }}>
-                {idx + 1}
-              </span>
-            </div>
-
-            {/* Step text */}
-            <span style={{
-              fontFamily: 'var(--font-ui)',
-              fontSize: 'var(--text-sm)',
-              color: 'var(--text-on-dark-primary)',
-              flex: 1,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-            }}>
-              {step.irreversible && <span style={{ fontSize: 12 }}>⚠️</span>}
-              {step.humanReadable}
-            </span>
-
-            {/* App chip */}
-            <span style={{
-              fontFamily: 'var(--font-ui)',
-              fontSize: 'var(--text-xs)',
-              background: 'rgba(255,255,255,0.08)',
-              border: '0.5px solid rgba(255,255,255,0.15)',
-              borderRadius: 'var(--radius-sm)',
-              padding: '2px 8px',
-              color: 'var(--text-on-dark-tertiary)',
-            }}>
-              {step.app}
-            </span>
+      {/* Detected State */}
+      {(status === 'proposed' || status === 'detected') && finding && (
+        <>
+          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-on-dark-tertiary)', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-ui)' }}>
+            Detected from {normalizedPlan.source || 'connected apps'}
           </div>
-        ))}
-      </div>
 
-      {/* Action buttons */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)' }}>
-        {onDismiss && (
-          <button className="arcus-btn-ghost" onClick={onDismiss}>
-            Dismiss
-          </button>
-        )}
-        <button
-          className="arcus-btn-primary"
-          onClick={onExecute}
-          disabled={isExecuting}
-          style={{ minWidth: 100 }}
-        >
-          {isExecuting ? <div className="arcus-spinner" style={{ width: 14, height: 14, borderWidth: 1.5 }} /> : 'Execute'}
-        </button>
-      </div>
-    </>
-  );
-}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
+            {finding.options.map((option, idx) => (
+              <div
+                key={idx}
+                onClick={() => setSelectedOption(idx)}
+                style={{
+                  display: 'flex',
+                  gap: 'var(--space-3)',
+                  padding: 'var(--space-3)',
+                  borderRadius: 'var(--radius-md)',
+                  cursor: 'pointer',
+                  border: selectedOption === idx ? '0.5px solid rgba(255,255,255,0.20)' : '0.5px solid transparent',
+                  background: selectedOption === idx ? 'rgba(255,255,255,0.06)' : 'transparent',
+                }}
+              >
+                <div style={{ width: 16, height: 16, borderRadius: '50%', border: `1.5px solid ${selectedOption === idx ? '#FFF' : 'rgba(255,255,255,0.3)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
+                  {selectedOption === idx && <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#FFF' }} className="arcus-option-pop" />}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                    <span style={{ fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--text-on-dark-primary)', fontFamily: 'var(--font-ui)' }}>{option.label}</span>
+                    <span className="arcus-effort-badge">{option.effort}</span>
+                  </div>
+                  <div style={{ fontSize: 'var(--text-xs)', color: option.irreversible ? 'var(--color-warning)' : 'var(--text-on-dark-tertiary)', fontFamily: 'var(--font-ui)' }}>
+                    {option.irreversible && '⚠ '}
+                    {option.tradeoff}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
 
-// ─── State: Executing ───────────────────────────────────────────────────────
-
-function StateExecuting({
-  finding,
-  steps,
-}: {
-  finding?: Finding;
-  steps: PlanStep[];
-}) {
-  const completedCount = steps.filter(s => s.status === 'completed').length;
-  const failedStep = steps.find(s => s.status === 'failed');
-
-  return (
-    <>
-      {finding && (
-        <h3 style={{
-          fontFamily: 'var(--font-content)',
-          fontSize: 'var(--text-md)',
-          fontWeight: 'var(--weight-medium)' as any,
-          color: 'var(--text-on-dark-primary)',
-          lineHeight: 'var(--leading-tight)' as any,
-          margin: '0 0 var(--space-4) 0',
-        }}>
-          {finding.headline}
-        </h3>
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button className="arcus-btn-primary" onClick={handleBuildPlan} disabled={loading}>
+              {loading ? <span className="arcus-spinner arcus-spinner-small" /> : 'Build Plan'}
+            </button>
+          </div>
+        </>
       )}
 
-      {/* Step list with live status */}
-      <div
-        style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}
-        aria-live="polite"
-      >
-        {steps.map((step) => (
-          <StepRow key={step.id} step={step} />
-        ))}
-      </div>
+      {/* Plan Built / Executing States */}
+      {(status === 'approved' || status === 'executing' || status === 'failed') && (
+        <>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
+            {steps.map((step, idx) => (
+              <div key={step.id} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-md)', background: step.status === 'completed' ? 'rgba(52,211,153,0.08)' : 'transparent' }} className={step.status === 'completed' ? 'arcus-step-flash' : ''}>
+                <div style={{ width: 20, height: 20, borderRadius: '50%', background: step.status === 'completed' ? 'var(--color-success-bg)' : 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 'var(--text-xs)', color: 'var(--text-on-dark-secondary)', fontFamily: 'var(--font-ui)' }}>
+                  {step.status === 'pending' && (idx + 1)}
+                  {step.status === 'executing' && <span className="arcus-spinner arcus-spinner-small" />}
+                  {step.status === 'completed' && <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5L4 7L8 3" stroke="var(--color-success)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  {step.status === 'failed' && <span style={{ color: 'var(--color-danger)' }}>×</span>}
+                </div>
+                <span style={{ flex: 1, fontSize: 'var(--text-sm)', color: 'var(--text-on-dark-primary)', fontFamily: 'var(--font-ui)' }}>{step.human_readable}</span>
+                <span className="arcus-step-app-chip">{step.app}</span>
+              </div>
+            ))}
+          </div>
 
-      {/* Summary */}
-      {failedStep ? (
-        <div style={{
-          marginTop: 'var(--space-4)',
-          fontFamily: 'var(--font-ui)',
-          fontSize: 'var(--text-xs)',
-          color: 'var(--text-on-dark-tertiary)',
-        }}>
-          {completedCount > 0 && `Steps 1–${completedCount} completed. `}
-          Step {steps.indexOf(failedStep) + 1} failed.
-          {steps.indexOf(failedStep) < steps.length - 1 &&
-            ` Steps ${steps.indexOf(failedStep) + 2}–${steps.length} were not attempted.`}
-        </div>
-      ) : (
-        <div style={{
-          marginTop: 'var(--space-4)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 8,
-          fontFamily: 'var(--font-ui)',
-          fontSize: 'var(--text-sm)',
-          color: 'var(--text-on-dark-secondary)',
-        }}>
-          <div className="arcus-spinner" style={{ width: 14, height: 14, borderWidth: 1.5 }} />
-          Running...
-        </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)' }}>
+            {status === 'approved' && (
+              <>
+                <button className="arcus-btn-ghost" onClick={handleDismiss}>Dismiss</button>
+                <button className="arcus-btn-primary" onClick={handleExecute} disabled={loading}>
+                  {loading ? <span className="arcus-spinner arcus-spinner-small" /> : 'Execute'}
+                </button>
+              </>
+            )}
+            {status === 'executing' && <button className="arcus-btn-ghost" disabled style={{ opacity: 0.8, cursor: 'default' }}>Running…</button>}
+            {status === 'failed' && <button className="arcus-btn arcus-btn-destructive" onClick={() => setStatus('approved')}>Retry</button>}
+          </div>
+        </>
       )}
-    </>
-  );
-}
-
-// ─── Step Row ───────────────────────────────────────────────────────────────
-
-function StepRow({ step }: { step: PlanStep }) {
-  const [justCompleted, setJustCompleted] = useState(false);
-  const prevStatus = useRef(step.status);
-
-  useEffect(() => {
-    if (prevStatus.current === 'executing' && step.status === 'completed') {
-      setJustCompleted(true);
-      const t = setTimeout(() => setJustCompleted(false), 600);
-      return () => clearTimeout(t);
-    }
-    prevStatus.current = step.status;
-  }, [step.status]);
-
-  return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      borderRadius: 'var(--radius-md)',
-    }}
-    className={justCompleted ? 'arcus-step-flash' : undefined}
-    >
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 'var(--space-3)',
-        padding: 'var(--space-2) var(--space-3)',
-      }}>
-        {/* Status indicator */}
-        <div style={{
-          width: 20, height: 20,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}>
-          {step.status === 'pending' && (
-            <div style={{
-              width: 20, height: 20,
-              borderRadius: '50%',
-              background: 'rgba(255,255,255,0.08)',
-            }} />
-          )}
-          {step.status === 'executing' && (
-            <div className="arcus-spinner" style={{ width: 18, height: 18, borderWidth: 1.5 }} />
-          )}
-          {step.status === 'completed' && (
-            <motion.div
-              initial={{ scale: 1.2 }}
-              animate={{ scale: 1 }}
-              transition={{ duration: 0.2 }}
-              style={{
-                width: 20, height: 20,
-                borderRadius: '50%',
-                background: 'var(--color-success-bg)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                <path d="M2 5L4.5 7.5L8 3" stroke="var(--color-success)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </motion.div>
-          )}
-          {step.status === 'failed' && (
-            <div style={{
-              width: 20, height: 20,
-              borderRadius: '50%',
-              background: 'var(--color-danger-bg)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--color-danger)',
-              fontSize: 12,
-              fontWeight: 600,
-            }}>×</div>
-          )}
-        </div>
-
-        {/* Step text */}
-        <span style={{
-          fontFamily: 'var(--font-ui)',
-          fontSize: 'var(--text-sm)',
-          color: step.status === 'completed' ? 'var(--text-on-dark-secondary)' : 'var(--text-on-dark-primary)',
-          flex: 1,
-        }}>
-          {step.humanReadable}
-        </span>
-
-        {/* App chip */}
-        <span style={{
-          fontFamily: 'var(--font-ui)',
-          fontSize: 'var(--text-xs)',
-          background: 'rgba(255,255,255,0.08)',
-          border: '0.5px solid rgba(255,255,255,0.15)',
-          borderRadius: 'var(--radius-sm)',
-          padding: '2px 8px',
-          color: 'var(--text-on-dark-tertiary)',
-        }}>
-          {step.app}
-        </span>
-      </div>
-
-      {/* Error expansion for failed steps */}
-      <AnimatePresence>
-        {step.status === 'failed' && step.error && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25 }}
-            style={{ overflow: 'hidden', paddingLeft: 44 }}
-          >
-            <div style={{
-              padding: 'var(--space-2) var(--space-3)',
-              fontFamily: 'var(--font-ui)',
-              fontSize: 'var(--text-xs)',
-              color: 'var(--color-danger)',
-              marginBottom: 'var(--space-1)',
-            }}>
-              {step.error}
-            </div>
-            <a
-              href={DEEP_LINKS[step.app] || '#'}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 4,
-                padding: 'var(--space-1) var(--space-3)',
-                fontFamily: 'var(--font-ui)',
-                fontSize: 'var(--text-xs)',
-                fontWeight: 'var(--weight-medium)' as any,
-                color: 'var(--text-on-dark-primary)',
-                textDecoration: 'none',
-              }}
-            >
-              Fix manually →
-            </a>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
-
-// ─── Default export for existing import compatibility ────────────────────────
-
-export default PlanArtifactCard;

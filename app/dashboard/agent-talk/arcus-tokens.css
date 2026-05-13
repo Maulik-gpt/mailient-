@@ -27,54 +27,71 @@
   --weight-medium:   500;
   --weight-semibold: 600;
 
-  /* Brand Palette */
-  --palette-page:    #F4F5F8;
-  --palette-black:   #000000;
-  --palette-surface: #222326;
-  --palette-white:   #FFFFFF;
+  /* ====================== */
+  /* BRAND PALETTE           */
+  /* ====================== */
+  --palette-page:    #F4F5F8;   /* page canvas — cool off-white */
+  --palette-black:   #000000;   /* sidebar, deepest surfaces */
+  --palette-surface: #222326;   /* cards, panels — dark charcoal */
+  --palette-white:   #FFFFFF;   /* text on dark, maximum contrast */
 
-  /* Semantic Surfaces */
-  --bg-page:    var(--palette-page);
-  --bg-sidebar: var(--palette-black);
-  --bg-card:    var(--palette-surface);
-  --bg-panel:   var(--palette-surface);
-  --bg-input:   rgba(255,255,255,0.06);
-  --bg-overlay: rgba(0,0,0,0.60);
+  /* ====================== */
+  /* SEMANTIC SURFACE TOKENS */
+  /* ====================== */
+  --bg-page:        var(--palette-page);     /* outermost page background */
+  --bg-sidebar:     var(--palette-black);    /* sidebar background */
+  --bg-card:        var(--palette-surface);  /* plan artifact cards */
+  --bg-panel:       var(--palette-surface);  /* any raised panel or sheet */
+  --bg-input:       rgba(255,255,255,0.06);  /* input fields on dark surface */
+  --bg-overlay:     rgba(0,0,0,0.60);        /* modal scrim */
 
-  /* Text on dark surfaces */
+  /* ====================== */
+  /* TEXT TOKENS             */
+  /* ====================== */
+  /* On dark surfaces (#222326 or #000000) */
   --text-on-dark-primary:   #FFFFFF;
   --text-on-dark-secondary: rgba(255,255,255,0.60);
   --text-on-dark-tertiary:  rgba(255,255,255,0.35);
   --text-on-dark-disabled:  rgba(255,255,255,0.20);
 
-  /* Text on light canvas */
+  /* On the light page canvas (#F4F5F8) */
   --text-on-light-primary:   #0A0B0D;
   --text-on-light-secondary: #4A4D55;
   --text-on-light-tertiary:  #8A8D96;
 
-  /* Convenience aliases */
+  /* Convenience aliases — use these in components */
   --text-primary:   var(--text-on-dark-primary);
   --text-secondary: var(--text-on-dark-secondary);
   --text-tertiary:  var(--text-on-dark-tertiary);
   --text-disabled:  var(--text-on-dark-disabled);
-  --text-inverse:   var(--palette-surface);
+  --text-inverse:   var(--palette-surface);  /* dark text on white */
 
-  /* Borders */
-  --border-faint:  rgba(255,255,255,0.06);
-  --border-soft:   rgba(255,255,255,0.12);
-  --border-strong: rgba(255,255,255,0.24);
-  --border-glow:   rgba(255,255,255,0.40);
+  /* ====================== */
+  /* BORDER TOKENS           */
+  /* ====================== */
+  --border-faint:  rgba(255,255,255,0.06);   /* barely there, darkest contexts */
+  --border-soft:   rgba(255,255,255,0.12);   /* standard card edge */
+  --border-strong: rgba(255,255,255,0.24);   /* active / selected state */
+  --border-glow:   rgba(255,255,255,0.40);   /* specular highlight, top edge */
 
-  /* Liquid Glass */
-  --glass-tint-card:    rgba(34,35,38,0.82);
-  --glass-tint-sidebar: rgba(0,0,0,0.88);
-  --glass-tint-modal:   rgba(22,23,26,0.90);
-  --glass-tint-toast:   rgba(34,35,38,0.94);
+  /* ====================== */
+  /* LIQUID GLASS SYSTEM     */
+  /* ====================== */
+  /* Glass tint values */
+  --glass-tint-card:    rgba(34,35,38,0.82);   /* cards on light page */
+  --glass-tint-sidebar: rgba(0,0,0,0.88);       /* sidebar */
+  --glass-tint-modal:   rgba(22,23,26,0.90);    /* modals */
+  --glass-tint-toast:   rgba(34,35,38,0.94);    /* toasts */
 
+  /* Blur values */
   --glass-blur-card:    blur(24px);
   --glass-blur-sidebar: blur(32px);
   --glass-blur-modal:   blur(40px);
 
+  /* Top-edge specular highlight */
+  --glass-highlight: inset 0 1px 0 rgba(255,255,255,0.14);
+
+  /* Full glass shadow stack (highlight + lift shadow) */
   --glass-shadow-card:  inset 0 1px 0 rgba(255,255,255,0.14),
                         0 4px 24px rgba(0,0,0,0.18),
                         0 1px 4px rgba(0,0,0,0.12);
@@ -85,182 +102,127 @@
                         0 8px 32px rgba(0,0,0,0.24),
                         0 2px 8px rgba(0,0,0,0.16);
 
+  /* Complete glass mixin values */
   --glass-card-bg:     var(--glass-tint-card);
   --glass-card-border: 0.5px solid rgba(255,255,255,0.12);
   --glass-card-blur:   var(--glass-blur-card);
   --glass-card-shadow: var(--glass-shadow-card);
 
-  /* Status Colors */
-  --color-success:        #34D399;
+  /* ====================== */
+  /* STATUS COLORS           */
+  /* ====================== */
+  --color-success:        #34D399;   /* emerald */
   --color-success-bg:     rgba(52,211,153,0.12);
   --color-success-border: rgba(52,211,153,0.30);
-  --color-warning:        #FBBF24;
+
+  --color-warning:        #FBBF24;   /* amber */
   --color-warning-bg:     rgba(251,191,36,0.12);
   --color-warning-border: rgba(251,191,36,0.30);
-  --color-danger:         #F87171;
+
+  --color-danger:         #F87171;   /* red */
   --color-danger-bg:      rgba(248,113,113,0.12);
   --color-danger-border:  rgba(248,113,113,0.30);
-  --color-info:           #60A5FA;
+
+  --color-info:           #60A5FA;   /* blue */
   --color-info-bg:        rgba(96,165,250,0.12);
   --color-info-border:    rgba(96,165,250,0.30);
 
-  /* Spacing */
-  --space-1:  4px;  --space-2:  8px;  --space-3:  12px;
-  --space-4:  16px; --space-5:  20px; --space-6:  24px;
-  --space-8:  32px; --space-10: 40px; --space-12: 48px;
+  /* ====================== */
+  /* SPACING SCALE — 4px base */
+  /* ====================== */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
   --space-16: 64px;
 
-  /* Radius */
-  --radius-sm:   4px;  --radius-md:   8px;
-  --radius-lg:   12px; --radius-xl:   16px;
-  --radius-2xl:  20px; --radius-full: 9999px;
+  /* Border Radius */
+  --radius-sm:   4px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-xl:   16px;
+  --radius-2xl:  20px;
+  --radius-full: 9999px;
 
   /* Motion */
   --duration-instant: 80ms;
   --duration-fast:    150ms;
   --duration-normal:  250ms;
   --duration-slow:    400ms;
-  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-in:     cubic-bezier(0.4, 0, 1, 1);
-  --ease-inout:  cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out:   cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in:    cubic-bezier(0.4, 0, 1, 1);
+  --ease-inout: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1); /* slight overshoot for glass pop */
 }
 
-/* ─── Glass Surface Base ─── */
-.arcus-glass {
+/* ─── Glass Surface Pattern ────────────────────────────────────────────────── */
+
+.glass-surface {
   background:             var(--glass-card-bg);
   backdrop-filter:        var(--glass-card-blur);
   -webkit-backdrop-filter:var(--glass-card-blur);
   border:                 var(--glass-card-border);
   box-shadow:             var(--glass-card-shadow);
   border-radius:          var(--radius-xl);
+  transition:             box-shadow var(--duration-fast) var(--ease-out),
+                          border-color var(--duration-fast) var(--ease-out),
+                          transform var(--duration-fast) var(--ease-out);
 }
-.arcus-glass:hover {
+
+.glass-surface:hover {
   box-shadow:   var(--glass-shadow-hover);
-  border-color: rgba(255,255,255,0.18);
-  transition:   box-shadow var(--duration-fast) var(--ease-out),
-                border-color var(--duration-fast) var(--ease-out);
+  border-color: rgba(255,255,255,0.20);
 }
 
-/* ─── Severity Badges ─── */
-.arcus-badge {
-  font-family: var(--font-ui);
-  font-size:   var(--text-xs);
-  font-weight: var(--weight-medium);
-  padding:     2px 8px;
-  border-radius: var(--radius-full);
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-.arcus-badge-low    { background: var(--color-info-bg);    color: var(--color-info);    border: 0.5px solid var(--color-info-border); }
-.arcus-badge-medium { background: var(--color-warning-bg); color: var(--color-warning); border: 0.5px solid var(--color-warning-border); }
-.arcus-badge-high   { background: var(--color-danger-bg);  color: var(--color-danger);  border: 0.5px solid var(--color-danger-border); }
-
-/* ─── Buttons ─── */
-.arcus-btn-primary {
-  background: #FFFFFF;
-  color: var(--text-inverse);
-  font-family: var(--font-ui);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
-  padding: 8px 16px;
-  border-radius: var(--radius-md);
-  border: none;
-  cursor: pointer;
-  transition: filter var(--duration-fast) var(--ease-out);
-  min-width: 100px;
-  text-align: center;
-}
-.arcus-btn-primary:hover  { filter: brightness(0.92); }
-.arcus-btn-primary:active { transform: scale(0.98); filter: brightness(0.86); }
-.arcus-btn-primary:disabled { opacity: 0.30; cursor: not-allowed; }
-
-.arcus-btn-ghost {
-  background: rgba(255,255,255,0.08);
-  color: var(--text-on-dark-secondary);
-  font-family: var(--font-ui);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
-  padding: 8px 16px;
-  border-radius: var(--radius-md);
-  border: 0.5px solid rgba(255,255,255,0.16);
-  cursor: pointer;
-  transition: background var(--duration-fast) var(--ease-out),
-              color var(--duration-fast) var(--ease-out);
-}
-.arcus-btn-ghost:hover { background: rgba(255,255,255,0.14); color: var(--text-on-dark-primary); }
-.arcus-btn-ghost:active { transform: scale(0.98); }
-.arcus-btn-ghost:disabled { opacity: 0.30; cursor: not-allowed; }
-
-.arcus-btn-destructive {
-  background: var(--color-danger-bg);
-  border: 0.5px solid var(--color-danger-border);
-  color: var(--color-danger);
-  font-family: var(--font-ui);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
-  padding: 8px 16px;
-  border-radius: var(--radius-md);
-  cursor: pointer;
+/* ─── Legacy arcus-glass (Alias) ─── */
+.arcus-glass {
+  composes: glass-surface;
 }
 
-/* ─── Step Status Spinner ─── */
+/* ─── Status Spinner ─── */
 @keyframes arcus-spin {
   to { transform: rotate(360deg); }
 }
 .arcus-spinner {
-  width: 20px; height: 20px;
+  width: 16px; height: 16px;
   border: 2px solid rgba(255,255,255,0.20);
   border-top-color: #FFFFFF;
   border-radius: 50%;
   animation: arcus-spin 600ms linear infinite;
 }
+.arcus-spinner-small { width: 12px; height: 12px; border-width: 1.5px; }
 
-/* ─── Step completion flash ─── */
-@keyframes arcus-step-flash {
-  0%   { background: var(--color-success-bg); }
-  33%  { background: var(--color-success-bg); }
-  100% { background: transparent; }
+/* ─── Animations ─── */
+@keyframes arcus-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.5; }
 }
-.arcus-step-flash {
-  animation: arcus-step-flash 600ms var(--ease-out) forwards;
-}
+.arcus-pulse { animation: arcus-pulse 2s ease-in-out infinite; }
 
-/* ─── Card entrance ─── */
-@keyframes arcus-card-enter {
-  from { transform: translateY(12px); opacity: 0; }
-  to   { transform: translateY(0);    opacity: 1; }
-}
-.arcus-card-enter {
-  animation: arcus-card-enter var(--duration-slow) var(--ease-out) forwards;
-}
-
-/* ─── Loading dots ─── */
 @keyframes arcus-dot-pulse {
   0%, 80%, 100% { opacity: 0.2; }
   40% { opacity: 1; }
 }
-.arcus-loading-dots span {
-  display: inline-block;
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--text-on-dark-tertiary);
-  animation: arcus-dot-pulse 1.2s infinite;
-}
-.arcus-loading-dots span:nth-child(2) { animation-delay: 150ms; }
-.arcus-loading-dots span:nth-child(3) { animation-delay: 300ms; }
 
-/* ─── Accessibility ─── */
-.arcus-glass:focus-visible,
-.arcus-btn-primary:focus-visible,
-.arcus-btn-ghost:focus-visible {
-  outline: 2px solid rgba(255,255,255,0.80);
-  outline-offset: 2px;
+@keyframes arcus-step-flash {
+  0%   { background: var(--color-success-bg); }
+  100% { background: transparent; }
 }
+.arcus-step-flash { animation: arcus-step-flash 1s var(--ease-out) forwards; }
 
-@media (prefers-reduced-motion: reduce) {
-  .arcus-card-enter { animation: none; opacity: 1; transform: none; }
-  .arcus-step-flash { animation: none; }
-  .arcus-spinner    { animation-duration: 0s; }
+@keyframes arcus-card-enter {
+  from { transform: translateY(12px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
 }
+.arcus-card-enter { animation: arcus-card-enter var(--duration-slow) var(--ease-out) forwards; }
+
+@keyframes arcus-option-pop {
+  0% { transform: scale(0); }
+  100% { transform: scale(1); }
+}
+.arcus-option-pop { animation: arcus-option-pop var(--duration-fast) var(--ease-spring); }
