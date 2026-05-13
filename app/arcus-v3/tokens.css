@@ -1,0 +1,267 @@
+/* Arcus V3 — Design Tokens
+ * Every component uses ONLY these tokens.
+ * No hardcoded hex values, no arbitrary spacing.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&display=swap');
+
+:root {
+  /* Typefaces */
+  --font-ui:      'Inter', sans-serif;
+  --font-content: 'Fraunces', serif;
+  --font-mono:    'JetBrains Mono', monospace;
+
+  /* Type Scale */
+  --text-xs:   11px;
+  --text-sm:   13px;
+  --text-base: 15px;
+  --text-md:   17px;
+  --text-lg:   20px;
+  --text-xl:   24px;
+  --text-2xl:  30px;
+
+  /* Line Heights */
+  --leading-tight:  1.3;
+  --leading-normal: 1.6;
+  --leading-loose:  1.9;
+
+  /* Font Weights */
+  --weight-light:    300;
+  --weight-regular:  400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+
+  /* Brand Palette */
+  --palette-page:    #F4F5F8;
+  --palette-black:   #000000;
+  --palette-surface: #222326;
+  --palette-white:   #FFFFFF;
+
+  /* Semantic Surfaces */
+  --bg-page:        var(--palette-page);
+  --bg-sidebar:     var(--palette-black);
+  --bg-card:        var(--palette-surface);
+  --bg-panel:       var(--palette-surface);
+  --bg-input:       rgba(255,255,255,0.06);
+  --bg-overlay:     rgba(0,0,0,0.60);
+
+  /* Text — On Dark Surfaces */
+  --text-on-dark-primary:   #FFFFFF;
+  --text-on-dark-secondary: rgba(255,255,255,0.60);
+  --text-on-dark-tertiary:  rgba(255,255,255,0.35);
+  --text-on-dark-disabled:  rgba(255,255,255,0.20);
+
+  /* Text — On Light Canvas */
+  --text-on-light-primary:   #0A0B0D;
+  --text-on-light-secondary: #4A4D55;
+  --text-on-light-tertiary:  #8A8D96;
+
+  /* Convenience Aliases */
+  --text-primary:   var(--text-on-dark-primary);
+  --text-secondary: var(--text-on-dark-secondary);
+  --text-tertiary:  var(--text-on-dark-tertiary);
+  --text-disabled:  var(--text-on-dark-disabled);
+  --text-inverse:   var(--palette-surface);
+
+  /* Borders */
+  --border-faint:  rgba(255,255,255,0.06);
+  --border-soft:   rgba(255,255,255,0.12);
+  --border-strong: rgba(255,255,255,0.24);
+  --border-glow:   rgba(255,255,255,0.40);
+
+  /* Liquid Glass System */
+  --glass-tint-card:    rgba(34,35,38,0.82);
+  --glass-tint-sidebar: rgba(0,0,0,0.88);
+  --glass-tint-modal:   rgba(22,23,26,0.90);
+  --glass-tint-toast:   rgba(34,35,38,0.94);
+
+  --glass-blur-card:    blur(24px);
+  --glass-blur-sidebar: blur(32px);
+  --glass-blur-modal:   blur(40px);
+
+  --glass-highlight: inset 0 1px 0 rgba(255,255,255,0.14);
+
+  --glass-shadow-card:  inset 0 1px 0 rgba(255,255,255,0.14),
+                        0 4px 24px rgba(0,0,0,0.18),
+                        0 1px 4px rgba(0,0,0,0.12);
+  --glass-shadow-modal: inset 0 1px 0 rgba(255,255,255,0.18),
+                        0 20px 60px rgba(0,0,0,0.30),
+                        0 4px 12px rgba(0,0,0,0.20);
+  --glass-shadow-hover: inset 0 1px 0 rgba(255,255,255,0.20),
+                        0 8px 32px rgba(0,0,0,0.24),
+                        0 2px 8px rgba(0,0,0,0.16);
+
+  --glass-card-bg:     var(--glass-tint-card);
+  --glass-card-border: 0.5px solid rgba(255,255,255,0.12);
+  --glass-card-blur:   var(--glass-blur-card);
+  --glass-card-shadow: var(--glass-shadow-card);
+
+  /* Status Colors */
+  --color-success:        #34D399;
+  --color-success-bg:     rgba(52,211,153,0.12);
+  --color-success-border: rgba(52,211,153,0.30);
+  --color-warning:        #FBBF24;
+  --color-warning-bg:     rgba(251,191,36,0.12);
+  --color-warning-border: rgba(251,191,36,0.30);
+  --color-danger:         #F87171;
+  --color-danger-bg:      rgba(248,113,113,0.12);
+  --color-danger-border:  rgba(248,113,113,0.30);
+  --color-info:           #60A5FA;
+  --color-info-bg:        rgba(96,165,250,0.12);
+  --color-info-border:    rgba(96,165,250,0.30);
+
+  /* Spacing — 4px base */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Border Radius */
+  --radius-sm:   4px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-xl:   16px;
+  --radius-2xl:  20px;
+  --radius-full: 9999px;
+
+  /* Motion */
+  --duration-instant: 80ms;
+  --duration-fast:    150ms;
+  --duration-normal:  250ms;
+  --duration-slow:    400ms;
+  --ease-out:   cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in:    cubic-bezier(0.4, 0, 1, 1);
+  --ease-inout: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ─── Glass Surface Pattern ────────────────────────────────────────────────── */
+
+.glass-surface {
+  background:       var(--glass-card-bg);
+  backdrop-filter:  var(--glass-card-blur);
+  -webkit-backdrop-filter: var(--glass-card-blur);
+  border:           var(--glass-card-border);
+  box-shadow:       var(--glass-card-shadow);
+  border-radius:    var(--radius-xl);
+}
+
+.glass-surface:hover {
+  box-shadow:  var(--glass-shadow-hover);
+  border-color: rgba(255,255,255,0.18);
+  transition:  box-shadow var(--duration-fast) var(--ease-out),
+               border-color var(--duration-fast) var(--ease-out);
+}
+
+.glass-sidebar {
+  background: var(--glass-tint-sidebar);
+  backdrop-filter: var(--glass-blur-sidebar);
+  -webkit-backdrop-filter: var(--glass-blur-sidebar);
+  border-right: 0.5px solid rgba(255,255,255,0.08);
+}
+
+.glass-modal {
+  background: var(--glass-tint-modal);
+  backdrop-filter: var(--glass-blur-modal);
+  -webkit-backdrop-filter: var(--glass-blur-modal);
+  box-shadow: var(--glass-shadow-modal);
+  border: 0.5px solid rgba(255,255,255,0.14);
+  border-radius: var(--radius-xl);
+}
+
+.glass-toast {
+  background: var(--glass-tint-toast);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 0.5px solid rgba(255,255,255,0.14);
+  box-shadow: var(--glass-shadow-card);
+  border-radius: var(--radius-lg);
+}
+
+/* ─── Animations ───────────────────────────────────────────────────────────── */
+
+@keyframes arcus-card-enter {
+  from { transform: translateY(12px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes arcus-step-flash {
+  0%   { background-color: var(--color-success-bg); }
+  100% { background-color: transparent; }
+}
+
+@keyframes arcus-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes arcus-spinner {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes arcus-pulse {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 1; }
+}
+
+@keyframes arcus-dot-pulse {
+  0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+  40% { opacity: 1; transform: scale(1); }
+}
+
+.arcus-card-enter {
+  animation: arcus-card-enter var(--duration-slow) var(--ease-out) both;
+}
+
+.arcus-step-flash {
+  animation: arcus-step-flash 600ms var(--ease-out) both;
+}
+
+/* Skeleton shimmer */
+.arcus-skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,0.06) 50%,
+    rgba(255,255,255,0) 100%
+  );
+  background-size: 200% 100%;
+  animation: arcus-shimmer 1.5s infinite;
+}
+
+/* Spinner */
+.arcus-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255,255,255,0.20);
+  border-top-color: #FFFFFF;
+  border-radius: 50%;
+  animation: arcus-spinner 600ms linear infinite;
+}
+
+.arcus-spinner-small {
+  width: 14px;
+  height: 14px;
+  border-width: 1.5px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .arcus-card-enter { animation: none; opacity: 1; transform: none; }
+  .arcus-step-flash { animation: none; }
+  .arcus-skeleton { animation: none; }
+  .glass-surface:hover { transition: none; }
+}
+
+/* ─── Focus Visible ────────────────────────────────────────────────────────── */
+
+*:focus-visible {
+  outline: 2px solid rgba(255,255,255,0.80);
+  outline-offset: 2px;
+}

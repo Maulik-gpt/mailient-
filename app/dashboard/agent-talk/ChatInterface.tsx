@@ -11,6 +11,7 @@ import { ThinkingLayer, ResultCard, type ThinkingStep, type ThinkingBlock, type 
 import { AgentExecutionTimeline, type AgentStep } from './components/AgentExecutionTimeline';
 import { CanvasPanel, type CanvasData } from './components/CanvasPanel';
 import { PlanArtifactCard, type PlanArtifact } from './components/PlanArtifactCard';
+import { PlanModeBrief } from './components/PlanModeBrief';
 import { PlanCanvas } from './components/PlanCanvas';
 import { SearchExecutionPanel } from './components/SearchExecutionPanel';
 import { ConnectorBar } from './components/ConnectorBar';
@@ -42,6 +43,8 @@ import { audioRuntime } from '@/lib/audio-runtime';
 import { NotificationService } from '@/lib/notification-service';
 import { GradientWave } from '@/components/ui/gradient-wave';
 import { useArcusAgentStream } from './hooks/useArcusAgentStream';
+import { useArcusV3Feed } from './hooks/useArcusV3Feed';
+import { usePlanModeBrief } from './hooks/usePlanModeBrief';
 
 const GRA_DEFORM = { incline: 0.3, noiseAmp: 150, noiseFlow: 2 };
 
@@ -1056,6 +1059,36 @@ export default function ChatInterface({
   const [liveThinkingBlocks, setLiveThinkingBlocks] = useState<ThinkingBlock[]>([]);
   const [currentThought, setCurrentThought] = useState<string | undefined>(undefined);
   const [pendingReplyProposal, setPendingReplyProposal] = useState<any>(null);
+
+  // Arcus view mode: 'feed' (default) or 'plan_mode' (daily brief)
+  const [arcusView, setArcusView] = useState<'feed' | 'plan_mode'>('feed');
+
+  // Arcus V3 Plan Mode Brief
+  const {
+    brief: planModeBrief,
+    briefDate: planModeBriefDate,
+    isLoading: isPlanModeLoading,
+    generateNew: generateNewBrief,
+  } = usePlanModeBrief();
+
+  // Arcus V3 Reactive Feed — surfaces webhook-driven plans in the chat
+  const {
+    activePlans: v3ActivePlans,
+    completedPlans: v3CompletedPlans,
+    buildPlan: v3BuildPlan,
+    executePlan: v3ExecutePlan,
+    dismissPlan: v3DismissPlan,
+    refresh: v3Refresh,
+  } = useArcusV3Feed({
+    enabled: true,
+    pollInterval: 30000,
+    onNewPlan: (plan) => {
+      toast.info(`Arcus detected: ${plan.title}`, {
+        description: plan.objective?.substring(0, 80),
+        duration: 5000,
+      });
+    },
+  });
 
   // Live thinking state (AI-generated, shown during loading)
   const [searchSessions, setSearchSessions] = useState<SearchSession[]>([]);
@@ -3069,6 +3102,24 @@ export default function ChatInterface({
                             </TooltipContent>
                           </Tooltip>
 
+                          {/* Plan Mode Toggle */}
+                          <Tooltip delayDuration={100}>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setArcusView(arcusView === 'plan_mode' ? 'feed' : 'plan_mode');
+                                }}
+                                className={`p-2 rounded-lg transition-all focus:outline-none focus:ring-0 ${arcusView === 'plan_mode' ? 'bg-black/10 dark:bg-white/10 text-black dark:text-white' : 'hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white/60'}`}
+                              >
+                                <Calendar className="w-5 h-5" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom">
+                              <span className="text-[10px]">{arcusView === 'plan_mode' ? 'Back to Feed' : 'Plan Mode'}</span>
+                            </TooltipContent>
+                          </Tooltip>
+
                           <Tooltip delayDuration={100}>
                             <TooltipTrigger asChild>
                               <button
@@ -3107,7 +3158,70 @@ export default function ChatInterface({
                     style={{ paddingBottom: isInitialMode ? undefined : '140px' }}
                   >
                     <div className="max-w-3xl mx-auto w-full">
-                      {isInitialMode ? (
+                      {/* Plan Mode View */}
+                      {arcusView === 'plan_mode' ? (
+                        <div className="py-6">
+                          <PlanModeBrief
+                            brief={planModeBrief}
+                            briefDate={planModeBriefDate || undefined}
+                            isLoading={isPlanModeLoading}
+                            onGenerateNew={generateNewBrief}
+                          />
+                        </div>
+                      ) : (
+                        <>
+                      {/* Arcus V3 Reactive Plan Cards */}
+                      {v3ActivePlans.length > 0 && (
+                        <div className="mb-6 space-y-4">
+                          {v3ActivePlans.map((plan) => (
+                            <PlanArtifactCard
+                              key={plan.planId}
+                              plan={plan}
+                              onApprove={async (planId) => {
+                                await v3BuildPlan(planId, 0);
+                              }}
+                              onBuildPlan={async (planId, optionIndex) => {
+                                await v3BuildPlan(planId, optionIndex);
+                              }}
+                              onExecute={async (planId) => {
+                                await v3ExecutePlan(planId);
+                              }}
+                              onReject={(planId) => v3DismissPlan(planId)}
+                              isNew={true}
+                            />
+                          ))}
+                        </div>
+                      )}
+                      {/* Arcus V3 Completed Plans (collapsed) */}
+                      {v3CompletedPlans.length > 0 && messages.length === 0 && (
+                        <div className="mb-6 space-y-2 opacity-80">
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 8,
+                            padding: '0 4px',
+                            marginBottom: 8,
+                          }}>
+                            <div style={{ flex: 1, height: 1, background: 'rgba(0,0,0,0.10)' }} />
+                            <span style={{
+                              fontFamily: 'var(--font-ui, Inter, sans-serif)',
+                              fontSize: 11,
+                              color: 'var(--text-on-light-tertiary, #8A8D96)',
+                            }}>Completed</span>
+                            <div style={{ flex: 1, height: 1, background: 'rgba(0,0,0,0.10)' }} />
+                          </div>
+                          {v3CompletedPlans.slice(0, 5).map((plan) => (
+                            <PlanArtifactCard
+                              key={plan.planId}
+                              plan={plan}
+                              onApprove={async () => {}}
+                            />
+                          ))}
+                        </div>
+                      )}
+                        </>
+                      )}
+                      {isInitialMode && arcusView === 'feed' ? (
                         <div className="flex flex-col items-center justify-center min-h-[50vh] py-12 animate-fade-in relative">
                           <div className="text-center mb-16">
                             <div className="flex justify-center mb-8">

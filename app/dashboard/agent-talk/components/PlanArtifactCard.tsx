@@ -1,696 +1,792 @@
 'use client';
 
-import { useState } from 'react';
+/**
+ * PlanArtifactCard — 4-State Machine
+ *
+ * States: detected → plan_built → executing → completed
+ *
+ * This component is the primary surface for Arcus reactive plans.
+ * It uses the liquid glass design system from arcus-tokens.css.
+ * All four states share the same outer glass shell — only the interior changes.
+ */
+
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  CheckCircle2, XCircle, Clock, ArrowRight, AlertTriangle,
-  FileText, ListTodo, Target, HelpCircle, Sparkles, Loader2,
-  ChevronDown, ChevronUp, ExternalLink, Shield, Zap, Play,
-  BrainCircuit, Check, X, Calendar, Mail, Database, Globe,
-  BarChart3, Edit3, Search, Circle
-} from 'lucide-react';
 import { cn } from '@/lib/utils';
+import '../arcus-tokens.css';
 
-export type PlanStatus = 'draft' | 'approved' | 'executing' | 'completed' | 'failed' | 'cancelled';
+// ─── Types ──────────────────────────────────────────────────────────────────
 
-export type TodoItem = {
-  todoId: string;
-  title: string;
-  description?: string;
-  status: 'pending' | 'ready' | 'running' | 'completed' | 'failed' | 'skipped' | 'blocked_approval';
-  actionType: string;
-  sortOrder: number;
-  dependsOn: string[];
-  approvalMode: 'auto' | 'manual';
-  attemptCount: number;
-  resultPayload?: any;
-  errorMessage?: string;
-  startedAt?: string;
-  completedAt?: string;
+export type PlanStatus = 'detected' | 'plan_built' | 'executing' | 'completed' | 'failed' | 'dismissed';
+
+export type StepStatus = 'pending' | 'executing' | 'completed' | 'failed';
+
+export type PlanStep = {
+  id: string;
+  app: 'gcal' | 'slack' | 'notion' | 'calcom';
+  action: string;
+  params: Record<string, unknown>;
+  humanReadable: string;
+  irreversible: boolean;
+  status: StepStatus;
+  error?: string;
+  position: number;
+};
+
+export type PlanOption = {
+  label: string;
+  effort: 'low' | 'medium' | 'high';
+  tradeoff: string;
+  irreversible: boolean;
+  steps: Array<{
+    app: string;
+    action: string;
+    params: Record<string, unknown>;
+    humanReadable: string;
+  }>;
+};
+
+export type Finding = {
+  id: string;
+  headline: string;
+  impact: string;
+  options: PlanOption[];
+  recommended: number;
 };
 
 export type PlanArtifact = {
   planId: string;
+  status: PlanStatus;
+  severity: 'low' | 'medium' | 'high';
+  findings: Finding[];
+  steps: PlanStep[];
+  sources: string[];       // e.g. ['gcal', 'slack']
+  createdAt: string;
+  completedAt?: string;
+  selectedOption?: number;
+  // Legacy compat fields (used by existing ChatInterface)
   title: string;
   objective: string;
   assumptions: string[];
   questionsAnswered: string[];
   acceptanceCriteria: string[];
-  status: PlanStatus;
   version: number;
   locked: boolean;
-  approvedAt?: string;
-  completedAt?: string;
   complexity: 'simple' | 'complex';
   intent: string;
   canvasType: string;
-  todos: TodoItem[];
-  createdAt: string;
+  todos: any[];
+  approvedAt?: string;
   runId?: string;
 };
+
+// ─── Props ──────────────────────────────────────────────────────────────────
 
 interface PlanArtifactCardProps {
   plan: PlanArtifact;
   onApprove: (planId: string) => Promise<void>;
   onReject?: (planId: string) => void;
+  onBuildPlan?: (planId: string, optionIndex: number) => Promise<void>;
+  onExecute?: (planId: string) => Promise<void>;
+  onStepUpdate?: (planId: string, stepId: string, status: StepStatus) => void;
   isProcessing?: boolean;
   compact?: boolean;
+  isNew?: boolean;  // triggers entrance animation
 }
 
-const statusConfig: Record<PlanStatus, { label: string; color: string; gradient: string; icon: any; bgColor: string }> = {
-  draft: { 
-    label: 'Draft Plan', 
-    color: 'text-amber-400', 
-    gradient: 'from-amber-500/20 to-orange-500/10',
-    icon: FileText,
-    bgColor: 'bg-amber-500/10'
-  },
-  approved: { 
-    label: 'Approved', 
-    color: 'text-emerald-400', 
-    gradient: 'from-emerald-500/20 to-teal-500/10',
-    icon: CheckCircle2,
-    bgColor: 'bg-emerald-500/10'
-  },
-  executing: { 
-    label: 'Executing', 
-    color: 'text-blue-400', 
-    gradient: 'from-blue-500/20 to-cyan-500/10',
-    icon: Loader2,
-    bgColor: 'bg-blue-500/10'
-  },
-  completed: { 
-    label: 'Completed', 
-    color: 'text-emerald-400', 
-    gradient: 'from-emerald-500/20 to-green-500/10',
-    icon: CheckCircle2,
-    bgColor: 'bg-emerald-500/10'
-  },
-  failed: { 
-    label: 'Failed', 
-    color: 'text-red-400', 
-    gradient: 'from-red-500/20 to-rose-500/10',
-    icon: XCircle,
-    bgColor: 'bg-red-500/10'
-  },
-  cancelled: { 
-    label: 'Cancelled', 
-    color: 'text-neutral-600 dark:text-neutral-600 dark:text-neutral-400', 
-    gradient: 'from-neutral-500/20 to-gray-500/10',
-    icon: XCircle,
-    bgColor: 'bg-neutral-500/10'
-  }
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+const SEVERITY_CONFIG = {
+  low:    { label: 'Low Priority',    className: 'arcus-badge-low' },
+  medium: { label: 'Needs Attention', className: 'arcus-badge-medium' },
+  high:   { label: 'Action Required', className: 'arcus-badge-high' },
 };
 
-const todoStatusConfig: Record<string, { label: string; color: string; bgColor: string; icon: any; pulse?: boolean }> = {
-  pending: { label: 'Pending', color: 'text-black/30 dark:text-white/30', bgColor: 'bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5', icon: Clock },
-  ready: { label: 'Ready', color: 'text-blue-400', bgColor: 'bg-blue-500/10', icon: CheckCircle2 },
-  running: { label: 'Running', color: 'text-amber-400', bgColor: 'bg-amber-500/10', icon: Loader2, pulse: true },
-  completed: { label: 'Done', color: 'text-emerald-400', bgColor: 'bg-emerald-500/10', icon: CheckCircle2 },
-  failed: { label: 'Failed', color: 'text-red-400', bgColor: 'bg-red-500/10', icon: AlertTriangle },
-  skipped: { label: 'Skipped', color: 'text-neutral-600 dark:text-neutral-600 dark:text-neutral-400', bgColor: 'bg-neutral-500/10', icon: CheckCircle2 },
-  blocked_approval: { label: 'Needs Approval', color: 'text-orange-400', bgColor: 'bg-orange-500/10', icon: Shield }
+const EFFORT_LABELS: Record<string, string> = {
+  low: 'Low effort',
+  medium: 'Medium effort',
+  high: 'High effort',
 };
 
-const actionTypeIcons: Record<string, any> = {
-  search_email: Search,
-  read_thread: Mail,
-  draft_reply: Edit3,
-  send_email: Mail,
-  schedule_meeting: Calendar,
-  notion_create_page: Database,
-  notion_append: Database,
-  tasks_add_tasks: ListTodo,
-  analyze_data: BarChart3,
-  generic_task: BrainCircuit,
-  execute: Zap,
-  think: BrainCircuit,
-  search: Search,
-  read: FileText,
-  analyze: BarChart3,
-  draft: Edit3
+const APP_ICONS: Record<string, string> = {
+  gcal: '📅',
+  slack: '💬',
+  notion: '📝',
+  calcom: '🗓️',
 };
 
-export function PlanArtifactCard({ plan, onApprove, onReject, isProcessing, compact = false }: PlanArtifactCardProps) {
-  const [expanded, setExpanded] = useState(!compact);
-  const [activeTab, setActiveTab] = useState<'overview' | 'todos'>('todos');
-  const [isApproving, setIsApproving] = useState(false);
+const DEEP_LINKS: Record<string, string> = {
+  gcal: 'https://calendar.google.com',
+  slack: 'https://app.slack.com',
+  notion: 'https://notion.so',
+  calcom: 'https://app.cal.com',
+};
 
-  const handleApprove = async () => {
-    setIsApproving(true);
-    try {
-      await onApprove(plan.planId);
-    } finally {
-      setIsApproving(false);
-    }
-  };
+function useRelativeTime(dateStr: string) {
+  const [relative, setRelative] = useState('');
+  useEffect(() => {
+    const update = () => {
+      const diff = Date.now() - new Date(dateStr).getTime();
+      const mins = Math.floor(diff / 60000);
+      if (mins < 1) setRelative('Just now');
+      else if (mins < 60) setRelative(`${mins} min ago`);
+      else if (mins < 1440) setRelative(`${Math.floor(mins / 60)}h ago`);
+      else setRelative(`${Math.floor(mins / 1440)}d ago`);
+    };
+    update();
+    const t = setInterval(update, 60000);
+    return () => clearInterval(t);
+  }, [dateStr]);
+  return relative;
+}
 
-  const statusInfo = statusConfig[plan.status];
-  const StatusIcon = statusInfo.icon;
+// ─── Component ──────────────────────────────────────────────────────────────
 
-  const completedTodos = plan.todos.filter(t => t.status === 'completed').length;
-  const totalTodos = plan.todos.length;
-  const progress = totalTodos > 0 ? (completedTodos / totalTodos) * 100 : 0;
-  const isExecuting = plan.status === 'executing';
-  const needsApproval = plan.status === 'draft' && !plan.locked;
+export function PlanArtifactCard({
+  plan,
+  onApprove,
+  onReject,
+  onBuildPlan,
+  onExecute,
+  isProcessing,
+  compact,
+  isNew,
+}: PlanArtifactCardProps) {
+  const relativeTime = useRelativeTime(plan.createdAt);
+  const [selectedOption, setSelectedOption] = useState(
+    plan.findings?.[0]?.recommended ?? 0
+  );
+  const [isBuilding, setIsBuilding] = useState(false);
+  const [isExecuting, setIsExecuting] = useState(false);
 
-  if (compact) {
+  const finding = plan.findings?.[0];
+  const severity = SEVERITY_CONFIG[plan.severity] || SEVERITY_CONFIG.low;
+  const isCompleted = plan.status === 'completed';
+
+  // ─── State: completed — collapsed row ───
+  if (isCompleted) {
     return (
-      <CompactPlanCard 
-        plan={plan} 
-        onApprove={handleApprove} 
-        isApproving={isApproving}
-        isProcessing={isProcessing}
-      />
+      <div
+        className="arcus-glass"
+        style={{
+          padding: '16px 24px',
+          opacity: 0.6,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          minHeight: 56,
+        }}
+      >
+        <span style={{
+          fontFamily: 'var(--font-ui)',
+          fontSize: 'var(--text-sm)',
+          color: 'var(--text-on-dark-secondary)',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          maxWidth: '60%',
+        }}>
+          {finding?.headline || plan.title || 'Plan completed'}
+        </span>
+        <span style={{
+          fontFamily: 'var(--font-ui)',
+          fontSize: 'var(--text-xs)',
+          color: 'var(--text-on-dark-tertiary)',
+        }}>
+          Completed · {plan.completedAt
+            ? new Date(plan.completedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            : relativeTime}
+        </span>
+      </div>
     );
   }
 
+  // ─── Outer glass shell (all non-completed states) ───
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-      className="w-full max-w-2xl mx-auto my-4"
+    <div
+      className={cn('arcus-glass', isNew && 'arcus-card-enter')}
+      style={{ padding: 'var(--space-6)' }}
     >
-      <div className={cn(
-        "relative overflow-hidden rounded-2xl border bg-[#0d0d0d]",
-        plan.status === 'draft' ? 'border-amber-500/30 shadow-lg shadow-amber-500/10' :
-        plan.status === 'executing' ? 'border-blue-500/30 shadow-lg shadow-blue-500/10' :
-        plan.status === 'completed' ? 'border-emerald-500/30 shadow-lg shadow-emerald-500/10' :
-        'border-neutral-200 dark:border-white/10'
-      )}>
-        {/* Animated Gradient Background */}
-        <div className={cn(
-          "absolute inset-0 bg-gradient-to-br opacity-30",
-          statusInfo.gradient
-        )} />
-        
-        {/* Progress Bar for Executing State */}
-        {isExecuting && (
-          <div className="absolute top-0 left-0 right-0 h-1 bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.8, ease: 'easeOut' }}
-              className="h-full bg-gradient-to-r from-blue-500 via-amber-500 to-emerald-500"
-            />
-          </div>
-        )}
+      {/* ─── Header: severity + timestamp ─── */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 'var(--space-4)',
+      }}>
+        <span className={cn('arcus-badge', severity.className)}>
+          {severity.label}
+        </span>
+        <span style={{
+          fontFamily: 'var(--font-ui)',
+          fontSize: 'var(--text-xs)',
+          color: 'var(--text-on-dark-tertiary)',
+        }}>
+          {relativeTime}
+        </span>
+      </div>
 
-        {/* Header */}
-        <div className="relative px-6 py-5 border-b border-neutral-200 dark:border-white/5">
-          <div className="flex items-start justify-between">
-            <div className="flex items-start gap-4">
-              <motion.div 
-                initial={{ scale: 0.8, rotate: -10 }}
-                animate={{ scale: 1, rotate: 0 }}
-                transition={{ type: 'spring', damping: 20 }}
-                className={cn(
-                  "w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border",
-                  plan.status === 'draft' ? 'bg-amber-500/10 border-amber-500/20' :
-                  plan.status === 'executing' ? 'bg-blue-500/10 border-blue-500/20' :
-                  plan.status === 'completed' ? 'bg-emerald-500/10 border-emerald-500/20' :
-                  'bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 border-neutral-200 dark:border-white/10'
-                )}
-              >
-                {isExecuting ? (
-                  <Loader2 className={cn("w-6 h-6 animate-spin", statusInfo.color)} />
-                ) : (
-                  <StatusIcon className={cn("w-6 h-6", statusInfo.color)} />
-                )}
-              </motion.div>
-              
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-3 mb-1">
-                  <h3 className="text-[16px] font-bold text-black/95 dark:text-white/95 tracking-tight">
-                    {plan.title}
-                  </h3>
-                  <span className={cn(
-                    "text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border",
-                    statusInfo.bgColor || 'bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5',
-                    statusInfo.color,
-                    plan.status === 'draft' ? 'border-amber-500/30' :
-                    plan.status === 'executing' ? 'border-blue-500/30' :
-                    plan.status === 'completed' ? 'border-emerald-500/30' :
-                    'border-neutral-200 dark:border-white/10'
-                  )}>
-                    {statusInfo.label}
-                  </span>
-                </div>
-                <p className="text-[13px] text-black/5 dark:text-black/50 dark:text-white/50 leading-relaxed">
-                  {plan.objective}
-                </p>
-              </div>
-            </div>
+      {/* ─── State: detected ─── */}
+      {plan.status === 'detected' && finding && (
+        <StateDetected
+          finding={finding}
+          sources={plan.sources}
+          selectedOption={selectedOption}
+          onSelectOption={setSelectedOption}
+          isBuilding={isBuilding}
+          onBuildPlan={async () => {
+            setIsBuilding(true);
+            try {
+              if (onBuildPlan) {
+                await onBuildPlan(plan.planId, selectedOption);
+              } else {
+                // Fallback: approve = build plan
+                await onApprove(plan.planId);
+              }
+            } finally {
+              setIsBuilding(false);
+            }
+          }}
+        />
+      )}
 
+      {/* ─── State: plan_built ─── */}
+      {plan.status === 'plan_built' && (
+        <StatePlanBuilt
+          finding={finding}
+          steps={plan.steps}
+          isExecuting={isExecuting}
+          onExecute={async () => {
+            setIsExecuting(true);
+            try {
+              if (onExecute) await onExecute(plan.planId);
+              else await onApprove(plan.planId);
+            } finally {
+              setIsExecuting(false);
+            }
+          }}
+          onDismiss={() => onReject?.(plan.planId)}
+        />
+      )}
+
+      {/* ─── State: executing ─── */}
+      {plan.status === 'executing' && (
+        <StateExecuting
+          finding={finding}
+          steps={plan.steps}
+        />
+      )}
+
+      {/* ─── State: failed ─── */}
+      {plan.status === 'failed' && (
+        <StateExecuting
+          finding={finding}
+          steps={plan.steps}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── State: Detected ────────────────────────────────────────────────────────
+
+function StateDetected({
+  finding,
+  sources,
+  selectedOption,
+  onSelectOption,
+  isBuilding,
+  onBuildPlan,
+}: {
+  finding: Finding;
+  sources: string[];
+  selectedOption: number;
+  onSelectOption: (i: number) => void;
+  isBuilding: boolean;
+  onBuildPlan: () => void;
+}) {
+  return (
+    <>
+      {/* Headline — Fraunces serif */}
+      <h3 style={{
+        fontFamily: 'var(--font-content)',
+        fontSize: 'var(--text-md)',
+        fontWeight: 'var(--weight-medium)' as any,
+        color: 'var(--text-on-dark-primary)',
+        lineHeight: 'var(--leading-tight)' as any,
+        margin: '0 0 var(--space-2) 0',
+      }}>
+        {finding.headline}
+      </h3>
+
+      {/* Impact */}
+      <p style={{
+        fontFamily: 'var(--font-ui)',
+        fontSize: 'var(--text-sm)',
+        color: 'var(--text-on-dark-secondary)',
+        lineHeight: 'var(--leading-normal)' as any,
+        margin: '0 0 var(--space-3) 0',
+      }}>
+        {finding.impact}
+      </p>
+
+      {/* Source attribution */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '6px',
+        marginBottom: 'var(--space-4)',
+      }}>
+        {sources.map(s => (
+          <span key={s} style={{ fontSize: '14px' }}>{APP_ICONS[s] || '📎'}</span>
+        ))}
+        <span style={{
+          fontFamily: 'var(--font-ui)',
+          fontSize: 'var(--text-xs)',
+          color: 'var(--text-on-dark-tertiary)',
+        }}>
+          Detected from {sources.map(s =>
+            s === 'gcal' ? 'Google Calendar' : s.charAt(0).toUpperCase() + s.slice(1)
+          ).join(' + ')}
+        </span>
+      </div>
+
+      {/* Options */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
+        {finding.options.map((opt, idx) => {
+          const isSelected = idx === selectedOption;
+          return (
             <button
-              onClick={() => setExpanded(!expanded)}
-              className="p-2 hover:bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 rounded-lg transition-colors text-black/40 dark:text-white/40 hover:text-black/70 dark:text-white/70"
+              key={idx}
+              onClick={() => onSelectOption(idx)}
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 'var(--space-3)',
+                padding: 'var(--space-3)',
+                background: isSelected ? 'rgba(255,255,255,0.06)' : 'transparent',
+                border: isSelected ? '0.5px solid rgba(255,255,255,0.20)' : '0.5px solid transparent',
+                borderRadius: 'var(--radius-md)',
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'background var(--duration-fast) var(--ease-out)',
+                width: '100%',
+              }}
             >
-              <motion.div
-                animate={{ rotate: expanded ? 180 : 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <ChevronDown className="w-5 h-5" />
-              </motion.div>
-            </button>
-          </div>
-
-          {/* Progress Bar */}
-          {totalTodos > 0 && (
-            <div className="mt-4 flex items-center gap-3">
-              <div className="flex-1 h-2 bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 rounded-full overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progress}%` }}
-                  transition={{ duration: 0.8, delay: 0.2 }}
-                  className={cn(
-                    "h-full rounded-full",
-                    plan.status === 'executing' 
-                      ? 'bg-gradient-to-r from-blue-500 via-amber-500 to-emerald-500' 
-                      : plan.status === 'completed'
-                      ? 'bg-emerald-500'
-                      : 'bg-black/[0.015] dark:bg-white/30'
-                  )}
-                />
-              </div>
-              <span className="text-[11px] text-black/40 dark:text-white/40 font-medium">
-                {completedTodos}/{totalTodos}
-              </span>
-            </div>
-          )}
-        </div>
-
-        <AnimatePresence>
-          {expanded && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3, ease: 'easeInOut' }}
-              className="overflow-hidden"
-            >
-              {/* Tabs */}
-              <div className="px-6 pt-4 flex items-center gap-1">
-                {(['overview', 'todos'] as const).map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={cn(
-                      "px-4 py-2 text-[12px] font-bold rounded-lg transition-all",
-                      activeTab === tab 
-                        ? "bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 text-black dark:text-white" 
-                        : "text-black/40 dark:text-white/40 hover:text-black/60 dark:text-white/60 hover:bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5"
-                    )}
-                  >
-                    {tab === 'overview' ? 'Overview' : `Steps (${totalTodos})`}
-                  </button>
-                ))}
+              {/* Radio dot */}
+              <div style={{
+                width: 16, height: 16,
+                borderRadius: '50%',
+                border: `2px solid ${isSelected ? '#FFFFFF' : 'rgba(255,255,255,0.25)'}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                marginTop: 2,
+              }}>
+                {isSelected && (
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: 'spring', damping: 15, stiffness: 400 }}
+                    style={{
+                      width: 8, height: 8,
+                      borderRadius: '50%',
+                      background: '#FFFFFF',
+                    }}
+                  />
+                )}
               </div>
 
               {/* Content */}
-              <div className="p-6 pt-4 space-y-4">
-                {activeTab === 'overview' ? (
-                  <OverviewTab plan={plan} />
-                ) : (
-                  <TodosTab todos={plan.todos} status={plan.status} />
-                )}
-              </div>
-
-              {/* Action Footer */}
-              {needsApproval && (
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="px-6 py-4 border-t border-neutral-200 dark:border-white/5 bg-white/[0.02]"
-                >
-                  <div className="flex items-center gap-3">
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={handleApprove}
-                      disabled={isApproving || isProcessing}
-                      className="flex-1 flex items-center justify-center gap-2 px-5 py-3 bg-white text-black text-[13px] font-bold rounded-xl hover:bg-neutral-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-white/10"
-                    >
-                      {isApproving ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Starting Execution...
-                        </>
-                      ) : (
-                        <>
-                          <Play className="w-4 h-4" />
-                          Execute Plan
-                        </>
-                      )}
-                    </motion.button>
-                    {onReject && (
-                      <button
-                        onClick={() => onReject(plan.planId)}
-                        className="px-5 py-3 bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 border border-neutral-200 dark:border-white/10 text-black/60 dark:text-white/60 text-[13px] font-bold rounded-xl hover:bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 hover:text-black dark:text-white transition-all"
-                      >
-                        Cancel
-                      </button>
-                    )}
-                  </div>
-                  <p className="text-[11px] text-black/30 dark:text-white/30 mt-3 text-center">
-                    Once approved, Arcus will execute all {totalTodos} steps automatically
-                  </p>
-                </motion.div>
-              )}
-
-              {isExecuting && (
-                <div className="px-6 py-4 border-t border-blue-500/20 bg-blue-500/5">
-                  <div className="flex items-center justify-center gap-2 text-blue-400">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span className="text-[13px] font-bold">Executing Plan...</span>
-                  </div>
-                </div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    </motion.div>
-  );
-}
-
-function CompactPlanCard({ plan, onApprove, isApproving, isProcessing }: { 
-  plan: PlanArtifact; 
-  onApprove: () => void;
-  isApproving: boolean;
-  isProcessing?: boolean;
-}) {
-  const completedTodos = plan.todos.filter(t => t.status === 'completed').length;
-  const totalTodos = plan.todos.length;
-  const progress = totalTodos > 0 ? (completedTodos / totalTodos) * 100 : 0;
-  const statusInfo = statusConfig[plan.status];
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="w-full max-w-xl mx-auto my-3"
-    >
-      <div className={cn(
-        "relative overflow-hidden rounded-xl border bg-neutral-50 dark:bg-[#111111] p-4",
-        plan.status === 'draft' ? 'border-amber-500/30' :
-        plan.status === 'executing' ? 'border-blue-500/30' :
-        'border-neutral-200 dark:border-white/10'
-      )}>
-        {/* Gradient Background */}
-        <div className={cn(
-          "absolute inset-0 bg-gradient-to-br opacity-20",
-          statusInfo.gradient
-        )} />
-
-        <div className="relative flex items-start gap-4">
-          <div className={cn(
-            "w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border",
-            plan.status === 'draft' ? 'bg-amber-500/10 border-amber-500/20' :
-            plan.status === 'executing' ? 'bg-blue-500/10 border-blue-500/20' :
-            'bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 border-neutral-200 dark:border-white/10'
-          )}>
-            {plan.status === 'executing' ? (
-              <Loader2 className={cn("w-5 h-5 animate-spin", statusInfo.color)} />
-            ) : (
-              <Sparkles className={cn("w-5 h-5", statusInfo.color)} />
-            )}
-          </div>
-
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <h4 className="text-[14px] font-bold text-black/90 dark:text-white/90">{plan.title}</h4>
-              <span className={cn(
-                "text-[9px] font-bold uppercase px-2 py-0.5 rounded-full",
-                statusInfo.bgColor || 'bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5',
-                statusInfo.color
-              )}>
-                {statusInfo.label}
-              </span>
-            </div>
-            <p className="text-[12px] text-black/5 dark:text-black/50 dark:text-white/50 line-clamp-1">{plan.objective}</p>
-
-            {/* Mini Progress */}
-            {totalTodos > 0 && (
-              <div className="mt-3 flex items-center gap-3">
-                <div className="flex-1 h-1.5 bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 rounded-full overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${progress}%` }}
-                    className={cn(
-                      "h-full rounded-full",
-                      plan.status === 'executing' 
-                        ? 'bg-gradient-to-r from-blue-500 to-emerald-500' 
-                        : 'bg-black/[0.015] dark:bg-white/30'
-                    )}
-                  />
-                </div>
-                <span className="text-[10px] text-black/40 dark:text-white/40">
-                  {completedTodos}/{totalTodos}
-                </span>
-              </div>
-            )}
-
-            {/* Todos Preview */}
-            <div className="mt-3 space-y-1">
-              {plan.todos.slice(0, 3).map((todo, i) => (
-                <div key={todo.todoId} className="flex items-center gap-2">
-                  <div className={cn(
-                    "w-4 h-4 rounded flex items-center justify-center",
-                    todoStatusConfig[todo.status].bgColor
-                  )}>
-                    {todo.status === 'completed' ? (
-                      <Check className="w-2.5 h-2.5 text-emerald-400" />
-                    ) : todo.status === 'running' ? (
-                      <Loader2 className="w-2.5 h-2.5 text-amber-400 animate-spin" />
-                    ) : (
-                      <Circle className="w-2.5 h-2.5 text-black/20 dark:text-white/20" />
-                    )}
-                  </div>
+              <div style={{ flex: 1 }}>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}>
+                  <span style={{
+                    fontFamily: 'var(--font-ui)',
+                    fontSize: 'var(--text-sm)',
+                    fontWeight: 'var(--weight-medium)' as any,
+                    color: 'var(--text-on-dark-primary)',
+                  }}>
+                    {opt.label}
+                  </span>
                   <span className={cn(
-                    "text-[11px] truncate",
-                    todo.status === 'completed' ? 'text-black/40 dark:text-white/40 line-through' : 'text-black/60 dark:text-white/60'
-                  )}>
-                    {todo.title}
+                    'arcus-badge',
+                    opt.effort === 'low' ? 'arcus-badge-low' :
+                    opt.effort === 'medium' ? 'arcus-badge-medium' : 'arcus-badge-high'
+                  )} style={{ fontSize: 10 }}>
+                    {EFFORT_LABELS[opt.effort]}
                   </span>
                 </div>
-              ))}
-              {plan.todos.length > 3 && (
-                <p className="text-[10px] text-black/30 dark:text-white/30 pl-6">
-                  +{plan.todos.length - 3} more steps
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Execute Button */}
-        {plan.status === 'draft' && (
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={onApprove}
-            disabled={isApproving || isProcessing}
-            className="relative mt-4 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-white text-black text-[12px] font-bold rounded-lg hover:bg-neutral-200 transition-all disabled:opacity-50"
-          >
-            {isApproving ? (
-              <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                Starting...
-              </>
-            ) : (
-              <>
-                <Play className="w-3.5 h-3.5" />
-                Execute Plan
-              </>
-            )}
-          </motion.button>
-        )}
-      </div>
-    </motion.div>
-  );
-}
-
-function OverviewTab({ plan }: { plan: PlanArtifact }) {
-  return (
-    <div className="space-y-5">
-      {/* Assumptions */}
-      {plan.assumptions.length > 0 && (
-        <motion.div 
-          initial={{ opacity: 0, x: -10 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.1 }}
-          className="space-y-2"
-        >
-          <div className="flex items-center gap-2 text-black/40 dark:text-white/40">
-            <Target className="w-3.5 h-3.5" />
-            <span className="text-[11px] font-bold uppercase tracking-wider">Assumptions</span>
-          </div>
-          <ul className="space-y-1.5">
-            {plan.assumptions.map((assumption, i) => (
-              <motion.li 
-                key={i}
-                initial={{ opacity: 0, x: -5 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.1 + i * 0.05 }}
-                className="flex items-start gap-2 text-[13px] text-black/60 dark:text-white/60"
-              >
-                <span className="text-black/30 dark:text-white/30 mt-1">•</span>
-                {assumption}
-              </motion.li>
-            ))}
-          </ul>
-        </motion.div>
-      )}
-
-      {/* Questions Answered */}
-      {plan.questionsAnswered.length > 0 && (
-        <motion.div 
-          initial={{ opacity: 0, x: -10 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.2 }}
-          className="space-y-2"
-        >
-          <div className="flex items-center gap-2 text-black/40 dark:text-white/40">
-            <HelpCircle className="w-3.5 h-3.5" />
-            <span className="text-[11px] font-bold uppercase tracking-wider">Questions Answered</span>
-          </div>
-          <ul className="space-y-1.5">
-            {plan.questionsAnswered.map((q, i) => (
-              <motion.li 
-                key={i}
-                initial={{ opacity: 0, x: -5 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2 + i * 0.05 }}
-                className="flex items-start gap-2 text-[13px] text-black/60 dark:text-white/60"
-              >
-                <span className="text-emerald-400/60 mt-1">✓</span>
-                {q}
-              </motion.li>
-            ))}
-          </ul>
-        </motion.div>
-      )}
-
-      {/* Acceptance Criteria */}
-      {plan.acceptanceCriteria.length > 0 && (
-        <motion.div 
-          initial={{ opacity: 0, x: -10 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.3 }}
-          className="space-y-2"
-        >
-          <div className="flex items-center gap-2 text-black/40 dark:text-white/40">
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            <span className="text-[11px] font-bold uppercase tracking-wider">Success Criteria</span>
-          </div>
-          <ul className="space-y-1.5">
-            {plan.acceptanceCriteria.map((criteria, i) => (
-              <motion.li 
-                key={i}
-                initial={{ opacity: 0, x: -5 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.3 + i * 0.05 }}
-                className="flex items-start gap-2 text-[13px] text-black/60 dark:text-white/60"
-              >
-                <span className="text-black/30 dark:text-white/30 mt-1">{i + 1}.</span>
-                {criteria}
-              </motion.li>
-            ))}
-          </ul>
-        </motion.div>
-      )}
-    </div>
-  );
-}
-
-function TodosTab({ todos, status: planStatus }: { todos: TodoItem[]; status: PlanStatus }) {
-  return (
-    <div className="space-y-2">
-      {todos.map((todo, index) => {
-        const status = todoStatusConfig[todo.status];
-        const StatusIcon = status.icon;
-        const ActionIcon = actionTypeIcons[todo.actionType] || BrainCircuit;
-        const isRunning = todo.status === 'running';
-        const isCompleted = todo.status === 'completed';
-
-        return (
-          <motion.div
-            key={todo.todoId}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
-            className={cn(
-              "flex items-start gap-3 p-3 rounded-xl border transition-all duration-300",
-              isRunning ? "bg-amber-500/5 border-amber-500/20 shadow-sm shadow-amber-500/5" :
-              isCompleted ? "bg-emerald-500/5 border-emerald-500/10" :
-              todo.status === 'failed' ? "bg-red-500/5 border-red-500/20" :
-              todo.status === 'blocked_approval' ? "bg-orange-500/5 border-orange-500/20" :
-              "bg-white/[0.02] border-neutral-200 dark:border-white/5 hover:border-neutral-200 dark:border-white/10"
-            )}
-          >
-            {/* Status Icon */}
-            <motion.div 
-              animate={status.pulse ? { scale: [1, 1.1, 1] } : {}}
-              transition={{ duration: 1, repeat: Infinity }}
-              className={cn(
-                "w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5",
-                status.bgColor
-              )}
-            >
-              <StatusIcon className={cn("w-3.5 h-3.5", status.pulse && "animate-spin", status.color)} />
-            </motion.div>
-
-            {/* Content */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <ActionIcon className="w-3.5 h-3.5 text-black/30 dark:text-white/30" />
-                  <h4 className={cn(
-                    "text-[13px] font-semibold leading-tight",
-                    isCompleted ? 'text-black/40 dark:text-white/40 line-through' : 'text-black/80 dark:text-white/80'
-                  )}>
-                    {todo.title}
-                  </h4>
-                </div>
-                <span className={cn(
-                  "text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0",
-                  status.bgColor, status.color
-                )}>
-                  {status.label}
+                <span style={{
+                  fontFamily: 'var(--font-ui)',
+                  fontSize: 'var(--text-xs)',
+                  color: opt.irreversible ? 'var(--color-warning)' : 'var(--text-on-dark-tertiary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  marginTop: 4,
+                }}>
+                  {opt.irreversible && <span>⚠️</span>}
+                  {opt.tradeoff}
                 </span>
               </div>
-              
-              {todo.description && !isCompleted && (
-                <p className="text-[12px] text-black/40 dark:text-white/40 mt-1 pl-5.5">{todo.description}</p>
-              )}
+            </button>
+          );
+        })}
+      </div>
 
-              {/* Error Message */}
-              {todo.errorMessage && (
-                <div className="flex items-start gap-2 mt-2 text-red-400/80">
-                  <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                  <p className="text-[11px]">{todo.errorMessage}</p>
-                </div>
-              )}
+      {/* Build Plan button */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <button
+          className="arcus-btn-primary"
+          onClick={onBuildPlan}
+          disabled={isBuilding}
+        >
+          {isBuilding ? (
+            <span className="arcus-loading-dots"><span /><span /><span /></span>
+          ) : 'Build Plan'}
+        </button>
+      </div>
+    </>
+  );
+}
 
-              {/* Result */}
-              {todo.resultPayload && isCompleted && (
-                <p className="text-[10px] text-emerald-400/60 mt-2 pl-5.5">
-                  ✓ {todo.resultPayload.message || 'Completed successfully'}
-                </p>
-              )}
+// ─── State: Plan Built ──────────────────────────────────────────────────────
 
-              {/* Attempt Count */}
-              {todo.attemptCount > 1 && (
-                <p className="text-[10px] text-black/30 dark:text-white/30 mt-2">
-                  Attempt {todo.attemptCount}
-                </p>
-              )}
+function StatePlanBuilt({
+  finding,
+  steps,
+  isExecuting,
+  onExecute,
+  onDismiss,
+}: {
+  finding?: Finding;
+  steps: PlanStep[];
+  isExecuting: boolean;
+  onExecute: () => void;
+  onDismiss?: () => void;
+}) {
+  return (
+    <>
+      {finding && (
+        <h3 style={{
+          fontFamily: 'var(--font-content)',
+          fontSize: 'var(--text-md)',
+          fontWeight: 'var(--weight-medium)' as any,
+          color: 'var(--text-on-dark-primary)',
+          lineHeight: 'var(--leading-tight)' as any,
+          margin: '0 0 var(--space-4) 0',
+        }}>
+          {finding.headline}
+        </h3>
+      )}
+
+      {/* Step checklist */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', marginBottom: 'var(--space-5)' }}>
+        {steps.map((step, idx) => (
+          <div
+            key={step.id}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 'var(--space-3)',
+              padding: 'var(--space-2) var(--space-3)',
+              background: step.irreversible ? 'var(--color-warning-bg)' : 'transparent',
+              borderRadius: 'var(--radius-md)',
+            }}
+          >
+            {/* Step number circle */}
+            <div style={{
+              width: 20, height: 20,
+              borderRadius: '50%',
+              background: 'rgba(255,255,255,0.08)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}>
+              <span style={{
+                fontFamily: 'var(--font-ui)',
+                fontSize: 'var(--text-xs)',
+                fontWeight: 'var(--weight-medium)' as any,
+                color: 'var(--text-on-dark-secondary)',
+              }}>
+                {idx + 1}
+              </span>
             </div>
+
+            {/* Step text */}
+            <span style={{
+              fontFamily: 'var(--font-ui)',
+              fontSize: 'var(--text-sm)',
+              color: 'var(--text-on-dark-primary)',
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+            }}>
+              {step.irreversible && <span style={{ fontSize: 12 }}>⚠️</span>}
+              {step.humanReadable}
+            </span>
+
+            {/* App chip */}
+            <span style={{
+              fontFamily: 'var(--font-ui)',
+              fontSize: 'var(--text-xs)',
+              background: 'rgba(255,255,255,0.08)',
+              border: '0.5px solid rgba(255,255,255,0.15)',
+              borderRadius: 'var(--radius-sm)',
+              padding: '2px 8px',
+              color: 'var(--text-on-dark-tertiary)',
+            }}>
+              {step.app}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Action buttons */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)' }}>
+        {onDismiss && (
+          <button className="arcus-btn-ghost" onClick={onDismiss}>
+            Dismiss
+          </button>
+        )}
+        <button
+          className="arcus-btn-primary"
+          onClick={onExecute}
+          disabled={isExecuting}
+          style={{ minWidth: 100 }}
+        >
+          {isExecuting ? <div className="arcus-spinner" style={{ width: 14, height: 14, borderWidth: 1.5 }} /> : 'Execute'}
+        </button>
+      </div>
+    </>
+  );
+}
+
+// ─── State: Executing ───────────────────────────────────────────────────────
+
+function StateExecuting({
+  finding,
+  steps,
+}: {
+  finding?: Finding;
+  steps: PlanStep[];
+}) {
+  const completedCount = steps.filter(s => s.status === 'completed').length;
+  const failedStep = steps.find(s => s.status === 'failed');
+
+  return (
+    <>
+      {finding && (
+        <h3 style={{
+          fontFamily: 'var(--font-content)',
+          fontSize: 'var(--text-md)',
+          fontWeight: 'var(--weight-medium)' as any,
+          color: 'var(--text-on-dark-primary)',
+          lineHeight: 'var(--leading-tight)' as any,
+          margin: '0 0 var(--space-4) 0',
+        }}>
+          {finding.headline}
+        </h3>
+      )}
+
+      {/* Step list with live status */}
+      <div
+        style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}
+        aria-live="polite"
+      >
+        {steps.map((step) => (
+          <StepRow key={step.id} step={step} />
+        ))}
+      </div>
+
+      {/* Summary */}
+      {failedStep ? (
+        <div style={{
+          marginTop: 'var(--space-4)',
+          fontFamily: 'var(--font-ui)',
+          fontSize: 'var(--text-xs)',
+          color: 'var(--text-on-dark-tertiary)',
+        }}>
+          {completedCount > 0 && `Steps 1–${completedCount} completed. `}
+          Step {steps.indexOf(failedStep) + 1} failed.
+          {steps.indexOf(failedStep) < steps.length - 1 &&
+            ` Steps ${steps.indexOf(failedStep) + 2}–${steps.length} were not attempted.`}
+        </div>
+      ) : (
+        <div style={{
+          marginTop: 'var(--space-4)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+          fontFamily: 'var(--font-ui)',
+          fontSize: 'var(--text-sm)',
+          color: 'var(--text-on-dark-secondary)',
+        }}>
+          <div className="arcus-spinner" style={{ width: 14, height: 14, borderWidth: 1.5 }} />
+          Running...
+        </div>
+      )}
+    </>
+  );
+}
+
+// ─── Step Row ───────────────────────────────────────────────────────────────
+
+function StepRow({ step }: { step: PlanStep }) {
+  const [justCompleted, setJustCompleted] = useState(false);
+  const prevStatus = useRef(step.status);
+
+  useEffect(() => {
+    if (prevStatus.current === 'executing' && step.status === 'completed') {
+      setJustCompleted(true);
+      const t = setTimeout(() => setJustCompleted(false), 600);
+      return () => clearTimeout(t);
+    }
+    prevStatus.current = step.status;
+  }, [step.status]);
+
+  return (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      borderRadius: 'var(--radius-md)',
+    }}
+    className={justCompleted ? 'arcus-step-flash' : undefined}
+    >
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 'var(--space-3)',
+        padding: 'var(--space-2) var(--space-3)',
+      }}>
+        {/* Status indicator */}
+        <div style={{
+          width: 20, height: 20,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+        }}>
+          {step.status === 'pending' && (
+            <div style={{
+              width: 20, height: 20,
+              borderRadius: '50%',
+              background: 'rgba(255,255,255,0.08)',
+            }} />
+          )}
+          {step.status === 'executing' && (
+            <div className="arcus-spinner" style={{ width: 18, height: 18, borderWidth: 1.5 }} />
+          )}
+          {step.status === 'completed' && (
+            <motion.div
+              initial={{ scale: 1.2 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 0.2 }}
+              style={{
+                width: 20, height: 20,
+                borderRadius: '50%',
+                background: 'var(--color-success-bg)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                <path d="M2 5L4.5 7.5L8 3" stroke="var(--color-success)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </motion.div>
+          )}
+          {step.status === 'failed' && (
+            <div style={{
+              width: 20, height: 20,
+              borderRadius: '50%',
+              background: 'var(--color-danger-bg)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--color-danger)',
+              fontSize: 12,
+              fontWeight: 600,
+            }}>×</div>
+          )}
+        </div>
+
+        {/* Step text */}
+        <span style={{
+          fontFamily: 'var(--font-ui)',
+          fontSize: 'var(--text-sm)',
+          color: step.status === 'completed' ? 'var(--text-on-dark-secondary)' : 'var(--text-on-dark-primary)',
+          flex: 1,
+        }}>
+          {step.humanReadable}
+        </span>
+
+        {/* App chip */}
+        <span style={{
+          fontFamily: 'var(--font-ui)',
+          fontSize: 'var(--text-xs)',
+          background: 'rgba(255,255,255,0.08)',
+          border: '0.5px solid rgba(255,255,255,0.15)',
+          borderRadius: 'var(--radius-sm)',
+          padding: '2px 8px',
+          color: 'var(--text-on-dark-tertiary)',
+        }}>
+          {step.app}
+        </span>
+      </div>
+
+      {/* Error expansion for failed steps */}
+      <AnimatePresence>
+        {step.status === 'failed' && step.error && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            style={{ overflow: 'hidden', paddingLeft: 44 }}
+          >
+            <div style={{
+              padding: 'var(--space-2) var(--space-3)',
+              fontFamily: 'var(--font-ui)',
+              fontSize: 'var(--text-xs)',
+              color: 'var(--color-danger)',
+              marginBottom: 'var(--space-1)',
+            }}>
+              {step.error}
+            </div>
+            <a
+              href={DEEP_LINKS[step.app] || '#'}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                padding: 'var(--space-1) var(--space-3)',
+                fontFamily: 'var(--font-ui)',
+                fontSize: 'var(--text-xs)',
+                fontWeight: 'var(--weight-medium)' as any,
+                color: 'var(--text-on-dark-primary)',
+                textDecoration: 'none',
+              }}
+            >
+              Fix manually →
+            </a>
           </motion.div>
-        );
-      })}
+        )}
+      </AnimatePresence>
     </div>
   );
 }
+
+// ─── Default export for existing import compatibility ────────────────────────
+
+export default PlanArtifactCard;

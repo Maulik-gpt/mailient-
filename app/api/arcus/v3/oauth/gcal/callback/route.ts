@@ -1,0 +1,164 @@
+/**
+ * Arcus V3 — Google Calendar OAuth Callback
+ * 
+ * Handles the redirect from Google after the user consents.
+ * Exchanges the authorization code for tokens, encrypts them,
+ * stores in arcus_integrations, and registers a Watch API channel.
+ */
+
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '../../../../../../../lib/auth.js';
+import { getSupabaseAdmin } from '../../../../../../../lib/supabase.js';
+import { encrypt } from '../../../../../../../lib/crypto.js';
+import { auditLogger } from '../../../../../../../lib/audit-logger.js';
+import crypto from 'crypto';
+
+/**
+ * GET — OAuth callback. Exchange code for tokens.
+ */
+export async function GET(request: NextRequest) {
+  try {
+    // 1. Verify user is authenticated
+    const session = await auth();
+    if (!session?.user?.email) {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+    const userId = session.user.email.toLowerCase();
+
+    // 2. Extract params
+    const { searchParams } = new URL(request.url);
+    const code = searchParams.get('code');
+    const state = searchParams.get('state');
+    const error = searchParams.get('error');
+
+    if (error) {
+      console.error('[Arcus V3] GCal OAuth error:', error);
+      return NextResponse.redirect(new URL('/arcus-v3?error=gcal_denied', request.url));
+    }
+
+    if (!code) {
+      return NextResponse.redirect(new URL('/arcus-v3?error=no_code', request.url));
+    }
+
+    // 3. Validate CSRF state
+    const storedState = request.cookies.get('arcus_gcal_state')?.value;
+    if (!state || !storedState || state !== storedState) {
+      console.error('[Arcus V3] GCal OAuth state mismatch');
+      return NextResponse.redirect(new URL('/arcus-v3?error=csrf', request.url));
+    }
+
+    // 4. Exchange code for tokens
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const redirectUri = `${baseUrl}/api/arcus/v3/oauth/gcal/callback`;
+
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code,
+        client_id: process.env.GOOGLE_CLIENT_ID || '',
+        client_secret: process.env.GOOGLE_CLIENT_SECRET || '',
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code',
+      }),
+    });
+
+    if (!tokenResponse.ok) {
+      const errorText = await tokenResponse.text();
+      console.error('[Arcus V3] Token exchange failed:', errorText);
+      return NextResponse.redirect(new URL('/arcus-v3?error=token_exchange', request.url));
+    }
+
+    const tokens = await tokenResponse.json();
+    const { access_token, refresh_token, expires_in, scope } = tokens;
+
+    if (!access_token) {
+      return NextResponse.redirect(new URL('/arcus-v3?error=no_token', request.url));
+    }
+
+    // 5. Register GCal Watch API channel for push notifications
+    const channelId = crypto.randomUUID();
+    const channelToken = crypto.randomBytes(32).toString('hex');
+    const webhookUrl = `${baseUrl}/api/arcus/v3/webhooks/gcal`;
+
+    let channelExpiry: string | null = null;
+    try {
+      const watchResponse = await fetch(
+        'https://www.googleapis.com/calendar/v3/calendars/primary/events/watch',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            id: channelId,
+            type: 'web_hook',
+            address: webhookUrl,
+            token: channelToken,
+            params: {
+              // Channel expires after 7 days (max for GCal Watch API)
+              ttl: String(7 * 24 * 60 * 60),
+            },
+          }),
+        }
+      );
+
+      if (watchResponse.ok) {
+        const watchData = await watchResponse.json();
+        channelExpiry = watchData.expiration
+          ? new Date(parseInt(watchData.expiration, 10)).toISOString()
+          : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+        console.log(`[Arcus V3] GCal Watch registered for ${userId}, expires: ${channelExpiry}`);
+      } else {
+        const watchError = await watchResponse.text();
+        console.warn('[Arcus V3] GCal Watch registration failed:', watchError);
+        // Continue — webhooks are optional, polling can be used as fallback
+      }
+    } catch (watchErr) {
+      console.warn('[Arcus V3] GCal Watch error:', (watchErr as Error).message);
+    }
+
+    // 6. Store encrypted tokens in arcus_integrations
+    const supabase = getSupabaseAdmin();
+    const expiresAt = expires_in
+      ? new Date(Date.now() + expires_in * 1000).toISOString()
+      : null;
+
+    const { error: dbError } = await supabase
+      .from('arcus_integrations')
+      .upsert({
+        user_id: userId,
+        provider: 'gcal',
+        access_token: encrypt(access_token),
+        refresh_token: refresh_token ? encrypt(refresh_token) : null,
+        scopes: scope ? scope.split(' ') : [],
+        expires_at: expiresAt,
+        channel_id: channelId,
+        channel_token: channelToken,
+        channel_expiry: channelExpiry,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id,provider' });
+
+    if (dbError) {
+      console.error('[Arcus V3] DB store error:', dbError.message);
+      return NextResponse.redirect(new URL('/arcus-v3?error=db_store', request.url));
+    }
+
+    // 7. Audit log
+    await auditLogger.log(userId, 'arcus.gcal_connected', {
+      channelId,
+      hasRefreshToken: !!refresh_token,
+      watchRegistered: !!channelExpiry,
+    });
+
+    // 8. Clear state cookie and redirect to Arcus
+    const response = NextResponse.redirect(new URL('/arcus-v3?connected=gcal', request.url));
+    response.cookies.delete('arcus_gcal_state');
+    return response;
+
+  } catch (error) {
+    console.error('[Arcus V3] GCal callback error:', (error as Error).message);
+    return NextResponse.redirect(new URL('/arcus-v3?error=callback', request.url));
+  }
+}

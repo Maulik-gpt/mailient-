@@ -1,0 +1,147 @@
+-- Arcus V3 — Database Schema (Supabase SQL)
+-- Run this in Supabase SQL editor to create all required tables.
+-- 
+-- Tables:
+--   arcus_integrations  — Connected apps with encrypted OAuth tokens
+--   arcus_plans          — Plan artifacts with status state machine
+--   arcus_plan_steps     — Execution steps per plan
+--   arcus_events_queue   — Job queue (replaces BullMQ for Phase 1)
+--   arcus_dedup_cache    — Deduplication keys with TTL
+
+-- ─── 1. Integrations ────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS arcus_integrations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id TEXT NOT NULL,
+  provider TEXT NOT NULL CHECK (provider IN ('gcal', 'slack', 'notion', 'calcom')),
+  access_token TEXT NOT NULL,         -- AES-256-GCM encrypted
+  refresh_token TEXT,                  -- AES-256-GCM encrypted
+  scopes TEXT[] DEFAULT '{}',
+  last_checked TIMESTAMPTZ,            -- For polling fallback (Phase 2+)
+  expires_at TIMESTAMPTZ,
+  channel_id TEXT,                     -- GCal Watch API channel ID
+  channel_token TEXT,                  -- GCal Watch API channel verification token
+  channel_expiry TIMESTAMPTZ,          -- GCal Watch API channel expiry
+  workspace_info JSONB DEFAULT '{}',   -- Slack workspace metadata
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+
+  UNIQUE(user_id, provider)
+);
+
+-- Index for fast user lookups
+CREATE INDEX IF NOT EXISTS idx_arcus_integrations_user ON arcus_integrations(user_id);
+
+-- ─── 2. Plans ───────────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS arcus_plans (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id TEXT NOT NULL,
+  mode TEXT NOT NULL CHECK (mode IN ('agentic', 'plan_mode')),
+  status TEXT NOT NULL DEFAULT 'proposed' CHECK (status IN ('proposed', 'approved', 'executing', 'completed', 'failed', 'dismissed')),
+  severity TEXT CHECK (severity IN ('low', 'medium', 'high')),
+  headline TEXT,
+  impact TEXT,                          -- Impact sentence for the card
+  findings JSONB DEFAULT '[]',          -- Full LLM findings array
+  selected_option INT DEFAULT 0,        -- Which option the user selected (0-based)
+  raw_llm_input JSONB,                  -- Full context sent to LLM (debugging)
+  raw_llm_output JSONB,                 -- Full JSON response from LLM
+  source TEXT,                          -- What triggered this plan
+  triggering_event JSONB,               -- The normalized event that caused this
+  created_at TIMESTAMPTZ DEFAULT now(),
+  executed_at TIMESTAMPTZ,
+  completed_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_arcus_plans_user ON arcus_plans(user_id);
+CREATE INDEX IF NOT EXISTS idx_arcus_plans_status ON arcus_plans(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_arcus_plans_created ON arcus_plans(user_id, created_at DESC);
+
+-- ─── 3. Plan Steps ──────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS arcus_plan_steps (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  plan_id UUID NOT NULL REFERENCES arcus_plans(id) ON DELETE CASCADE,
+  position INT NOT NULL,                -- Execution order, 0-indexed
+  app TEXT NOT NULL,                    -- 'gcal' | 'slack'
+  action TEXT NOT NULL,                 -- 'update_event' | 'send_message' | etc.
+  params JSONB DEFAULT '{}',            -- Action parameters
+  human_readable TEXT NOT NULL,         -- Plain English description for the UI
+  irreversible BOOLEAN DEFAULT false,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'executing', 'completed', 'failed')),
+  error TEXT,
+  executed_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_arcus_plan_steps_plan ON arcus_plan_steps(plan_id);
+CREATE INDEX IF NOT EXISTS idx_arcus_plan_steps_order ON arcus_plan_steps(plan_id, position ASC);
+
+-- ─── 4. Events Queue ────────────────────────────────────────────────────────────
+-- Simple job queue table. Workers poll for 'pending' jobs.
+
+CREATE TABLE IF NOT EXISTS arcus_events_queue (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id TEXT NOT NULL,
+  source TEXT NOT NULL,
+  event_type TEXT NOT NULL,
+  payload JSONB NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
+  error TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  processed_at TIMESTAMPTZ,
+  attempts INT DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_arcus_queue_pending ON arcus_events_queue(status, created_at ASC) WHERE status = 'pending';
+CREATE INDEX IF NOT EXISTS idx_arcus_queue_user ON arcus_events_queue(user_id, status);
+
+-- ─── 5. Deduplication Cache ─────────────────────────────────────────────────────
+-- Prevents duplicate event processing. Entries auto-expire via cleanup cron.
+
+CREATE TABLE IF NOT EXISTS arcus_dedup_cache (
+  dedup_key TEXT PRIMARY KEY,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  expires_at TIMESTAMPTZ NOT NULL      -- TTL: created_at + 600 seconds
+);
+
+CREATE INDEX IF NOT EXISTS idx_arcus_dedup_expires ON arcus_dedup_cache(expires_at);
+
+-- ─── 6. Plan Mode Briefs ────────────────────────────────────────────────────────
+-- Stores the daily/manual brief output separately for easy retrieval.
+
+CREATE TABLE IF NOT EXISTS arcus_briefs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id TEXT NOT NULL,
+  plan_id UUID REFERENCES arcus_plans(id) ON DELETE CASCADE,
+  brief_data JSONB NOT NULL,            -- The structured weekly brief JSON
+  generated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_arcus_briefs_user ON arcus_briefs(user_id, generated_at DESC);
+
+-- ─── RLS Policies ───────────────────────────────────────────────────────────────
+-- Enable Row Level Security on all tables
+
+ALTER TABLE arcus_integrations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE arcus_plans ENABLE ROW LEVEL SECURITY;
+ALTER TABLE arcus_plan_steps ENABLE ROW LEVEL SECURITY;
+ALTER TABLE arcus_events_queue ENABLE ROW LEVEL SECURITY;
+ALTER TABLE arcus_briefs ENABLE ROW LEVEL SECURITY;
+
+-- Service role has full access (for API routes running server-side)
+-- These policies allow the service role key to perform all operations
+CREATE POLICY "Service role full access" ON arcus_integrations FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Service role full access" ON arcus_plans FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Service role full access" ON arcus_plan_steps FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Service role full access" ON arcus_events_queue FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Service role full access" ON arcus_briefs FOR ALL USING (true) WITH CHECK (true);
+
+-- ─── Cleanup Function ──────────────────────────────────────────────────────────
+-- Call periodically to remove expired dedup entries
+
+CREATE OR REPLACE FUNCTION arcus_cleanup_dedup()
+RETURNS void AS $$
+BEGIN
+  DELETE FROM arcus_dedup_cache WHERE expires_at < now();
+END;
+$$ LANGUAGE plpgsql;
