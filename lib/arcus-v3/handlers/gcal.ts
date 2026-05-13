@@ -30,6 +30,8 @@ export async function gcalHandler(
       return createEvent(accessToken, params);
     case 'delete_event':
       return deleteEvent(accessToken, params);
+    case 'create_meet_link':
+      return createMeetLink(accessToken, params);
     default:
       throw new Error(`Unknown gcal action: ${action}`);
   }
@@ -91,7 +93,10 @@ async function createEvent(
     throw new Error('gcal.create_event requires a title (summary)');
   }
 
-  const response = await fetch(url, {
+  // If meet link requested, we need conferenceDataVersion=1
+  const createUrl = params.createMeetLink ? `${url}?conferenceDataVersion=1` : url;
+
+  const response = await fetch(createUrl, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
@@ -130,6 +135,42 @@ async function deleteEvent(
   }
 }
 
+async function createMeetLink(
+  token: string,
+  params: Record<string, unknown>
+): Promise<void> {
+  const { eventId, calendarId } = params;
+  if (!eventId) throw new Error('gcal.create_meet_link requires eventId');
+
+  const calendar = (calendarId as string) || 'primary';
+  const url = `https://www.googleapis.com/calendar/v3/calendars/${calendar}/events/${eventId}?conferenceDataVersion=1`;
+
+  const patchBody = {
+    conferenceData: {
+      createRequest: {
+        requestId: `arcus-${Date.now()}`,
+        conferenceSolutionKey: { type: 'hangoutsMeet' },
+      },
+    },
+  };
+
+  const response = await fetch(url, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(patchBody),
+    signal: AbortSignal.timeout(8000),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`GCal createMeetLink failed (${response.status}): ${errorText.substring(0, 200)}`);
+  }
+}
+
+
 /**
  * Build a Google Calendar event body from Arcus step params.
  */
@@ -162,6 +203,14 @@ function buildEventBody(params: Record<string, unknown>): Record<string, unknown
   }
   if (params.status) {
     body.status = params.status;
+  }
+  if (params.createMeetLink) {
+    (body as any).conferenceData = {
+      createRequest: {
+        requestId: `arcus-${Date.now()}`,
+        conferenceSolutionKey: { type: 'hangoutsMeet' },
+      },
+    };
   }
 
   return body;

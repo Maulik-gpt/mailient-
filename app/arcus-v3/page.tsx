@@ -40,6 +40,9 @@ export default function ArcusPage() {
   const [brief, setBrief] = useState<any>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [disconnecting, setDisconnecting] = useState<string | null>(null);
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [auditCursor, setAuditCursor] = useState<string | null>(null);
 
   // Fetch plans
   const fetchPlans = useCallback(async () => {
@@ -89,6 +92,30 @@ export default function ArcusPage() {
     }
   }, []);
 
+  // Fetch audit logs
+  const fetchAuditLogs = useCallback(async (cursor?: string) => {
+    setAuditLoading(true);
+    try {
+      const url = cursor 
+        ? `/api/arcus/v3/audit?cursor=${cursor}` 
+        : '/api/arcus/v3/audit';
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        if (cursor) {
+          setAuditLogs(prev => [...prev, ...data.logs]);
+        } else {
+          setAuditLogs(data.logs || []);
+        }
+        setAuditCursor(data.nextCursor);
+      }
+    } catch (err) {
+      console.error('Failed to fetch audit logs:', err);
+    } finally {
+      setAuditLoading(false);
+    }
+  }, []);
+
   // Generate new brief
   async function handleGenerateBrief() {
     setBriefLoading(true);
@@ -130,13 +157,20 @@ export default function ArcusPage() {
       setToast('Slack connected successfully');
       setView('feed');
       window.history.replaceState({}, '', '/arcus-v3');
+    } else if (connected === 'notion') {
+      setToast('Notion connected successfully');
+      setView('feed');
+      window.history.replaceState({}, '', '/arcus-v3');
     }
-    const error = params.get('error');
     if (error) {
       setToast(`Connection error: ${error}`);
       window.history.replaceState({}, '', '/arcus-v3');
     }
-  }, [fetchPlans, fetchIntegrations, fetchBrief]);
+
+    if (view === 'settings') {
+      fetchAuditLogs();
+    }
+  }, [fetchPlans, fetchIntegrations, fetchBrief, fetchAuditLogs, view]);
 
   // Auto-dismiss toast
   useEffect(() => {
@@ -161,6 +195,27 @@ export default function ArcusPage() {
     }
   }
 
+  // Connect Cal.com (API Key)
+  async function handleConnectCalcom() {
+    const apiKey = prompt('Enter your Cal.com API Key:');
+    if (!apiKey) return;
+    try {
+      const res = await fetch('/api/arcus/v3/integrations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider: 'calcom', accessToken: apiKey }),
+      });
+      if (res.ok) {
+        await fetchIntegrations();
+        setToast('Cal.com connected');
+      } else {
+        setToast('Failed to connect Cal.com');
+      }
+    } catch {
+      setToast('Error connecting Cal.com');
+    }
+  }
+
   // Separate active plans and completed plans
   const activeStatuses = ['proposed', 'approved', 'executing'];
   const activePlans = plans.filter(p => activeStatuses.includes(p.status) && p.mode === 'agentic');
@@ -168,7 +223,9 @@ export default function ArcusPage() {
 
   const isGCalConnected = integrations.some(i => i.provider === 'gcal');
   const isSlackConnected = integrations.some(i => i.provider === 'slack');
-  const hasIntegrations = isGCalConnected || isSlackConnected;
+  const isNotionConnected = integrations.some(i => i.provider === 'notion');
+  const isCalcomConnected = integrations.some(i => i.provider === 'calcom');
+  const hasIntegrations = isGCalConnected || isSlackConnected || isNotionConnected || isCalcomConnected;
 
   // ─── Render ─────────────────────────────────────────────────────────────────
 
@@ -232,6 +289,14 @@ export default function ArcusPage() {
           <div className="arcus-integration-row">
             <div className={`arcus-integration-dot ${isSlackConnected ? 'connected' : 'disconnected'}`} />
             <span>Slack</span>
+          </div>
+          <div className="arcus-integration-row">
+            <div className={`arcus-integration-dot ${isNotionConnected ? 'connected' : 'disconnected'}`} />
+            <span>Notion</span>
+          </div>
+          <div className="arcus-integration-row">
+            <div className={`arcus-integration-dot ${isCalcomConnected ? 'connected' : 'disconnected'}`} />
+            <span>Cal.com</span>
           </div>
         </div>
       </aside>
@@ -406,6 +471,115 @@ export default function ArcusPage() {
                       <a href="/api/arcus/v3/oauth/slack" className="arcus-btn arcus-btn-primary" style={{ textDecoration: 'none' }}>
                         Connect
                       </a>
+                    )}
+                  </div>
+                </div>
+
+                {/* Notion */}
+                <div className="glass-surface" style={{ padding: 'var(--space-5)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ color: 'var(--text-on-dark-primary)', fontWeight: 500, fontSize: 'var(--text-base)' }}>
+                        Notion
+                      </div>
+                      <div style={{ color: 'var(--text-on-dark-tertiary)', fontSize: 'var(--text-xs)', marginTop: 4 }}>
+                        {isNotionConnected ? 'Connected — polling for document changes' : 'Not connected'}
+                      </div>
+                    </div>
+                    {isNotionConnected ? (
+                      <button
+                        className="arcus-btn arcus-btn-destructive"
+                        onClick={() => handleDisconnect('notion')}
+                        disabled={disconnecting === 'notion'}
+                      >
+                        {disconnecting === 'notion' ? <span className="arcus-spinner arcus-spinner-small" /> : 'Disconnect'}
+                      </button>
+                    ) : (
+                      <a href="/api/arcus/v3/oauth/notion" className="arcus-btn arcus-btn-primary" style={{ textDecoration: 'none' }}>
+                        Connect
+                      </a>
+                    )}
+                  </div>
+                </div>
+
+                {/* Cal.com */}
+                <div className="glass-surface" style={{ padding: 'var(--space-5)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ color: 'var(--text-on-dark-primary)', fontWeight: 500, fontSize: 'var(--text-base)' }}>
+                        Cal.com
+                      </div>
+                      <div style={{ color: 'var(--text-on-dark-tertiary)', fontSize: 'var(--text-xs)', marginTop: 4 }}>
+                        {isCalcomConnected ? 'Connected — managing bookings' : 'Not connected'}
+                      </div>
+                    </div>
+                    {isCalcomConnected ? (
+                      <button
+                        className="arcus-btn arcus-btn-destructive"
+                        onClick={() => handleDisconnect('calcom')}
+                        disabled={disconnecting === 'calcom'}
+                      >
+                        {disconnecting === 'calcom' ? <span className="arcus-spinner arcus-spinner-small" /> : 'Disconnect'}
+                      </button>
+                    ) : (
+                      <button className="arcus-btn arcus-btn-primary" onClick={handleConnectCalcom}>
+                        Connect
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Activity Log */}
+                <div style={{ marginTop: 'var(--space-8)' }}>
+                  <h3 style={{
+                    fontFamily: 'var(--font-content)',
+                    fontSize: 'var(--text-lg)',
+                    color: 'var(--text-on-light-primary)',
+                    marginBottom: 'var(--space-4)',
+                  }}>
+                    Activity Log
+                  </h3>
+                  <div className="glass-surface" style={{ overflow: 'hidden' }}>
+                    <div style={{ maxHeight: 400, overflowY: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-xs)' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', textAlign: 'left' }}>
+                            <th style={{ padding: 'var(--space-3)', color: 'var(--text-on-dark-tertiary)' }}>Time</th>
+                            <th style={{ padding: 'var(--space-3)', color: 'var(--text-on-dark-tertiary)' }}>Action</th>
+                            <th style={{ padding: 'var(--space-3)', color: 'var(--text-on-dark-tertiary)' }}>Metadata</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {auditLogs.map((log, i) => (
+                            <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                              <td style={{ padding: 'var(--space-3)', color: 'var(--text-on-dark-secondary)', whiteSpace: 'nowrap' }}>
+                                {new Date(log.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                              </td>
+                              <td style={{ padding: 'var(--space-3)', color: 'var(--text-on-dark-primary)' }}>
+                                {log.action}
+                              </td>
+                              <td style={{ padding: 'var(--space-3)', color: 'var(--text-on-dark-tertiary)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {JSON.stringify(log.metadata)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      {auditLogs.length === 0 && !auditLoading && (
+                        <div style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--text-on-dark-tertiary)' }}>
+                          No activity recorded yet.
+                        </div>
+                      )}
+                    </div>
+                    {auditCursor && (
+                      <button 
+                        className="arcus-btn arcus-btn-ghost" 
+                        style={{ width: '100%', borderRadius: 0, borderTop: '1px solid rgba(255,255,255,0.1)' }}
+                        onClick={() => fetchAuditLogs(auditCursor)}
+                        disabled={auditLoading}
+                      >
+                        {auditLoading ? 'Loading...' : 'Load more'}
+                      </button>
                     )}
                   </div>
                 </div>

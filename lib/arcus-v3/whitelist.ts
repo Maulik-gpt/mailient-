@@ -12,9 +12,10 @@
  */
 
 const ALLOWED_ACTIONS: Record<string, string[]> = {
-  gcal:  ['update_event', 'create_event', 'delete_event'],
+  gcal:  ['update_event', 'create_event', 'delete_event', 'create_meet_link'],
   slack: ['send_message', 'set_status'],
-  // notion and calcom are added in Phase 2 and Phase 3 respectively
+  notion: ['update_page', 'create_page'],
+  calcom: ['cancel_booking', 'reschedule_booking'],
 };
 
 /**

@@ -12,6 +12,8 @@ import { getSupabaseAdmin } from '../supabase.js';
 import { decrypt } from '../crypto.js';
 import { normalizeGCalEvents } from './normalizers/gcal';
 import { normalizeSlackHistory } from './normalizers/slack';
+import { Client } from '@notionhq/client';
+import { normalizeNotionPage, normalizeNotionDatabaseItem, flattenNotionBlocks } from './normalizers/notion';
 
 /**
  * Build the complete context for LLM reasoning.
@@ -48,15 +50,19 @@ export async function buildContext(
 
   const gcalIntegration = integrations?.find(i => i.provider === 'gcal');
   const slackIntegration = integrations?.find(i => i.provider === 'slack');
+  const notionIntegration = integrations?.find(i => i.provider === 'notion');
 
   // 3. Fetch data in parallel
   const eventWindow = mode === 'plan_mode' ? 7 : 2; // days
-  const [upcomingEvents, recentMessages] = await Promise.all([
+  const [upcomingEvents, recentMessages, notionEvents] = await Promise.all([
     gcalIntegration
       ? fetchGCalEvents(gcalIntegration, eventWindow)
       : Promise.resolve([]),
     slackIntegration
       ? fetchSlackMessages(slackIntegration)
+      : Promise.resolve([]),
+    notionIntegration
+      ? fetchNotionEvents(notionIntegration, eventWindow)
       : Promise.resolve([]),
   ]);
 
@@ -69,6 +75,7 @@ export async function buildContext(
     currentTime,
     upcomingEvents,
     recentMessages,
+    notionEvents,
     triggeringEvent,
   };
 }
@@ -241,3 +248,45 @@ async function refreshGCalToken(refreshToken: string): Promise<string | null> {
     return null;
   }
 }
+
+/**
+ * Fetch Notion pages and database items.
+ */
+async function fetchNotionEvents(
+  integration: Record<string, unknown>,
+  daysAhead: number
+): Promise<ArcusEvent[]> {
+  try {
+    const accessToken = decrypt(integration.access_token as string);
+    const notion = new Client({ auth: accessToken });
+    const lookbackHours = 48; // Standard lookback for recent edits
+    const lookbackDate = new Date(Date.now() - lookbackHours * 60 * 60 * 1000).toISOString();
+
+    // 1. Search for recently modified pages
+    const { results: pages } = await notion.search({
+      filter: { property: 'object', value: 'page' },
+      sort: { timestamp: 'last_edited_time', direction: 'descending' },
+      page_size: 20,
+    });
+
+    const recentPages = pages.filter((p: any) => p.last_edited_time > lookbackDate);
+    const normalizedEvents: ArcusEvent[] = [];
+
+    // 2. Fetch content for recent pages (max 5 to avoid timeouts)
+    for (const page of recentPages.slice(0, 5)) {
+      try {
+        const { results: blocks } = await notion.blocks.children.list({ block_id: page.id, page_size: 50 });
+        const content = flattenNotionBlocks(blocks);
+        normalizedEvents.push(normalizeNotionPage(page, content));
+      } catch (e) {
+        // Skip individual failures
+      }
+    }
+
+    return normalizedEvents;
+  } catch (err) {
+    console.error('[Arcus V3] Notion fetch error:', (err as Error).message);
+    return [];
+  }
+}
+

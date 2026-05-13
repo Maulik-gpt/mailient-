@@ -21,20 +21,22 @@ export async function GET(request: NextRequest) {
 
     // Parse query params
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = Math.min(parseInt(searchParams.get('limit') || '20', 10), 50);
+    const cursor = searchParams.get('cursor'); // createdAt timestamp
     const status = searchParams.get('status'); // optional filter
     const mode = searchParams.get('mode'); // 'agentic' | 'plan_mode'
-    const offset = (page - 1) * limit;
 
     // Build query — always scoped to userId
     let query = supabase
       .from('arcus_plans')
-      .select('*', { count: 'exact' })
+      .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+      .limit(limit);
 
+    if (cursor) {
+      query = query.lt('created_at', cursor);
+    }
     if (status) {
       query = query.eq('status', status);
     }
@@ -42,7 +44,7 @@ export async function GET(request: NextRequest) {
       query = query.eq('mode', mode);
     }
 
-    const { data: plans, error, count } = await query;
+    const { data: plans, error } = await query;
 
     if (error) {
       console.error('[Arcus V3] Plans list error:', error.message);
@@ -64,12 +66,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       plans: plansWithSteps,
-      pagination: {
-        page,
-        limit,
-        total: count || 0,
-        totalPages: Math.ceil((count || 0) / limit),
-      },
+      nextCursor: plansWithSteps.length === limit ? plansWithSteps[plansWithSteps.length - 1].created_at : null
     });
 
   } catch (error) {

@@ -9,6 +9,8 @@ import { getSupabaseAdmin } from '../supabase.js';
 import { decrypt } from '../crypto.js';
 import { gcalHandler } from './handlers/gcal';
 import { slackHandler } from './handlers/slack';
+import { notionHandler } from './handlers/notion';
+import { calcomHandler } from './handlers/calcom';
 
 /**
  * Execute a single step by dispatching to the appropriate handler.
@@ -30,6 +32,12 @@ export async function executeStep(
       return slackHandler(step.action, step.params, {
         accessToken: tokens.accessToken,
       });
+    case 'notion':
+      return notionHandler(step.action, step.params, {
+        accessToken: tokens.accessToken,
+      });
+    case 'calcom':
+      return calcomHandler(tokens.accessToken, step.action, step.params);
     default:
       throw new Error(`Unknown app: ${step.app}`);
   }

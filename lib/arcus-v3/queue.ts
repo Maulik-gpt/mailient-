@@ -14,6 +14,7 @@ import { auditLogger } from '../audit-logger.js';
 import type { ArcusJob, ArcusEvent } from './types';
 import { normalizeGCalEvent } from './normalizers/gcal';
 import { normalizeSlackMessage } from './normalizers/slack';
+import { normalizeNotionPage } from './normalizers/notion';
 import crypto from 'crypto';
 
 // In-memory lock to prevent concurrent processing for the same user
@@ -215,6 +216,10 @@ function normalizeEvent(source: string, payload: Record<string, unknown>): Arcus
       return normalizeGCalEvent(payload);
     case 'slack':
       return normalizeSlackMessage(payload);
+    case 'notion':
+      // Notion payload might be a batch of pages
+      const pages = (payload.pages as any[]) || [];
+      return normalizeNotionPage(pages[0] || {}, ''); // trigger with first page, empty content (builder will fetch full content)
     default:
       // Generic fallback
       return {
