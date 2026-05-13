@@ -5,7 +5,6 @@
  * DELETE /api/arcus/v3/integrations?provider=xxx  — Disconnect
  */
 import { NextRequest, NextResponse } from 'next/server';
-// @ts-ignore
 import { auth } from '../../../../../lib/auth.js';
 import { getSupabaseAdmin } from '../../../../../lib/supabase.js';
 import { encrypt } from '../../../../../lib/crypto.js';
@@ -13,7 +12,7 @@ import { auditLogger } from '../../../../../lib/audit-logger.js';
 
 export async function GET() {
   try {
-    const session = await (auth as any)();
+    const session = await auth();
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -34,7 +33,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await (auth as any)();
+    const session = await auth();
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -72,7 +71,7 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await (auth as any)();
+    const session = await auth();
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

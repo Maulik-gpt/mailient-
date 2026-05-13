@@ -5,14 +5,13 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-// @ts-ignore
 import { auth } from '../../../../../lib/auth.js';
 import { getSupabaseAdmin } from '../../../../../lib/supabase.js';
 
 export async function GET(request: NextRequest) {
   try {
     // Authenticate
-    const session = await (auth as any)();
+    const session = await auth();
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

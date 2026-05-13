@@ -10,12 +10,11 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-// @ts-ignore
 import { auth } from '../../../../../../lib/auth.js';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await (auth as any)();
+    const session = await auth();
     if (!session?.user?.email) {
       return NextResponse.redirect(new URL('/login', request.url));
     }

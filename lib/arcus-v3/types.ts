@@ -53,7 +53,6 @@ export interface ArcusContext {
   currentTime: string;
   upcomingEvents: ArcusEvent[];
   recentMessages: ArcusEvent[];
-  notionEvents?: ArcusEvent[];
   triggeringEvent?: ArcusEvent; // absent in Plan Mode
 }
 

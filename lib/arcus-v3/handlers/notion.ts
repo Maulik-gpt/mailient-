@@ -14,22 +14,21 @@ export async function notionHandler(
   action: string,
   params: any,
   credentials: { accessToken: string }
-): Promise<void> {
+): Promise<{ success: boolean; data?: any; error?: string }> {
   const notion = new Client({ auth: credentials.accessToken });
 
   try {
     switch (action) {
       case 'update_page':
-        await updatePage(notion, params);
-        return;
+        return await updatePage(notion, params);
       case 'create_page':
-        await createPage(notion, params);
-        return;
+        return await createPage(notion, params);
       default:
-        throw new Error(`Unsupported Notion action: ${action}`);
+        return { success: false, error: `Unsupported Notion action: ${action}` };
     }
   } catch (err: any) {
-    throw new Error(`Notion handler error (${action}): ${err.message}`);
+    console.error(`[Arcus V3] Notion handler error (${action}):`, err.message);
+    return { success: false, error: err.message };
   }
 }
 
@@ -37,7 +36,7 @@ async function updatePage(notion: Client, params: any) {
   const { pageId, properties, icon, cover, archived } = params;
   if (!pageId) throw new Error('pageId is required for update_page');
 
-  await notion.pages.update({
+  const response = await notion.pages.update({
     page_id: pageId,
     properties: properties || {},
     icon: icon,

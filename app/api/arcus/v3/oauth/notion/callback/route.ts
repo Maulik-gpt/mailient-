@@ -7,7 +7,6 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-// @ts-ignore
 import { auth } from '../../../../../../../lib/auth.js';
 import { getSupabaseAdmin } from '../../../../../../../lib/supabase.js';
 import { encrypt } from '../../../../../../../lib/crypto.js';
@@ -16,7 +15,7 @@ import { auditLogger } from '../../../../../../../lib/audit-logger.js';
 export async function GET(request: NextRequest) {
   try {
     // 1. Verify user is authenticated
-    const session = await (auth as any)();
+    const session = await auth();
     if (!session?.user?.email) {
       return NextResponse.redirect(new URL('/login', request.url));
     }

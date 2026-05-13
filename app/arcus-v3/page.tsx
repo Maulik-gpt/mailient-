@@ -162,7 +162,6 @@ export default function ArcusPage() {
       setView('feed');
       window.history.replaceState({}, '', '/arcus-v3');
     }
-    const error = params.get('error');
     if (error) {
       setToast(`Connection error: ${error}`);
       window.history.replaceState({}, '', '/arcus-v3');
