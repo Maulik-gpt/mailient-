@@ -3,7 +3,7 @@
  * Arcus V3 — Plan Mode Brief View
  * Full-page editorial morning briefing.
  */
-import React, { useState } from 'react';
+import React from 'react';
 
 interface BriefData {
   generatedAt: string;
@@ -27,114 +27,116 @@ export default function PlanModeBrief({ brief, onGenerate, loading }: PlanModeBr
   });
 
   return (
-    <div>
+    <div style={{ maxWidth: 800, margin: '0 auto' }}>
       {/* Header */}
-      <div className="arcus-brief-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-8)' }}>
         <div>
-          <h1 className="arcus-brief-date">{today}</h1>
-          <p className="arcus-brief-subtitle">Your Arcus brief</p>
+          <h1 style={{ fontFamily: 'var(--font-content)', fontSize: 'var(--text-2xl)', fontWeight: 400, color: 'var(--text-on-light-primary)', marginBottom: 'var(--space-1)' }}>
+            {today}
+          </h1>
+          <p style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--text-sm)', color: 'var(--text-on-light-tertiary)' }}>
+            Your Arcus brief
+          </p>
         </div>
-        <button
-          className="arcus-btn arcus-btn-ghost"
-          onClick={onGenerate}
-          disabled={loading}
-        >
+        <button className="arcus-btn arcus-btn-ghost" onClick={onGenerate} disabled={loading}>
           {loading ? <span className="arcus-spinner arcus-spinner-small" /> : 'Generate New Brief'}
         </button>
       </div>
 
-      <div className="arcus-brief-separator" />
+      <div style={{ height: 1, background: 'rgba(0,0,0,0.08)', marginBottom: 'var(--space-8)' }} />
 
-      {/* No brief yet */}
-      {!brief && !loading && (
-        <div className="arcus-empty">
-          <h2 className="arcus-empty-headline">No brief yet.</h2>
-          <p className="arcus-empty-subline">
-            Arcus generates your morning brief at 7AM, or you can run it now.
-          </p>
-          <button className="arcus-btn arcus-btn-primary" onClick={onGenerate}>
-            Generate brief
-          </button>
-        </div>
-      )}
-
-      {/* Loading */}
-      {loading && (
-        <div className="glass-surface arcus-brief-container">
-          <div className="arcus-brief-loading">
-            <span className="arcus-brief-loading-text">
+      {/* Main Glass Document */}
+      <div className="glass-surface" style={{ padding: 'var(--space-10)', position: 'relative', minHeight: 400 }}>
+        {loading ? (
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ fontFamily: 'var(--font-content)', fontSize: 'var(--text-md)', color: 'var(--text-on-dark-tertiary)' }} className="arcus-pulse">
               Arcus is thinking about your week…
             </span>
           </div>
-        </div>
-      )}
-
-      {/* Brief content */}
-      {brief && !loading && (
-        <div className="glass-surface arcus-brief-container">
-          {/* Critical Path */}
-          <div className="arcus-brief-section">
-            <div className="arcus-brief-section-label">Critical Path</div>
-            {brief.criticalPath.map((item, idx) => (
-              <div className="arcus-brief-item" key={idx}>
-                <span className="arcus-brief-item-number">{idx + 1}</span>
-                <div>
-                  <div className="arcus-brief-item-text">{item.item}</div>
-                  <div className="arcus-brief-item-reason">{item.reason}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Risks */}
-          <div className="arcus-brief-section">
-            <div className="arcus-brief-section-label">Risks</div>
-            {brief.risks.map((risk, idx) => (
-              <div className="arcus-brief-item" key={idx} style={{ alignItems: 'center' }}>
-                <span className={`arcus-badge arcus-badge-${risk.severity}`} style={{ flexShrink: 0 }}>
-                  {risk.severity}
-                </span>
-                <div style={{ flex: 1 }}>
-                  <div className="arcus-brief-item-text" style={{ fontWeight: 400 }}>
-                    {risk.risk}
+        ) : brief ? (
+          <>
+            {/* Critical Path */}
+            <section style={{ marginBottom: 'var(--space-12)' }}>
+              <h4 className="arcus-brief-section-label">Critical Path</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+                {brief.criticalPath.map((item, idx) => (
+                  <div key={idx} style={{ display: 'flex', gap: 'var(--space-6)', alignItems: 'baseline' }}>
+                    <span style={{ fontFamily: 'var(--font-content)', fontSize: 'var(--text-xl)', color: 'var(--text-on-dark-tertiary)', minWidth: 32 }}>
+                      {idx + 1}
+                    </span>
+                    <div>
+                      <div style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--text-base)', fontWeight: 500, color: 'var(--text-on-dark-primary)', lineHeight: 1.6 }}>
+                        {item.item}
+                      </div>
+                      <div style={{ fontSize: 'var(--text-sm)', color: 'var(--text-on-dark-secondary)', marginTop: 4 }}>
+                        {item.reason}
+                      </div>
+                    </div>
                   </div>
-                  <div className="arcus-brief-item-reason">{risk.suggestion}</div>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </section>
 
-          {/* Focus Blocks */}
-          <div className="arcus-brief-section">
-            <div className="arcus-brief-section-label">Suggested Focus Blocks</div>
-            {brief.suggestedFocusBlocks.map((block, idx) => (
-              <div className="arcus-brief-item" key={idx}>
-                <div>
-                  <div className="arcus-brief-item-text">
-                    {block.day} · {block.timeRange}
+            {/* Risks */}
+            <section style={{ marginBottom: 'var(--space-12)' }}>
+              <h4 className="arcus-brief-section-label">Risks</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                {brief.risks.map((risk, idx) => (
+                  <div key={idx} style={{ display: 'flex', gap: 'var(--space-4)', alignItems: 'center', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', background: 'rgba(255,255,255,0.04)' }}>
+                    <span className={`arcus-badge arcus-badge-${risk.severity}`}>
+                      {risk.severity.toUpperCase()}
+                    </span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 'var(--text-sm)', color: 'var(--text-on-dark-primary)' }}>{risk.risk}</div>
+                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-on-dark-tertiary)', marginTop: 2 }}>{risk.suggestion}</div>
+                    </div>
                   </div>
-                  <div className="arcus-brief-item-reason">{block.reason}</div>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </section>
 
-          {/* Drop or Delegate */}
-          <div className="arcus-brief-section">
-            <div className="arcus-brief-section-label">One Thing to Drop or Delegate</div>
-            <div className="arcus-brief-item">
-              <div>
-                <div className="arcus-brief-item-text">
-                  {brief.oneThingToDropOrDelegate.item}
+            {/* Focus Blocks & Drop */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-10)' }}>
+              <section>
+                <h4 className="arcus-brief-section-label">Focus Blocks</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                  {brief.suggestedFocusBlocks.map((block, idx) => (
+                    <div key={idx} style={{ borderLeft: '2px solid rgba(255,255,255,0.1)', paddingLeft: 'var(--space-4)' }}>
+                      <div style={{ fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--text-on-dark-primary)' }}>
+                        {block.day} · {block.timeRange}
+                      </div>
+                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-on-dark-secondary)', marginTop: 2 }}>
+                        {block.reason}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className="arcus-brief-item-reason">
-                  {brief.oneThingToDropOrDelegate.reasoning}
+              </section>
+
+              <section>
+                <h4 className="arcus-brief-section-label">One Thing to Drop</h4>
+                <div style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', background: 'rgba(248,113,113,0.08)', border: '0.5px solid rgba(248,113,113,0.15)' }}>
+                  <div style={{ fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-danger)' }}>
+                    {brief.oneThingToDropOrDelegate.item}
+                  </div>
+                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-on-dark-secondary)', marginTop: 4 }}>
+                    {brief.oneThingToDropOrDelegate.reasoning}
+                  </div>
                 </div>
-              </div>
+              </section>
             </div>
+          </>
+        ) : (
+          <div style={{ textAlign: 'center', padding: 'var(--space-16)' }}>
+             <h2 style={{ fontFamily: 'var(--font-content)', fontSize: 'var(--text-lg)', color: 'var(--text-on-dark-primary)', marginBottom: 'var(--space-2)' }}>No brief yet.</h2>
+             <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-on-dark-secondary)', marginBottom: 'var(--space-6)' }}>
+               Arcus generates your morning brief at 7AM, or you can run it now.
+             </p>
+             <button className="arcus-btn arcus-btn-primary" onClick={onGenerate}>Generate brief</button>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
+

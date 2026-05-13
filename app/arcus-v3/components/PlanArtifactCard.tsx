@@ -5,7 +5,8 @@
  * State machine component with exactly 4 states:
  * detected → plan_built → executing → completed
  * 
- * All four share the same glass outer shell — only interior changes.
+ * Shared glass shell, editorial typography (Fraunces), 
+ * and liquid interaction language.
  */
 import React, { useState, useCallback } from 'react';
 import { useRelativeTime } from '../hooks/useRelativeTime';
@@ -62,15 +63,10 @@ interface PlanArtifactCardProps {
   onUpdate?: () => void;
 }
 
-const SEVERITY_LABELS: Record<string, string> = {
-  low: 'Low Priority',
-  medium: 'Needs Attention',
-  high: 'Action Required',
-};
-
-const DEEP_LINKS: Record<string, string> = {
-  gcal: 'https://calendar.google.com',
-  slack: 'https://app.slack.com',
+const SEVERITY_MAP: Record<string, { label: string; color: string }> = {
+  low: { label: 'Low Priority', color: 'blue' },
+  medium: { label: 'Needs Attention', color: 'amber' },
+  high: { label: 'Action Required', color: 'red' },
 };
 
 export default function PlanArtifactCard({ plan, isNew, onUpdate }: PlanArtifactCardProps) {
@@ -82,28 +78,18 @@ export default function PlanArtifactCard({ plan, isNew, onUpdate }: PlanArtifact
   const [loading, setLoading] = useState(false);
   const relativeTime = useRelativeTime(plan.created_at);
 
-  // SSE for real-time step updates during execution
-  const sseActive = status === 'executing' ? plan.id : null;
+  // SSE for real-time execution feedback
+  const sseActive = (status === 'executing' || status === 'approved') ? plan.id : null;
 
   usePlanSSE(sseActive, useCallback((event: SSEEvent) => {
     if (event.type === 'step:start' && event.stepId) {
-      setSteps(prev =>
-        prev.map(s => s.id === event.stepId ? { ...s, status: 'executing' } : s)
-      );
+      setSteps(prev => prev.map(s => s.id === event.stepId ? { ...s, status: 'executing' } : s));
     }
     if (event.type === 'step:done' && event.stepId) {
-      setSteps(prev =>
-        prev.map(s => s.id === event.stepId ? { ...s, status: 'completed' } : s)
-      );
+      setSteps(prev => prev.map(s => s.id === event.stepId ? { ...s, status: 'completed' } : s));
     }
     if (event.type === 'step:failed' && event.stepId) {
-      setSteps(prev =>
-        prev.map(s =>
-          s.id === event.stepId
-            ? { ...s, status: 'failed', error: event.error || 'Unknown error' }
-            : s
-        )
-      );
+      setSteps(prev => prev.map(s => s.id === event.stepId ? { ...s, status: 'failed', error: event.error || 'Execution failed' } : s));
       setStatus('failed');
     }
     if (event.type === 'plan:completed') {
@@ -111,7 +97,7 @@ export default function PlanArtifactCard({ plan, isNew, onUpdate }: PlanArtifact
     }
   }, []));
 
-  // ─── API Calls ──────────────────────────────────────────────────────────────
+  // ─── Actions ──────────────────────────────────────────────────────────────
 
   async function handleBuildPlan() {
     setLoading(true);
@@ -122,7 +108,6 @@ export default function PlanArtifactCard({ plan, isNew, onUpdate }: PlanArtifact
         body: JSON.stringify({ selectedOption }),
       });
       if (res.ok) {
-        // Fetch updated plan with steps
         const planRes = await fetch(`/api/arcus/v3/plans/${plan.id}`);
         if (planRes.ok) {
           const updated = await planRes.json();
@@ -140,14 +125,10 @@ export default function PlanArtifactCard({ plan, isNew, onUpdate }: PlanArtifact
   async function handleExecute() {
     setLoading(true);
     try {
-      const res = await fetch(`/api/arcus/v3/plans/${plan.id}/execute`, {
-        method: 'POST',
-      });
-      if (res.ok) {
-        setStatus('executing');
-      }
+      const res = await fetch(`/api/arcus/v3/plans/${plan.id}/execute`, { method: 'POST' });
+      if (res.ok) setStatus('executing');
     } catch (err) {
-      console.error('Execute failed:', err);
+      console.error('Execution trigger failed:', err);
     } finally {
       setLoading(false);
     }
@@ -163,81 +144,78 @@ export default function PlanArtifactCard({ plan, isNew, onUpdate }: PlanArtifact
     }
   }
 
-  // ─── Render by State ────────────────────────────────────────────────────────
+  // ─── Rendering ──────────────────────────────────────────────────────────────
 
   if (status === 'dismissed') return null;
 
-  // Completed state — collapsed single row
+  // State: Completed (Collapsed)
   if (status === 'completed') {
     return (
-      <div className={`glass-surface arcus-card-completed`}>
-        <div className="arcus-card-completed-row">
-          <span className="arcus-card-completed-headline">
-            {(plan.headline || '').substring(0, 60)}
-            {(plan.headline || '').length > 60 ? '…' : ''}
-          </span>
-          <span className="arcus-card-completed-time">
-            Completed · {useRelativeTime(plan.completed_at)}
-          </span>
-        </div>
+      <div className="glass-surface" style={{ padding: 'var(--space-4) var(--space-6)', opacity: 0.6, height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-on-dark-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '70%' }}>
+          {plan.findings?.[0]?.headline || plan.headline}
+        </span>
+        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-on-dark-tertiary)' }}>
+          Completed · {useRelativeTime(plan.completed_at)}
+        </span>
       </div>
     );
   }
 
+  const severity = SEVERITY_MAP[plan.severity || 'low'];
   const finding = plan.findings?.[0];
-  const severity = plan.severity || 'low';
 
   return (
-    <div className={`glass-surface arcus-plan-card ${isNew ? 'arcus-card-enter' : ''}`}>
+    <div className={`glass-surface ${isNew ? 'arcus-card-enter' : ''}`} style={{ padding: 'var(--space-6)' }}>
       {/* Header */}
-      <div className="arcus-card-header">
-        <span className={`arcus-badge arcus-badge-${severity}`}>
-          {SEVERITY_LABELS[severity] || severity}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
+        <span className={`arcus-badge arcus-badge-${plan.severity || 'low'}`}>
+          {severity.label}
         </span>
-        <span className="arcus-card-time">{relativeTime}</span>
+        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-on-dark-tertiary)' }}>
+          {relativeTime}
+        </span>
       </div>
 
-      {/* Headline */}
-      {finding && (
-        <>
-          <h3 className="arcus-card-headline">{finding.headline}</h3>
-          <p className="arcus-card-impact">{finding.impact}</p>
-          <div className="arcus-card-source">
-            <span>Detected from {plan.source === 'gcal' ? 'Google Calendar' : plan.source === 'slack' ? 'Slack' : plan.source}</span>
-          </div>
-        </>
-      )}
+      {/* Headline & Impact */}
+      <h3 style={{ fontFamily: 'var(--font-content)', fontSize: 'var(--text-md)', fontWeight: 500, color: 'var(--text-on-dark-primary)', lineHeight: 1.3, marginBottom: 'var(--space-2)' }}>
+        {finding?.headline || plan.headline}
+      </h3>
+      <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-on-dark-secondary)', lineHeight: 1.6, marginBottom: 'var(--space-3)' }}>
+        {finding?.impact || plan.impact}
+      </p>
 
-      {/* State: detected/proposed — show options */}
-      {status === 'proposed' && finding && (
+      {/* Detected State */}
+      {(status === 'proposed' || status === 'detected') && finding && (
         <>
-          <div className="arcus-options">
+          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-on-dark-tertiary)', marginBottom: 'var(--space-4)' }}>
+            Detected from {plan.source || 'connected apps'}
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
             {finding.options.map((option, idx) => (
               <div
                 key={idx}
-                className={`arcus-option ${selectedOption === idx ? 'selected' : ''}`}
                 onClick={() => setSelectedOption(idx)}
-                role="radio"
-                aria-checked={selectedOption === idx}
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === ' ' || e.key === 'Enter') {
-                    e.preventDefault();
-                    setSelectedOption(idx);
-                  }
+                style={{
+                  display: 'flex',
+                  gap: 'var(--space-3)',
+                  padding: 'var(--space-3)',
+                  borderRadius: 'var(--radius-md)',
+                  cursor: 'pointer',
+                  border: selectedOption === idx ? '0.5px solid rgba(255,255,255,0.20)' : '0.5px solid transparent',
+                  background: selectedOption === idx ? 'rgba(255,255,255,0.06)' : 'transparent',
                 }}
               >
-                <div className="arcus-option-radio">
-                  <div className="arcus-option-radio-dot" />
+                <div style={{ width: 16, height: 16, borderRadius: '50%', border: `1.5px solid ${selectedOption === idx ? '#FFF' : 'rgba(255,255,255,0.3)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
+                  {selectedOption === idx && <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#FFF' }} className="arcus-option-pop" />}
                 </div>
-                <div className="arcus-option-content">
-                  <div className="arcus-option-label">
-                    {option.label}
-                    <span className="arcus-effort-badge" style={{ marginLeft: 8 }}>
-                      {option.effort}
-                    </span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                    <span style={{ fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--text-on-dark-primary)' }}>{option.label}</span>
+                    <span className="arcus-effort-badge">{option.effort}</span>
                   </div>
-                  <div className={`arcus-option-tradeoff ${option.irreversible ? 'irreversible' : ''}`}>
+                  <div style={{ fontSize: 'var(--text-xs)', color: option.irreversible ? 'var(--color-warning)' : 'var(--text-on-dark-tertiary)' }}>
                     {option.irreversible && '⚠ '}
                     {option.tradeoff}
                   </div>
@@ -246,109 +224,47 @@ export default function PlanArtifactCard({ plan, isNew, onUpdate }: PlanArtifact
             ))}
           </div>
 
-          <div className="arcus-card-actions">
-            <button
-              className="arcus-btn arcus-btn-primary"
-              onClick={handleBuildPlan}
-              disabled={loading}
-            >
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button className="arcus-btn arcus-btn-primary" onClick={handleBuildPlan} disabled={loading}>
               {loading ? <span className="arcus-spinner arcus-spinner-small" /> : 'Build Plan'}
             </button>
           </div>
         </>
       )}
 
-      {/* State: plan_built/approved — show steps */}
-      {status === 'approved' && (
+      {/* Plan Built / Executing States */}
+      {(status === 'approved' || status === 'executing' || status === 'failed') && (
         <>
-          {loading && steps.length === 0 ? (
-            <div className="arcus-dots">
-              <div className="arcus-dot" />
-              <div className="arcus-dot" />
-              <div className="arcus-dot" />
-            </div>
-          ) : (
-            <div className="arcus-steps">
-              {steps.map((step, idx) => (
-                <div
-                  key={step.id}
-                  className={`arcus-step ${step.irreversible ? 'irreversible' : ''}`}
-                >
-                  <div className="arcus-step-indicator">
-                    {idx + 1}
-                  </div>
-                  <span className="arcus-step-text">{step.human_readable}</span>
-                  <span className="arcus-step-app-chip">{step.app}</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
+            {steps.map((step, idx) => (
+              <div key={step.id} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-md)', background: step.status === 'completed' ? 'rgba(52,211,153,0.08)' : 'transparent' }} className={step.status === 'completed' ? 'arcus-step-flash' : ''}>
+                <div style={{ width: 20, height: 20, borderRadius: '50%', background: step.status === 'completed' ? 'var(--color-success-bg)' : 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 'var(--text-xs)', color: 'var(--text-on-dark-secondary)' }}>
+                  {step.status === 'pending' && (idx + 1)}
+                  {step.status === 'executing' && <span className="arcus-spinner arcus-spinner-small" />}
+                  {step.status === 'completed' && <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5L4 7L8 3" stroke="var(--color-success)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  {step.status === 'failed' && <span style={{ color: 'var(--color-danger)' }}>×</span>}
                 </div>
-              ))}
-            </div>
-          )}
-
-          <div className="arcus-card-actions">
-            <button className="arcus-btn arcus-btn-ghost" onClick={handleDismiss}>
-              Dismiss
-            </button>
-            <button
-              className="arcus-btn arcus-btn-primary"
-              onClick={handleExecute}
-              disabled={loading}
-            >
-              {loading ? <span className="arcus-spinner arcus-spinner-small" /> : 'Execute'}
-            </button>
-          </div>
-        </>
-      )}
-
-      {/* State: executing — live step progress */}
-      {(status === 'executing' || status === 'failed') && (
-        <div className="arcus-steps" aria-live="polite">
-          {steps.map((step, idx) => (
-            <React.Fragment key={step.id}>
-              <div
-                className={`arcus-step ${step.status === 'completed' ? 'arcus-step-flash' : ''} ${step.irreversible ? 'irreversible' : ''}`}
-              >
-                <div className={`arcus-step-indicator ${step.status}`}>
-                  {step.status === 'pending' && ''}
-                  {step.status === 'executing' && (
-                    <span className="arcus-spinner arcus-spinner-small" />
-                  )}
-                  {step.status === 'completed' && (
-                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                      <path d="M2 5L4 7L8 3" stroke="var(--color-success)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  )}
-                  {step.status === 'failed' && (
-                    <span style={{ color: 'var(--color-danger)', fontSize: 11, fontWeight: 600 }}>×</span>
-                  )}
-                </div>
-                <span className="arcus-step-text">{step.human_readable}</span>
+                <span style={{ flex: 1, fontSize: 'var(--text-sm)', color: 'var(--text-on-dark-primary)' }}>{step.human_readable}</span>
                 <span className="arcus-step-app-chip">{step.app}</span>
               </div>
-              {step.status === 'failed' && step.error && (
-                <>
-                  <div className="arcus-step-error">{step.error}</div>
-                  <a
-                    href={DEEP_LINKS[step.app] || '#'}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="arcus-step-fix-link"
-                  >
-                    Fix manually →
-                  </a>
-                </>
-              )}
-            </React.Fragment>
-          ))}
+            ))}
+          </div>
 
-          {status === 'executing' && (
-            <div className="arcus-card-actions">
-              <button className="arcus-btn arcus-btn-ghost" disabled>
-                Running…
-              </button>
-            </div>
-          )}
-        </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)' }}>
+            {status === 'approved' && (
+              <>
+                <button className="arcus-btn arcus-btn-ghost" onClick={handleDismiss}>Dismiss</button>
+                <button className="arcus-btn arcus-btn-primary" onClick={handleExecute} disabled={loading}>
+                  {loading ? <span className="arcus-spinner arcus-spinner-small" /> : 'Execute'}
+                </button>
+              </>
+            )}
+            {status === 'executing' && <button className="arcus-btn arcus-btn-ghost" disabled>Running…</button>}
+            {status === 'failed' && <button className="arcus-btn arcus-btn-destructive" onClick={() => setStatus('approved')}>Retry</button>}
+          </div>
+        </>
       )}
     </div>
   );
 }
+

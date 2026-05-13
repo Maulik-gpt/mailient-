@@ -7,6 +7,7 @@
   min-height: 100vh;
   background: var(--bg-page);
   font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
 }
 
 /* ─── Sidebar ──────────────────────────────────────────────────────────────── */
@@ -21,11 +22,15 @@
   flex-direction: column;
   padding: var(--space-6);
   z-index: 50;
+  background: var(--glass-tint-sidebar);
+  backdrop-filter: var(--glass-blur-sidebar);
+  -webkit-backdrop-filter: var(--glass-blur-sidebar);
+  border-right: 0.5px solid rgba(255,255,255,0.08);
 }
 
 .arcus-sidebar-logo {
   font-family: var(--font-content);
-  font-weight: var(--weight-medium);
+  font-weight: 500;
   font-size: var(--text-lg);
   color: var(--text-on-dark-primary);
   margin-bottom: var(--space-10);
@@ -55,7 +60,6 @@
   background: none;
   width: 100%;
   text-align: left;
-  border-left: 2px solid transparent;
 }
 
 .arcus-nav-item:hover {
@@ -65,8 +69,7 @@
 
 .arcus-nav-item.active {
   color: var(--text-on-dark-primary);
-  background: rgba(255,255,255,0.08);
-  border-left-color: rgba(255,255,255,0.80);
+  background: rgba(255,255,255,0.12);
 }
 
 .arcus-nav-item svg {
@@ -95,7 +98,6 @@
   gap: var(--space-2);
   font-size: var(--text-xs);
   color: var(--text-on-dark-tertiary);
-  cursor: pointer;
 }
 
 .arcus-integration-dot {
@@ -122,9 +124,9 @@
 }
 
 .arcus-content {
-  max-width: 720px;
+  max-width: 800px;
   margin: 0 auto;
-  padding: var(--space-8);
+  padding: var(--space-12) var(--space-8);
 }
 
 /* ─── Feed ─────────────────────────────────────────────────────────────────── */
@@ -145,66 +147,24 @@
 .arcus-date-divider-line {
   flex: 1;
   height: 1px;
-  background: rgba(0,0,0,0.10);
+  background: rgba(0,0,0,0.06);
 }
 
 .arcus-date-divider-label {
   font-size: var(--text-xs);
   color: var(--text-on-light-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   white-space: nowrap;
 }
 
-/* ─── Plan Card ────────────────────────────────────────────────────────────── */
-
-.arcus-plan-card {
-  padding: var(--space-6);
-}
-
-.arcus-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--space-4);
-}
-
-.arcus-card-time {
-  font-size: var(--text-xs);
-  color: var(--text-on-dark-tertiary);
-}
-
-.arcus-card-headline {
-  font-family: var(--font-content);
-  font-size: var(--text-md);
-  font-weight: var(--weight-medium);
-  color: var(--text-on-dark-primary);
-  line-height: var(--leading-tight);
-  margin-bottom: var(--space-2);
-}
-
-.arcus-card-impact {
-  font-family: var(--font-ui);
-  font-size: var(--text-sm);
-  color: var(--text-on-dark-secondary);
-  line-height: var(--leading-normal);
-  margin-bottom: var(--space-3);
-}
-
-.arcus-card-source {
-  font-size: var(--text-xs);
-  color: var(--text-on-dark-tertiary);
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  margin-bottom: var(--space-4);
-}
-
-/* ─── Severity Badges ──────────────────────────────────────────────────────── */
+/* ─── Badges ──────────────────────────────────────────────────────────────── */
 
 .arcus-badge {
   display: inline-flex;
   align-items: center;
   font-size: var(--text-xs);
-  font-weight: var(--weight-medium);
+  font-weight: 500;
   padding: 2px 8px;
   border-radius: var(--radius-full);
   border: 0.5px solid;
@@ -228,10 +188,9 @@
   border-color: var(--color-danger-border);
 }
 
-/* Effort badges */
 .arcus-effort-badge {
   font-size: var(--text-xs);
-  font-weight: var(--weight-medium);
+  font-weight: 500;
   padding: 1px 6px;
   border-radius: var(--radius-full);
   background: rgba(255,255,255,0.08);
@@ -239,134 +198,7 @@
   border: 0.5px solid rgba(255,255,255,0.12);
 }
 
-/* ─── Options ──────────────────────────────────────────────────────────────── */
-
-.arcus-options {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  margin-bottom: var(--space-4);
-}
-
-.arcus-option {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-3);
-  padding: var(--space-3);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: background var(--duration-fast) var(--ease-out);
-  border: 0.5px solid transparent;
-}
-
-.arcus-option:hover {
-  background: rgba(255,255,255,0.04);
-}
-
-.arcus-option.selected {
-  background: rgba(255,255,255,0.06);
-  border-color: rgba(255,255,255,0.20);
-}
-
-.arcus-option-radio {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  border: 1.5px solid rgba(255,255,255,0.30);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  margin-top: 1px;
-}
-
-.arcus-option.selected .arcus-option-radio {
-  border-color: #FFFFFF;
-}
-
-.arcus-option-radio-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #FFFFFF;
-  transform: scale(0);
-  transition: transform var(--duration-fast) var(--ease-spring);
-}
-
-.arcus-option.selected .arcus-option-radio-dot {
-  transform: scale(1);
-}
-
-.arcus-option-content {
-  flex: 1;
-}
-
-.arcus-option-label {
-  font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
-  color: var(--text-on-dark-primary);
-  margin-bottom: 2px;
-}
-
-.arcus-option-tradeoff {
-  font-size: var(--text-xs);
-  color: var(--text-on-dark-tertiary);
-}
-
-.arcus-option-tradeoff.irreversible {
-  color: var(--color-warning);
-}
-
-/* ─── Step List ────────────────────────────────────────────────────────────── */
-
-.arcus-steps {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  margin-bottom: var(--space-4);
-}
-
-.arcus-step {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-md);
-  transition: background 400ms var(--ease-out);
-}
-
-.arcus-step.irreversible {
-  background: var(--color-warning-bg);
-}
-
-.arcus-step-indicator {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  font-size: var(--text-xs);
-  font-weight: var(--weight-medium);
-  color: var(--text-on-dark-secondary);
-  background: rgba(255,255,255,0.08);
-  transition: all var(--duration-fast) var(--ease-out);
-}
-
-.arcus-step-indicator.completed {
-  background: var(--color-success-bg);
-}
-
-.arcus-step-indicator.failed {
-  background: var(--color-danger-bg);
-}
-
-.arcus-step-text {
-  flex: 1;
-  font-size: var(--text-sm);
-  color: var(--text-on-dark-primary);
-}
+/* ─── App Chips ───────────────────────────────────────────────────────────── */
 
 .arcus-step-app-chip {
   font-size: var(--text-xs);
@@ -377,76 +209,49 @@
   color: var(--text-on-dark-tertiary);
 }
 
-.arcus-step-error {
-  font-size: var(--text-xs);
-  color: var(--color-danger);
-  padding-left: 32px;
-  margin-top: var(--space-1);
-}
-
-.arcus-step-fix-link {
-  font-size: var(--text-xs);
-  font-weight: var(--weight-medium);
-  color: var(--text-on-dark-primary);
-  text-decoration: none;
-  padding-left: 32px;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-}
-
-.arcus-step-fix-link:hover {
-  text-decoration: underline;
-}
-
-/* ─── Buttons ──────────────────────────────────────────────────────────────── */
+/* ─── Buttons ─────────────────────────────────────────────────────────────── */
 
 .arcus-btn {
   font-family: var(--font-ui);
   font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
+  font-weight: 500;
   padding: 8px 16px;
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: filter var(--duration-fast) var(--ease-out),
               background var(--duration-fast) var(--ease-out),
-              color var(--duration-fast) var(--ease-out);
+              transform var(--duration-instant) var(--ease-out);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
   min-width: 80px;
+  border: none;
 }
 
 .arcus-btn:active {
   transform: scale(0.98);
-  transition: transform var(--duration-instant);
 }
 
 .arcus-btn:disabled {
   opacity: 0.30;
   cursor: not-allowed;
-  transform: none;
+  transform: none !important;
 }
 
 .arcus-btn-primary {
   background: #FFFFFF;
-  color: var(--text-inverse);
-  border: none;
+  color: var(--palette-surface);
 }
 
 .arcus-btn-primary:hover:not(:disabled) {
   filter: brightness(0.92);
 }
 
-.arcus-btn-primary:active:not(:disabled) {
-  filter: brightness(0.86);
-}
-
 .arcus-btn-ghost {
   background: rgba(255,255,255,0.08);
   color: var(--text-on-dark-secondary);
-  border: 0.5px solid rgba(255,255,255,0.16);
+  border: 0.5px solid rgba(255,255,255,0.16) !important;
 }
 
 .arcus-btn-ghost:hover:not(:disabled) {
@@ -457,230 +262,36 @@
 .arcus-btn-destructive {
   background: var(--color-danger-bg);
   color: var(--color-danger);
-  border: 0.5px solid var(--color-danger-border);
+  border: 0.5px solid var(--color-danger-border) !important;
 }
 
-.arcus-btn-destructive:hover:not(:disabled) {
-  background: rgba(248,113,113,0.20);
-}
-
-/* Card action row */
-.arcus-card-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--space-3);
-  margin-top: var(--space-4);
-}
-
-/* ─── Completed Card ───────────────────────────────────────────────────────── */
-
-.arcus-card-completed {
-  opacity: 0.6;
-  padding: var(--space-4) var(--space-6);
-}
-
-.arcus-card-completed-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.arcus-card-completed-headline {
-  font-size: var(--text-sm);
-  color: var(--text-on-dark-secondary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 70%;
-}
-
-.arcus-card-completed-time {
-  font-size: var(--text-xs);
-  color: var(--text-on-dark-tertiary);
-  white-space: nowrap;
-}
-
-/* ─── Plan Mode Brief ──────────────────────────────────────────────────────── */
-
-.arcus-brief-header {
-  margin-bottom: var(--space-8);
-}
-
-.arcus-brief-date {
-  font-family: var(--font-content);
-  font-size: var(--text-2xl);
-  font-weight: var(--weight-regular);
-  color: var(--text-on-light-primary);
-  margin-bottom: var(--space-1);
-}
-
-.arcus-brief-subtitle {
-  font-family: var(--font-ui);
-  font-size: var(--text-sm);
-  color: var(--text-on-light-tertiary);
-}
-
-.arcus-brief-separator {
-  height: 1px;
-  background: rgba(0,0,0,0.08);
-  margin: var(--space-4) 0;
-}
-
-.arcus-brief-container {
-  padding: var(--space-8);
-}
-
-.arcus-brief-section {
-  margin-bottom: var(--space-8);
-}
+/* ─── Editorial Brief ─────────────────────────────────────────────────────── */
 
 .arcus-brief-section-label {
   font-size: var(--text-xs);
-  font-weight: var(--weight-semibold);
+  font-weight: 600;
   color: var(--text-on-dark-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   margin-bottom: var(--space-4);
 }
 
-.arcus-brief-item {
-  display: flex;
-  gap: var(--space-4);
-  margin-bottom: var(--space-3);
-  align-items: baseline;
+/* ─── Interactive Elements ─────────────────────────────────────────────────── */
+
+@keyframes option-pop {
+  0% { transform: scale(0); }
+  100% { transform: scale(1); }
 }
 
-.arcus-brief-item-number {
-  font-family: var(--font-content);
-  font-size: var(--text-xl);
-  color: var(--text-on-dark-tertiary);
-  min-width: 24px;
+.arcus-option-pop {
+  animation: option-pop var(--duration-fast) var(--ease-spring);
 }
 
-.arcus-brief-item-text {
-  font-family: var(--font-ui);
-  font-size: var(--text-base);
-  font-weight: var(--weight-medium);
-  color: var(--text-on-dark-primary);
-  line-height: var(--leading-loose);
+/* ─── Mobile Tab Bar ──────────────────────────────────────────────────────── */
+
+.arcus-bottom-tab-bar {
+  display: none;
 }
-
-.arcus-brief-item-reason {
-  font-size: var(--text-sm);
-  color: var(--text-on-dark-secondary);
-  margin-top: var(--space-1);
-}
-
-/* Brief loading */
-.arcus-brief-loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 300px;
-}
-
-.arcus-brief-loading-text {
-  font-family: var(--font-content);
-  font-size: var(--text-md);
-  color: var(--text-on-dark-tertiary);
-  animation: arcus-pulse 2s ease-in-out infinite;
-}
-
-/* ─── Empty States ─────────────────────────────────────────────────────────── */
-
-.arcus-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-16) var(--space-8);
-  text-align: center;
-}
-
-.arcus-empty-headline {
-  font-family: var(--font-content);
-  font-size: var(--text-lg);
-  font-weight: var(--weight-medium);
-  color: var(--text-on-light-primary);
-  margin-bottom: var(--space-2);
-}
-
-.arcus-empty-subline {
-  font-family: var(--font-ui);
-  font-size: var(--text-sm);
-  color: var(--text-on-light-secondary);
-  margin-bottom: var(--space-6);
-  max-width: 360px;
-}
-
-/* ─── Skeleton ─────────────────────────────────────────────────────────────── */
-
-.arcus-skeleton-card {
-  opacity: 0.5;
-  padding: var(--space-6);
-}
-
-.arcus-skeleton-line {
-  height: 12px;
-  background: rgba(255,255,255,0.08);
-  border-radius: var(--radius-sm);
-  margin-bottom: var(--space-3);
-}
-
-/* ─── Dots Loading ─────────────────────────────────────────────────────────── */
-
-.arcus-dots {
-  display: flex;
-  gap: 6px;
-  padding: var(--space-4);
-  justify-content: center;
-}
-
-.arcus-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--text-on-dark-tertiary);
-  animation: arcus-dot-pulse 1.2s infinite;
-}
-
-.arcus-dot:nth-child(2) { animation-delay: 150ms; }
-.arcus-dot:nth-child(3) { animation-delay: 300ms; }
-
-/* ─── Toast ────────────────────────────────────────────────────────────────── */
-
-.arcus-toast-container {
-  position: fixed;
-  bottom: var(--space-6);
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 100;
-}
-
-/* ─── New Update Pill ──────────────────────────────────────────────────────── */
-
-.arcus-new-update-pill {
-  position: sticky;
-  top: var(--space-4);
-  z-index: 10;
-  display: flex;
-  justify-content: center;
-}
-
-.arcus-new-update-pill button {
-  background: rgba(34,35,38,0.88);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 0.5px solid rgba(255,255,255,0.16);
-  border-radius: var(--radius-full);
-  color: var(--text-on-dark-primary);
-  font-size: var(--text-xs);
-  font-weight: var(--weight-medium);
-  padding: 4px 12px;
-  cursor: pointer;
-}
-
-/* ─── Responsive ───────────────────────────────────────────────────────────── */
 
 @media (max-width: 767px) {
   .arcus-sidebar {
@@ -692,47 +303,28 @@
   .arcus-content {
     padding: var(--space-4);
   }
-  .arcus-plan-card, .glass-surface {
-    border-radius: var(--radius-lg);
-  }
   .arcus-bottom-tab-bar {
     display: flex;
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    height: 56px;
-    z-index: 50;
-    justify-content: space-around;
-    align-items: center;
-    padding: 0 var(--space-4);
+    height: 64px;
     background: rgba(0,0,0,0.88);
     backdrop-filter: blur(32px);
     -webkit-backdrop-filter: blur(32px);
     border-top: 0.5px solid rgba(255,255,255,0.10);
+    justify-content: space-around;
+    align-items: center;
+    z-index: 100;
   }
   .arcus-tab-icon {
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
     color: rgba(255,255,255,0.40);
-    cursor: pointer;
   }
   .arcus-tab-icon.active {
     color: #FFFFFF;
   }
 }
 
-@media (min-width: 768px) {
-  .arcus-bottom-tab-bar {
-    display: none;
-  }
-}
-
-@media (min-width: 768px) and (max-width: 1023px) {
-  .arcus-sidebar {
-    width: 200px;
-  }
-  .arcus-main {
-    margin-left: 200px;
-  }
-}
