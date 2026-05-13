@@ -195,6 +195,21 @@ export default function ArcusPage() {
     }
   }
 
+  // Update preferences
+  async function handleUpdatePreference(key: string, value: any) {
+    try {
+      const newPrefs = { ...(plans[0] as any)?.user?.preferences, [key]: value }; // Simplified lookup
+      await fetch('/api/arcus/v3/preferences', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ preferences: newPrefs }),
+      });
+      setToast('Preference updated');
+    } catch {
+      setToast('Failed to update preference');
+    }
+  }
+
   // Connect Cal.com (API Key)
   async function handleConnectCalcom() {
     const apiKey = prompt('Enter your Cal.com API Key:');
@@ -420,6 +435,22 @@ export default function ArcusPage() {
               }}>
                 Integrations
               </h2>
+              
+              {/* Preferences Section */}
+              <div className="glass-surface" style={{ padding: 'var(--space-5)', marginBottom: 'var(--space-6)' }}>
+                <h3 style={{ color: 'var(--text-on-dark-primary)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-4)' }}>Preferences</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--text-on-dark-secondary)', fontSize: 'var(--text-xs)' }}>
+                    <input type="checkbox" onChange={(e) => handleUpdatePreference('preferAsync', e.target.checked)} />
+                    Prefer async communication (Slack over Meetings)
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--text-on-dark-secondary)', fontSize: 'var(--text-xs)' }}>
+                    <input type="checkbox" defaultChecked onChange={(e) => handleUpdatePreference('planModeEnabled', e.target.checked)} />
+                    Enable Daily Brief (Plan Mode)
+                  </label>
+                </div>
+              </div>
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
                 {/* Google Calendar */}
                 <div className="glass-surface" style={{ padding: 'var(--space-5)' }}>
