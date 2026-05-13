@@ -269,7 +269,14 @@ export function LinearLanding() {
                         ) : (
                             <>
                                 <button onClick={() => router.push('/auth/signin')} className="hidden sm:block text-sm font-medium text-zinc-500 hover:text-white transition-colors">Log in</button>
-                                <LiquidButton onClick={(e) => handleClick(e, 'waitlist')} size="default" className="text-white">
+                                <LiquidButton 
+                                    onClick={() => {
+                                        const el = document.getElementById('waitlist');
+                                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    }} 
+                                    size="default" 
+                                    className="text-white"
+                                >
                                     Join Waitlist
                                 </LiquidButton>
                             </>

@@ -13,19 +13,25 @@ export function CTASection() {
     const router = useRouter()
     const { data: session, status } = useSession()
     const [email, setEmail] = useState("")
+    const [isLoading, setIsLoading] = useState(false)
 
     const handleJoinWaitlist = async () => {
         if (!email || !email.includes("@")) {
-            // Basic validation
             return;
         }
 
+        setIsLoading(true);
+        
         // Redirect to Google Sign-in to capture verified Gmail ID
-        // After success, it will redirect to onboarding with waitlist param
-        await signIn("google", {
-            callbackUrl: "/onboarding?waitlist=true",
-            login_hint: email.toLowerCase().trim()
-        });
+        try {
+            await signIn("google", {
+                callbackUrl: "/onboarding?waitlist=true",
+                login_hint: email.toLowerCase().trim()
+            });
+        } catch (error) {
+            console.error("Sign in error:", error);
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -87,12 +93,14 @@ export function CTASection() {
                     </div>
                     <button
                         onClick={handleJoinWaitlist}
-                        className="group relative inline-flex h-14 items-center justify-center gap-3 overflow-hidden rounded-2xl bg-white px-8 text-base font-bold text-black transition-all duration-300 hover:scale-[1.02] active:scale-95 whitespace-nowrap shadow-[0_20px_40px_rgba(255,255,255,0.1)]"
+                        disabled={isLoading}
+                        className={`group relative inline-flex h-14 items-center justify-center gap-3 overflow-hidden rounded-2xl bg-white px-8 text-base font-bold text-black transition-all duration-300 hover:scale-[1.02] active:scale-95 whitespace-nowrap shadow-[0_20px_40px_rgba(255,255,255,0.1)] ${isLoading ? 'opacity-70 cursor-wait' : ''}`}
                     >
                         <span className="relative z-10">
-                            Join Waitlist
+                            {isLoading ? "Redirecting..." : "Join Waitlist"}
                         </span>
-                        <ArrowRight className="h-5 w-5 relative z-10 transition-transform duration-300 group-hover:translate-x-1" />
+                        {!isLoading && <ArrowRight className="h-5 w-5 relative z-10 transition-transform duration-300 group-hover:translate-x-1" />}
+                        {isLoading && <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />}
                     </button>
                 </div>
 
