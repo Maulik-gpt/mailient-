@@ -479,7 +479,7 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
       if ((aiData as any).inbox_intelligence) {
         newInsights.push(...(aiData as any).inbox_intelligence);
       } else {
-        const categories = ['opportunity', 'urgent', 'lead', 'risk', 'follow_up', 'important'];
+        const categories = ['opportunity', 'urgent', 'lead', 'risk', 'follow_up', 'newsletters'];
         categories.forEach(cat => {
           const categoryData = (aiData as any)[cat];
           if (categoryData && categoryData.ids && categoryData.ids.length > 0) {
