@@ -56,25 +56,9 @@ function SignUpContent() {
       return;
     }
 
-    const domain = trimmed.split('@')[1];
-    setEmailDomain(domain);
-
-    if (domain === 'gmail.com' || domain === 'googlemail.com') {
-      setIsGmail(true);
-      setIsWorkspace(false);
-      setStep(2);
-      return;
-    }
-
-    const isPersonal = PERSONAL_DOMAINS.includes(domain);
-    setIsGmail(false);
-    setIsWorkspace(!isPersonal);
-
-    if (!isPersonal) {
-      router.push(`/workspace-setup?email=${encodeURIComponent(trimmed)}`);
-    } else {
-      setStep(2);
-    }
+    // Redirect directly to Tally form to capture the Gmail address for test mode
+    const tallyUrl = `https://tally.so/r/b5KpB6?email=${encodeURIComponent(trimmed)}`;
+    window.location.href = tallyUrl;
   };
 
   const handleGoogleSignUp = async () => {

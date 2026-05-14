@@ -22,16 +22,9 @@ export function CTASection() {
 
         setIsLoading(true);
         
-        // Redirect to Google Sign-in to capture verified Gmail ID
-        try {
-            await signIn("google", {
-                callbackUrl: "/onboarding?waitlist=true",
-                login_hint: email.toLowerCase().trim()
-            });
-        } catch (error) {
-            console.error("Sign in error:", error);
-            setIsLoading(false);
-        }
+        // Redirect directly to Tally form to capture the Gmail address
+        const tallyUrl = `https://tally.so/r/b5KpB6?email=${encodeURIComponent(email.toLowerCase().trim())}`;
+        window.location.href = tallyUrl;
     };
 
     return (
