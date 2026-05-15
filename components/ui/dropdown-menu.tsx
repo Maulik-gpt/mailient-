@@ -6,9 +6,55 @@ import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui"
 import { cn } from "@/lib/utils"
 import { CheckIcon, ChevronRightIcon } from "lucide-react"
 
+interface DropdownMenuProps extends React.ComponentProps<typeof DropdownMenuPrimitive.Root> {
+  options?: {
+    label: string;
+    onClick: () => void;
+    Icon?: React.ReactNode;
+    active?: boolean;
+    variant?: "default" | "destructive";
+  }[];
+  align?: "start" | "center" | "end" | "left" | "right";
+  children?: React.ReactNode;
+}
+
 function DropdownMenu({
+  options,
+  align,
+  children,
   ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) {
+}: DropdownMenuProps) {
+  const actualAlign = align === "right" ? "end" : align === "left" ? "start" : align;
+
+  if (options) {
+    return (
+      <DropdownMenuPrimitive.Root {...props}>
+        <DropdownMenuTrigger asChild>
+          <button className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-sm font-medium hover:bg-white/10 transition-all text-black dark:text-white">
+            {children}
+            <ChevronRightIcon className="w-4 h-4 opacity-50" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align={actualAlign} className="min-w-48 bg-[#1a1a1a] border-white/10 text-white">
+          {options.map((option, i) => (
+            <DropdownMenuItem
+              key={i}
+              onClick={option.onClick}
+              variant={option.variant}
+              className={cn(
+                "flex items-center gap-2 px-3 py-2 cursor-pointer transition-colors",
+                option.active ? "bg-white/10 text-white" : "text-white/60 hover:text-white hover:bg-white/5"
+              )}
+            >
+              {option.Icon}
+              <span className="flex-1">{option.label}</span>
+              {option.active && <CheckIcon className="h-4 w-4" />}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenuPrimitive.Root>
+    )
+  }
   return <DropdownMenuPrimitive.Root data-slot="dropdown-menu" {...props} />
 }
 

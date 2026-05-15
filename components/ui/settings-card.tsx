@@ -259,12 +259,12 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
             onClick={onClose}
         >
             <div
-                className="w-full md:max-w-[1020px] h-full md:h-[700px] bg-white dark:bg-[#1a1a1a] rounded-none md:rounded-[2.5rem] overflow-hidden flex flex-col md:flex-row shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] md:border border-neutral-200 dark:border-white/5"
+                className="w-full md:max-w-[980px] h-full md:h-[680px] bg-white dark:bg-[#1a1a1a] rounded-none md:rounded-[2rem] overflow-hidden flex flex-col md:flex-row shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] md:border border-neutral-200 dark:border-white/5"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Sidebar */}
                 {/* Sidebar - Horizontal scroll on mobile, vertical on desktop */}
-                <div className="w-full md:w-[260px] bg-neutral-50 dark:bg-[#141414] border-b md:border-b-0 md:border-r border-neutral-200 dark:border-white/5 p-4 flex flex-row md:flex-col overflow-x-auto md:overflow-y-hidden shrink-0">
+                <div className="w-full md:w-[250px] bg-neutral-50 dark:bg-[#141414] border-b md:border-b-0 md:border-r border-neutral-200 dark:border-white/5 p-4 flex flex-row md:flex-col overflow-x-auto md:overflow-y-hidden shrink-0">
                     <div className="flex flex-row md:flex-col items-center md:items-stretch gap-1 md:gap-0 md:flex-1 md:overflow-y-auto custom-scrollbar pr-1">
                         <div className="hidden md:block">
                              <MenuButton label="Settings" category />
@@ -306,7 +306,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                 {/* Main Content */}
                 <div className="flex-1 flex flex-col h-full relative">
                     {/* Header Title */}
-                    <div className="px-6 md:px-12 pt-8 md:pt-14 pb-6 md:pb-10 flex items-center justify-between">
+                    <div className="px-6 md:px-12 pt-8 md:pt-10 pb-4 md:pb-8 flex items-center justify-between">
                         <motion.h1
                             key={activeSection}
                             initial={{ opacity: 0, x: -10 }}
@@ -324,7 +324,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                         </button>
                     </div>
 
-                    <div className="px-6 md:px-12 pb-8 md:pb-14 overflow-y-auto flex-1 custom-scrollbar">
+                    <div className="px-6 md:px-12 pb-8 md:pb-10 overflow-y-auto flex-1 custom-scrollbar">
                         <AnimatePresence mode="wait">
                             {activeSection === 'general' && (
                                 <motion.div
@@ -469,7 +469,8 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                 </div>
                                             )}
                                         </div>
-                                        <div className="bg-neutral-50 dark:bg-white/5 rounded-[2.5rem] p-8 md:p-10 border border-neutral-200 dark:border-white/5 space-y-8">
+                                        <div className="space-y-6">
+                                        <div className="bg-neutral-50 dark:bg-white/5 rounded-[2rem] p-8 md:p-8 border border-neutral-200 dark:border-white/5 space-y-6">
                                             <div className="flex items-center justify-between">
                                                 <div className="space-y-1">
                                                     <div className="flex items-center gap-2">
