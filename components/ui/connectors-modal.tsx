@@ -571,53 +571,61 @@ export function ConnectorsModal({
               <AnimatePresence>
                 {showFeedback && (
                   <motion.div
-                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                    className="absolute inset-0 z-[230] bg-white dark:bg-[#0A0A0A] p-10 flex flex-col rounded-[3rem]"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="absolute inset-0 z-[230] bg-black/40 backdrop-blur-sm flex items-center justify-center p-6 rounded-[2.5rem]"
                   >
-                    <div className="flex items-center justify-between mb-12">
-                      <div>
-                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400 dark:text-white/20 mb-2">Integration Feedback</h4>
-                        <h3 className="text-3xl font-bold text-black dark:text-white tracking-tighter">Help us refine {selectedApp.name}.</h3>
+                    <motion.div 
+                      initial={{ y: 20 }}
+                      animate={{ y: 0 }}
+                      className="w-full max-w-[420px] bg-[#0F0F0F] border border-white/10 rounded-[2rem] p-8 shadow-2xl flex flex-col gap-6"
+                    >
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-[15px] font-bold text-white/90">Feedback for {selectedApp.name}</h3>
+                        <button 
+                          onClick={() => setShowFeedback(false)}
+                          className="p-1 text-white/30 hover:text-white transition-colors"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
                       </div>
-                      <button 
-                        onClick={() => setShowFeedback(false)}
-                        className="p-2 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-full transition-colors"
-                      >
-                        <X className="w-6 h-6 text-neutral-400" />
-                      </button>
-                    </div>
 
-                    <div className="flex-1 flex flex-col">
-                      <textarea
-                        value={feedback}
-                        onChange={(e) => setFeedback(e.target.value)}
-                        placeholder="Tell us what's on your mind... be brutally honest."
-                        className="w-full flex-1 bg-transparent border-none p-0 text-3xl text-black dark:text-white focus:outline-none transition-all placeholder:text-neutral-200 dark:placeholder:text-neutral-800 font-bold resize-none leading-tight"
-                        autoFocus
-                      />
-                      
-                      <div className="mt-8">
+                      <div className="relative">
+                        <textarea
+                          value={feedback}
+                          onChange={(e) => setFeedback(e.target.value)}
+                          placeholder="Share your thoughts..."
+                          className="w-full h-40 bg-white/[0.03] border border-white/5 rounded-2xl p-5 text-[14px] text-white placeholder:text-white/20 focus:outline-none focus:border-white/10 transition-all resize-none leading-relaxed"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                              handleSendFeedback();
+                            }
+                          }}
+                        />
+                      </div>
+
+                      <div className="flex justify-end">
                         <button 
                           onClick={handleSendFeedback}
                           disabled={isSubmittingFeedback || !feedback.trim()}
-                          className="w-full h-20 bg-black dark:bg-white text-white dark:text-black rounded-2xl font-bold flex items-center justify-center gap-4 hover:opacity-90 active:scale-[0.99] transition-all disabled:opacity-20 disabled:grayscale disabled:cursor-not-allowed group shadow-2xl"
+                          className="bg-white/10 hover:bg-white/20 text-white rounded-full pl-6 pr-4 py-3 text-[14px] font-bold flex items-center gap-4 active:scale-95 transition-all disabled:opacity-20 disabled:grayscale disabled:cursor-not-allowed group"
                         >
                           {isSubmittingFeedback ? (
-                            <div className="w-8 h-8 border-4 border-white/30 border-t-white dark:border-t-black rounded-full animate-spin" />
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                           ) : (
                             <>
-                              <span className="text-2xl tracking-tighter">Submit Integration Feedback</span>
-                              <Zap className="w-6 h-6 group-hover:scale-125 transition-transform fill-current" />
+                              Send Feedback
+                              <div className="flex items-center gap-1 bg-white/10 px-2 py-1 rounded-md text-[10px] text-white/40">
+                                <span>⌘</span>
+                                <span className="text-[12px]">↵</span>
+                              </div>
                             </>
                           )}
                         </button>
-                        <p className="text-center mt-6 text-[11px] font-mono uppercase tracking-widest text-neutral-400 dark:text-white/10">
-                          Your thoughts go directly to our engineering team.
-                        </p>
                       </div>
-                    </div>
+                    </motion.div>
                   </motion.div>
                 )}
               </AnimatePresence>
