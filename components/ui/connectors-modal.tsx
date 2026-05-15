@@ -274,7 +274,7 @@ export function ConnectorsModal({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="absolute inset-0 bg-black/60 backdrop-blur-[20px] transition-all duration-500"
+          className="absolute inset-0 bg-black/80 backdrop-blur-md transition-all duration-500"
         />
 
         <motion.div
@@ -287,11 +287,11 @@ export function ConnectorsModal({
           }}
           exit={{ opacity: 0, scale: 0.98, y: 30 }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          className="relative w-full max-w-[560px] h-full max-h-[820px] bg-white dark:bg-[#121212] rounded-[3rem] border border-white/10 shadow-[0_0_100px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden pointer-events-auto"
+          className="relative w-full max-w-[920px] h-full max-h-[820px] bg-white dark:bg-[#0A0A0A] rounded-[2.5rem] border border-neutral-200 dark:border-white/10 shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden pointer-events-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-8 py-6">
+          <div className="flex items-center justify-between px-10 py-8">
             <h2 className="text-[20px] font-bold text-black dark:text-white tracking-tight">Connectors</h2>
             <button 
               onClick={onClose}
@@ -302,7 +302,7 @@ export function ConnectorsModal({
           </div>
 
           {/* Navigation - Apps Only (Tabs removed) */}
-          <div className="px-8 flex items-center border-b border-neutral-100 dark:border-white/[0.03]">
+          <div className="px-10 flex items-center border-b border-neutral-100 dark:border-white/[0.03]">
             <button className="pb-4 text-[14px] font-bold text-black dark:text-white relative">
               Apps
               <motion.div layoutId="tab-underline" className="absolute bottom-0 left-0 right-0 h-[3px] bg-black dark:bg-white rounded-full" />
@@ -310,7 +310,13 @@ export function ConnectorsModal({
           </div>
 
           {/* Grid Area */}
-          <div className="flex-1 overflow-y-auto p-8 arcus-scrollbar pb-12">
+          {/* Grid Area */}
+          <div className="flex-1 relative overflow-hidden">
+            {/* Fade Overlays */}
+            <div className="absolute top-0 left-0 right-0 h-12 bg-gradient-to-b from-white dark:from-[#0A0A0A] to-transparent z-10 pointer-events-none" />
+            <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white dark:from-[#0A0A0A] to-transparent z-10 pointer-events-none" />
+            
+            <div className="h-full overflow-y-auto p-10 py-12 arcus-scrollbar pb-12">
             <div className="grid grid-cols-1 gap-4">
             {SUPPORTED_APPS.map((app) => {
                 const statusObj = Array.isArray(statuses) 
@@ -322,15 +328,15 @@ export function ConnectorsModal({
                   <button
                     key={app.id}
                     onClick={() => setSelectedApp(app)}
-                    className="flex items-start gap-4 p-5 rounded-[2.5rem] bg-neutral-50 dark:bg-[#222]/40 border border-neutral-200 dark:border-white/04 hover:bg-neutral-100 dark:hover:bg-white/[0.04] hover:border-neutral-300 dark:hover:border-white/[0.08] transition-all text-left group shadow-sm"
+                    className="flex items-start gap-6 p-6 rounded-[2rem] bg-neutral-50 dark:bg-white/[0.02] border border-neutral-200 dark:border-white/5 hover:bg-neutral-100 dark:hover:bg-white/10 hover:border-neutral-300 dark:hover:border-white/20 transition-all text-left group shadow-sm"
                   >
                     <div 
                       className={cn(
-                        "w-12 h-12 rounded-[16px] flex items-center justify-center border border-white/[0.05] shrink-0 shadow-lg group-hover:scale-105 transition-transform p-1.5",
+                        "w-16 h-16 rounded-2xl flex items-center justify-center border border-white/[0.05] shrink-0 shadow-lg group-hover:scale-110 transition-transform p-3",
                         app.id === 'notion' ? "bg-white" : "bg-black/40"
                       )}
                     >
-                      <app.icon />
+                      <app.icon className="w-full h-full" />
                     </div>
                     <div className="flex-1 pr-2">
                       <div className="flex items-center justify-between mb-1">
@@ -341,7 +347,7 @@ export function ConnectorsModal({
                           </div>
                         )}
                       </div>
-                      <p className="text-[12px] text-black/30 dark:text-white/30 leading-relaxed line-clamp-2">
+                      <p className="text-[14px] text-black/50 dark:text-white/40 leading-relaxed line-clamp-2 mt-1">
                         {app.description}
                       </p>
                     </div>
@@ -359,7 +365,7 @@ export function ConnectorsModal({
               initial={{ opacity: 0, scale: 0.95, y: 30 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 30 }}
-              className="absolute z-[210] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(95vw,480px)] bg-white dark:bg-[#1a1a1a] rounded-[3rem] border border-white/10 shadow-[0_40px_120px_rgba(0,0,0,0.9)] p-8 md:p-10 flex flex-col items-center pointer-events-auto"
+              className="absolute z-[210] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(95vw,480px)] bg-white dark:bg-[#0A0A0A] rounded-[3rem] border border-neutral-200 dark:border-white/10 shadow-[0_40px_120px_rgba(0,0,0,0.9)] p-8 md:p-10 flex flex-col items-center pointer-events-auto"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Close Button */}
