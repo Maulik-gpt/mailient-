@@ -80,7 +80,7 @@ export function FeedbackDialog({
       >
         <div className="space-y-4 pt-2">
           <div className="flex items-center justify-between px-1">
-            <h3 className="text-[10px] font-black tracking-[0.2em] text-neutral-400 dark:text-neutral-500 uppercase">
+            <h3 className="text-[11px] font-bold tracking-tight text-neutral-400 dark:text-neutral-500">
               Feedback
             </h3>
           </div>

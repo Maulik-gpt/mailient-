@@ -1884,7 +1884,7 @@ export function GmailInterfaceFixed() {
                             >
                                 <PanelLeft className="w-5 h-5" />
                             </button>
-                            <span className="font-bold text-sm tracking-tight text-neutral-900 dark:text-white uppercase whitespace-nowrap">Home Feed</span>
+                            <span className="font-bold text-sm tracking-tight text-neutral-900 dark:text-white whitespace-nowrap">Home Feed</span>
                             <button
                                 onClick={() => setIsArcusOpen(true)}
                                 className="p-2 bg-black dark:bg-white text-white dark:text-black rounded-lg"

@@ -225,7 +225,7 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
         if (category) {
             return (
                 <div className="px-4 py-3 first:pt-4">
-                    <span className="text-[10px] font-bold tracking-[0.15em] text-neutral-500 dark:text-neutral-400 uppercase">
+                    <span className="text-[11px] font-bold tracking-tight text-neutral-500 dark:text-neutral-400">
                         {label}
                     </span>
                 </div>
@@ -435,7 +435,7 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
                                     className="space-y-8"
                                 >
                                     <div className="space-y-4">
-                                        <h2 className="text-[13px] font-bold tracking-wider text-neutral-500 dark:text-neutral-400 uppercase px-1">Display & Notifications</h2>
+                                        <h2 className="text-[13px] font-bold tracking-tight text-neutral-500 dark:text-neutral-400 px-1">Display & Notifications</h2>
                                         <div className="bg-neutral-50 dark:bg-white/5 rounded-[2.5rem] p-8 md:p-10 border border-neutral-200 dark:border-white/5 space-y-8">
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-3">
@@ -466,7 +466,7 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
 
 
                                     <div className="space-y-4">
-                                        <h2 className="text-[13px] font-bold tracking-wider text-neutral-500 dark:text-neutral-400 uppercase px-1">App Maintenance</h2>
+                                        <h2 className="text-[13px] font-bold tracking-tight text-neutral-500 dark:text-neutral-400 px-1">App Maintenance</h2>
                                         <div className="bg-neutral-50 dark:bg-white/5 rounded-[24px] p-6 border border-neutral-200 dark:border-white/5 flex items-center justify-center gap-4">
                                             <Button
                                                 variant="outline"
