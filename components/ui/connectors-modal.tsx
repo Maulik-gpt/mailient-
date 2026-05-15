@@ -193,6 +193,9 @@ export function ConnectorsModal({
   const [showDetails, setShowDetails] = useState(false);
   const [manageDropdownOpen, setManageDropdownOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedback, setFeedback] = useState('');
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
 
   // Check for successful auth redirect
   useEffect(() => {
@@ -213,6 +216,34 @@ export function ConnectorsModal({
       }
     }
   }, []);
+
+  const handleSendFeedback = async () => {
+    if (!feedback.trim()) {
+      return;
+    }
+
+    setIsSubmittingFeedback(true);
+    try {
+      const response = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          feedback,
+          source: `Integration: ${selectedApp?.name}`,
+          connectorId: selectedApp?.id
+        }),
+      });
+
+      if (response.ok) {
+        setFeedback('');
+        setShowFeedback(false);
+      }
+    } catch (error) {
+      console.error('Failed to send feedback:', error);
+    } finally {
+      setIsSubmittingFeedback(false);
+    }
+  };
 
   // Fetch integration statuses
   useEffect(() => {
@@ -527,9 +558,69 @@ export function ConnectorsModal({
                 </AnimatePresence>
                 
                 <div className="flex justify-center mt-6">
-                  <button className="text-[13px] text-neutral-400 dark:text-white/20 hover:text-neutral-600 dark:hover:text-white/40 transition-all underline underline-offset-4">Provide feedback</button>
+                  <button 
+                    onClick={() => setShowFeedback(true)}
+                    className="text-[13px] text-neutral-400 dark:text-white/20 hover:text-neutral-600 dark:hover:text-white/40 transition-all underline underline-offset-4"
+                  >
+                    Provide feedback
+                  </button>
                 </div>
               </div>
+
+              {/* Feedback Overlay */}
+              <AnimatePresence>
+                {showFeedback && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                    className="absolute inset-0 z-[230] bg-white dark:bg-[#0A0A0A] p-10 flex flex-col rounded-[3rem]"
+                  >
+                    <div className="flex items-center justify-between mb-12">
+                      <div>
+                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400 dark:text-white/20 mb-2">Integration Feedback</h4>
+                        <h3 className="text-3xl font-bold text-black dark:text-white tracking-tighter">Help us refine {selectedApp.name}.</h3>
+                      </div>
+                      <button 
+                        onClick={() => setShowFeedback(false)}
+                        className="p-2 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-full transition-colors"
+                      >
+                        <X className="w-6 h-6 text-neutral-400" />
+                      </button>
+                    </div>
+
+                    <div className="flex-1 flex flex-col">
+                      <textarea
+                        value={feedback}
+                        onChange={(e) => setFeedback(e.target.value)}
+                        placeholder="Tell us what's on your mind... be brutally honest."
+                        className="w-full flex-1 bg-transparent border-none p-0 text-3xl text-black dark:text-white focus:outline-none transition-all placeholder:text-neutral-200 dark:placeholder:text-neutral-800 font-bold resize-none leading-tight"
+                        autoFocus
+                      />
+                      
+                      <div className="mt-8">
+                        <button 
+                          onClick={handleSendFeedback}
+                          disabled={isSubmittingFeedback || !feedback.trim()}
+                          className="w-full h-20 bg-black dark:bg-white text-white dark:text-black rounded-2xl font-bold flex items-center justify-center gap-4 hover:opacity-90 active:scale-[0.99] transition-all disabled:opacity-20 disabled:grayscale disabled:cursor-not-allowed group shadow-2xl"
+                        >
+                          {isSubmittingFeedback ? (
+                            <div className="w-8 h-8 border-4 border-white/30 border-t-white dark:border-t-black rounded-full animate-spin" />
+                          ) : (
+                            <>
+                              <span className="text-2xl tracking-tighter">Submit Integration Feedback</span>
+                              <Zap className="w-6 h-6 group-hover:scale-125 transition-transform fill-current" />
+                            </>
+                          )}
+                        </button>
+                        <p className="text-center mt-6 text-[11px] font-mono uppercase tracking-widest text-neutral-400 dark:text-white/10">
+                          Your thoughts go directly to our engineering team.
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           )}
         </AnimatePresence>
