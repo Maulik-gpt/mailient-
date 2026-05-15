@@ -319,6 +319,8 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
 
     let currentPageToken: string | null = pageToken as string | null;
 
+    const query = 'in:inbox';
+
     // Fetch 30 emails to provide a richer dashboard while remaining safely under the 50s Vercel timeout
     console.log(`📡 Fetching the absolute latest 30 emails with query: "${query}"...`);
     
