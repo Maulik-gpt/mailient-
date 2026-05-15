@@ -256,16 +256,16 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/10 dark:bg-black/40 backdrop-blur-sm"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
             onClick={onClose}
         >
             <div
-                className="w-full md:max-w-[920px] h-full md:h-[640px] bg-white dark:bg-[#1a1a1a] rounded-none md:rounded-[2rem] overflow-hidden flex flex-col md:flex-row shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] md:border border-neutral-200 dark:border-white/5"
+                className="w-full md:max-w-[920px] h-full md:h-[640px] bg-white dark:bg-[#0A0A0A] rounded-none md:rounded-[2rem] overflow-hidden flex flex-col md:flex-row shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] md:border border-neutral-200 dark:border-white/5"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Sidebar */}
                 {/* Sidebar - Horizontal scroll on mobile, vertical on desktop */}
-                <div className="w-full md:w-[250px] bg-neutral-50 dark:bg-[#141414] border-b md:border-b-0 md:border-r border-neutral-200 dark:border-white/5 p-4 flex flex-row md:flex-col overflow-x-auto md:overflow-y-hidden shrink-0">
+                <div className="w-full md:w-[250px] bg-neutral-50 dark:bg-[#070707] border-b md:border-b-0 md:border-r border-neutral-200 dark:border-white/5 p-4 flex flex-row md:flex-col overflow-x-auto md:overflow-y-hidden shrink-0">
                     <div className="flex flex-row md:flex-col items-center md:items-stretch gap-1 md:gap-0 md:flex-1 md:overflow-y-auto custom-scrollbar pr-1">
                         <div className="hidden md:block">
                              <MenuButton label="Settings" category />
@@ -830,7 +830,7 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
                                             <RefreshCw className="w-8 h-8 text-neutral-600 dark:text-neutral-500 animate-spin" />
                                         </div>
                                     ) : (
-                                        <div className="bg-neutral-50 dark:bg-[#141414] rounded-[16px] p-8 border border-neutral-200 dark:border-white/5">
+                                        <div className="bg-neutral-50 dark:bg-[#070707] rounded-[16px] p-8 border border-neutral-200 dark:border-white/5">
                                             <div className="flex items-center justify-between mb-8">
                                                 <div className="space-y-1">
                                                     <p className="text-[10px] text-neutral-600 dark:text-neutral-500 font-bold uppercase tracking-widest">Active Tier</p>
