@@ -58,15 +58,9 @@ interface ConnectorModalProps {
 }
 
 const categoryLabels: Record<string, string> = {
-  [CONNECTOR_CATEGORIES.EMAIL]: 'Email',
   [CONNECTOR_CATEGORIES.CALENDAR]: 'Calendar',
-  [CONNECTOR_CATEGORIES.STORAGE]: 'Storage',
-  [CONNECTOR_CATEGORIES.DEVELOPMENT]: 'Development',
-  [CONNECTOR_CATEGORIES.SOCIAL]: 'Social',
-  [CONNECTOR_CATEGORIES.ADVERTISING]: 'Advertising',
-  [CONNECTOR_CATEGORIES.COMMUNICATION]: 'Communication',
   [CONNECTOR_CATEGORIES.PRODUCTIVITY]: 'Productivity',
-  [CONNECTOR_CATEGORIES.AUTOMATION]: 'Automation'
+  [CONNECTOR_CATEGORIES.TASKS]: 'Tasks'
 };
 
 export function ConnectorModal({ 
@@ -210,7 +204,7 @@ export function ConnectorModal({
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     activeTab === 'apps'
                       ? 'bg-neutral-100 dark:bg-white/10 text-black dark:text-white'
-                      : 'text-neutral-600 dark:text-neutral-400 hover:text-black dark:text-white hover:bg-neutral-100 dark:bg-white/5'
+                      : 'text-neutral-500 hover:text-black dark:text-neutral-400 dark:hover:text-white hover:bg-neutral-100 dark:bg-white/5'
                   }`}
                 >
                   Apps
@@ -220,7 +214,7 @@ export function ConnectorModal({
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
                     activeTab === 'connected'
                       ? 'bg-neutral-100 dark:bg-white/10 text-black dark:text-white'
-                      : 'text-neutral-600 dark:text-neutral-400 hover:text-black dark:text-white hover:bg-neutral-100 dark:bg-white/5'
+                      : 'text-neutral-500 hover:text-black dark:text-neutral-400 dark:hover:text-white hover:bg-neutral-100 dark:bg-white/5'
                   }`}
                 >
                   Connected
@@ -378,7 +372,7 @@ export function ConnectorModal({
                     <div className="h-full overflow-y-auto p-10 py-12 custom-scrollbar">
                     {connectedWithInfo.length > 0 ? (
                       <div className="space-y-4">
-                        {connectedWithInfo.map((connection) => (
+                        {connectedWithInfo.map((connection: any) => (
                           <motion.button
                             key={connection.accountId}
                             onClick={() => {
@@ -387,11 +381,11 @@ export function ConnectorModal({
                             }}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="w-full bg-neutral-50 dark:bg-gray-900 border border-green-500/30 rounded-xl p-4 
-                                       flex items-center gap-4 text-left hover:bg-neutral-100 dark:bg-gray-800/50 transition-all"
+                            className="w-full bg-neutral-50 dark:bg-white/[0.02] border border-emerald-500/30 rounded-[1.5rem] p-6 
+                                       flex items-center gap-6 text-left hover:bg-neutral-100 dark:hover:bg-white/5 transition-all group"
                           >
                             <div
-                              className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                              className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm transition-transform group-hover:scale-110"
                               style={{ backgroundColor: `${connection.color}15` }}
                             >
                               <img
@@ -403,15 +397,15 @@ export function ConnectorModal({
                             
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
-                                <h4 className="font-semibold text-black dark:text-white">
+                                <h4 className="text-lg font-bold text-black dark:text-white">
                                   {connection.name}
                                 </h4>
-                                <CheckCircle2 className="w-4 h-4 text-green-500" />
+                                <CheckCircle2 className="w-5 h-5 text-emerald-500" />
                               </div>
                               {connection.email && (
-                                <p className="text-neutral-600 dark:text-gray-400 text-sm">{connection.email}</p>
+                                <p className="text-neutral-500 dark:text-neutral-400 text-sm mt-1">{connection.email}</p>
                               )}
-                              <p className="text-green-400 text-xs mt-0.5">
+                              <p className="text-emerald-500/60 text-xs mt-1 font-medium">
                                 Connected {new Date(connection.connectedAt || '').toLocaleDateString()}
                               </p>
                             </div>
