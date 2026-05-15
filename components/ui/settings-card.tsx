@@ -259,7 +259,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
             onClick={onClose}
         >
             <div
-                className="w-full md:max-w-[980px] h-full md:h-[680px] bg-white dark:bg-[#1a1a1a] rounded-none md:rounded-[2rem] overflow-hidden flex flex-col md:flex-row shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] md:border border-neutral-200 dark:border-white/5"
+                className="w-full md:max-w-[920px] h-full md:h-[640px] bg-white dark:bg-[#1a1a1a] rounded-none md:rounded-[2rem] overflow-hidden flex flex-col md:flex-row shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] md:border border-neutral-200 dark:border-white/5"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Sidebar */}
@@ -306,7 +306,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                 {/* Main Content */}
                 <div className="flex-1 flex flex-col h-full relative">
                     {/* Header Title */}
-                    <div className="px-6 md:px-12 pt-8 md:pt-10 pb-4 md:pb-8 flex items-center justify-between">
+                    <div className="px-6 md:px-10 pt-6 md:pt-8 pb-4 md:pb-6 flex items-center justify-between">
                         <motion.h1
                             key={activeSection}
                             initial={{ opacity: 0, x: -10 }}
@@ -324,7 +324,7 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                         </button>
                     </div>
 
-                    <div className="px-6 md:px-12 pb-8 md:pb-10 overflow-y-auto flex-1 custom-scrollbar">
+                    <div className="px-6 md:px-10 pb-8 md:pb-8 overflow-y-auto flex-1 custom-scrollbar">
                         <AnimatePresence mode="wait">
                             {activeSection === 'general' && (
                                 <motion.div
