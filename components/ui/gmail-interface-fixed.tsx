@@ -1544,8 +1544,6 @@ export function GmailInterfaceFixed() {
     };
 
 
-    };
-
     const handleSendReply = async () => {
         // Read HTML directly from the contentEditable editor to preserve all formatting
         const editorHtml = draftContentEditorRef.current?.innerHTML || draftContent;
@@ -1586,7 +1584,7 @@ export function GmailInterfaceFixed() {
             let encodedAttachments: { filename: string, mimeType: string, content: string }[] = [];
             if (draftAttachments && draftAttachments.length > 0) {
                 encodedAttachments = await Promise.all(
-                    draftAttachments.map(async (file) => {
+                    draftAttachments.map(async (file: File) => {
                         return new Promise<{ filename: string, mimeType: string, content: string }>((resolve) => {
                             const reader = new FileReader();
                             reader.onload = (e) => {
@@ -2959,8 +2957,7 @@ export function GmailInterfaceFixed() {
                                                                                                     handleScheduleCall(selectedEmailId);
                                                                                                 } else if (label === 'Escalate' && selectedEmailId) {
                                                                                                     handleEscalate(selectedEmailId);
-                                                                                                } else if (label === 'Add Note' && selectedEmailId) {
-                                                                                                    handleAddNote(selectedEmailId);
+
                                                                                                 } else if (label === 'Send follow-up' && selectedEmailId) {
                                                                                                     handleDraftReply(selectedEmailId, 'follow-up');
                                                                                                 } else if (label === 'Unsubscribe' && selectedEmailId) {
