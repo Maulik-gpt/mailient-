@@ -1844,7 +1844,12 @@ export function GmailInterfaceFixed() {
                 />
 
                 <AnimatePresence>
-                    {showSettings && <SettingsCard onClose={() => setShowSettings(false)} />}
+                    {showSettings && (
+                        <SettingsCard 
+                            onClose={() => setShowSettings(false)} 
+                            onOpenHelp={() => setShowHelp(true)} 
+                        />
+                    )}
                     {showHelp && <HelpCard onClose={() => setShowHelp(false)} />}
                     {showRewards && (
                         <RewardsCard

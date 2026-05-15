@@ -57,11 +57,12 @@ import { ThemeToggle } from './theme-toggle';
 
 interface SettingsCardProps {
     onClose: () => void;
+    onOpenHelp?: () => void;
 }
 
 type SettingsSection = 'general' | 'system' | 'account' | 'team' | 'subscription' | 'usage' | 'privacy';
 
-export function SettingsCard({ onClose }: SettingsCardProps) {
+export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
     const { data: session, update: updateSession } = useSession();
     const router = useRouter();
     const { settings, updateSetting, resetCache, relaunchApp, subscriptionData, setSubscriptionData } = useDashboardSettings();
@@ -286,7 +287,10 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                         <div className="hidden md:block my-2 h-px bg-neutral-200 dark:bg-white/5" />
                         
                         <button
-                            onClick={() => router.push('/help')}
+                            onClick={() => {
+                                onClose();
+                                onOpenHelp?.();
+                            }}
                             className="hidden md:flex w-full items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 text-neutral-500 dark:text-neutral-400 hover:text-black dark:hover:text-white hover:bg-black/[0.03] dark:hover:bg-white/5"
                         >
                             <HelpCircle className="w-4 h-4 text-neutral-500 dark:text-neutral-400" strokeWidth={1.5} />
