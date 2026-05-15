@@ -231,12 +231,7 @@ export function GmailInterfaceFixed() {
     const [showSchedulingModal, setShowSchedulingModal] = useState(false);
     const [schedulingEmailId, setSchedulingEmailId] = useState<string | null>(null);
 
-    // Note functionality state
-    const [showNoteEditor, setShowNoteEditor] = useState(false);
-    const [noteEmailId, setNoteEmailId] = useState<string | null>(null);
-    const [noteSubject, setNoteSubject] = useState<string>('');
-    const [noteContent, setNoteContent] = useState<string>('');
-    const [isSavingNote, setIsSavingNote] = useState(false);
+
     const [isGmailConnected, setIsGmailConnected] = useState(true);
 
     const [isUsageLimitModalOpen, setIsUsageLimitModalOpen] = useState(false);
@@ -1548,111 +1543,7 @@ export function GmailInterfaceFixed() {
         }
     };
 
-    // Add Note functionality - will be implemented next
-    const handleAddNote = async (emailId: string) => {
-        const email = selectedInsight?.source_emails?.find(e => e.id === emailId);
-        if (email) {
-            setNoteEmailId(emailId);
-            setNoteSubject(email.subject);
-            setShowNoteEditor(true);
 
-            // Generate AI note content
-            try {
-                const response = await fetch('/api/email/generate-note', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        emailId,
-                        subject: email.subject,
-                        snippet: email.snippet,
-                        category: selectedInsight?.type || 'general'
-                    })
-                });
-
-                const data = await response.json().catch(() => ({}));
-                if (!response.ok) {
-                    if (data?.error === 'limit_reached') {
-                        setUsageLimitModalData({
-                            featureName: 'AI Notes',
-                            currentUsage: data.usage || 0,
-                            limit: data.limit || 0,
-                            period: data.period || 'monthly',
-                            currentPlan: data.planType || 'starter'
-                        });
-                        setIsUsageLimitModalOpen(true);
-                        setShowNoteEditor(false);
-                        return;
-                    }
-                    throw new Error(data?.error || 'Failed to generate note');
-                }
-                setNoteContent(decodeEntities(data.noteContent));
-            } catch (error) {
-                console.error('Error generating note:', error);
-                setNoteContent(`Note about: ${email.subject}\n\n`);
-            }
-        }
-    };
-
-    const handleSaveNote = async () => {
-        if (!noteContent.trim()) {
-            toast.error('Note content cannot be empty');
-            return;
-        }
-
-        setIsSavingNote(true);
-        const toastId = toast.loading('Saving your note...');
-
-        try {
-            const response = await fetch('/api/notes/save', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    emailId: noteEmailId,
-                    subject: noteSubject,
-                    content: noteContent,
-                    createdAt: new Date().toISOString()
-                })
-            });
-
-            const result = await response.json().catch(() => ({}));
-            if (!response.ok) {
-                if (result?.error === 'limit_reached') {
-                    setUsageLimitModalData({
-                        featureName: 'AI Notes',
-                        currentUsage: result.usage || 0,
-                        limit: result.limit || 0,
-                        period: result.period || 'monthly',
-                        currentPlan: result.planType || 'starter'
-                    });
-                    setIsUsageLimitModalOpen(true);
-                    toast.dismiss(toastId);
-                    return;
-                }
-                throw new Error(result?.error || 'Failed to save note');
-            }
-            toast.success('📝 Note saved successfully!', { id: toastId });
-            triggerSuccessConfetti(); // Dopamine boost!
-            console.log('✅ Note saved:', result);
-
-            // Redirect to the note page
-            if (result.note?.id) {
-                window.location.href = `/i/notes/${result.note.id}`;
-            }
-            forceFetchUsage();
-
-            // Reset and close
-            setNoteContent('');
-            setNoteSubject('');
-            setNoteEmailId(null);
-            setShowNoteEditor(false);
-
-        } catch (error: unknown) {
-            console.error('❌ Save note failed:', error);
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-            toast.error(`Failed to save note: ${errorMessage}`, { id: toastId });
-        } finally {
-            setIsSavingNote(false);
-        }
     };
 
     const handleSendReply = async () => {
@@ -1797,7 +1688,7 @@ export function GmailInterfaceFixed() {
             case 'hot-leads':
                 return ['Coming Soon', 'Schedule Meeting'];
             case 'at-risk':
-                return ['Repair Reply', 'Add Note'];
+                return ['Repair Reply', 'Escalate'];
             case 'unread-important':
                 return ['Draft Reply', 'Unsubscribe'];
             case 'missed-followups':
@@ -3451,72 +3342,7 @@ export function GmailInterfaceFixed() {
                                                     </div>
                                                 </div>
 
-                                                {/* Note Editor - Premium UI in bottom-right */}
-                                                <div
-                                                    className={`fixed bottom-0 right-0 lg:bottom-6 lg:right-6 w-full lg:w-96 h-[85vh] lg:h-[32rem] bg-gradient-to-br from-neutral-800/90 to-neutral-900/90 backdrop-blur-2xl rounded-t-[2rem] lg:rounded-[2rem] shadow-2xl transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) z-[1110] border border-neutral-700/50`}
-                                                    style={{
-                                                        transform: showNoteEditor ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.95)',
-                                                        opacity: showNoteEditor ? 1 : 0,
-                                                        pointerEvents: showNoteEditor ? 'auto' : 'none'
-                                                    }}
-                                                >
-                                                    <div className="p-6 h-[32rem] flex flex-col">
-                                                        {/* Header with close button */}
-                                                        <div className="flex justify-between items-center mb-4">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="p-2 bg-yellow-500/10 rounded-xl">
-                                                                    <Sparkles className="w-5 h-5 text-yellow-400" />
-                                                                </div>
-                                                                <div>
-                                                                    <h3 className="text-lg font-medium text-black dark:text-white">AI Note</h3>
-                                                                    <p className="text-xs text-neutral-500 dark:text-neutral-400 font-light">Intelligent insights</p>
-                                                                </div>
-                                                            </div>
-                                                            <button
-                                                                onClick={() => setShowNoteEditor(false)}
-                                                                className="p-2 hover:bg-neutral-700/50 rounded-full transition-colors text-neutral-600 hover:text-black dark:text-white"
-                                                            >
-                                                                <X className="w-5 h-5" />
-                                                            </button>
-                                                        </div>
 
-                                                        {/* Note Content Area */}
-                                                        <div className="flex-1 bg-neutral-900/30 rounded-[1.5rem] border border-neutral-200 dark:border-neutral-800/50 p-4 mb-4 overflow-hidden flex flex-col">
-                                                            <input
-                                                                type="text"
-                                                                value={noteSubject}
-                                                                onChange={(e) => setNoteSubject(e.target.value)}
-                                                                className="w-full bg-transparent text-black dark:text-white text-base font-medium px-3 py-2 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-yellow-500/20 transition-colors mb-3"
-                                                                placeholder="Note heading..."
-                                                            />
-                                                            <div className="flex-1 bg-transparent text-neutral-900 dark:text-neutral-200 resize-none focus:outline-none font-light leading-relaxed text-sm custom-scrollbar overflow-y-auto">
-                                                                {/* Render markdown formatting */}
-                                                                <div className="prose prose-invert max-w-none whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: renderMarkdown(noteContent) }} />
-                                                            </div>
-                                                            {/* Progressive Blur for Textarea */}
-                                                            <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-neutral-900/80 to-transparent pointer-events-none z-10" />
-                                                        </div>
-
-                                                        {/* Save Button */}
-                                                        <button
-                                                            onClick={handleSaveNote}
-                                                            disabled={isSavingNote || !noteContent.trim()}
-                                                            className={`h-12 bg-gradient-to-r ${isSavingNote || !noteContent.trim() ? 'from-neutral-700 to-neutral-800' : 'from-yellow-500 to-yellow-600'} text-black font-medium rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center`}
-                                                        >
-                                                            {isSavingNote ? (
-                                                                <>
-                                                                    <Sparkles className="w-4 h-4 mr-2 animate-pulse" />
-                                                                    Saving...
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <Sparkles className="w-4 h-4 mr-2" />
-                                                                    Save Note
-                                                                </>
-                                                            )}
-                                                        </button>
-                                                    </div>
-                                                </div>
 
                                                 {/* Scheduling Modal */}
                                                 <SchedulingModal
@@ -3694,12 +3520,7 @@ export function GmailInterfaceFixed() {
                                                                                              >
                                                                                                  <Download className="w-4 h-4" />
                                                                                              </button>
-                                                                                             <button
-                                                                                                 onClick={(e) => { e.stopPropagation(); setNoteEmailId(selectedTraditionalEmail.id); setNoteSubject(`Note: ${att.filename}`); setNoteContent(`Reference to document "${att.filename}" in email "${selectedTraditionalEmail.subject}"`); setShowNoteEditor(true); }}
-                                                                                                 className="p-2.5 bg-black/5 hover:bg-black/10 dark:bg-white/10 border border-neutral-200 dark:border-white/10 rounded-xl text-black hover:text-black dark:text-white transition-all"
-                                                                                             >
-                                                                                                 <FilePlus className="w-4 h-4" />
-                                                                                             </button>
+
                                                                                          </div>
                                                                                      ))}
                                                                                  </div>

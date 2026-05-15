@@ -21,7 +21,6 @@ const mailientPlans = [
       "1 AI Draft Reply / day",
       "50 Arcus AI credits / day",
       "3 Email Summaries / day",
-      "Basic AI Notes",
     ],
   },
   {
@@ -34,7 +33,6 @@ const mailientPlans = [
       "Unlimited Arcus AI",
       "30 Email Summaries / day",
       "30 Schedule Calls / month",
-      "50 AI Notes / month",
     ],
     checkoutUrl: "https://buy.polar.sh/polar_cl_ojXGgACq5GNMsUInVP3HX5vpXepohT5P8m7SL2RcCej",
   },
@@ -48,7 +46,6 @@ const mailientPlans = [
       "Unlimited Arcus AI",
       "Unlimited Summaries",
       "Unlimited Schedule Calls",
-      "Unlimited AI Notes",
       "Priority AI Processing",
     ],
     checkoutUrl: "https://buy.polar.sh/polar_cl_BmoCj2jm6Hxy2Pc4DI6y717wsENNDAniGPfsB1pMO61",

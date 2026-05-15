@@ -131,7 +131,6 @@ export function UsageLimitModal({
                                                 ] : [
                                                     'Unlimited Draft Replies',
                                                     'Unlimited Schedule Calls',
-                                                    'Unlimited AI Notes & Analysis',
                                                     'Unlimited Arcus AI Access'
                                                 ]).map((feature) => (
                                                     <li key={feature} className="flex items-center gap-2 text-sm text-black dark:text-white/60">

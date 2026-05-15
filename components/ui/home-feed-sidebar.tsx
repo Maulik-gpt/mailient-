@@ -104,7 +104,6 @@ export function HomeFeedSidebar({
 
     const mainNavItems = [
         { id: 'home', icon: LayoutGrid, label: 'Home', route: '/home-feed' },
-        { id: 'notes', icon: FileText, label: 'Notes', route: '/i/notes' },
         { id: 'arcus', icon: Sparkles, label: 'Arcus', route: '/dashboard/agent-talk' },
     ];
 

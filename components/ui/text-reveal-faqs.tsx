@@ -37,11 +37,7 @@ export default function FAQs() {
       question: 'How do I trigger an AI scheduling?',
       answer: 'In Arcus chat, click the calendar icon. Arcus will scan your linked calendar and suggest optimal times based on the email context and your preferences.',
     },
-    {
-      id: 'item-7',
-      question: 'What are AI Notes?',
-      answer: 'AI Notes allow you to extract actionable intelligence from an email and save it directly into your dashboard. It cleans up the mess and keeps the insight ready for your next project.',
-    },
+
     {
       id: 'item-8',
       question: 'How do Arcus credits work?',

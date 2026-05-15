@@ -142,7 +142,7 @@ export function HelpCard({ onClose }: HelpCardProps) {
                                             { title: "Voice Profile Training", desc: "The more you use Mailient, the more accurate and human your Arcus drafts become." },
                                             { title: "Multi-Thread Summary", desc: "Summarize dozens of related emails into a single intelligence report for rapid catching up." },
                                             { title: "Contextual Peeking", desc: "Hover over contacts in People view to see their last AI intelligence sift instantly." },
-                                            { title: "Note Stashing", desc: "Save critical AI insights as 'AI Notes' to prevent losing valuable data in the thread noise." },
+
                                             { title: "Adaptive Tones", desc: "Toggle between Founder, Assistant, and Concise modes for any reply depending on the stakes." },
                                             { title: "Privacy First", desc: "Enable Enhanced Privacy to keep all sensitive AI processing confined to your local device." },
                                             { title: "Session Awareness", desc: "Arcus remembers your research during the session for better, contextual follow-ups." },
