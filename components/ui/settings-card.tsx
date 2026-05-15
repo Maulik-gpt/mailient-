@@ -469,7 +469,6 @@ export function SettingsCard({ onClose }: SettingsCardProps) {
                                                 </div>
                                             )}
                                         </div>
-                                        <div className="space-y-6">
                                         <div className="bg-neutral-50 dark:bg-white/5 rounded-[2rem] p-8 md:p-8 border border-neutral-200 dark:border-white/5 space-y-6">
                                             <div className="flex items-center justify-between">
                                                 <div className="space-y-1">
