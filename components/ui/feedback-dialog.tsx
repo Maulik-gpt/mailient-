@@ -73,38 +73,44 @@ export function FeedbackDialog({
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent
         className={cn(
-          "max-w-md w-full p-9 gap-6 overflow-hidden border border-neutral-200 dark:border-white/10 bg-white dark:bg-[#0c0c0c] text-neutral-900 dark:text-neutral-200",
-          "shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] rounded-[50px]",
+          "max-w-md w-full p-6 gap-6 overflow-hidden border border-neutral-200 dark:border-white/10 bg-white dark:bg-[#0c0c0c] text-neutral-900 dark:text-neutral-200",
+          "shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-2xl",
           "!animate-none !duration-0 transition-none"
         )}
       >
-        <div className="space-y-6 pt-2">
+        <div className="space-y-4 pt-2">
+          <div className="flex items-center justify-between px-1">
+            <h3 className="text-[10px] font-black tracking-[0.2em] text-neutral-400 dark:text-neutral-500 uppercase">
+              Feedback
+            </h3>
+          </div>
+          
           <textarea
             value={feedback}
             onChange={(e) => setFeedback(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Share your feedback..."
-            className="w-full min-h-[180px] rounded-[28px] bg-neutral-200/50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-white/5 p-7 text-base resize-none outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 text-neutral-900 placeholder:text-neutral-600 dark:text-neutral-500 transition-all font-medium"
+            placeholder="Share your thoughts..."
+            className="w-full min-h-[160px] rounded-xl bg-neutral-50 dark:bg-[#151515] border border-neutral-200 dark:border-white/5 p-5 text-sm md:text-[15px] resize-none outline-none focus:border-black/20 dark:focus:border-white/10 focus:ring-4 focus:ring-black/5 dark:focus:ring-white/5 text-neutral-900 dark:text-neutral-200 placeholder:text-neutral-500 transition-all font-sans leading-relaxed"
             autoFocus
           />
           
-          <div className="flex items-center justify-end">
+          <div className="flex items-center justify-end pt-2">
             <Button
               onClick={handleSend}
               disabled={isSending || !feedback.trim()}
               className={cn(
-                "rounded-[20px] px-8 py-3 transition-all font-bold flex items-center gap-2 group border-none shadow-2xl",
-                "bg-black dark:bg-white text-white dark:text-black hover:bg-black/90 dark:hover:bg-neutral-200"
+                "rounded-xl px-6 py-2.5 transition-all font-bold flex items-center gap-2 group border-none shadow-lg active:scale-95",
+                "bg-black dark:bg-[#fafafa] text-white dark:text-black hover:bg-black/90 dark:hover:bg-white/90"
               )}
             >
               {isSending ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <>
-                  <span className="text-sm">Send</span>
-                  <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-lg bg-white/10 dark:bg-black/10 ml-1">
-                    <span className="text-[10px] text-white/40 dark:text-black/40">⌘</span>
-                    <CornerDownLeft className="w-2.5 h-2.5 text-white/40 dark:text-black/40" />
+                  <span className="text-[13px] font-bold">Send Feedback</span>
+                  <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-white/10 dark:bg-black/10 ml-1 opacity-60">
+                    <span className="text-[9px] font-bold">⌘</span>
+                    <CornerDownLeft className="w-2 h-2" />
                   </div>
                 </>
               )}
