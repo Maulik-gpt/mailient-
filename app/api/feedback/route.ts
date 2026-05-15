@@ -16,7 +16,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { feedback } = await req.json();
+        const { feedback, source, connectorId } = await req.json();
 
         if (!feedback) {
             return NextResponse.json({ error: 'Feedback is required' }, { status: 400 });
@@ -24,17 +24,18 @@ export async function POST(req: Request) {
 
         if (!resend) {
             console.error('RESEND_API_KEY is missing. Feedback received:', feedback);
-            // Even if email fails, we return success so user doesn't get frustrated
-            // You can log this to Supabase later if you want
             return NextResponse.json({ success: true, message: 'Feedback received (logged to console)' });
         }
+
+        const subjectPrefix = source ? `[Mailient Integration] ${source}` : '[Mailient Intelligence] New Feedback';
+        const displaySource = source || 'General Intelligence';
 
         const emailContent = `
             <div style="font-family: 'Satoshi', sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #111;">
                 <h2 style="font-size: 24px; font-weight: 800; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 30px; tracking: -0.05em;">New User Intelligence Feedback</h2>
                 
                 <div style="margin-bottom: 40px;">
-                    <p style="font-size: 14px; text-transform: uppercase; color: #666; font-weight: 700; margin-bottom: 10px; letter-spacing: 0.1em;">Message</p>
+                    <p style="font-size: 14px; text-transform: uppercase; color: #666; font-weight: 700; margin-bottom: 10px; letter-spacing: 0.1em;">Topic: ${displaySource}</p>
                     <p style="font-size: 18px; line-height: 1.6; color: #000; background: #f9f9f9; padding: 30px; border-radius: 12px; font-style: italic;">
                         "${feedback}"
                     </p>
@@ -55,6 +56,12 @@ export async function POST(req: Request) {
                             <td style="padding: 8px 0; color: #666;">Timestamp</td>
                             <td style="padding: 8px 0; color: #444;">${new Date().toLocaleString()}</td>
                         </tr>
+                        ${connectorId ? `
+                        <tr>
+                            <td style="padding: 8px 0; color: #666;">Connector</td>
+                            <td style="padding: 8px 0; color: #444;">${connectorId}</td>
+                        </tr>
+                        ` : ''}
                     </table>
                 </div>
 
@@ -67,7 +74,7 @@ export async function POST(req: Request) {
         const { data, error } = await resend.emails.send({
             from: 'Feedback <feedback@mailient.xyz>',
             to: ['mailient.xyz@gmail.com'],
-            subject: `[Mailient Intelligence] New Feedback from ${session.user?.name || 'User'}`,
+            subject: `Feedback: ${displaySource}`,
             html: emailContent,
         });
 
