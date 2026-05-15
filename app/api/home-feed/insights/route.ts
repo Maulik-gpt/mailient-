@@ -321,9 +321,10 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
 
     // Fetch the absolute most recent emails in the inbox (including newsletters and promotional content)
     const query = 'in:inbox';
-    console.log(`📡 Fetching the absolute latest 40 emails with query: "${query}"...`);
+    // Fetch 20 emails to ensure we don't breach the 50s Vercel timeout with free-tier LLM generation speeds
+    console.log(`📡 Fetching the absolute latest 20 emails with query: "${query}"...`);
     
-    const recentEmails = await gmailService.getEmails(40, query, currentPageToken as any);
+    const recentEmails = await gmailService.getEmails(20, query, currentPageToken as any);
     const messages = recentEmails.messages || [];
     currentPageToken = recentEmails.nextPageToken || null;
 
@@ -345,7 +346,7 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
       });
     }
 
-    const uniqueIds = messages.slice(0, 40).map((m: any) => m.id);
+    const uniqueIds = messages.slice(0, 20).map((m: any) => m.id);
     console.log(`📬 Fetching details for the ${uniqueIds.length} most recent emails in parallel...`);
     const gmailStartTime = Date.now();
 
@@ -377,8 +378,8 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
 
     const validDetails = emailDetails.filter((d): d is EmailDetail => d !== null);
 
-    // Keep all latest 40 emails (including newsletters which will be classified under 'newsletters')
-    const cleanEmails = validDetails.slice(0, 40);
+    // Keep all latest 20 emails (including newsletters which will be classified under 'newsletters')
+    const cleanEmails = validDetails.slice(0, 20);
 
     const gmailDuration = (Date.now() - gmailStartTime) / 1000;
     console.log(`✅ Finalized pristine email pool of ${cleanEmails.length} items in ${gmailDuration.toFixed(2)}s`);
