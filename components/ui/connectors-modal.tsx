@@ -169,7 +169,8 @@ const SUPPORTED_APPS = [
     privacyPolicy: 'https://cal.com/privacy',
     description: 'Cal.com MCP enables professional scheduling with automated link generation and booking straight from Arcus.',
     details: 'Integrate Cal.com to let Arcus share your booking links and automatically handle appointment scheduling with external partners.',
-    smartPrompt: "Share my Cal.com booking link and check if there's any availability for a 30-min call this Friday afternoon."
+    smartPrompt: "Share my Cal.com booking link and check if there's any availability for a 30-min call this Friday afternoon.",
+    comingSoon: true
   }
 ];
 
@@ -371,7 +372,14 @@ export function ConnectorsModal({
                     </div>
                     <div className="flex-1 pr-2">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-[15px] font-bold text-black/90 dark:text-white/90 tracking-tight">{app.name}</span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-[15px] font-bold text-black/90 dark:text-white/90 tracking-tight">{app.name}</span>
+                          {app.comingSoon && (
+                            <span className="px-2 py-0.5 rounded-full bg-neutral-200 dark:bg-white/10 text-[10px] font-bold text-neutral-500 dark:text-white/40 uppercase tracking-wider">
+                              Coming soon
+                            </span>
+                          )}
+                        </div>
                         {isConnected && (
                           <div className="w-4 h-4 rounded-full bg-transparent flex items-center justify-center">
                             <Check className="w-3 h-3 text-emerald-500/80" />
@@ -495,6 +503,14 @@ export function ConnectorsModal({
                       </AnimatePresence>
                     </div>
                   </>
+                ) : selectedApp.comingSoon ? (
+                  <button
+                    disabled
+                    className="w-full py-4 bg-neutral-200 dark:bg-white/10 text-neutral-500 dark:text-white/40 rounded-2xl font-bold text-[15px] cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    <Clock className="w-4 h-4" />
+                    Coming soon
+                  </button>
                 ) : (
                   <button
                     onClick={() => handleConnectAction(selectedApp.id)}
