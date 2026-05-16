@@ -7,6 +7,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus,
@@ -413,6 +414,9 @@ function CreateAgentInput({
   const [prompt, setPrompt] = useState('');
   const [skipConfirmations, setSkipConfirmations] = useState(false);
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const handleSubmit = () => {
     if (title.trim() && prompt.trim()) {
       onSubmit({
@@ -426,8 +430,10 @@ function CreateAgentInput({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+  if (!mounted) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
       {/* Backdrop */}
       <motion.div
         initial={{ opacity: 0 }}
@@ -568,7 +574,8 @@ function CreateAgentInput({
           </button>
         </div>
       </motion.div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
