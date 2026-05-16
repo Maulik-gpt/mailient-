@@ -33,11 +33,7 @@ export async function GET(request: Request) {
         emailStats.drafted = siftData.filter(d => d.action === 'reply').length;
         emailStats.archived = siftData.filter(d => d.action === 'archive' || d.category === 'Newsletter').length;
         emailStats.flagged = siftData.filter(d => d.urgency === 'high' || d.action === 'review').length;
-      } else {
-        emailStats = { total: 14, drafted: 3, archived: 9, flagged: 2 }; // fallback realistic
       }
-    } else {
-      emailStats = { total: 14, drafted: 3, archived: 9, flagged: 2 }; // fallback realistic
     }
 
     // 2. Fetch Meetings (Google Calendar via CalendarService or mock fallback)
@@ -60,41 +56,32 @@ export async function GET(request: Request) {
          console.error('Calendar fetch error', err);
        }
     }
-    if (meetings.length === 0) {
-      meetings = [
-        { id: 'm1', title: 'Product Review', time: '2:00 PM', attendees: ['Priya', 'Rohan'], type: 'internal' },
-        { id: 'm2', title: 'Design Sync', time: '4:00 PM', attendees: ['Design Team'], type: 'check-in' }
-      ];
-    }
 
     // 3. Fetch Action Items
-    const actionItems = [
-      { id: 'a1', subject: 'Pending Approval', from: 'Client', urgency: 'high', type: 'review', snippet: 'Please review the attached contract terms.' }
-    ];
+    const actionItems: any[] = [];
 
     // 4. Fetch Agents
-    let agents = [
-      {
-        id: 'ag1',
-        name: 'Morning Triage',
-        description: 'Every morning at 7am, triage my inbox, draft replies to anything urgent, and send me a summary',
-        schedule: '0 7 * * *',
-        type: 'triage',
-        status: 'active',
-        lastRun: new Date().toISOString(),
-        nextRun: new Date(Date.now() + 86400000).toISOString(),
-      },
-      {
-        id: 'ag2',
-        name: 'Weekly Follow-up',
-        description: 'Every Friday at 5pm, check which clients I haven\'t followed up with this week and draft follow-up emails',
-        schedule: '0 17 * * 5',
-        type: 'follow-up',
-        status: 'active',
-        lastRun: new Date(Date.now() - 86400000).toISOString(),
-        nextRun: new Date(Date.now() + 86400000 * 6).toISOString(),
+    let agents: any[] = [];
+    try {
+      const { data: dbAgents, error: agentsError } = await db.supabase
+        .from('arcus_recurring_agents')
+        .select('*')
+        .eq('user_id', session.user.id);
+        
+      if (!agentsError && dbAgents) {
+        agents = dbAgents.map(a => ({
+          id: a.id,
+          name: a.name,
+          description: a.description,
+          schedule: a.cron_schedule,
+          type: a.agent_type,
+          status: a.is_active ? 'active' : 'paused',
+          createdAt: a.created_at
+        }));
       }
-    ];
+    } catch (e) {
+      console.error('Failed to fetch agents:', e);
+    }
 
     return NextResponse.json({
       emailStats,
