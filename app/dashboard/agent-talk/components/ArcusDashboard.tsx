@@ -315,13 +315,14 @@ export function ArcusDashboard({
               </div>
             )}
 
-            {/* Prompt Box (passed as children from ChatInterface) */}
-            <div className="w-full relative group max-w-2xl mx-auto px-4 z-10 mb-10">
-              {children}
+            {/* Prompt Box Fixed Bottom */}
+            <div className="fixed bottom-0 left-0 right-0 z-50 pointer-events-none pb-8 pt-12 bg-gradient-to-t from-black via-[#0a0a0a] to-transparent">
+              <div className="w-full max-w-2xl mx-auto px-4 pointer-events-auto">
+                {children}
+              </div>
             </div>
 
-            {/* Quick Actions Grid */}
-            <div className="max-w-2xl mx-auto px-4 mb-8">
+            <div className="max-w-2xl mx-auto px-4 mb-32">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 {QUICK_ACTIONS.map((action, i) => (
                   <QuickActionButton
@@ -332,29 +333,6 @@ export function ArcusDashboard({
                   />
                 ))}
               </div>
-            </div>
-
-            {/* Conversational Starters */}
-            <div className="max-w-2xl mx-auto px-4">
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.4 }}
-              >
-                <h3 className="text-[10px] font-bold text-white/20 uppercase tracking-wider mb-3 px-1">
-                  Try asking
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {starters.map((text, i) => (
-                    <ConversationalStarter
-                      key={text}
-                      text={text}
-                      onClick={() => handleQuickAction(text)}
-                      delay={0.5 + i * 0.05}
-                    />
-                  ))}
-                </div>
-              </motion.div>
             </div>
           </motion.div>
         ) : (

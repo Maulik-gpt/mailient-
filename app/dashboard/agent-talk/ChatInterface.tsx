@@ -1268,7 +1268,12 @@ export default function ChatInterface({
     }
 
     toast.success('Mission accepted', { description: 'Opening Arcus Workspace...' });
-  }, []);
+    
+    // Resume agent loop with approval
+    setTimeout(() => {
+      processAgentLoopMessage("I approve opening the canvas. Please proceed with the task in the canvas.", currentConversationId as string, false);
+    }, 500);
+  }, [currentConversationId]);
 
   const handleDeclineCanvas = useCallback((msgId: number) => {
     setMessages(prev => prev.map(m => {
@@ -1293,7 +1298,12 @@ export default function ChatInterface({
     }
 
     toast.info('Mission declined', { description: 'Continuing in chat mode.' });
-  }, []);
+
+    // Resume agent loop with denial
+    setTimeout(() => {
+      processAgentLoopMessage("I decline opening the canvas. Please proceed with the task in plain chat.", currentConversationId as string, false);
+    }, 500);
+  }, [currentConversationId]);
 
   const handleContinueWithCredits = useCallback((msgId: number) => {
     // 1. Mark this message as continued to avoid double-clicks
@@ -1667,7 +1677,8 @@ export default function ChatInterface({
           conversationId: conversationIdToUse,
           isNewConversation: isNew,
           gmailAccessToken,
-          modelId: options?.modelId
+          modelId: options?.modelId,
+          mode: options?.isPlanMode ? 'plan' : 'agent'
         }),
         signal: abortControllerRef.current.signal
       });

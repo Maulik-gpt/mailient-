@@ -37,7 +37,8 @@ export async function POST(request: Request) {
       conversationId, 
       history = [], 
       selectedEmailId = null,
-      modelId = null 
+      modelId = null,
+      mode = 'agent'
     } = body;
 
     if (!message) {
@@ -92,7 +93,8 @@ export async function POST(request: Request) {
         google_tasks: !!tokens?.encrypted_access_token,
         notion: !!process.env.NOTION_INTEGRATION_TOKEN,
         supermemory: !!process.env.SUPERMEMORY_API_KEY
-      }
+      },
+      mode
     });
 
     // 6. Create SSE Stream

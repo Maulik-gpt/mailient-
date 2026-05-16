@@ -75,40 +75,7 @@ interface AgentsPanelProps {
 // PRESET AGENT TEMPLATES
 // ============================================================================
 
-const AGENT_TEMPLATES = [
-  {
-    id: 'morning-triage',
-    name: 'Morning Triage',
-    description: 'Every morning at 7am, triage my inbox, draft replies to anything urgent, and send me a summary',
-    schedule: 'Every day at 7:00 AM',
-    type: 'triage' as const,
-    icon: Mail,
-  },
-  {
-    id: 'weekly-followup',
-    name: 'Weekly Follow-up',
-    description: 'Every Friday at 5pm, check which clients I haven\'t followed up with this week and draft follow-up emails',
-    schedule: 'Every Friday at 5:00 PM',
-    type: 'follow-up' as const,
-    icon: Users,
-  },
-  {
-    id: 'pricing-trigger',
-    name: 'Pricing Detector',
-    description: 'Every time someone mentions pricing in an email, flag it and draft a reply with my pricing deck link',
-    schedule: 'Event-triggered',
-    type: 'custom' as const,
-    icon: TrendingUp,
-  },
-  {
-    id: 'daily-report',
-    name: 'Daily Report',
-    description: 'Every evening at 6pm, generate a report of all email activity, response times, and pending items',
-    schedule: 'Every day at 6:00 PM',
-    type: 'report' as const,
-    icon: Activity,
-  },
-];
+// No preset templates as requested
 
 // ============================================================================
 // SUB-COMPONENTS
@@ -503,30 +470,9 @@ export function AgentsPanel({
     setAgents(prev => prev.map(a => a.id === id ? { ...a, status: 'running' as const } : a));
     onRunNow?.(id);
     toast.info('Running agent...');
-    // Simulate completion
-    setTimeout(() => {
-      setAgents(prev => prev.map(a => a.id === id ? {
-        ...a,
-        status: 'active' as const,
-        lastRun: {
-          timestamp: 'Just now',
-          summary: `Agent completed all scheduled tasks successfully.`,
-          actionsCount: Math.floor(Math.random() * 8) + 2,
-          status: 'success' as const,
-        }
-      } : a));
-      toast.success('Agent run complete');
-    }, 3000);
   };
 
-  const handleUseTemplate = (template: typeof AGENT_TEMPLATES[0]) => {
-    // Send to chat as a command
-    if (onSendMessage) {
-      onSendMessage(`Create a scheduled agent: ${template.description}`);
-    } else {
-      handleCreateAgent(template.description, template.schedule);
-    }
-  };
+
 
   return (
     <div className={cn("w-full max-w-3xl mx-auto py-6", className)}>
@@ -597,35 +543,6 @@ export function AgentsPanel({
             <p className="text-[13px] text-white/30 max-w-sm mx-auto">
               Create agents that run automatically — triage your inbox, draft replies, and send follow-ups while you sleep.
             </p>
-          </div>
-
-          {/* Agent Templates */}
-          <div>
-            <h3 className="text-[11px] font-bold text-white/30 uppercase tracking-wider mb-3">Quick Start Templates</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {AGENT_TEMPLATES.map((template, i) => (
-                <motion.button
-                  key={template.id}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 + i * 0.05 }}
-                  onClick={() => handleUseTemplate(template)}
-                  className="text-left p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] transition-all group active:scale-[0.98]"
-                >
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-8 h-8 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-white/10 transition-all">
-                      <template.icon className="w-4 h-4 text-white/50" />
-                    </div>
-                    <h4 className="text-[13px] font-semibold text-white/80 group-hover:text-white transition-colors">{template.name}</h4>
-                  </div>
-                  <p className="text-[11px] text-white/30 leading-relaxed line-clamp-2">{template.description}</p>
-                  <div className="flex items-center gap-1.5 mt-2 text-[10px] text-white/20">
-                    <Timer className="w-3 h-3" />
-                    <span>{template.schedule}</span>
-                  </div>
-                </motion.button>
-              ))}
-            </div>
           </div>
         </motion.div>
       )}
