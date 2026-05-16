@@ -602,33 +602,65 @@ export function AgentsPanel({
     if (propAgents) setAgents(propAgents);
   }, [propAgents]);
 
-  const handleCreateAgent = (data: { title: string, scheduleFreq: string, time: string, prompt: string, skipConfirmations: boolean, expirationDate?: string }) => {
-    // Generate a human-readable schedule string
-    const timeStr = new Date(`2000-01-01T${data.time}`).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const schedule = `${data.scheduleFreq} at ${timeStr}${data.expirationDate ? ` (Expires ${data.expirationDate})` : ''}`;
+  const handleCreateAgent = async (data: { title: string, scheduleFreq: string, time: string, prompt: string, skipConfirmations: boolean, expirationDate?: string }) => {
+    const schedule = `${data.scheduleFreq} at ${data.time} UTC${data.expirationDate ? ` (Expires ${data.expirationDate})` : ''}`;
 
-    const newAgent: ScheduledAgent = {
-      id: `agent_${Date.now()}`,
-      name: data.title,
-      description: data.prompt,
-      schedule,
-      status: 'active',
-      createdAt: new Date().toISOString(),
-      type: 'custom',
-      trigger: data.scheduleFreq === 'No Repeat' ? 'manual' : 'cron',
-    };
-
-    setAgents(prev => [newAgent, ...prev]);
     setIsCreating(false);
-    
-    // As per user's prompt: "when user clicks Save, the AI agent should continue from the Arcus AI chat directly with the prompt"
-    // So we pass the prompt directly to onSendMessage
-    if (onSendMessage) {
-      onSendMessage(`Create a scheduled agent named "${data.title}". Schedule: ${schedule}. Task: ${data.prompt}. Skip Confirmations: ${data.skipConfirmations}.`);
-    } else {
-      onCreateAgent?.(data.prompt, schedule);
+
+    // 1. Persist to database via API
+    try {
+      const res = await fetch('/api/agent-talk/agents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: data.title,
+          description: data.prompt,
+          prompt: data.prompt,
+          skip_confirmations: data.skipConfirmations,
+          schedule_freq: data.scheduleFreq,
+          schedule_time: data.time,
+          expiration_date: data.expirationDate || null,
+          agent_type: 'custom',
+        }),
+      });
+
+      const saved = res.ok ? await res.json() : null;
+
+      const newAgent: ScheduledAgent = {
+        id: saved?.id || `agent_${Date.now()}`,
+        name: data.title,
+        description: data.prompt,
+        schedule,
+        status: 'active',
+        createdAt: new Date().toISOString(),
+        type: 'custom',
+        trigger: data.scheduleFreq === 'No Repeat' ? 'manual' : 'cron',
+      };
+
+      setAgents(prev => [newAgent, ...prev]);
+      toast.success('Agent created & saved', { description: `"${newAgent.name}" is now active` });
+    } catch (e) {
+      console.error('Failed to persist agent:', e);
+      // Still add locally even if API fails
+      const newAgent: ScheduledAgent = {
+        id: `agent_${Date.now()}`,
+        name: data.title,
+        description: data.prompt,
+        schedule,
+        status: 'active',
+        createdAt: new Date().toISOString(),
+        type: 'custom',
+        trigger: data.scheduleFreq === 'No Repeat' ? 'manual' : 'cron',
+      };
+      setAgents(prev => [newAgent, ...prev]);
+      toast.success('Agent created locally', { description: 'Could not save to server' });
     }
-    toast.success('Agent created', { description: `${newAgent.name} is now active` });
+
+    // 2. Send the prompt directly to Arcus AI chat so the agent starts working immediately
+    if (onSendMessage) {
+      const skipNote = data.skipConfirmations ? ' Execute all actions without asking for confirmation.' : '';
+      onSendMessage(`[Scheduled Agent: "${data.title}"] ${data.prompt}${skipNote}`);
+    }
   };
 
   const handlePause = (id: string) => {
@@ -651,8 +683,13 @@ export function AgentsPanel({
   };
 
   const handleRunNow = (id: string) => {
+    const agent = agents.find(a => a.id === id);
     setAgents(prev => prev.map(a => a.id === id ? { ...a, status: 'running' as const } : a));
     onRunNow?.(id);
+    // Actually execute the agent's prompt through the chat
+    if (agent?.description && onSendMessage) {
+      onSendMessage(`[Running Agent: "${agent.name}"] ${agent.description}`);
+    }
     toast.info('Running agent...');
   };
 

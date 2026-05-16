@@ -3281,6 +3281,8 @@ export default function ChatInterface({
                             actionItems={actionItems}
                             agents={scheduledAgents}
                             onCreateAgent={async (desc, sched) => {
+                              // AgentsPanel now handles API persistence directly,
+                              // this is a fallback if AgentsPanel's internal API call fails
                               try {
                                 const res = await fetch('/api/agent-talk/agents', {
                                   method: 'POST',
@@ -3288,19 +3290,15 @@ export default function ChatInterface({
                                   body: JSON.stringify({ name: 'New Agent', description: desc, schedule: sched, agent_type: 'custom' })
                                 });
                                 if (res.ok) {
-                                  const newAgent = await res.json();
-                                  setScheduledAgents(prev => [...prev, {
-                                    id: newAgent.id,
-                                    name: newAgent.name || 'New Agent',
-                                    description: desc,
-                                    schedule: sched,
-                                    type: 'custom',
-                                    status: 'active',
-                                  }]);
-                                  toast.success('Scheduled agent created');
+                                  // Refresh agents list from server
+                                  const dashRes = await fetch('/api/agent-talk/dashboard');
+                                  if (dashRes.ok) {
+                                    const dashData = await dashRes.json();
+                                    setScheduledAgents(dashData.agents || []);
+                                  }
                                 }
                               } catch (e) {
-                                toast.error('Failed to create agent');
+                                console.error('Fallback agent create failed:', e);
                               }
                             }}
                             onPauseAgent={async (id) => {
@@ -3327,12 +3325,9 @@ export default function ChatInterface({
                               await fetch(`/api/agent-talk/agents?id=${id}`, { method: 'DELETE' });
                             }}
                             onRunNow={(id) => {
+                              // AgentsPanel now triggers the prompt via onSendMessage internally
+                              // Just update the status here for visual feedback
                               setScheduledAgents(prev => prev.map(a => a.id === id ? { ...a, status: 'running' } : a));
-                              toast.success('Agent running...');
-                              setTimeout(() => {
-                                setScheduledAgents(prev => prev.map(a => a.id === id ? { ...a, status: 'active', lastRun: new Date().toISOString() } : a));
-                                toast.success('Agent execution complete');
-                              }, 3000);
                             }}
                           >
                             {/* Prompt box passed as children */}

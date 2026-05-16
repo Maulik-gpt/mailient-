@@ -60,7 +60,6 @@ export async function GET(request: Request) {
     // 3. Fetch Action Items
     const actionItems: any[] = [];
 
-    // 4. Fetch Agents
     let agents: any[] = [];
     try {
       const { data: dbAgents, error: agentsError } = await db.supabase
@@ -72,11 +71,16 @@ export async function GET(request: Request) {
         agents = dbAgents.map(a => ({
           id: a.id,
           name: a.name,
-          description: a.description,
-          schedule: a.cron_schedule,
+          description: a.prompt || a.description,
+          schedule: a.readable_schedule || a.cron_schedule,
           type: a.agent_type,
           status: a.is_active ? 'active' : 'paused',
-          createdAt: a.created_at
+          createdAt: a.created_at,
+          prompt: a.prompt || a.description,
+          skipConfirmations: a.skip_confirmations || false,
+          scheduleFreq: a.schedule_freq || 'Daily',
+          scheduleTime: a.schedule_time || '08:00',
+          expirationDate: a.expiration_date || null,
         }));
       }
     } catch (e) {

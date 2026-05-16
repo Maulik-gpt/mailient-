@@ -13,27 +13,105 @@ export async function POST(request: Request) {
 
     const db = new DatabaseService();
     const body = await request.json();
-    const { name, description, schedule, agent_type } = body;
+    const { name, description, schedule, agent_type, prompt, skip_confirmations, schedule_freq, schedule_time, expiration_date } = body;
+
+    // Build a cron expression from schedule_freq + schedule_time
+    let cronSchedule = schedule || '';
+    if (schedule_freq && schedule_time) {
+      const [hour, minute] = schedule_time.split(':');
+      switch (schedule_freq) {
+        case 'Daily':
+          cronSchedule = `${minute} ${hour} * * *`;
+          break;
+        case 'Weekly':
+          cronSchedule = `${minute} ${hour} * * 1`; // Monday
+          break;
+        case 'Monthly':
+          cronSchedule = `${minute} ${hour} 1 * *`; // 1st of month
+          break;
+        case 'No Repeat':
+          cronSchedule = 'manual';
+          break;
+        default:
+          cronSchedule = `${minute} ${hour} * * *`;
+      }
+    }
+
+    // Build the human-readable schedule string for display
+    const timeStr = schedule_time || '08:00';
+    const freqStr = schedule_freq || 'Daily';
+    const readableSchedule = `${freqStr} at ${timeStr} UTC${expiration_date ? ` (Expires ${expiration_date})` : ''}`;
 
     const { data, error } = await db.supabase
       .from('arcus_recurring_agents')
       .insert({
         user_id: session.user.id,
         name: name || 'Scheduled Agent',
-        description,
-        cron_schedule: schedule,
+        description: description || prompt || '',
+        cron_schedule: cronSchedule,
         agent_type: agent_type || 'custom',
-        is_active: true
+        is_active: true,
+        prompt: prompt || description || '',
+        skip_confirmations: skip_confirmations || false,
+        schedule_freq: freqStr,
+        schedule_time: timeStr,
+        expiration_date: expiration_date || null,
+        readable_schedule: readableSchedule,
       })
       .select()
       .single();
 
     if (error) {
-       // Table might not exist, just return success mock if so
-       if (error.code === '42P01') {
-           return NextResponse.json({ id: `mock_${Date.now()}`, name, description, cron_schedule: schedule, agent_type, is_active: true });
-       }
-       throw error;
+      // Table might not have the new columns yet — fallback to basic insert
+      if (error.code === '42703' || error.message?.includes('column')) {
+        const { data: fallbackData, error: fallbackError } = await db.supabase
+          .from('arcus_recurring_agents')
+          .insert({
+            user_id: session.user.id,
+            name: name || 'Scheduled Agent',
+            description: prompt || description || '',
+            cron_schedule: cronSchedule,
+            agent_type: agent_type || 'custom',
+            is_active: true,
+          })
+          .select()
+          .single();
+
+        if (fallbackError && fallbackError.code === '42P01') {
+          return NextResponse.json({
+            id: `local_${Date.now()}`,
+            name: name || 'Scheduled Agent',
+            description: prompt || description || '',
+            cron_schedule: cronSchedule,
+            agent_type: agent_type || 'custom',
+            is_active: true,
+            prompt: prompt || '',
+            skip_confirmations: skip_confirmations || false,
+            schedule_freq: freqStr,
+            schedule_time: timeStr,
+            expiration_date: expiration_date || null,
+            readable_schedule: readableSchedule,
+          });
+        }
+        if (fallbackError) throw fallbackError;
+        return NextResponse.json({ ...fallbackData, prompt, skip_confirmations, schedule_freq: freqStr, schedule_time: timeStr, readable_schedule: readableSchedule });
+      }
+      if (error.code === '42P01') {
+        return NextResponse.json({
+          id: `local_${Date.now()}`,
+          name: name || 'Scheduled Agent',
+          description: prompt || description || '',
+          cron_schedule: cronSchedule,
+          agent_type: agent_type || 'custom',
+          is_active: true,
+          prompt: prompt || '',
+          skip_confirmations: skip_confirmations || false,
+          schedule_freq: freqStr,
+          schedule_time: timeStr,
+          readable_schedule: readableSchedule,
+        });
+      }
+      throw error;
     }
 
     return NextResponse.json(data);
