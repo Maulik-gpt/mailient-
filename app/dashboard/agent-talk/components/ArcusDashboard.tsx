@@ -78,84 +78,7 @@ interface ArcusDashboardProps {
 // QUICK ACTION CONFIGS
 // ============================================================================
 
-const QUICK_ACTIONS = [
-  {
-    label: 'Catch up',
-    icon: Sparkles,
-    text: "Please provide me with a comprehensive summary of my recent email correspondence from the last 24 hours. I am particularly interested in any urgent matters, action items directed at me, or important status updates that require my immediate attention.",
-    description: 'Summarize what happened overnight',
-  },
-  {
-    label: 'Draft replies',
-    icon: PenTool,
-    text: "I would like some assistance in drafting professional responses to all my unanswered emails. Please ensure each reply is articulate, maintains a collaborative tone, and clearly addresses all the questions or points raised by each sender.",
-    description: 'Auto-draft to unanswered emails',
-  },
-  {
-    label: 'Schedule',
-    icon: Calendar,
-    text: "I need to facilitate meetings based on my recent email threads. Could you please review any pending scheduling requests and compare them with my calendar to suggest the most optimal windows?",
-    description: 'Handle meeting requests',
-  },
-  {
-    label: 'Analytics',
-    icon: BarChart3,
-    text: "Please perform an audit of my email engagement and activity over the past seven days. I am looking for a detailed overview of my top communication partners, peak activity times, and any trends in my response frequency or inbox growth.",
-    description: 'Email activity insights',
-  },
-];
 
-const CONVERSATIONAL_STARTERS = [
-  "Reply to all unanswered emails from this week",
-  "Which clients haven't heard from me in over 2 weeks?",
-  "Find every email from Rohan and summarize what we discussed",
-  "Draft a follow-up to everyone I met at the conference last month",
-  "Triage my inbox and archive all newsletters",
-  "What's my most urgent email right now?",
-];
-
-// ============================================================================
-// SUB-COMPONENTS
-// ============================================================================
-
-function QuickActionButton({
-  action,
-  onClick,
-  delay = 0,
-}: {
-  action: typeof QUICK_ACTIONS[0];
-  onClick: () => void;
-  delay?: number;
-}) {
-  return (
-    <motion.button
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-      onClick={onClick}
-      className={cn(
-        "flex items-center gap-3 px-5 py-3 rounded-2xl",
-        "bg-white/[0.02] border border-white/[0.06]",
-        "hover:border-white/[0.12] hover:bg-white/[0.04]",
-        "transition-all group/action active:scale-[0.98]",
-        "text-left"
-      )}
-    >
-      <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0 group-hover/action:bg-white/10 group-hover/action:border-white/20 transition-all">
-        <action.icon className="w-4 h-4 text-white/50 group-hover/action:text-white/80 transition-colors" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <span className="text-[13px] font-semibold text-white/80 group-hover/action:text-white transition-colors block">
-          {action.label}
-        </span>
-        <span className="text-[11px] text-white/25 group-hover/action:text-white/40 transition-colors block truncate">
-          {action.description}
-        </span>
-      </div>
-      <ChevronRight className="w-4 h-4 text-white/10 group-hover/action:text-white/30 transition-colors flex-shrink-0" />
-    </motion.button>
-  );
-}
 
 function ConversationalStarter({
   text,
@@ -210,9 +133,6 @@ export function ArcusDashboard({
   children,
 }: ArcusDashboardProps) {
   const [activeTab, setActiveTab] = useState<'home' | 'agents'>('home');
-  const [starters] = useState(() =>
-    [...CONVERSATIONAL_STARTERS].sort(() => Math.random() - 0.5).slice(0, 4)
-  );
 
   const hasBriefingData = emailStats && emailStats.total > 0;
 
@@ -323,16 +243,7 @@ export function ArcusDashboard({
             </div>
 
             <div className="max-w-2xl mx-auto px-4 mb-32">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {QUICK_ACTIONS.map((action, i) => (
-                  <QuickActionButton
-                    key={action.label}
-                    action={action}
-                    onClick={() => handleQuickAction(action.text)}
-                    delay={0.1 + i * 0.05}
-                  />
-                ))}
-              </div>
+              {/* Suggestions removed as requested */}
             </div>
           </motion.div>
         ) : (

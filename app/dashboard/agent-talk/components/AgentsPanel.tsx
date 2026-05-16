@@ -297,6 +297,106 @@ function AgentCard({
     </motion.div>
   );
 }
+// ============================================================================
+// CUSTOM PREMIUM INPUT COMPONENTS
+// ============================================================================
+
+function CustomDropdown({ value, options, onChange, className }: any) {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <div className={cn("relative", className)}>
+      <div 
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full bg-[#111] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white flex justify-between items-center cursor-pointer hover:border-white/20 transition-colors"
+      >
+        <span>{value}</span>
+        <ChevronDown className={cn("w-4 h-4 text-white/40 transition-transform", isOpen && "rotate-180")} />
+      </div>
+      <AnimatePresence>
+        {isOpen && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+            <motion.div
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -5 }}
+              className="absolute top-full left-0 w-full mt-2 bg-[#1A1A1A] border border-white/10 rounded-xl overflow-hidden z-50 shadow-2xl"
+            >
+              {options.map((opt: string) => (
+                <div
+                  key={opt}
+                  onClick={() => { onChange(opt); setIsOpen(false); }}
+                  className={cn(
+                    "px-4 py-2.5 cursor-pointer text-sm transition-colors hover:bg-white/5",
+                    value === opt ? "bg-white/10 text-white font-medium" : "text-white/70"
+                  )}
+                >
+                  {opt}
+                </div>
+              ))}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function CustomTimePicker({ value, onChange }: any) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [hour, min] = value.split(':');
+  
+  const hours = Array.from({length: 24}, (_, i) => i.toString().padStart(2, '0'));
+  const minutes = Array.from({length: 12}, (_, i) => (i * 5).toString().padStart(2, '0'));
+
+  return (
+    <div className="relative w-32">
+      <div 
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full bg-[#111] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white flex justify-between items-center cursor-pointer hover:border-white/20 transition-colors"
+      >
+        <span>{value}</span>
+        <Clock className="w-4 h-4 text-white/40" />
+      </div>
+      <AnimatePresence>
+        {isOpen && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+            <motion.div
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -5 }}
+              className="absolute top-full left-0 w-40 mt-2 bg-[#1A1A1A] border border-white/10 rounded-xl overflow-hidden z-50 shadow-2xl flex h-48"
+            >
+              <div className="flex-1 overflow-y-auto custom-scrollbar border-r border-white/10 bg-[#141414]">
+                {hours.map(h => (
+                  <div 
+                    key={h}
+                    onClick={() => onChange(`${h}:${min}`)}
+                    className={cn("px-4 py-2 cursor-pointer text-center text-sm hover:bg-white/5", hour === h ? "bg-white/10 text-white font-medium" : "text-white/50")}
+                  >
+                    {h}
+                  </div>
+                ))}
+              </div>
+              <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#141414]">
+                {minutes.map(m => (
+                  <div 
+                    key={m}
+                    onClick={() => onChange(`${hour}:${m}`)}
+                    className={cn("px-4 py-2 cursor-pointer text-center text-sm hover:bg-white/5", min === m ? "bg-white/10 text-white font-medium" : "text-white/50")}
+                  >
+                    {m}
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 function CreateAgentInput({
   onSubmit,
@@ -327,7 +427,7 @@ function CreateAgentInput({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       {/* Backdrop */}
       <motion.div
         initial={{ opacity: 0 }}
@@ -370,29 +470,17 @@ function CreateAgentInput({
           {/* Schedule */}
           <div>
             <label className="block text-sm font-medium text-white mb-2">Schedule</label>
-            <div className="flex items-center gap-3">
-              <div className="relative w-48">
-                <select
-                  value={scheduleFreq}
-                  onChange={e => setScheduleFreq(e.target.value)}
-                  className="w-full appearance-none bg-[#111] border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-white/30 transition-colors cursor-pointer"
-                >
-                  <option value="Daily">Daily</option>
-                  <option value="Weekly">Weekly</option>
-                  <option value="Monthly">Monthly</option>
-                  <option value="No Repeat">No Repeat</option>
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 pointer-events-none" />
-              </div>
-
-              <div className="relative w-32">
-                <input
-                  type="time"
-                  value={time}
-                  onChange={e => setTime(e.target.value)}
-                  className="w-full bg-[#111] border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-white/30 transition-colors [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:invert cursor-pointer"
-                />
-              </div>
+            <div className="flex items-center gap-3 relative z-10">
+              <CustomDropdown
+                className="w-48"
+                value={scheduleFreq}
+                onChange={setScheduleFreq}
+                options={["Daily", "Weekly", "Monthly", "No Repeat"]}
+              />
+              <CustomTimePicker
+                value={time}
+                onChange={setTime}
+              />
             </div>
             
             <div className="mt-3 flex flex-col gap-3">
