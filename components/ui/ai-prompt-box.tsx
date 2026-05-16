@@ -748,7 +748,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
          onFocus={() => setIsFocused(true)}
          onBlur={() => setIsFocused(false)}
          className={cn(
-          "w-full bg-white dark:bg-[#0B0A09]/80 backdrop-blur-3xl border border-white/[0.08] ring-1 ring-white/5 transition-all duration-300 ease-in-out focus:ring-0 focus:outline-none focus-within:ring-0 focus-within:outline-none",
+          "w-full bg-white dark:bg-[#161616]/90 backdrop-blur-3xl border border-white/[0.08] ring-1 ring-white/5 transition-all duration-300 ease-in-out focus:ring-0 focus:outline-none focus-within:ring-0 focus-within:outline-none",
           !props.hideShadow && "shadow-[0_20px_50px_rgba(0,0,0,0.5)]",
           isRecording && "border-red-500/70",
           className
