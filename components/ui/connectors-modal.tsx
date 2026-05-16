@@ -265,14 +265,20 @@ export function ConnectorsModal({
   }, [isOpen]);
 
   const handleConnectAction = async (appId: string) => {
+    console.log('[ConnectorsModal] Connecting app:', appId);
     try {
       const res = await fetch(`/api/integrations/${appId}/auth`);
+      console.log('[ConnectorsModal] Auth endpoint response status:', res.status);
       if (res.ok) {
         const { url } = await res.json();
+        console.log('[ConnectorsModal] Redirecting to:', url);
         window.location.href = url;
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        console.error('[ConnectorsModal] Auth error:', errorData);
       }
     } catch (err) {
-      console.error('Failed to get auth URL:', err);
+      console.error('[ConnectorsModal] Failed to get auth URL:', err);
     }
   };
 

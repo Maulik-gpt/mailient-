@@ -29,7 +29,8 @@ export async function GET(request) {
       provider: 'slack'
     })).toString('base64');
 
-    const authUrl = integrationManager.getAuthUrl('slack', state);
+    const { origin } = new URL(request.url);
+    const authUrl = integrationManager.getAuthUrl('slack', state, origin);
     return NextResponse.json({ url: authUrl });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
