@@ -10,11 +10,13 @@ import { ChatHistoryModal } from './components/ChatHistoryModal';
 import { ThinkingLayer, ResultCard, type ThinkingStep, type ThinkingBlock, type SearchSession } from './components/ThinkingLayer';
 import { AgentExecutionTimeline, type AgentStep } from './components/AgentExecutionTimeline';
 import { CanvasPanel, type CanvasData } from './components/CanvasPanel';
-import { PlanArtifactCard, type PlanArtifact } from './components/PlanArtifactCard';
+import PlanArtifactCard from './components/PlanArtifactCard';
 import { PlanModeBrief } from './components/PlanModeBrief';
 import { PlanCanvas } from './components/PlanCanvas';
 import { SearchExecutionPanel } from './components/SearchExecutionPanel';
 import { ConnectorBar } from './components/ConnectorBar';
+import { StatusBar } from './components/StatusBar';
+import { ArcusDashboard } from './components/ArcusDashboard';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { PromptInputBox } from '@/components/ui/ai-prompt-box';
@@ -26,13 +28,13 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/comp
 import { RainbowButton } from '@/components/ui/rainbow-button';
 import { HomeFeedSidebar } from "@/components/ui/home-feed-sidebar";
 import { TextShimmer } from '@/components/ui/text-shimmer';
-import NotesFetchingDisplay from '@/components/ui/notes-fetching-display';
+
 import { UsageLimitModal } from '@/components/ui/usage-limit-modal';
 import { SettingsCard } from '@/components/ui/settings-card';
 import { HelpCard } from '@/components/ui/help-card';
 import { RewardsCard } from '@/components/ui/rewards-card';
 import { ShiningText } from '@/components/ui/shining-text';
-import { Note } from '@/components/ui/note';
+
 import { Button as Button1 } from '@/components/ui/button-1';
 import { MorphingSquare } from '@/components/ui/morphing-square';
 import { useTheme } from 'next-themes';
@@ -462,7 +464,7 @@ interface AgentMessage {
       canvasType?: string;
     };
     searchSessions?: SearchSession[];
-    planArtifact?: PlanArtifact; // Phase 2: Plan artifact for execution
+    planArtifact?: any; // Phase 2: Plan artifact for execution
     executionResult?: any; // Phase 1: Execution gateway result
     error?: any; // Phase 1: Error with recovery hints
     recoveryHint?: any; // Phase 1: Error recovery guidance
@@ -1128,6 +1130,39 @@ export default function ChatInterface({
   const [agentRunMeta, setAgentRunMeta] = useState<{ runId?: string; totalDurationMs?: number } | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // --- MOCK DATA FOR ARCUS DASHBOARD ---
+  const [emailStats, setEmailStats] = useState({
+    total: 0,
+    drafted: 0,
+    archived: 0,
+    flagged: 0,
+  });
+
+  const [meetings, setMeetings] = useState<any[]>([]);
+  const [actionItems, setActionItems] = useState<any[]>([]);
+  const [scheduledAgents, setScheduledAgents] = useState<any[]>([]);
+  const [isDashboardDataLoading, setIsDashboardDataLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchDashboardData() {
+      try {
+        const res = await fetch('/api/agent-talk/dashboard');
+        if (res.ok) {
+          const data = await res.json();
+          setEmailStats(data.emailStats || emailStats);
+          setMeetings(data.meetings || []);
+          setActionItems(data.actionItems || []);
+          setScheduledAgents(data.agents || []);
+        }
+      } catch (e) {
+        console.error('Failed to fetch dashboard data', e);
+      } finally {
+        setIsDashboardDataLoading(false);
+      }
+    }
+    fetchDashboardData();
+  }, []);
 
 
 
@@ -2126,7 +2161,7 @@ export default function ChatInterface({
   // Plan approval handlers (Phase 2)
   // Plan approval is handled by handlePlanApprove (L1823) which also updates message state
 
-  const handleDeclinePlan = async (plan: PlanArtifact) => {
+  const handleDeclinePlan = async (plan: any) => {
     try {
       await fetch('/api/agent-talk/chat-arcus', {
         method: 'POST',
@@ -3051,8 +3086,21 @@ export default function ChatInterface({
                         </Tooltip>
                       </div>
 
-                      {/* Right Side: New Chat and History */}
+                      {/* Right Side: StatusBar + New Chat and History */}
                       <div className="flex items-center gap-3">
+                        {/* Status Bar — live metrics */}
+                        <StatusBar
+                          emailsTriaged={0}
+                          draftsWaiting={0}
+                          meetingsBooked={0}
+                          agentsRunning={0}
+                          onMetricClick={(id) => {
+                            if (id === 'agents') {
+                              // Could navigate to agents tab
+                            }
+                          }}
+                        />
+
                         {/* Subscription Badge */}
                         {currentPlan !== 'pro' && (
                           <div className="flex items-center gap-1.5 px-3 py-1 bg-white dark:bg-[#111111] border border-neutral-200 dark:border-white/10 rounded-full shadow-sm transition-all group-hover:border-neutral-300 dark:group-hover:border-white/20">
@@ -3163,9 +3211,8 @@ export default function ChatInterface({
                         <div className="py-6">
                           <PlanModeBrief
                             brief={planModeBrief}
-                            briefDate={planModeBriefDate || undefined}
-                            isLoading={isPlanModeLoading}
-                            onGenerateNew={generateNewBrief}
+                            loading={isPlanModeLoading}
+                            onGenerate={generateNewBrief}
                           />
                         </div>
                       ) : (
@@ -3177,17 +3224,8 @@ export default function ChatInterface({
                             <PlanArtifactCard
                               key={plan.planId}
                               plan={plan}
-                              onApprove={async (planId) => {
-                                await v3BuildPlan(planId, 0);
-                              }}
-                              onBuildPlan={async (planId, optionIndex) => {
-                                await v3BuildPlan(planId, optionIndex);
-                              }}
-                              onExecute={async (planId) => {
-                                await v3ExecutePlan(planId);
-                              }}
-                              onReject={(planId) => v3DismissPlan(planId)}
                               isNew={true}
+                              onUpdate={() => v3Refresh()}
                             />
                           ))}
                         </div>
@@ -3214,7 +3252,6 @@ export default function ChatInterface({
                             <PlanArtifactCard
                               key={plan.planId}
                               plan={plan}
-                              onApprove={async () => {}}
                             />
                           ))}
                         </div>
@@ -3222,27 +3259,54 @@ export default function ChatInterface({
                         </>
                       )}
                       {isInitialMode && arcusView === 'feed' ? (
-                        <div className="flex flex-col items-center justify-center min-h-[50vh] py-12 animate-fade-in relative">
-                          <div className="text-center mb-16">
-                            <div className="flex justify-center mb-8">
-                              <img
-                                src="/arcus-ai-icon.jpg"
-                                className="w-16 h-16 object-cover rounded-[24px] shadow-2xl grayscale brightness-110"
-                                alt="Arcus AI"
-                              />
-                            </div>
-                            <h1 className="text-4xl md:text-6xl font-medium text-black dark:text-white tracking-tighter" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                              Ask anything about your emails
-                            </h1>
-                          </div>
-
-                          {/* Centered Prompt Box for Initial Mode */}
-                          <div className="w-full relative group max-w-2xl mx-auto px-4 z-10">
+                        <div className="flex flex-col items-center justify-center min-h-[50vh] py-8 animate-fade-in relative">
+                          <ArcusDashboard
+                            userName={'Maulik'}
+                            onSendMessage={(msg) => handleSend(msg)}
+                            onSuggestionClick={(text) => setSuggestionInput({ text, id: Date.now() })}
+                            isLoading={isLoading}
+                            emailStats={emailStats}
+                            meetings={meetings}
+                            actionItems={actionItems}
+                            agents={scheduledAgents}
+                            onCreateAgent={(desc, sched) => {
+                              setScheduledAgents(prev => [...prev, {
+                                id: `ag${Date.now()}`,
+                                name: 'New Agent',
+                                description: desc,
+                                schedule: sched,
+                                type: 'custom',
+                                status: 'active',
+                              }]);
+                              toast.success('Scheduled agent created');
+                            }}
+                            onPauseAgent={(id) => {
+                              setScheduledAgents(prev => prev.map(a => a.id === id ? { ...a, status: 'paused' } : a));
+                              toast.success('Agent paused');
+                            }}
+                            onResumeAgent={(id) => {
+                              setScheduledAgents(prev => prev.map(a => a.id === id ? { ...a, status: 'active' } : a));
+                              toast.success('Agent resumed');
+                            }}
+                            onDeleteAgent={(id) => {
+                              setScheduledAgents(prev => prev.filter(a => a.id !== id));
+                              toast.success('Agent deleted');
+                            }}
+                            onRunNow={(id) => {
+                              setScheduledAgents(prev => prev.map(a => a.id === id ? { ...a, status: 'running' } : a));
+                              toast.success('Agent running...');
+                              setTimeout(() => {
+                                setScheduledAgents(prev => prev.map(a => a.id === id ? { ...a, status: 'active', lastRun: new Date().toISOString() } : a));
+                                toast.success('Agent execution complete');
+                              }, 3000);
+                            }}
+                          >
+                            {/* Prompt box passed as children */}
                             <PromptInputBox
                               onSend={(msg, files, opts) => handleSend(msg, files, opts)}
                               onStop={() => abortControllerRef.current?.abort()}
                               isLoading={isLoading}
-                              placeholder="Assign a task or ask anything"
+                              placeholder="Tell Arcus what to do..."
                               onSearchClick={() => { }}
                               onAttachEmailClick={() => setIsEmailSelectionModalOpen(true)}
                               onPersonalityClick={() => setIsPersonalityModalOpen(true)}
@@ -3262,30 +3326,7 @@ export default function ChatInterface({
                                 setIsUsageLimitModalOpen(true);
                               }}
                             />
-                          </div>
-
-                          {/* Pill-style Action Buttons - Now shifted BELOW */}
-                          <div className="flex flex-wrap justify-center gap-2.5 mt-10 max-w-2xl mx-auto">
-                            {[
-                              { label: 'Catch up', icon: Sparkles, text: "Please provide me with a comprehensive summary of my recent email correspondence from the last 24 hours. I am particularly interested in any urgent matters, action items directed at me, or important status updates that require my immediate attention." },
-                              { label: 'Summarize', icon: FileText, text: "Could you please analyze my current unread emails and synthesize the core information from each thread? I would like a breakdown that highlights the main subject of each conversation and identifies any deadlines or specific requests made by the senders." },
-                              { label: 'Draft reply', icon: PenTool, text: "I would like some assistance in drafting a professional response to my most recent email. Please ensure the reply is articulate, maintains a collaborative tone, and clearly addresses all the questions or points raised by the sender in their message." },
-                              { label: 'Schedule', icon: Calendar, text: "I need to facilitate a meeting for tomorrow based on my recent email threads. Could you please review any pending scheduling requests and compare them with my calendar to suggest the most optimal windows for a 30-minute discussion?" },
-                              { label: 'Analytics', icon: BarChart3, text: "Please perform an audit of my email engagement and activity over the past seven days. I am looking for a detailed overview of my top communication partners, peak activity times, and any trends in my response frequency or inbox growth." }
-                            ].map((btn) => (
-                              <button
-                                key={btn.label}
-                                onClick={() => setSuggestionInput({
-                                  text: btn.text,
-                                  id: Date.now()
-                                })}
-                                className="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-white/[0.03] border border-neutral-200 dark:border-white/[0.08] rounded-full text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-white/[0.06] hover:border-blue-500/30 dark:hover:border-blue-500/40 transition-all text-[13px] font-medium shadow-sm active:scale-95 group/btn"
-                              >
-                                <btn.icon className="w-3.5 h-3.5 text-neutral-400 group-hover/btn:text-blue-500 transition-colors" />
-                                {btn.label}
-                              </button>
-                            ))}
-                          </div>
+                          </ArcusDashboard>
                         </div>
                       ) : (
                         <div className="space-y-4 pt-4">

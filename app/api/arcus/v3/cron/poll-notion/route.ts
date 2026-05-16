@@ -13,7 +13,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '../../../../../../lib/supabase.js';
 import { decrypt } from '../../../../../../lib/crypto.js';
 import { Client } from '@notionhq/client';
-import { enqueueArcusEvent } from '../../../../../../lib/arcus-v3/queue';
+import { enqueueEvent } from '../../../../../../lib/arcus-v3/queue';
 
 export const dynamic = 'force-dynamic';
 
