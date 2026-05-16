@@ -321,7 +321,8 @@ export function ConnectorsModal({
             opacity: 1, 
             scale: 1, 
             y: 0,
-            filter: selectedApp ? 'blur(12px) brightness(0.5)' : 'none'
+            filter: selectedApp ? 'blur(12px) brightness(0.5)' : 'none',
+            pointerEvents: selectedApp ? 'none' : 'auto' as any
           }}
           exit={{ opacity: 0, scale: 0.98, y: 30 }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
