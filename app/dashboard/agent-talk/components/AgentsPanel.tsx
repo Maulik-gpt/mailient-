@@ -302,107 +302,185 @@ function CreateAgentInput({
   onSubmit,
   onCancel,
 }: {
-  onSubmit: (description: string, schedule: string) => void;
+  onSubmit: (data: { title: string, scheduleFreq: string, time: string, prompt: string, skipConfirmations: boolean, expirationDate?: string }) => void;
   onCancel: () => void;
 }) {
-  const [description, setDescription] = useState('');
-  const [schedule, setSchedule] = useState('');
-  const [step, setStep] = useState<'describe' | 'schedule'>('describe');
+  const [title, setTitle] = useState('');
+  const [scheduleFreq, setScheduleFreq] = useState('Daily');
+  const [time, setTime] = useState('08:00');
+  const [hasExpiration, setHasExpiration] = useState(false);
+  const [expirationDate, setExpirationDate] = useState('');
+  const [prompt, setPrompt] = useState('');
+  const [skipConfirmations, setSkipConfirmations] = useState(false);
 
   const handleSubmit = () => {
-    if (description.trim() && schedule.trim()) {
-      onSubmit(description.trim(), schedule.trim());
-      setDescription('');
-      setSchedule('');
+    if (title.trim() && prompt.trim()) {
+      onSubmit({
+        title: title.trim(),
+        scheduleFreq,
+        time,
+        prompt: prompt.trim(),
+        skipConfirmations,
+        expirationDate: hasExpiration ? expirationDate : undefined,
+      });
     }
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -12 }}
-      className="rounded-2xl border border-white/[0.1] bg-white/[0.03] p-5 backdrop-blur-sm"
-    >
-      <div className="flex items-center gap-2 mb-4">
-        <div className="w-8 h-8 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
-          <Sparkles className="w-4 h-4 text-white/60" />
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onCancel}
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+      />
+      
+      {/* Modal */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="relative w-full max-w-2xl bg-[#1A1A1A] border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 pb-4 border-b border-white/[0.04]">
+          <h2 className="text-xl font-medium text-white tracking-tight">New scheduled task</h2>
+          <button onClick={onCancel} className="text-white/40 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/5">
+            <X className="w-5 h-5" />
+          </button>
         </div>
-        <h4 className="text-[14px] font-semibold text-white/90">Create New Agent</h4>
-        <button onClick={onCancel} className="ml-auto p-1 hover:bg-white/5 rounded-lg transition-all">
-          <X className="w-4 h-4 text-white/30" />
-        </button>
-      </div>
 
-      {step === 'describe' ? (
-        <>
-          <p className="text-[12px] text-white/40 mb-3">Describe what you want this agent to do in plain English:</p>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder='e.g., "Every morning at 7am, triage my inbox and draft replies to urgent emails"'
-            className="w-full h-24 bg-black/50 border border-white/[0.08] rounded-xl p-3 text-white/90 placeholder:text-white/20 focus:outline-none focus:border-white/20 resize-none text-[13px] leading-relaxed"
-            autoFocus
-          />
-          <div className="flex items-center justify-end gap-2 mt-3">
-            <button
-              onClick={onCancel}
-              className="px-4 py-2 text-[12px] text-white/40 hover:text-white/60 transition-colors font-medium"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => description.trim() && setStep('schedule')}
-              disabled={!description.trim()}
-              className="px-5 py-2 bg-white text-black text-[12px] font-bold rounded-full hover:bg-neutral-200 transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1.5"
-            >
-              Next <ChevronRight className="w-3.5 h-3.5" />
-            </button>
+        {/* Content */}
+        <div className="p-6 space-y-6 overflow-y-auto max-h-[70vh] custom-scrollbar">
+          
+          {/* Title */}
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">Title</label>
+            <input
+              type="text"
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              placeholder="e.g. Summary of unread mail"
+              className="w-full bg-[#111] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder:text-white/20 focus:outline-none focus:border-white/30 transition-colors"
+            />
           </div>
-        </>
-      ) : (
-        <>
-          <p className="text-[12px] text-white/40 mb-3">Set a schedule for this agent:</p>
-          <div className="flex flex-wrap gap-2 mb-3">
-            {['Every morning at 7 AM', 'Every Friday at 5 PM', 'Every hour', 'Event-triggered'].map((preset) => (
-              <button
-                key={preset}
-                onClick={() => setSchedule(preset)}
-                className={cn(
-                  "px-3 py-1.5 rounded-full text-[12px] border transition-all",
-                  schedule === preset
-                    ? "bg-white/10 border-white/20 text-white"
-                    : "bg-white/[0.02] border-white/[0.06] text-white/50 hover:border-white/[0.12]"
+
+          {/* Schedule */}
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">Schedule</label>
+            <div className="flex items-center gap-3">
+              <div className="relative w-48">
+                <select
+                  value={scheduleFreq}
+                  onChange={e => setScheduleFreq(e.target.value)}
+                  className="w-full appearance-none bg-[#111] border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-white/30 transition-colors cursor-pointer"
+                >
+                  <option value="Daily">Daily</option>
+                  <option value="Weekly">Weekly</option>
+                  <option value="Monthly">Monthly</option>
+                  <option value="No Repeat">No Repeat</option>
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 pointer-events-none" />
+              </div>
+
+              <div className="relative w-32">
+                <input
+                  type="time"
+                  value={time}
+                  onChange={e => setTime(e.target.value)}
+                  className="w-full bg-[#111] border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-white/30 transition-colors [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:invert cursor-pointer"
+                />
+              </div>
+            </div>
+            
+            <div className="mt-3 flex flex-col gap-3">
+              <label className="flex items-center gap-2 cursor-pointer w-fit group">
+                <div className="relative flex items-center justify-center w-4 h-4 rounded border border-white/20 bg-[#111] group-hover:border-white/40 transition-colors">
+                  {hasExpiration && <CheckCircle2 className="w-3 h-3 text-white" />}
+                  <input
+                    type="checkbox"
+                    checked={hasExpiration}
+                    onChange={e => setHasExpiration(e.target.checked)}
+                    className="absolute opacity-0 w-full h-full cursor-pointer"
+                  />
+                </div>
+                <span className="text-sm text-white/70 group-hover:text-white transition-colors">Set expiration date</span>
+              </label>
+
+              <AnimatePresence>
+                {hasExpiration && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <input
+                      type="date"
+                      value={expirationDate}
+                      onChange={e => setExpirationDate(e.target.value)}
+                      className="w-48 bg-[#111] border border-white/10 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-white/30 transition-colors [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:invert cursor-pointer text-sm"
+                    />
+                  </motion.div>
                 )}
-              >
-                {preset}
-              </button>
-            ))}
+              </AnimatePresence>
+            </div>
           </div>
-          <input
-            value={schedule}
-            onChange={(e) => setSchedule(e.target.value)}
-            placeholder="Or type a custom schedule..."
-            className="w-full bg-black/50 border border-white/[0.08] rounded-xl p-3 text-white/90 placeholder:text-white/20 focus:outline-none focus:border-white/20 text-[13px]"
-          />
-          <div className="flex items-center justify-between gap-2 mt-3">
+
+          {/* Prompt */}
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">Prompt</label>
+            <textarea
+              value={prompt}
+              onChange={e => setPrompt(e.target.value)}
+              placeholder="Summarize unread emails and highlight important messages"
+              className="w-full h-32 bg-[#111] border border-white/10 rounded-xl p-4 text-white placeholder:text-white/20 focus:outline-none focus:border-white/30 transition-colors resize-none"
+            />
+          </div>
+
+          {/* Skip confirmations */}
+          <div className="flex items-center justify-between p-4 bg-[#111] border border-white/10 rounded-xl">
+            <div>
+              <div className="text-sm font-medium text-white">Skip confirmations</div>
+              <div className="text-xs text-white/50 mt-0.5">No approval needed before sending, publishing, or posting.</div>
+            </div>
             <button
-              onClick={() => setStep('describe')}
-              className="px-4 py-2 text-[12px] text-white/40 hover:text-white/60 transition-colors font-medium"
+              onClick={() => setSkipConfirmations(!skipConfirmations)}
+              className={cn(
+                "w-11 h-6 rounded-full transition-colors relative",
+                skipConfirmations ? "bg-white" : "bg-white/20"
+              )}
             >
-              Back
-            </button>
-            <button
-              onClick={handleSubmit}
-              disabled={!schedule.trim()}
-              className="px-5 py-2 bg-white text-black text-[12px] font-bold rounded-full hover:bg-neutral-200 transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1.5"
-            >
-              <Zap className="w-3.5 h-3.5" /> Create Agent
+              <div
+                className={cn(
+                  "absolute top-1 w-4 h-4 rounded-full transition-all bg-[#111]",
+                  skipConfirmations ? "left-6" : "left-1 bg-white"
+                )}
+              />
             </button>
           </div>
-        </>
-      )}
-    </motion.div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 p-6 pt-4 border-t border-white/[0.04] bg-[#1a1a1a]">
+          <button
+            onClick={onCancel}
+            className="px-5 py-2 text-sm font-medium text-white border border-white/10 rounded-xl hover:bg-white/5 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={!title.trim() || !prompt.trim()}
+            className="px-6 py-2 text-sm font-medium text-black bg-white rounded-xl hover:bg-neutral-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Save
+          </button>
+        </div>
+      </motion.div>
+    </div>
   );
 }
 
@@ -429,21 +507,32 @@ export function AgentsPanel({
     if (propAgents) setAgents(propAgents);
   }, [propAgents]);
 
-  const handleCreateAgent = (description: string, schedule: string) => {
+  const handleCreateAgent = (data: { title: string, scheduleFreq: string, time: string, prompt: string, skipConfirmations: boolean, expirationDate?: string }) => {
+    // Generate a human-readable schedule string
+    const timeStr = new Date(`2000-01-01T${data.time}`).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const schedule = `${data.scheduleFreq} at ${timeStr}${data.expirationDate ? ` (Expires ${data.expirationDate})` : ''}`;
+
     const newAgent: ScheduledAgent = {
       id: `agent_${Date.now()}`,
-      name: description.split(',')[0].slice(0, 40),
-      description,
+      name: data.title,
+      description: data.prompt,
       schedule,
       status: 'active',
       createdAt: new Date().toISOString(),
       type: 'custom',
-      trigger: schedule.toLowerCase().includes('event') ? 'event' : 'cron',
+      trigger: data.scheduleFreq === 'No Repeat' ? 'manual' : 'cron',
     };
 
     setAgents(prev => [newAgent, ...prev]);
     setIsCreating(false);
-    onCreateAgent?.(description, schedule);
+    
+    // As per user's prompt: "when user clicks Save, the AI agent should continue from the Arcus AI chat directly with the prompt"
+    // So we pass the prompt directly to onSendMessage
+    if (onSendMessage) {
+      onSendMessage(`Create a scheduled agent named "${data.title}". Schedule: ${schedule}. Task: ${data.prompt}. Skip Confirmations: ${data.skipConfirmations}.`);
+    } else {
+      onCreateAgent?.(data.prompt, schedule);
+    }
     toast.success('Agent created', { description: `${newAgent.name} is now active` });
   };
 
@@ -499,15 +588,13 @@ export function AgentsPanel({
         </button>
       </motion.div>
 
-      {/* Create Agent Form */}
+      {/* Create Agent Modal Form */}
       <AnimatePresence>
         {isCreating && (
-          <div className="mb-6">
-            <CreateAgentInput
-              onSubmit={handleCreateAgent}
-              onCancel={() => setIsCreating(false)}
-            />
-          </div>
+          <CreateAgentInput
+            onSubmit={handleCreateAgent}
+            onCancel={() => setIsCreating(false)}
+          />
         )}
       </AnimatePresence>
 
