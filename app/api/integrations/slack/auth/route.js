@@ -24,7 +24,7 @@ export async function GET(request) {
     const session = await getSession();
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const state = Buffer.from(JSON.stringify({ 
+    const state = Buffer.from(JSON.stringify({
       user: session.user.email,
       provider: 'slack'
     })).toString('base64');

@@ -30,6 +30,15 @@ export async function GET(request) {
     })).toString('base64');
 
     const { origin } = new URL(request.url);
+    
+    // Debug environment variables
+    console.log('[Notion Auth Route] Checking environment:', {
+      hasClientId: !!process.env.NOTION_CLIENT_ID,
+      hasSecret: !!process.env.NOTION_CLIENT_SECRET,
+      notionKeys: Object.keys(process.env).filter(k => k.includes('NOTION')),
+      cwd: process.cwd()
+    });
+
     const authUrl = integrationManager.getAuthUrl('notion', state, origin);
     console.log('[Notion Auth] Generated Auth URL:', authUrl);
     return NextResponse.json({ url: authUrl });
