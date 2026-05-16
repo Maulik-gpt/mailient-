@@ -1131,7 +1131,7 @@ export default function ChatInterface({
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // --- MOCK DATA FOR ARCUS DASHBOARD ---
+  const [userName, setUserName] = useState<string>('User');
   const [emailStats, setEmailStats] = useState({
     total: 0,
     drafted: 0,
@@ -1150,6 +1150,7 @@ export default function ChatInterface({
         const res = await fetch('/api/agent-talk/dashboard');
         if (res.ok) {
           const data = await res.json();
+          if (data.userName) setUserName(data.userName);
           setEmailStats(data.emailStats || emailStats);
           setMeetings(data.meetings || []);
           setActionItems(data.actionItems || []);
@@ -3272,7 +3273,7 @@ export default function ChatInterface({
                       {isInitialMode && arcusView === 'feed' ? (
                         <div className="flex flex-col items-center justify-center min-h-[50vh] py-8 animate-fade-in relative">
                           <ArcusDashboard
-                            userName={'Maulik'}
+                            userName={userName}
                             onSendMessage={(msg) => handleSend(msg)}
                             onSuggestionClick={(text) => setSuggestionInput({ text, id: Date.now() })}
                             isLoading={isLoading}

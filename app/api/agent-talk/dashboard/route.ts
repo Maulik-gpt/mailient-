@@ -88,6 +88,7 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({
+      userName: session.user.name || session.user.email.split('@')[0],
       emailStats,
       meetings,
       actionItems,
