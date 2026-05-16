@@ -3269,28 +3269,51 @@ export default function ChatInterface({
                             meetings={meetings}
                             actionItems={actionItems}
                             agents={scheduledAgents}
-                            onCreateAgent={(desc, sched) => {
-                              setScheduledAgents(prev => [...prev, {
-                                id: `ag${Date.now()}`,
-                                name: 'New Agent',
-                                description: desc,
-                                schedule: sched,
-                                type: 'custom',
-                                status: 'active',
-                              }]);
-                              toast.success('Scheduled agent created');
+                            onCreateAgent={async (desc, sched) => {
+                              try {
+                                const res = await fetch('/api/agent-talk/agents', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ name: 'New Agent', description: desc, schedule: sched, agent_type: 'custom' })
+                                });
+                                if (res.ok) {
+                                  const newAgent = await res.json();
+                                  setScheduledAgents(prev => [...prev, {
+                                    id: newAgent.id,
+                                    name: newAgent.name || 'New Agent',
+                                    description: desc,
+                                    schedule: sched,
+                                    type: 'custom',
+                                    status: 'active',
+                                  }]);
+                                  toast.success('Scheduled agent created');
+                                }
+                              } catch (e) {
+                                toast.error('Failed to create agent');
+                              }
                             }}
-                            onPauseAgent={(id) => {
+                            onPauseAgent={async (id) => {
                               setScheduledAgents(prev => prev.map(a => a.id === id ? { ...a, status: 'paused' } : a));
                               toast.success('Agent paused');
+                              await fetch('/api/agent-talk/agents', {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ id, is_active: false })
+                              });
                             }}
-                            onResumeAgent={(id) => {
+                            onResumeAgent={async (id) => {
                               setScheduledAgents(prev => prev.map(a => a.id === id ? { ...a, status: 'active' } : a));
                               toast.success('Agent resumed');
+                              await fetch('/api/agent-talk/agents', {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ id, is_active: true })
+                              });
                             }}
-                            onDeleteAgent={(id) => {
+                            onDeleteAgent={async (id) => {
                               setScheduledAgents(prev => prev.filter(a => a.id !== id));
                               toast.success('Agent deleted');
+                              await fetch(`/api/agent-talk/agents?id=${id}`, { method: 'DELETE' });
                             }}
                             onRunNow={(id) => {
                               setScheduledAgents(prev => prev.map(a => a.id === id ? { ...a, status: 'running' } : a));

@@ -717,6 +717,13 @@ export class GmailService {
   }
 
   /**
+   * Archive email (remove INBOX label)
+   */
+  async archiveEmail(messageId) {
+    return this.removeLabel(messageId, 'INBOX');
+  }
+
+  /**
    * Delete email (move to trash)
    */
   async deleteEmail(messageId) {
