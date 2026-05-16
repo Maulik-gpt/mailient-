@@ -265,20 +265,40 @@ export function ConnectorsModal({
   }, [isOpen]);
 
   const handleConnectAction = async (appId: string) => {
-    console.log('[ConnectorsModal] Connecting app:', appId);
+    console.log('[ConnectorsModal] handleConnectAction triggered for:', appId);
+    // Visual feedback that the button was clicked
+    const button = document.activeElement as HTMLButtonElement;
+    if (button) {
+      const originalText = button.innerText;
+      button.innerText = 'Connecting...';
+      button.disabled = true;
+    }
+
     try {
       const res = await fetch(`/api/integrations/${appId}/auth`);
-      console.log('[ConnectorsModal] Auth endpoint response status:', res.status);
+      console.log('[ConnectorsModal] Auth response status:', res.status);
+      
       if (res.ok) {
-        const { url } = await res.json();
-        console.log('[ConnectorsModal] Redirecting to:', url);
-        window.location.href = url;
-      } else {
-        const errorData = await res.json().catch(() => ({}));
-        console.error('[ConnectorsModal] Auth error:', errorData);
+        const data = await res.json();
+        console.log('[ConnectorsModal] Auth data:', data);
+        if (data.url) {
+          console.log('[ConnectorsModal] Redirecting to:', data.url);
+          window.location.assign(data.url);
+          return;
+        }
       }
+      
+      const errorData = await res.json().catch(() => ({}));
+      console.error('[ConnectorsModal] Auth error:', errorData);
+      alert('Authentication failed. Please try again.');
     } catch (err) {
-      console.error('[ConnectorsModal] Failed to get auth URL:', err);
+      console.error('[ConnectorsModal] Fetch error:', err);
+      alert('Could not reach authentication server.');
+    } finally {
+      if (button) {
+        button.innerText = 'Connect';
+        button.disabled = false;
+      }
     }
   };
 
@@ -304,6 +324,14 @@ export function ConnectorsModal({
 
   if (!isOpen) return null;
 
+  // Helper to check if an app is connected
+  const isAppConnected = (appId: string) => {
+    if (Array.isArray(statuses)) {
+      return statuses.find((s: any) => s.provider === appId)?.connected;
+    }
+    return (statuses as any)?.[appId] === true || (statuses as any)?.[appId]?.connected === true;
+  };
+
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 md:p-8 overflow-hidden isolate">
@@ -312,7 +340,7 @@ export function ConnectorsModal({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="absolute inset-0 bg-black/80 backdrop-blur-md transition-all duration-500"
+          className="absolute inset-0 bg-black/80 backdrop-blur-md transition-all duration-500 z-0"
         />
 
         <motion.div
@@ -322,11 +350,13 @@ export function ConnectorsModal({
             scale: 1, 
             y: 0,
             filter: selectedApp ? 'blur(12px) brightness(0.5)' : 'none',
-            pointerEvents: selectedApp ? 'none' : 'auto' as any
           }}
           exit={{ opacity: 0, scale: 0.98, y: 30 }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          className="relative w-full max-w-[920px] h-full max-h-[820px] bg-white dark:bg-[#0A0A0A] rounded-[2.5rem] border border-neutral-200 dark:border-white/10 shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden pointer-events-auto"
+          className={cn(
+            "relative w-full max-w-[920px] h-full max-h-[820px] bg-white dark:bg-[#0A0A0A] rounded-[2.5rem] border border-neutral-200 dark:border-white/10 shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden z-10",
+            selectedApp ? "pointer-events-none" : "pointer-events-auto"
+          )}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -349,7 +379,6 @@ export function ConnectorsModal({
           </div>
 
           {/* Grid Area */}
-          {/* Grid Area */}
           <div className="flex-1 relative overflow-hidden">
             {/* Fade Overlays */}
             <div className="absolute top-0 left-0 right-0 h-12 bg-gradient-to-b from-white dark:from-[#0A0A0A] to-transparent z-10 pointer-events-none" />
@@ -358,10 +387,7 @@ export function ConnectorsModal({
             <div className="h-full overflow-y-auto p-10 py-12 arcus-scrollbar pb-12">
             <div className="grid grid-cols-1 gap-4">
             {SUPPORTED_APPS.map((app) => {
-                const statusObj = Array.isArray(statuses) 
-                  ? statuses.find((s: any) => s.provider === app.id)
-                  : (statuses as any)?.[app.id];
-                const isConnected = statusObj?.connected || false;
+                const isConnected = isAppConnected(app.id);
 
                 return (
                   <button
@@ -412,7 +438,7 @@ export function ConnectorsModal({
               initial={{ opacity: 0, scale: 0.95, y: 30 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 30 }}
-              className="absolute z-[210] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(95vw,480px)] bg-white dark:bg-[#0A0A0A] rounded-[3rem] border border-neutral-200 dark:border-white/10 shadow-[0_40px_120px_rgba(0,0,0,0.9)] p-8 md:p-10 flex flex-col items-center pointer-events-auto"
+              className="absolute z-[20000] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(95vw,480px)] bg-white dark:bg-[#0A0A0A] rounded-[3rem] border border-neutral-200 dark:border-white/10 shadow-[0_40px_120px_rgba(0,0,0,0.9)] p-8 md:p-10 flex flex-col items-center pointer-events-auto"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Close Button */}
@@ -460,7 +486,7 @@ export function ConnectorsModal({
 
               {/* Action Buttons */}
               <div className="flex items-center gap-3 w-full mb-8">
-                {Array.isArray(statuses) && statuses.find((s: any) => s.provider === selectedApp.id)?.connected ? (
+                {isAppConnected(selectedApp.id) ? (
                   <>
                     <button
                       onClick={() => {
@@ -597,7 +623,7 @@ export function ConnectorsModal({
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="absolute inset-0 z-[230] bg-black/40 backdrop-blur-sm flex items-center justify-center p-6 rounded-[2.5rem]"
+                    className="absolute inset-0 z-[30000] bg-black/40 backdrop-blur-sm flex items-center justify-center p-6 rounded-[2.5rem]"
                   >
                     <motion.div 
                       initial={{ y: 20 }}
@@ -657,6 +683,7 @@ export function ConnectorsModal({
         </AnimatePresence>
       </div>
     </AnimatePresence>
+
   );
 }
 
