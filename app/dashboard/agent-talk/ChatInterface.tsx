@@ -853,7 +853,7 @@ const UserMessageCopyButton = ({ msg }: { msg: Message }) => {
 };
 
 
-const MessageActionButtons = ({ msg, onFeedback, onRegenerate, isLoading }: { msg: Message, onFeedback: (type: 'like' | 'dislike', id: string | number) => void, onRegenerate: (id: number) => void, isLoading: boolean }) => {
+const MessageActionButtons = ({ msg, onFeedback, onRegenerate, isLoading, onShare }: { msg: Message, onFeedback: (type: 'like' | 'dislike', id: string | number) => void, onRegenerate: (id: number) => void, isLoading: boolean, onShare?: () => Promise<string | null> }) => {
   const [isCopied, setIsCopied] = useState(false);
   const [isShared, setIsShared] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
@@ -868,20 +868,30 @@ const MessageActionButtons = ({ msg, onFeedback, onRegenerate, isLoading }: { ms
     setTimeout(() => setIsCopied(false), 2000);
   };
 
-  const handleShare = () => {
+  const handleShare = async () => {
+    if (!onShare) return;
     setIsShared(true);
-    const shareUrl = `https://mailient.xyz/share/${msg.id || Date.now()}`;
-    navigator.clipboard.writeText(shareUrl);
-
-    toast.success(
-      <div className="flex flex-col gap-0.5">
-        <p className="font-bold text-[13px]">Copied link to clipboard.</p>
-        <p className="text-white/40 text-[11px]">Shared links can be viewed by anyone with the link.</p>
-      </div>,
-      {
-        duration: 4000
+    try {
+      const shareUrl = await onShare();
+      if (shareUrl) {
+        navigator.clipboard.writeText(shareUrl);
+        toast.success(
+          <div className="flex flex-col gap-0.5">
+            <p className="font-bold text-[13px]">Copied link to clipboard.</p>
+            <p className="text-white/40 text-[11px]">Shared links can be viewed by anyone with the link.</p>
+          </div>,
+          { duration: 4000 }
+        );
+      } else {
+        toast.error("Failed to generate share link.");
+        setIsShared(false);
+        return;
       }
-    );
+    } catch {
+      toast.error("Failed to generate share link.");
+      setIsShared(false);
+      return;
+    }
     setTimeout(() => setIsShared(false), 3000);
   };
 
@@ -2042,12 +2052,25 @@ export default function ChatInterface({
         
         allMsgs = [...allMsgs, agentMsg];
         const unique = allMsgs.filter((msg: any, idx: number, self: any[]) => idx === self.findIndex(t => t.id === msg.id));
+        const convTitle = existing.title || chatTitle || messageText.slice(0, 60);
         localStorage.setItem(`conversation_${conversationIdToUse}`, JSON.stringify({ ...existing, messages: unique, lastUpdated: new Date().toISOString(), messageCount: unique.length }));
+
+        // Persist to Supabase (fire-and-forget — localStorage is the read cache)
+        fetch('/api/arcus/conversation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ conversationId: conversationIdToUse, messages: unique, title: convTitle }),
+        }).catch(() => { /* non-critical */ });
 
         if (isNew) {
           generateChatTitle(messageText).then(title => {
             localStorage.setItem(`conv_${conversationIdToUse}_title`, title);
             setChatTitle(title);
+            fetch('/api/arcus/conversation', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ conversationId: conversationIdToUse, messages: unique, title }),
+            }).catch(() => { });
           }).catch(() => { });
         }
       }
@@ -2408,7 +2431,7 @@ export default function ChatInterface({
       }
     } else {
       // If not in localStorage, fetch from API
-      fetch(`/api/agent-talk/conversation/${conversationId}`)
+      fetch(`/api/arcus/conversation/${conversationId}`)
         .then(response => response.json())
         .then(data => {
           if (data && data.messages && Array.isArray(data.messages)) {
@@ -2814,30 +2837,20 @@ export default function ChatInterface({
 
 
   const saveConversation = async () => {
-    if (messages.length > 0) return;
+    if (messages.length === 0 || !currentConversationId) return;
 
     try {
-      // Group messages into user-agent pairs and save
-      for (let i = 0; i < messages.length; i += 2) {
-        const userMessage = messages[i];
-        const agentMessage = messages[i + 1];
-
-        if (userMessage && agentMessage && userMessage.type === 'user' && agentMessage.type === 'agent') {
-          await fetch('/api/agent-talk/chat', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              message: userMessage.content,
-              conversationId: currentConversationId,
-              isNewConversation: isInitialMode
-            }),
-          });
-        }
-      }
+      await fetch('/api/arcus/conversation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          conversationId: currentConversationId,
+          messages,
+          title: chatTitle || messages[0]?.content?.toString?.()?.slice(0, 60) || 'Conversation',
+        }),
+      });
     } catch (error) {
-      console.error('Error saving conversation:', error);
+      console.error('Error saving conversation to DB:', error);
     }
   };
 
@@ -3722,6 +3735,22 @@ export default function ChatInterface({
                                         isLoading={isLoading}
                                         onFeedback={(type, id) => setFeedbackModal({ isOpen: true, type, msgId: id })}
                                         onRegenerate={handleRegenerateClick}
+                                        onShare={async () => {
+                                          if (!currentConversationId || messages.length === 0) return null;
+                                          try {
+                                            const res = await fetch('/api/agent-talk/share', {
+                                              method: 'POST',
+                                              headers: { 'Content-Type': 'application/json' },
+                                              body: JSON.stringify({
+                                                conversationId: currentConversationId,
+                                                messages,
+                                                title: chatTitle || messages[0]?.content?.toString?.()?.slice(0, 60) || 'Conversation',
+                                              }),
+                                            });
+                                            const data = await res.json();
+                                            return data.shareUrl || null;
+                                          } catch { return null; }
+                                        }}
                                       />
                                     )}
 
