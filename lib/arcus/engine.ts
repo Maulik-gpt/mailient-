@@ -1,14 +1,14 @@
 /**
- * Arcus Engine — OpenRouter caller with Claude native tool_use.
+ * Arcus Engine — OpenRouter caller with Claude-compatible tool_use.
  *
  * Rotates across three API keys. If all fail, throws with a clear message.
- * Uses anthropic/claude-sonnet-4-5 with anthropic/claude-3.5-sonnet as fallback.
+ * Uses only free OpenRouter models.
  */
 
 const MODELS = [
-  'anthropic/claude-sonnet-4-5',
-  'anthropic/claude-3.5-sonnet',
-  'anthropic/claude-3.5-haiku',
+  'openrouter/free',
+  'meta-llama/llama-3.3-70b-instruct:free',
+  'google/gemini-2.0-flash-exp:free',
 ];
 
 function getKeys(): string[] {
