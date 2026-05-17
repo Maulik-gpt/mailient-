@@ -313,7 +313,7 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   },
   {
     name: 'open_canvas',
-    description: 'Open the built-in Canvas Panel — a beautiful full-screen document viewer on the right side. ALWAYS available, requires no integration. Use for ANYTHING longer than 3 paragraphs: email drafts, reports, analyses, summaries, action plans, weekly digests. Never render long content in chat — use open_canvas instead.',
+    description: 'Open the built-in Canvas Panel — a beautiful full-screen document viewer on the right side. ALWAYS available, requires no integration. Use for ANYTHING longer than 3 paragraphs: email drafts, reports, analyses, summaries, action plans, weekly digests. Never render long content in chat — use open_canvas instead. To include custom visual charts/graphs in your canvas content, use these exact code block schemas:\n1. Bar chart: ```bar-chart\ntitle: Chart Title\nlabels: ["Mon", "Tue", ...]\nlabel: Label 1\ndata: [10, 20, ...]\nlabel: Label 2\ndata: [15, 25, ...]\n```\n2. Line chart: ```line-chart\ntitle: Chart Title\nlabels: ["Mon", "Tue", ...]\nlabel: Label 1\ndata: [10, 20, ...]\n```\n3. Pie/Donut chart: ```pie-chart\ntitle: Chart Title\nLabel 1: 10\nLabel 2: 20\n```',
     input_schema: {
       type: 'object',
       properties: {

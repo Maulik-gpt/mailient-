@@ -212,6 +212,7 @@ export function CanvasPanel({
           <AnimatePresence mode="wait">
             {isEmail ? (
               <motion.div key="email" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <MetaInsights type={canvasData.type} content={getTextContent()} />
                 {editMode ? (
                   <textarea
                     value={editedBody}
@@ -228,6 +229,7 @@ export function CanvasPanel({
               </motion.div>
             ) : (
               <motion.div key="doc" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <MetaInsights type={canvasData.type} content={getTextContent()} />
                 <MarkdownView content={canvasData.raw || (typeof canvasData.content === 'string' ? canvasData.content : '')} />
               </motion.div>
             )}
@@ -320,6 +322,418 @@ function FooterButton({
   );
 }
 
+// ─── Meta Insights Component ──────────────────────────────────────────────────
+
+function MetaInsights({ type, content }: { type: string; content: string }) {
+  const words = content.trim().split(/\s+/).filter(Boolean).length;
+  const minRead = Math.max(1, Math.ceil(words / 200));
+
+  const getTags = () => {
+    const tags = [`${minRead} min read`];
+    const lower = content.toLowerCase();
+    
+    if (type === 'email_draft' || type === 'reply') {
+      tags.push('Style-Matched');
+      tags.push('Draft Reply');
+    } else if (type === 'report') {
+      tags.push('Weekly Digest');
+      tags.push('Inbox Analysis');
+    } else if (type === 'analysis' || type === 'analytics') {
+      tags.push('Statistical');
+      tags.push('AI Audit');
+    } else if (type === 'action_plan') {
+      tags.push('Actionable');
+      tags.push('CRM Tasks');
+    } else {
+      tags.push('AI Memo');
+    }
+
+    if (lower.includes('urgent') || lower.includes('alert') || lower.includes('security')) {
+      tags.push('High Priority');
+    }
+    
+    if (lower.includes('revenue') || lower.includes('deal') || lower.includes('$')) {
+      tags.push('Revenue Deal');
+    }
+
+    return tags;
+  };
+
+  const tags = getTags();
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 mb-6 p-3 px-4 rounded-xl bg-white/[0.02] border border-white/[0.04] backdrop-blur-md">
+      <div className="flex items-center gap-1.5 text-[10px] font-bold text-white/30 uppercase tracking-widest mr-2 shrink-0">
+        <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+        Meta Insights
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {tags.map((tag, idx) => (
+          <span 
+            key={idx} 
+            className={cn(
+              "px-2.5 py-0.5 rounded-full text-[10px] font-semibold border transition-all duration-200",
+              tag === 'High Priority' 
+                ? "bg-red-500/10 border-red-500/25 text-red-300 animate-pulse"
+                : tag === 'Revenue Deal'
+                ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-300"
+                : "bg-white/[0.04] border-white/[0.06] text-white/60"
+            )}
+          >
+            {tag}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── YAML/Text Chart Parser ────────────────────────────────────────────────────
+
+interface ChartData {
+  type: 'bar' | 'line' | 'pie';
+  title?: string;
+  labels: string[];
+  datasets: {
+    label: string;
+    data: number[];
+    color?: string;
+  }[];
+}
+
+function parseChartContent(content: string, typeHint?: 'bar' | 'line' | 'pie'): ChartData | null {
+  try {
+    const lines = content.split('\n').map(l => l.trim()).filter(Boolean);
+    const data: Partial<ChartData> = {
+      type: typeHint || 'bar',
+      labels: [],
+      datasets: []
+    };
+
+    let currentDataset: any = null;
+
+    for (const line of lines) {
+      if (line.toLowerCase().startsWith('type:')) {
+        const t = line.split(':')[1].trim().toLowerCase();
+        if (t === 'bar' || t === 'line' || t === 'pie') {
+          data.type = t;
+        }
+      } else if (line.toLowerCase().startsWith('title:')) {
+        data.title = line.split(':').slice(1).join(':').trim().replace(/^['"]|['"]$/g, '');
+      } else if (line.toLowerCase().startsWith('labels:')) {
+        const val = line.split(':').slice(1).join(':').trim();
+        try {
+          data.labels = JSON.parse(val);
+        } catch {
+          data.labels = val.replace(/[\[\]"']/g, '').split(',').map(s => s.trim());
+        }
+      } else if (line.startsWith('-') || line.startsWith('dataset:')) {
+        // Ignored
+      } else if (line.toLowerCase().startsWith('label:')) {
+        currentDataset = { label: line.split(':')[1].trim().replace(/^['"]|['"]$/g, ''), data: [] };
+        data.datasets!.push(currentDataset);
+      } else if (line.toLowerCase().startsWith('values:') || line.toLowerCase().startsWith('data:')) {
+        const val = line.split(':').slice(1).join(':').trim();
+        let nums: number[] = [];
+        try {
+          nums = JSON.parse(val);
+        } catch {
+          nums = val.replace(/[\[\]"']/g, '').split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+        }
+        if (currentDataset) {
+          currentDataset.data = nums;
+        } else {
+          if (data.datasets!.length === 0) {
+            data.datasets!.push({ label: 'Value', data: nums });
+          } else {
+            data.datasets![0].data = nums;
+          }
+        }
+      } else if (line.includes(':')) {
+        const parts = line.split(':');
+        const k = parts[0].trim().replace(/^[-* ]+/, '');
+        const v = parseFloat(parts[1].trim());
+        if (!isNaN(v)) {
+          data.labels!.push(k);
+          if (data.datasets!.length === 0) {
+            data.datasets!.push({ label: 'Value', data: [] });
+          }
+          data.datasets![0].data.push(v);
+        }
+      }
+    }
+
+    if (data.labels!.length && data.datasets!.length) {
+      return data as ChartData;
+    }
+  } catch (e) {
+    console.error('Failed to parse chart', e);
+  }
+  return null;
+}
+
+// ─── Dynamic SVG Interactive Charts ────────────────────────────────────────────
+
+function InteractiveChart({ data }: { data: ChartData }) {
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+
+  if (data.type === 'pie') {
+    const values = data.datasets[0]?.data || [];
+    const total = values.reduce((sum, v) => sum + v, 0);
+    const colors = ['#a855f7', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#06b6d4'];
+
+    let accumulatedAngle = 0;
+    const radius = 70;
+    const strokeWidth = 24;
+    const center = 100;
+    const circumference = 2 * Math.PI * radius;
+
+    return (
+      <div className="my-6 p-6 rounded-2xl bg-white/[0.02] border border-white/[0.05] flex flex-col sm:flex-row items-center gap-8 backdrop-blur-md">
+        <div className="relative w-[180px] h-[180px] flex-shrink-0">
+          <svg viewBox="0 0 200 200" className="w-full h-full transform -rotate-90">
+            {values.map((v, idx) => {
+              const percentage = total > 0 ? v / total : 0;
+              const strokeDasharray = `${percentage * circumference} ${circumference}`;
+              const strokeDashoffset = -accumulatedAngle * circumference;
+              accumulatedAngle += percentage;
+
+              const isHovered = hoveredIdx === idx;
+
+              return (
+                <circle
+                  key={idx}
+                  cx={center}
+                  cy={center}
+                  r={radius}
+                  fill="transparent"
+                  stroke={colors[idx % colors.length]}
+                  strokeWidth={isHovered ? strokeWidth + 4 : strokeWidth}
+                  strokeDasharray={strokeDasharray}
+                  strokeDashoffset={strokeDashoffset}
+                  strokeLinecap="round"
+                  className="transition-all duration-300 cursor-pointer origin-center hover:scale-[1.02]"
+                  onMouseEnter={() => setHoveredIdx(idx)}
+                  onMouseLeave={() => setHoveredIdx(null)}
+                />
+              );
+            })}
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+            <span className="text-[10px] text-white/30 font-semibold uppercase tracking-wider">Total</span>
+            <span className="text-[20px] font-bold text-white tracking-tight">{total}</span>
+          </div>
+        </div>
+
+        <div className="flex-1 flex flex-col gap-3 w-full">
+          {data.title && <h4 className="text-[13px] font-bold text-white/90 mb-1">{data.title}</h4>}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {data.labels.map((label, idx) => {
+              const val = values[idx] || 0;
+              const pct = total > 0 ? Math.round((val / total) * 100) : 0;
+              const isHovered = hoveredIdx === idx;
+
+              return (
+                <div
+                  key={idx}
+                  className={cn(
+                    "flex items-center justify-between p-2 rounded-xl border transition-all duration-200 cursor-pointer",
+                    isHovered 
+                      ? "bg-white/[0.06] border-white/[0.12] scale-[1.02]" 
+                      : "bg-white/[0.01] border-transparent"
+                  )}
+                  onMouseEnter={() => setHoveredIdx(idx)}
+                  onMouseLeave={() => setHoveredIdx(null)}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: colors[idx % colors.length] }} />
+                    <span className="text-[12px] font-medium text-white/70 truncate">{label}</span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-[12px] font-semibold text-white/90">{val}</span>
+                    <span className="text-[10px] text-white/40 font-mono">({pct}%)</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const labels = data.labels;
+  const datasets = data.datasets;
+  const colors = ['#3b82f6', '#10b981', '#a855f7', '#f59e0b', '#ec4899'];
+
+  const allValues = datasets.flatMap(d => d.data);
+  const maxVal = Math.max(...allValues, 1);
+  const minVal = 0;
+  const range = maxVal - minVal;
+  const padding = range * 0.1;
+  const gridMax = Math.ceil((maxVal + padding) / 5) * 5;
+
+  const chartHeight = 160;
+  const chartWidth = 380;
+  const paddingX = 40;
+  const paddingY = 20;
+
+  const getX = (index: number) => paddingX + (index * (chartWidth - paddingX * 2)) / Math.max(labels.length - 1, 1);
+  const getY = (value: number) => chartHeight - paddingY - ((value - minVal) * (chartHeight - paddingY * 2)) / gridMax;
+
+  return (
+    <div className="my-6 p-6 rounded-2xl bg-white/[0.02] border border-white/[0.05] flex flex-col gap-4 backdrop-blur-md">
+      {data.title && (
+        <div className="flex items-center justify-between">
+          <h4 className="text-[13px] font-bold text-white/95">{data.title}</h4>
+          <div className="flex items-center gap-3">
+            {datasets.map((d, idx) => (
+              <div key={idx} className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: colors[idx % colors.length] }} />
+                <span className="text-[10px] text-white/50 font-medium">{d.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="relative w-full h-[180px]">
+        <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-full">
+          {[0, 1, 2, 3, 4].map(i => {
+            const val = (gridMax / 4) * i;
+            const y = getY(val);
+            return (
+              <g key={i} className="opacity-25">
+                <line x1={paddingX} y1={y} x2={chartWidth - paddingX} y2={y} stroke="rgba(255,255,255,0.15)" strokeWidth={0.5} strokeDasharray="3 3" />
+                <text x={paddingX - 8} y={y + 3} fill="rgba(255,255,255,0.4)" fontSize={8} textAnchor="end" className="font-mono">{Math.round(val)}</text>
+              </g>
+            );
+          })}
+
+          {data.type === 'bar' && datasets.map((d, dIdx) => {
+            const barWidth = Math.max(2, (chartWidth - paddingX * 2) / (labels.length * 3));
+            const groupOffset = (dIdx - (datasets.length - 1) / 2) * (barWidth + 2);
+
+            return d.data.map((val, idx) => {
+              const x = getX(idx) + groupOffset;
+              const y = getY(val);
+              const height = chartHeight - paddingY - y;
+              const isHovered = hoveredIdx === idx;
+
+              return (
+                <rect
+                  key={`${dIdx}-${idx}`}
+                  x={x - barWidth / 2}
+                  y={y}
+                  width={barWidth}
+                  height={Math.max(2, height)}
+                  rx={2}
+                  fill={colors[dIdx % colors.length]}
+                  fillOpacity={isHovered ? 0.95 : 0.75}
+                  className="transition-all duration-200 cursor-pointer"
+                  onMouseEnter={() => setHoveredIdx(idx)}
+                  onMouseLeave={() => setHoveredIdx(null)}
+                />
+              );
+            });
+          })}
+
+          {data.type === 'line' && datasets.map((d, dIdx) => {
+            let pathData = '';
+            d.data.forEach((val, idx) => {
+              const x = getX(idx);
+              const y = getY(val);
+              if (idx === 0) pathData += `M ${x} ${y}`;
+              else pathData += ` L ${x} ${y}`;
+            });
+
+            return (
+              <g key={dIdx}>
+                <path
+                  d={`${pathData} L ${getX(labels.length - 1)} ${chartHeight - paddingY} L ${getX(0)} ${chartHeight - paddingY} Z`}
+                  fill={`url(#gradient-${dIdx})`}
+                  className="opacity-10"
+                />
+                <defs>
+                  <linearGradient id={`gradient-${dIdx}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={colors[dIdx % colors.length]} />
+                    <stop offset="100%" stopColor="transparent" />
+                  </linearGradient>
+                </defs>
+
+                <path
+                  d={pathData}
+                  fill="transparent"
+                  stroke={colors[dIdx % colors.length]}
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                />
+
+                {d.data.map((val, idx) => {
+                  const x = getX(idx);
+                  const y = getY(val);
+                  const isHovered = hoveredIdx === idx;
+
+                  return (
+                    <circle
+                      key={idx}
+                      cx={x}
+                      cy={y}
+                      r={isHovered ? 4.5 : 3}
+                      fill={colors[dIdx % colors.length]}
+                      stroke="#0c0c0d"
+                      strokeWidth={1.5}
+                      className="transition-all duration-150 cursor-pointer"
+                      onMouseEnter={() => setHoveredIdx(idx)}
+                      onMouseLeave={() => setHoveredIdx(null)}
+                    />
+                  );
+                })}
+              </g>
+            );
+          })}
+
+          {labels.map((label, idx) => {
+            const x = getX(idx);
+            const isHovered = hoveredIdx === idx;
+            return (
+              <text
+                key={idx}
+                x={x}
+                y={chartHeight - 4}
+                fill={isHovered ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.35)'}
+                fontSize={8}
+                textAnchor="middle"
+                className="font-medium transition-colors duration-150"
+              >
+                {label}
+              </text>
+            );
+          })}
+        </svg>
+
+        {hoveredIdx !== null && (
+          <div 
+            className="absolute z-10 px-2.5 py-1.5 rounded-lg bg-black/90 border border-white/10 text-[10px] text-white/90 flex flex-col gap-1 pointer-events-none shadow-lg"
+            style={{
+              left: `${Math.min(getX(hoveredIdx) * 0.9, 240)}px`,
+              top: '10px'
+            }}
+          >
+            <span className="font-bold text-white/50 uppercase">{labels[hoveredIdx]}</span>
+            {datasets.map((d, dIdx) => (
+              <div key={dIdx} className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: colors[dIdx % colors.length] }} />
+                <span>{d.label}: <strong>{d.data[hoveredIdx]}</strong></span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Beautiful markdown renderer ────────────────────────────────────────────────
 
 function MarkdownView({ content }: { content: string }) {
@@ -371,8 +785,18 @@ function MarkdownView({ content }: { content: string }) {
             {children}
           </blockquote>
         ),
-        code: ({ inline, children, ...props }: any) =>
-          inline ? (
+        code: ({ inline, children, ...props }: any) => {
+          const rawText = String(children);
+          const lang = props.className || '';
+
+          if (!inline && (lang.includes('chart') || lang.includes('graph') || lang.includes('piechart') || lang.includes('pie-chart'))) {
+            const parsed = parseChartContent(rawText, lang.includes('pie') ? 'pie' : lang.includes('line') ? 'line' : 'bar');
+            if (parsed) {
+              return <InteractiveChart data={parsed} />;
+            }
+          }
+
+          return inline ? (
             <code className="px-1.5 py-0.5 rounded-md bg-white/8 text-[12.5px] font-mono text-white/75 border border-white/10">
               {children}
             </code>
@@ -380,7 +804,8 @@ function MarkdownView({ content }: { content: string }) {
             <pre className="my-4 rounded-xl bg-[#161618] border border-white/[0.07] overflow-x-auto">
               <code className="block p-4 text-[12.5px] font-mono text-white/75 leading-relaxed">{children}</code>
             </pre>
-          ),
+          );
+        },
         hr: () => <hr className="my-6 border-white/[0.08]" />,
         a: ({ href, children }) => (
           <a href={href} target="_blank" rel="noopener noreferrer"
