@@ -9,10 +9,67 @@
  */
 
 import { getSupabaseAdmin } from '../supabase.js';
-import { decrypt } from '../crypto.js';
+import { decrypt, encrypt } from '../crypto.js';
 import type { ToolSchema } from './engine';
 
 // ── Token helpers ──────────────────────────────────────────────────────────────
+
+/**
+ * Refresh a Google access token using the stored refresh token.
+ * Stores the new access token back in user_tokens.
+ * Returns the new access token, or null if refresh fails.
+ */
+async function refreshGoogleToken(userId: string): Promise<string | null> {
+  try {
+    const supabase = getSupabaseAdmin();
+    const uid = userId.toLowerCase();
+
+    const { data } = await supabase
+      .from('user_tokens')
+      .select('encrypted_refresh_token')
+      .or(`user_id.ilike."${uid}",google_email.ilike."${uid}"`)
+      .maybeSingle();
+
+    if (!data?.encrypted_refresh_token) return null;
+
+    const refreshToken = decrypt(data.encrypted_refresh_token);
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    if (!clientId || !clientSecret) return null;
+
+    const res = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        refresh_token: refreshToken,
+        grant_type: 'refresh_token',
+      }),
+      signal: AbortSignal.timeout(8000),
+    });
+
+    if (!res.ok) return null;
+
+    const json = await res.json();
+    const newToken = json.access_token;
+    if (!newToken) return null;
+
+    // Persist new token
+    await supabase
+      .from('user_tokens')
+      .update({
+        encrypted_access_token: encrypt(newToken),
+        access_token_expires_at: new Date(Date.now() + (json.expires_in ?? 3600) * 1000).toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .or(`user_id.ilike."${uid}",google_email.ilike."${uid}"`);
+
+    return newToken;
+  } catch {
+    return null;
+  }
+}
 
 async function getGmailToken(userId: string): Promise<string | null> {
   try {
@@ -371,16 +428,19 @@ export async function executeTool(
 // ── Implementations ────────────────────────────────────────────────────────────
 
 async function searchGmail(userId: string, input: any): Promise<ToolResult> {
-  const token = await getGmailToken(userId);
+  let token = await getGmailToken(userId);
   if (!token) return { output: 'Gmail is not connected. Ask the user to connect Gmail in Settings → Integrations.' };
 
   const max = Math.min(input.maxResults || 10, 25);
   const params = new URLSearchParams({ q: input.query, maxResults: String(max) });
+  const url = `https://gmail.googleapis.com/gmail/v1/users/me/messages?${params}`;
 
-  const listRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?${params}`, {
-    headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000),
-  });
-  if (!listRes.ok) return { output: `Gmail search failed (${listRes.status}). Token may be expired.` };
+  let listRes = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) });
+  if (listRes.status === 401) {
+    const newToken = await refreshGoogleToken(userId);
+    if (newToken) { token = newToken; listRes = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) }); }
+  }
+  if (!listRes.ok) return { output: `Gmail search failed (${listRes.status}).` };
 
   const listData = await listRes.json();
   const messages: any[] = listData.messages || [];
@@ -409,13 +469,15 @@ async function searchGmail(userId: string, input: any): Promise<ToolResult> {
 }
 
 async function readEmail(userId: string, input: any): Promise<ToolResult> {
-  const token = await getGmailToken(userId);
+  let token = await getGmailToken(userId);
   if (!token) return { output: 'Gmail is not connected.' };
 
-  const res = await fetch(
-    `https://gmail.googleapis.com/gmail/v1/users/me/messages/${input.messageId}?format=full`,
-    { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) }
-  );
+  const url = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${input.messageId}?format=full`;
+  let res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) });
+  if (res.status === 401) {
+    const newToken = await refreshGoogleToken(userId);
+    if (newToken) { token = newToken; res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) }); }
+  }
   if (!res.ok) return { output: `Could not read email (${res.status}).` };
 
   const m = await res.json();
@@ -440,14 +502,16 @@ async function readEmail(userId: string, input: any): Promise<ToolResult> {
 }
 
 async function getSentEmails(userId: string, input: any): Promise<ToolResult> {
-  const token = await getGmailToken(userId);
+  let token = await getGmailToken(userId);
   if (!token) return { output: 'Gmail is not connected.' };
 
   const limit = Math.min(input.limit || 30, 50);
-  const listRes = await fetch(
-    `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${limit}&labelIds=SENT`,
-    { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) }
-  );
+  const url = `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${limit}&labelIds=SENT`;
+  let listRes = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) });
+  if (listRes.status === 401) {
+    const newToken = await refreshGoogleToken(userId);
+    if (newToken) { token = newToken; listRes = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) }); }
+  }
   if (!listRes.ok) return { output: `Could not fetch sent emails (${listRes.status}).` };
 
   const listData = await listRes.json();
@@ -474,18 +538,31 @@ async function getSentEmails(userId: string, input: any): Promise<ToolResult> {
 }
 
 async function draftReply(userId: string, input: any): Promise<ToolResult> {
-  const token = await getGmailToken(userId);
+  let token = await getGmailToken(userId);
   if (!token) return { output: 'Gmail is not connected.' };
 
   const subject = input.subject || 'Re: (no subject)';
   const raw = buildRaw(input.to, subject, input.body, input.threadId, input.inReplyToMessageId);
+  const draftBody = JSON.stringify({ message: { raw, threadId: input.threadId } });
 
-  const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/drafts', {
+  let res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/drafts', {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message: { raw, threadId: input.threadId } }),
+    body: draftBody,
     signal: AbortSignal.timeout(12000),
   });
+  if (res.status === 401) {
+    const newToken = await refreshGoogleToken(userId);
+    if (newToken) {
+      token = newToken;
+      res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/drafts', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: draftBody,
+        signal: AbortSignal.timeout(12000),
+      });
+    }
+  }
 
   if (!res.ok) {
     const err = await res.text().catch(() => '');
@@ -518,20 +595,32 @@ async function draftReply(userId: string, input: any): Promise<ToolResult> {
 }
 
 async function sendEmail(userId: string, input: any): Promise<ToolResult> {
-  const token = await getGmailToken(userId);
+  let token = await getGmailToken(userId);
   if (!token) return { output: 'Gmail is not connected.' };
 
   const raw = buildRaw(input.to, input.subject, input.body, input.threadId);
+  const reqBody: Record<string, any> = { raw };
+  if (input.threadId) reqBody.threadId = input.threadId;
+  const sendBodyStr = JSON.stringify(reqBody);
 
-  const body: Record<string, any> = { raw };
-  if (input.threadId) body.threadId = input.threadId;
-
-  const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+  let res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    body: sendBodyStr,
     signal: AbortSignal.timeout(12000),
   });
+  if (res.status === 401) {
+    const newToken = await refreshGoogleToken(userId);
+    if (newToken) {
+      token = newToken;
+      res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: sendBodyStr,
+        signal: AbortSignal.timeout(12000),
+      });
+    }
+  }
 
   if (!res.ok) {
     const err = await res.text().catch(() => '');
@@ -543,7 +632,7 @@ async function sendEmail(userId: string, input: any): Promise<ToolResult> {
 }
 
 async function scheduleMeeting(userId: string, input: any): Promise<ToolResult> {
-  const token = await getGcalToken(userId);
+  let token = await getGcalToken(userId);
   if (!token) return { output: 'Google Calendar is not connected. Ask the user to connect it in Settings → Integrations.' };
 
   const event: Record<string, any> = {
@@ -560,15 +649,27 @@ async function scheduleMeeting(userId: string, input: any): Promise<ToolResult> 
     event.attendees = input.attendees.map((e: string) => ({ email: e }));
   }
 
-  const res = await fetch(
-    'https://www.googleapis.com/calendar/v3/calendars/primary/events?conferenceDataVersion=1&sendUpdates=all',
-    {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(event),
-      signal: AbortSignal.timeout(12000),
+  const calUrl = 'https://www.googleapis.com/calendar/v3/calendars/primary/events?conferenceDataVersion=1&sendUpdates=all';
+  const eventBodyStr = JSON.stringify(event);
+
+  let res = await fetch(calUrl, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: eventBodyStr,
+    signal: AbortSignal.timeout(12000),
+  });
+  if (res.status === 401) {
+    const newToken = await refreshGoogleToken(userId);
+    if (newToken) {
+      token = newToken;
+      res = await fetch(calUrl, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: eventBodyStr,
+        signal: AbortSignal.timeout(12000),
+      });
     }
-  );
+  }
 
   if (!res.ok) {
     const err = await res.text().catch(() => '');
@@ -592,7 +693,7 @@ async function scheduleMeeting(userId: string, input: any): Promise<ToolResult> 
 }
 
 async function getCalendarEvents(userId: string, input: any): Promise<ToolResult> {
-  const token = await getGcalToken(userId);
+  let token = await getGcalToken(userId);
   if (!token) return { output: 'Google Calendar is not connected.' };
 
   const days = input.daysAhead || 7;
@@ -608,9 +709,12 @@ async function getCalendarEvents(userId: string, input: any): Promise<ToolResult
     maxResults: String(max),
   });
 
-  const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`, {
-    headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(10000),
-  });
+  const calEventsUrl = `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`;
+  let res = await fetch(calEventsUrl, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(10000) });
+  if (res.status === 401) {
+    const newToken = await refreshGoogleToken(userId);
+    if (newToken) { token = newToken; res = await fetch(calEventsUrl, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(10000) }); }
+  }
   if (!res.ok) return { output: `Calendar fetch failed (${res.status}).` };
 
   const data = await res.json();
