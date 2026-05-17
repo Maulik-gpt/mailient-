@@ -1829,6 +1829,27 @@ export default function ChatInterface({
                   : cv.markdown;
                 setCanvasData({ type: cv.type || 'notes', title: cv.title, content: canvasContent, raw: cv.markdown });
                 setIsCanvasOpen(true);
+
+                // Persist the canvas content as a result card on the active message meta object
+                setMessages(msgs => msgs.map(m => {
+                  if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+                  return {
+                    ...m,
+                    meta: {
+                      ...(m.meta || {}),
+                      result: {
+                        type: cv.type || 'notes',
+                        title: cv.title || 'Action Results Summary',
+                        canvasData: {
+                          type: cv.type || 'notes',
+                          title: cv.title || 'Action Results Summary',
+                          content: canvasContent,
+                          raw: cv.markdown
+                        }
+                      }
+                    }
+                  };
+                }));
               }
               break;
             }
@@ -1938,6 +1959,26 @@ export default function ChatInterface({
 
               setMessages(prev => prev.map(m => {
                 if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+                
+                // If this step produced canvas content, persist it under the message result metadata
+                let extraMeta = {};
+                if (data.canvasContent) {
+                  const cv = data.canvasContent;
+                  const canvasContent = cv.type === 'email_draft' && cv.meta ? cv.meta : cv.markdown;
+                  extraMeta = {
+                    result: {
+                      type: cv.type || 'notes',
+                      title: cv.title || 'Action Results Summary',
+                      canvasData: {
+                        type: cv.type || 'notes',
+                        title: cv.title || 'Action Results Summary',
+                        content: canvasContent,
+                        raw: cv.markdown
+                      }
+                    }
+                  };
+                }
+
                 return {
                   ...m,
                   content: { text: finalContent.trim(), list: [], footer: '' },
@@ -1945,7 +1986,8 @@ export default function ChatInterface({
                     ...(m.meta || {}),
                     liveThinking: liveThinkingText || (m.meta as any)?.liveThinking,
                     thinkingComplete: finalContent.trim().length > 0 ? true : (m.meta as any)?.thinkingComplete,
-                    agentSteps: currentAgentSteps
+                    agentSteps: currentAgentSteps,
+                    ...extraMeta
                   }
                 };
               }));
@@ -3728,31 +3770,7 @@ export default function ChatInterface({
                                       </div>
                                     )}
 
-                                    {/* Action buttons — AFTER all cards */}
-                                    {msg.role === 'assistant' && !(msg as AgentMessage).meta?.limitReached && !(msg as AgentMessage).meta?.isStreaming && (
-                                      <MessageActionButtons
-                                        msg={msg}
-                                        isLoading={isLoading}
-                                        onFeedback={(type, id) => setFeedbackModal({ isOpen: true, type, msgId: id })}
-                                        onRegenerate={handleRegenerateClick}
-                                        onShare={async () => {
-                                          if (!currentConversationId || messages.length === 0) return null;
-                                          try {
-                                            const res = await fetch('/api/agent-talk/share', {
-                                              method: 'POST',
-                                              headers: { 'Content-Type': 'application/json' },
-                                              body: JSON.stringify({
-                                                conversationId: currentConversationId,
-                                                messages,
-                                                title: chatTitle || messages[0]?.content?.toString?.()?.slice(0, 60) || 'Conversation',
-                                              }),
-                                            });
-                                            const data = await res.json();
-                                            return data.shareUrl || null;
-                                          } catch { return null; }
-                                        }}
-                                      />
-                                    )}
+
 
                                     {msg.role === 'assistant' && msg.meta?.limitReached && (
                                       <div className="flex flex-col gap-3 mt-4">
@@ -3882,6 +3900,32 @@ export default function ChatInterface({
                                             setCanvasData((msg as AgentMessage).meta!.result!.canvasData);
                                             setIsCanvasOpen(true);
                                           }
+                                        }}
+                                      />
+                                    )}
+
+                                    {/* Action buttons — AFTER all cards */}
+                                    {msg.role === 'assistant' && !(msg as AgentMessage).meta?.limitReached && !(msg as AgentMessage).meta?.isStreaming && (
+                                      <MessageActionButtons
+                                        msg={msg}
+                                        isLoading={isLoading}
+                                        onFeedback={(type, id) => setFeedbackModal({ isOpen: true, type, msgId: id })}
+                                        onRegenerate={handleRegenerateClick}
+                                        onShare={async () => {
+                                          if (!currentConversationId || messages.length === 0) return null;
+                                          try {
+                                            const res = await fetch('/api/agent-talk/share', {
+                                              method: 'POST',
+                                              headers: { 'Content-Type': 'application/json' },
+                                              body: JSON.stringify({
+                                                conversationId: currentConversationId,
+                                                messages,
+                                                title: chatTitle || messages[0]?.content?.toString?.()?.slice(0, 60) || 'Conversation',
+                                              }),
+                                            });
+                                            const data = await res.json();
+                                            return data.shareUrl || null;
+                                          } catch { return null; }
                                         }}
                                       />
                                     )}
