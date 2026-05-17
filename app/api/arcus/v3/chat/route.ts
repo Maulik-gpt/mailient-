@@ -1,69 +1,50 @@
 /**
- * Arcus V3 — Conversational Chat Endpoint
+ * Arcus V3 — Agentic Chat Endpoint
  * POST /api/arcus/v3/chat
  *
- * Accepts a user message, builds full context (Gmail, GCal, Slack, Notion),
- * calls the LLM with the conversational prompt, and streams SSE events back.
+ * Real agentic loop using Claude tool_use via OpenRouter.
+ * Streams SSE events matching useArcusAgentStream's expected format.
  *
- * SSE event format matches what useArcusAgentStream expects:
- *   event: run_start   data: { runId, message }
- *   event: thinking    data: { status }
- *   event: tool_call   data: { tool, params }
- *   event: tool_result data: { tool, success, summary }
- *   event: message     data: { content, canvasContent? }
- *   event: done        data: { runId, durationMs }
- *   event: error       data: { message }
+ * Event types:
+ *   run_start        → { runId, message }
+ *   thinking         → { status }
+ *   tool_call        → { tool, params, iteration }
+ *   tool_result      → { tool, success, summary, iteration }
+ *   message          → { content, canvasContent? }
+ *   error            → { message }
+ *   done             → { runId, durationMs, totalSteps }
  */
 
 import { NextRequest } from 'next/server';
 import { auth } from '../../../../../lib/auth.js';
-import { buildContext } from '../../../../../lib/arcus-v3/context-builder';
-import { buildConversationalPrompt } from '../../../../../lib/arcus-v3/prompts/conversational';
-import { isAllowedAction } from '../../../../../lib/arcus-v3/whitelist';
-import { executeStep } from '../../../../../lib/arcus-v3/dispatcher';
-import { auditLogger } from '../../../../../lib/audit-logger.js';
+import { getSupabaseAdmin } from '../../../../../lib/supabase.js';
+import { decrypt } from '../../../../../lib/crypto.js';
+import { ARCUS_TOOLS } from '../../../../../lib/arcus-v3/tools/definitions';
+import { executeTool } from '../../../../../lib/arcus-v3/tools/executor';
+import { storeMessage, getConversationHistory } from '../../../../../lib/arcus-v3/memory';
 import crypto from 'crypto';
-import { z } from 'zod';
 
 export const maxDuration = 60;
 
-// ── Output schema ──────────────────────────────────────────────────────────────
+const MAX_ITERATIONS = 6;
 
-const ActionSchema = z.object({
-  app: z.enum(['gcal', 'slack', 'notion', 'calcom', 'gmail']),
-  action: z.string(),
-  params: z.record(z.string(), z.unknown()),
-  humanReadable: z.string(),
-  requiresApproval: z.boolean().default(false),
-});
-
-const ConversationalOutputSchema = z.object({
-  reply: z.string(),
-  actions: z.array(ActionSchema).default([]),
-  canvasContent: z
-    .object({
-      title: z.string(),
-      type: z.enum(['document', 'report', 'sequence', 'summary']),
-      markdown: z.string(),
-    })
-    .nullable()
-    .default(null),
-});
-
-// ── Helpers ────────────────────────────────────────────────────────────────────
+// ── SSE helpers ────────────────────────────────────────────────────────────────
 
 function sseEvent(type: string, data: unknown): string {
   return `event: ${type}\ndata: ${JSON.stringify(data)}\n\n`;
 }
 
-async function callLLM(system: string, user: string): Promise<string> {
+// ── OpenRouter call ────────────────────────────────────────────────────────────
+
+async function callLLM(
+  messages: Array<{ role: string; content: any }>,
+  tools: any[]
+): Promise<any> {
   const keys = [
     process.env.OPENROUTER_API_KEY,
     process.env.OPENROUTER_API_KEY2,
     process.env.OPENROUTER_API_KEY3,
   ].filter(Boolean);
-
-  if (!keys.length) throw new Error('No OpenRouter API keys configured');
 
   for (const key of keys) {
     try {
@@ -72,31 +53,123 @@ async function callLLM(system: string, user: string): Promise<string> {
         headers: {
           Authorization: `Bearer ${key}`,
           'HTTP-Referer': 'https://mailient.xyz',
-          'X-Title': 'Arcus V3',
+          'X-Title': 'Arcus AI',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           model: 'anthropic/claude-3.5-sonnet',
-          messages: [
-            { role: 'system', content: system },
-            { role: 'user', content: user },
-          ],
+          messages,
+          tools,
+          max_tokens: 4000,
           temperature: 0.3,
-          max_tokens: 2000,
-          response_format: { type: 'json_object' },
         }),
-        signal: AbortSignal.timeout(30000),
+        signal: AbortSignal.timeout(35000),
       });
 
-      if (!res.ok) continue;
+      if (!res.ok) {
+        const body = await res.text().catch(() => '');
+        console.error(`[Arcus] OpenRouter ${res.status}:`, body.slice(0, 200));
+        continue;
+      }
+
       const data = await res.json();
-      return data.choices?.[0]?.message?.content || '';
-    } catch {
+      return data.choices?.[0]?.message || null;
+    } catch (err) {
+      console.error('[Arcus] LLM call error:', (err as Error).message);
       continue;
     }
   }
 
-  throw new Error('All OpenRouter API keys exhausted');
+  throw new Error('All API keys exhausted or timed out.');
+}
+
+// ── User context helper ────────────────────────────────────────────────────────
+
+async function getUserIntegrations(userId: string): Promise<string> {
+  try {
+    const supabase = getSupabaseAdmin();
+    const { data } = await supabase
+      .from('arcus_integrations')
+      .select('provider')
+      .eq('user_id', userId);
+    const connected = (data || []).map((r: any) => r.provider);
+    return connected.length
+      ? `Connected integrations: ${connected.join(', ')}.`
+      : 'No integrations connected yet.';
+  } catch {
+    return '';
+  }
+}
+
+async function getRecentEmailSummary(userId: string): Promise<string> {
+  try {
+    const supabase = getSupabaseAdmin();
+    const { data } = await supabase
+      .from('arcus_integrations')
+      .select('access_token')
+      .eq('user_id', userId)
+      .eq('provider', 'gmail')
+      .maybeSingle();
+    if (!data?.access_token) return '';
+    const token = decrypt(data.access_token);
+
+    const res = await fetch(
+      'https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=10&labelIds=INBOX&q=is:unread',
+      { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) }
+    );
+    if (!res.ok) return '';
+    const listData = await res.json();
+    const count = listData.resultSizeEstimate || 0;
+    return `You have approximately ${count} unread emails in your inbox.`;
+  } catch {
+    return '';
+  }
+}
+
+// ── Content helpers ────────────────────────────────────────────────────────────
+
+function extractTextFromContent(content: any): string {
+  if (typeof content === 'string') return content;
+  if (Array.isArray(content)) {
+    return content
+      .filter((b: any) => b.type === 'text')
+      .map((b: any) => b.text || '')
+      .join('\n');
+  }
+  return '';
+}
+
+function hasToolUse(content: any): boolean {
+  if (!Array.isArray(content)) return false;
+  return content.some((b: any) => b.type === 'tool_use');
+}
+
+function getToolUseBlocks(content: any): any[] {
+  if (!Array.isArray(content)) return [];
+  return content.filter((b: any) => b.type === 'tool_use');
+}
+
+// ── System prompt ──────────────────────────────────────────────────────────────
+
+function buildSystemPrompt(integrationInfo: string, emailSummary: string, userName: string): string {
+  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  return `You are Arcus, an intelligent AI assistant built into Mailient — an email and productivity app.
+
+Today is ${today}. The user's name is ${userName || 'there'}.
+
+${integrationInfo}
+${emailSummary}
+
+Your job is to help users manage their inbox, draft replies, schedule meetings, update notes, and stay on top of their work. You have access to real tools — use them proactively when the user asks about emails, meetings, or notes.
+
+Guidelines:
+- When the user asks about emails, ALWAYS use search_gmail or read_email first. Don't guess.
+- When asked to draft or write a reply, use draft_reply to save it to Gmail. Then open_canvas to show the draft.
+- For long content (reports, summaries, email drafts), always use open_canvas.
+- Be concise in chat. Let the canvas hold the detailed content.
+- If an integration isn't connected, tell the user how to connect it (Settings → Integrations).
+- Never fabricate email content. Only report what you actually find with tools.
+- Chain tools naturally: search → read → draft → canvas.`;
 }
 
 // ── Main handler ───────────────────────────────────────────────────────────────
@@ -107,11 +180,18 @@ export async function POST(request: NextRequest) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
   }
   const userId = session.user.email.toLowerCase();
+  const userName = session.user.name?.split(' ')[0] || '';
 
-  let body: { message?: string; history?: Array<{ role: string; content: string }> } = {};
-  try { body = await request.json(); } catch { /* empty body */ }
+  let body: {
+    message?: string;
+    history?: Array<{ role: string; content: string }>;
+    conversationId?: string;
+  } = {};
+  try {
+    body = await request.json();
+  } catch { /* empty body */ }
 
-  const { message, history = [] } = body;
+  const { message, history = [], conversationId } = body;
   if (!message?.trim()) {
     return new Response(JSON.stringify({ error: 'message is required' }), { status: 400 });
   }
@@ -127,68 +207,150 @@ export async function POST(request: NextRequest) {
       try {
         emit('run_start', { runId, message });
 
-        // 1. Build context (Gmail + GCal + Slack + Notion)
-        emit('thinking', { status: 'Reading your inbox and calendar…' });
-        const context = await buildContext(userId, 'agentic');
-        context.userMessage = message;
-        context.conversationHistory = history
-          .filter(h => h.role === 'user' || h.role === 'assistant')
-          .slice(-10) as Array<{ role: 'user' | 'assistant'; content: string }>;
+        // ── 1. Load context ──────────────────────────────────────────────────
+        emit('thinking', { status: 'Loading your workspace context…' });
 
-        // 2. Build prompt + call LLM
-        emit('thinking', { status: 'Reasoning…' });
-        const prompt = buildConversationalPrompt(context);
-        const raw = await callLLM(prompt.system, prompt.user);
+        const [integrationInfo, emailSummary, dbHistory] = await Promise.all([
+          getUserIntegrations(userId),
+          getRecentEmailSummary(userId),
+          conversationId
+            ? getConversationHistory(userId, conversationId, 20)
+            : Promise.resolve([]),
+        ]);
 
-        // 3. Parse output
-        let parsed: unknown;
-        try { parsed = JSON.parse(raw); }
-        catch { parsed = { reply: raw, actions: [], canvasContent: null }; }
+        // Merge: DB history (cross-session) + client history (in-session), deduplicate by position
+        // Client history takes precedence since it's the most recent state
+        const baseHistory: Array<{ role: 'user' | 'assistant'; content: string }> =
+          history.length > 0
+            ? (history as Array<{ role: 'user' | 'assistant'; content: string }>).slice(-20)
+            : dbHistory.slice(-20);
 
-        const result = ConversationalOutputSchema.safeParse(parsed);
-        const output = result.success
-          ? result.data
-          : { reply: raw || 'Something went wrong. Please try again.', actions: [], canvasContent: null };
+        // ── 2. Build messages for LLM ────────────────────────────────────────
+        const systemPrompt = buildSystemPrompt(integrationInfo, emailSummary, userName);
 
-        // 4. Execute auto-approved actions (requiresApproval === false)
-        const autoActions = output.actions.filter(a => !a.requiresApproval && isAllowedAction(a.app, a.action));
-        const pendingActions = output.actions.filter(a => a.requiresApproval || !isAllowedAction(a.app, a.action));
+        const llmMessages: Array<{ role: string; content: any }> = [
+          ...baseHistory.map(h => ({ role: h.role, content: h.content })),
+          { role: 'user', content: message },
+        ];
 
-        for (const action of autoActions) {
-          emit('tool_call', { tool: `${action.app}.${action.action}`, params: action.params });
-          try {
-            await executeStep(
-              { app: action.app, action: action.action, params: action.params },
-              userId
-            );
-            emit('tool_result', { tool: `${action.app}.${action.action}`, success: true, summary: action.humanReadable });
-            await auditLogger.log(userId, `arcus.chat.${action.app}.${action.action}`, { params: action.params });
-          } catch (err) {
-            emit('tool_result', { tool: `${action.app}.${action.action}`, success: false, summary: (err as Error).message });
+        // ── 3. Agentic loop ──────────────────────────────────────────────────
+        emit('thinking', { status: 'Reasoning about your request…' });
+
+        let iteration = 0;
+        let finalText = '';
+        let canvasContent: { title: string; type: string; markdown: string; meta?: Record<string, any> } | null = null;
+        let totalSteps = 0;
+
+        // Prepend system as first user message since OpenRouter needs system role
+        const messagesWithSystem = [
+          { role: 'system', content: systemPrompt },
+          ...llmMessages,
+        ];
+
+        while (iteration < MAX_ITERATIONS) {
+          const assistantMsg = await callLLM(messagesWithSystem, ARCUS_TOOLS);
+          if (!assistantMsg) throw new Error('LLM returned empty response.');
+
+          // Add assistant's response to message history for next iteration
+          messagesWithSystem.push({
+            role: 'assistant',
+            content: assistantMsg.content,
+          });
+
+          const toolBlocks = getToolUseBlocks(assistantMsg.content);
+          const textContent = extractTextFromContent(assistantMsg.content);
+
+          if (!hasToolUse(assistantMsg.content)) {
+            // No more tool calls — this is the final text response
+            finalText = textContent;
+            break;
           }
-        }
 
-        // Emit pending actions needing approval
-        for (const action of pendingActions) {
-          if (isAllowedAction(action.app, action.action)) {
-            emit('approval_required', {
-              tool: `${action.app}.${action.action}`,
-              params: action.params,
-              description: action.humanReadable,
+          // Execute each tool call
+          const toolResults: Array<{ type: string; tool_use_id: string; content: string }> = [];
+
+          for (const toolBlock of toolBlocks) {
+            totalSteps++;
+            const toolName = toolBlock.name;
+            const toolInput = toolBlock.input || {};
+
+            emit('tool_call', {
+              tool: toolName,
+              params: toolInput,
+              iteration,
             });
+
+            try {
+              const result = await executeTool(toolName, toolInput, userId);
+
+              // Capture canvas data if tool returned it
+              if (result.canvasData) {
+                canvasContent = result.canvasData;
+              }
+
+              emit('tool_result', {
+                tool: toolName,
+                success: true,
+                summary: result.output.slice(0, 200),
+                iteration,
+              });
+
+              toolResults.push({
+                type: 'tool_result',
+                tool_use_id: toolBlock.id,
+                content: result.output,
+              });
+            } catch (err) {
+              const errMsg = (err as Error).message;
+              emit('tool_result', {
+                tool: toolName,
+                success: false,
+                summary: errMsg,
+                iteration,
+              });
+              toolResults.push({
+                type: 'tool_result',
+                tool_use_id: toolBlock.id,
+                content: `Error: ${errMsg}`,
+              });
+            }
           }
+
+          // Feed tool results back as user message (Anthropic format)
+          messagesWithSystem.push({
+            role: 'user',
+            content: toolResults,
+          });
+
+          iteration++;
         }
 
-        // 5. Emit the final reply
+        if (!finalText) {
+          finalText = 'I completed the requested actions. Let me know if you need anything else.';
+        }
+
+        // ── 4. Persist to memory ─────────────────────────────────────────────
+        if (conversationId) {
+          await Promise.all([
+            storeMessage(userId, conversationId, 'user', message),
+            storeMessage(userId, conversationId, 'assistant', finalText),
+          ]).catch(() => {});
+        }
+
+        // ── 5. Emit final message ─────────────────────────────────────────────
         emit('message', {
-          content: output.reply,
-          canvasContent: output.canvasContent,
-          pendingActions: pendingActions.filter(a => isAllowedAction(a.app, a.action)),
+          content: finalText,
+          canvasContent: canvasContent || undefined,
+          iteration,
         });
 
-        emit('done', { runId, durationMs: Date.now() - startedAt });
-
+        emit('done', {
+          runId,
+          durationMs: Date.now() - startedAt,
+          totalSteps,
+        });
       } catch (err) {
+        console.error('[Arcus V3 Chat] Error:', (err as Error).message);
         emit('error', { message: (err as Error).message });
       } finally {
         controller.close();

@@ -1160,6 +1160,7 @@ export default function ChatInterface({
   const [agentSteps, setAgentSteps] = useState<AgentStep[]>([]);
   const [isAgentLoopActive, setIsAgentLoopActive] = useState(false);
   const [agentRunMeta, setAgentRunMeta] = useState<{ runId?: string; totalDurationMs?: number } | null>(null);
+  const [liveActivityLine, setLiveActivityLine] = useState<string>('');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -1657,16 +1658,26 @@ export default function ChatInterface({
   const getStepLabel = (tool: string, params: any, status: 'active' | 'completed' | 'error') => {
     const isActive = status === 'active';
     switch (tool) {
+      // Legacy tool names
       case 'search_inbox': return isActive ? `Searching emails${params?.query ? ` for "${params.query}"` : '...'}` : `Searched emails${params?.query ? ` for "${params.query}"` : ''}`;
       case 'search_web': return isActive ? `Researching web${params?.query ? ` for "${params.query}"` : '...'}` : `Researched web${params?.query ? ` for "${params.query}"` : ''}`;
-      case 'read_email': return isActive ? 'Reading email content...' : 'Read email content';
       case 'read_browser_page': return isActive ? `Visiting ${params?.url || 'page'}...` : `Visited ${params?.url || 'page'}`;
       case 'save_draft': return isActive ? 'Drafting response...' : 'Drafted response';
-      case 'send_email': return isActive ? 'Sending email...' : 'Sent email';
-      case 'schedule_meeting': return isActive ? 'Scheduling meeting...' : 'Scheduled meeting';
       case 'create_note': return isActive ? 'Creating note...' : 'Created note';
       case 'search_notes': return isActive ? 'Searching notes...' : 'Searched notes';
-      default: return isActive ? `Executing ${tool}...` : `Executed ${tool}`;
+      // New Arcus rebuild tool names
+      case 'search_gmail': return isActive ? `Searching inbox${params?.query ? ` for "${params.query}"` : '...'}` : `Searched inbox${params?.query ? ` for "${params.query}"` : ''}`;
+      case 'read_email': return isActive ? 'Reading email thread...' : 'Read email thread';
+      case 'get_sent_emails': return isActive ? 'Analyzing your writing style...' : 'Analyzed writing style';
+      case 'draft_reply': return isActive ? `Drafting reply${params?.subject ? ` to "${params.subject}"` : '...'}` : `Drafted reply${params?.subject ? ` to "${params.subject}"` : ''}`;
+      case 'send_email': return isActive ? 'Sending email...' : 'Sent email';
+      case 'schedule_meeting': return isActive ? `Scheduling meeting${params?.title ? ` "${params.title}"` : '...'}` : `Scheduled meeting${params?.title ? ` "${params.title}"` : ''}`;
+      case 'get_calendar_events': return isActive ? 'Reading your calendar...' : 'Read calendar';
+      case 'search_notion': return isActive ? `Searching Notion${params?.query ? ` for "${params.query}"` : '...'}` : `Searched Notion${params?.query ? ` for "${params.query}"` : ''}`;
+      case 'open_canvas': return isActive ? `Opening canvas${params?.title ? ` "${params.title}"` : '...'}` : `Opened canvas${params?.title ? ` "${params.title}"` : ''}`;
+      case 'web_search': return isActive ? `Searching web${params?.query ? ` for "${params.query}"` : '...'}` : `Searched web${params?.query ? ` for "${params.query}"` : ''}`;
+      case 'send_slack_message': return isActive ? `Sending Slack message${params?.channel ? ` to ${params.channel}` : '...'}` : `Sent Slack message${params?.channel ? ` to ${params.channel}` : ''}`;
+      default: return isActive ? `Running ${tool.replace(/_/g, ' ')}...` : `Completed ${tool.replace(/_/g, ' ')}`;
     }
   };
 
@@ -1680,6 +1691,7 @@ export default function ChatInterface({
 
     setIsLoading(true);
     setIsAgentLoopActive(true);
+    setLiveActivityLine('');
     setAgentSteps([{
       id: 'al-init',
       type: 'thinking',
@@ -1701,17 +1713,26 @@ export default function ChatInterface({
     };
     setMessages(prev => [...prev, placeholderMsg]);
 
+    // Build conversation history from current messages to give Arcus memory
+    const history = messages
+      .filter(m => m.id !== assistantMsgId && (m.role === 'user' || m.role === 'assistant'))
+      .slice(-20)
+      .map(m => ({
+        role: m.role as 'user' | 'assistant',
+        content: m.role === 'user'
+          ? ((m as UserMessage).content || '')
+          : ((m as AgentMessage).content as any)?.text || '',
+      }))
+      .filter(h => h.content);
+
     try {
-      const response = await fetch('/api/agent-talk/chat-arcus-v2', {
+      const response = await fetch('/api/arcus/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: messageText,
           conversationId: conversationIdToUse,
-          isNewConversation: isNew,
-          gmailAccessToken,
-          modelId: options?.modelId,
-          mode: options?.isPlanMode ? 'plan' : 'agent'
+          history,
         }),
         signal: abortControllerRef.current.signal
       });
@@ -1764,49 +1785,66 @@ export default function ChatInterface({
           try { data = JSON.parse(line.slice(6).trim()); } catch { continue; }
 
           switch (currentEventType) {
-            case 'thinking':
+            case 'run_start':
+              setMessages(msgs => msgs.map(m => {
+                if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+                return { ...m, meta: { ...(m.meta || {}), liveThinking: 'Connecting to Arcus…' } };
+              }));
+              break;
+
+            case 'thinking': {
+              const thinkStatus = data.status || data.step || 'Reasoning…';
               const nextThinkingSteps = [...currentAgentSteps];
               const activeThink = nextThinkingSteps.find(s => s.status === 'active');
               if (activeThink) {
-                activeThink.label = 'Reasoning...';
-                activeThink.context = data.step || '';
+                activeThink.label = thinkStatus;
+                activeThink.context = thinkStatus;
               } else {
                 nextThinkingSteps.push({
-                  id: `al-think-${data.iteration}`,
+                  id: `al-think-${stepIndex}`,
                   type: 'thinking',
-                  label: 'Reasoning...',
-                  context: data.step || '',
+                  label: thinkStatus,
+                  context: thinkStatus,
                   status: 'active',
                   startedAt: Date.now(),
-                  iteration: data.iteration
+                  iteration: 0,
                 });
               }
               currentAgentSteps = nextThinkingSteps;
               setAgentSteps(nextThinkingSteps);
+              setLiveActivityLine(thinkStatus);
               setMessages(msgs => msgs.map(m => {
                 if (m.id !== assistantMsgId || m.type !== 'agent') return m;
-                return { 
-                  ...m, 
-                  meta: { 
-                    ...(m.meta || {}), 
-                    liveThinking: data.step || 'Reasoning...',
-                    agentSteps: nextThinkingSteps 
-                  } 
-                };
+                return { ...m, meta: { ...(m.meta || {}), liveThinking: thinkStatus, agentSteps: nextThinkingSteps } };
               }));
               break;
+            }
 
-            case 'tool_call':
+            case 'canvas': {
+              // Tool produced canvas content — open the panel immediately
+              const cv = data;
+              if (cv?.title && cv?.markdown) {
+                const canvasContent = cv.type === 'email_draft' && cv.draftMeta
+                  ? cv.draftMeta
+                  : cv.markdown;
+                setCanvasData({ type: cv.type || 'notes', title: cv.title, content: canvasContent, raw: cv.markdown });
+                setIsCanvasOpen(true);
+              }
+              break;
+            }
+
+            case 'tool_call': {
               stepIndex++;
-              const nextToolCallSteps = currentAgentSteps.map(s => 
+              const activeLabel = getStepLabel(data.tool, data.params, 'active');
+              const nextToolCallSteps = currentAgentSteps.map(s =>
                 s.status === 'active' ? { ...s, status: 'completed' as const, completedAt: Date.now(), label: getStepLabel(s.tool || '', s.params || {}, 'completed') } : s
               );
               nextToolCallSteps.push({
                 id: `al-tool-${stepIndex}`,
                 type: 'tool_call',
                 tool: data.tool,
-                label: getStepLabel(data.tool, data.params, 'active'),
-                context: data.params?.query || data.params?.message || data.params?.summary || '',
+                label: activeLabel,
+                context: data.params?.query || data.params?.message || data.params?.summary || data.params?.subject || '',
                 status: 'active',
                 startedAt: Date.now(),
                 iteration: data.iteration,
@@ -1814,21 +1852,15 @@ export default function ChatInterface({
               });
               currentAgentSteps = nextToolCallSteps;
               setAgentSteps(nextToolCallSteps);
-              
+              setLiveActivityLine(activeLabel);
               setMessages(msgs => msgs.map(m => {
                 if (m.id !== assistantMsgId || m.type !== 'agent') return m;
-                return { 
-                  ...m, 
-                  meta: { 
-                    ...(m.meta || {}), 
-                    thinkingComplete: true,
-                    agentSteps: nextToolCallSteps 
-                  } 
-                };
+                return { ...m, meta: { ...(m.meta || {}), thinkingComplete: true, agentSteps: nextToolCallSteps } };
               }));
               break;
+            }
 
-            case 'tool_result':
+            case 'tool_result': {
               const nextResultSteps = currentAgentSteps.map(s =>
                 s.status === 'active'
                   ? { ...s, status: 'completed' as const, completedAt: Date.now(), summary: data.summary || `${data.tool} done`, label: getStepLabel(s.tool || '', s.params || {}, 'completed') }
@@ -1836,11 +1868,13 @@ export default function ChatInterface({
               );
               currentAgentSteps = nextResultSteps;
               setAgentSteps(nextResultSteps);
+              setLiveActivityLine('');
               setMessages(msgs => msgs.map(m => {
                 if (m.id !== assistantMsgId || m.type !== 'agent') return m;
                 return { ...m, meta: { ...(m.meta || {}), agentSteps: nextResultSteps } };
               }));
               break;
+            }
 
             case 'tool_error':
               const nextErrorSteps = currentAgentSteps.map(s =>
@@ -1885,6 +1919,22 @@ export default function ChatInterface({
               rawOutput += (data.content || '');
               const { thinking: liveThinkingText, cleanText: roadmapText } = extractThinking(rawOutput);
               finalContent = roadmapText;
+
+              // Open canvas panel if the agent produced canvas content
+              if (data.canvasContent) {
+                const cv = data.canvasContent;
+                // email_draft needs structured content; everything else gets raw markdown string
+                const canvasContent = cv.type === 'email_draft' && cv.meta
+                  ? cv.meta
+                  : cv.markdown;
+                setCanvasData({
+                  type: cv.type || 'notes',
+                  title: cv.title,
+                  content: canvasContent,
+                  raw: cv.markdown,
+                });
+                setIsCanvasOpen(true);
+              }
 
               setMessages(prev => prev.map(m => {
                 if (m.id !== assistantMsgId || m.type !== 'agent') return m;
@@ -1943,6 +1993,7 @@ export default function ChatInterface({
               
               setAgentSteps(finalSteps);
               setIsAgentLoopActive(false);
+              setLiveActivityLine('');
               setAgentRunMeta({ runId: data.runId, totalDurationMs: data.durationMs });
               break;
           }
@@ -1971,6 +2022,7 @@ export default function ChatInterface({
           };
         }));
         setAgentSteps(autoCompletedSteps);
+        setLiveActivityLine('');
       }
 
       setNewMessageIds(prev => new Set(prev).add(assistantMsgId));
@@ -3505,6 +3557,26 @@ export default function ChatInterface({
                                           runId={(msg as AgentMessage).meta?.agentRunId}
                                           totalDurationMs={(msg as AgentMessage).meta?.agentDurationMs}
                                         />
+                                        {/* Live activity narration line */}
+                                        <AnimatePresence>
+                                          {(msg as AgentMessage).meta?.isStreaming !== false && liveActivityLine && msg.id === messages[messages.length - 1]?.id && (
+                                            <motion.div
+                                              key={liveActivityLine}
+                                              initial={{ opacity: 0, y: 4 }}
+                                              animate={{ opacity: 1, y: 0 }}
+                                              exit={{ opacity: 0, y: -4 }}
+                                              transition={{ duration: 0.25 }}
+                                              className="mt-2 flex items-center gap-2"
+                                            >
+                                              <motion.span
+                                                className="inline-block w-1.5 h-1.5 rounded-full bg-blue-400"
+                                                animate={{ scale: [1, 1.4, 1], opacity: [0.7, 1, 0.7] }}
+                                                transition={{ repeat: Infinity, duration: 1.2, ease: 'easeInOut' }}
+                                              />
+                                              <span className="text-[11px] text-white/40 font-mono tracking-wide">{liveActivityLine}</span>
+                                            </motion.div>
+                                          )}
+                                        </AnimatePresence>
                                       </div>
                                     )}
 

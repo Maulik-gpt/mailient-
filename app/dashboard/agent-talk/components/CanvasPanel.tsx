@@ -1,17 +1,19 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { 
-  X, Copy, Check, Edit3, FileText, Mail, Sparkles, ChevronDown, 
-  ChevronRight, Calendar, Globe, AlertCircle, ShieldAlert, Send, 
-  ArrowRight, BarChart3, Clock, Users, Zap, 
+import {
+  X, Copy, Check, Edit3, FileText, Mail, Sparkles, ChevronDown,
+  ChevronRight, Calendar, Globe, AlertCircle, ShieldAlert, Send,
+  ArrowRight, BarChart3, Clock, Users, Zap,
   MoreHorizontal, CheckCircle2, Circle, Edit, Terminal,
   Code, Layout, Laptop, GripVertical, ChevronLeft, Presentation,
-  LineChart, PieChart, TrendingUp, Info, ListTodo, AlertTriangle, 
+  LineChart, PieChart, TrendingUp, Info, ListTodo, AlertTriangle,
   Target, HelpCircle, Shield, Play, Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from "@/lib/utils";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { ExecutionTimeline } from './ExecutionTimeline';
 import { ActionOutputCards } from './ActionOutputCards';
 import { CanvasArtifacts } from './CanvasArtifacts';
@@ -461,6 +463,14 @@ export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecutin
                                             onExecute={(actionId: string) => onExecute(actionId, canvasData.content?.context)}
                                             disabled={isExecuting}
                                         />
+                                    ) : typeof canvasData.content === 'string' && canvasData.content ? (
+                                        <div className="h-full overflow-y-auto pr-1 custom-scrollbar">
+                                          <div className="prose prose-invert prose-sm max-w-none text-[13.5px] leading-relaxed text-white/80">
+                                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                              {canvasData.content}
+                                            </ReactMarkdown>
+                                          </div>
+                                        </div>
                                     ) : (
                                         <div className="h-full flex flex-col items-center justify-center opacity-30 px-12 text-center">
                                             <div className="w-12 h-12 rounded-2xl bg-black/[0.03] dark:bg-white/5 border border-neutral-200 dark:border-white/10 flex items-center justify-center mb-4">
