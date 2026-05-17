@@ -51,22 +51,22 @@ const TYPE_CONFIG: Record<string, {
   badge: string;
   badgeText: string;
 }> = {
-  email_draft:     { label: 'Email Draft',   Icon: Mail,      accent: '#6366f1', badge: 'bg-indigo-500/15 border-indigo-500/25',  badgeText: 'text-indigo-300'  },
-  reply:           { label: 'Reply',          Icon: Mail,      accent: '#10b981', badge: 'bg-emerald-500/15 border-emerald-500/25', badgeText: 'text-emerald-300' },
-  report:          { label: 'Report',         Icon: FileText,  accent: '#8b5cf6', badge: 'bg-violet-500/15 border-violet-500/25',  badgeText: 'text-violet-300'  },
-  notes:           { label: 'Notes',          Icon: Edit3,     accent: '#ec4899', badge: 'bg-pink-500/15 border-pink-500/25',      badgeText: 'text-pink-300'    },
-  analysis:        { label: 'Analysis',       Icon: BarChart3, accent: '#f97316', badge: 'bg-orange-500/15 border-orange-500/25',  badgeText: 'text-orange-300'  },
-  analytics:       { label: 'Analytics',      Icon: BarChart3, accent: '#f97316', badge: 'bg-orange-500/15 border-orange-500/25',  badgeText: 'text-orange-300'  },
-  action_plan:     { label: 'Action Plan',    Icon: Zap,       accent: '#f59e0b', badge: 'bg-amber-500/15 border-amber-500/25',   badgeText: 'text-amber-300'   },
-  research:        { label: 'Research',       Icon: Globe,     accent: '#06b6d4', badge: 'bg-cyan-500/15 border-cyan-500/25',     badgeText: 'text-cyan-300'    },
-  summary:         { label: 'Summary',        Icon: FileText,  accent: '#8b5cf6', badge: 'bg-violet-500/15 border-violet-500/25', badgeText: 'text-violet-300'  },
-  meeting_schedule:{ label: 'Schedule',       Icon: Calendar,  accent: '#3b82f6', badge: 'bg-blue-500/15 border-blue-500/25',    badgeText: 'text-blue-300'    },
-  workflow:        { label: 'Workflow',        Icon: Sparkles,  accent: '#a855f7', badge: 'bg-purple-500/15 border-purple-500/25', badgeText: 'text-purple-300'  },
-  execution:       { label: 'Execution',       Icon: Play,      accent: '#3b82f6', badge: 'bg-blue-500/15 border-blue-500/25',    badgeText: 'text-blue-300'    },
-  artifacts:       { label: 'Files',           Icon: FileText,  accent: '#8b5cf6', badge: 'bg-violet-500/15 border-violet-500/25', badgeText: 'text-violet-300'  },
-  action_outputs:  { label: 'Results',         Icon: CheckCircle2, accent: '#10b981', badge: 'bg-emerald-500/15 border-emerald-500/25', badgeText: 'text-emerald-300' },
-  next_actions:    { label: 'Next Steps',      Icon: ArrowRight, accent: '#f59e0b', badge: 'bg-amber-500/15 border-amber-500/25', badgeText: 'text-amber-300'  },
-  none:            { label: 'Document',        Icon: Sparkles,  accent: '#a855f7', badge: 'bg-purple-500/15 border-purple-500/25', badgeText: 'text-purple-300'  },
+  email_draft:     { label: 'Email Draft',   Icon: Mail,      accent: '#ffffff', badge: 'bg-white/[0.04] border-white/[0.08]', badgeText: 'text-white/80' },
+  reply:           { label: 'Reply',          Icon: Mail,      accent: '#ffffff', badge: 'bg-white/[0.04] border-white/[0.08]', badgeText: 'text-white/80' },
+  report:          { label: 'Report',         Icon: FileText,  accent: '#ffffff', badge: 'bg-white/[0.04] border-white/[0.08]', badgeText: 'text-white/80' },
+  notes:           { label: 'Notes',          Icon: Edit3,     accent: '#ffffff', badge: 'bg-white/[0.04] border-white/[0.08]', badgeText: 'text-white/80' },
+  analysis:        { label: 'Analysis',       Icon: BarChart3, accent: '#ffffff', badge: 'bg-white/[0.04] border-white/[0.08]', badgeText: 'text-white/80' },
+  analytics:       { label: 'Analytics',      Icon: BarChart3, accent: '#ffffff', badge: 'bg-white/[0.04] border-white/[0.08]', badgeText: 'text-white/80' },
+  action_plan:     { label: 'Action Plan',    Icon: Zap,       accent: '#ffffff', badge: 'bg-white/[0.04] border-white/[0.08]', badgeText: 'text-white/80' },
+  research:        { label: 'Research',       Icon: Globe,     accent: '#ffffff', badge: 'bg-white/[0.04] border-white/[0.08]', badgeText: 'text-white/80' },
+  summary:         { label: 'Summary',        Icon: FileText,  accent: '#ffffff', badge: 'bg-white/[0.04] border-white/[0.08]', badgeText: 'text-white/80' },
+  meeting_schedule:{ label: 'Schedule',       Icon: Calendar,  accent: '#ffffff', badge: 'bg-white/[0.04] border-white/[0.08]', badgeText: 'text-white/80' },
+  workflow:        { label: 'Workflow',        Icon: Sparkles,  accent: '#ffffff', badge: 'bg-white/[0.04] border-white/[0.08]', badgeText: 'text-white/80' },
+  execution:       { label: 'Execution',       Icon: Play,      accent: '#ffffff', badge: 'bg-white/[0.04] border-white/[0.08]', badgeText: 'text-white/80' },
+  artifacts:       { label: 'Files',           Icon: FileText,  accent: '#ffffff', badge: 'bg-white/[0.04] border-white/[0.08]', badgeText: 'text-white/80' },
+  action_outputs:  { label: 'Results',         Icon: CheckCircle2, accent: '#ffffff', badge: 'bg-white/[0.04] border-white/[0.08]', badgeText: 'text-white/80' },
+  next_actions:    { label: 'Next Steps',      Icon: ArrowRight, accent: '#ffffff', badge: 'bg-white/[0.04] border-white/[0.08]', badgeText: 'text-white/80' },
+  none:            { label: 'Document',        Icon: Sparkles,  accent: '#ffffff', badge: 'bg-white/[0.04] border-white/[0.08]', badgeText: 'text-white/80' },
 };
 
 function getConfig(type: string) {
@@ -363,8 +363,8 @@ function MetaInsights({ type, content }: { type: string; content: string }) {
 
   return (
     <div className="flex flex-wrap items-center gap-2 mb-6 p-3 px-4 rounded-xl bg-white/[0.02] border border-white/[0.04] backdrop-blur-md">
-      <div className="flex items-center gap-1.5 text-[10px] font-bold text-white/30 uppercase tracking-widest mr-2 shrink-0">
-        <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+      <div className="flex items-center gap-1.5 text-[10px] font-bold text-white/35 uppercase tracking-widest mr-2 shrink-0">
+        <Sparkles className="w-3.5 h-3.5 text-white/60" />
         Meta Insights
       </div>
       <div className="flex flex-wrap gap-2">
@@ -374,9 +374,9 @@ function MetaInsights({ type, content }: { type: string; content: string }) {
             className={cn(
               "px-2.5 py-0.5 rounded-full text-[10px] font-semibold border transition-all duration-200",
               tag === 'High Priority' 
-                ? "bg-red-500/10 border-red-500/25 text-red-300 animate-pulse"
+                ? "bg-white text-black border-white animate-pulse"
                 : tag === 'Revenue Deal'
-                ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-300"
+                ? "bg-white/80 text-black border-white"
                 : "bg-white/[0.04] border-white/[0.06] text-white/60"
             )}
           >
@@ -480,7 +480,14 @@ function InteractiveChart({ data }: { data: ChartData }) {
   if (data.type === 'pie') {
     const values = data.datasets[0]?.data || [];
     const total = values.reduce((sum, v) => sum + v, 0);
-    const colors = ['#a855f7', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#06b6d4'];
+    const colors = [
+      '#ffffff',               // Pure white
+      'rgba(255,255,255,0.85)', // High opacity white
+      'rgba(255,255,255,0.7)',  // Medium-high opacity white
+      'rgba(255,255,255,0.5)',  // Medium opacity white
+      'rgba(255,255,255,0.3)',  // Medium-low opacity white
+      'rgba(255,255,255,0.15)', // Low opacity white
+    ];
 
     let accumulatedAngle = 0;
     const radius = 70;
@@ -564,7 +571,12 @@ function InteractiveChart({ data }: { data: ChartData }) {
 
   const labels = data.labels;
   const datasets = data.datasets;
-  const colors = ['#3b82f6', '#10b981', '#a855f7', '#f59e0b', '#ec4899'];
+  const colors = [
+    '#ffffff',               // Pure white
+    'rgba(255,255,255,0.7)',  // White 70%
+    'rgba(255,255,255,0.4)',  // White 40%
+    'rgba(255,255,255,0.2)',  // White 20%
+  ];
 
   const allValues = datasets.flatMap(d => d.data);
   const maxVal = Math.max(...allValues, 1);
@@ -809,7 +821,7 @@ function MarkdownView({ content }: { content: string }) {
         hr: () => <hr className="my-6 border-white/[0.08]" />,
         a: ({ href, children }) => (
           <a href={href} target="_blank" rel="noopener noreferrer"
-            className="text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors">
+            className="text-white underline underline-offset-2 hover:text-white/80 transition-colors">
             {children}
           </a>
         ),

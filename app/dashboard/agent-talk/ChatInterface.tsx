@@ -10,6 +10,7 @@ import { ChatHistoryModal } from './components/ChatHistoryModal';
 import { ThinkingLayer, ResultCard, type ThinkingStep, type ThinkingBlock, type SearchSession } from './components/ThinkingLayer';
 import { AgentExecutionTimeline, type AgentStep } from './components/AgentExecutionTimeline';
 import { CanvasPanel, type CanvasData } from './components/CanvasPanel';
+import { ArtifactsGalleryPanel } from './components/ArtifactsGalleryPanel';
 import PlanArtifactCard from './components/PlanArtifactCard';
 import { PlanModeBrief } from './components/PlanModeBrief';
 import { PlanCanvas } from './components/PlanCanvas';
@@ -1165,6 +1166,7 @@ export default function ChatInterface({
 
   // Canvas Panel state
   const [isCanvasOpen, setIsCanvasOpen] = useState(false);
+  const [showArtifactsPanel, setShowArtifactsPanel] = useState(false);
   const [feedbackModal, setFeedbackModal] = useState<{ isOpen: boolean, type: 'like' | 'dislike', msgId: string | number | null }>({ isOpen: false, type: 'like', msgId: null });
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [canvasData, setCanvasData] = useState<CanvasData | null>(null);
@@ -3306,21 +3308,26 @@ export default function ChatInterface({
                             </TooltipContent>
                           </Tooltip>
 
-                          {/* Plan Mode Toggle */}
+                          {/* Documents/Artifacts Gallery Button instead of Plan Mode */}
                           <Tooltip delayDuration={100}>
                             <TooltipTrigger asChild>
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setArcusView(arcusView === 'plan_mode' ? 'feed' : 'plan_mode');
+                                  if (showArtifactsPanel) {
+                                    setShowArtifactsPanel(false);
+                                  } else {
+                                    setShowArtifactsPanel(true);
+                                    setIsCanvasOpen(false);
+                                  }
                                 }}
-                                className={`p-2 rounded-lg transition-all focus:outline-none focus:ring-0 ${arcusView === 'plan_mode' ? 'bg-black/10 dark:bg-white/10 text-black dark:text-white' : 'hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white/60'}`}
+                                className={`p-2 rounded-lg transition-all focus:outline-none focus:ring-0 ${showArtifactsPanel ? 'bg-black/10 dark:bg-white/10 text-black dark:text-white' : 'hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white/60'}`}
                               >
-                                <Calendar className="w-5 h-5" />
+                                <FileText className="w-5 h-5" />
                               </button>
                             </TooltipTrigger>
                             <TooltipContent side="bottom">
-                              <span className="text-[10px]">{arcusView === 'plan_mode' ? 'Back to Feed' : 'Plan Mode'}</span>
+                              <span className="text-[10px]">{showArtifactsPanel ? 'Close Documents' : 'Documents'}</span>
                             </TooltipContent>
                           </Tooltip>
 
@@ -3923,10 +3930,11 @@ export default function ChatInterface({
                 </div>
               </div>
 
-              {/* Canvas Sidebar (Order 2 - RIGHT) - Properly Sibling to Chat Column */}
-              <AnimatePresence>
-                {isCanvasOpen && canvasData && (
+              {/* Canvas Sidebar or Artifacts Gallery Sidebar (Order 2 - RIGHT) */}
+              <AnimatePresence mode="wait">
+                {isCanvasOpen && canvasData ? (
                   <motion.div
+                    key="canvas-panel"
                     initial={{ width: 0, opacity: 0 }}
                     animate={{ width: 'auto', opacity: 1 }}
                     exit={{ width: 0, opacity: 0 }}
@@ -3942,7 +3950,28 @@ export default function ChatInterface({
                       isSidebarCollapsed={isSidebarCollapsed}
                     />
                   </motion.div>
-                )}
+                ) : showArtifactsPanel ? (
+                  <motion.div
+                    key="artifacts-gallery"
+                    initial={{ width: 0, opacity: 0 }}
+                    animate={{ width: 'auto', opacity: 1 }}
+                    exit={{ width: 0, opacity: 0 }}
+                    transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+                    className="h-full flex-shrink-0 bg-[#161616] border border-neutral-200 dark:border-white/5 rounded-[32px] z-50 overflow-hidden order-2 relative shadow-2xl"
+                  >
+                    <ArtifactsGalleryPanel
+                      isOpen={showArtifactsPanel}
+                      onClose={() => setShowArtifactsPanel(false)}
+                      onSelectArtifact={(data) => {
+                        setCanvasData(data);
+                        setIsCanvasOpen(true);
+                        setShowArtifactsPanel(false);
+                      }}
+                      isSidebarCollapsed={isSidebarCollapsed}
+                      messages={messages}
+                    />
+                  </motion.div>
+                ) : null}
               </AnimatePresence>
             </div>
           </LayoutGroup>

@@ -91,21 +91,6 @@ const BrandIcons = {
 // Definitive list of supported connectors (Phase 4 canonical)
 const SUPPORTED_APPS = [
   {
-    id: 'gmail',
-    name: 'Gmail',
-    icon: BrandIcons.Gmail,
-    color: '#EA4335',
-    type: 'MCP',
-    author: 'Google',
-    uuid: 'gm-0a1b-2c3d-4e5f-6g7h8i9j0k1l',
-    website: 'https://mail.google.com',
-    documentation: 'https://developers.google.com/gmail',
-    privacyPolicy: 'https://policies.google.com/privacy',
-    description: 'Gmail MCP connects Arcus directly to your inbox so it can read, draft, send, and organize emails on your behalf.',
-    details: 'Connect Gmail so Arcus can triage your inbox, draft replies in your tone, detect meeting requests, and keep your Notion CRM updated — all automatically.',
-    smartPrompt: "Triage my inbox and tell me what needs my attention today.",
-  },
-  {
     id: 'google_calendar',
     name: 'Google Calendar', 
     icon: BrandIcons.GoogleCalendar, 
