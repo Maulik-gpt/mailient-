@@ -1710,14 +1710,7 @@ export default function ChatInterface({
     setIsLoading(true);
     setIsAgentLoopActive(true);
     setLiveActivityLine('');
-    setAgentSteps([{
-      id: 'al-init',
-      type: 'thinking',
-      label: 'Analysing your request...',
-      status: 'active',
-      startedAt: Date.now(),
-      iteration: 0
-    }]);
+    setAgentSteps([]);          // start empty — only tool_call events populate the timeline
     setLiveThinkingBlocks([]);
 
     // Add placeholder assistant message
@@ -1727,7 +1720,7 @@ export default function ChatInterface({
       role: 'assistant',
       content: { text: '', list: [], footer: '' },
       time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
-      meta: { actionType: 'agent_loop', isStreaming: true, liveThinking: 'Thinking...', agentSteps }
+      meta: { actionType: 'agent_loop', isStreaming: true, liveThinking: 'Thinking...', agentSteps: [] }
     };
     setMessages(prev => [...prev, placeholderMsg]);
 
@@ -1775,14 +1768,7 @@ export default function ChatInterface({
       let rawOutput = '';
       let stepIndex = 0;
       let streamFinishedNormally = false;
-      let currentAgentSteps: AgentStep[] = [{
-        id: 'al-init',
-        type: 'thinking',
-        label: 'Analysing your request...',
-        status: 'active',
-        startedAt: Date.now(),
-        iteration: 0
-      }];
+      let currentAgentSteps: AgentStep[] = [];  // populated only by tool_call events
 
       while (true) {
         const { done, value } = await reader.read();
@@ -1804,36 +1790,20 @@ export default function ChatInterface({
 
           switch (currentEventType) {
             case 'run_start':
+              // No step added — just update the thinking label
               setMessages(msgs => msgs.map(m => {
                 if (m.id !== assistantMsgId || m.type !== 'agent') return m;
-                return { ...m, meta: { ...(m.meta || {}), liveThinking: 'Connecting to Arcus…' } };
+                return { ...m, meta: { ...(m.meta || {}), liveThinking: 'Thinking...' } };
               }));
               break;
 
             case 'thinking': {
-              const thinkStatus = data.status || data.step || 'Reasoning…';
-              const nextThinkingSteps = [...currentAgentSteps];
-              const activeThink = nextThinkingSteps.find(s => s.status === 'active');
-              if (activeThink) {
-                activeThink.label = thinkStatus;
-                activeThink.context = thinkStatus;
-              } else {
-                nextThinkingSteps.push({
-                  id: `al-think-${stepIndex}`,
-                  type: 'thinking',
-                  label: thinkStatus,
-                  context: thinkStatus,
-                  status: 'active',
-                  startedAt: Date.now(),
-                  iteration: 0,
-                });
-              }
-              currentAgentSteps = nextThinkingSteps;
-              setAgentSteps(nextThinkingSteps);
-              setLiveActivityLine(thinkStatus);
+              // Only update the thinking text shown in AgentThinkingSection.
+              // Never push thinking events into currentAgentSteps — they show in the timeline.
+              const thinkStatus = data.status || data.step || 'Thinking...';
               setMessages(msgs => msgs.map(m => {
                 if (m.id !== assistantMsgId || m.type !== 'agent') return m;
-                return { ...m, meta: { ...(m.meta || {}), liveThinking: thinkStatus, agentSteps: nextThinkingSteps } };
+                return { ...m, meta: { ...(m.meta || {}), liveThinking: thinkStatus } };
               }));
               break;
             }

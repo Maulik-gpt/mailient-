@@ -133,28 +133,35 @@ export async function getConnectedIntegrations(userId: string): Promise<string[]
   try {
     const { getSupabaseAdmin } = await import('../supabase.js');
     const supabase = getSupabaseAdmin();
-    const { data } = await supabase
-      .from('arcus_integrations')
-      .select('provider')
-      .eq('user_id', userId);
+    const uid = userId.toLowerCase();
 
-    const arcusProviders = (data || []).map((r: any) => r.provider as string);
+    const [arcusRes, legacyRes, userTokensRes] = await Promise.all([
+      // V3 arcus_integrations table
+      supabase.from('arcus_integrations').select('provider').eq('user_id', uid),
+      // Legacy integration_credentials table
+      supabase.from('integration_credentials').select('provider').eq('user_id', uid),
+      // user_tokens table — populated by Google OAuth login (covers gmail + gcal automatically)
+      supabase.from('user_tokens')
+        .select('user_id')
+        .or(`user_id.ilike."${uid}",google_email.ilike."${uid}"`)
+        .maybeSingle(),
+    ]);
 
-    // Also check legacy integration_credentials for google (covers gmail + gcal)
-    const { data: legacy } = await supabase
-      .from('integration_credentials')
-      .select('provider')
-      .eq('user_id', userId);
+    const arcusProviders = (arcusRes.data || []).map((r: any) => r.provider as string);
 
-    const legacyProviders = (legacy || []).map((r: any) => {
+    const legacyProviders = (legacyRes.data || []).flatMap((r: any) => {
       const p = r.provider as string;
       if (p === 'google') return ['gmail', 'gcal'];
       if (p === 'google_calendar') return ['gcal'];
       return [p];
-    }).flat();
+    });
 
-    const all = [...new Set([...arcusProviders, ...legacyProviders])];
-    return all;
+    // If user_tokens has a row the user signed in with Google → Gmail + GCal available
+    const googleLoginProviders: string[] = userTokensRes.data
+      ? ['gmail', 'gcal']
+      : [];
+
+    return [...new Set([...arcusProviders, ...legacyProviders, ...googleLoginProviders])];
   } catch {
     return [];
   }

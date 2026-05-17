@@ -17,23 +17,34 @@ import type { ToolSchema } from './engine';
 async function getGmailToken(userId: string): Promise<string | null> {
   try {
     const supabase = getSupabaseAdmin();
-    // Try arcus_integrations first (V3)
+    const uid = userId.toLowerCase();
+
+    // 1. arcus_integrations (V3 OAuth flow)
     const { data: v3 } = await supabase
       .from('arcus_integrations')
       .select('access_token')
-      .eq('user_id', userId)
+      .eq('user_id', uid)
       .eq('provider', 'gmail')
       .maybeSingle();
     if (v3?.access_token) return decrypt(v3.access_token);
 
-    // Fall back to integration_credentials (legacy)
+    // 2. integration_credentials (legacy OAuth flow)
     const { data: legacy } = await supabase
       .from('integration_credentials')
       .select('encrypted_access_token')
-      .eq('user_id', userId)
+      .eq('user_id', uid)
       .eq('provider', 'google')
       .maybeSingle();
     if (legacy?.encrypted_access_token) return decrypt(legacy.encrypted_access_token);
+
+    // 3. user_tokens (populated automatically on Google login via NextAuth)
+    const { data: ut } = await supabase
+      .from('user_tokens')
+      .select('encrypted_access_token')
+      .or(`user_id.ilike."${uid}",google_email.ilike."${uid}"`)
+      .maybeSingle();
+    if (ut?.encrypted_access_token) return decrypt(ut.encrypted_access_token);
+
     return null;
   } catch {
     return null;
@@ -43,22 +54,34 @@ async function getGmailToken(userId: string): Promise<string | null> {
 async function getGcalToken(userId: string): Promise<string | null> {
   try {
     const supabase = getSupabaseAdmin();
-    const { data } = await supabase
+    const uid = userId.toLowerCase();
+
+    // 1. arcus_integrations (V3 OAuth flow)
+    const { data: v3 } = await supabase
       .from('arcus_integrations')
       .select('access_token')
-      .eq('user_id', userId)
+      .eq('user_id', uid)
       .eq('provider', 'gcal')
       .maybeSingle();
-    if (data?.access_token) return decrypt(data.access_token);
+    if (v3?.access_token) return decrypt(v3.access_token);
 
-    // Fall back to integration_credentials google
+    // 2. integration_credentials (legacy OAuth flow)
     const { data: legacy } = await supabase
       .from('integration_credentials')
       .select('encrypted_access_token')
-      .eq('user_id', userId)
+      .eq('user_id', uid)
       .eq('provider', 'google_calendar')
       .maybeSingle();
     if (legacy?.encrypted_access_token) return decrypt(legacy.encrypted_access_token);
+
+    // 3. user_tokens (Google login covers Calendar scope too)
+    const { data: ut } = await supabase
+      .from('user_tokens')
+      .select('encrypted_access_token')
+      .or(`user_id.ilike."${uid}",google_email.ilike."${uid}"`)
+      .maybeSingle();
+    if (ut?.encrypted_access_token) return decrypt(ut.encrypted_access_token);
+
     return null;
   } catch {
     return null;
