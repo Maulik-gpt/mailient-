@@ -252,12 +252,12 @@ export default function SharePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white selection:bg-blue-500/30">
+    <div className="min-h-screen bg-[#050505] text-white selection:bg-white/20">
       {/* Premium Glassmorphic Header */}
       <nav className="fixed top-0 left-0 right-0 z-50 h-16 border-b border-white/[0.04] bg-black/60 backdrop-blur-2xl flex items-center justify-between px-6 lg:px-12">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shrink-0">
-            <img src="/mailient-logo-white.png" className="w-5 h-5 invert" alt="Logo" />
+          <div className="w-8 h-8 rounded-lg bg-white/[0.08] border border-white/10 flex items-center justify-center shrink-0">
+            <img src="/logo.svg" className="w-5 h-5" alt="Arcus Logo" />
           </div>
           <h1 className="text-[14px] font-bold tracking-tight text-white truncate max-w-[180px] sm:max-w-[280px]">
             {title}
@@ -265,7 +265,7 @@ export default function SharePage() {
 
           {/* Premium Analytics Views Pill */}
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.06] text-white/50 text-[11px] font-semibold shrink-0">
-            <Eye className="w-3.5 h-3.5 text-blue-400" />
+            <Eye className="w-3.5 h-3.5 text-white" />
             <span>{views} {views === 1 ? 'view' : 'views'}</span>
           </div>
         </div>
@@ -297,7 +297,7 @@ export default function SharePage() {
           {authStatus === 'unauthenticated' && (
             <button 
               onClick={() => signIn('google')}
-              className="px-4 py-1.5 bg-white text-black text-[12px] font-bold rounded-full hover:bg-white/90 transition-all active:scale-95 shadow-md shadow-white/5"
+              className="px-4 py-1.5 bg-white text-black text-[12px] font-bold rounded-full hover:bg-neutral-200 transition-all active:scale-95 shadow-md shadow-white/5"
             >
               Sign In
             </button>
@@ -322,15 +322,12 @@ export default function SharePage() {
               )}>
                 {/* Avatar */}
                 <div className={cn(
-                  "w-9 h-9 rounded-xl flex-shrink-0 flex items-center justify-center border overflow-hidden",
-                  msg.role === 'user' 
-                    ? "bg-[#161618] border-white/[0.08]" 
-                    : "bg-blue-500/10 border-blue-500/20"
+                  "w-9 h-9 rounded-xl flex-shrink-0 flex items-center justify-center border overflow-hidden bg-[#161618] border-white/[0.08]"
                 )}>
                   {msg.role === 'user' ? (
                     <User2 className="w-4 h-4 text-white/50" />
                   ) : (
-                    <Bot className="w-4 h-4 text-blue-400" />
+                    <Bot className="w-4 h-4 text-white" />
                   )}
                 </div>
 
@@ -358,7 +355,7 @@ export default function SharePage() {
                   {/* Timestamp */}
                   {msg.time && (
                     <span className={cn(
-                      "text-[10px] tracking-tight text-white/20 px-1 font-medium",
+                       "text-[10px] tracking-tight text-white/20 px-1 font-medium",
                       msg.role === 'user' ? "text-right" : "text-left"
                     )}>
                       {msg.time}
@@ -372,78 +369,56 @@ export default function SharePage() {
       </main>
 
       {/* Premium Floating Footer Action Bar */}
-      <footer className="fixed bottom-0 left-0 right-0 z-40 p-6 lg:p-12">
-        <div className="max-w-3xl mx-auto">
-          <div className="relative group overflow-hidden bg-[#111113]/95 backdrop-blur-2xl border border-white/[0.07] rounded-[32px] p-6 lg:p-7 shadow-[0_32px_96px_-8px_rgba(0,0,0,0.9)] transition-all hover:border-blue-500/30">
-            {/* Ambient background glow */}
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/[0.03] to-transparent pointer-events-none" />
-            
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-6 relative z-10">
-              
-              {/* Dynamic Context Description based on user role */}
-              <div className="text-center sm:text-left space-y-1">
-                <h3 className="text-[16px] font-bold tracking-tight text-white">
-                  {authStatus === 'unauthenticated' ? (
-                    "Unlock this automated workspace"
-                  ) : isOwner ? (
-                    "You own this shared session"
-                  ) : (
-                    "Clone this mission to Arcus"
-                  )}
-                </h3>
-                <p className="text-white/40 text-[12.5px] leading-snug">
-                  {authStatus === 'unauthenticated' ? (
-                    "Sign in to take control, copy this setup, and start automating your workflow."
-                  ) : isOwner ? (
-                    "Continue chatting, schedule events, or orchestrate email drafts in your workspace."
-                  ) : (
-                    "Import this entire chat history to run the same tools and prompts independently."
-                  )}
-                </p>
-              </div>
-
-              {/* Dynamic Action Buttons based on user role */}
-              <div className="w-full sm:w-auto shrink-0">
-                {authStatus === 'unauthenticated' ? (
-                  <button 
-                    onClick={() => signIn('google')}
-                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3.5 bg-white text-black font-bold text-[13px] rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-white/5"
-                  >
-                    <LogIn className="w-4 h-4" />
-                    <span>Sign In to Continue</span>
-                    <ArrowRight className="w-4 h-4 ml-1" />
-                  </button>
-                ) : isOwner ? (
-                  <button 
-                    onClick={() => router.push(`/dashboard/agent-talk/${originalConvoId}`)}
-                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3.5 bg-blue-500 text-white font-bold text-[13px] rounded-2xl hover:bg-blue-600 hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-blue-500/20"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                    <span>Continue Conversation</span>
-                  </button>
-                ) : (
-                  <button 
-                    onClick={handleClone}
-                    disabled={cloning}
-                    className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-6 py-3.5 bg-blue-500 text-white font-bold text-[13px] rounded-2xl hover:bg-blue-600 hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-blue-500/20 disabled:opacity-50"
-                  >
-                    {cloning ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        <span>Cloning Workspace...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Layers className="w-4 h-4" />
-                        <span>Clone to My Workspace</span>
-                      </>
-                    )}
-                  </button>
-                )}
-              </div>
-
-            </div>
+      <footer className="fixed bottom-8 left-0 right-0 z-40 px-6 flex justify-center">
+        <div className="bg-[#0b0b0c]/90 border border-white/[0.08] rounded-full p-2.5 shadow-2xl backdrop-blur-xl flex items-center gap-4">
+          <div className="pl-3 pr-1 font-medium text-[13px] text-white/70">
+            {authStatus === 'unauthenticated' ? (
+              "Sign in to clone this session"
+            ) : isOwner ? (
+              "This is your shared session"
+            ) : (
+              "Clone this conversation to Arcus"
+            )}
           </div>
+
+          {authStatus === 'unauthenticated' ? (
+            <button 
+              onClick={() => signIn('google')}
+              className="flex items-center gap-2 px-5 py-2 bg-white text-black font-bold text-[12.5px] rounded-full hover:bg-neutral-200 active:scale-95 transition-all font-satoshi shadow-lg shrink-0"
+              style={{ fontFamily: "Satoshi, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}
+            >
+              <LogIn className="w-3.5 h-3.5 text-black" />
+              <span>Continue Conversation</span>
+            </button>
+          ) : isOwner ? (
+            <button 
+              onClick={() => router.push(`/dashboard/agent-talk/${originalConvoId}`)}
+              className="flex items-center gap-2 px-5 py-2 bg-white text-black font-bold text-[12.5px] rounded-full hover:bg-neutral-200 active:scale-95 transition-all font-satoshi shadow-lg shrink-0"
+              style={{ fontFamily: "Satoshi, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}
+            >
+              <ExternalLink className="w-3.5 h-3.5 text-black" />
+              <span>Continue Conversation</span>
+            </button>
+          ) : (
+            <button 
+              onClick={handleClone}
+              disabled={cloning}
+              className="flex items-center gap-2 px-5 py-2 bg-white text-black font-bold text-[12.5px] rounded-full hover:bg-neutral-200 active:scale-95 transition-all font-satoshi shadow-lg shrink-0 disabled:opacity-50"
+              style={{ fontFamily: "Satoshi, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}
+            >
+              {cloning ? (
+                <>
+                  <div className="w-3.5 h-3.5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                  <span>Cloning...</span>
+                </>
+              ) : (
+                <>
+                  <Layers className="w-3.5 h-3.5 text-black" />
+                  <span>Continue Conversation</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
       </footer>
     </div>
