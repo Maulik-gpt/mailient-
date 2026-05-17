@@ -523,61 +523,90 @@ interface ResultCardProps {
     type: string;
     title: string;
     onView: () => void;
+    rawContent?: string;
 }
 
 const resultIcons: Record<string, any> = {
-    email_draft: <Mail className="w-4 h-4" />,
-    summary: <FileText className="w-4 h-4" />,
-    research: <Search className="w-4 h-4" />,
-    action_plan: <Zap className="w-4 h-4" />,
-    reply: <Mail className="w-4 h-4" />,
-    notes: <FileText className="w-4 h-4" />,
-    meeting_schedule: <Calendar className="w-4 h-4" />,
-    analytics: <BarChart3 className="w-4 h-4" />,
-    notion: <Database className="w-4 h-4" />,
-    tasks: <ListTodo className="w-4 h-4" />,
+    email_draft: <Mail className="w-5 h-5 text-white/60" />,
+    summary: <FileText className="w-5 h-5 text-white/60" />,
+    research: <Search className="w-5 h-5 text-white/60" />,
+    action_plan: <Zap className="w-5 h-5 text-white/60" />,
+    reply: <Mail className="w-5 h-5 text-white/60" />,
+    notes: <FileText className="w-5 h-5 text-white/60" />,
+    meeting_schedule: <Calendar className="w-5 h-5 text-white/60" />,
+    analytics: <BarChart3 className="w-5 h-5 text-white/60" />,
+    notion: <Database className="w-5 h-5 text-white/60" />,
+    tasks: <ListTodo className="w-5 h-5 text-white/60" />,
+    report: <FileText className="w-5 h-5 text-white/60" />,
+    analysis: <FileText className="w-5 h-5 text-white/60" />,
 };
 
 const resultLabels: Record<string, string> = {
-    email_draft: 'Draft',
-    summary: 'Summary',
-    research: 'Report',
-    action_plan: 'Plan',
-    reply: 'Reply',
-    notes: 'Notes',
-    meeting_schedule: 'Schedule',
-    analytics: 'Analytics',
-    notion: 'Notion Page',
-    tasks: 'Tasks',
+    email_draft: 'Email · Draft',
+    summary: 'Document · MD',
+    research: 'Report · MD',
+    action_plan: 'Plan · MD',
+    reply: 'Email · Reply',
+    notes: 'Notes · MD',
+    meeting_schedule: 'Schedule · MD',
+    analytics: 'Analytics · MD',
+    notion: 'Notion · Page',
+    tasks: 'Tasks · MD',
+    report: 'Report · MD',
+    analysis: 'Analysis · MD',
 };
 
-export function ResultCard({ type, title, onView }: ResultCardProps) {
-    const label = resultLabels[type] || 'View Result';
+export function ResultCard({ type, title, onView, rawContent }: ResultCardProps) {
+    const label = resultLabels[type] || 'Document · MD';
     
+    const handleDownload = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!rawContent) return;
+        const blob = new Blob([rawContent], { type: 'text/markdown;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        const safeTitle = (title || 'document').toLowerCase().replace(/[^a-z0-9]+/g, '_');
+        
+        const isEmail = type === 'email_draft' || type === 'reply';
+        link.setAttribute('download', `${safeTitle}.${isEmail ? 'txt' : 'md'}`);
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     return (
-        <motion.button
+        <motion.div
             whileHover={{ y: -1 }}
-            whileTap={{ scale: 0.98 }}
+            whileTap={{ scale: 0.99 }}
             onClick={onView}
-            className="group relative flex items-center gap-4 p-5 mt-4 mb-4 w-full max-w-[400px] bg-neutral-50 dark:bg-[#111111] border border-neutral-200 dark:border-white/5 rounded-2xl transition-all hover:bg-neutral-100 dark:hover:bg-[#161616] hover:border-neutral-200 dark:hover:border-white/10"
+            className="group relative flex items-center gap-4 p-4 mt-3 mb-3 w-full max-w-[620px] bg-black/[0.15] dark:bg-white/[0.02] border border-neutral-200 dark:border-white/[0.06] rounded-2xl transition-all hover:bg-neutral-100 dark:hover:bg-white/[0.04] hover:border-neutral-300 dark:hover:border-white/[0.12] cursor-pointer"
         >
-            <div className="w-10 h-10 rounded-xl bg-black/[0.03] dark:bg-white/5 flex items-center justify-center shrink-0 border border-neutral-200 dark:border-white/5 group-hover:border-neutral-200 dark:group-hover:border-white/10 group-hover:bg-black/[0.05] dark:group-hover:bg-white/10 transition-all text-black/40 dark:text-white/40 group-hover:text-black/80 dark:group-hover:text-white/80">
-                {resultIcons[type] || <Sparkles className="w-4 h-4" />}
+            {/* Tilted Graphic card container */}
+            <div className="relative w-11 h-12 rounded-lg bg-gradient-to-br from-white/[0.06] to-white/[0.01] border border-white/[0.08] flex items-center justify-center shrink-0 shadow-lg transform -rotate-3 overflow-hidden transition-transform group-hover:rotate-0">
+                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent pointer-events-none" />
+                {resultIcons[type] || <FileText className="w-5 h-5 text-white/50 group-hover:text-white/70 transition-colors" />}
             </div>
 
             <div className="flex flex-col items-start gap-0.5 flex-1 min-w-0">
-                <span className="text-black/90 dark:text-white/90 text-[14px] font-bold tracking-tight truncate group-hover:text-black dark:group-hover:text-white transition-colors">
-                    {title || label}
+                <span className="text-black/90 dark:text-white/90 text-[14px] font-medium tracking-tight truncate group-hover:text-black dark:group-hover:text-white transition-colors">
+                    {title || 'Untitled Document'}
                 </span>
-                <span className="text-[10px] font-bold tracking-widest uppercase text-black/20 dark:text-white/20 group-hover:text-black/40 dark:group-hover:text-white/40 transition-colors">
+                <span className="text-[11px] text-black/45 dark:text-white/40 font-medium">
                     {label}
                 </span>
             </div>
 
-            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-black/[0.03] dark:bg-white/5 text-black/10 dark:text-white/10 group-hover:text-black/40 dark:group-hover:text-white/40 transition-all">
-                <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-            </div>
-        </motion.button>
+            {rawContent && (
+                <button
+                    onClick={handleDownload}
+                    className="px-4 py-1.5 rounded-xl border border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-white/5 text-[11px] font-semibold text-black/80 dark:text-white/90 hover:bg-neutral-100 dark:hover:bg-white/10 hover:border-neutral-300 dark:hover:border-white/20 transition-all active:scale-95 shrink-0"
+                >
+                    Download
+                </button>
+            )}
+        </motion.div>
     );
 }
 

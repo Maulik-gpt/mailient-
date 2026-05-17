@@ -3840,6 +3840,7 @@ export default function ChatInterface({
                                       <ResultCard
                                         type={(msg as AgentMessage).meta!.result!.type}
                                         title={(msg as AgentMessage).meta!.result!.title}
+                                        rawContent={(msg as AgentMessage).meta!.result!.canvasData?.raw || (typeof (msg as AgentMessage).meta!.result!.canvasData?.content === 'string' ? (msg as AgentMessage).meta!.result!.canvasData?.content : undefined)}
                                         onView={() => {
                                           if ((msg as AgentMessage).meta?.result) {
                                             setCanvasData((msg as AgentMessage).meta!.result!.canvasData);
