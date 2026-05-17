@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 // @ts-ignore
-import { auth } from '@/lib/auth.js';
+import { auth as authAny } from '@/lib/auth.js';
+const auth = authAny as any;
 import { DatabaseService } from '@/lib/supabase.js';
 
 export const dynamic = 'force-dynamic';
