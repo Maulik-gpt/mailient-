@@ -20,12 +20,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: 'Shared conversation not found or expired' }, { status: 404 });
     }
 
-    // Increment view count in Supabase asynchronously
+    // Increment view count asynchronously using the hybrid database helper
     const currentViews = sharedConvo.views || 0;
-    await db.supabase
-      .from('shared_chats')
-      .update({ views: currentViews + 1 })
-      .eq('id', id);
+    // @ts-ignore
+    await db.incrementSharedConversationViews(id, currentViews);
 
     return NextResponse.json({
       id: sharedConvo.id,
@@ -71,13 +69,11 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     }
 
     // Mark as unshared to revoke public access
-    const { error } = await db.supabase
-      .from('shared_chats')
-      .update({ is_unshared: true })
-      .eq('id', id);
+    // @ts-ignore
+    const revokeResult = await db.revokeSharedConversation(id);
 
-    if (error) {
-      return NextResponse.json({ error: 'Failed to revoke link', details: error.message }, { status: 500 });
+    if (!revokeResult?.success) {
+      return NextResponse.json({ error: 'Failed to revoke link', details: revokeResult?.error }, { status: 500 });
     }
 
     return NextResponse.json({
