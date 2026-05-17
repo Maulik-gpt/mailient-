@@ -105,8 +105,11 @@ export async function GET(request: NextRequest) {
       workspaceId: workspace_id,
     });
 
-    // 7. Clear state cookie and redirect
-    const response = NextResponse.redirect(new URL('/arcus-v3?connected=notion', request.url));
+    // 7. Clear state cookie and redirect to the agent dashboard with success signal
+    const successUrl = new URL('/dashboard/agent-talk', request.url);
+    successUrl.searchParams.set('success', 'connected');
+    successUrl.searchParams.set('provider', 'notion');
+    const response = NextResponse.redirect(successUrl);
     response.cookies.delete('arcus_notion_state');
     return response;
 

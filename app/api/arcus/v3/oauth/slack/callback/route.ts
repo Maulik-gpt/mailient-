@@ -115,8 +115,11 @@ export async function GET(request: NextRequest) {
       botUserId,
     });
 
-    // 7. Clear state cookie and redirect
-    const response = NextResponse.redirect(new URL('/arcus-v3?connected=slack', request.url));
+    // 7. Clear state cookie and redirect to the agent dashboard with success signal
+    const successUrl = new URL('/dashboard/agent-talk', request.url);
+    successUrl.searchParams.set('success', 'connected');
+    successUrl.searchParams.set('provider', 'slack');
+    const response = NextResponse.redirect(successUrl);
     response.cookies.delete('arcus_slack_state');
     return response;
 

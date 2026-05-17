@@ -152,8 +152,11 @@ export async function GET(request: NextRequest) {
       watchRegistered: !!channelExpiry,
     });
 
-    // 8. Clear state cookie and redirect to Arcus
-    const response = NextResponse.redirect(new URL('/arcus-v3?connected=gcal', request.url));
+    // 8. Clear state cookie and redirect to the agent dashboard with success signal
+    const successUrl = new URL('/dashboard/agent-talk', request.url);
+    successUrl.searchParams.set('success', 'connected');
+    successUrl.searchParams.set('provider', 'google_calendar');
+    const response = NextResponse.redirect(successUrl);
     response.cookies.delete('arcus_gcal_state');
     return response;
 

@@ -1045,6 +1045,17 @@ export default function ChatInterface({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
   const [isIntegrationsModalOpen, setIsIntegrationsModalOpen] = useState<boolean>(false);
+
+  // Auto-open the connectors modal when we land back from an OAuth redirect
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('success') === 'connected') {
+      setIsIntegrationsModalOpen(true);
+      // Strip the query params so a refresh doesn't re-trigger the modal
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
   const [isEmailSelectionModalOpen, setIsEmailSelectionModalOpen] = useState<boolean>(false);
   const [isMoreOptionsOpen, setIsMoreOptionsOpen] = useState<boolean>(false);
   const [isPersonalityModalOpen, setIsPersonalityModalOpen] = useState(false);
