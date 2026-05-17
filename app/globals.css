@@ -241,8 +241,8 @@ body,
   --color-graphite-border: rgba(255, 255, 255, 0.06);
   --color-graphite-border-strong: rgba(255, 255, 255, 0.12);
   --color-graphite-text: #FFFFFF;
-  --color-graphite-muted: rgba(255, 255, 255, 0.6);
-  --color-graphite-muted-2: rgba(255, 255, 255, 0.4);
+  --color-graphite-muted: rgba(255, 255, 255, 0.95);
+  --color-graphite-muted-2: rgba(255, 255, 255, 0.85);
 
   /* Arcus Typography */
   --letter-spacing-arcus: -0.02em;
@@ -545,10 +545,10 @@ body,
   --primary: #f7f8f8;
   --primary-foreground: #000000;
   --secondary: #23252a;
-  --secondary-foreground: #8a8f98;
+  --secondary-foreground: #f3f4f6;
   --muted: #23252a;
-  --muted-foreground: #62666d;
-  --accent: #62666d;
+  --muted-foreground: #e5e7eb;
+  --accent: #e5e7eb;
   --accent-foreground: #f7f8f8;
   --destructive: oklch(0.6 0.25 15);
   --destructive-foreground: oklch(1 0 0);

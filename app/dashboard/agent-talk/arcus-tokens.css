@@ -50,9 +50,9 @@
   /* ====================== */
   /* On dark surfaces (#222326 or #000000) */
   --text-on-dark-primary:   #FFFFFF;
-  --text-on-dark-secondary: rgba(255,255,255,0.60);
-  --text-on-dark-tertiary:  rgba(255,255,255,0.35);
-  --text-on-dark-disabled:  rgba(255,255,255,0.20);
+  --text-on-dark-secondary: #FFFFFF;
+  --text-on-dark-tertiary:  rgba(255,255,255,0.90);
+  --text-on-dark-disabled:  rgba(255,255,255,0.60);
 
   /* On the light page canvas (#F4F5F8) */
   --text-on-light-primary:   #0A0B0D;

@@ -328,7 +328,7 @@ export default function SharePage() {
           </h1>
 
           {/* Premium Analytics Views Pill */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.06] text-white/50 text-[11px] font-semibold shrink-0">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.06] text-white/85 text-[11px] font-semibold shrink-0">
             <Eye className="w-3.5 h-3.5 text-white" />
             <span>{views} {views === 1 ? 'view' : 'views'}</span>
           </div>
@@ -338,7 +338,7 @@ export default function SharePage() {
           {/* Copy link option in top-right */}
           <button 
             onClick={handleCopyLink}
-            className="px-3.5 py-1.5 rounded-full border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.06] hover:border-white/[0.1] text-white/70 text-[11.5px] font-semibold transition-colors active:scale-95"
+            className="px-3.5 py-1.5 rounded-full border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.06] hover:border-white/[0.1] text-white/95 text-[11.5px] font-semibold transition-colors active:scale-95"
           >
             {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-400 inline mr-1" /> : null}
             <span>{copiedLink ? "Copied" : "Copy Link"}</span>
