@@ -2018,8 +2018,15 @@ export default function ChatInterface({
       if (conversationIdToUse) {
         const existingRaw = localStorage.getItem(`conversation_${conversationIdToUse}`);
         const existing = existingRaw ? JSON.parse(existingRaw) : { id: conversationIdToUse, messages: [], title: messageText.split(' ').slice(0, 5).join(' '), lastUpdated: '', messageCount: 0 };
-        const userMsg: UserMessage = { id: Date.now(), type: 'user', role: 'user', content: messageText, time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) };
         
+        // Check if the user message from handleSubmit is already present in existing messages
+        const hasUserMsg = (existing.messages || []).some((m: any) => m.role === 'user' && m.content === messageText);
+        let allMsgs = existing.messages || [];
+        if (!hasUserMsg) {
+          const userMsg: UserMessage = { id: Date.now(), type: 'user', role: 'user', content: messageText, time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) };
+          allMsgs = [...allMsgs, userMsg];
+        }
+
         // Use synthesized content if available, fallback to finalContent
         const finalPersistedText = finalProcessedText || finalContent;
         const agentMsg: AgentMessage = { 
@@ -2031,7 +2038,7 @@ export default function ChatInterface({
           meta: { agentSteps: currentAgentSteps }
         };
         
-        const allMsgs = [...(existing.messages || []), userMsg, agentMsg];
+        allMsgs = [...allMsgs, agentMsg];
         const unique = allMsgs.filter((msg: any, idx: number, self: any[]) => idx === self.findIndex(t => t.id === msg.id));
         localStorage.setItem(`conversation_${conversationIdToUse}`, JSON.stringify({ ...existing, messages: unique, lastUpdated: new Date().toISOString(), messageCount: unique.length }));
 
@@ -2082,7 +2089,15 @@ export default function ChatInterface({
       if (conversationIdToUse) {
         const existingRaw = localStorage.getItem(`conversation_${conversationIdToUse}`);
         const existing = existingRaw ? JSON.parse(existingRaw) : { id: conversationIdToUse, messages: [], title: messageText.split(' ').slice(0, 5).join(' '), lastUpdated: '', messageCount: 0 };
-        const userMsg: UserMessage = { id: Date.now(), type: 'user', role: 'user', content: messageText, time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) };
+        
+        // Check if the user message from handleSubmit is already present in existing messages
+        const hasUserMsg = (existing.messages || []).some((m: any) => m.role === 'user' && m.content === messageText);
+        let allMsgs = existing.messages || [];
+        if (!hasUserMsg) {
+          const userMsg: UserMessage = { id: Date.now(), type: 'user', role: 'user', content: messageText, time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) };
+          allMsgs = [...allMsgs, userMsg];
+        }
+
         const errorContentText = `${err.message || 'The connection was lost during processing.'}. Please try again.`;
         const agentMsg: AgentMessage = {
           id: assistantMsgId,
@@ -2092,7 +2107,8 @@ export default function ChatInterface({
           time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
           meta: { limitReached: isLimitError }
         };
-        const allMsgs = [...(existing.messages || []), userMsg, agentMsg];
+        
+        allMsgs = [...allMsgs, agentMsg];
         const unique = allMsgs.filter((msg: any, idx: number, self: any[]) => idx === self.findIndex(t => t.id === msg.id));
         localStorage.setItem(`conversation_${conversationIdToUse}`, JSON.stringify({ ...existing, messages: unique, lastUpdated: new Date().toISOString(), messageCount: unique.length }));
 
@@ -2725,12 +2741,25 @@ export default function ChatInterface({
     }));
 
     // Pre-save to localStorage so it survives potential refreshes
+    const existingRawForPreSave = localStorage.getItem(`conversation_${conversationIdToUse}`);
+    let historyMessages = messages;
+    if (existingRawForPreSave) {
+      try {
+        const existingData = JSON.parse(existingRawForPreSave);
+        if (existingData.messages && existingData.messages.length > historyMessages.length) {
+          historyMessages = existingData.messages;
+        }
+      } catch (e) {
+        console.error('Error parsing existing conversation for pre-save:', e);
+      }
+    }
+
     const conversationData = {
       id: conversationIdToUse as string,
-      messages: [...(conversations[conversationIdToUse as string] || []), newMessage],
-      title: messageText.trim().split(' ').slice(0, 5).join(' '), // Temporary title, will be updated by AI
+      messages: [...historyMessages, newMessage],
+      title: chatTitle || messageText.trim().split(' ').slice(0, 5).join(' '),
       lastUpdated: new Date().toISOString(),
-      messageCount: 1
+      messageCount: historyMessages.length + 1
     };
     localStorage.setItem(`conversation_${conversationIdToUse}`, JSON.stringify(conversationData));
 

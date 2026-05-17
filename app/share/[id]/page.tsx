@@ -222,65 +222,65 @@ export default function SharePage() {
         {/* Header Skeleton */}
         <nav className="h-16 border-b border-white/[0.04] bg-black/60 backdrop-blur-2xl flex items-center justify-between px-6 lg:px-12 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-white/[0.15] border border-white/30 animate-pulse shrink-0" />
-            <div className="h-4 w-24 bg-white/[0.18] rounded-full animate-pulse" />
+            <div className="w-8 h-8 rounded-lg bg-white/30 border border-white/40 animate-pulse shrink-0" />
+            <div className="h-4 w-24 bg-white/35 rounded-full animate-pulse" />
           </div>
           <div className="flex items-center gap-2">
-            <div className="h-6 w-16 bg-white/[0.12] rounded-full animate-pulse" />
-            <div className="h-6 w-20 bg-white/[0.12] rounded-full animate-pulse" />
+            <div className="h-6 w-16 bg-white/25 rounded-full animate-pulse" />
+            <div className="h-6 w-20 bg-white/25 rounded-full animate-pulse" />
           </div>
         </nav>
 
         {/* Content Chat Skeleton */}
-        <div className="flex-1 max-w-3xl w-full mx-auto px-6 py-8 overflow-y-auto space-y-8">
+        <div className="flex-1 max-w-3xl w-full mx-auto px-6 py-8 overflow-y-auto space-y-8 mt-16">
           {/* User Message Skeleton */}
           <div className="flex flex-col items-end space-y-2">
             <div className="flex items-center gap-3">
-              <div className="h-4 w-12 bg-white/[0.12] rounded-full animate-pulse" />
-              <div className="w-8 h-8 rounded-full bg-white/[0.18] border border-white/30 animate-pulse" />
+              <div className="h-4 w-12 bg-white/25 rounded-full animate-pulse" />
+              <div className="w-8 h-8 rounded-full bg-white/35 border border-white/40 animate-pulse" />
             </div>
-            <div className="w-64 h-12 bg-white/[0.1] border border-white/15 rounded-[20px] animate-pulse" />
+            <div className="w-64 h-12 bg-white/20 border border-white/30 rounded-[20px] animate-pulse" />
           </div>
 
           {/* Bot Message Skeleton 1 */}
           <div className="flex flex-col items-start space-y-3">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-white/[0.18] border border-white/30 animate-pulse" />
-              <div className="h-4 w-16 bg-white/[0.12] rounded-full animate-pulse" />
+              <div className="w-8 h-8 rounded-full bg-white/35 border border-white/40 animate-pulse" />
+              <div className="h-4 w-16 bg-white/25 rounded-full animate-pulse" />
             </div>
             <div className="w-full space-y-2.5 pl-11">
-              <div className="h-4 w-[90%] bg-white/[0.18] rounded-md animate-pulse" />
-              <div className="h-4 w-[95%] bg-white/[0.18] rounded-md animate-pulse" />
-              <div className="h-4 w-[60%] bg-white/[0.18] rounded-md animate-pulse" />
+              <div className="h-4 w-[90%] bg-white/30 rounded-md animate-pulse" />
+              <div className="h-4 w-[95%] bg-white/30 rounded-md animate-pulse" />
+              <div className="h-4 w-[60%] bg-white/30 rounded-md animate-pulse" />
             </div>
           </div>
 
           {/* User Message Skeleton 2 */}
           <div className="flex flex-col items-end space-y-2 pt-4">
             <div className="flex items-center gap-3">
-              <div className="h-4 w-16 bg-white/[0.12] rounded-full animate-pulse" />
-              <div className="w-8 h-8 rounded-full bg-white/[0.18] border border-white/30 animate-pulse" />
+              <div className="h-4 w-16 bg-white/25 rounded-full animate-pulse" />
+              <div className="w-8 h-8 rounded-full bg-white/35 border border-white/40 animate-pulse" />
             </div>
-            <div className="w-80 h-10 bg-white/[0.1] border border-white/15 rounded-[20px] animate-pulse" />
+            <div className="w-80 h-10 bg-white/20 border border-white/30 rounded-[20px] animate-pulse" />
           </div>
 
           {/* Bot Message Skeleton 2 */}
           <div className="flex flex-col items-start space-y-3">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-white/[0.18] border border-white/30 animate-pulse" />
-              <div className="h-4 w-14 bg-white/[0.12] rounded-full animate-pulse" />
+              <div className="w-8 h-8 rounded-full bg-white/35 border border-white/40 animate-pulse" />
+              <div className="h-4 w-14 bg-white/25 rounded-full animate-pulse" />
             </div>
             <div className="w-full space-y-2.5 pl-11">
-              <div className="h-4 w-[95%] bg-white/[0.18] rounded-md animate-pulse" />
-              <div className="h-4 w-[85%] bg-white/[0.18] rounded-md animate-pulse" />
-              <div className="h-4 w-[40%] bg-white/[0.18] rounded-md animate-pulse" />
+              <div className="h-4 w-[95%] bg-white/30 rounded-md animate-pulse" />
+              <div className="h-4 w-[85%] bg-white/30 rounded-md animate-pulse" />
+              <div className="h-4 w-[40%] bg-white/30 rounded-md animate-pulse" />
             </div>
           </div>
         </div>
 
         {/* Footer Skeleton */}
         <footer className="h-20 border-t border-white/[0.04] bg-black/60 backdrop-blur-2xl flex items-center justify-center px-6 shrink-0">
-          <div className="w-48 h-9 rounded-full bg-white/[0.15] border border-white/30 animate-pulse" />
+          <div className="w-48 h-9 rounded-full bg-white/30 border border-white/40 animate-pulse" />
         </footer>
       </div>
     );
@@ -313,8 +313,15 @@ export default function SharePage() {
       {/* Premium Glassmorphic Header */}
       <nav className="fixed top-0 left-0 right-0 z-50 h-16 border-b border-white/[0.04] bg-black/60 backdrop-blur-2xl flex items-center justify-between px-6 lg:px-12">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-8 h-8 rounded-lg bg-white/[0.08] border border-white/10 flex items-center justify-center shrink-0">
-            <img src="/logo.svg" className="w-5 h-5" alt="Arcus Logo" />
+          <div className="w-8 h-8 rounded-lg overflow-hidden border border-white/10 flex items-center justify-center shrink-0">
+            <img 
+              src="/arcus-ai-icon.jpg" 
+              className="w-full h-full object-cover" 
+              alt="Arcus Logo" 
+              width="32"
+              height="32"
+              loading="eager"
+            />
           </div>
           <h1 className="text-[14px] font-bold tracking-tight text-white truncate max-w-[180px] sm:max-w-[280px]">
             {title}
@@ -425,58 +432,55 @@ export default function SharePage() {
         </div>
       </main>
 
-      {/* Premium Floating Footer Action Bar */}
-      <footer className="fixed bottom-8 left-0 right-0 z-40 px-6 flex justify-center">
-        <div className="bg-[#0b0b0c]/90 border border-white/[0.08] rounded-full p-2.5 shadow-2xl backdrop-blur-xl flex items-center gap-4">
-          <div className="pl-3 pr-1 font-medium text-[13px] text-white/70">
-            {authStatus === 'unauthenticated' ? (
-              "Sign in to clone this session"
-            ) : isOwner ? (
-              "This is your shared session"
+      {/* Premium Curvy Continue Button */}
+      <footer className="fixed bottom-8 left-0 right-0 z-50 px-6 flex justify-center">
+        {authStatus === 'unauthenticated' ? (
+          <button 
+            onClick={() => signIn('google')}
+            className="px-6 py-2.5 bg-white text-black font-bold text-[13.5px] rounded-full hover:bg-neutral-200 active:scale-95 transition-all shadow-xl shadow-black/40 font-satoshi flex items-center gap-2 border border-white"
+            style={{ 
+              fontFamily: "Satoshi, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+              letterSpacing: "-0.01em"
+            }}
+          >
+            <LogIn className="w-4 h-4 text-black" />
+            <span>Continue Conversation</span>
+          </button>
+        ) : isOwner ? (
+          <button 
+            onClick={() => router.push(`/dashboard/agent-talk/${originalConvoId}`)}
+            className="px-6 py-2.5 bg-white text-black font-bold text-[13.5px] rounded-full hover:bg-neutral-200 active:scale-95 transition-all shadow-xl shadow-black/40 font-satoshi flex items-center gap-2 border border-white"
+            style={{ 
+              fontFamily: "Satoshi, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+              letterSpacing: "-0.01em"
+            }}
+          >
+            <ExternalLink className="w-4 h-4 text-black" />
+            <span>Continue Conversation</span>
+          </button>
+        ) : (
+          <button 
+            onClick={handleClone}
+            disabled={cloning}
+            className="px-6 py-2.5 bg-white text-black font-bold text-[13.5px] rounded-full hover:bg-neutral-200 active:scale-95 transition-all shadow-xl shadow-black/40 font-satoshi flex items-center gap-2 border border-white disabled:opacity-50"
+            style={{ 
+              fontFamily: "Satoshi, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+              letterSpacing: "-0.01em"
+            }}
+          >
+            {cloning ? (
+              <>
+                <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                <span>Cloning...</span>
+              </>
             ) : (
-              "Clone this conversation to Arcus"
+              <>
+                <Layers className="w-4 h-4 text-black" />
+                <span>Continue Conversation</span>
+              </>
             )}
-          </div>
-
-          {authStatus === 'unauthenticated' ? (
-            <button 
-              onClick={() => signIn('google')}
-              className="flex items-center gap-2 px-5 py-2 bg-white text-black font-bold text-[12.5px] rounded-full hover:bg-neutral-200 active:scale-95 transition-all font-satoshi shadow-lg shrink-0"
-              style={{ fontFamily: "Satoshi, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}
-            >
-              <LogIn className="w-3.5 h-3.5 text-black" />
-              <span>Continue Conversation</span>
-            </button>
-          ) : isOwner ? (
-            <button 
-              onClick={() => router.push(`/dashboard/agent-talk/${originalConvoId}`)}
-              className="flex items-center gap-2 px-5 py-2 bg-white text-black font-bold text-[12.5px] rounded-full hover:bg-neutral-200 active:scale-95 transition-all font-satoshi shadow-lg shrink-0"
-              style={{ fontFamily: "Satoshi, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}
-            >
-              <ExternalLink className="w-3.5 h-3.5 text-black" />
-              <span>Continue Conversation</span>
-            </button>
-          ) : (
-            <button 
-              onClick={handleClone}
-              disabled={cloning}
-              className="flex items-center gap-2 px-5 py-2 bg-white text-black font-bold text-[12.5px] rounded-full hover:bg-neutral-200 active:scale-95 transition-all font-satoshi shadow-lg shrink-0 disabled:opacity-50"
-              style={{ fontFamily: "Satoshi, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}
-            >
-              {cloning ? (
-                <>
-                  <div className="w-3.5 h-3.5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-                  <span>Cloning...</span>
-                </>
-              ) : (
-                <>
-                  <Layers className="w-3.5 h-3.5 text-black" />
-                  <span>Continue Conversation</span>
-                </>
-              )}
-            </button>
-          )}
-        </div>
+          </button>
+        )}
       </footer>
     </div>
   );

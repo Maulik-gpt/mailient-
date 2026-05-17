@@ -165,7 +165,7 @@ export function ConnectorBannerCompact({
         {onDismiss && (
           <button
             onClick={onDismiss}
-            className="p-1.5 text-neutral-600 dark:text-gray-400 hover:text-black dark:text-white hover:bg-neutral-100 dark:bg-gray-800
+            className="p-1.5 text-neutral-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-neutral-100 dark:bg-gray-800
                        rounded-lg transition-colors"
           >
             <X className="w-4 h-4" />
