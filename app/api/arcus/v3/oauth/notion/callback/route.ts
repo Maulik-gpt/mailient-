@@ -29,18 +29,18 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('[Arcus V3] Notion OAuth error:', error);
-      return NextResponse.redirect(new URL('/arcus-v3?error=notion_denied', request.url));
+      return NextResponse.redirect(new URL('/dashboard/agent-talk?error=notion_denied', request.url));
     }
 
     if (!code) {
-      return NextResponse.redirect(new URL('/arcus-v3?error=no_code', request.url));
+      return NextResponse.redirect(new URL('/dashboard/agent-talk?error=no_code', request.url));
     }
 
     // 3. Validate CSRF state
     const storedState = request.cookies.get('arcus_notion_state')?.value;
     if (!state || !storedState || state !== storedState) {
       console.error('[Arcus V3] Notion OAuth state mismatch');
-      return NextResponse.redirect(new URL('/arcus-v3?error=csrf', request.url));
+      return NextResponse.redirect(new URL('/dashboard/agent-talk?error=csrf', request.url));
     }
 
     // 4. Exchange code for access token
@@ -67,14 +67,14 @@ export async function GET(request: NextRequest) {
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
       console.error('[Arcus V3] Notion token exchange failed:', errorText);
-      return NextResponse.redirect(new URL('/arcus-v3?error=token_exchange', request.url));
+      return NextResponse.redirect(new URL('/dashboard/agent-talk?error=token_exchange', request.url));
     }
 
     const data = await tokenResponse.json();
     const { access_token, workspace_name, workspace_icon, workspace_id, bot_id } = data;
 
     if (!access_token) {
-      return NextResponse.redirect(new URL('/arcus-v3?error=no_token', request.url));
+      return NextResponse.redirect(new URL('/dashboard/agent-talk?error=no_token', request.url));
     }
 
     // 5. Store encrypted token in arcus_integrations
@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
 
     if (dbError) {
       console.error('[Arcus V3] DB store error:', dbError.message);
-      return NextResponse.redirect(new URL('/arcus-v3?error=db_store', request.url));
+      return NextResponse.redirect(new URL('/dashboard/agent-talk?error=db_store', request.url));
     }
 
     // 6. Audit log
@@ -115,6 +115,6 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('[Arcus V3] Notion callback error:', (error as Error).message);
-    return NextResponse.redirect(new URL('/arcus-v3?error=callback', request.url));
+    return NextResponse.redirect(new URL('/dashboard/agent-talk?error=callback', request.url));
   }
 }

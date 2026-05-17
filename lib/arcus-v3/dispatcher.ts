@@ -11,6 +11,7 @@ import { gcalHandler } from './handlers/gcal';
 import { slackHandler } from './handlers/slack';
 import { notionHandler } from './handlers/notion';
 import { calcomHandler } from './handlers/calcom';
+import { executeGmailAction } from './handlers/gmail';
 
 /**
  * Execute a single step by dispatching to the appropriate handler.
@@ -38,6 +39,8 @@ export async function executeStep(
       });
     case 'calcom':
       return calcomHandler(tokens.accessToken, step.action, step.params);
+    case 'gmail':
+      return executeGmailAction(tokens.accessToken, step.action, step.params) as any;
     default:
       throw new Error(`Unknown app: ${step.app}`);
   }

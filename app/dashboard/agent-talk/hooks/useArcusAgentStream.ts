@@ -59,7 +59,7 @@ export function useArcusAgentStream(callbacks: AgentStreamCallbacks) {
     abortRef.current = new AbortController();
 
     try {
-      const response = await fetch('/api/agent-talk/chat-arcus-v2', {
+      const response = await fetch('/api/arcus/v3/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(request),

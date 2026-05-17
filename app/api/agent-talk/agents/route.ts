@@ -3,6 +3,28 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth.js';
 import { DatabaseService } from '@/lib/supabase.js';
 
+export async function GET() {
+  try {
+    // @ts-ignore
+    const session = await auth();
+    if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const db = new DatabaseService();
+    const { data, error } = await db.supabase
+      .from('arcus_recurring_agents')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .order('created_at', { ascending: false });
+
+    if (error && error.code === '42P01') return NextResponse.json({ agents: [] });
+    if (error) throw error;
+
+    return NextResponse.json({ agents: data || [] });
+  } catch (error: any) {
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
 export async function POST(request: Request) {
   try {
     // @ts-ignore

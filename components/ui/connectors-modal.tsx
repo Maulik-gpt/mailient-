@@ -76,13 +76,37 @@ const BrandIcons = {
       <path d="M100.745 47.281c0-7.33 5.978-13.317 13.309-13.317 7.33 0 13.317 5.987 13.317 13.317s-5.987 13.317-13.317 13.317h-13.309zm-6.709 0c0 7.33-5.987 13.317-13.317 13.317s-13.317-5.986-13.317-13.317V13.946C67.402 6.616 73.388.63 80.719.63c7.33 0 13.317 5.987 13.317 13.317zm0 0" fill="#2eb57d"/>
       <path d="M80.719 100.745c7.33 0 13.317 5.978 13.317 13.309 0 7.33-5.987 13.317-13.317 13.317s-13.317-5.987-13.317-13.317v-13.309zm0-6.709c-7.33 0-13.317-5.987-13.317-13.317s5.986-13.317 13.317-13.317h33.335c7.33 0 13.317 5.986 13.317 13.317 0 7.33-5.987 13.317-13.317 13.317zm0 0" fill="#ebb02e"/>
     </svg>
+  ),
+  Gmail: ({ className }: { className?: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className={className}>
+      <path fill="#EA4335" d="M6 12l18 11L42 12V9H6z"/>
+      <path fill="#34A853" d="M42 12v27a3 3 0 01-3 3H9a3 3 0 01-3-3V12l18 11 18-11z"/>
+      <path fill="#4285F4" d="M6 12v27a3 3 0 003 3V12H6z"/>
+      <path fill="#FBBC04" d="M42 12v30h-3V12l3-3v3z"/>
+      <path fill="#EA4335" d="M6 9h36l-3 3H9L6 9z"/>
+    </svg>
   )
 };
 
 // Definitive list of supported connectors (Phase 4 canonical)
 const SUPPORTED_APPS = [
-  { 
-    id: 'google_calendar', 
+  {
+    id: 'gmail',
+    name: 'Gmail',
+    icon: BrandIcons.Gmail,
+    color: '#EA4335',
+    type: 'MCP',
+    author: 'Google',
+    uuid: 'gm-0a1b-2c3d-4e5f-6g7h8i9j0k1l',
+    website: 'https://mail.google.com',
+    documentation: 'https://developers.google.com/gmail',
+    privacyPolicy: 'https://policies.google.com/privacy',
+    description: 'Gmail MCP connects Arcus directly to your inbox so it can read, draft, send, and organize emails on your behalf.',
+    details: 'Connect Gmail so Arcus can triage your inbox, draft replies in your tone, detect meeting requests, and keep your Notion CRM updated — all automatically.',
+    smartPrompt: "Triage my inbox and tell me what needs my attention today.",
+  },
+  {
+    id: 'google_calendar',
     name: 'Google Calendar', 
     icon: BrandIcons.GoogleCalendar, 
     color: '#4285F4',
@@ -264,41 +288,32 @@ export function ConnectorsModal({
     }
   }, [isOpen]);
 
+  // V3 providers redirect directly; legacy providers return { url } from /auth
+  const V3_DIRECT_ROUTES: Record<string, string> = {
+    gmail:            '/api/arcus/v3/oauth/gmail',
+    google_calendar:  '/api/arcus/v3/oauth/gcal',
+    slack:            '/api/arcus/v3/oauth/slack',
+    notion:           '/api/arcus/v3/oauth/notion',
+    notion_calendar:  '/api/arcus/v3/oauth/notion', // shares Notion OAuth
+  };
+
   const handleConnectAction = async (appId: string) => {
-    console.log('[ConnectorsModal] handleConnectAction triggered for:', appId);
-    // Visual feedback that the button was clicked
-    const button = document.activeElement as HTMLButtonElement;
-    if (button) {
-      const originalText = button.innerText;
-      button.innerText = 'Connecting...';
-      button.disabled = true;
+    // V3 providers: just navigate — the route itself redirects to the provider
+    if (V3_DIRECT_ROUTES[appId]) {
+      window.location.assign(V3_DIRECT_ROUTES[appId]);
+      return;
     }
 
+    // Legacy providers: fetch a URL from the auth endpoint
     try {
       const res = await fetch(`/api/integrations/${appId}/auth`);
-      console.log('[ConnectorsModal] Auth response status:', res.status);
-      
       if (res.ok) {
         const data = await res.json();
-        console.log('[ConnectorsModal] Auth data:', data);
-        if (data.url) {
-          console.log('[ConnectorsModal] Redirecting to:', data.url);
-          window.location.assign(data.url);
-          return;
-        }
+        if (data.url) { window.location.assign(data.url); return; }
       }
-      
-      const errorData = await res.json().catch(() => ({}));
-      console.error('[ConnectorsModal] Auth error:', errorData);
       alert('Authentication failed. Please try again.');
-    } catch (err) {
-      console.error('[ConnectorsModal] Fetch error:', err);
+    } catch {
       alert('Could not reach authentication server.');
-    } finally {
-      if (button) {
-        button.innerText = 'Connect';
-        button.disabled = false;
-      }
     }
   };
 

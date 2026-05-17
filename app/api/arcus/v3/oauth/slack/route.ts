@@ -65,6 +65,6 @@ export async function GET(request: NextRequest) {
     return response;
   } catch (error) {
     console.error('[Arcus V3] Slack OAuth init error:', (error as Error).message);
-    return NextResponse.redirect(new URL('/arcus-v3?error=slack_oauth_init', request.url));
+    return NextResponse.redirect(new URL('/dashboard/agent-talk?error=slack_oauth_init', request.url));
   }
 }

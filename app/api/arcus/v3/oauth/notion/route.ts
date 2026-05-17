@@ -50,6 +50,6 @@ export async function GET(request: NextRequest) {
     return response;
   } catch (error) {
     console.error('[Arcus V3] Notion OAuth init error:', (error as Error).message);
-    return NextResponse.redirect(new URL('/arcus-v3?error=oauth_init', request.url));
+    return NextResponse.redirect(new URL('/dashboard/agent-talk?error=oauth_init', request.url));
   }
 }

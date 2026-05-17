@@ -12,6 +12,7 @@ import { getSupabaseAdmin } from '../supabase.js';
 import { decrypt } from '../crypto.js';
 import { normalizeGCalEvents } from './normalizers/gcal';
 import { normalizeSlackHistory } from './normalizers/slack';
+import { normalizeGmailMessages } from './normalizers/gmail';
 import { Client } from '@notionhq/client';
 import { normalizeNotionPage, normalizeNotionDatabaseItem, flattenNotionBlocks } from './normalizers/notion';
 
@@ -51,10 +52,11 @@ export async function buildContext(
   const gcalIntegration = integrations?.find(i => i.provider === 'gcal');
   const slackIntegration = integrations?.find(i => i.provider === 'slack');
   const notionIntegration = integrations?.find(i => i.provider === 'notion');
+  const gmailIntegration = integrations?.find(i => i.provider === 'gmail');
 
   // 3. Fetch data in parallel
   const eventWindow = mode === 'plan_mode' ? 7 : 2; // days
-  const [upcomingEvents, recentMessages, notionEvents] = await Promise.all([
+  const [upcomingEvents, recentMessages, notionEvents, recentEmails] = await Promise.all([
     gcalIntegration
       ? fetchGCalEvents(gcalIntegration, eventWindow)
       : Promise.resolve([]),
@@ -63,6 +65,9 @@ export async function buildContext(
       : Promise.resolve([]),
     notionIntegration
       ? fetchNotionEvents(notionIntegration, eventWindow)
+      : Promise.resolve([]),
+    gmailIntegration
+      ? fetchGmailEmails(gmailIntegration)
       : Promise.resolve([]),
   ]);
 
@@ -76,6 +81,7 @@ export async function buildContext(
     upcomingEvents,
     recentMessages,
     notionEvents,
+    recentEmails,
     triggeringEvent,
   };
 }
@@ -286,6 +292,61 @@ async function fetchNotionEvents(
     return normalizedEvents;
   } catch (err) {
     console.error('[Arcus V3] Notion fetch error:', (err as Error).message);
+    return [];
+  }
+}
+
+/**
+ * Fetch recent Gmail messages from the inbox (last 50, up to 48h).
+ * Uses gmail.readonly scope — only reads, never writes.
+ */
+async function fetchGmailEmails(
+  integration: Record<string, unknown>
+): Promise<ArcusEvent[]> {
+  try {
+    const accessToken = decrypt(integration.access_token as string);
+
+    // 1. List inbox message IDs (last 50)
+    const listRes = await fetch(
+      'https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=50&labelIds=INBOX&q=newer_than:2d',
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        signal: AbortSignal.timeout(10000),
+      }
+    );
+
+    if (!listRes.ok) {
+      console.error('[Arcus V3] Gmail list error:', listRes.status);
+      return [];
+    }
+
+    const listData = await listRes.json();
+    const messageIds: string[] = (listData.messages || []).map((m: { id: string }) => m.id);
+    if (!messageIds.length) return [];
+
+    // 2. Batch fetch message metadata (first 20 to avoid timeouts)
+    const fetched = await Promise.all(
+      messageIds.slice(0, 20).map(async (id) => {
+        try {
+          const res = await fetch(
+            `https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=full`,
+            {
+              headers: { Authorization: `Bearer ${accessToken}` },
+              signal: AbortSignal.timeout(8000),
+            }
+          );
+          if (!res.ok) return null;
+          return await res.json();
+        } catch {
+          return null;
+        }
+      })
+    );
+
+    const messages = fetched.filter(Boolean);
+    return normalizeGmailMessages(messages);
+  } catch (err) {
+    console.error('[Arcus V3] Gmail fetch error:', (err as Error).message);
     return [];
   }
 }

@@ -11,8 +11,8 @@ import { z } from 'zod';
 // Every integration normalizes its raw API response into this shape.
 // The LLM sees ONLY ArcusEvent objects — never raw API payloads.
 
-export type ArcusEventSource = 'gcal' | 'slack' | 'notion' | 'calcom';
-export type ArcusEventType = 'meeting' | 'message' | 'page' | 'booking' | 'task';
+export type ArcusEventSource = 'gcal' | 'slack' | 'notion' | 'calcom' | 'gmail';
+export type ArcusEventType = 'meeting' | 'message' | 'page' | 'booking' | 'task' | 'email';
 
 export interface ArcusEvent {
   id: string;
@@ -51,9 +51,13 @@ export interface ArcusUserContext {
 export interface ArcusContext {
   user: ArcusUserContext;
   currentTime: string;
-  upcomingEvents: ArcusEvent[];
-  recentMessages: ArcusEvent[];
-  triggeringEvent?: ArcusEvent; // absent in Plan Mode
+  upcomingEvents: ArcusEvent[];    // GCal events
+  recentMessages: ArcusEvent[];   // Slack messages
+  notionEvents?: ArcusEvent[];    // Notion pages
+  recentEmails?: ArcusEvent[];    // Gmail inbox
+  triggeringEvent?: ArcusEvent;   // absent in Plan Mode / conversational mode
+  userMessage?: string;           // present only in conversational mode
+  conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>;
 }
 
 // ─── Plan Artifact ──────────────────────────────────────────────────────────────
@@ -97,7 +101,7 @@ export interface Plan {
 
 // Step schema for execution actions
 export const StepSchema = z.object({
-  app: z.enum(['gcal', 'slack', 'notion', 'calcom']),
+  app: z.enum(['gcal', 'slack', 'notion', 'calcom', 'gmail']),
   action: z.string(),
   params: z.record(z.string(), z.unknown()),
   humanReadable: z.string(),
@@ -189,4 +193,5 @@ export const DEEP_LINKS: Record<string, string> = {
   slack: 'https://app.slack.com',
   notion: 'https://notion.so',
   calcom: 'https://app.cal.com',
+  gmail: 'https://mail.google.com',
 };
