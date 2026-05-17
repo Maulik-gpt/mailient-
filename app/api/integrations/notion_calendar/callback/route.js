@@ -1,53 +1,9 @@
+// notion_calendar auth now redirects to /api/integrations/notion/callback
+// This route is kept but should not be reached in normal flow.
+// If it is reached (e.g. old bookmarked link), forward to the notion callback handler.
 import { NextResponse } from 'next/server';
-import { auth as getSession } from '@/lib/auth';
-import { ArcusIntegrationManager } from '@/lib/arcus-integration-manager';
-import { supabase } from '@/lib/supabase';
-
-const db = {
-  async storeIntegrationCredentials(userEmail, provider, credentials) {
-    await supabase.from('integration_credentials').upsert({
-      user_email: userEmail,
-      provider,
-      access_token: credentials.accessToken,
-      refresh_token: credentials.refreshToken,
-      expires_at: credentials.expiresAt,
-      scopes: credentials.scopes,
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'user_email,provider' });
-  },
-
-  async logIntegrationEvent(userEmail, provider, event, metadata = {}) {
-    await supabase.from('integration_events').insert({
-      user_email: userEmail,
-      provider,
-      event,
-      metadata,
-      created_at: new Date().toISOString()
-    });
-  }
-};
-
-const integrationManager = new ArcusIntegrationManager(db);
 
 export async function GET(request) {
-  try {
-    const session = await getSession();
-    if (!session?.user?.email) return NextResponse.redirect(`/dashboard/agent-talk?error=unauthorized`);
-
-    const { searchParams } = new URL(request.url);
-    const code = searchParams.get('code');
-    const userEmail = session.user.email;
-    const provider = 'notion_calendar';
-
-    if (!code) return NextResponse.redirect(`/dashboard/agent-talk?error=missing_code`);
-
-    const { origin } = new URL(request.url);
-    const credentials = await integrationManager.exchangeCode(provider, code, origin);
-    await integrationManager.storeCredentials(userEmail, provider, credentials);
-    await db.logIntegrationEvent(userEmail, provider, 'connected', { scopes: credentials.scopes });
-
-    return NextResponse.redirect(`/dashboard/agent-talk?success=connected&provider=${provider}`);
-  } catch (err) {
-    return NextResponse.redirect(`/dashboard/agent-talk?error=exchange_failed&message=${encodeURIComponent(err.message)}`);
-  }
+  const { origin, search } = new URL(request.url);
+  return NextResponse.redirect(new URL(`/api/integrations/notion/callback${search}`, origin));
 }

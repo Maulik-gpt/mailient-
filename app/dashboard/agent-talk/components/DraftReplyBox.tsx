@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Copy, X, Edit2, Mail, Send, Check, Sparkles, ArrowUp, Undo2, CornerDownLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import WordBlurStream from '../../../../src/WordBlurStream';
 
 interface DraftReplyBoxProps {
     draftData: {
@@ -286,7 +287,7 @@ export function DraftReplyBox({
                                     {selection.text}
                                 </span>
                                 <span className="text-black dark:text-white bg-blue-500/30 px-1 rounded-md border-b-2 border-blue-500/50 shadow-[0_0_20px_rgba(59,130,246,0.1)]">
-                                    {proposedRefinement}
+                                    <WordBlurStream text={proposedRefinement} loop={false} />
                                 </span>
                                 {editedContent.slice(selection.end)}
                             </>

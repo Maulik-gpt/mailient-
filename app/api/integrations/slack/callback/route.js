@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
 import { auth as getSession } from '@/lib/auth';
 import { ArcusIntegrationManager } from '@/lib/arcus-integration-manager';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseAdmin } from '@/lib/supabase';
+import { encrypt } from '@/lib/crypto';
 
 const db = {
   async storeIntegrationCredentials(userEmail, provider, credentials) {
+    const supabase = getSupabaseAdmin();
     await supabase.from('integration_credentials').upsert({
       user_email: userEmail,
       provider,
@@ -17,6 +19,7 @@ const db = {
   },
 
   async logIntegrationEvent(userEmail, provider, event, metadata = {}) {
+    const supabase = getSupabaseAdmin();
     await supabase.from('integration_events').insert({
       user_email: userEmail,
       provider,
@@ -46,6 +49,17 @@ export async function GET(request) {
     const credentials = await integrationManager.exchangeCode(provider, code, baseUrl);
     await integrationManager.storeCredentials(userEmail, provider, credentials);
     await db.logIntegrationEvent(userEmail, provider, 'connected', { scopes: credentials.scopes });
+
+    // Also write encrypted tokens to arcus_integrations so the v3 agent can use them
+    const supabase = getSupabaseAdmin();
+    await supabase.from('arcus_integrations').upsert({
+      user_id: userEmail.toLowerCase(),
+      provider: 'slack',
+      access_token: encrypt(credentials.accessToken),
+      refresh_token: credentials.refreshToken ? encrypt(credentials.refreshToken) : null,
+      scopes: credentials.scopes || [],
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id,provider' });
 
     return NextResponse.redirect(new URL(`/dashboard/agent-talk?success=connected&provider=${provider}`, baseUrl));
   } catch (err) {

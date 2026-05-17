@@ -1,6 +1,5 @@
 import { DatabaseService } from '@/lib/supabase.js';
 import { auth } from '@/lib/auth.js';
-import { decrypt } from '@/lib/crypto.js';
 
 export async function POST(request) {
   try {
@@ -32,51 +31,26 @@ export async function GET(request) {
     if (!session?.user?.email) {
       return Response.json({ error: 'No session' }, { status: 401 });
     }
+    const userEmail = session.user.email.toLowerCase();
 
     const db = new DatabaseService();
-    const tokens = await db.getUserTokens(session.user.email);
-    const profile = await db.getUserProfile(session.user.email);
+    const { data: rows } = await db.supabase
+      .from('integration_credentials')
+      .select('provider')
+      .eq('user_email', userEmail);
 
-    const tokenScopes = tokens?.scopes || '';
+    const connected = new Set((rows || []).map(r => r.provider));
 
-    // Core Google integrations
-    const integrations = {
-      gmail: !!tokens,
-      'google-calendar': tokenScopes.includes('calendar'),
-      'google-meet': tokenScopes.includes('calendar'),
-      'google-tasks': tokenScopes.includes('tasks') || !!tokens, // Tasks API uses same OAuth
-    };
+    // notion_calendar shares the notion token
+    if (connected.has('notion')) connected.add('notion_calendar');
+    // google_meet shares the google_calendar token
+    if (connected.has('google_calendar')) connected.add('google_meet');
 
-    // Notion — check if server-level integration token is configured
-    const notionConfigured = !!process.env.NOTION_INTEGRATION_TOKEN;
-    let notionConnected = false;
-    if (notionConfigured) {
-      try {
-        const { NotionAdapter } = await import('@/lib/notion-adapter.js');
-        const notion = new NotionAdapter({ token: process.env.NOTION_INTEGRATION_TOKEN });
-        const check = await notion.checkConnection();
-        notionConnected = check.connected;
-      } catch (e) {
-        // Connection check failed — not connected
-      }
-    }
-    integrations['notion'] = notionConnected;
-
-    // Google Tasks — verify via API if tokens exist
-    let tasksConnected = false;
-    if (tokens?.encrypted_access_token) {
-      try {
-        const accessToken = decrypt(tokens.encrypted_access_token);
-        const refreshToken = tokens.encrypted_refresh_token ? decrypt(tokens.encrypted_refresh_token) : '';
-        const { GoogleTasksAdapter } = await import('@/lib/google-tasks-adapter.js');
-        const tasksAdapter = new GoogleTasksAdapter(accessToken, refreshToken);
-        const check = await tasksAdapter.checkConnection();
-        tasksConnected = check.connected;
-      } catch (e) {
-        // Tasks check failed
-      }
-    }
-    integrations['google-tasks'] = tasksConnected;
+    const PROVIDERS = ['google_calendar', 'google_meet', 'notion', 'notion_calendar', 'slack', 'cal_com'];
+    const integrations = PROVIDERS.map(provider => ({
+      provider,
+      connected: connected.has(provider),
+    }));
 
     return Response.json({ integrations });
 

@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
 import { auth as getSession } from '@/lib/auth';
 import { ArcusIntegrationManager } from '@/lib/arcus-integration-manager';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseAdmin } from '@/lib/supabase';
+import { encrypt } from '@/lib/crypto';
 
 // Database wrapper
 const db = {
   async storeIntegrationCredentials(userEmail, provider, credentials) {
+    const supabase = getSupabaseAdmin();
     const { error } = await supabase
       .from('integration_credentials')
       .upsert({
@@ -19,11 +21,12 @@ const db = {
       }, {
         onConflict: 'user_email,provider'
       });
-    
+
     if (error) throw error;
   },
 
   async logIntegrationEvent(userEmail, provider, event, metadata = {}) {
+    const supabase = getSupabaseAdmin();
     await supabase
       .from('integration_events')
       .insert({
@@ -87,6 +90,18 @@ export async function GET(request) {
     await db.logIntegrationEvent(userEmail, provider, 'connected', {
       scopes: credentials.scopes
     });
+
+    // Write encrypted tokens to arcus_integrations so the v3 agent dispatcher can use them
+    const supabase = getSupabaseAdmin();
+    await supabase.from('arcus_integrations').upsert({
+      user_id: userEmail.toLowerCase(),
+      provider: 'gcal',
+      access_token: encrypt(credentials.accessToken),
+      refresh_token: credentials.refreshToken ? encrypt(credentials.refreshToken) : null,
+      scopes: credentials.scopes || [],
+      expires_at: credentials.expiresAt || null,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id,provider' });
 
     // Redirect back to chat with success
     return NextResponse.redirect(

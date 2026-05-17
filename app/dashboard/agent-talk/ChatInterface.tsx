@@ -1,7 +1,7 @@
 "use client";
 
 import { Send, Mail, Upload, User, User2, MessageCircle, DoorOpen, Bell, Mail as EmailIcon, MoreHorizontal, LogOut, Settings, ChevronRight, ChevronDown, CheckCircle2, Circle, Edit, History, LayoutGrid, Zap, Volume2, Sparkles, FileText, Calendar, BarChart3, PenTool, BrainCircuit, Search, Check, X, PanelLeft, Menu, Compass, Terminal, Share2 } from 'lucide-react';
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { HugeiconsIcon } from '@hugeicons/react';
@@ -28,6 +28,7 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/comp
 import { RainbowButton } from '@/components/ui/rainbow-button';
 import { HomeFeedSidebar } from "@/components/ui/home-feed-sidebar";
 import { TextShimmer } from '@/components/ui/text-shimmer';
+import WordBlurStream from '../../../src/WordBlurStream';
 
 import { UsageLimitModal } from '@/components/ui/usage-limit-modal';
 import { SettingsCard } from '@/components/ui/settings-card';
@@ -270,6 +271,29 @@ const MessageContent = ({ content, isUser, isTyping, isNewResponse, hideLinks }:
   const textColorClass = isUser ? "text-white" : "text-white/90";
   let textContent = typeof content === 'string' ? content : (content.text || '');
 
+  const shouldAnimate = (isTyping || isNewResponse) && !isUser;
+
+  const markdownComponents = useMemo(() => {
+    const base = {
+      ...MarkdownComponents,
+      ...(hideLinks ? { a: ({ node, ...props }: any) => <span className="text-inherit underline underline-offset-2 opacity-50 cursor-default">{props.children}</span> } : {})
+    };
+
+    if (shouldAnimate) {
+      return {
+        ...base,
+        text: ({ children }: { children: string }) => {
+          if (typeof children === 'string') {
+            return <WordBlurStream text={children} loop={false} />;
+          }
+          return children;
+        }
+      };
+    }
+
+    return base;
+  }, [shouldAnimate, hideLinks]);
+
   return (
     <div className={cn(
       "w-full",
@@ -304,16 +328,13 @@ const MessageContent = ({ content, isUser, isTyping, isNewResponse, hideLinks }:
       )}
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
-        components={{
-          ...MarkdownComponents,
-          ...(hideLinks ? { a: ({ node, ...props }) => <span className="text-inherit underline underline-offset-2 opacity-50 cursor-default">{props.children}</span> } : {})
-        }}
+        components={markdownComponents}
       >
         {textContent}
       </ReactMarkdown>
       {isTyping && textContent && (
         <motion.span
-          className="inline-block w-1.5 h-4 ml-1 bg-white/40 rounded-sm"
+          className="inline-block w-1.5 h-4 ml-1 bg-white/40 rounded-sm align-middle"
           animate={{ opacity: [0, 1, 0] }}
           transition={{ repeat: Infinity, duration: 0.8 }}
         />
