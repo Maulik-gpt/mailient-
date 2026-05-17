@@ -313,7 +313,7 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   },
   {
     name: 'open_canvas',
-    description: 'Open the canvas panel — a full document workspace on the right side. Use this for ANYTHING longer than a short chat reply: email drafts for review, reports, weekly digests, analyses, proposals, action plans. The canvas renders markdown beautifully with Copy and Export buttons. Always use canvas for content over 3 paragraphs.',
+    description: 'Open the built-in Canvas Panel — a beautiful full-screen document viewer on the right side. ALWAYS available, requires no integration. Use for ANYTHING longer than 3 paragraphs: email drafts, reports, analyses, summaries, action plans, weekly digests. Never render long content in chat — use open_canvas instead.',
     input_schema: {
       type: 'object',
       properties: {

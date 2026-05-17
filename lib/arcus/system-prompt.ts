@@ -54,8 +54,8 @@ const ALL_INTEGRATION_KEYS = Object.keys(INTEGRATION_CAPABILITIES);
 
 // Tools that are always available regardless of connected integrations
 const ALWAYS_AVAILABLE = [
-  'Canvas panel — render documents, reports, drafts in a full-screen panel',
-  'Web search — search the internet for current information',
+  'Canvas Panel (built-in, always available) — render ANY document, report, analysis, email draft, or data summary in a beautiful full-screen document viewer. Use open_canvas for anything longer than 3 paragraphs. No integration needed.',
+  'Web Search (built-in, always available) — search the internet for current information.',
 ];
 
 export function buildSystemPrompt(opts: SystemPromptOptions): string {

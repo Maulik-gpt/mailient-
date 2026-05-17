@@ -2,938 +2,424 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  X, Copy, Check, Edit3, FileText, Mail, Sparkles, ChevronDown,
-  ChevronRight, Calendar, Globe, AlertCircle, ShieldAlert, Send,
-  ArrowRight, BarChart3, Clock, Users, Zap,
-  MoreHorizontal, CheckCircle2, Circle, Edit, Terminal,
-  Code, Layout, Laptop, GripVertical, ChevronLeft, Presentation,
-  LineChart, PieChart, TrendingUp, Info, ListTodo, AlertTriangle,
-  Target, HelpCircle, Shield, Play, Loader2
+  X, Copy, Check, Edit3, FileText, Mail, Sparkles,
+  BarChart3, Zap, Globe, Calendar, ArrowRight, Send,
+  Download, ChevronLeft, ChevronRight, Loader2,
+  AlertTriangle, CheckCircle2, Clock, ListTodo, Target,
+  HelpCircle, Shield, Play,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { ExecutionTimeline } from './ExecutionTimeline';
-import { ActionOutputCards } from './ActionOutputCards';
-import { CanvasArtifacts } from './CanvasArtifacts';
-import { NextActionControls } from './NextActionControls';
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, 
-  ResponsiveContainer, PieChart as RePieChart, Pie, Cell, 
-  AreaChart, Area 
-} from 'recharts';
 
-export type CanvasType = 'email_draft' | 'summary' | 'research' | 'action_plan' | 'reply' | 'notes' | 'meeting_schedule' | 'analytics' | 'workflow' | 'execution' | 'artifacts' | 'action_outputs' | 'next_actions' | 'none';
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export type CanvasType =
+  | 'email_draft' | 'summary' | 'research' | 'action_plan' | 'reply'
+  | 'notes' | 'meeting_schedule' | 'analytics' | 'workflow' | 'execution'
+  | 'artifacts' | 'action_outputs' | 'next_actions' | 'none'
+  | 'report' | 'analysis';
 
 export interface CanvasData {
-    type: CanvasType;
-    title?: string;
-    content: any;
-    sections?: any[];
-    actions?: { actionType: string; label?: string; requiresApproval?: boolean }[];
-    approvalTokens?: Record<string, string>;
-    raw?: string;
-    error?: string;
+  type: CanvasType;
+  title?: string;
+  content: any;
+  sections?: any[];
+  actions?: { actionType: string; label?: string; requiresApproval?: boolean }[];
+  approvalTokens?: Record<string, string>;
+  raw?: string;
+  error?: string;
 }
 
 interface CanvasPanelProps {
-    isOpen: boolean;
-    onClose: () => void;
-    canvasData: CanvasData | null;
-    onExecute: (action: string, data: unknown) => void;
-    isExecuting?: boolean;
-    isSidebarCollapsed?: boolean;
-    onSendToChat?: (message: string) => void;
+  isOpen: boolean;
+  onClose: () => void;
+  canvasData: CanvasData | null;
+  onExecute: (action: string, data: unknown) => void;
+  isExecuting?: boolean;
+  isSidebarCollapsed?: boolean;
+  onSendToChat?: (message: string) => void;
 }
 
-const typeConfig: Record<CanvasType, { label: string; icon: any; color: string }> = {
-    email_draft: { label: 'Draft', icon: <Mail className="w-4 h-4" />, color: '#6366f1' },
-    summary: { label: 'Summary', icon: <FileText className="w-4 h-4" />, color: '#8b5cf6' },
-    research: { label: 'Research', icon: <Globe className="w-4 h-4" />, color: '#06b6d4' },
-    action_plan: { label: 'Plan', icon: <Zap className="w-4 h-4" />, color: '#f59e0b' },
-    reply: { label: 'Reply', icon: <Zap className="w-4 h-4" />, color: '#10b981' },
-    notes: { label: 'Notes', icon: <Edit3 className="w-4 h-4" />, color: '#ec4899' },
-    meeting_schedule: { label: 'Schedule', icon: <Calendar className="w-4 h-4" />, color: '#3b82f6' },
-    analytics: { label: 'Analytics', icon: <BarChart3 className="w-4 h-4" />, color: '#f97316' },
-    workflow: { label: 'Review', icon: <Layout className="w-4 h-4" />, color: '#a855f7' },
-    execution: { label: 'Execution', icon: <Play className="w-4 h-4" />, color: '#3b82f6' },
-    artifacts: { label: 'Artifacts', icon: <FileText className="w-4 h-4" />, color: '#8b5cf6' },
-    action_outputs: { label: 'Results', icon: <CheckCircle2 className="w-4 h-4" />, color: '#10b981' },
-    next_actions: { label: 'Next Steps', icon: <ArrowRight className="w-4 h-4" />, color: '#f59e0b' },
-    none: { label: 'Work', icon: <Sparkles className="w-4 h-4" />, color: '#a855f7' },
+// ─── Type config ───────────────────────────────────────────────────────────────
+
+const TYPE_CONFIG: Record<string, {
+  label: string;
+  Icon: any;
+  accent: string;
+  badge: string;
+  badgeText: string;
+}> = {
+  email_draft:     { label: 'Email Draft',   Icon: Mail,      accent: '#6366f1', badge: 'bg-indigo-500/15 border-indigo-500/25',  badgeText: 'text-indigo-300'  },
+  reply:           { label: 'Reply',          Icon: Mail,      accent: '#10b981', badge: 'bg-emerald-500/15 border-emerald-500/25', badgeText: 'text-emerald-300' },
+  report:          { label: 'Report',         Icon: FileText,  accent: '#8b5cf6', badge: 'bg-violet-500/15 border-violet-500/25',  badgeText: 'text-violet-300'  },
+  notes:           { label: 'Notes',          Icon: Edit3,     accent: '#ec4899', badge: 'bg-pink-500/15 border-pink-500/25',      badgeText: 'text-pink-300'    },
+  analysis:        { label: 'Analysis',       Icon: BarChart3, accent: '#f97316', badge: 'bg-orange-500/15 border-orange-500/25',  badgeText: 'text-orange-300'  },
+  analytics:       { label: 'Analytics',      Icon: BarChart3, accent: '#f97316', badge: 'bg-orange-500/15 border-orange-500/25',  badgeText: 'text-orange-300'  },
+  action_plan:     { label: 'Action Plan',    Icon: Zap,       accent: '#f59e0b', badge: 'bg-amber-500/15 border-amber-500/25',   badgeText: 'text-amber-300'   },
+  research:        { label: 'Research',       Icon: Globe,     accent: '#06b6d4', badge: 'bg-cyan-500/15 border-cyan-500/25',     badgeText: 'text-cyan-300'    },
+  summary:         { label: 'Summary',        Icon: FileText,  accent: '#8b5cf6', badge: 'bg-violet-500/15 border-violet-500/25', badgeText: 'text-violet-300'  },
+  meeting_schedule:{ label: 'Schedule',       Icon: Calendar,  accent: '#3b82f6', badge: 'bg-blue-500/15 border-blue-500/25',    badgeText: 'text-blue-300'    },
+  workflow:        { label: 'Workflow',        Icon: Sparkles,  accent: '#a855f7', badge: 'bg-purple-500/15 border-purple-500/25', badgeText: 'text-purple-300'  },
+  execution:       { label: 'Execution',       Icon: Play,      accent: '#3b82f6', badge: 'bg-blue-500/15 border-blue-500/25',    badgeText: 'text-blue-300'    },
+  artifacts:       { label: 'Files',           Icon: FileText,  accent: '#8b5cf6', badge: 'bg-violet-500/15 border-violet-500/25', badgeText: 'text-violet-300'  },
+  action_outputs:  { label: 'Results',         Icon: CheckCircle2, accent: '#10b981', badge: 'bg-emerald-500/15 border-emerald-500/25', badgeText: 'text-emerald-300' },
+  next_actions:    { label: 'Next Steps',      Icon: ArrowRight, accent: '#f59e0b', badge: 'bg-amber-500/15 border-amber-500/25', badgeText: 'text-amber-300'  },
+  none:            { label: 'Document',        Icon: Sparkles,  accent: '#a855f7', badge: 'bg-purple-500/15 border-purple-500/25', badgeText: 'text-purple-300'  },
 };
 
-export function CanvasPanel({ isOpen, onClose, canvasData, onExecute, isExecuting, isSidebarCollapsed, onSendToChat }: CanvasPanelProps) {
-    const [editMode, setEditMode] = useState(false);
-    const [editedBody, setEditedBody] = useState('');
-    const [copied, setCopied] = useState(false);
-    const [width, setWidth] = useState(520);
-    const [isResizing, setIsResizing] = useState(false);
-    const [deckIndex, setDeckIndex] = useState(0);
-    const scrollRef = useRef<HTMLDivElement>(null);
+function getConfig(type: string) {
+  return TYPE_CONFIG[type] ?? TYPE_CONFIG.none;
+}
 
-    useEffect(() => {
-        if (canvasData?.type === 'email_draft' && canvasData.content?.body) {
-            setEditedBody(canvasData.content.body);
-        }
-    }, [canvasData]);
+// ─── Main Component ────────────────────────────────────────────────────────────
 
-    const handleCopy = () => {
-        let text = '';
-        if (canvasData?.type === 'email_draft' || canvasData?.type === 'reply') {
-            text = `Subject: ${canvasData.content.subject || ''}\nTo: ${canvasData.content.to || ''}\n\n${editMode ? editedBody : canvasData.content.body || ''}`;
-        } else if (canvasData?.raw) {
-            text = canvasData.raw;
-        }
-        navigator.clipboard.writeText(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+export function CanvasPanel({
+  isOpen, onClose, canvasData, onExecute, isExecuting, isSidebarCollapsed,
+}: CanvasPanelProps) {
+  const [editMode, setEditMode]     = useState(false);
+  const [editedBody, setEditedBody] = useState('');
+  const [copied, setCopied]         = useState(false);
+  const [width, setWidth]           = useState(540);
+  const [isResizing, setIsResizing] = useState(false);
+  const [isClient, setIsClient]     = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { setIsClient(true); }, []);
+
+  useEffect(() => {
+    if (canvasData?.type === 'email_draft' || canvasData?.type === 'reply') {
+      const body = canvasData.content?.body || extractEmailBody(canvasData.raw || '');
+      setEditedBody(body);
+      setEditMode(false);
+    }
+  }, [canvasData]);
+
+  // ── Resize ───────────────────────────────────────────────────────────────────
+  const startResizing = useCallback((e: React.MouseEvent) => { e.preventDefault(); setIsResizing(true); }, []);
+  const stopResizing  = useCallback(() => { setIsResizing(false); }, []);
+  const handleResize  = useCallback((e: MouseEvent) => {
+    if (!isResizing || window.innerWidth < 768) return;
+    const sidebarW = isSidebarCollapsed ? 80 : 256;
+    const max = window.innerWidth - sidebarW - 500 - 48;
+    const next = window.innerWidth - e.clientX;
+    setWidth(Math.max(380, Math.min(next, max)));
+  }, [isResizing, isSidebarCollapsed]);
+
+  useEffect(() => {
+    window.addEventListener('mousemove', handleResize);
+    window.addEventListener('mouseup', stopResizing);
+    return () => {
+      window.removeEventListener('mousemove', handleResize);
+      window.removeEventListener('mouseup', stopResizing);
     };
+  }, [handleResize, stopResizing]);
 
-    const handleExecute = (action: string) => {
-        if (action === 'copy') { handleCopy(); return; }
-        if (action === 'cancel') { onClose(); return; }
-        if (action === 'revise') { setEditMode(true); return; }
+  // ── Actions ──────────────────────────────────────────────────────────────────
+  const getTextContent = () => {
+    if (!canvasData) return '';
+    if (canvasData.raw) return canvasData.raw;
+    if (typeof canvasData.content === 'string') return canvasData.content;
+    if (canvasData.content?.body) return canvasData.content.body;
+    return JSON.stringify(canvasData.content, null, 2);
+  };
 
-        let payload = canvasData?.content;
-        if (canvasData?.type === 'email_draft' || canvasData?.type === 'reply') {
-            payload = { ...canvasData.content, body: editMode ? editedBody : canvasData.content.body || '' };
-        }
+  const handleCopy = () => {
+    navigator.clipboard.writeText(getTextContent());
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
-        onExecute(action, payload);
-    };
+  const handleSend = () => {
+    const payload = canvasData?.content?.threadId
+      ? { ...canvasData.content, body: editMode ? editedBody : canvasData.content.body }
+      : { ...(canvasData?.content || {}), body: editMode ? editedBody : (canvasData?.content?.body || '') };
+    onExecute('send_email', payload);
+  };
 
-    const startResizing = useCallback((e: React.MouseEvent) => {
-        e.preventDefault();
-        setIsResizing(true);
-    }, []);
+  if (!isOpen || !canvasData) return null;
 
-    const stopResizing = useCallback(() => {
-        setIsResizing(false);
-    }, []);
+  const cfg = getConfig(canvasData.type);
+  const isEmail = canvasData.type === 'email_draft' || canvasData.type === 'reply';
+  const panelWidth = isClient && window.innerWidth < 768 ? 'calc(100vw - 24px)' : `${width}px`;
 
-    const resize = useCallback((e: MouseEvent) => {
-        if (isResizing && window.innerWidth >= 768) {
-            const sidebarWidth = isSidebarCollapsed ? 80 : 256;
-            const chatMinWidth = 500;
-            const paddingAndGap = 48; // 32px padding (p-4 * 2) + 16px gap (gap-4)
-            const maxAllowedWidth = window.innerWidth - sidebarWidth - chatMinWidth - paddingAndGap;
-            
-            const newWidth = window.innerWidth - e.clientX;
-            // Clamp between reasonable min (380) and derived max
-            if (newWidth > 380 && newWidth < maxAllowedWidth) {
-                setWidth(newWidth);
-            } else if (newWidth >= maxAllowedWidth) {
-                setWidth(maxAllowedWidth);
-            }
-        }
-    }, [isResizing, isSidebarCollapsed]);
+  return (
+    <div
+      className={cn(
+        'h-[calc(100vh-32px)] flex flex-col flex-shrink-0 relative',
+        'bg-[#0c0c0d] border border-white/[0.07] rounded-[24px] shadow-[0_32px_80px_-8px_rgba(0,0,0,0.8)]',
+        'overflow-hidden select-text m-3',
+        isResizing ? 'cursor-ew-resize' : '',
+      )}
+      style={{ width: panelWidth }}
+    >
+      {/* Accent glow at top */}
+      <div
+        className="absolute inset-x-0 top-0 h-[1px] opacity-60"
+        style={{ background: `linear-gradient(90deg, transparent, ${cfg.accent}, transparent)` }}
+      />
 
-    useEffect(() => {
-        window.addEventListener('mousemove', resize);
-        window.addEventListener('mouseup', stopResizing);
-        return () => {
-            window.removeEventListener('mousemove', resize);
-            window.removeEventListener('mouseup', stopResizing);
-        };
-    }, [resize, stopResizing]);
+      {/* Resize handle */}
+      <div
+        onMouseDown={startResizing}
+        className="hidden md:block absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize z-10 hover:bg-white/10 transition-colors"
+      />
 
-    const [isClient, setIsClient] = useState(false);
-    useEffect(() => {
-        setIsClient(true);
-    }, []);
-
-    if (!isOpen || !canvasData) return null;
-
-    return (
-        <div
-            className="h-[calc(100vh-32px)] flex flex-col overflow-hidden relative flex-shrink-0 bg-[#0a0a0a] border border-white/10 z-50 group/canvas selection:bg-blue-500/30 w-full md:w-auto shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] rounded-[28px] m-4"
-            style={{ width: isClient && window.innerWidth < 768 ? 'calc(100vw - 32px)' : `${width}px` }}
-        >
-            {/* Resize Handle */}
-            <div 
-                onMouseDown={startResizing}
-                className="hidden md:block absolute left-0 top-0 bottom-0 w-1.5 cursor-ew-resize hover:bg-white/10 transition-colors z-[100]"
-            />
-
-            {/* Premium Header - macOS/Manus Style */}
-            <div className="shrink-0 bg-[#161617] border-b border-white/5">
-                <div className="flex items-center justify-between px-5 py-4">
-                    <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-1.5">
-                            <div className="w-3 h-3 rounded-full bg-white/10" />
-                            <div className="w-3 h-3 rounded-full bg-white/10" />
-                            <div className="w-3 h-3 rounded-full bg-white/10" />
-                        </div>
-                        <h2 className="text-[14px] font-semibold text-white/90 tracking-tight ml-2">
-                           Arcus's Computer
-                        </h2>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-3 mr-2">
-                            <button className="p-1.5 hover:bg-white/10 rounded-md transition-colors text-white/60 hover:text-white">
-                                <Laptop className="w-4 h-4" />
-                            </button>
-                            <button className="p-1.5 hover:bg-white/10 rounded-md transition-colors text-white/60 hover:text-white">
-                                <Layout className="w-4 h-4" />
-                            </button>
-                        </div>
-                        <button 
-                            onClick={onClose}
-                            className="w-8 h-8 flex items-center justify-center hover:bg-white/10 rounded-full transition-colors text-white/60"
-                        >
-                            <X className="w-5 h-5" />
-                        </button>
-                    </div>
-                </div>
-                
-                {/* Status Bar / Browser Style */}
-                <div className="flex items-center gap-3 px-5 py-2.5 bg-[#1c1c1d] border-t border-white/5 text-[12px] font-medium text-white/40">
-                    <span className="text-white/60">Arcus is using {canvasData.type === 'analytics' ? 'Data Engine' : 'Intelligent Agent'}</span>
-                    <span className="truncate text-white/20 flex-1">
-                        {canvasData.type === 'analytics' ? 'analytical_sifting_protocol_v2.0' : 
-                         canvasData.type === 'summary' ? 'semantic_weights_from_inbox' : 
-                         'workspace_execution_flow'}
-                    </span>
-                </div>
-
-                {/* URL / Breadcrumb Bar - Simplified */}
-                <div className="px-5 py-2 bg-[#0a0a0a] border-t border-white/5 text-[11px] font-mono text-white/20 truncate">
-                    https://mailient.xyz/arcus/{canvasData.type}/{canvasData?.title?.toLowerCase().replace(/\s+/g, '-') || 'execution'}
-                </div>
-            </div>
-
-            {/* Inner Content Window */}
-            <div className="flex-1 bg-[#0a0a0a] flex flex-col overflow-hidden relative">
-                {/* Content Scroll Area */}
-                <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar p-6">
-                        <AnimatePresence mode="wait">
-                            {canvasData.type === 'workflow' ? (
-                                <motion.div key="workflow" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-                                    {canvasData.content?.steps?.map((step: any, index: number) => (
-                                        <div 
-                                            key={step.id || index}
-                                            className={cn(
-                                                "flex items-start gap-4 transition-opacity duration-500",
-                                                step.status === 'completed' || step.status === 'active' ? "opacity-100" : "opacity-10"
-                                            )}
-                                        >
-                                            <div className="mt-1 shrink-0">
-                                                {step.status === 'completed' ? (
-                                                    <CheckCircle2 className="w-5 h-5 text-blue-500/80" />
-                                                ) : (
-                                                    <div className={cn(
-                                                        "w-5 h-5 rounded-full border flex items-center justify-center",
-                                                        step.status === 'active' ? "border-white/40 animate-pulse" : "border-neutral-200 dark:border-white/10"
-                                                    )}>
-                                                        <div className="w-1.5 h-1.5 rounded-full bg-black/[0.020] dark:bg-white/40" />
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="flex flex-col min-w-0">
-                                                <span className="text-[14px] font-bold text-black/90 dark:text-white/90 truncate">{step.title}</span>
-                                                {step.description && step.status === 'active' && (
-                                                    <span className="text-[11px] text-black/30 dark:text-white/30 mt-1 leading-relaxed">{step.description}</span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </motion.div>
-                            ) : canvasData.type === 'summary' ? (
-                                <div className="h-full flex flex-col">
-                                    <div className="shrink-0 flex items-center justify-between mb-8">
-                                        <div className="flex items-center gap-2">
-                                            <Presentation className="w-4 h-4 text-blue-400" />
-                                            <span className="text-[11px] font-bold uppercase tracking-widest text-black/40 dark:text-white/40">Email Summary Deck</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                          <button 
-                                            disabled={deckIndex === 0}
-                                            onClick={() => setDeckIndex(p => Math.max(0, p - 1))}
-                                            className="w-8 h-8 rounded-lg bg-black/[0.03] dark:bg-white/5 flex items-center justify-center hover:bg-black/[0.05] dark:hover:bg-white/10 disabled:opacity-20 transition-all"
-                                          >
-                                            <ChevronLeft className="w-4 h-4 text-black dark:text-white" />
-                                          </button>
-                                          <span className="text-[12px] font-mono text-black/60 dark:text-white/60">{deckIndex + 1} / {canvasData.content?.items?.length || 1}</span>
-                                          <button 
-                                            disabled={deckIndex >= (canvasData.content?.items?.length || 1) - 1}
-                                            onClick={() => setDeckIndex(p => Math.min((canvasData.content?.items?.length || 1) - 1, p + 1))}
-                                            className="w-8 h-8 rounded-lg bg-black/[0.03] dark:bg-white/5 flex items-center justify-center hover:bg-black/[0.05] dark:hover:bg-white/10 disabled:opacity-20 transition-all"
-                                          >
-                                            <ChevronRight className="w-4 h-4 text-black dark:text-white" />
-                                          </button>
-                                        </div>
-                                    </div>
-
-                                    <AnimatePresence mode="wait">
-                                      <motion.div 
-                                        key={deckIndex}
-                                        initial={{ opacity: 0, x: 20 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        exit={{ opacity: 0, x: -20 }}
-                                        className="flex-1 flex flex-col items-center justify-center text-center px-8"
-                                      >
-                                          <div className="w-16 h-16 rounded-3xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-6">
-                                            <Sparkles className="w-8 h-8 text-blue-400" />
-                                          </div>
-                                          <h3 className="text-[20px] font-bold text-black dark:text-white mb-2 leading-tight">
-                                            {canvasData.content?.items?.[deckIndex]?.subject || 'Email Summary'}
-                                          </h3>
-                                          <p className="text-[14px] text-black/5 dark:text-white/50 leading-relaxed font-mono">
-                                            {canvasData.content?.items?.[deckIndex]?.summary || 'No summary available for this item.'}
-                                          </p>
-                                          {canvasData.content?.items?.[deckIndex]?.sender && (
-                                            <div className="mt-8 flex items-center gap-3">
-                                              <div className="px-4 py-2 bg-black/[0.03] dark:bg-white/5 rounded-full border border-neutral-200 dark:border-white/5 text-[11px] text-black/40 dark:text-white/40 font-mono">
-                                                From: {canvasData.content.items[deckIndex].sender}
-                                              </div>
-                                              {canvasData.content?.items?.[deckIndex]?.priority && (
-                                                <div className={cn(
-                                                  "px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest border",
-                                                  canvasData.content.items[deckIndex].priority === 'high' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
-                                                  canvasData.content.items[deckIndex].priority === 'medium' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
-                                                  'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                                                )}>
-                                                  {canvasData.content.items[deckIndex].priority}
-                                                </div>
-                                              )}
-                                            </div>
-                                          )}
-                                      </motion.div>
-                                    </AnimatePresence>
-                                </div>
-                            ) : canvasData.type === 'action_plan' ? (
-                                <PlanArtifactView 
-                                    content={canvasData.content} 
-                                    onExecute={onExecute}
-                                    isExecuting={isExecuting}
-                                />
-                            ) : canvasData.type === 'analytics' ? (
-                                <div className="h-full flex flex-col space-y-4 overflow-y-auto pr-2 custom-scrollbar">
-                                  {/* Dynamic Stats Row */}
-                                  <div className="grid grid-cols-2 gap-4">
-                                    {(canvasData.content?.stats || []).map((stat: any, i: number) => (
-                                      <div key={i} className="p-5 bg-[#0a0a0a] border border-white/5 rounded-2xl flex flex-col justify-between min-h-[120px]">
-                                        <div className="flex items-center gap-2 mb-2 text-white/40">
-                                          {stat.changeDirection === 'up' ? <TrendingUp className="w-3.5 h-3.5" /> : <Users className="w-3.5 h-3.5" />}
-                                          <span className="text-[10px] font-bold uppercase tracking-widest">{stat.label}</span>
-                                        </div>
-                                        <div>
-                                          <div className="text-[32px] font-bold text-white tracking-tight">{stat.value}</div>
-                                          {stat.change && (
-                                            <div className={cn("text-[11px] font-medium tracking-tight mt-1", stat.changeDirection === 'up' ? 'text-emerald-500' : stat.changeDirection === 'down' ? 'text-red-500' : 'text-blue-500')}>
-                                              {stat.changeDirection === 'up' ? '+' : stat.changeDirection === 'down' ? '-' : ''}{stat.change}
-                                            </div>
-                                          )}
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-
-                                  {/* Dynamic Area Chart */}
-                                  {canvasData.content?.areaChart && (
-                                    <div className="p-6 bg-[#0a0a0a] border border-white/5 rounded-2xl h-[240px]">
-                                      <div className="flex items-center justify-between mb-8">
-                                        <div className="text-[12px] font-bold text-white flex items-center gap-2 tracking-tight">
-                                          <LineChart className="w-4 h-4 text-emerald-500" />
-                                          {canvasData.content.areaChart.label || 'Emails Received per Day'}
-                                        </div>
-                                      </div>
-                                      <div className="h-[140px] w-full">
-                                        <ResponsiveContainer width="100%" height="100%">
-                                          <AreaChart data={canvasData.content.areaChart.data || []}>
-                                            <defs>
-                                              <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.15}/>
-                                                <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                                              </linearGradient>
-                                            </defs>
-                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
-                                            <XAxis dataKey="name" stroke="rgba(255,255,255,0.2)" fontSize={10} axisLine={false} tickLine={false} />
-                                            <YAxis hide />
-                                            <RechartsTooltip 
-                                              contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', fontSize: '11px' }}
-                                              itemStyle={{ color: '#fff' }}
-                                            />
-                                            <Area type="monotone" dataKey="value" stroke="#10b981" fillOpacity={1} fill="url(#colorValue)" strokeWidth={2} />
-                                          </AreaChart>
-                                        </ResponsiveContainer>
-                                      </div>
-                                    </div>
-                                  )}
-
-                                  {/* Dynamic Pie Chart */}
-                                  {canvasData.content?.pieChart && (
-                                    <div className="p-6 bg-[#0a0a0a] border border-white/5 rounded-2xl">
-                                      <div className="text-[12px] font-bold text-white mb-6 flex items-center gap-2 tracking-tight">
-                                        <PieChart className="w-4 h-4 text-blue-500" />
-                                        {canvasData.content.pieChart.label || 'Distribution'}
-                                      </div>
-                                      <div className="flex items-center gap-8">
-                                        <div className="w-[120px] h-[120px]">
-                                          <ResponsiveContainer width="100%" height="100%">
-                                            <RePieChart>
-                                              <Pie
-                                                data={canvasData.content.pieChart.data || []}
-                                                cx="50%"
-                                                cy="50%"
-                                                innerRadius={40}
-                                                outerRadius={55}
-                                                paddingAngle={4}
-                                                dataKey="value"
-                                                stroke="none"
-                                              >
-                                                {(canvasData.content.pieChart.data || []).map((_: any, index: number) => (
-                                                  <Cell key={`cell-${index}`} fill={['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981'][index % 5]} />
-                                                ))}
-                                              </Pie>
-                                            </RePieChart>
-                                          </ResponsiveContainer>
-                                        </div>
-                                        <div className="flex-1 space-y-3">
-                                          {(canvasData.content.pieChart.data || []).map((seg: any, i: number) => {
-                                            const total = (canvasData.content.pieChart.data || []).reduce((sum: number, d: any) => sum + (d.value || 0), 0);
-                                            const pct = total > 0 ? Math.round((seg.value / total) * 100) : 0;
-                                            const colors = ['bg-blue-500', 'bg-purple-500', 'bg-pink-500', 'bg-amber-500', 'bg-emerald-500'];
-                                            return (
-                                              <div key={i} className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2">
-                                                  <div className={cn("w-2 h-2 rounded-full", colors[i % colors.length])} />
-                                                  <span className="text-[11px] text-white/70">{seg.name}</span>
-                                                </div>
-                                                <span className="text-[11px] font-mono text-white/40">{pct}%</span>
-                                              </div>
-                                            );
-                                          })}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                            ) : (
-                                <motion.div key="content" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-full flex flex-col font-mono">
-                                    {canvasData.type === 'email_draft' || canvasData.type === 'reply' ? (
-                                        <div className="space-y-4 text-[13px] leading-relaxed">
-                                            <div className="flex gap-4 border-b border-neutral-200 dark:border-white/5 pb-2">
-                                                <span className="text-black/20 dark:text-white/20 uppercase tracking-tighter">To</span>
-                                                <span className="text-black/60 dark:text-white/60">{canvasData.content.to}</span>
-                                            </div>
-                                            <div className="flex gap-4 border-b border-neutral-200 dark:border-white/5 pb-2">
-                                                <span className="text-black/20 dark:text-white/20 uppercase tracking-tighter">Sub</span>
-                                                <span className="text-black/90 dark:text-white/90">{canvasData.content.subject}</span>
-                                            </div>
-                                            <div className="pt-4 text-black/80 dark:text-white/80 whitespace-pre-wrap">
-                                                {editMode ? (
-                                                    <textarea
-                                                        value={editedBody}
-                                                        onChange={(e) => setEditedBody(e.target.value)}
-                                                        className="w-full bg-transparent border-none focus:outline-none min-h-[300px] resize-none"
-                                                        autoFocus
-                                                    />
-                                                ) : canvasData.content.body}
-                                            </div>
-                                        </div>
-                                    ) : canvasData.type === 'execution' ? (
-                                        <ExecutionTimeline 
-                                            steps={canvasData.content?.steps || []}
-                                            currentStepId={canvasData.content?.currentStepId}
-                                            overallProgress={canvasData.content?.progress || 0}
-                                            runStatus={canvasData.content?.runStatus || 'initializing'}
-                                        />
-                                    ) : canvasData.type === 'artifacts' ? (
-                                        <CanvasArtifacts 
-                                            artifacts={canvasData.content?.artifacts || []}
-                                            onDownload={(id) => onExecute('download_artifact', { id })}
-                                        />
-                                    ) : canvasData.type === 'action_outputs' ? (
-                                        <ActionOutputCards 
-                                            outputs={canvasData.content?.outputs || []}
-                                            onViewDetails={(output: any) => {
-                                                if (output?.externalRefs?.notionPageUrl) {
-                                                    window.open(output.externalRefs.notionPageUrl, '_blank');
-                                                } else if (output?.externalRefs?.calendarEventUrl) {
-                                                    window.open(output.externalRefs.calendarEventUrl, '_blank');
-                                                }
-                                            }}
-                                        />
-                                    ) : canvasData.type === 'next_actions' ? (
-                                        <NextActionControls 
-                                            actions={canvasData.content?.actions || []}
-                                            onExecute={(actionId: string) => onExecute(actionId, canvasData.content?.context)}
-                                            disabled={isExecuting}
-                                        />
-                                    ) : typeof canvasData.content === 'string' && canvasData.content ? (
-                                        <div className="h-full overflow-y-auto pr-1 custom-scrollbar">
-                                          <div className="prose prose-invert prose-sm max-w-none text-[13.5px] leading-relaxed text-white/80">
-                                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                              {canvasData.content}
-                                            </ReactMarkdown>
-                                          </div>
-                                        </div>
-                                    ) : (
-                                        <div className="h-full flex flex-col items-center justify-center opacity-30 px-12 text-center">
-                                            <div className="w-12 h-12 rounded-2xl bg-black/[0.03] dark:bg-white/5 border border-neutral-200 dark:border-white/10 flex items-center justify-center mb-4">
-                                                <Sparkles className="w-6 h-6 text-black/40 dark:text-white/40" />
-                                            </div>
-                                            <p className="text-[13px] font-bold text-black dark:text-white tracking-tight">Mission Active</p>
-                                            <p className="text-[11px] text-black/40 dark:text-white/40 mt-1 leading-relaxed">Arcus is analyzing the objective and preparing context for the workspace...</p>
-                                        </div>
-                                    )}
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
-                </div>
-
-            {/* Bottom Status Bar - Media Style */}
-            <div className="shrink-0 h-16 bg-[#161617] border-t border-white/5 px-6 flex items-center justify-between text-white/30 text-[12px]">
-                <div className="flex items-center gap-5">
-                    <div className="flex items-center gap-1">
-                        <button className="hover:text-white transition-colors p-1"><ChevronLeft className="w-5 h-5" /></button>
-                        <button className="hover:text-white transition-colors p-1"><ChevronRight className="w-5 h-5" /></button>
-                    </div>
-                    
-                    {/* Media Progress Bar */}
-                    <div className="flex flex-col gap-1.5 w-[200px]">
-                        <div className="h-1.5 w-full bg-white/5 rounded-full relative overflow-hidden">
-                            <motion.div 
-                                initial={{ width: "0%" }}
-                                animate={{ width: "85%" }}
-                                className="absolute left-0 top-0 bottom-0 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]" 
-                            />
-                        </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-2 text-blue-400 font-bold uppercase tracking-widest text-[10px]">
-                        <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
-                        <span>live</span>
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-4 text-right">
-                    <div className="flex flex-col items-end">
-                        <span className="text-white/60 font-medium truncate max-w-[240px]">
-                            {canvasData?.title || 'Processing objective'}
-                        </span>
-                        <span className="text-[10px] text-white/20 font-mono">
-                            VERIFYING LEADS FOR ACCURACY... 2 / 4
-                        </span>
-                    </div>
-                    <ChevronDown className="w-4 h-4 opacity-30" />
-                </div>
-            </div>
-
-            {/* Float Action Controls (only for actionable types) */}
-            {(canvasData?.type === 'email_draft' || canvasData?.type === 'reply') && (
-                <div className="absolute right-8 bottom-20 flex gap-3">
-                    <button 
-                        onClick={() => handleExecute('send_email')}
-                        className="h-10 px-6 bg-white text-black text-[12px] font-bold rounded-full shadow-2xl hover:bg-neutral-200 transition-all active:scale-95 flex items-center gap-2"
-                    >
-                        <span>Execute Mission</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
-                    {!editMode ? (
-                        <button 
-                            onClick={() => setEditMode(true)}
-                            className="w-10 h-10 bg-[#2a2a2a] border border-neutral-200 dark:border-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white rounded-full flex items-center justify-center transition-all shadow-xl"
-                        >
-                            <Edit3 className="w-4 h-4" />
-                        </button>
-                    ) : (
-                        <button 
-                            onClick={() => setEditMode(false)}
-                            className="h-10 px-6 bg-[#2a2a2a] border border-neutral-200 dark:border-white/10 text-black dark:text-white font-bold rounded-full flex items-center justify-center text-[12px] shadow-xl"
-                        >
-                            Done
-                        </button>
-                    )}
-                </div>
-            )}
-
-            <style jsx global>{`
-                .custom-scrollbar::-webkit-scrollbar { width: 3px; }
-                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-                .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.05); border-radius: 10px; }
-            `}</style>
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      <header className="shrink-0 flex items-center justify-between px-5 py-3.5 border-b border-white/[0.06] bg-[#0e0e10]">
+        {/* Type badge + title */}
+        <div className="flex items-center gap-3 min-w-0">
+          <span className={cn('flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-semibold tracking-wide shrink-0', cfg.badge, cfg.badgeText)}>
+            <cfg.Icon className="w-3.5 h-3.5" />
+            {cfg.label}
+          </span>
+          <h2 className="text-[13px] font-semibold text-white/80 truncate leading-tight">
+            {canvasData.title || 'Document'}
+          </h2>
         </div>
-    );
-}
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// PLAN ARTIFACT VIEW (Phase 2)
-// ═══════════════════════════════════════════════════════════════════════════════
-
-interface PlanArtifactViewProps {
-    content: {
-        planId?: string;
-        title?: string;
-        objective?: string;
-        assumptions?: string[];
-        questionsAnswered?: string[];
-        acceptanceCriteria?: string[];
-        status?: 'draft' | 'approved' | 'executing' | 'completed' | 'failed' | 'cancelled';
-        todos?: Array<{
-            todoId: string;
-            title: string;
-            description?: string;
-            status: 'pending' | 'ready' | 'running' | 'completed' | 'failed' | 'skipped' | 'blocked_approval';
-            actionType: string;
-            sortOrder: number;
-            approvalMode: 'auto' | 'manual';
-            attemptCount: number;
-            errorMessage?: string;
-            resultPayload?: any;
-        }>;
-        progress?: {
-            total: number;
-            completed: number;
-            failed: number;
-            running: number;
-            ready: number;
-        };
-        approvedAt?: string;
-        completedAt?: string;
-    };
-    onExecute: (action: string, data: unknown) => void;
-    isExecuting?: boolean;
-}
-
-const todoStatusConfig: Record<string, { label: string; color: string; bgColor: string; icon: any }> = {
-    pending: { label: 'Pending', color: 'text-black/30 dark:text-white/30', bgColor: 'bg-black/[0.03] dark:bg-white/5', icon: Clock },
-    ready: { label: 'Ready', color: 'text-blue-400', bgColor: 'bg-blue-500/10', icon: CheckCircle2 },
-    running: { label: 'Running', color: 'text-amber-400', bgColor: 'bg-amber-500/10', icon: Loader2 },
-    completed: { label: 'Done', color: 'text-emerald-400', bgColor: 'bg-emerald-500/10', icon: CheckCircle2 },
-    failed: { label: 'Failed', color: 'text-red-400', bgColor: 'bg-red-500/10', icon: AlertTriangle },
-    skipped: { label: 'Skipped', color: 'text-neutral-600 dark:text-neutral-600 dark:text-neutral-400', bgColor: 'bg-neutral-500/10', icon: CheckCircle2 },
-    blocked_approval: { label: 'Blocked', color: 'text-orange-400', bgColor: 'bg-orange-500/10', icon: AlertTriangle }
-};
-
-const planStatusConfig: Record<string, { label: string; color: string; bgColor: string }> = {
-    draft: { label: 'Draft', color: 'text-amber-400', bgColor: 'bg-amber-500/10' },
-    approved: { label: 'Approved', color: 'text-emerald-400', bgColor: 'bg-emerald-500/10' },
-    executing: { label: 'Executing', color: 'text-blue-400', bgColor: 'bg-blue-500/10' },
-    completed: { label: 'Completed', color: 'text-emerald-400', bgColor: 'bg-emerald-500/10' },
-    failed: { label: 'Failed', color: 'text-red-400', bgColor: 'bg-red-500/10' },
-    cancelled: { label: 'Cancelled', color: 'text-neutral-600 dark:text-neutral-600 dark:text-neutral-400', bgColor: 'bg-neutral-500/10' }
-};
-
-function PlanArtifactView({ content, onExecute, isExecuting: isExecutingProp }: PlanArtifactViewProps) {
-    const [activeTab, setActiveTab] = useState<'overview' | 'todos' | 'timeline'>('overview');
-    const [expandedTodos, setExpandedTodos] = useState(true);
-
-    const status = content.status || 'draft';
-    const statusInfo = planStatusConfig[status];
-    const todos = content.todos || [];
-    const progress = content.progress || {
-        total: todos.length,
-        completed: todos.filter(t => t.status === 'completed').length,
-        failed: todos.filter(t => t.status === 'failed').length,
-        running: todos.filter(t => t.status === 'running').length,
-        ready: todos.filter(t => t.status === 'ready').length
-    };
-
-    const progressPercent = progress.total > 0 ? (progress.completed / progress.total) * 100 : 0;
-    const isExecuting = status === 'executing' || status === 'approved';
-    const needsApproval = status === 'draft';
-
-    return (
-        <div className="h-full flex flex-col space-y-6 overflow-y-auto pr-2 custom-scrollbar">
-            {/* Header */}
-            <div className="space-y-4">
-                <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className={cn(
-                            "w-12 h-12 rounded-xl flex items-center justify-center border",
-                            statusInfo.bgColor, statusInfo.color.replace('text-', 'border-').replace('400', '500/30')
-                        )}>
-                            <ListTodo className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <h2 className="text-[18px] font-bold text-black/95 dark:text-white/95">{content.title || 'Execution Plan'}</h2>
-                            <p className="text-[13px] text-black/5 dark:text-white/50 mt-0.5">{content.objective}</p>
-                        </div>
-                    </div>
-                    <span className={cn(
-                        "text-[11px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border",
-                        statusInfo.bgColor, statusInfo.color, statusInfo.color.replace('text-', 'border-').replace('400', '500/30')
-                    )}>
-                        {statusInfo.label}
-                    </span>
-                </div>
-
-                {/* Progress Bar */}
-                {progress.total > 0 && (
-                    <div className="space-y-2">
-                        <div className="flex items-center justify-between text-[11px] text-black/40 dark:text-white/40">
-                            <span>Progress</span>
-                            <span>{progress.completed}/{progress.total} completed</span>
-                        </div>
-                        <div className="h-2 bg-black/[0.03] dark:bg-white/5 rounded-full overflow-hidden">
-                            <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: `${progressPercent}%` }}
-                                className="h-full bg-gradient-to-r from-blue-500 via-amber-500 to-emerald-500 rounded-full"
-                                transition={{ duration: 0.5 }}
-                            />
-                        </div>
-                        <div className="flex items-center gap-4 text-[11px]">
-                            {progress.running > 0 && (
-                                <span className="text-amber-400 flex items-center gap-1">
-                                    <Loader2 className="w-3 h-3 animate-spin" />
-                                    {progress.running} running
-                                </span>
-                            )}
-                            {progress.failed > 0 && (
-                                <span className="text-red-400 flex items-center gap-1">
-                                    <AlertTriangle className="w-3 h-3" />
-                                    {progress.failed} failed
-                                </span>
-                            )}
-                            {progress.ready > 0 && status === 'approved' && (
-                                <span className="text-blue-400">{progress.ready} ready to start</span>
-                            )}
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {/* Action Button */}
-            {needsApproval && (
-                <button
-                    onClick={() => onExecute('approve_plan', { planId: content.planId })}
-                    disabled={isExecutingProp}
-                    className="flex items-center justify-center gap-2 w-full py-3 bg-white text-black text-[14px] font-bold rounded-xl hover:bg-neutral-200 transition-all disabled:opacity-50"
-                >
-                    <Shield className="w-4 h-4" />
-                    Approve & Execute Plan
-                </button>
-            )}
-
-            {/* Tabs */}
-            <div className="flex items-center gap-1 p-1 bg-black/[0.03] dark:bg-white/5 rounded-lg">
-                {(['overview', 'todos', 'timeline'] as const).map((tab) => (
-                    <button
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        className={cn(
-                            "flex-1 py-2 text-[12px] font-bold rounded-md transition-all",
-                            activeTab === tab 
-                                ? "bg-black/[0.05] dark:bg-white/10 text-black dark:text-white" 
-                                : "text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60"
-                        )}
-                    >
-                        {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                    </button>
-                ))}
-            </div>
-
-            {/* Tab Content */}
-            <AnimatePresence mode="wait">
-                {activeTab === 'overview' && (
-                    <motion.div
-                        key="overview"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="space-y-6"
-                    >
-                        {/* Assumptions */}
-                        {content.assumptions && content.assumptions.length > 0 && (
-                            <div className="space-y-3">
-                                <div className="flex items-center gap-2 text-black/40 dark:text-white/40">
-                                    <Target className="w-4 h-4" />
-                                    <span className="text-[12px] font-bold uppercase tracking-wider">Assumptions</span>
-                                </div>
-                                <ul className="space-y-2">
-                                    {content.assumptions.map((assumption, i) => (
-                                        <li key={i} className="flex items-start gap-2 text-[13px] text-black/60 dark:text-white/60">
-                                            <span className="text-black/30 dark:text-white/30 mt-1">•</span>
-                                            {assumption}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
-
-                        {/* Questions Answered */}
-                        {content.questionsAnswered && content.questionsAnswered.length > 0 && (
-                            <div className="space-y-3">
-                                <div className="flex items-center gap-2 text-black/40 dark:text-white/40">
-                                    <HelpCircle className="w-4 h-4" />
-                                    <span className="text-[12px] font-bold uppercase tracking-wider">Questions Answered</span>
-                                </div>
-                                <ul className="space-y-2">
-                                    {content.questionsAnswered.map((q, i) => (
-                                        <li key={i} className="flex items-start gap-2 text-[13px] text-black/60 dark:text-white/60">
-                                            <span className="text-emerald-400/60 mt-1">✓</span>
-                                            {q}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
-
-                        {/* Acceptance Criteria */}
-                        {content.acceptanceCriteria && content.acceptanceCriteria.length > 0 && (
-                            <div className="space-y-3">
-                                <div className="flex items-center gap-2 text-black/40 dark:text-white/40">
-                                    <CheckCircle2 className="w-4 h-4" />
-                                    <span className="text-[12px] font-bold uppercase tracking-wider">Acceptance Criteria</span>
-                                </div>
-                                <ul className="space-y-2">
-                                    {content.acceptanceCriteria.map((criteria, i) => (
-                                        <li key={i} className="flex items-start gap-2 text-[13px] text-black/60 dark:text-white/60">
-                                            <span className="text-black/30 dark:text-white/30 mt-1">{i + 1}.</span>
-                                            {criteria}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
-                    </motion.div>
-                )}
-
-                {activeTab === 'todos' && (
-                    <motion.div
-                        key="todos"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="space-y-2"
-                    >
-                        {todos.map((todo, index) => (
-                            <TodoItemCard key={todo.todoId} todo={todo} index={index} />
-                        ))}
-                    </motion.div>
-                )}
-
-                {activeTab === 'timeline' && (
-                    <motion.div
-                        key="timeline"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="space-y-4"
-                    >
-                        <div className="relative pl-4 border-l border-neutral-200 dark:border-white/10 space-y-6">
-                            {content.approvedAt && (
-                                <TimelineItem 
-                                    status="completed"
-                                    title="Plan Approved"
-                                    timestamp={content.approvedAt}
-                                    description="User approved the execution plan"
-                                />
-                            )}
-                            {todos.filter(t => t.status !== 'pending').map((todo) => (
-                                <TimelineItem
-                                    key={todo.todoId}
-                                    status={todo.status}
-                                    title={todo.title}
-                                    description={todo.resultPayload?.message || todo.errorMessage}
-                                    isError={todo.status === 'failed'}
-                                />
-                            ))}
-                            {content.completedAt && (
-                                <TimelineItem 
-                                    status="completed"
-                                    title="Plan Completed"
-                                    timestamp={content.completedAt}
-                                    description="All tasks finished successfully"
-                                />
-                            )}
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+        {/* Actions */}
+        <div className="flex items-center gap-1 shrink-0 ml-3">
+          <button
+            onClick={handleCopy}
+            title="Copy content"
+            className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-white/8 text-white/40 hover:text-white/80 transition-all"
+          >
+            {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+          </button>
+          <button
+            onClick={onClose}
+            title="Close"
+            className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-white/8 text-white/40 hover:text-white/80 transition-all"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
-    );
-}
+      </header>
 
-function TodoItemCard({ todo, index }: { todo: NonNullable<PlanArtifactViewProps['content']['todos']>[number]; index: number }) {
-    const status = todoStatusConfig[todo.status];
-    const StatusIcon = status.icon;
-    const isRunning = todo.status === 'running';
-    const isCompleted = todo.status === 'completed';
+      {/* ── Email metadata strip ────────────────────────────────────────────── */}
+      {isEmail && (
+        <div className="shrink-0 border-b border-white/[0.06] bg-[#0e0e10]/60">
+          <EmailField label="To"      value={canvasData.content?.to      || ''} />
+          <EmailField label="Subject" value={canvasData.content?.subject || ''} last />
+        </div>
+      )}
 
-    return (
-        <motion.div
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: index * 0.05 }}
-            className={cn(
-                "flex items-start gap-3 p-3 rounded-xl border transition-all",
-                isRunning ? "bg-amber-500/5 border-amber-500/20" :
-                isCompleted ? "bg-emerald-500/5 border-emerald-500/10" :
-                todo.status === 'failed' ? "bg-red-500/5 border-red-500/20" :
-                todo.status === 'blocked_approval' ? "bg-orange-500/5 border-orange-500/20" :
-                "bg-white/[0.02] border-neutral-200 dark:border-white/5"
+      {/* ── Content ──────────────────────────────────────────────────────────── */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto canvas-scroll">
+        <div className="px-7 py-6">
+          <AnimatePresence mode="wait">
+            {isEmail ? (
+              <motion.div key="email" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                {editMode ? (
+                  <textarea
+                    value={editedBody}
+                    onChange={e => setEditedBody(e.target.value)}
+                    className="w-full min-h-[360px] bg-transparent text-[14px] text-white/80 leading-relaxed resize-none focus:outline-none font-sans"
+                    autoFocus
+                    placeholder="Email body…"
+                  />
+                ) : (
+                  <div className="prose-canvas text-[14px] text-white/80 leading-relaxed whitespace-pre-wrap font-sans">
+                    {canvasData.content?.body || extractEmailBody(canvasData.raw || '')}
+                  </div>
+                )}
+              </motion.div>
+            ) : (
+              <motion.div key="doc" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <MarkdownView content={canvasData.raw || (typeof canvasData.content === 'string' ? canvasData.content : '')} />
+              </motion.div>
             )}
-        >
-            <div className={cn("w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mt-0.5", status.bgColor)}>
-                <StatusIcon className={cn("w-3.5 h-3.5", isRunning && "animate-spin", status.color)} />
-            </div>
-            <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-2">
-                    <h4 className={cn("text-[13px] font-semibold leading-tight", isCompleted ? 'text-black/40 dark:text-white/40 line-through' : 'text-black/80 dark:text-white/80')}>
-                        {todo.title}
-                    </h4>
-                    <span className={cn("text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0", status.bgColor, status.color)}>
-                        {status.label}
-                    </span>
-                </div>
-                {todo.description && !isCompleted && (
-                    <p className="text-[12px] text-black/40 dark:text-white/40 mt-1">{todo.description}</p>
-                )}
-                {todo.errorMessage && (
-                    <p className="text-[11px] text-red-400/80 mt-1">{todo.errorMessage}</p>
-                )}
-                {todo.attemptCount > 1 && (
-                    <p className="text-[10px] text-black/30 dark:text-white/30 mt-2">Attempt {todo.attemptCount}</p>
-                )}
-            </div>
-        </motion.div>
-    );
+          </AnimatePresence>
+        </div>
+      </div>
+
+      {/* ── Footer ───────────────────────────────────────────────────────────── */}
+      <footer className="shrink-0 border-t border-white/[0.06] bg-[#0e0e10] px-5 py-3.5 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          {/* Word count */}
+          <span className="text-[11px] text-white/25 tabular-nums">
+            {wordCount(getTextContent())} words
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {isEmail ? (
+            <>
+              {editMode ? (
+                <FooterButton onClick={() => setEditMode(false)} variant="ghost">Done editing</FooterButton>
+              ) : (
+                <FooterButton onClick={() => setEditMode(true)} variant="ghost" icon={<Edit3 className="w-3.5 h-3.5" />}>Edit</FooterButton>
+              )}
+              <FooterButton
+                onClick={handleSend}
+                variant="primary"
+                icon={<Send className="w-3.5 h-3.5" />}
+                loading={isExecuting}
+              >
+                Send Email
+              </FooterButton>
+            </>
+          ) : (
+            <>
+              <FooterButton onClick={handleCopy} variant="ghost" icon={copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}>
+                {copied ? 'Copied' : 'Copy'}
+              </FooterButton>
+            </>
+          )}
+        </div>
+      </footer>
+
+      <style jsx global>{`
+        .canvas-scroll::-webkit-scrollbar          { width: 4px; }
+        .canvas-scroll::-webkit-scrollbar-track    { background: transparent; }
+        .canvas-scroll::-webkit-scrollbar-thumb    { background: rgba(255,255,255,0.06); border-radius: 8px; }
+        .canvas-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.12); }
+      `}</style>
+    </div>
+  );
 }
 
-function TimelineItem({ 
-    status, 
-    title, 
-    description, 
-    timestamp, 
-    isError 
-}: { 
-    status: string; 
-    title: string; 
-    description?: string; 
-    timestamp?: string;
-    isError?: boolean;
+// ─── Email field row ────────────────────────────────────────────────────────────
+
+function EmailField({ label, value, last }: { label: string; value: string; last?: boolean }) {
+  return (
+    <div className={cn('flex items-start gap-3 px-6 py-2.5', !last && 'border-b border-white/[0.04]')}>
+      <span className="text-[11px] font-semibold text-white/25 uppercase tracking-widest w-[42px] shrink-0 pt-[1px]">{label}</span>
+      <span className="text-[13px] text-white/70 leading-snug">{value || '—'}</span>
+    </div>
+  );
+}
+
+// ─── Footer button ──────────────────────────────────────────────────────────────
+
+function FooterButton({
+  children, onClick, variant, icon, loading,
+}: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  variant: 'primary' | 'ghost';
+  icon?: React.ReactNode;
+  loading?: boolean;
 }) {
-    const statusColors: Record<string, string> = {
-        completed: 'bg-emerald-500',
-        failed: 'bg-red-500',
-        running: 'bg-amber-500',
-        ready: 'bg-blue-500',
-        pending: 'bg-black/[0.010] dark:bg-white/20'
-    };
+  return (
+    <button
+      onClick={onClick}
+      disabled={loading}
+      className={cn(
+        'flex items-center gap-1.5 px-3.5 h-8 rounded-xl text-[12px] font-semibold transition-all active:scale-95 disabled:opacity-50',
+        variant === 'primary'
+          ? 'bg-white text-black hover:bg-white/90'
+          : 'text-white/50 hover:text-white/80 hover:bg-white/8',
+      )}
+    >
+      {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : icon}
+      {children}
+    </button>
+  );
+}
 
-    return (
-        <div className="relative">
-            <div className={cn("absolute -left-[21px] w-3 h-3 rounded-full", statusColors[status] || 'bg-black/[0.010] dark:bg-white/20')} />
-            <div className="space-y-1">
-                <h4 className="text-[13px] font-semibold text-black/80 dark:text-white/80">{title}</h4>
-                {description && (
-                    <p className={cn("text-[12px]", isError ? 'text-red-400/80' : 'text-black/5 dark:text-white/50')}>
-                        {description}
-                    </p>
-                )}
-                {timestamp && (
-                    <p className="text-[11px] text-black/30 dark:text-white/30">
-                        {new Date(timestamp).toLocaleString()}
-                    </p>
-                )}
-            </div>
-        </div>
-    );
+// ─── Beautiful markdown renderer ────────────────────────────────────────────────
+
+function MarkdownView({ content }: { content: string }) {
+  if (!content) return (
+    <div className="flex flex-col items-center justify-center py-20 opacity-30">
+      <Sparkles className="w-8 h-8 text-white/30 mb-3" />
+      <p className="text-[13px] text-white/40">No content</p>
+    </div>
+  );
+
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      components={{
+        h1: ({ children }) => (
+          <h1 className="text-[22px] font-bold text-white/95 leading-tight mb-5 mt-2 tracking-tight">{children}</h1>
+        ),
+        h2: ({ children }) => (
+          <h2 className="text-[17px] font-semibold text-white/90 leading-snug mb-3 mt-6 tracking-tight">{children}</h2>
+        ),
+        h3: ({ children }) => (
+          <h3 className="text-[14px] font-semibold text-white/80 leading-snug mb-2.5 mt-5">{children}</h3>
+        ),
+        p: ({ children }) => (
+          <p className="text-[14px] text-white/75 leading-[1.75] mb-4">{children}</p>
+        ),
+        ul: ({ children }) => (
+          <ul className="mb-4 space-y-1.5 list-none pl-0">{children}</ul>
+        ),
+        ol: ({ children }) => (
+          <ol className="mb-4 space-y-1.5 pl-5 list-decimal marker:text-white/30">{children}</ol>
+        ),
+        li: ({ children, ...props }: any) => (
+          props.ordered
+            ? <li className="text-[13.5px] text-white/75 leading-relaxed pl-1">{children}</li>
+            : <li className="flex items-start gap-2.5 text-[13.5px] text-white/75 leading-relaxed list-none">
+                <span className="w-1.5 h-1.5 rounded-full bg-white/25 mt-[7px] shrink-0" />
+                <span className="flex-1">{children}</span>
+              </li>
+        ),
+        strong: ({ children }) => (
+          <strong className="font-semibold text-white/90">{children}</strong>
+        ),
+        em: ({ children }) => (
+          <em className="italic text-white/70">{children}</em>
+        ),
+        blockquote: ({ children }) => (
+          <blockquote className="border-l-2 border-white/20 pl-4 my-4 text-[13.5px] text-white/50 italic leading-relaxed">
+            {children}
+          </blockquote>
+        ),
+        code: ({ inline, children, ...props }: any) =>
+          inline ? (
+            <code className="px-1.5 py-0.5 rounded-md bg-white/8 text-[12.5px] font-mono text-white/75 border border-white/10">
+              {children}
+            </code>
+          ) : (
+            <pre className="my-4 rounded-xl bg-[#161618] border border-white/[0.07] overflow-x-auto">
+              <code className="block p-4 text-[12.5px] font-mono text-white/75 leading-relaxed">{children}</code>
+            </pre>
+          ),
+        hr: () => <hr className="my-6 border-white/[0.08]" />,
+        a: ({ href, children }) => (
+          <a href={href} target="_blank" rel="noopener noreferrer"
+            className="text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors">
+            {children}
+          </a>
+        ),
+        table: ({ children }) => (
+          <div className="my-5 overflow-x-auto rounded-xl border border-white/[0.08]">
+            <table className="w-full text-[13px]">{children}</table>
+          </div>
+        ),
+        thead: ({ children }) => (
+          <thead className="bg-white/[0.04] border-b border-white/[0.08]">{children}</thead>
+        ),
+        tbody: ({ children }) => (
+          <tbody className="divide-y divide-white/[0.05]">{children}</tbody>
+        ),
+        th: ({ children }) => (
+          <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-white/40 uppercase tracking-wider">{children}</th>
+        ),
+        td: ({ children }) => (
+          <td className="px-4 py-3 text-white/65">{children}</td>
+        ),
+      }}
+    >
+      {content}
+    </ReactMarkdown>
+  );
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function extractEmailBody(markdown: string): string {
+  const parts = markdown.split('---');
+  if (parts.length >= 2) return parts.slice(1).join('---').replace(/^\s+/, '').split('✅')[0].trim();
+  return markdown;
+}
+
+function wordCount(text: string): number {
+  return text.trim().split(/\s+/).filter(Boolean).length;
 }
