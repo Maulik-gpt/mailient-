@@ -59,12 +59,13 @@ export async function POST(request: NextRequest) {
     .filter(h => h.role && h.content?.trim())
     .map(h => ({ role: h.role as 'user' | 'assistant', content: h.content }));
 
-  // Start agentic loop
+  // Start agentic loop — pass connected integrations so only available tools are used
   const stream = runAgentLoop({
     userId,
     systemPrompt,
     history: sanitizedHistory,
     userMessage: message,
+    connectedIntegrations,
   });
 
   // After streaming, save to memory async (don't await — don't block the response)

@@ -135,13 +135,61 @@ export async function callLLM(
   throw new Error('All models and API keys exhausted. Please try again.');
 }
 
-/** Extract plain text from a content block array */
+/**
+ * Strip internal model XML tags from text.
+ * Free models (Llama, Gemini) frequently emit <thinking>, <tool>, <tool_call>,
+ * <result>, <output>, <answer> etc. as part of their internal reasoning format.
+ * These must NEVER reach the user.
+ */
+export function sanitizeModelText(text: string): string {
+  if (!text) return '';
+
+  // Remove complete closed blocks first (including nested content)
+  const CLOSED_TAGS = [
+    'thinking', 'thought', 'tool', 'tool_call', 'tool_use', 'tool_result',
+    'result', 'output', 'answer', 'reasoning', 'reflection', 'scratchpad',
+    'system', 'context', 'instruction', 'plan', 'step',
+  ];
+
+  let clean = text;
+
+  // Remove closed blocks: <tag>...</tag>
+  for (const tag of CLOSED_TAGS) {
+    clean = clean.replace(new RegExp(`<${tag}[^>]*>[\\s\\S]*?<\\/${tag}>`, 'gi'), '');
+  }
+
+  // Remove any remaining open/close XML tags from the list above
+  for (const tag of CLOSED_TAGS) {
+    clean = clean.replace(new RegExp(`<\\/?${tag}[^>]*>`, 'gi'), '');
+  }
+
+  // Remove any unclosed/partial tags at start of string (e.g. "<th<tool" artifacts)
+  clean = clean.replace(/^<[^>]{0,30}$/gm, '');
+
+  // Remove generic angle-bracket patterns that look like model internals (not markdown)
+  // Preserve things like <br> only if they're valid HTML we might use
+  clean = clean.replace(/<[a-z_]+[^>]*>/gi, (match) => {
+    const safeHtml = /^<(br|strong|em|b|i|u|p|div|span|h[1-6]|ul|ol|li|a|code|pre)\b/i.test(match);
+    return safeHtml ? match : '';
+  });
+  clean = clean.replace(/<\/[a-z_]+>/gi, (match) => {
+    const safeHtml = /^<\/(br|strong|em|b|i|u|p|div|span|h[1-6]|ul|ol|li|a|code|pre)>/i.test(match);
+    return safeHtml ? match : '';
+  });
+
+  // Collapse multiple blank lines into one
+  clean = clean.replace(/\n{3,}/g, '\n\n');
+
+  return clean.trim();
+}
+
+/** Extract plain text from a content block array, with XML sanitization */
 export function getText(content: ContentBlock[]): string {
-  return content
+  const raw = content
     .filter((b): b is { type: 'text'; text: string } => b.type === 'text')
     .map(b => b.text)
-    .join('\n')
-    .trim();
+    .join('\n');
+  return sanitizeModelText(raw);
 }
 
 /** Extract tool_use blocks */

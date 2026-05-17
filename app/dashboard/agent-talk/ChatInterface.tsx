@@ -1,6 +1,6 @@
 "use client";
 
-import { Send, Mail, Upload, User, User2, MessageCircle, DoorOpen, Bell, Mail as EmailIcon, MoreHorizontal, LogOut, Settings, ChevronRight, ChevronDown, CheckCircle2, Circle, Edit, History, LayoutGrid, Zap, Volume2, Sparkles, FileText, Calendar, BarChart3, PenTool, BrainCircuit, Search, Check, X, PanelLeft, Menu, Compass, Terminal, Share2 } from 'lucide-react';
+import { Send, Mail, Upload, User, User2, MessageCircle, DoorOpen, Bell, Mail as EmailIcon, MoreHorizontal, LogOut, Settings, ChevronRight, ChevronDown, CheckCircle2, Circle, Edit, History, LayoutGrid, Zap, Volume2, Sparkles, FileText, Calendar, BarChart3, PenTool, BrainCircuit, Search, Check, X, PanelLeft, Menu, Compass, Terminal, Share2, Bot } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
@@ -411,27 +411,44 @@ function extractSearchTerm(message: string): string {
   return message.trim();
 }
 
+// All XML-like tags that free models (Llama, Gemini, Qwen) emit internally.
+const MODEL_INTERNAL_TAGS = [
+  'thinking', 'thought', 'tool', 'tool_call', 'tool_use', 'tool_result',
+  'result', 'output', 'answer', 'reasoning', 'reflection', 'scratchpad',
+  'system', 'context', 'instruction', 'plan', 'step',
+];
+
 function extractThinking(message: string): { thinking: string; cleanText: string } {
   if (typeof message !== 'string') return { thinking: '', cleanText: '' };
 
-  // 1. Remove all fully closed thinking and tool_call blocks from the clean text
-  let cleanText = message
-    .replace(/<thinking>[\s\S]*?<\/thinking>/gi, '')
-    .replace(/<tool_call>[\s\S]*?<\/tool_call>/gi, '')
-    .trim();
-
-  // 2. Check for a currently open/streaming thinking tag
   let thinking = '';
-  if (cleanText.includes('<thinking>')) {
-    const parts = cleanText.split('<thinking>');
-    thinking = parts[parts.length - 1].trim();
-    cleanText = parts.slice(0, -1).join('<thinking>').trim();
+  let cleanText = message;
+
+  // 1. Extract content inside <thinking> for display in the thinking layer
+  const thinkMatch = cleanText.match(/<thinking>([\s\S]*?)<\/thinking>/i);
+  if (thinkMatch) thinking = thinkMatch[1].trim();
+
+  // 2. Remove all closed blocks for every known internal tag
+  for (const tag of MODEL_INTERNAL_TAGS) {
+    cleanText = cleanText.replace(new RegExp(`<${tag}[^>]*>[\\s\\S]*?<\\/${tag}>`, 'gi'), '');
   }
 
-  // 3. Check for a currently open/streaming tool_call tag and hide it
-  if (cleanText.includes('<tool_call>')) {
-    cleanText = cleanText.split('<tool_call>')[0].trim();
+  // 3. Remove any streaming-open tags (no closing tag yet) — truncate from there
+  for (const tag of MODEL_INTERNAL_TAGS) {
+    const idx = cleanText.search(new RegExp(`<${tag}[\\s>]`, 'i'));
+    if (idx !== -1) cleanText = cleanText.slice(0, idx);
   }
+
+  // 4. Remove any stray opening/closing tags of the internal list
+  for (const tag of MODEL_INTERNAL_TAGS) {
+    cleanText = cleanText.replace(new RegExp(`<\\/?${tag}[^>]*>`, 'gi'), '');
+  }
+
+  // 5. Remove any partial malformed tag artifacts at start of lines (e.g. "<th<tool", "<th>")
+  cleanText = cleanText.replace(/^<[^>\n]{0,40}$/gm, '');
+
+  // 6. Collapse excess blank lines
+  cleanText = cleanText.replace(/\n{3,}/g, '\n\n').trim();
 
   return { thinking, cleanText };
 }
@@ -1096,6 +1113,7 @@ export default function ChatInterface({
 
   // Arcus view mode: 'feed' (default) or 'plan_mode' (daily brief)
   const [arcusView, setArcusView] = useState<'feed' | 'plan_mode'>('feed');
+  const [dashboardTab, setDashboardTab] = useState<'home' | 'agents'>('home');
 
   // Arcus V3 Plan Mode Brief
   const {
@@ -3069,6 +3087,49 @@ export default function ChatInterface({
                 {/* Header - Glassmorphic fixed height */}
                 <div className="shrink-0 z-40 bg-black/[0.02] dark:bg-black/40 backdrop-blur-md border-b border-neutral-200 dark:border-white/[0.03]" style={{ flexShrink: 0 }}>
                   <div className="relative px-8 py-4">
+                    {/* Centered Agent/Home Toggle */}
+                    {isInitialMode && arcusView === 'feed' && (
+                      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 pointer-events-auto">
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                          className="flex items-center gap-1 p-1 bg-white/[0.03] border border-white/[0.06] rounded-full shadow-lg"
+                        >
+                          <button
+                            onClick={() => setDashboardTab('home')}
+                            className={cn(
+                              "px-5 py-2 rounded-full text-[12px] font-bold transition-all flex items-center gap-2",
+                              dashboardTab === 'home'
+                                ? "bg-white/[0.08] text-white border border-white/[0.12]"
+                                : "text-white/40 hover:text-white/60 border border-transparent"
+                            )}
+                          >
+                            <Sparkles className="w-3.5 h-3.5" />
+                            Home
+                          </button>
+                          <button
+                            onClick={() => setDashboardTab('agents')}
+                            className={cn(
+                              "px-5 py-2 rounded-full text-[12px] font-bold transition-all flex items-center gap-2",
+                              dashboardTab === 'agents'
+                                ? "bg-white/[0.08] text-white border border-white/[0.12]"
+                                : "text-white/40 hover:text-white/60 border border-transparent"
+                            )}
+                          >
+                            <Bot className="w-3.5 h-3.5" />
+                            Agents
+                            {scheduledAgents && scheduledAgents.filter(a => a.status === 'running').length > 0 && (
+                              <motion.div
+                                className="w-1.5 h-1.5 bg-green-400 rounded-full"
+                                animate={{ opacity: [1, 0.4, 1] }}
+                                transition={{ repeat: Infinity, duration: 1.5 }}
+                              />
+                            )}
+                          </button>
+                        </motion.div>
+                      </div>
+                    )}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         {/* Mobile Menu Button */}
@@ -3365,6 +3426,8 @@ export default function ChatInterface({
                             meetings={meetings}
                             actionItems={actionItems}
                             agents={scheduledAgents}
+                            activeTab={dashboardTab}
+                            onTabChange={setDashboardTab}
                             onCreateAgent={async (desc, sched) => {
                               // AgentsPanel now handles API persistence directly,
                               // this is a fallback if AgentsPanel's internal API call fails

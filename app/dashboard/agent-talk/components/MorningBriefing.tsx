@@ -246,6 +246,29 @@ function ActionCard({
 // MAIN COMPONENT
 // ============================================================================
 
+const DYNAMIC_GREETINGS = [
+  "Back at it!",
+  "Ready as you are.",
+  "What are we conquering today, {user}?",
+  "Let's make some progress.",
+  "Welcome back, {user}.",
+  "Good to see you, {user}.",
+  "Let's clear the queue.",
+  "Inbox zen awaits, {user}.",
+  "Ready to automate.",
+  "Standing by.",
+  "Let's crush some tasks, {user}.",
+  "At your command.",
+  "Let's streamline your day.",
+  "Where should we start, {user}?",
+  "Your inbox co-pilot is ready.",
+  "Let's build something great, {user}.",
+  "Ready to run.",
+  "Always at your service.",
+  "Here we go!",
+  "Let's keep the momentum, {user}!"
+];
+
 export function MorningBriefing({
   userName,
   emailStats,
@@ -262,6 +285,19 @@ export function MorningBriefing({
 }: MorningBriefingProps) {
   const { text: greeting, icon: GreetingIcon } = getGreeting();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [greetingText, setGreetingText] = useState('');
+
+  useEffect(() => {
+    const randomIndex = Math.floor(Math.random() * DYNAMIC_GREETINGS.length);
+    const selectedTemplate = DYNAMIC_GREETINGS[randomIndex];
+    let resolvedGreeting = selectedTemplate;
+    if (userName) {
+      resolvedGreeting = selectedTemplate.replace('{user}', userName);
+    } else {
+      resolvedGreeting = selectedTemplate.replace(/,?\s*\{user\}/g, '');
+    }
+    setGreetingText(resolvedGreeting);
+  }, [userName]);
 
   // Default mock data if none provided
   const stats = emailStats || { total: 0, drafted: 0, archived: 0, flagged: 0 };
@@ -295,7 +331,7 @@ export function MorningBriefing({
           </div>
           <div>
             <h1 className="text-3xl md:text-4xl font-medium text-white tracking-tighter" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-              {greeting}{userName ? `, ${userName}` : ''}
+              {greetingText || `${greeting}${userName ? `, ${userName}` : ''}`}
             </h1>
           </div>
         </div>

@@ -70,6 +70,10 @@ interface ArcusDashboardProps {
   // State
   isLoading?: boolean;
 
+  // Tab Control
+  activeTab?: 'home' | 'agents';
+  onTabChange?: (tab: 'home' | 'agents') => void;
+
   // Children - for prompt box
   children?: React.ReactNode;
 }
@@ -78,7 +82,28 @@ interface ArcusDashboardProps {
 // QUICK ACTION CONFIGS
 // ============================================================================
 
-
+const DYNAMIC_GREETINGS = [
+  "Back at it!",
+  "Ready as you are.",
+  "What are we conquering today, {user}?",
+  "Let's make some progress.",
+  "Welcome back, {user}.",
+  "Good to see you, {user}.",
+  "Let's clear the queue.",
+  "Inbox zen awaits, {user}.",
+  "Ready to automate.",
+  "Standing by.",
+  "Let's crush some tasks, {user}.",
+  "At your command.",
+  "Let's streamline your day.",
+  "Where should we start, {user}?",
+  "Your inbox co-pilot is ready.",
+  "Let's build something great, {user}.",
+  "Ready to run.",
+  "Always at your service.",
+  "Here we go!",
+  "Let's keep the momentum, {user}!"
+];
 
 function ConversationalStarter({
   text,
@@ -130,9 +155,27 @@ export function ArcusDashboard({
   onDeleteAgent,
   onRunNow,
   isLoading = false,
+  activeTab: activeTabProp,
+  onTabChange: onTabChangeProp,
   children,
 }: ArcusDashboardProps) {
-  const [activeTab, setActiveTab] = useState<'home' | 'agents'>('home');
+  const [localTab, setLocalTab] = useState<'home' | 'agents'>('home');
+  const activeTab = activeTabProp !== undefined ? activeTabProp : localTab;
+  const setActiveTab = onTabChangeProp !== undefined ? onTabChangeProp : setLocalTab;
+
+  const [greetingText, setGreetingText] = useState('');
+
+  useEffect(() => {
+    const randomIndex = Math.floor(Math.random() * DYNAMIC_GREETINGS.length);
+    const selectedTemplate = DYNAMIC_GREETINGS[randomIndex];
+    let resolvedGreeting = selectedTemplate;
+    if (userName) {
+      resolvedGreeting = selectedTemplate.replace('{user}', userName);
+    } else {
+      resolvedGreeting = selectedTemplate.replace(/,?\s*\{user\}/g, '');
+    }
+    setGreetingText(resolvedGreeting);
+  }, [userName]);
 
   const hasBriefingData = emailStats && emailStats.total > 0;
 
@@ -145,47 +188,7 @@ export function ArcusDashboard({
   };
 
   return (
-    <div className="flex flex-col items-center w-full">
-      {/* Tab Switcher — Home / Agents */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="flex items-center gap-1 p-1 bg-white/[0.03] border border-white/[0.06] rounded-full mb-10"
-      >
-        <button
-          onClick={() => setActiveTab('home')}
-          className={cn(
-            "px-5 py-2 rounded-full text-[12px] font-bold transition-all flex items-center gap-2",
-            activeTab === 'home'
-              ? "bg-white/[0.08] text-white border border-white/[0.12]"
-              : "text-white/40 hover:text-white/60 border border-transparent"
-          )}
-        >
-          <Sparkles className="w-3.5 h-3.5" />
-          Home
-        </button>
-        <button
-          onClick={() => setActiveTab('agents')}
-          className={cn(
-            "px-5 py-2 rounded-full text-[12px] font-bold transition-all flex items-center gap-2",
-            activeTab === 'agents'
-              ? "bg-white/[0.08] text-white border border-white/[0.12]"
-              : "text-white/40 hover:text-white/60 border border-transparent"
-          )}
-        >
-          <Bot className="w-3.5 h-3.5" />
-          Agents
-          {agents && agents.filter(a => a.status === 'running').length > 0 && (
-            <motion.div
-              className="w-1.5 h-1.5 bg-green-400 rounded-full"
-              animate={{ opacity: [1, 0.4, 1] }}
-              transition={{ repeat: Infinity, duration: 1.5 }}
-            />
-          )}
-        </button>
-      </motion.div>
-
+    <div className="flex flex-col items-center w-full min-h-0">
       {/* Content */}
       <AnimatePresence mode="wait">
         {activeTab === 'home' ? (
@@ -197,54 +200,56 @@ export function ArcusDashboard({
             transition={{ duration: 0.3 }}
             className="w-full max-w-3xl mx-auto"
           >
-            {/* Morning Briefing (if data available) */}
             {hasBriefingData ? (
-              <div className="mb-12">
-                <MorningBriefing
-                  userName={userName}
-                  emailStats={emailStats}
-                  meetings={meetings}
-                  actionItems={actionItems}
-                  isLoading={isLoading}
-                  onTriageInbox={() => handleQuickAction("Triage my inbox now and categorize all unread emails by urgency")}
-                  onDraftReplies={() => handleQuickAction("Draft replies to all emails that need a response")}
-                  onViewMeetings={() => handleQuickAction("Show me all my meetings for today with details")}
-                  onViewAction={(id) => handleQuickAction(`Show me the email flagged for my attention (ID: ${id})`)}
-                  onRefresh={() => handleQuickAction("Refresh my inbox briefing with the latest data")}
-                />
-              </div>
-            ) : (
-              /* Default greeting when no briefing data */
-              <div className="text-center mb-12">
-                <div className="flex justify-center mb-8">
-                  <img
-                    src="/arcus-ai-icon.jpg"
-                    className="w-16 h-16 object-cover rounded-[24px] shadow-2xl grayscale brightness-110"
-                    alt="Arcus AI"
+              <div className="flex flex-col justify-center min-h-[65vh] py-4">
+                <div className="flex-1 flex flex-col justify-center">
+                  <MorningBriefing
+                    userName={userName}
+                    emailStats={emailStats}
+                    meetings={meetings}
+                    actionItems={actionItems}
+                    isLoading={isLoading}
+                    onTriageInbox={() => handleQuickAction("Triage my inbox now and categorize all unread emails by urgency")}
+                    onDraftReplies={() => handleQuickAction("Draft replies to all emails that need a response")}
+                    onViewMeetings={() => handleQuickAction("Show me all my meetings for today with details")}
+                    onViewAction={(id) => handleQuickAction(`Show me the email flagged for my attention (ID: ${id})`)}
+                    onRefresh={() => handleQuickAction("Refresh my inbox briefing with the latest data")}
                   />
                 </div>
-                <h1
-                  className="text-4xl md:text-6xl font-medium text-white tracking-tighter mb-4"
-                  style={{ fontFamily: "'Montserrat', sans-serif" }}
-                >
-                  {userName ? `Hey ${userName}` : 'Ask anything about your emails'}
-                </h1>
-                <p className="text-[15px] text-white/35 max-w-lg mx-auto leading-relaxed">
-                  Arcus reads your inbox, drafts replies in your tone, books meetings, and manages everything — so you don't have to.
-                </p>
+                
+                {/* Center prompt box */}
+                <div className="w-full max-w-2xl mx-auto px-4 mt-8 mb-4">
+                  {children}
+                </div>
+              </div>
+            ) : (
+              /* Default greeting when no briefing data - Shifted to upper half, prompt box centered below */
+              <div className="flex flex-col justify-center min-h-[65vh] py-4">
+                <div className="flex-1 flex flex-col justify-center text-center">
+                  <div className="flex justify-center mb-8">
+                    <img
+                      src="/arcus-ai-icon.jpg"
+                      className="w-16 h-16 object-cover rounded-[24px] shadow-2xl grayscale brightness-110"
+                      alt="Arcus AI"
+                    />
+                  </div>
+                  <h1
+                    className="text-4xl md:text-6xl font-medium text-white tracking-tighter mb-4"
+                    style={{ fontFamily: "'Montserrat', sans-serif" }}
+                  >
+                    {greetingText || (userName ? `Hey ${userName}` : 'Ask anything about your emails')}
+                  </h1>
+                  <p className="text-[15px] text-white/35 max-w-lg mx-auto leading-relaxed">
+                    Arcus reads your inbox, drafts replies in your tone, books meetings, and manages everything — so you don't have to.
+                  </p>
+                </div>
+
+                {/* Center prompt box */}
+                <div className="w-full max-w-2xl mx-auto px-4 mt-8 mb-4">
+                  {children}
+                </div>
               </div>
             )}
-
-            {/* Prompt Box Fixed Bottom */}
-            <div className="fixed bottom-0 left-0 right-0 z-50 pointer-events-none pb-8 pt-12 bg-gradient-to-t from-black via-[#0a0a0a] to-transparent">
-              <div className="w-full max-w-2xl mx-auto px-4 pointer-events-auto">
-                {children}
-              </div>
-            </div>
-
-            <div className="max-w-2xl mx-auto px-4 mb-32">
-              {/* Suggestions removed as requested */}
-            </div>
           </motion.div>
         ) : (
           <motion.div

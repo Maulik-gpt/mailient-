@@ -283,6 +283,35 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   },
 ];
 
+// ── Integration → tool mapping ─────────────────────────────────────────────────
+// null = always available (no integration needed)
+const TOOL_INTEGRATION_MAP: Record<string, string | null> = {
+  search_gmail: 'gmail',
+  read_email: 'gmail',
+  get_sent_emails: 'gmail',
+  draft_reply: 'gmail',
+  send_email: 'gmail',
+  schedule_meeting: 'gcal',
+  get_calendar_events: 'gcal',
+  search_notion: 'notion',
+  open_canvas: null,
+  web_search: null,
+  send_slack_message: 'slack',
+};
+
+/**
+ * Returns only the tool schemas the user can actually use,
+ * based on which integrations they have connected.
+ * Tools with no required integration are always included.
+ */
+export function getAvailableTools(connectedIntegrations: string[]): ToolSchema[] {
+  const connected = new Set(connectedIntegrations);
+  return TOOL_SCHEMAS.filter(schema => {
+    const required = TOOL_INTEGRATION_MAP[schema.name];
+    return required === null || connected.has(required);
+  });
+}
+
 // ── Tool implementations ───────────────────────────────────────────────────────
 
 export interface ToolResult {

@@ -2,53 +2,131 @@
  * Arcus System Prompt
  *
  * Builds the system prompt injected before every LLM call.
- * Includes: identity, capabilities, connected integrations, memories, and rules.
+ * Tells the AI exactly which integrations are connected/not, and what it can/cannot do.
  */
 
 export interface SystemPromptOptions {
   userName: string;
   userId: string;
   connectedIntegrations: string[];
-  memories: string;       // formatted memory context from Supermemory
+  memories: string;
   isBackgroundAgent?: boolean;
   agentTaskDescription?: string;
 }
+
+const INTEGRATION_CAPABILITIES: Record<string, { label: string; can: string[] }> = {
+  gmail: {
+    label: 'Gmail',
+    can: [
+      'Search inbox with filters (from:, subject:, is:unread, newer_than:, etc.)',
+      'Read full email threads and attachments',
+      'Analyze sent emails to learn writing style',
+      'Save replies as Gmail drafts',
+      'Send emails directly',
+    ],
+  },
+  gcal: {
+    label: 'Google Calendar',
+    can: [
+      'Check upcoming events and availability',
+      'Create calendar events with Google Meet links',
+      'Add attendees and meeting agendas',
+    ],
+  },
+  notion: {
+    label: 'Notion',
+    can: [
+      'Search pages and databases across the workspace',
+      'Read page content for context',
+    ],
+  },
+  slack: {
+    label: 'Slack',
+    can: [
+      'Send direct messages to yourself',
+      'Post to Slack channels',
+      'Send task completion notifications',
+    ],
+  },
+};
+
+const ALL_INTEGRATION_KEYS = Object.keys(INTEGRATION_CAPABILITIES);
+
+// Tools that are always available regardless of connected integrations
+const ALWAYS_AVAILABLE = [
+  'Canvas panel — render documents, reports, drafts in a full-screen panel',
+  'Web search — search the internet for current information',
+];
 
 export function buildSystemPrompt(opts: SystemPromptOptions): string {
   const today = new Date().toLocaleDateString('en-US', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
   });
 
-  const integrationList = opts.connectedIntegrations.length
-    ? opts.connectedIntegrations.join(', ')
-    : 'none — tell the user to connect apps in Settings → Integrations';
+  const connected = opts.connectedIntegrations.filter(p => INTEGRATION_CAPABILITIES[p]);
+  const notConnected = ALL_INTEGRATION_KEYS.filter(p => !opts.connectedIntegrations.includes(p));
+
+  // Build what you CAN do
+  const canDoLines: string[] = [...ALWAYS_AVAILABLE];
+  for (const key of connected) {
+    const info = INTEGRATION_CAPABILITIES[key];
+    canDoLines.push(`**${info.label}** (connected):`);
+    info.can.forEach(c => canDoLines.push(`  - ${c}`));
+  }
+
+  // Build what you CANNOT do yet
+  const cannotDoLines: string[] = [];
+  for (const key of notConnected) {
+    const info = INTEGRATION_CAPABILITIES[key];
+    cannotDoLines.push(`**${info.label}** — NOT connected. Cannot use ${info.can[0].toLowerCase().split(' ')[0]} tools. Tell the user to connect ${info.label} in Settings → Integrations → ${info.label}.`);
+  }
+
+  const capabilitySection = [
+    '## What you CAN do right now',
+    canDoLines.join('\n'),
+    '',
+    cannotDoLines.length
+      ? '## What you CANNOT do (integrations not connected)\n' + cannotDoLines.join('\n')
+      : '## All integrations connected — full capabilities available',
+  ].join('\n');
 
   const agentContext = opts.isBackgroundAgent
-    ? `\n\n## Background Agent Mode\nYou are running as an autonomous background agent with no human in the loop.\nTask: ${opts.agentTaskDescription}\nComplete the full task using tools. Generate a detailed report of everything you did.`
+    ? `\n\n## Background Agent Mode\nYou are running as an autonomous background agent. No human is watching.\nTask: ${opts.agentTaskDescription}\nComplete the task fully using available tools. Write a detailed report of what you found and did.`
     : '';
 
-  return `You are Arcus, the AI agent for Mailient. You are not a chatbot. You are a fully autonomous AI agent that lives inside the user's inbox and actually does things.
+  return `You are Arcus, the AI agent built into Mailient. You are not a chatbot. You are a fully autonomous agent that lives inside the user's email and calendar and actually does things — searches, reads, drafts, schedules.
 
 Today is ${today}. The user's name is ${opts.userName}.
 
-## Your capabilities
-You have tools to: read Gmail, draft and send email replies in the user's exact voice, schedule Google Calendar events with Meet links, search Notion, search the web, open a canvas document panel, and send Slack notifications.
+${capabilitySection}
 
-Connected integrations: ${integrationList}
+## Rules you must always follow
 
-## Core rules
-- Use tools immediately without asking for permission. Never say "I'll need to search your inbox" — just do it.
-- For any email task: always call search_gmail first, then read_email for context, then draft_reply.
-- Before drafting any reply: call get_sent_emails to analyze the user's writing style. Match their tone exactly.
-- For anything longer than 3 paragraphs: use open_canvas instead of writing in chat.
-- When scheduling a meeting: call get_calendar_events first to check availability.
-- Never fabricate email content. Only report what tools actually return.
-- If an integration is not connected, tell the user how to connect it and what you can do once they do.
-- Always narrate what you're doing in one line before each tool call so the user has transparency.
-- When you draft or produce something important, also open the canvas to show it beautifully.${opts.memories}${agentContext}
+**Integration rules:**
+- ONLY call tools for integrations listed as connected above. If an integration is not connected, explain that to the user and tell them exactly where to connect it (Settings → Integrations).
+- Never fabricate email or calendar content. Only report what tools actually return.
+- If a task requires an integration that is not connected, say: "I can't do this yet — [Integration] isn't connected. Connect it at Settings → Integrations → [Integration] and I'll take care of it."
 
-## Voice and style
-Be direct and action-oriented. You are the user's chief of staff — act like it. No pleasantries, no hedging. When the task is done, give a clean summary of exactly what you did. If something failed, explain why and what the user should do.`;
+**Action rules:**
+- Use tools immediately without asking for permission. Don't say "I'll need to search" — just search.
+- For any email task: call search_gmail → read_email → get_sent_emails → draft_reply. Always in that order.
+- Before drafting any reply: call get_sent_emails to study the user's tone and voice. Match it exactly.
+- For anything more than 3 paragraphs: use open_canvas to render it beautifully, not inline chat.
+- When scheduling: always check get_calendar_events first to confirm availability.
+
+**Transparency rules:**
+- Before every tool call, narrate what you're about to do in one short sentence (e.g. "Searching inbox for emails from Priya...").
+- After every tool result, briefly say what you found (e.g. "Found 3 unread emails from Priya. Reading the latest...").
+- Never go silent while working. Keep the user informed step by step.
+- When done, give a clean 2–3 sentence summary of exactly what you did and what happened.${opts.memories}${agentContext}
+
+## Output format rules — CRITICAL
+- NEVER use XML tags in your responses. No <thinking>, <tool>, <tool_call>, <result>, <output>, <answer>, or any other XML/HTML tags.
+- Write in plain text and markdown only. Use **bold**, bullet points, and headers where appropriate.
+- Your response text is shown directly to the user. Any XML tag will appear as raw text on screen.
+
+## Voice
+Direct, calm, competent. No fluff, no hedging. You are the user's chief of staff.`;
 }
 
 export async function getConnectedIntegrations(userId: string): Promise<string[]> {
@@ -59,7 +137,24 @@ export async function getConnectedIntegrations(userId: string): Promise<string[]
       .from('arcus_integrations')
       .select('provider')
       .eq('user_id', userId);
-    return (data || []).map((r: any) => r.provider);
+
+    const arcusProviders = (data || []).map((r: any) => r.provider as string);
+
+    // Also check legacy integration_credentials for google (covers gmail + gcal)
+    const { data: legacy } = await supabase
+      .from('integration_credentials')
+      .select('provider')
+      .eq('user_id', userId);
+
+    const legacyProviders = (legacy || []).map((r: any) => {
+      const p = r.provider as string;
+      if (p === 'google') return ['gmail', 'gcal'];
+      if (p === 'google_calendar') return ['gcal'];
+      return [p];
+    }).flat();
+
+    const all = [...new Set([...arcusProviders, ...legacyProviders])];
+    return all;
   } catch {
     return [];
   }

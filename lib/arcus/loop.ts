@@ -18,8 +18,8 @@
  */
 
 import crypto from 'crypto';
-import { callLLM, getText, getToolCalls } from './engine';
-import { executeTool, TOOL_SCHEMAS } from './tools';
+import { callLLM, getText, getToolCalls, sanitizeModelText } from './engine';
+import { executeTool, getAvailableTools } from './tools';
 import type { LLMMessage } from './engine';
 
 export const MAX_TOOL_CALLS = 20;
@@ -37,13 +37,15 @@ export interface LoopOptions {
   systemPrompt: string;
   history: Array<{ role: 'user' | 'assistant'; content: string }>;
   userMessage: string;
+  connectedIntegrations?: string[];
 }
 
 /**
  * Run the agentic loop. Returns a ReadableStream of SSE events.
  */
 export function runAgentLoop(opts: LoopOptions): ReadableStream {
-  const { userId, systemPrompt, history, userMessage } = opts;
+  const { userId, systemPrompt, history, userMessage, connectedIntegrations = [] } = opts;
+  const availableTools = getAvailableTools(connectedIntegrations);
   const runId = crypto.randomUUID();
   const startedAt = Date.now();
 
@@ -71,13 +73,13 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
         emit('thinking', { status: 'Reasoning about your request…' });
 
         while (true) {
-          const response = await callLLM(messages, TOOL_SCHEMAS);
+          const response = await callLLM(messages, availableTools);
 
           // Add assistant message to history
           messages.push({ role: 'assistant', content: response.content });
 
           const toolCalls = getToolCalls(response.content);
-          const textContent = getText(response.content);
+          const textContent = sanitizeModelText(getText(response.content));
 
           if (!toolCalls.length || response.stop_reason === 'end_turn') {
             // Done — this is the final response
@@ -138,7 +140,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
               [...messages, { role: 'user', content: 'Please provide your final response now based on everything you\'ve done.' }],
               [] // No tools — force text response
             );
-            finalText = getText(finalResponse.content);
+            finalText = sanitizeModelText(getText(finalResponse.content));
             break;
           }
         }

@@ -149,6 +149,7 @@ async function runAgent(agent: any): Promise<string> {
     systemPrompt,
     history: [],
     userMessage: taskDescription,
+    connectedIntegrations,
   });
 
   const reader = stream.getReader();

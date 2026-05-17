@@ -1,21 +1,12 @@
 'use client';
 
-/**
- * AgentExecutionTimeline — Phase 3: Premium Minimalist Aesthetic
- * 
- * Features:
- * - Shimmering text (ShiningText) for active steps
- * - V3 Verb forms for completed steps
- * - Expandable output/summaries
- * - Minimalist design with zero "heavy" labels
- */
-
-import { useState, useRef, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { 
-  ChevronDown, 
-  Search, Mail, Zap, FileText, Calendar, ListTodo, Database, BrainCircuit, Sparkles, CheckCircle2 
+import {
+  Search, Mail, Send, FileText, Calendar, Database,
+  BrainCircuit, Sparkles, CheckCircle2, Globe, MessageSquare,
+  Inbox, PenLine, Clock, LayoutTemplate,
 } from 'lucide-react';
 import { ShiningText } from '@/components/ui/shining-text';
 
@@ -26,7 +17,7 @@ export interface AgentStep {
   type: 'thinking' | 'tool_call' | 'tool_result' | 'tool_error' | 'approval' | 'respond' | 'message';
   tool?: string;
   label: string;
-  context?: string; // Detailed context (e.g. search query, internal thought)
+  context?: string;
   status: 'active' | 'completed' | 'error';
   summary?: string;
   startedAt: number;
@@ -42,61 +33,44 @@ interface AgentExecutionTimelineProps {
   totalDurationMs?: number;
 }
 
-// ─── Constants ─────────────────────────────────────────────────────────────
+// ─── Tool metadata ──────────────────────────────────────────────────────────
 
-const toolIcons: Record<string, React.ReactNode> = {
-  search_inbox: <Search className="w-3.5 h-3.5" />,
-  read_email: <Mail className="w-3.5 h-3.5" />,
-  send_email: <Zap className="w-3.5 h-3.5" />,
-  save_draft: <FileText className="w-3.5 h-3.5" />,
-  schedule_meeting: <Calendar className="w-3.5 h-3.5" />,
-  check_availability: <Calendar className="w-3.5 h-3.5" />,
-  create_task: <ListTodo className="w-3.5 h-3.5" />,
-  notion_create_page: <Database className="w-3.5 h-3.5" />,
-  notion_search: <Database className="w-3.5 h-3.5" />,
-  think: <BrainCircuit className="w-3.5 h-3.5" />,
-  respond: <Sparkles className="w-3.5 h-3.5" />,
+const TOOL_META: Record<string, { icon: React.ReactNode; color: string; activeVerb: string; doneVerb: string }> = {
+  // Gmail
+  search_gmail:     { icon: <Search className="w-3.5 h-3.5" />,      color: 'text-blue-400',   activeVerb: 'Searching inbox',      doneVerb: 'Searched inbox' },
+  read_email:       { icon: <Mail className="w-3.5 h-3.5" />,         color: 'text-blue-400',   activeVerb: 'Reading email',         doneVerb: 'Read email' },
+  get_sent_emails:  { icon: <Inbox className="w-3.5 h-3.5" />,        color: 'text-blue-400',   activeVerb: 'Studying writing style', doneVerb: 'Studied writing style' },
+  draft_reply:      { icon: <PenLine className="w-3.5 h-3.5" />,      color: 'text-amber-400',  activeVerb: 'Drafting reply',        doneVerb: 'Drafted reply' },
+  send_email:       { icon: <Send className="w-3.5 h-3.5" />,         color: 'text-green-400',  activeVerb: 'Sending email',         doneVerb: 'Sent email' },
+  // Calendar
+  schedule_meeting: { icon: <Calendar className="w-3.5 h-3.5" />,     color: 'text-violet-400', activeVerb: 'Scheduling meeting',    doneVerb: 'Scheduled meeting' },
+  get_calendar_events: { icon: <Clock className="w-3.5 h-3.5" />,     color: 'text-violet-400', activeVerb: 'Reading calendar',      doneVerb: 'Read calendar' },
+  // Notion
+  search_notion:    { icon: <Database className="w-3.5 h-3.5" />,     color: 'text-slate-400',  activeVerb: 'Searching Notion',      doneVerb: 'Searched Notion' },
+  // Canvas
+  open_canvas:      { icon: <LayoutTemplate className="w-3.5 h-3.5" />, color: 'text-orange-400', activeVerb: 'Opening canvas',     doneVerb: 'Opened canvas' },
+  // Web
+  web_search:       { icon: <Globe className="w-3.5 h-3.5" />,        color: 'text-cyan-400',   activeVerb: 'Searching web',         doneVerb: 'Searched web' },
+  // Slack
+  send_slack_message: { icon: <MessageSquare className="w-3.5 h-3.5" />, color: 'text-pink-400', activeVerb: 'Sending Slack message', doneVerb: 'Sent Slack message' },
+  // Legacy
+  search_inbox:     { icon: <Search className="w-3.5 h-3.5" />,       color: 'text-blue-400',   activeVerb: 'Searching inbox',       doneVerb: 'Searched inbox' },
+  save_draft:       { icon: <FileText className="w-3.5 h-3.5" />,     color: 'text-amber-400',  activeVerb: 'Saving draft',          doneVerb: 'Saved draft' },
+  send_web_request: { icon: <Globe className="w-3.5 h-3.5" />,        color: 'text-cyan-400',   activeVerb: 'Fetching page',         doneVerb: 'Fetched page' },
 };
 
-// ─── Helpers ───────────────────────────────────────────────────────────────
-
-/**
- * Formats tool names into V3 (Past Participle) or Active (Present Continuous)
- */
-const formatVerb = (tool: string, status: string, label: string) => {
-  const name = tool.replace(/_/g, ' ');
-  
-  if (status === 'active') {
-    if (name.includes('search')) return `Searching Inbox...`;
-    if (name.startsWith('read')) return 'Reading Email...';
-    if (name.startsWith('send')) return 'Sending Email...';
-    if (name.startsWith('save')) return 'Saving Draft...';
-    if (name.startsWith('schedule')) return 'Scheduling Meeting...';
-    if (name.startsWith('check')) return 'Checking Availability...';
-    if (name.startsWith('create')) return 'Creating Task...';
-    return `${name.charAt(0).toUpperCase() + name.slice(1)}ing...`;
-  }
-
-  if (status === 'completed') {
-    if (name.includes('search')) return 'Searched Inbox';
-    if (name.startsWith('read')) return 'Read Email';
-    if (name.startsWith('send')) return 'Sent Email';
-    if (name.startsWith('save')) return 'Saved Draft';
-    if (name.startsWith('schedule')) return 'Scheduled Meeting';
-    if (name.startsWith('check')) return 'Checked Availability';
-    if (name.startsWith('create')) return 'Created Task';
-    return `${name.charAt(0).toUpperCase() + name.slice(1)}ed`;
-  }
-
-  return label || name;
-};
+function getToolMeta(toolName: string) {
+  return TOOL_META[toolName] ?? {
+    icon: <Sparkles className="w-3.5 h-3.5" />,
+    color: 'text-white/40',
+    activeVerb: `Running ${toolName.replace(/_/g, ' ')}`,
+    doneVerb: `Ran ${toolName.replace(/_/g, ' ')}`,
+  };
+}
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
-export function AgentExecutionTimeline({
-  steps,
-  isActive,
-}: AgentExecutionTimelineProps) {
+export function AgentExecutionTimeline({ steps, isActive }: AgentExecutionTimelineProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -105,105 +79,124 @@ export function AgentExecutionTimeline({
     }
   }, [steps.length, isActive]);
 
-  if (steps.length === 0) return null;
+  // Filter: skip bare "Reasoning..." thinking steps — only show meaningful steps
+  const visible = steps.filter(s => {
+    if (s.type === 'thinking') {
+      const label = s.label?.toLowerCase() || '';
+      return !['reasoning...', 'processing...', 'thinking...', 'analysing your request...'].includes(label);
+    }
+    return true;
+  });
+
+  if (visible.length === 0) return null;
 
   return (
-    <div className="w-full mt-4 space-y-4 max-w-full">
+    <div className="w-full mt-3 space-y-2.5 max-w-full">
       <AnimatePresence initial={false}>
-        {steps.map((step, idx) => {
+        {visible.map((step, idx) => {
           const isTool = step.type === 'tool_call' || step.type === 'tool_result';
-          const isThinking = step.type === 'thinking';
-          const isLast = idx === steps.length - 1;
           const isActiveStep = step.status === 'active';
-          
-          if (isThinking && !step.label) return null;
-          if (isThinking && (step.label === 'Reasoning...' || step.label === 'Processing...')) return null;
+          const isError = step.status === 'error';
+          const meta = isTool && step.tool ? getToolMeta(step.tool) : null;
 
-          const displayLabel = isTool 
-            ? formatVerb(step.tool || '', step.status, step.label) 
+          const displayLabel = isTool && meta
+            ? (isActiveStep ? meta.activeVerb : meta.doneVerb)
             : step.label;
+
+          const contextLine = step.context ||
+            step.params?.query ||
+            step.params?.subject ||
+            step.params?.title ||
+            step.params?.channel ||
+            '';
 
           return (
             <motion.div
               key={step.id || idx}
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              className="group flex flex-col gap-2"
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.25 }}
+              className="flex flex-col gap-1"
             >
-              <div className="flex items-center gap-3">
-                {/* Minimal Icon/Status */}
+              {/* Main step row */}
+              <div className="flex items-start gap-2.5">
+                {/* Icon bubble */}
                 <div className={cn(
-                  "flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-500",
-                  isActiveStep 
-                    ? "bg-neutral-900 dark:bg-white text-white dark:text-black shadow-sm" 
-                    : "bg-neutral-100 dark:bg-white/5 text-neutral-400 dark:text-white/20"
+                  'flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5 transition-all duration-300',
+                  isActiveStep
+                    ? 'bg-white/10 ring-1 ring-white/20'
+                    : isError
+                    ? 'bg-red-500/10 ring-1 ring-red-500/20'
+                    : 'bg-white/[0.04]',
                 )}>
                   {isActiveStep ? (
                     <motion.div
-                      animate={{ scale: [1, 1.1, 1] }}
-                      transition={{ repeat: Infinity, duration: 2 }}
+                      animate={{ opacity: [0.5, 1, 0.5] }}
+                      transition={{ repeat: Infinity, duration: 1.4, ease: 'easeInOut' }}
+                      className={cn(meta?.color || 'text-white/50')}
                     >
-                      {isTool ? toolIcons[step.tool || 'default'] : <BrainCircuit className="w-3.5 h-3.5" />}
+                      {meta?.icon ?? <BrainCircuit className="w-3 h-3" />}
                     </motion.div>
+                  ) : isError ? (
+                    <span className="text-red-400 text-[10px]">✕</span>
                   ) : (
-                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <CheckCircle2 className="w-3 h-3 text-white/20" />
                   )}
                 </div>
 
-                {/* Step Text & Context */}
-                <div className="flex-1 min-w-0">
+                {/* Label + context */}
+                <div className="flex-1 min-w-0 pt-0.5">
                   {isActiveStep ? (
-                    <div className="flex flex-col gap-0.5">
+                    <>
                       <ShiningText text={displayLabel} />
-                      {step.context && (
-                        <motion.p 
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          className="text-[12px] text-neutral-400 dark:text-white/20 italic line-clamp-1"
-                        >
-                          {step.context}
-                        </motion.p>
+                      {contextLine && (
+                        <p className="text-[11px] text-white/25 mt-0.5 truncate italic">
+                          {contextLine}
+                        </p>
                       )}
-                    </div>
+                    </>
                   ) : (
-                    <div className="flex flex-col">
-                      <span className="text-[14px] font-medium text-neutral-500 dark:text-white/40">
+                    <>
+                      <span className={cn(
+                        'text-[13px] font-medium',
+                        isError ? 'text-red-400/70' : 'text-white/35',
+                      )}>
                         {displayLabel}
                       </span>
-                      {step.context && (
-                        <span className="text-[11px] text-neutral-400/60 dark:text-white/10 italic line-clamp-1">
-                          {step.context}
+                      {contextLine && (
+                        <span className="block text-[11px] text-white/15 truncate italic">
+                          {contextLine}
                         </span>
                       )}
-                    </div>
+                    </>
                   )}
                 </div>
+
+                {/* Duration badge for completed steps */}
+                {!isActiveStep && step.completedAt && step.startedAt && (
+                  <span className="flex-shrink-0 text-[10px] text-white/15 font-mono mt-0.5">
+                    {((step.completedAt - step.startedAt) / 1000).toFixed(1)}s
+                  </span>
+                )}
               </div>
 
-              {/* Expandable Result/Summary */}
-              {step.summary && (
-                <details className="ml-9 group/details">
-                  <summary className="flex items-center gap-1.5 cursor-pointer list-none text-[11px] font-bold text-neutral-400 dark:text-white/20 hover:text-black dark:hover:text-white/50 transition-colors uppercase tracking-widest select-none">
-                    <ChevronDown className="w-3 h-3 transition-transform group-open/details:rotate-180" />
-                    View Details
-                  </summary>
-                  <motion.div 
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    className="mt-2 p-3 rounded-2xl bg-neutral-50 dark:bg-white/[0.02] border border-neutral-100 dark:border-white/5"
-                  >
-                    <p className="text-[12px] leading-relaxed text-neutral-600 dark:text-white/60">
-                      {step.summary}
-                    </p>
-                  </motion.div>
-                </details>
+              {/* Result summary — always visible when present, no click required */}
+              {step.summary && !isActiveStep && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  transition={{ duration: 0.2 }}
+                  className="ml-7 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/[0.05] text-[12px] text-white/40 leading-relaxed"
+                >
+                  {step.summary}
+                </motion.div>
               )}
             </motion.div>
           );
         })}
       </AnimatePresence>
-      <div ref={bottomRef} className="h-2" />
+      <div ref={bottomRef} />
     </div>
   );
 }
