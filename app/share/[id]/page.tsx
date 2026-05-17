@@ -218,13 +218,70 @@ export default function SharePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
-            <Sparkles className="w-6 h-6 text-blue-500 animate-pulse" />
+      <div className="min-h-screen bg-[#050505] text-white flex flex-col font-sans">
+        {/* Header Skeleton */}
+        <nav className="h-16 border-b border-white/[0.04] bg-black/60 backdrop-blur-2xl flex items-center justify-between px-6 lg:px-12 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-white/[0.15] border border-white/30 animate-pulse shrink-0" />
+            <div className="h-4 w-24 bg-white/[0.18] rounded-full animate-pulse" />
           </div>
-          <p className="text-white/40 text-[13px] animate-pulse">Loading shared workspace...</p>
+          <div className="flex items-center gap-2">
+            <div className="h-6 w-16 bg-white/[0.12] rounded-full animate-pulse" />
+            <div className="h-6 w-20 bg-white/[0.12] rounded-full animate-pulse" />
+          </div>
+        </nav>
+
+        {/* Content Chat Skeleton */}
+        <div className="flex-1 max-w-3xl w-full mx-auto px-6 py-8 overflow-y-auto space-y-8">
+          {/* User Message Skeleton */}
+          <div className="flex flex-col items-end space-y-2">
+            <div className="flex items-center gap-3">
+              <div className="h-4 w-12 bg-white/[0.12] rounded-full animate-pulse" />
+              <div className="w-8 h-8 rounded-full bg-white/[0.18] border border-white/30 animate-pulse" />
+            </div>
+            <div className="w-64 h-12 bg-white/[0.1] border border-white/15 rounded-[20px] animate-pulse" />
+          </div>
+
+          {/* Bot Message Skeleton 1 */}
+          <div className="flex flex-col items-start space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-white/[0.18] border border-white/30 animate-pulse" />
+              <div className="h-4 w-16 bg-white/[0.12] rounded-full animate-pulse" />
+            </div>
+            <div className="w-full space-y-2.5 pl-11">
+              <div className="h-4 w-[90%] bg-white/[0.18] rounded-md animate-pulse" />
+              <div className="h-4 w-[95%] bg-white/[0.18] rounded-md animate-pulse" />
+              <div className="h-4 w-[60%] bg-white/[0.18] rounded-md animate-pulse" />
+            </div>
+          </div>
+
+          {/* User Message Skeleton 2 */}
+          <div className="flex flex-col items-end space-y-2 pt-4">
+            <div className="flex items-center gap-3">
+              <div className="h-4 w-16 bg-white/[0.12] rounded-full animate-pulse" />
+              <div className="w-8 h-8 rounded-full bg-white/[0.18] border border-white/30 animate-pulse" />
+            </div>
+            <div className="w-80 h-10 bg-white/[0.1] border border-white/15 rounded-[20px] animate-pulse" />
+          </div>
+
+          {/* Bot Message Skeleton 2 */}
+          <div className="flex flex-col items-start space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-white/[0.18] border border-white/30 animate-pulse" />
+              <div className="h-4 w-14 bg-white/[0.12] rounded-full animate-pulse" />
+            </div>
+            <div className="w-full space-y-2.5 pl-11">
+              <div className="h-4 w-[95%] bg-white/[0.18] rounded-md animate-pulse" />
+              <div className="h-4 w-[85%] bg-white/[0.18] rounded-md animate-pulse" />
+              <div className="h-4 w-[40%] bg-white/[0.18] rounded-md animate-pulse" />
+            </div>
+          </div>
         </div>
+
+        {/* Footer Skeleton */}
+        <footer className="h-20 border-t border-white/[0.04] bg-black/60 backdrop-blur-2xl flex items-center justify-center px-6 shrink-0">
+          <div className="w-48 h-9 rounded-full bg-white/[0.15] border border-white/30 animate-pulse" />
+        </footer>
       </div>
     );
   }
