@@ -30,60 +30,60 @@ const MessageContent = ({ content, isUser }: { content: any, isUser: boolean }) 
   const list = typeof content === 'string' ? [] : (content.list || []);
 
   if (isUser) {
-    return <div className="text-[14px] leading-relaxed tracking-tight text-white/95 whitespace-pre-wrap font-sans">{text}</div>;
+    return <div className="text-[14px] leading-relaxed tracking-tight text-white whitespace-pre-wrap font-sans">{text}</div>;
   }
 
   // Render assistant messages as formatted Markdown
   return (
-    <div className="text-[14px] leading-relaxed tracking-tight text-black/90 dark:text-white/90">
+    <div className="text-[14px] leading-relaxed tracking-tight text-black dark:text-white">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
           h1: ({ children }) => (
-            <h1 className="text-[18px] font-bold text-white/95 leading-tight mb-4 mt-2 tracking-tight">{children}</h1>
+            <h1 className="text-[18px] font-bold text-white leading-tight mb-4 mt-2 tracking-tight">{children}</h1>
           ),
           h2: ({ children }) => (
-            <h2 className="text-[16px] font-semibold text-white/90 leading-snug mb-3 mt-4 tracking-tight">{children}</h2>
+            <h2 className="text-[16px] font-semibold text-white leading-snug mb-3 mt-4 tracking-tight">{children}</h2>
           ),
           h3: ({ children }) => (
-            <h3 className="text-[14px] font-semibold text-white/80 leading-snug mb-2.5 mt-3">{children}</h3>
+            <h3 className="text-[14px] font-semibold text-white leading-snug mb-2.5 mt-3">{children}</h3>
           ),
           p: ({ children }) => (
-            <p className="text-[14.5px] text-white/80 leading-[1.65] mb-3">{children}</p>
+            <p className="text-[14.5px] text-white leading-[1.65] mb-3">{children}</p>
           ),
           ul: ({ children }) => (
             <ul className="mb-3 space-y-1.5 list-none pl-0">{children}</ul>
           ),
           ol: ({ children }) => (
-            <ol className="mb-3 space-y-1.5 pl-5 list-decimal marker:text-white/30">{children}</ol>
+            <ol className="mb-3 space-y-1.5 pl-5 list-decimal marker:text-white">{children}</ol>
           ),
           li: ({ children, ...props }: any) => (
             props.ordered
-              ? <li className="text-[13.5px] text-white/85 leading-relaxed pl-1">{children}</li>
-              : <li className="flex items-start gap-2 text-[13.5px] text-white/85 leading-relaxed list-none">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500/50 mt-[7px] shrink-0" />
+              ? <li className="text-[13.5px] text-white leading-relaxed pl-1">{children}</li>
+              : <li className="flex items-start gap-2 text-[13.5px] text-white leading-relaxed list-none">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white/60 mt-[7px] shrink-0" />
                   <span className="flex-1">{children}</span>
                 </li>
           ),
           strong: ({ children }) => (
-            <strong className="font-semibold text-white/95">{children}</strong>
+            <strong className="font-semibold text-white">{children}</strong>
           ),
           em: ({ children }) => (
-            <em className="italic text-white/75">{children}</em>
+            <em className="italic text-white">{children}</em>
           ),
           blockquote: ({ children }) => (
-            <blockquote className="border-l-2 border-white/20 pl-4 my-3 text-[13.5px] text-white/50 italic leading-relaxed">
+            <blockquote className="border-l-2 border-white/20 pl-4 my-3 text-[13.5px] text-white italic leading-relaxed">
               {children}
             </blockquote>
           ),
           code: ({ inline, children }: any) =>
             inline ? (
-              <code className="px-1.5 py-0.5 rounded bg-white/10 text-[12px] font-mono text-white/85 border border-white/10">
+              <code className="px-1.5 py-0.5 rounded bg-white/10 text-[12px] font-mono text-white border border-white/10">
                 {children}
               </code>
             ) : (
               <pre className="my-3 rounded-lg bg-black/40 border border-white/[0.05] overflow-x-auto p-3.5">
-                <code className="block text-[12px] font-mono text-white/80 leading-relaxed">{children}</code>
+                <code className="block text-[12px] font-mono text-white leading-relaxed">{children}</code>
               </pre>
             ),
           hr: () => <hr className="my-4 border-white/[0.06]" />,

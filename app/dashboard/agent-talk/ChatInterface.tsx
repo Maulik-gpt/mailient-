@@ -133,14 +133,14 @@ const linkify = (text: string, isUser: boolean = false): string => {
 
 const MarkdownComponents: any = {
   h1: ({ children }: any) => <h1 className="text-2xl font-bold text-white mb-4 mt-6 first:mt-0 tracking-tight border-b border-white/10 pb-2">{children}</h1>,
-  h2: ({ children }: any) => <h2 className="text-xl font-bold text-white/90 mb-3 mt-5 tracking-tight flex items-center gap-2">{children}</h2>,
-  h3: ({ children }: any) => <h3 className="text-lg font-bold text-white/80 mb-2 mt-4 tracking-tight">{children}</h3>,
-  h4: ({ children }: any) => <h4 className="text-base font-bold text-white/70 mb-2 mt-3">{children}</h4>,
-  h5: ({ children }: any) => <h5 className="text-sm font-bold text-white/60 mb-1 mt-2">{children}</h5>,
-  h6: ({ children }: any) => <h6 className="text-xs font-bold text-white/50 mb-1 mt-2 uppercase tracking-widest">{children}</h6>,
-  p: ({ children }: any) => <p className="mb-4 last:mb-0 leading-relaxed text-[16px] text-white/80">{children}</p>,
-  ul: ({ children }: any) => <ul className="list-none pl-0 mb-4 space-y-2 text-white/70">{children}</ul>,
-  ol: ({ children }: any) => <ol className="list-decimal pl-6 mb-4 space-y-1.5 text-white/70">{children}</ol>,
+  h2: ({ children }: any) => <h2 className="text-xl font-bold text-white mb-3 mt-5 tracking-tight flex items-center gap-2">{children}</h2>,
+  h3: ({ children }: any) => <h3 className="text-lg font-bold text-white mb-2 mt-4 tracking-tight">{children}</h3>,
+  h4: ({ children }: any) => <h4 className="text-base font-bold text-white mb-2 mt-3">{children}</h4>,
+  h5: ({ children }: any) => <h5 className="text-sm font-bold text-white mb-1 mt-2">{children}</h5>,
+  h6: ({ children }: any) => <h6 className="text-xs font-bold text-white mb-1 mt-2 uppercase tracking-widest">{children}</h6>,
+  p: ({ children }: any) => <p className="mb-4 last:mb-0 leading-relaxed text-[16px] text-white">{children}</p>,
+  ul: ({ children }: any) => <ul className="list-none pl-0 mb-4 space-y-2 text-white">{children}</ul>,
+  ol: ({ children }: any) => <ol className="list-decimal pl-6 mb-4 space-y-1.5 text-white">{children}</ol>,
   li: ({ children }: any) => {
     // Check if this is a main bullet (starts with ◆) or sub bullet (starts with •)
     const text = typeof children === 'string' ? children : '';
@@ -149,12 +149,12 @@ const MarkdownComponents: any = {
     return (
       <li className={cn(
         "flex items-start gap-2",
-        isMainBullet && "font-medium text-white/90",
+        isMainBullet && "font-medium text-white",
         isActionItem && "bg-white/[0.03] rounded-lg px-3 py-2 -mx-3"
       )}>
         <span className={cn(
           "mt-1.5 flex-shrink-0",
-          isMainBullet ? "w-1.5 h-1.5 bg-white/60 rounded-full" : "w-1 h-1 bg-white/30 rounded-full"
+          isMainBullet ? "w-1.5 h-1.5 bg-white rounded-full" : "w-1.5 h-1.5 bg-white/40 rounded-full"
         )} />
         <span className="flex-1">{children}</span>
       </li>
@@ -168,14 +168,14 @@ const MarkdownComponents: any = {
     </div>
   ),
   thead: ({ children }: any) => <thead className="bg-white/[0.06] border-b border-white/[0.1]">{children}</thead>,
-  th: ({ children }: any) => <th className="px-4 py-3 font-bold text-white/90 uppercase tracking-wider text-[11px]">{children}</th>,
+  th: ({ children }: any) => <th className="px-4 py-3 font-bold text-white uppercase tracking-wider text-[11px]">{children}</th>,
   td: ({ children }: any) => {
     // Highlight status symbols in table cells
     const text = typeof children === 'string' ? children : '';
     const hasStatus = /[✅❌⚠️⏳💰🚀🔥⚡📊📈]/.test(text.toString());
     return (
       <td className={cn(
-        "px-4 py-2.5 text-white/70 border-b border-white/[0.03] last:border-0",
+        "px-4 py-2.5 text-white border-b border-white/[0.03] last:border-0",
         hasStatus && "font-medium"
       )}>{children}</td>
     );
@@ -184,7 +184,7 @@ const MarkdownComponents: any = {
   hr: () => <div className="my-6 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />,
   blockquote: ({ children }: any) => (
     <blockquote className="border-l-2 border-white/30 pl-4 py-2 my-4 bg-white/[0.02] rounded-r-lg">
-      <p className="text-white/70 italic text-sm">{children}</p>
+      <p className="text-white italic text-sm">{children}</p>
     </blockquote>
   ),
   code: ({ node, inline, className, children, ...props }: any) => {
@@ -194,8 +194,8 @@ const MarkdownComponents: any = {
       <code className={cn(
         "font-mono text-sm",
         inline
-          ? "px-1.5 py-0.5 rounded bg-white/[0.08] text-white/90"
-          : "block p-4 bg-[#0a0a0a] border border-white/[0.08] rounded-lg text-white/80 my-4 overflow-x-auto",
+          ? "px-1.5 py-0.5 rounded bg-white/[0.08] text-white"
+          : "block p-4 bg-[#0a0a0a] border border-white/[0.08] rounded-lg text-white my-4 overflow-x-auto",
         className
       )} {...props}>
         {children}
@@ -209,14 +209,14 @@ const MarkdownComponents: any = {
   ),
   a: ({ node, ...props }: any) => (
     <a
-      className="text-white/90 underline underline-offset-4 decoration-white/30 hover:decoration-white/70 transition-all font-medium hover:text-white"
+      className="text-white underline underline-offset-4 decoration-white/30 hover:decoration-white/70 transition-all font-medium hover:text-white"
       target="_blank"
       rel="noopener noreferrer"
       {...props}
     />
   ),
   strong: ({ children }: any) => <strong className="font-bold text-white">{children}</strong>,
-  em: ({ children }: any) => <em className="italic text-white/80">{children}</em>
+  em: ({ children }: any) => <em className="italic text-white">{children}</em>
 };
 
 const TypewriterMarkdown = ({ content, speed = 4, hideLinks }: { content: string, speed?: number, hideLinks?: boolean }) => {
@@ -3459,7 +3459,7 @@ export default function ChatInterface({
                               onPersonalityClick={() => setIsPersonalityModalOpen(true)}
                               selectedEmailsCount={selectedEmails.length}
                               suggestionInput={suggestionInput}
-                              showConnectBanner={true}
+                              showConnectBanner={false}
                               onConnectClick={() => setIsIntegrationsModalOpen(true)}
                               currentPlan={currentPlan || 'free'}
                               onUpgradeClick={() => {
@@ -3490,7 +3490,7 @@ export default function ChatInterface({
                                   </div>
                                 )}
                                 <div className="flex flex-col max-w-[95%] group/msg">
-                                  <div className={`transition-all relative overflow-hidden ${msg.role === 'user' ? 'px-5 py-3 rounded-[24px] bg-[#111]/95 backdrop-blur-2xl border border-white/[0.12] text-white shadow-2xl ring-1 ring-white/5' : 'text-white/90 px-0 py-1'}`}>
+                                  <div className={`transition-all relative overflow-hidden ${msg.role === 'user' ? 'px-5 py-3 rounded-[24px] bg-[#111]/95 backdrop-blur-2xl border border-white/[0.12] text-white shadow-2xl ring-1 ring-white/5' : 'text-white px-0 py-1'}`}>
                                     {msg.role === 'user' && isLoading && msg.id === messages.filter(m => m.role === 'user').pop()?.id && (
                                       <motion.div 
                                         className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.08] to-transparent w-[200%] pointer-events-none"
