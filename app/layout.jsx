@@ -1,6 +1,7 @@
 import Script from "next/script";
 import "./globals.css";
 import Providers from "./providers";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata = {
   title: "Mailient",
@@ -92,7 +93,10 @@ export default function RootLayout({ children }) {
         <link href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400,300,200,100&display=swap" rel="stylesheet" />
       </head>
       <body className="font-sans antialiased satoshi-app bg-background text-foreground" data-new-gr-c-s-check-loaded="14.1258.0" data-gr-ext-installed="">
-        <Providers>{children}</Providers>
+        <Providers>
+          {children}
+          <Analytics />
+        </Providers>
       </body>
     </html>
   );
