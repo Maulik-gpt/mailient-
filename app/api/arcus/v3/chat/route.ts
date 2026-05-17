@@ -57,7 +57,7 @@ async function callLLM(
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'anthropic/claude-3.5-sonnet',
+          model: 'openrouter/free',
           messages,
           tools,
           max_tokens: 4000,

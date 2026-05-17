@@ -3,7 +3,7 @@
  * POST /api/arcus/chat
  *
  * Rebuilds the chat system from scratch:
- * - Claude native tool_use via OpenRouter (anthropic/claude-sonnet-4-5)
+ * - Tool_use via OpenRouter free models (openrouter/free)
  * - Supermemory v3 for cross-session memory
  * - Full conversation history on every call
  * - Real tool execution (Gmail, Calendar, Notion, Canvas, Web, Slack)
