@@ -51,27 +51,26 @@ export function ConnectorBanner({
       exit={{ opacity: 0, y: 10 }}
       className="absolute -bottom-16 left-0 right-0 mx-4"
     >
-      <div className="bg-gradient-to-r from-gray-900 to-gray-800 
-                      border border-gray-700/50 rounded-xl p-3
+      <div className="bg-[#0b0b0c] border border-white/[0.08] rounded-xl p-3.5
                       flex items-center justify-between
-                      shadow-lg shadow-black/20">
+                      shadow-2xl shadow-black/40">
         <div className="flex items-center gap-3">
           {/* Icon */}
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500/20 to-purple-500/20
+          <div className="w-10 h-10 rounded-lg bg-white/[0.06]
                           flex items-center justify-center flex-shrink-0">
-            <Link2 className="w-5 h-5 text-blue-400" />
+            <Link2 className="w-5 h-5 text-white" />
           </div>
 
           {/* Text */}
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-medium text-black dark:text-white text-sm">
-                Connect your tools to Arcus
+              <span className="font-semibold text-white text-sm">
+                Connectors are now available.
               </span>
               <Sparkles className="w-3.5 h-3.5 text-yellow-400" />
             </div>
-            <p className="text-neutral-600 dark:text-gray-400 text-xs">
-              Enable AI-powered workflows across Gmail, Calendar, Notion, and more
+            <p className="text-white text-xs mt-0.5">
+              Connectors allow Arcus to interact with apps directly in conversations.
             </p>
           </div>
 
@@ -84,7 +83,7 @@ export function ConnectorBanner({
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
                 className="w-8 h-8 rounded-lg flex items-center justify-center
-                           ring-2 ring-[#1a1a1a] bg-neutral-100 dark:bg-gray-800"
+                           ring-2 ring-[#0b0b0c] bg-white/[0.08]"
                 style={{ zIndex: featuredConnectors.length - index }}
               >
                 <img
@@ -98,31 +97,30 @@ export function ConnectorBanner({
               </motion.div>
             ))}
             <div className="w-8 h-8 rounded-lg flex items-center justify-center
-                           ring-2 ring-[#1a1a1a] bg-neutral-100 dark:bg-gray-800 text-xs text-neutral-600 dark:text-gray-400">
+                           ring-2 ring-[#0b0b0c] bg-white/[0.08] text-xs text-white font-semibold">
               +
             </div>
           </div>
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
+          {onDismiss && (
+            <button
+              onClick={onDismiss}
+              className="text-white hover:text-white/80 text-sm font-semibold transition-colors"
+            >
+              Dismiss
+            </button>
+          )}
+          
           <button
             onClick={onOpenConnectors}
-            className="px-4 py-2 bg-white text-black rounded-lg text-sm font-medium
+            className="px-5 py-2 bg-white text-black rounded-full text-sm font-bold
                        hover:bg-gray-200 transition-colors whitespace-nowrap"
           >
             Connect
           </button>
-          
-          {onDismiss && (
-            <button
-              onClick={onDismiss}
-              className="p-2 text-neutral-600 dark:text-gray-400 hover:text-black dark:text-white hover:bg-neutral-100 dark:bg-gray-800
-                         rounded-lg transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
         </div>
       </div>
     </motion.div>
