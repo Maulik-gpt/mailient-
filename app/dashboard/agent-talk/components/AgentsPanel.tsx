@@ -296,6 +296,226 @@ const TEMPLATES = [
   { name: 'Lead Harvest', description: 'Run the lead qualification flow across inbox and web, push to Notion, email a harvest report.', cron_schedule: '0 5 * * *', output_channel: 'gmail' as const, task_description: 'Every morning at 5am, search my inbox for inbound leads, research and qualify each one via web search, save qualified leads to Notion, and email me a harvest report.' },
 ];
 
+function PremiumDatePicker({ value, onChange, minDate }: {
+  value: string;
+  onChange: (val: string) => void;
+  minDate?: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const today = new Date();
+  
+  const selectedDate = value ? (() => {
+    const [y, m, d] = value.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  })() : null;
+
+  const [viewYear, setViewYear] = useState(selectedDate ? selectedDate.getFullYear() : today.getFullYear());
+  const [viewMonth, setViewMonth] = useState(selectedDate ? selectedDate.getMonth() : today.getMonth());
+
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const startDayOfWeek = new Date(viewYear, viewMonth, 1).getDay();
+  
+  const prevMonthDays = new Date(viewYear, viewMonth, 0).getDate();
+  
+  const cells: Array<{ day: number | null; dateStr: string; isCurrentMonth: boolean; isDisabled: boolean }> = [];
+  
+  for (let i = startDayOfWeek - 1; i >= 0; i--) {
+    const d = prevMonthDays - i;
+    const m = viewMonth === 0 ? 11 : viewMonth - 1;
+    const y = viewMonth === 0 ? viewYear - 1 : viewYear;
+    const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    cells.push({
+      day: d,
+      dateStr,
+      isCurrentMonth: false,
+      isDisabled: minDate ? dateStr < minDate : false
+    });
+  }
+  
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    cells.push({
+      day: d,
+      dateStr,
+      isCurrentMonth: true,
+      isDisabled: minDate ? dateStr < minDate : false
+    });
+  }
+  
+  const remaining = 42 - cells.length;
+  for (let d = 1; d <= remaining; d++) {
+    const m = viewMonth === 11 ? 0 : viewMonth + 1;
+    const y = viewMonth === 11 ? viewYear + 1 : viewYear;
+    const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    cells.push({
+      day: d,
+      dateStr,
+      isCurrentMonth: false,
+      isDisabled: minDate ? dateStr < minDate : false
+    });
+  }
+
+  const handlePrevMonth = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (viewMonth === 0) {
+      setViewMonth(11);
+      setViewYear(v => v - 1);
+    } else {
+      setViewMonth(v => v - 1);
+    }
+  };
+
+  const handleNextMonth = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (viewMonth === 11) {
+      setViewMonth(0);
+      setViewYear(v => v + 1);
+    } else {
+      setViewMonth(v => v + 1);
+    }
+  };
+
+  const handlePrevYear = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setViewYear(v => v - 1);
+  };
+
+  const handleNextYear = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setViewYear(v => v + 1);
+  };
+
+  const handleSelectDay = (cell: typeof cells[0], e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (cell.isDisabled) return;
+    onChange(cell.dateStr);
+    setIsOpen(false);
+  };
+
+  const handleClear = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onChange('');
+    setIsOpen(false);
+  };
+
+  const handleToday = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    if (minDate && todayStr < minDate) return;
+    onChange(todayStr);
+    setViewYear(today.getFullYear());
+    setViewMonth(today.getMonth());
+    setIsOpen(false);
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = () => setIsOpen(false);
+    window.addEventListener('click', handleClickOutside);
+    return () => window.removeEventListener('click', handleClickOutside);
+  }, [isOpen]);
+
+  const formattedValue = selectedDate ? selectedDate.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  }) : 'Select expiration date...';
+
+  return (
+    <div className="relative w-full" onClick={e => e.stopPropagation()}>
+      <div
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full bg-[#121214] border border-[#242427] rounded-xl px-4 py-3 text-[14px] text-zinc-100 flex items-center justify-between cursor-pointer hover:border-zinc-700 transition-all select-none shadow-inner"
+      >
+        <span className={cn(selectedDate ? 'text-zinc-200 font-medium' : 'text-zinc-650')}>
+          {formattedValue}
+        </span>
+        <div className="flex items-center gap-2">
+          {value && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onChange('');
+              }}
+              className="p-1 text-zinc-555 hover:text-zinc-300 rounded-lg hover:bg-zinc-800 transition-colors"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+          <CalendarDays className="w-4 h-4 text-zinc-555" />
+        </div>
+      </div>
+
+      {isOpen && (
+        <div className="absolute top-full left-0 mt-2 w-72 bg-[#0c0c0d] border border-zinc-900 rounded-2xl shadow-2xl p-4.5 z-50 select-none animate-in fade-in slide-in-from-top-2 duration-150">
+          <div className="flex items-center justify-between mb-3.5">
+            <div className="flex gap-1">
+              <button onClick={handlePrevYear} className="p-1.5 hover:bg-zinc-900 text-zinc-600 hover:text-zinc-350 rounded-lg transition-colors text-[10px] font-extrabold font-mono">
+                &lt;&lt;
+              </button>
+              <button onClick={handlePrevMonth} className="p-1.5 hover:bg-zinc-900 text-zinc-600 hover:text-zinc-350 rounded-lg transition-colors text-[10px] font-extrabold font-mono">
+                &lt;
+              </button>
+            </div>
+            
+            <span className="text-[13px] font-extrabold text-zinc-200 tracking-tight font-sans">
+              {MONTH_NAMES[viewMonth]} {viewYear}
+            </span>
+
+            <div className="flex gap-1">
+              <button onClick={handleNextMonth} className="p-1.5 hover:bg-zinc-900 text-zinc-600 hover:text-zinc-350 rounded-lg transition-colors text-[10px] font-extrabold font-mono">
+                &gt;
+              </button>
+              <button onClick={handleNextYear} className="p-1.5 hover:bg-zinc-900 text-zinc-600 hover:text-zinc-350 rounded-lg transition-colors text-[10px] font-extrabold font-mono">
+                &gt;&gt;
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-7 text-center text-[10px] font-extrabold uppercase tracking-wider text-zinc-600 mb-2">
+            {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
+              <div key={d}>{d}</div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-7 gap-1">
+            {cells.map((cell, idx) => {
+              const isSelected = value === cell.dateStr;
+              const isTodayCell = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}` === cell.dateStr;
+              return (
+                <button
+                  key={idx}
+                  onClick={(e) => handleSelectDay(cell, e)}
+                  disabled={cell.isDisabled}
+                  className={cn(
+                    'text-[12px] py-1.5 rounded-lg text-center font-bold transition-all',
+                    cell.isCurrentMonth ? 'text-zinc-300' : 'text-zinc-700',
+                    cell.isDisabled && 'text-zinc-800/30 cursor-not-allowed hover:bg-transparent',
+                    !cell.isDisabled && !isSelected && 'hover:bg-zinc-900/50',
+                    isTodayCell && !isSelected && 'border border-zinc-900 text-zinc-100',
+                    isSelected && 'bg-zinc-100 text-zinc-950 font-bold shadow-md shadow-white/5'
+                  )}
+                >
+                  {cell.day}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center justify-between border-t border-zinc-900/80 mt-3 pt-2.5">
+            <button onClick={handleClear} className="text-[11px] font-extrabold text-zinc-550 hover:text-zinc-350 transition-colors">
+              Clear
+            </button>
+            <button onClick={handleToday} className="text-[11px] font-extrabold text-zinc-400 hover:text-zinc-200 transition-colors">
+              Today
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Create / Edit Modal ────────────────────────────────────────────────────────
 
 function CreateModal({ onClose, onSave, initial }: {
@@ -350,20 +570,20 @@ function CreateModal({ onClose, onSave, initial }: {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 24, scale: 0.98 }}
         transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-        className="relative w-full max-w-4xl bg-zinc-950 border border-zinc-700/50 rounded-2xl shadow-2xl shadow-black/70 overflow-hidden max-h-[95vh] flex flex-col"
+        className="relative w-full max-w-4xl bg-[#0a0a0b] border border-zinc-900 rounded-2xl shadow-2xl shadow-black/70 overflow-hidden max-h-[95vh] flex flex-col"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-8 pt-7 pb-5 border-b border-zinc-800/60 flex-shrink-0">
+        <div className="flex items-center justify-between px-8 pt-7 pb-5 border-b border-zinc-900/60 flex-shrink-0">
           <div>
-            <h2 className="text-[20px] font-bold text-zinc-100">{initial?.id ? 'Edit schedule' : 'New schedule'}</h2>
-            <p className="text-[14px] text-zinc-500 mt-1">Describe the job and when to run it</p>
+            <h2 className="text-[20px] font-extrabold text-zinc-100 tracking-tight">{initial?.id ? 'Edit schedule' : 'New schedule'}</h2>
+            <p className="text-[14px] text-zinc-550 mt-1">Describe the job and when to run it</p>
           </div>
-          <button onClick={onClose} className="w-9 h-9 flex items-center justify-center rounded-xl text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-all">
+          <button onClick={onClose} className="w-9 h-9 flex items-center justify-center rounded-xl text-zinc-550 hover:text-zinc-200 hover:bg-[#121214] border border-transparent hover:border-zinc-900 transition-all">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="px-8 py-6 overflow-y-auto custom-scroll flex-1">
+        <div className="px-8 py-6 overflow-y-auto custom-scroll flex-1 bg-[#0a0a0b]">
           <style dangerouslySetInnerHTML={{ __html: `
             .custom-scroll::-webkit-scrollbar {
               width: 6px;
@@ -386,24 +606,24 @@ function CreateModal({ onClose, onSave, initial }: {
             <div className="lg:col-span-7 space-y-6">
               {/* Task description */}
               <div>
-                <label className="block text-[13px] font-semibold text-zinc-400 mb-2">What should Arcus do?</label>
+                <label className="block text-[13px] font-bold text-zinc-400 mb-2">What should Arcus do?</label>
                 <textarea
                   value={task}
                   onChange={e => setTask(e.target.value)}
                   placeholder="Describe what you want this agent to do in plain English…"
                   rows={8}
-                  className="w-full bg-zinc-900 border border-zinc-700/60 rounded-xl px-4 py-3.5 text-[15px] text-zinc-100 leading-relaxed placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500/30 resize-none transition-all"
+                  className="w-full bg-[#121214] border border-[#242427] rounded-xl px-4 py-3.5 text-[15px] text-zinc-100 leading-relaxed placeholder:text-zinc-650 focus:outline-none focus:border-zinc-700 transition-all resize-none animate-none"
                 />
               </div>
 
               {/* Optional name */}
               <div>
-                <label className="block text-[13px] font-semibold text-zinc-400 mb-2">Agent name <span className="font-normal text-zinc-500">(optional)</span></label>
+                <label className="block text-[13px] font-bold text-zinc-400 mb-2">Agent name <span className="font-normal text-zinc-550">(optional)</span></label>
                 <input
                   value={name}
                   onChange={e => setName(e.target.value)}
                   placeholder="e.g. Morning Client Check"
-                  className="w-full bg-zinc-900 border border-zinc-700/60 rounded-xl px-4 py-3 text-[15px] text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500/30 transition-all"
+                  className="w-full bg-[#121214] border border-[#242427] rounded-xl px-4 py-3 text-[15px] text-zinc-100 placeholder:text-zinc-655 focus:outline-none focus:border-zinc-700 transition-all"
                 />
               </div>
             </div>
@@ -412,17 +632,17 @@ function CreateModal({ onClose, onSave, initial }: {
             <div className="lg:col-span-5 space-y-6">
               {/* Schedule */}
               <div>
-                <label className="block text-[13px] font-semibold text-zinc-400 mb-2">Schedule</label>
+                <label className="block text-[13px] font-bold text-zinc-400 mb-2">Schedule</label>
                 <div className="flex flex-wrap gap-2 mb-4">
                   {SCHEDULE_PATTERNS.map(p => (
                     <button
                       key={p.key}
                       onClick={() => setPatternKey(p.key)}
                       className={cn(
-                        'px-3.5 py-1.5 rounded-lg text-[13px] font-medium transition-all border',
+                        'px-3.5 py-1.5 rounded-lg text-[13px] font-bold transition-all border',
                         patternKey === p.key
-                          ? 'bg-zinc-100 text-zinc-950 border-zinc-100'
-                          : 'bg-zinc-900 border-zinc-700/60 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200',
+                          ? 'bg-zinc-100 text-zinc-950 border-zinc-100 shadow-sm'
+                          : 'bg-[#121214] border-[#242427] text-zinc-400 hover:border-zinc-700 hover:text-zinc-200',
                       )}
                     >
                       {p.label}
@@ -434,23 +654,23 @@ function CreateModal({ onClose, onSave, initial }: {
                   <div className="flex gap-4 mb-4">
                     {activePat.needsDay && (
                       <div className="flex-1">
-                        <label className="block text-[11px] font-semibold text-zinc-500 mb-1.5">Day</label>
+                        <label className="block text-[11px] font-bold text-zinc-550 mb-1.5">Day</label>
                         <select
                           value={scheduleWeekday}
                           onChange={e => setScheduleWeekday(e.target.value)}
-                          className="w-full bg-zinc-900 border border-zinc-700/60 rounded-xl px-4 py-3 text-[14px] text-zinc-100 focus:outline-none focus:border-zinc-500 transition-all appearance-none cursor-pointer"
+                          className="w-full bg-[#121214] border border-[#242427] rounded-xl px-4 py-3 text-[14px] text-zinc-100 focus:outline-none focus:border-zinc-700 transition-all appearance-none cursor-pointer font-bold"
                         >
                           {WEEK_DAYS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
                         </select>
                       </div>
                     )}
                     <div className={activePat.needsDay ? 'flex-1' : 'w-full'}>
-                      <label className="block text-[11px] font-semibold text-zinc-500 mb-1.5">Time <span className="font-normal text-zinc-600">({browserTz})</span></label>
+                      <label className="block text-[11px] font-bold text-zinc-555 mb-1.5">Time <span className="font-normal text-zinc-600">({browserTz})</span></label>
                       <input
                         type="time"
                         value={scheduleTime}
                         onChange={e => setScheduleTime(e.target.value)}
-                        className="w-full bg-zinc-900 border border-zinc-700/60 rounded-xl px-4 py-3 text-[14px] text-zinc-100 focus:outline-none focus:border-zinc-500 transition-all"
+                        className="w-full bg-[#121214] border border-[#242427] rounded-xl px-4 py-3 text-[14px] text-zinc-100 focus:outline-none focus:border-zinc-700 transition-all font-mono"
                         style={{ colorScheme: 'dark' }}
                       />
                     </div>
@@ -459,20 +679,20 @@ function CreateModal({ onClose, onSave, initial }: {
 
                 {patternKey === 'custom' && (
                   <div className="mb-4">
-                    <label className="block text-[11px] font-semibold text-zinc-500 mb-1.5">Cron expression (UTC)</label>
+                    <label className="block text-[11px] font-bold text-zinc-555 mb-1.5">Cron expression (UTC)</label>
                     <input
                       value={customCron}
                       onChange={e => setCustomCron(e.target.value)}
                       placeholder="e.g. 0 9 * * 1-5"
-                      className="w-full bg-zinc-900 border border-zinc-700/60 rounded-xl px-4 py-3 text-[14px] text-zinc-100 font-mono placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 transition-all"
+                      className="w-full bg-[#121214] border border-[#242427] rounded-xl px-4 py-3 text-[14px] text-zinc-100 font-mono placeholder:text-[#3a3a3e] focus:outline-none focus:border-zinc-700 transition-all"
                     />
                   </div>
                 )}
 
                 {cron && patternKey !== 'custom' && (
-                  <div className="px-4 py-2.5 bg-zinc-900/60 rounded-lg border border-zinc-800/50">
+                  <div className="px-4 py-3 bg-[#121214]/60 rounded-xl border border-zinc-900">
                     <p className="text-[13px] text-zinc-400">
-                      Runs: <span className="text-zinc-200 font-medium">{cronToLabel(cron)}</span>
+                      Runs: <span className="text-zinc-200 font-bold">{cronToLabel(cron)}</span>
                     </p>
                   </div>
                 )}
@@ -480,17 +700,17 @@ function CreateModal({ onClose, onSave, initial }: {
 
               {/* Output channel */}
               <div>
-                <label className="block text-[13px] font-semibold text-zinc-400 mb-2">Deliver report to</label>
+                <label className="block text-[13px] font-bold text-zinc-400 mb-2">Deliver report to</label>
                 <div className="flex gap-2">
                   {(['gmail', 'slack', 'both'] as const).map(ch => (
                     <button
                       key={ch}
                       onClick={() => setChannel(ch)}
                       className={cn(
-                        'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[14px] font-medium border transition-all',
+                        'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[14px] font-bold border transition-all',
                         channel === ch
-                          ? 'bg-zinc-100 text-zinc-950 border-zinc-100'
-                          : 'bg-zinc-900 border-zinc-700/60 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200',
+                          ? 'bg-zinc-100 text-zinc-950 border-zinc-100 shadow-sm'
+                          : 'bg-[#121214] border-[#242427] text-zinc-400 hover:border-zinc-700 hover:text-zinc-200',
                       )}
                     >
                       {ch === 'gmail' && <Mail className="w-3.5 h-3.5" />}
@@ -505,37 +725,34 @@ function CreateModal({ onClose, onSave, initial }: {
                     value={slackCh}
                     onChange={e => setSlackCh(e.target.value)}
                     placeholder="Slack channel (e.g. #reports)"
-                    className="mt-3 w-full bg-zinc-900 border border-zinc-700/60 rounded-xl px-4 py-3 text-[14px] text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 transition-all"
+                    className="mt-3 w-full bg-[#121214] border border-[#242427] rounded-xl px-4 py-3 text-[14px] text-zinc-100 placeholder:text-zinc-655 focus:outline-none focus:border-zinc-700 transition-all"
                   />
                 )}
               </div>
 
               {/* Skip confirmations */}
-              <div className="flex items-center justify-between bg-zinc-900/70 rounded-xl px-4 py-3.5 border border-zinc-800/60">
+              <div className="flex items-center justify-between bg-[#121214] border border-zinc-900 rounded-xl px-4 py-3.5">
                 <div>
-                  <p className="text-[14px] font-semibold text-zinc-100">Skip confirmations</p>
-                  <p className="text-[12px] text-zinc-500 mt-0.5">No approval needed before execution</p>
+                  <p className="text-[14px] font-bold text-zinc-100">Skip confirmations</p>
+                  <p className="text-[12px] text-zinc-550 mt-0.5">No approval needed before execution</p>
                 </div>
                 <Toggle checked={skipConf} onChange={() => setSkipConf(v => !v)} />
               </div>
 
               {/* Expiration date */}
               <div>
-                <div className="flex items-center justify-between bg-zinc-900/70 rounded-xl px-4 py-3.5 border border-zinc-800/60">
+                <div className="flex items-center justify-between bg-[#121214] border border-zinc-900 rounded-xl px-4 py-3.5 mb-2">
                   <div>
-                    <p className="text-[14px] font-semibold text-zinc-100">Expiration date</p>
-                    <p className="text-[12px] text-zinc-500 mt-0.5">Agent stops running after this date</p>
+                    <p className="text-[14px] font-bold text-zinc-100">Expiration date</p>
+                    <p className="text-[12px] text-zinc-550 mt-0.5">Agent stops running after this date</p>
                   </div>
                   <Toggle checked={hasExpiry} onChange={() => { setHasExpiry(v => !v); if (hasExpiry) setExpiresAt(''); }} />
                 </div>
                 {hasExpiry && (
-                  <input
-                    type="date"
+                  <PremiumDatePicker
                     value={expiresAt}
-                    onChange={e => setExpiresAt(e.target.value)}
-                    min={todayStr}
-                    className="mt-2 w-full bg-zinc-900 border border-zinc-700/60 rounded-xl px-4 py-3 text-[14px] text-zinc-100 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500/30 transition-all"
-                    style={{ colorScheme: 'dark' }}
+                    onChange={setExpiresAt}
+                    minDate={todayStr}
                   />
                 )}
               </div>
@@ -543,8 +760,8 @@ function CreateModal({ onClose, onSave, initial }: {
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-6 mt-6 border-t border-zinc-800/60">
-            <button onClick={onClose} className="flex-1 py-3.5 rounded-xl text-[15px] font-semibold text-zinc-400 bg-zinc-900 hover:bg-zinc-800 transition-all border border-zinc-700/60">
+          <div className="flex gap-3 pt-6 mt-6 border-t border-zinc-900/60">
+            <button onClick={onClose} className="flex-1 py-3.5 rounded-xl text-[15px] font-bold text-zinc-400 bg-[#121214] hover:bg-zinc-900 transition-all border border-[#242427]">
               Cancel
             </button>
             <button
