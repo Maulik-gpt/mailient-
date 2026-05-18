@@ -363,7 +363,7 @@ function PremiumDatePicker({ value, onChange, minDate }: {
       </div>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 w-72 bg-[#0c0c0d] border border-zinc-900 rounded-2xl shadow-2xl p-4.5 z-50 select-none animate-in fade-in slide-in-from-top-2 duration-150">
+        <div className="absolute bottom-full left-0 mb-2 w-72 bg-[#0c0c0d] border border-zinc-900 rounded-2xl shadow-2xl p-4.5 z-50 select-none animate-in fade-in slide-in-from-bottom-2 duration-150">
           {/* Header navigation */}
           <div className="flex items-center justify-between mb-3.5">
             <div className="flex gap-1">
@@ -506,7 +506,7 @@ function PremiumTimePicker({ value, onChange }: {
       </div>
 
       {isOpen && (
-        <div className="absolute top-full right-0 lg:left-0 mt-2 w-64 bg-[#0c0c0d] border border-zinc-900 rounded-2xl shadow-2xl p-4 z-50 select-none animate-in fade-in slide-in-from-top-2 duration-150 flex gap-3">
+        <div className="absolute bottom-full right-0 lg:left-0 mb-2 w-64 bg-[#0c0c0d] border border-zinc-900 rounded-2xl shadow-2xl p-4 z-50 select-none animate-in fade-in slide-in-from-bottom-2 duration-150 flex gap-3">
           {/* Hours Column */}
           <div className="flex-1 flex flex-col items-center">
             <span className="text-[10px] uppercase tracking-wider text-zinc-600 font-extrabold mb-2">Hour</span>
