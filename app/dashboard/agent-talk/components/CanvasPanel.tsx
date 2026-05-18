@@ -315,8 +315,13 @@ export function CanvasPanel({
             </>
           ) : (
             <>
-              <FooterButton onClick={handleCopy} variant="ghost" icon={copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}>
-                {copied ? 'Copied' : 'Copy'}
+              <FooterButton
+                onClick={handleDownloadDocx}
+                variant="ghost"
+                loading={downloadingDocx}
+                icon={downloadingDocx ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+              >
+                Download
               </FooterButton>
             </>
           )}

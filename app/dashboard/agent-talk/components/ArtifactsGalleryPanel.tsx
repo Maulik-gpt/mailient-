@@ -2,10 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import {
-  X, FileText, Download, Sparkles, BarChart3, Mail,
-  Search, Grid, Plus, Check, Play, FileSpreadsheet,
-  ChevronRight, ArrowRight, ShieldCheck, Terminal, HelpCircle,
-  Compass, Loader2
+  X, FileText, Download, Sparkles,
+  Search, ArrowRight, Loader2, Library
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -45,6 +43,7 @@ export function ArtifactsGalleryPanel({
 
   const [allSessions, setAllSessions] = useState<any[]>([]);
   const [isLoadingAll, setIsLoadingAll] = useState(false);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   // ─── Resize Handlers ─────────────────────────────────────────────────────────
   const startResizing = (e: React.MouseEvent) => {
@@ -172,20 +171,32 @@ export function ArtifactsGalleryPanel({
     art.tag.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleDownload = (e: React.MouseEvent, art: DynamicArtifactItem) => {
+  const handleDownload = async (e: React.MouseEvent, art: DynamicArtifactItem) => {
     e.stopPropagation();
+    if (downloadingId === art.id) return;
+    setDownloadingId(art.id);
+    const safeName = art.title.replace(/\s+/g, '_').toLowerCase();
     try {
-      const blob = new Blob([art.raw], { type: 'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${art.title.replace(/\s+/g, '_').toLowerCase()}.txt`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      toast.success('File download initiated successfully');
-    } catch (err) {
-      toast.error('Could not download file');
+      const { markdownToDocxBlob, triggerDocxDownload } = await import('@/lib/arcus/docx-export');
+      const blob = await markdownToDocxBlob(art.raw, art.title);
+      triggerDocxDownload(blob, safeName);
+      toast.success(`Downloaded "${art.title}"`);
+    } catch {
+      try {
+        const blob = new Blob([art.raw], { type: 'text/markdown;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${safeName}.md`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success('Downloaded as markdown');
+      } catch {
+        toast.error('Could not download file');
+      }
+    } finally {
+      setDownloadingId(null);
     }
   };
 
@@ -225,16 +236,16 @@ export function ArtifactsGalleryPanel({
       <div className="px-6 py-5 border-b border-white/[0.08] flex items-center justify-between shrink-0 relative z-10">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center">
-            <FileText className="w-4 h-4 text-white/80" />
+            <Library className="w-4 h-4 text-white/80" />
           </div>
           <div>
-            <h3 className="text-[14px] font-bold text-white tracking-tight lowercase">Documents & Artifacts</h3>
+            <h3 className="text-[14px] font-bold text-white tracking-tight lowercase">Library</h3>
             {isLoadingAll ? (
               <p className="text-[10px] text-zinc-500 tracking-tight uppercase flex items-center gap-1.5">
-                <Loader2 className="w-2.5 h-2.5 animate-spin" /> Synchronizing previous chats...
+                <Loader2 className="w-2.5 h-2.5 animate-spin" /> Syncing all conversations...
               </p>
             ) : (
-              <p className="text-[10px] text-white/40 tracking-tight uppercase">Workspace Library</p>
+              <p className="text-[10px] text-white/40 tracking-tight uppercase">All conversations</p>
             )}
           </div>
         </div>
@@ -256,7 +267,7 @@ export function ArtifactsGalleryPanel({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search session documents..."
+              placeholder="Search library..."
               className="w-full pl-9 pr-4 py-2 bg-white/[0.03] border border-white/[0.06] rounded-xl text-[13px] text-white placeholder:text-white/20 focus:outline-none focus:border-white/20 transition-all font-medium tracking-tight"
             />
           </div>
@@ -269,41 +280,64 @@ export function ArtifactsGalleryPanel({
         {dynamicArtifacts.length > 0 ? (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h4 className="text-[11px] font-bold text-white/40 uppercase tracking-wider">Session Artifacts</h4>
+              <h4 className="text-[11px] font-bold text-white/40 uppercase tracking-wider">All Documents</h4>
               <span className="text-[10px] text-white/30 font-mono">{filteredArtifacts.length} total</span>
             </div>
 
             {/* Grid Layout of Dynamic Artifacts */}
             <div className="grid grid-cols-1 gap-4">
-              {filteredArtifacts.map((art) => (
-                <div
-                  key={art.id}
-                  onClick={() => handleSelect(art)}
-                  className="group p-5 bg-white/[0.02] hover:bg-white/[0.05] border border-white/[0.06] hover:border-white/20 rounded-2xl transition-all duration-300 ease-out cursor-pointer relative"
-                >
-                  <div className="flex items-start justify-between mb-3.5">
-                    <span className="px-2.5 py-0.5 rounded-full bg-white/[0.04] border border-white/[0.06] text-[9px] font-mono text-white/80">
-                      {art.tag}
-                    </span>
-                    <button
-                      onClick={(e) => handleDownload(e, art)}
-                      className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-white/40 hover:text-white opacity-0 group-hover:opacity-100"
-                      title="Download Raw Source"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+              {filteredArtifacts.map((art) => {
+                const snippet = art.raw
+                  .replace(/^#{1,6}\s+/gm, '')
+                  .replace(/[*_`~]/g, '')
+                  .replace(/\n+/g, ' ')
+                  .trim()
+                  .slice(0, 120);
+                const isDownloading = downloadingId === art.id;
+                return (
+                  <div
+                    key={art.id}
+                    onClick={() => handleSelect(art)}
+                    className="group p-4 bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.06] hover:border-white/[0.14] rounded-2xl transition-all duration-200 ease-out cursor-pointer relative"
+                  >
+                    {/* Top row: tag + download */}
+                    <div className="flex items-center justify-between mb-2.5">
+                      <span className="px-2 py-0.5 rounded-full bg-white/[0.04] border border-white/[0.06] text-[9px] font-mono text-white/60 tracking-wide">
+                        {art.tag}
+                      </span>
+                      <button
+                        onClick={(e) => handleDownload(e, art)}
+                        className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-white/30 hover:text-white/80 opacity-0 group-hover:opacity-100"
+                        title="Download .docx"
+                      >
+                        {isDownloading
+                          ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          : <Download className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
 
-                  <h5 className="text-[13px] font-bold text-white leading-snug tracking-tight mb-2">
-                    {art.title}
-                  </h5>
+                    {/* Title */}
+                    <h5 className="text-[13px] font-semibold text-white leading-snug tracking-tight mb-1.5">
+                      {art.title}
+                    </h5>
 
-                  <div className="flex items-center justify-between pt-3 border-t border-white/[0.04] text-[10px] text-white/40 font-mono">
-                    <span>{art.subtitle}</span>
-                    <span className="flex items-center gap-1">Open in Canvas <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" /></span>
+                    {/* Content preview */}
+                    {snippet && (
+                      <p className="text-[12px] text-white/35 leading-relaxed line-clamp-2 mb-3">
+                        {snippet}{snippet.length === 120 ? '…' : ''}
+                      </p>
+                    )}
+
+                    {/* Footer */}
+                    <div className="flex items-center justify-between pt-2.5 border-t border-white/[0.04] text-[10px] text-white/30 font-mono">
+                      <span className="truncate max-w-[55%]">{art.subtitle}</span>
+                      <span className="flex items-center gap-1 shrink-0 text-white/40 group-hover:text-white/70 transition-colors">
+                        Open in Canvas <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                      </span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
               {filteredArtifacts.length === 0 && (
                 <div className="py-12 flex flex-col items-center justify-center text-center">
@@ -321,11 +355,11 @@ export function ArtifactsGalleryPanel({
             </div>
             
             <h4 className="text-white text-[15px] font-bold tracking-tight mb-2 lowercase">
-              No session documents generated
+              Your library is empty
             </h4>
-            
+
             <p className="text-white/40 text-[12px] leading-relaxed max-w-[280px]">
-              When the Arcus agent generates structured spreadsheets, roadmaps, analytics, or drafts in this chat, they will automatically appear here as selectable workspace cards.
+              Documents, plans, and drafts created by Arcus across all your conversations will appear here — searchable and downloadable as .docx.
             </p>
           </div>
         )}

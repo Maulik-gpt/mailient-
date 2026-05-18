@@ -3641,7 +3641,7 @@ export default function ChatInterface({
                               </button>
                             </TooltipTrigger>
                             <TooltipContent side="bottom">
-                              <span className="text-[10px]">{showArtifactsPanel ? 'Close Documents' : 'Documents'}</span>
+                              <span className="text-[10px]">{showArtifactsPanel ? 'Close Library' : 'Library'}</span>
                             </TooltipContent>
                           </Tooltip>
 
