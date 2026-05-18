@@ -1,14 +1,12 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   Search, Mail, Send, FileText, Calendar, Database,
-  BrainCircuit, Sparkles, CheckCircle2, Globe, MessageSquare,
-  Inbox, PenLine, Clock, LayoutTemplate,
+  Globe, MessageSquare, Inbox, PenLine, Clock,
+  LayoutTemplate, Terminal, CheckCircle2, AlertCircle,
 } from 'lucide-react';
-import { ShiningText } from '@/components/ui/shining-text';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -26,177 +24,223 @@ export interface AgentStep {
   params?: any;
 }
 
+export interface AgentNarrative {
+  iteration: number;
+  text: string;
+}
+
 interface AgentExecutionTimelineProps {
   steps: AgentStep[];
+  narratives?: AgentNarrative[];
   isActive: boolean;
   runId?: string;
   totalDurationMs?: number;
 }
 
-// ─── Tool metadata ──────────────────────────────────────────────────────────
+// ─── Tool icon map ───────────────────────────────────────────────────────────
 
-const TOOL_META: Record<string, { icon: React.ReactNode; color: string; activeVerb: string; doneVerb: string }> = {
-  // Gmail
-  search_gmail:     { icon: <Search className="w-3.5 h-3.5" />,      color: 'text-blue-400',   activeVerb: 'Searching inbox',      doneVerb: 'Searched inbox' },
-  read_email:       { icon: <Mail className="w-3.5 h-3.5" />,         color: 'text-blue-400',   activeVerb: 'Reading email',         doneVerb: 'Read email' },
-  get_sent_emails:  { icon: <Inbox className="w-3.5 h-3.5" />,        color: 'text-blue-400',   activeVerb: 'Studying writing style', doneVerb: 'Studied writing style' },
-  draft_reply:      { icon: <PenLine className="w-3.5 h-3.5" />,      color: 'text-amber-400',  activeVerb: 'Drafting reply',        doneVerb: 'Drafted reply' },
-  send_email:       { icon: <Send className="w-3.5 h-3.5" />,         color: 'text-green-400',  activeVerb: 'Sending email',         doneVerb: 'Sent email' },
-  // Calendar
-  schedule_meeting: { icon: <Calendar className="w-3.5 h-3.5" />,     color: 'text-violet-400', activeVerb: 'Scheduling meeting',    doneVerb: 'Scheduled meeting' },
-  get_calendar_events: { icon: <Clock className="w-3.5 h-3.5" />,     color: 'text-violet-400', activeVerb: 'Reading calendar',      doneVerb: 'Read calendar' },
-  // Notion
-  search_notion:    { icon: <Database className="w-3.5 h-3.5" />,     color: 'text-slate-400',  activeVerb: 'Searching Notion',      doneVerb: 'Searched Notion' },
-  // Canvas
-  open_canvas:      { icon: <LayoutTemplate className="w-3.5 h-3.5" />, color: 'text-orange-400', activeVerb: 'Opening canvas',     doneVerb: 'Opened canvas' },
-  // Web
-  web_search:       { icon: <Globe className="w-3.5 h-3.5" />,        color: 'text-cyan-400',   activeVerb: 'Searching web',         doneVerb: 'Searched web' },
-  // Slack
-  send_slack_message: { icon: <MessageSquare className="w-3.5 h-3.5" />, color: 'text-pink-400', activeVerb: 'Sending Slack message', doneVerb: 'Sent Slack message' },
-  // Legacy
-  search_inbox:     { icon: <Search className="w-3.5 h-3.5" />,       color: 'text-blue-400',   activeVerb: 'Searching inbox',       doneVerb: 'Searched inbox' },
-  save_draft:       { icon: <FileText className="w-3.5 h-3.5" />,     color: 'text-amber-400',  activeVerb: 'Saving draft',          doneVerb: 'Saved draft' },
-  send_web_request: { icon: <Globe className="w-3.5 h-3.5" />,        color: 'text-cyan-400',   activeVerb: 'Fetching page',         doneVerb: 'Fetched page' },
+const TOOL_ICON: Record<string, React.ReactNode> = {
+  search_gmail:       <Search className="w-3.5 h-3.5" />,
+  search_inbox:       <Search className="w-3.5 h-3.5" />,
+  read_email:         <Mail className="w-3.5 h-3.5" />,
+  get_sent_emails:    <Inbox className="w-3.5 h-3.5" />,
+  draft_reply:        <PenLine className="w-3.5 h-3.5" />,
+  save_draft:         <PenLine className="w-3.5 h-3.5" />,
+  send_email:         <Send className="w-3.5 h-3.5" />,
+  schedule_meeting:   <Calendar className="w-3.5 h-3.5" />,
+  get_calendar_events:<Clock className="w-3.5 h-3.5" />,
+  search_notion:      <Database className="w-3.5 h-3.5" />,
+  open_canvas:        <LayoutTemplate className="w-3.5 h-3.5" />,
+  web_search:         <Globe className="w-3.5 h-3.5" />,
+  send_web_request:   <Globe className="w-3.5 h-3.5" />,
+  send_slack_message: <MessageSquare className="w-3.5 h-3.5" />,
 };
 
-function getToolMeta(toolName: string) {
-  return TOOL_META[toolName] ?? {
-    icon: <Sparkles className="w-3.5 h-3.5" />,
-    color: 'text-white/40',
-    activeVerb: `Running ${toolName.replace(/_/g, ' ')}`,
-    doneVerb: `Ran ${toolName.replace(/_/g, ' ')}`,
-  };
+function getIcon(tool?: string): React.ReactNode {
+  if (!tool) return <Terminal className="w-3.5 h-3.5" />;
+  return TOOL_ICON[tool] ?? <Terminal className="w-3.5 h-3.5" />;
 }
 
-// ─── Main Component ─────────────────────────────────────────────────────────
+// ─── Single step pill ────────────────────────────────────────────────────────
 
-export function AgentExecutionTimeline({ steps, isActive }: AgentExecutionTimelineProps) {
-  const bottomRef = useRef<HTMLDivElement>(null);
+function StepPill({ step }: { step: AgentStep }) {
+  const isActive = step.status === 'active';
+  const isError = step.status === 'error';
 
-  useEffect(() => {
-    if (isActive && bottomRef.current) {
-      bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-  }, [steps.length, isActive]);
+  const contextHint =
+    step.context ||
+    step.params?.query ||
+    step.params?.subject ||
+    step.params?.title ||
+    step.params?.channel ||
+    '';
 
-  // Filter: skip bare "Reasoning..." thinking steps — only show meaningful steps
+  const durationSec =
+    step.completedAt && step.startedAt
+      ? ((step.completedAt - step.startedAt) / 1000).toFixed(1)
+      : null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -6 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
+      className={cn(
+        'flex items-center gap-2.5 px-3 py-1.5 rounded-xl border w-fit max-w-full transition-all',
+        isActive
+          ? 'bg-white/[0.05] border-white/[0.14] shadow-[0_0_12px_rgba(255,255,255,0.04)]'
+          : isError
+          ? 'bg-red-500/[0.04] border-red-500/[0.12]'
+          : 'bg-white/[0.025] border-white/[0.06]',
+      )}
+    >
+      {/* Icon box */}
+      <div
+        className={cn(
+          'flex-shrink-0 w-[22px] h-[22px] rounded-lg flex items-center justify-center border transition-all',
+          isActive
+            ? 'bg-white/[0.10] border-white/[0.18] text-white/80'
+            : isError
+            ? 'bg-red-500/10 border-red-500/20 text-red-400/70'
+            : 'bg-white/[0.05] border-white/[0.08] text-white/30',
+        )}
+      >
+        {isActive ? (
+          <motion.div
+            animate={{ opacity: [0.6, 1, 0.6] }}
+            transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut' }}
+          >
+            {getIcon(step.tool)}
+          </motion.div>
+        ) : isError ? (
+          <AlertCircle className="w-3.5 h-3.5" />
+        ) : (
+          <CheckCircle2 className="w-3.5 h-3.5" />
+        )}
+      </div>
+
+      {/* Label + optional context hint */}
+      <div className="flex-1 min-w-0">
+        {isActive ? (
+          <motion.span
+            className="text-[13px] font-medium text-white/75 tracking-tight block truncate"
+            animate={{ opacity: [0.75, 1, 0.75] }}
+            transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
+          >
+            {step.label}
+          </motion.span>
+        ) : (
+          <span
+            className={cn(
+              'text-[13px] font-medium tracking-tight block truncate',
+              isError ? 'text-red-400/60' : 'text-white/35',
+            )}
+          >
+            {step.label}
+          </span>
+        )}
+        {contextHint && (
+          <span
+            className={cn(
+              'block text-[11px] truncate mt-0.5',
+              isActive ? 'text-white/30 italic' : 'text-white/15 italic',
+            )}
+          >
+            {contextHint}
+          </span>
+        )}
+      </div>
+
+      {/* Duration */}
+      {durationSec && !isActive && (
+        <span className="flex-shrink-0 text-[10px] text-white/15 font-mono tabular-nums">
+          {durationSec}s
+        </span>
+      )}
+
+      {/* Active pulse dots */}
+      {isActive && (
+        <div className="flex items-center gap-0.5 flex-shrink-0 ml-1">
+          {[0, 0.25, 0.5].map((delay, i) => (
+            <motion.span
+              key={i}
+              className="w-1 h-1 rounded-full bg-white/40"
+              animate={{ opacity: [0.3, 1, 0.3] }}
+              transition={{ repeat: Infinity, duration: 1.2, delay, ease: 'easeInOut' }}
+            />
+          ))}
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+// ─── Narrative paragraph between step groups ──────────────────────────────────
+
+function NarrativeParagraph({ text }: { text: string }) {
+  return (
+    <motion.p
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
+      className="text-[13px] text-white/55 leading-[1.7] py-1"
+    >
+      {text}
+    </motion.p>
+  );
+}
+
+// ─── Main component ─────────────────────────────────────────────────────────
+
+export function AgentExecutionTimeline({
+  steps,
+  narratives = [],
+  isActive,
+}: AgentExecutionTimelineProps) {
+  // Filter out bare thinking/status steps
   const visible = steps.filter(s => {
     if (s.type === 'thinking') {
-      const label = s.label?.toLowerCase() || '';
-      return !['reasoning...', 'processing...', 'thinking...', 'analysing your request...'].includes(label);
+      const l = s.label?.toLowerCase() || '';
+      return !['reasoning...', 'processing...', 'thinking...', 'analysing your request...'].includes(l);
     }
     return true;
   });
 
   if (visible.length === 0) return null;
 
+  // Group by iteration
+  const iterMap = new Map<number, AgentStep[]>();
+  for (const s of visible) {
+    const arr = iterMap.get(s.iteration) ?? [];
+    arr.push(s);
+    iterMap.set(s.iteration, arr);
+  }
+  const iterations = [...iterMap.keys()].sort((a, b) => a - b);
+
   return (
-    <div className="w-full mt-3 space-y-2.5 max-w-full">
+    <div className="flex flex-col gap-2.5 mt-2 mb-4">
       <AnimatePresence initial={false}>
-        {visible.map((step, idx) => {
-          const isTool = step.type === 'tool_call' || step.type === 'tool_result';
-          const isActiveStep = step.status === 'active';
-          const isError = step.status === 'error';
-          const meta = isTool && step.tool ? getToolMeta(step.tool) : null;
-
-          const displayLabel = isTool && meta
-            ? (isActiveStep ? meta.activeVerb : meta.doneVerb)
-            : step.label;
-
-          const contextLine = step.context ||
-            step.params?.query ||
-            step.params?.subject ||
-            step.params?.title ||
-            step.params?.channel ||
-            '';
+        {iterations.map(iter => {
+          const narrative = narratives.find(n => n.iteration === iter);
+          const iterSteps = iterMap.get(iter) ?? [];
 
           return (
-            <motion.div
-              key={step.id || idx}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              transition={{ duration: 0.25 }}
-              className="flex flex-col gap-1"
-            >
-              {/* Main step row */}
-              <div className="flex items-start gap-2.5">
-                {/* Icon bubble */}
-                <div className={cn(
-                  'flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5 transition-all duration-300',
-                  isActiveStep
-                    ? 'bg-white/10 ring-1 ring-white/20'
-                    : isError
-                    ? 'bg-red-500/10 ring-1 ring-red-500/20'
-                    : 'bg-white/[0.04]',
-                )}>
-                  {isActiveStep ? (
-                    <motion.div
-                      animate={{ opacity: [0.5, 1, 0.5] }}
-                      transition={{ repeat: Infinity, duration: 1.4, ease: 'easeInOut' }}
-                      className={cn(meta?.color || 'text-white/50')}
-                    >
-                      {meta?.icon ?? <BrainCircuit className="w-3 h-3" />}
-                    </motion.div>
-                  ) : isError ? (
-                    <span className="text-red-400 text-[10px]">✕</span>
-                  ) : (
-                    <CheckCircle2 className="w-3 h-3 text-white/20" />
-                  )}
-                </div>
-
-                {/* Label + context */}
-                <div className="flex-1 min-w-0 pt-0.5">
-                  {isActiveStep ? (
-                    <>
-                      <ShiningText text={displayLabel} />
-                      {contextLine && (
-                        <p className="text-[11px] text-white/25 mt-0.5 truncate italic">
-                          {contextLine}
-                        </p>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <span className={cn(
-                        'text-[13px] font-medium',
-                        isError ? 'text-red-400/70' : 'text-white/35',
-                      )}>
-                        {displayLabel}
-                      </span>
-                      {contextLine && (
-                        <span className="block text-[11px] text-white/15 truncate italic">
-                          {contextLine}
-                        </span>
-                      )}
-                    </>
-                  )}
-                </div>
-
-                {/* Duration badge for completed steps */}
-                {!isActiveStep && step.completedAt && step.startedAt && (
-                  <span className="flex-shrink-0 text-[10px] text-white/15 font-mono mt-0.5">
-                    {((step.completedAt - step.startedAt) / 1000).toFixed(1)}s
-                  </span>
-                )}
-              </div>
-
-              {/* Result summary — always visible when present, no click required */}
-              {step.summary && !isActiveStep && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  transition={{ duration: 0.2 }}
-                  className="ml-7 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/[0.05] text-[12px] text-white/40 leading-relaxed"
-                >
-                  {step.summary}
-                </motion.div>
+            <div key={iter} className="flex flex-col gap-1.5">
+              {/* Narrative text before this iteration's pills */}
+              {narrative?.text && (
+                <NarrativeParagraph text={narrative.text} />
               )}
-            </motion.div>
+
+              {/* Pills for this iteration */}
+              <div className="flex flex-col gap-1">
+                {iterSteps.map((step, idx) => (
+                  <StepPill key={step.id || `${iter}-${idx}`} step={step} />
+                ))}
+              </div>
+            </div>
           );
         })}
       </AnimatePresence>
-      <div ref={bottomRef} />
     </div>
   );
 }

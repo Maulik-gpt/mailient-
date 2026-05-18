@@ -18,11 +18,44 @@ import { searchMemories, saveConversationTurn } from '../../../../lib/arcus/memo
 
 export const maxDuration = 60;
 
-function buildPlanSystemPrompt(userName: string): string {
+function buildPlanSystemPrompt(userName: string, connectedIntegrations: string[]): string {
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+  const INTEGRATION_LABELS: Record<string, string> = {
+    gmail: 'Gmail',
+    gcal: 'Google Calendar',
+    notion: 'Notion',
+    slack: 'Slack',
+  };
+  const ALL_KNOWN = Object.keys(INTEGRATION_LABELS);
+
+  const connected = connectedIntegrations.filter(k => INTEGRATION_LABELS[k]);
+  const notConnected = ALL_KNOWN.filter(k => !connected.includes(k));
+
+  const alwaysAvailable = ['Web Search (built-in)', 'Canvas document viewer (built-in)'];
+  const connectedLabels = connected.map(k => INTEGRATION_LABELS[k]);
+  const notConnectedLabels = notConnected.map(k => INTEGRATION_LABELS[k]);
+
+  const integrationSection = [
+    '## Tools available to execute this plan',
+    'Always available: ' + alwaysAvailable.join(', '),
+    connected.length ? 'Connected integrations: ' + connectedLabels.join(', ') : 'No third-party integrations connected.',
+    notConnected.length
+      ? `NOT connected (do NOT plan steps that require these): ${notConnectedLabels.join(', ')}. Also do NOT plan steps using Microsoft 365, Outlook, Excel, Teams, Jira, HubSpot, Salesforce, Asana, Trello, or any other external app not listed above.`
+      : '',
+  ].filter(Boolean).join('\n');
+
   return `You are Arcus, a strategic planning expert. Today is ${today}. The user's name is ${userName}.
 
 Your only job right now is to create a comprehensive, well-structured action plan.
+
+${integrationSection}
+
+## CRITICAL — Only plan what can actually be executed
+- Every action item in the plan MUST be achievable using only the tools listed above.
+- If an integration is not connected, do NOT include steps that require it.
+- Do NOT include steps that say "use Microsoft 365", "log in to Outlook", "open Excel", "use HubSpot", or reference any app not listed as available above.
+- Plan around what IS available. If email is needed and Gmail is connected, use Gmail. If no calendar is connected, skip scheduling steps or note the user must do it manually.
 
 ## Output rules — CRITICAL
 - Output ONLY the plan document as markdown. No preamble, no "here is your plan", no explanation before or after.
@@ -79,7 +112,7 @@ export async function POST(request: NextRequest) {
   ]);
 
   const systemPrompt = isPlanMode
-    ? buildPlanSystemPrompt(userName)
+    ? buildPlanSystemPrompt(userName, connectedIntegrations)
     : buildSystemPrompt({ userName, userId, connectedIntegrations, memories });
 
   // Sanitize history (last 20 turns)

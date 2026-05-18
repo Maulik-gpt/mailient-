@@ -8,7 +8,8 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import { AddSquareIcon, Cancel01Icon, WorkHistoryIcon } from '@hugeicons/core-free-icons';
 import { ChatHistoryModal } from './components/ChatHistoryModal';
 import { ThinkingLayer, ResultCard, type ThinkingStep, type ThinkingBlock, type SearchSession } from './components/ThinkingLayer';
-import { AgentExecutionTimeline, type AgentStep } from './components/AgentExecutionTimeline';
+import { AgentExecutionTimeline, type AgentStep, type AgentNarrative } from './components/AgentExecutionTimeline';
+import { TaskProgressCard, type TaskList } from './components/TaskProgressCard';
 import { LiveTaskWidget } from './components/LiveTaskWidget';
 import { DraftReplyBox } from './components/DraftReplyBox';
 import { ChatPlanCard, type PlanCardData } from './components/ChatPlanCard';
@@ -487,7 +488,9 @@ interface AgentMessage {
     internalThought?: string;
     isStreaming?: boolean;
     actionHistory?: any[];
+    taskList?: TaskList;
     agentSteps?: AgentStep[];
+    agentNarratives?: AgentNarrative[];
     agentRunId?: string;
     agentDurationMs?: number;
     result?: {
@@ -522,6 +525,7 @@ interface AgentMessage {
       threadId?: string;
     };
     planCard?: PlanCardData;
+    planIntro?: string;
     hasError?: boolean;
     errorMessage?: string;
     searchExecution?: {
@@ -848,6 +852,80 @@ function AgentTaskPill({ step }: { step: AgentStep }) {
           {step.summary}
         </p>
       )}
+    </div>
+  );
+}
+
+// ─── Collapsible Execution Steps wrapper ─────────────────────────────────────
+function CollapsibleSteps({
+  steps,
+  narratives,
+  isActive,
+  runId,
+  totalDurationMs,
+}: {
+  steps: AgentStep[];
+  narratives?: AgentNarrative[];
+  isActive: boolean;
+  runId?: string;
+  totalDurationMs?: number;
+}) {
+  const [collapsed, setCollapsed] = useState(false);
+
+  if (!steps || steps.length === 0) return null;
+
+  const completedCount = steps.filter(s => s.status === 'completed').length;
+  const totalCount = steps.length;
+
+  return (
+    <div className="mb-2">
+      {/* Toggle row */}
+      <button
+        onClick={() => setCollapsed(c => !c)}
+        className="flex items-center gap-1.5 text-white/25 hover:text-white/50 transition-colors mb-2 group/toggle"
+      >
+        <ChevronDown
+          className={cn(
+            'w-3 h-3 transition-transform duration-200',
+            collapsed ? '-rotate-90' : 'rotate-0',
+          )}
+        />
+        <span className="text-[11px] font-mono tracking-wide">
+          {collapsed
+            ? `${totalCount} step${totalCount !== 1 ? 's' : ''}`
+            : isActive
+            ? `${completedCount} / ${totalCount} steps`
+            : `${totalCount} step${totalCount !== 1 ? 's' : ''} completed`}
+        </span>
+        {isActive && (
+          <motion.span
+            className="inline-block w-1 h-1 rounded-full bg-white/35"
+            animate={{ opacity: [0.3, 1, 0.3] }}
+            transition={{ repeat: Infinity, duration: 1.4, ease: 'easeInOut' }}
+          />
+        )}
+      </button>
+
+      {/* Content */}
+      <AnimatePresence initial={false}>
+        {!collapsed && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+            className="overflow-hidden"
+          >
+            <AgentExecutionTimeline
+              steps={steps}
+              narratives={narratives}
+              isActive={isActive}
+              runId={runId}
+              totalDurationMs={totalDurationMs}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -1870,7 +1948,9 @@ export default function ChatInterface({
       let rawOutput = '';
       let stepIndex = 0;
       let streamFinishedNormally = false;
-      let currentAgentSteps: AgentStep[] = [];  // populated only by tool_call events
+      let currentAgentSteps: AgentStep[] = [];       // populated only by tool_call events
+      let currentAgentNarratives: AgentNarrative[] = []; // populated by narrative events
+      let currentTaskList: TaskList | null = null;    // populated by task_list event
 
       while (true) {
         const { done, value } = await reader.read();
@@ -1898,6 +1978,29 @@ export default function ChatInterface({
                 return { ...m, meta: { ...(m.meta || {}), liveThinking: 'Thinking...' } };
               }));
               break;
+
+            case 'task_list': {
+              if (Array.isArray(data.tasks) && data.tasks.length > 0) {
+                currentTaskList = { tasks: data.tasks, completedCount: 0 };
+                setMessages(msgs => msgs.map(m => {
+                  if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+                  return { ...m, meta: { ...(m.meta || {}), taskList: currentTaskList! } };
+                }));
+              }
+              break;
+            }
+
+            case 'task_progress': {
+              const completed = typeof data.completedCount === 'number' ? data.completedCount : 0;
+              if (currentTaskList) currentTaskList = { ...currentTaskList, completedCount: completed };
+              setMessages(msgs => msgs.map(m => {
+                if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+                const existing = (m as AgentMessage).meta?.taskList;
+                if (!existing) return m;
+                return { ...m, meta: { ...(m.meta || {}), taskList: { ...existing, completedCount: completed } } };
+              }));
+              break;
+            }
 
             case 'thinking': {
               // Only update the thinking text shown in AgentThinkingSection.
@@ -1998,6 +2101,19 @@ export default function ChatInterface({
               break;
             }
 
+            case 'narrative': {
+              // Intermediate narrative text emitted between tool call groups
+              if (data.text?.trim()) {
+                const narrative: AgentNarrative = { iteration: data.iteration ?? 0, text: data.text.trim() };
+                currentAgentNarratives = [...currentAgentNarratives, narrative];
+                setMessages(msgs => msgs.map(m => {
+                  if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+                  return { ...m, meta: { ...(m.meta || {}), agentNarratives: currentAgentNarratives } };
+                }));
+              }
+              break;
+            }
+
             case 'tool_error':
               const nextErrorSteps = currentAgentSteps.map(s =>
                 s.status === 'active'
@@ -2088,6 +2204,7 @@ export default function ChatInterface({
                     liveThinking: liveThinkingText || (m.meta as any)?.liveThinking,
                     thinkingComplete: finalContent.trim().length > 0 ? true : (m.meta as any)?.thinkingComplete,
                     agentSteps: currentAgentSteps,
+                    agentNarratives: currentAgentNarratives,
                     ...extraMeta
                   }
                 };
@@ -2119,6 +2236,8 @@ export default function ChatInterface({
                 status: 'proposed',
                 createdAt: new Date().toISOString(),
               };
+              // One-sentence intro shown above the plan card
+              const planIntro = `I've put together a plan titled "${planCard.title}". Review it below — click Execute to run it step by step, or Cancel to start over.`;
               finalProcessedText = ''; // plan card replaces the text message
               streamFinishedNormally = true;
               setMessages(msgs => msgs.map(m => {
@@ -2130,6 +2249,7 @@ export default function ChatInterface({
                     ...(m.meta || {}),
                     isStreaming: false,
                     planCard,
+                    planIntro,
                     // _planForDocs: used only by ArtifactsGalleryPanel — does NOT trigger PlanCanvas
                     _planForDocs: {
                       title: planCard.title,
@@ -2229,9 +2349,13 @@ export default function ChatInterface({
           role: 'assistant', 
           content: { text: finalPersistedText, list: [], footer: '' }, 
           time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
-          meta: { agentSteps: currentAgentSteps }
+          meta: {
+            agentSteps: currentAgentSteps,
+            agentNarratives: currentAgentNarratives,
+            ...(currentTaskList ? { taskList: currentTaskList } : {}),
+          }
         };
-        
+
         allMsgs = [...allMsgs, agentMsg];
         const unique = allMsgs.filter((msg: any, idx: number, self: any[]) => idx === self.findIndex(t => t.id === msg.id));
         const convTitle = existing.title || chatTitle || messageText.slice(0, 60);
@@ -3747,6 +3871,25 @@ export default function ChatInterface({
                                        />
                                      )}
 
+                                     {/* Task progress card — appears first, before execution steps */}
+                                     {msg.role === 'assistant' && (msg as AgentMessage).meta?.taskList && (
+                                       <TaskProgressCard
+                                         taskList={(msg as AgentMessage).meta!.taskList!}
+                                         isActive={(msg as AgentMessage).meta?.isStreaming !== false}
+                                       />
+                                     )}
+
+                                     {/* Execution steps — above message text, collapsible */}
+                                     {msg.role === 'assistant' && (msg as AgentMessage).meta?.agentSteps && !(msg as AgentMessage).meta?.limitReached && ((msg as AgentMessage).meta!.agentSteps!).length > 0 && (
+                                       <CollapsibleSteps
+                                         steps={(msg as AgentMessage).meta!.agentSteps!}
+                                         narratives={(msg as AgentMessage).meta?.agentNarratives}
+                                         isActive={(msg as AgentMessage).meta?.isStreaming !== false}
+                                         runId={(msg as AgentMessage).meta?.agentRunId}
+                                         totalDurationMs={(msg as AgentMessage).meta?.agentDurationMs}
+                                       />
+                                     )}
+
                                      {!((msg as AgentMessage).meta?.hasError) && ((msg as AgentMessage).meta?.isStreaming !== true || (typeof msg.content === 'string' ? msg.content : msg.content.text).length > 0 || isAgentLoopActive) && (
                                        <MessageContent
                                          content={msg.content}
@@ -3807,37 +3950,6 @@ export default function ChatInterface({
                                     )}
 
 
-                                    {/* Advanced Agent Execution Timeline (Parallel Thinking & Execution) */}
-                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.agentSteps && !(msg as AgentMessage).meta?.limitReached && (
-                                      <div className="mb-6">
-                                        <AgentExecutionTimeline
-                                          steps={(msg as AgentMessage).meta!.agentSteps!}
-                                          isActive={(msg as AgentMessage).meta?.isStreaming !== false}
-                                          runId={(msg as AgentMessage).meta?.agentRunId}
-                                          totalDurationMs={(msg as AgentMessage).meta?.agentDurationMs}
-                                        />
-                                        {/* Live activity narration line */}
-                                        <AnimatePresence>
-                                          {(msg as AgentMessage).meta?.isStreaming !== false && liveActivityLine && msg.id === messages[messages.length - 1]?.id && (
-                                            <motion.div
-                                              key={liveActivityLine}
-                                              initial={{ opacity: 0, y: 4 }}
-                                              animate={{ opacity: 1, y: 0 }}
-                                              exit={{ opacity: 0, y: -4 }}
-                                              transition={{ duration: 0.25 }}
-                                              className="mt-2 flex items-center gap-2"
-                                            >
-                                              <motion.span
-                                                className="inline-block w-1.5 h-1.5 rounded-full bg-blue-400"
-                                                animate={{ scale: [1, 1.4, 1], opacity: [0.7, 1, 0.7] }}
-                                                transition={{ repeat: Infinity, duration: 1.2, ease: 'easeInOut' }}
-                                              />
-                                              <span className="text-[11px] text-white/40 font-mono tracking-wide">{liveActivityLine}</span>
-                                            </motion.div>
-                                          )}
-                                        </AnimatePresence>
-                                      </div>
-                                    )}
 
                                     {/* Plan Canvas (Inline + Full-Screen Modal) */}
                                     {msg.role === 'assistant' && (msg as AgentMessage).meta?.planArtifact && (
@@ -3853,6 +3965,13 @@ export default function ChatInterface({
                                           isProcessing={isProcessingPlan}
                                         />
                                       </div>
+                                    )}
+
+                                    {/* Plan intro paragraph */}
+                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.planIntro && (
+                                      <p className="text-[13px] text-white/55 leading-[1.7] mb-1 mt-1">
+                                        {(msg as AgentMessage).meta!.planIntro}
+                                      </p>
                                     )}
 
                                     {/* Chat Plan Card — rendered when plan mode generates a plan */}

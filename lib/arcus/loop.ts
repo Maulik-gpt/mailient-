@@ -88,6 +88,30 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
         let finalText = '';
         let canvasContent: any = null;
         let iteration = 0;
+        let taskCount = 0; // total tasks emitted (for progress tracking)
+
+        // ── Pre-loop: generate a task list so the user sees what's coming ─────
+        if (!isPlanMode && availableTools.length > 0) {
+          try {
+            const tlRes = await callLLM([
+              {
+                role: 'system',
+                content: `You are a task planner. Given the user's request, output a JSON array of 3-5 short action items (max 10 words each) describing what you will do step-by-step. Output ONLY the raw JSON array with no extra text, no markdown fences. Example: ["Search inbox for recent emails","Read top 3 matching threads","Draft a reply matching user tone","Send the draft"]`,
+              },
+              { role: 'user', content: userMessage },
+            ], [], { maxTokens: 200 });
+            const raw = getText(tlRes.content).trim();
+            const match = raw.match(/\[[\s\S]*\]/);
+            if (match) {
+              const tasks: string[] = JSON.parse(match[0]);
+              if (Array.isArray(tasks) && tasks.length >= 2) {
+                const clean = tasks.slice(0, 6).map(t => String(t).trim()).filter(Boolean);
+                taskCount = clean.length;
+                emit('task_list', { tasks: clean });
+              }
+            }
+          } catch { /* silent — task list is optional */ }
+        }
 
         emit('thinking', { status: 'Thinking…' });
 
@@ -100,6 +124,12 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
 
           // ── Case 1: Model wants to call tools → execute them ──────────────
           if (toolCalls.length > 0) {
+            // Emit any intermediate narrative text the model wrote alongside tool calls
+            // (e.g. "I found X and Y — now I'll check Z"). Shown between step groups.
+            if (textContent && textContent.length >= 20 && textContent.length <= 2000 && !isIntentText(textContent)) {
+              emit('narrative', { text: textContent, iteration });
+            }
+
             const toolResults: Array<{ type: 'tool_result'; tool_use_id: string; content: string }> = [];
 
             for (const tc of toolCalls) {
@@ -150,6 +180,12 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
               break;
             }
 
+            // Advance task progress — one task per completed iteration (rough mapping)
+            if (taskCount > 0) {
+              const completedSoFar = Math.min(iteration, taskCount - 1);
+              emit('task_progress', { completedCount: completedSoFar });
+            }
+
             // Loop — let the model decide what to do next
             emit('thinking', { status: 'Processing results…' });
             continue;
@@ -190,6 +226,11 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
           finalText = isPlanMode
             ? 'I was unable to generate a plan. Please try again with a more specific request.'
             : 'Done. Let me know if you need anything else.';
+        }
+
+        // All tasks complete when we reach the final answer
+        if (taskCount > 0) {
+          emit('task_progress', { completedCount: taskCount });
         }
 
         if (isPlanMode) {
