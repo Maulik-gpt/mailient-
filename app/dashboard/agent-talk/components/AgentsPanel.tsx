@@ -1,577 +1,288 @@
 'use client';
 
-/**
- * AgentsPanel — Scheduled AI Agents Management Panel for Arcus
- * Create, manage, and monitor autonomous email agents
- * Manus AI-inspired design with premium glassmorphic cards
- */
-
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Plus,
-  Play,
-  Pause,
-  Trash2,
-  Clock,
-  CheckCircle2,
-  AlertCircle,
-  Zap,
-  ChevronRight,
-  ChevronDown,
-  MoreHorizontal,
-  Calendar,
-  Mail,
-  Search,
-  Users,
-  TrendingUp,
-  Settings,
-  RefreshCw,
-  X,
-  Sparkles,
-  Bot,
-  Timer,
-  Activity
+  Plus, Clock, Mail, Zap, Loader2, X, Trash2, Slack,
+  MoreHorizontal, Check, AlertCircle, ChevronDown, Bot,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
-// ============================================================================
-// TYPES
-// ============================================================================
+// ── Types ──────────────────────────────────────────────────────────────────────
 
-export interface ScheduledAgent {
+interface Agent {
   id: string;
   name: string;
-  description: string;
-  schedule: string; // cron-like description: "Every morning at 7am", "Every Friday at 5pm"
-  status: 'active' | 'paused' | 'error' | 'running';
-  lastRun?: {
-    timestamp: string;
-    summary: string;
-    actionsCount: number;
-    status: 'success' | 'partial' | 'failed';
-  };
-  nextRun?: string;
-  createdAt: string;
-  type: 'triage' | 'follow-up' | 'schedule' | 'custom' | 'report';
-  trigger?: 'cron' | 'event' | 'manual';
-  icon?: React.ElementType;
+  task_description: string;
+  cron_schedule: string;
+  output_channel: 'gmail' | 'slack' | 'both';
+  slack_channel: string | null;
+  status: 'active' | 'paused' | 'running';
+  skip_confirmations: boolean;
+  last_run_at: string | null;
+  last_report_summary: string | null;
+  created_at: string;
 }
 
-interface AgentsPanelProps {
-  agents?: ScheduledAgent[];
-  onCreateAgent?: (description: string, schedule: string) => void;
-  onPauseAgent?: (id: string) => void;
-  onResumeAgent?: (id: string) => void;
-  onDeleteAgent?: (id: string) => void;
-  onRunNow?: (id: string) => void;
-  onViewHistory?: (id: string) => void;
-  onSendMessage?: (message: string) => void;
-  className?: string;
+// ── Cron helpers ───────────────────────────────────────────────────────────────
+
+function cronToLabel(cron: string): string {
+  const parts = cron.split(' ');
+  if (parts.length !== 5) return cron;
+  const [minStr, hourStr, , , dowStr] = parts;
+  if (hourStr.startsWith('*/')) return hourStr === '*/1' ? 'Every hour' : `Every ${hourStr.split('/')[1]}h`;
+  const h = hourStr.padStart(2, '0');
+  const m = minStr.padStart(2, '0');
+  const time = `${h}:${m}`;
+  if (dowStr === '*') return `Daily at ${time}`;
+  if (dowStr === '0') return `Sundays at ${time}`;
+  if (dowStr === '1-5') return `Weekdays at ${time}`;
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  if (!isNaN(parseInt(dowStr))) return `${days[parseInt(dowStr)]}s at ${time}`;
+  return cron;
 }
 
-// ============================================================================
-// PRESET AGENT TEMPLATES
-// ============================================================================
+function getNextRunDate(cron: string): Date {
+  const now = new Date();
+  const parts = cron.split(' ');
+  if (parts.length !== 5) return new Date(now.getTime() + 86400000);
+  const [minStr, hourStr, , , dowStr] = parts;
+  if (hourStr.startsWith('*/')) {
+    const interval = parseInt(hourStr.split('/')[1]) || 1;
+    const next = new Date(now);
+    next.setMinutes(parseInt(minStr) || 0, 0, 0);
+    if (next <= now) next.setHours(next.getHours() + interval);
+    return next;
+  }
+  const tH = parseInt(hourStr) || 0;
+  const tM = parseInt(minStr) || 0;
+  const candidate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), tH, tM, 0);
+  if (dowStr === '*') return candidate > now ? candidate : new Date(candidate.getTime() + 86400000);
+  if (dowStr === '1-5') {
+    let next = candidate > now ? candidate : new Date(candidate.getTime() + 86400000);
+    for (let i = 0; i < 7; i++) { if (next.getDay() >= 1 && next.getDay() <= 5) return next; next = new Date(next.getTime() + 86400000); }
+    return next;
+  }
+  const targetDow = parseInt(dowStr) || 0;
+  const daysUntil = (targetDow - now.getDay() + 7) % 7 || (candidate <= now ? 7 : 0);
+  const next = new Date(candidate);
+  next.setDate(next.getDate() + daysUntil);
+  return next;
+}
 
-// No preset templates as requested
+function formatNextRun(date: Date): string {
+  return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()} ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
+}
 
-// ============================================================================
-// SUB-COMPONENTS
-// ============================================================================
+function formatRunDate(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()} ${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
+}
 
-function AgentStatusBadge({ status }: { status: ScheduledAgent['status'] }) {
-  const config = {
-    active: { label: 'Active', color: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/20', dot: 'bg-green-400' },
-    paused: { label: 'Paused', color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', dot: 'bg-amber-400' },
-    error: { label: 'Error', color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20', dot: 'bg-red-400' },
-    running: { label: 'Running', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20', dot: 'bg-blue-400' },
-  };
+// ── Schedule helpers ───────────────────────────────────────────────────────────
 
-  const c = config[status];
+const SCHEDULE_PATTERNS = [
+  { label: 'Every day', key: 'daily', needsTime: true, needsDay: false },
+  { label: 'Every hour', key: 'hourly', needsTime: false, needsDay: false },
+  { label: 'Every weekday', key: 'weekday', needsTime: true, needsDay: false },
+  { label: 'Every week', key: 'weekly', needsTime: true, needsDay: true },
+  { label: 'Custom cron', key: 'custom', needsTime: false, needsDay: false },
+];
 
+const WEEK_DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].map((l, i) => ({ label: l, value: String(i) }));
+
+function buildCron(key: string, time: string, weekday: string): string {
+  const [h, m] = time.split(':').map(s => parseInt(s, 10));
+  const hh = isNaN(h) ? 7 : h;
+  const mm = isNaN(m) ? 0 : m;
+  if (key === 'daily') return `${mm} ${hh} * * *`;
+  if (key === 'hourly') return `0 */1 * * *`;
+  if (key === 'weekday') return `${mm} ${hh} * * 1-5`;
+  if (key === 'weekly') return `${mm} ${hh} * * ${weekday}`;
+  return '';
+}
+
+function parseCronToSchedule(cron: string) {
+  if (!cron || cron === '0 */1 * * *') return { key: 'hourly', time: '07:00', weekday: '0' };
+  const parts = cron.split(' ');
+  if (parts.length !== 5) return { key: 'custom', time: '07:00', weekday: '0' };
+  const [mm, hh, , , dow] = parts;
+  const time = `${String(parseInt(hh) || 0).padStart(2, '0')}:${String(parseInt(mm) || 0).padStart(2, '0')}`;
+  if (dow === '1-5') return { key: 'weekday', time, weekday: '1' };
+  if (dow !== '*' && !dow.includes('/')) return { key: 'weekly', time, weekday: dow };
+  return { key: 'daily', time, weekday: '0' };
+}
+
+// ── Toggle ─────────────────────────────────────────────────────────────────────
+
+function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
   return (
-    <div className={cn("flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-bold uppercase tracking-wider", c.bg, c.border, c.color)}>
-      {status === 'running' ? (
-        <motion.div
-          className={cn("w-1.5 h-1.5 rounded-full", c.dot)}
-          animate={{ opacity: [1, 0.3, 1] }}
-          transition={{ repeat: Infinity, duration: 1 }}
-        />
-      ) : (
-        <div className={cn("w-1.5 h-1.5 rounded-full", c.dot)} />
-      )}
-      {c.label}
-    </div>
-  );
-}
-
-function AgentCard({
-  agent,
-  onPause,
-  onResume,
-  onDelete,
-  onRunNow,
-  onViewHistory,
-  delay = 0,
-}: {
-  agent: ScheduledAgent;
-  onPause?: () => void;
-  onResume?: () => void;
-  onDelete?: () => void;
-  onRunNow?: () => void;
-  onViewHistory?: () => void;
-  delay?: number;
-}) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [showMenu, setShowMenu] = useState(false);
-
-  const typeIcons: Record<string, React.ElementType> = {
-    triage: Mail,
-    'follow-up': Users,
-    schedule: Calendar,
-    custom: Zap,
-    report: Activity,
-  };
-
-  const TypeIcon = (agent.icon || typeIcons[agent.type] || Bot) as React.FC<any>;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-      className={cn(
-        "relative group rounded-2xl border transition-all overflow-hidden",
-        "bg-white/[0.02] border-white/[0.06] hover:border-white/[0.12]",
-        agent.status === 'running' && "border-blue-500/20 bg-blue-500/[0.02]"
-      )}
+    <button
+      onClick={onChange}
+      className={cn('relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200',
+        checked ? 'bg-blue-500' : 'bg-white/15')}
     >
-      {/* Running shimmer */}
-      {agent.status === 'running' && (
-        <motion.div
-          className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/[0.04] to-transparent w-[200%] pointer-events-none"
-          animate={{ x: ['-100%', '100%'] }}
-          transition={{ repeat: Infinity, duration: 3, ease: "linear" }}
-        />
-      )}
-
-      <div className="relative p-4">
-        {/* Header Row */}
-        <div className="flex items-start gap-3">
-          <div className={cn(
-            "w-10 h-10 rounded-xl flex items-center justify-center border flex-shrink-0 transition-all",
-            agent.status === 'active' ? "bg-white/5 border-white/10 text-white/60" :
-            agent.status === 'running' ? "bg-blue-500/10 border-blue-500/20 text-blue-400" :
-            agent.status === 'paused' ? "bg-white/[0.02] border-white/[0.06] text-white/30" :
-            "bg-red-500/5 border-red-500/15 text-red-400"
-          )}>
-            <TypeIcon className="w-5 h-5" />
-          </div>
-
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <h4 className="text-[14px] font-semibold text-white/90 truncate">{agent.name}</h4>
-              <AgentStatusBadge status={agent.status} />
-            </div>
-            <p className="text-[12px] text-white/40 leading-relaxed line-clamp-2">{agent.description}</p>
-          </div>
-
-          {/* Menu */}
-          <div className="relative">
-            <button
-              onClick={() => setShowMenu(!showMenu)}
-              className="p-1.5 hover:bg-white/5 rounded-lg transition-all text-white/20 hover:text-white/50 opacity-0 group-hover:opacity-100"
-            >
-              <MoreHorizontal className="w-4 h-4" />
-            </button>
-
-            <AnimatePresence>
-              {showMenu && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95, y: -4 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: -4 }}
-                  className="absolute right-0 top-full mt-1 w-44 bg-[#1a1a1a] border border-white/[0.08] rounded-xl shadow-2xl py-1 z-50"
-                >
-                  <button
-                    onClick={() => { onRunNow?.(); setShowMenu(false); }}
-                    className="w-full px-3 py-2 text-left text-[12px] text-white/70 hover:bg-white/5 transition-colors flex items-center gap-2"
-                  >
-                    <Play className="w-3.5 h-3.5" /> Run now
-                  </button>
-                  {agent.status === 'active' ? (
-                    <button
-                      onClick={() => { onPause?.(); setShowMenu(false); }}
-                      className="w-full px-3 py-2 text-left text-[12px] text-white/70 hover:bg-white/5 transition-colors flex items-center gap-2"
-                    >
-                      <Pause className="w-3.5 h-3.5" /> Pause
-                    </button>
-                  ) : agent.status === 'paused' ? (
-                    <button
-                      onClick={() => { onResume?.(); setShowMenu(false); }}
-                      className="w-full px-3 py-2 text-left text-[12px] text-white/70 hover:bg-white/5 transition-colors flex items-center gap-2"
-                    >
-                      <Play className="w-3.5 h-3.5" /> Resume
-                    </button>
-                  ) : null}
-                  <button
-                    onClick={() => { onViewHistory?.(); setShowMenu(false); }}
-                    className="w-full px-3 py-2 text-left text-[12px] text-white/70 hover:bg-white/5 transition-colors flex items-center gap-2"
-                  >
-                    <Clock className="w-3.5 h-3.5" /> View history
-                  </button>
-                  <div className="h-[1px] bg-white/[0.05] my-1" />
-                  <button
-                    onClick={() => { onDelete?.(); setShowMenu(false); }}
-                    className="w-full px-3 py-2 text-left text-[12px] text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-2"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" /> Delete
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-
-        {/* Schedule & Last Run */}
-        <div className="flex items-center gap-4 mt-3 pt-3 border-t border-white/[0.04]">
-          <div className="flex items-center gap-1.5 text-[11px] text-white/30">
-            <Timer className="w-3.5 h-3.5" />
-            <span>{agent.schedule}</span>
-          </div>
-          {agent.lastRun && (
-            <>
-              <div className="w-[1px] h-3 bg-white/[0.06]" />
-              <div className="flex items-center gap-1.5 text-[11px] text-white/30">
-                {agent.lastRun.status === 'success' ? (
-                  <CheckCircle2 className="w-3.5 h-3.5 text-green-400/60" />
-                ) : agent.lastRun.status === 'failed' ? (
-                  <AlertCircle className="w-3.5 h-3.5 text-red-400/60" />
-                ) : (
-                  <AlertCircle className="w-3.5 h-3.5 text-amber-400/60" />
-                )}
-                <span>Last run: {agent.lastRun.timestamp}</span>
-              </div>
-            </>
-          )}
-          {agent.nextRun && (
-            <>
-              <div className="w-[1px] h-3 bg-white/[0.06]" />
-              <div className="flex items-center gap-1.5 text-[11px] text-white/20">
-                <Clock className="w-3.5 h-3.5" />
-                <span>Next: {agent.nextRun}</span>
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* Expandable Last Run Details */}
-        {agent.lastRun && (
-          <>
-            <button
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="mt-2 flex items-center gap-1 text-[11px] text-white/20 hover:text-white/40 transition-colors"
-            >
-              <ChevronDown className={cn("w-3 h-3 transition-transform", isExpanded && "rotate-180")} />
-              {agent.lastRun.actionsCount} actions performed
-            </button>
-            <AnimatePresence>
-              {isExpanded && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="overflow-hidden"
-                >
-                  <p className="mt-2 text-[12px] text-white/30 leading-relaxed pl-4 border-l border-white/[0.06]">
-                    {agent.lastRun.summary}
-                  </p>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </>
-        )}
-      </div>
-    </motion.div>
-  );
-}
-// ============================================================================
-// CUSTOM PREMIUM INPUT COMPONENTS
-// ============================================================================
-
-function CustomDropdown({ value, options, onChange, className }: any) {
-  const [isOpen, setIsOpen] = useState(false);
-  return (
-    <div className={cn("relative", className)}>
-      <div 
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full bg-[#111] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white flex justify-between items-center cursor-pointer hover:border-white/20 transition-colors"
-      >
-        <span>{value}</span>
-        <ChevronDown className={cn("w-4 h-4 text-white/40 transition-transform", isOpen && "rotate-180")} />
-      </div>
-      <AnimatePresence>
-        {isOpen && (
-          <>
-            <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-            <motion.div
-              initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -5 }}
-              className="absolute top-full left-0 w-full mt-2 bg-[#1A1A1A] border border-white/10 rounded-xl overflow-hidden z-50 shadow-2xl"
-            >
-              {options.map((opt: string) => (
-                <div
-                  key={opt}
-                  onClick={() => { onChange(opt); setIsOpen(false); }}
-                  className={cn(
-                    "px-4 py-2.5 cursor-pointer text-sm transition-colors hover:bg-white/5",
-                    value === opt ? "bg-white/10 text-white font-medium" : "text-white/70"
-                  )}
-                >
-                  {opt}
-                </div>
-              ))}
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-    </div>
+      <span className={cn('inline-block h-5 w-5 transform rounded-full bg-white shadow transition duration-200', checked ? 'translate-x-5' : 'translate-x-0')} />
+    </button>
   );
 }
 
-function CustomTimePicker({ value, onChange }: any) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [hour, min] = value.split(':');
-  
-  const hours = Array.from({length: 24}, (_, i) => i.toString().padStart(2, '0'));
-  const minutes = Array.from({length: 12}, (_, i) => (i * 5).toString().padStart(2, '0'));
+// ── Templates ──────────────────────────────────────────────────────────────────
 
-  return (
-    <div className="relative w-32">
-      <div 
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full bg-[#111] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white flex justify-between items-center cursor-pointer hover:border-white/20 transition-colors"
-      >
-        <span>{value}</span>
-        <Clock className="w-4 h-4 text-white/40" />
-      </div>
-      <AnimatePresence>
-        {isOpen && (
-          <>
-            <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-            <motion.div
-              initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -5 }}
-              className="absolute top-full left-0 w-40 mt-2 bg-[#1A1A1A] border border-white/10 rounded-xl overflow-hidden z-50 shadow-2xl flex h-48"
-            >
-              <div className="flex-1 overflow-y-auto custom-scrollbar border-r border-white/10 bg-[#141414]">
-                {hours.map(h => (
-                  <div 
-                    key={h}
-                    onClick={() => onChange(`${h}:${min}`)}
-                    className={cn("px-4 py-2 cursor-pointer text-center text-sm hover:bg-white/5", hour === h ? "bg-white/10 text-white font-medium" : "text-white/50")}
-                  >
-                    {h}
-                  </div>
-                ))}
-              </div>
-              <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#141414]">
-                {minutes.map(m => (
-                  <div 
-                    key={m}
-                    onClick={() => onChange(`${hour}:${m}`)}
-                    className={cn("px-4 py-2 cursor-pointer text-center text-sm hover:bg-white/5", min === m ? "bg-white/10 text-white font-medium" : "text-white/50")}
-                  >
-                    {m}
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
+const TEMPLATES = [
+  { name: 'Morning Inbox Sweep', description: 'Scan inbox for unanswered client emails, draft replies in your tone, email a summary with links.', cron_schedule: '0 7 * * *', output_channel: 'gmail' as const, task_description: 'Every morning at 7am, search my inbox for any unanswered client emails, study my recent sent emails to learn my writing tone, draft a personalized reply for each one, and email me a clear summary with links to each draft.' },
+  { name: 'Meeting Autopilot', description: 'Find meeting requests, check calendar availability, book with Meet links, Slack you a summary.', cron_schedule: '0 9 * * *', output_channel: 'both' as const, task_description: 'Every morning at 9am, search my Gmail inbox for meeting requests, check my Google Calendar for availability, book confirmed meetings with Google Meet links, and send me a Slack message listing what was scheduled.' },
+  { name: 'Weekly Opportunity Digest', description: 'Scan all emails from the week, identify revenue opportunities and leads, email a full digest every Sunday.', cron_schedule: '0 18 * * 0', output_channel: 'gmail' as const, task_description: 'Every Sunday at 6pm, search through all emails I received this week, identify revenue opportunities, potential partnerships, and warm leads, and write a comprehensive weekly digest email.' },
+  { name: 'Client Pulse', description: 'Every hour, checks if email arrived from your top contacts. Sends an immediate Slack ping.', cron_schedule: '0 */1 * * *', output_channel: 'slack' as const, task_description: 'Every hour, check if any new email arrived from my most important contacts. If so, immediately send me a Slack message with the sender name, subject line, and first two sentences.' },
+  { name: 'Notion + Inbox Sync', description: 'Cross-reference your Notion tasks with Gmail, find gaps, send a daily project briefing.', cron_schedule: '0 8 * * *', output_channel: 'gmail' as const, task_description: 'Every morning at 8am, read my Notion task list, search Gmail for emails related to each project, identify gaps, and email me a concise project briefing.' },
+  { name: 'Lead Harvest', description: 'Run the lead qualification flow across inbox and web, push to Notion, email a harvest report.', cron_schedule: '0 5 * * *', output_channel: 'gmail' as const, task_description: 'Every morning at 5am, search my inbox for inbound leads, research and qualify each one via web search, save qualified leads to Notion, and email me a harvest report.' },
+];
 
-function CreateAgentInput({
-  onSubmit,
-  onCancel,
-}: {
-  onSubmit: (data: { title: string, scheduleFreq: string, time: string, prompt: string, skipConfirmations: boolean, expirationDate?: string }) => void;
-  onCancel: () => void;
+// ── Create Modal ───────────────────────────────────────────────────────────────
+
+function CreateModal({ onClose, onSave, initial }: {
+  onClose: () => void;
+  onSave: (data: Partial<Agent> & { _timezone?: string }) => Promise<void>;
+  initial?: Partial<Agent>;
 }) {
-  const [title, setTitle] = useState('');
-  const [scheduleFreq, setScheduleFreq] = useState('Daily');
-  const [time, setTime] = useState('08:00');
-  const [hasExpiration, setHasExpiration] = useState(false);
-  const [expirationDate, setExpirationDate] = useState('');
-  const [prompt, setPrompt] = useState('');
-  const [skipConfirmations, setSkipConfirmations] = useState(false);
+  const parsed = initial?.cron_schedule ? parseCronToSchedule(initial.cron_schedule) : { key: 'daily', time: '07:00', weekday: '0' };
+  const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
+  const [name, setName] = useState(initial?.name || '');
+  const [task, setTask] = useState(initial?.task_description || '');
+  const [patternKey, setPatternKey] = useState(parsed.key);
+  const [scheduleTime, setScheduleTime] = useState(parsed.time);
+  const [scheduleWeekday, setScheduleWeekday] = useState(parsed.weekday);
+  const [customCron, setCustomCron] = useState(patternKey === 'custom' ? (initial?.cron_schedule || '') : '');
+  const [channel, setChannel] = useState<'gmail'|'slack'|'both'>(initial?.output_channel || 'gmail');
+  const [slackCh, setSlackCh] = useState(initial?.slack_channel || '');
+  const [skipConf, setSkipConf] = useState(initial?.skip_confirmations ?? false);
+  const [saving, setSaving] = useState(false);
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  const handleSubmit = () => {
-    if (title.trim() && prompt.trim()) {
-      onSubmit({
-        title: title.trim(),
-        scheduleFreq,
-        time,
-        prompt: prompt.trim(),
-        skipConfirmations,
-        expirationDate: hasExpiration ? expirationDate : undefined,
-      });
+  const activePat = SCHEDULE_PATTERNS.find(p => p.key === patternKey) || SCHEDULE_PATTERNS[0];
+  const cron = patternKey === 'custom' ? customCron : buildCron(patternKey, scheduleTime, scheduleWeekday);
+
+  const handleSave = async () => {
+    if (!task.trim()) { toast.error('Describe what you want Arcus to do.'); return; }
+    setSaving(true);
+    try {
+      const agentName = name.trim() || task.trim().slice(0, 40) + (task.trim().length > 40 ? '…' : '');
+      await onSave({ name: agentName, task_description: task.trim(), cron_schedule: cron || '0 7 * * *', output_channel: channel, slack_channel: channel !== 'gmail' ? slackCh || null : null, skip_confirmations: skipConf, _timezone: browserTz });
+      onClose();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to save.');
+    } finally {
+      setSaving(false);
     }
   };
 
   if (!mounted) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
-      {/* Backdrop */}
+    <div className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={onCancel}
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-      />
-      
-      {/* Modal */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="relative w-full max-w-2xl bg-[#1A1A1A] border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 30 }}
+        className="relative w-full max-w-xl bg-[#141414] border border-white/10 rounded-3xl overflow-y-auto max-h-[92vh] shadow-2xl"
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 pb-4 border-b border-white/[0.04]">
-          <h2 className="text-xl font-medium text-white tracking-tight">New scheduled task</h2>
-          <button onClick={onCancel} className="text-white/40 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/5">
-            <X className="w-5 h-5" />
+        <div className="flex items-center justify-between px-7 pt-7 pb-0">
+          <div>
+            <h2 className="text-[17px] font-bold text-white">{initial?.id ? 'Edit schedule' : 'New schedule'}</h2>
+            <p className="text-[12px] text-white/35 mt-0.5">Describe the job in plain English</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full text-white/30 hover:text-white hover:bg-white/10 transition-all">
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Content */}
-        <div className="p-6 space-y-6 overflow-y-auto max-h-[70vh] custom-scrollbar">
-          
-          {/* Title */}
+        <div className="px-7 py-5 space-y-4">
+          <textarea
+            value={task}
+            onChange={e => setTask(e.target.value)}
+            placeholder="Describe what you want this agent to do..."
+            rows={4}
+            className="w-full bg-white/[0.04] border border-white/10 rounded-2xl px-4 py-3.5 text-white text-[13px] leading-relaxed placeholder:text-white/20 focus:outline-none focus:border-white/25 resize-none transition-colors"
+          />
+
           <div>
-            <label className="block text-sm font-medium text-white mb-2">Title</label>
-            <input
-              type="text"
-              value={title}
-              onChange={e => setTitle(e.target.value)}
-              placeholder="e.g. Summary of unread mail"
-              className="w-full bg-[#111] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder:text-white/20 focus:outline-none focus:border-white/30 transition-colors"
-            />
+            <label className="block text-[10px] font-bold uppercase tracking-widest text-white/30 mb-2">Agent name (optional)</label>
+            <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Morning Client Check" className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-white text-[12px] placeholder:text-white/20 focus:outline-none focus:border-white/25 transition-colors" />
           </div>
 
-          {/* Schedule */}
           <div>
-            <label className="block text-sm font-medium text-white mb-2">Schedule</label>
-            <div className="flex items-center gap-3 relative z-10">
-              <CustomDropdown
-                className="w-48"
-                value={scheduleFreq}
-                onChange={setScheduleFreq}
-                options={["Daily", "Weekly", "Monthly", "No Repeat"]}
-              />
-              <CustomTimePicker
-                value={time}
-                onChange={setTime}
-              />
+            <label className="block text-[10px] font-bold uppercase tracking-widest text-white/30 mb-2.5">Schedule</label>
+            <div className="flex flex-wrap gap-2 mb-3">
+              {SCHEDULE_PATTERNS.map(p => (
+                <button key={p.key} onClick={() => setPatternKey(p.key)} className={cn('px-3 py-1.5 rounded-full text-[11px] font-medium transition-all border', patternKey === p.key ? 'bg-white text-black border-white' : 'bg-white/5 border-white/10 text-white/50 hover:border-white/20 hover:text-white/70')}>
+                  {p.label}
+                </button>
+              ))}
             </div>
-            
-            <div className="mt-3 flex flex-col gap-3">
-              <label className="flex items-center gap-2 cursor-pointer w-fit group">
-                <div className="relative flex items-center justify-center w-4 h-4 rounded border border-white/20 bg-[#111] group-hover:border-white/40 transition-colors">
-                  {hasExpiration && <CheckCircle2 className="w-3 h-3 text-white" />}
-                  <input
-                    type="checkbox"
-                    checked={hasExpiration}
-                    onChange={e => setHasExpiration(e.target.checked)}
-                    className="absolute opacity-0 w-full h-full cursor-pointer"
-                  />
+
+            {activePat.needsTime && (
+              <div className="flex gap-3">
+                {activePat.needsDay && (
+                  <div className="flex-1">
+                    <label className="block text-[10px] text-white/25 mb-1">Day</label>
+                    <select value={scheduleWeekday} onChange={e => setScheduleWeekday(e.target.value)} className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl px-3 py-2 text-white text-[12px] focus:outline-none focus:border-white/25 transition-colors appearance-none">
+                      {WEEK_DAYS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+                    </select>
+                  </div>
+                )}
+                <div className={activePat.needsDay ? 'flex-1' : 'w-full'}>
+                  <label className="block text-[10px] text-white/25 mb-1">Time (your local time · {browserTz})</label>
+                  <input type="time" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl px-3 py-2 text-white text-[12px] focus:outline-none focus:border-white/25 transition-colors" style={{ colorScheme: 'dark' }} />
                 </div>
-                <span className="text-sm text-white/70 group-hover:text-white transition-colors">Set expiration date</span>
-              </label>
+              </div>
+            )}
 
-              <AnimatePresence>
-                {hasExpiration && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="overflow-hidden"
-                  >
-                    <input
-                      type="date"
-                      value={expirationDate}
-                      onChange={e => setExpirationDate(e.target.value)}
-                      className="w-48 bg-[#111] border border-white/10 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-white/30 transition-colors [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:invert cursor-pointer text-sm"
-                    />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+            {patternKey === 'custom' && (
+              <input value={customCron} onChange={e => setCustomCron(e.target.value)} placeholder="e.g. 0 9 * * 1-5" className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl px-4 py-2 text-white font-mono text-[11px] placeholder:text-white/20 focus:outline-none focus:border-white/25 transition-colors" />
+            )}
+
+            {cron && patternKey !== 'custom' && (
+              <p className="mt-2 text-[10px] text-white/25 font-mono">Runs: <span className="text-white/45">{cronToLabel(cron)}</span></p>
+            )}
           </div>
 
-          {/* Prompt */}
           <div>
-            <label className="block text-sm font-medium text-white mb-2">Prompt</label>
-            <textarea
-              value={prompt}
-              onChange={e => setPrompt(e.target.value)}
-              placeholder="Summarize unread emails and highlight important messages"
-              className="w-full h-32 bg-[#111] border border-white/10 rounded-xl p-4 text-white placeholder:text-white/20 focus:outline-none focus:border-white/30 transition-colors resize-none"
-            />
+            <label className="block text-[10px] font-bold uppercase tracking-widest text-white/30 mb-2.5">Deliver report to</label>
+            <div className="flex gap-2">
+              {(['gmail','slack','both'] as const).map(ch => (
+                <button key={ch} onClick={() => setChannel(ch)} className={cn('flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[11px] font-medium border transition-all', channel === ch ? 'bg-white/10 border-white/30 text-white' : 'bg-white/[0.03] border-white/8 text-white/40 hover:border-white/15 hover:text-white/70')}>
+                  {ch === 'gmail' && <Mail className="w-3 h-3" />}
+                  {ch === 'slack' && <Slack className="w-3 h-3" />}
+                  {ch === 'both' && <Zap className="w-3 h-3" />}
+                  {ch === 'both' ? 'Both' : ch.charAt(0).toUpperCase() + ch.slice(1)}
+                </button>
+              ))}
+            </div>
+            {channel !== 'gmail' && (
+              <input value={slackCh} onChange={e => setSlackCh(e.target.value)} placeholder="Slack channel (e.g. #reports)" className="mt-2 w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-[11px] placeholder:text-white/20 focus:outline-none focus:border-white/25 transition-colors" />
+            )}
           </div>
 
-          {/* Skip confirmations */}
-          <div className="flex items-center justify-between p-4 bg-[#111] border border-white/10 rounded-xl">
+          <div className="flex items-center justify-between bg-white/[0.03] rounded-xl px-4 py-3 border border-white/[0.06]">
             <div>
-              <div className="text-sm font-medium text-white">Skip confirmations</div>
-              <div className="text-xs text-white/50 mt-0.5">No approval needed before sending, publishing, or posting.</div>
+              <p className="text-[12px] font-semibold text-white">Skip confirmations</p>
+              <p className="text-[10px] text-white/30 mt-0.5">No approval needed before sending or posting</p>
             </div>
-            <button
-              onClick={() => setSkipConfirmations(!skipConfirmations)}
-              className={cn(
-                "w-11 h-6 rounded-full transition-colors relative",
-                skipConfirmations ? "bg-white" : "bg-white/20"
-              )}
-            >
-              <div
-                className={cn(
-                  "absolute top-1 w-4 h-4 rounded-full transition-all bg-[#111]",
-                  skipConfirmations ? "left-6" : "left-1 bg-white"
-                )}
-              />
+            <Toggle checked={skipConf} onChange={() => setSkipConf(v => !v)} />
+          </div>
+
+          <div className="flex gap-3">
+            <button onClick={onClose} className="flex-1 py-2.5 rounded-xl text-[12px] font-semibold text-white/50 bg-white/5 hover:bg-white/10 transition-all border border-white/10">Cancel</button>
+            <button onClick={handleSave} disabled={saving || !task.trim()} className="flex-1 py-2.5 rounded-xl text-[12px] font-bold text-black bg-white hover:bg-white/90 active:scale-[0.98] transition-all disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2">
+              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+              {saving ? 'Saving…' : initial?.id ? 'Save changes' : 'Create schedule'}
             </button>
           </div>
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-3 p-6 pt-4 border-t border-white/[0.04] bg-[#1a1a1a]">
-          <button
-            onClick={onCancel}
-            className="px-5 py-2 text-sm font-medium text-white border border-white/10 rounded-xl hover:bg-white/5 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={!title.trim() || !prompt.trim()}
-            className="px-6 py-2 text-sm font-medium text-black bg-white rounded-xl hover:bg-neutral-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Save
-          </button>
         </div>
       </motion.div>
     </div>,
@@ -579,192 +290,245 @@ function CreateAgentInput({
   );
 }
 
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
+// ── Agent Card ─────────────────────────────────────────────────────────────────
 
-export function AgentsPanel({
-  agents: propAgents,
-  onCreateAgent,
-  onPauseAgent,
-  onResumeAgent,
-  onDeleteAgent,
-  onRunNow,
-  onViewHistory,
-  onSendMessage,
-  className,
-}: AgentsPanelProps) {
-  const [isCreating, setIsCreating] = useState(false);
-  const [agents, setAgents] = useState<ScheduledAgent[]>(propAgents || []);
-
-  // Sync with prop updates
-  useEffect(() => {
-    if (propAgents) setAgents(propAgents);
-  }, [propAgents]);
-
-  const handleCreateAgent = async (data: { title: string, scheduleFreq: string, time: string, prompt: string, skipConfirmations: boolean, expirationDate?: string }) => {
-    const schedule = `${data.scheduleFreq} at ${data.time} UTC${data.expirationDate ? ` (Expires ${data.expirationDate})` : ''}`;
-
-    setIsCreating(false);
-
-    // 1. Persist to database via API
-    try {
-      const res = await fetch('/api/agent-talk/agents', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: data.title,
-          description: data.prompt,
-          prompt: data.prompt,
-          skip_confirmations: data.skipConfirmations,
-          schedule_freq: data.scheduleFreq,
-          schedule_time: data.time,
-          expiration_date: data.expirationDate || null,
-          agent_type: 'custom',
-        }),
-      });
-
-      const saved = res.ok ? await res.json() : null;
-
-      const newAgent: ScheduledAgent = {
-        id: saved?.id || `agent_${Date.now()}`,
-        name: data.title,
-        description: data.prompt,
-        schedule,
-        status: 'active',
-        createdAt: new Date().toISOString(),
-        type: 'custom',
-        trigger: data.scheduleFreq === 'No Repeat' ? 'manual' : 'cron',
-      };
-
-      setAgents(prev => [newAgent, ...prev]);
-      toast.success('Agent created & saved', { description: `"${newAgent.name}" is now active` });
-    } catch (e) {
-      console.error('Failed to persist agent:', e);
-      // Still add locally even if API fails
-      const newAgent: ScheduledAgent = {
-        id: `agent_${Date.now()}`,
-        name: data.title,
-        description: data.prompt,
-        schedule,
-        status: 'active',
-        createdAt: new Date().toISOString(),
-        type: 'custom',
-        trigger: data.scheduleFreq === 'No Repeat' ? 'manual' : 'cron',
-      };
-      setAgents(prev => [newAgent, ...prev]);
-      toast.success('Agent created locally', { description: 'Could not save to server' });
-    }
-
-    // 2. Send the prompt directly to Arcus AI chat so the agent starts working immediately
-    if (onSendMessage) {
-      const skipNote = data.skipConfirmations ? ' Execute all actions without asking for confirmation.' : '';
-      onSendMessage(`[Scheduled Agent: "${data.title}"] ${data.prompt}${skipNote}`);
-    }
-  };
-
-  const handlePause = (id: string) => {
-    setAgents(prev => prev.map(a => a.id === id ? { ...a, status: 'paused' as const } : a));
-    onPauseAgent?.(id);
-    toast.info('Agent paused');
-  };
-
-  const handleResume = (id: string) => {
-    setAgents(prev => prev.map(a => a.id === id ? { ...a, status: 'active' as const } : a));
-    onResumeAgent?.(id);
-    toast.success('Agent resumed');
-  };
-
-  const handleDelete = (id: string) => {
-    if (!confirm('Delete this agent? This cannot be undone.')) return;
-    setAgents(prev => prev.filter(a => a.id !== id));
-    onDeleteAgent?.(id);
-    toast.success('Agent deleted');
-  };
-
-  const handleRunNow = (id: string) => {
-    const agent = agents.find(a => a.id === id);
-    setAgents(prev => prev.map(a => a.id === id ? { ...a, status: 'running' as const } : a));
-    onRunNow?.(id);
-    // Actually execute the agent's prompt through the chat
-    if (agent?.description && onSendMessage) {
-      onSendMessage(`[Running Agent: "${agent.name}"] ${agent.description}`);
-    }
-    toast.info('Running agent...');
-  };
-
-
+function AgentCard({ agent, onToggle, onEdit, onDelete, onToggleConf }: {
+  agent: Agent; onToggle: () => void; onEdit: () => void; onDelete: () => void; onToggleConf: () => void;
+}) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const nextRun = getNextRunDate(agent.cron_schedule);
 
   return (
-    <div className={cn("w-full max-w-3xl mx-auto py-6", className)}>
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between mb-8"
-      >
-        <div>
-          <h2 className="text-2xl font-medium text-white tracking-tighter" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-            Scheduled Agents
-          </h2>
-          <p className="text-[13px] text-white/40 mt-1">
-            Autonomous agents that manage your inbox on a schedule
-          </p>
+    <motion.div layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+      className="bg-white/[0.03] border border-white/[0.07] rounded-2xl overflow-hidden hover:border-white/12 transition-all">
+      <div className="p-4">
+        <div className="flex items-start gap-3">
+          <div className="w-8 h-8 rounded-xl bg-white/[0.05] border border-white/[0.06] flex items-center justify-center flex-shrink-0 mt-0.5">
+            <Clock className="w-3.5 h-3.5 text-white/40" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[13px] font-bold text-white leading-tight line-clamp-1">{agent.name}</p>
+            <p className="text-[11px] text-white/40 mt-1 leading-relaxed line-clamp-2">{agent.task_description}</p>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Toggle checked={agent.status !== 'paused'} onChange={onToggle} />
+            <div className="relative">
+              <button onClick={() => setMenuOpen(v => !v)} className="w-6 h-6 flex items-center justify-center rounded-lg text-white/25 hover:text-white hover:bg-white/10 transition-all">
+                <MoreHorizontal className="w-3.5 h-3.5" />
+              </button>
+              <AnimatePresence>
+                {menuOpen && (
+                  <motion.div initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.92 }}
+                    className="absolute right-0 top-8 w-32 bg-[#1e1e1e] border border-white/10 rounded-xl overflow-hidden shadow-xl z-10">
+                    <button onClick={() => { setMenuOpen(false); onEdit(); }} className="w-full px-3 py-2 text-left text-[11px] text-white/70 hover:bg-white/8 hover:text-white transition-all">Edit</button>
+                    <button onClick={() => { setMenuOpen(false); onDelete(); }} className="w-full px-3 py-2 text-left text-[11px] text-red-400 hover:bg-red-500/10 transition-all">Delete</button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
         </div>
-        <button
-          onClick={() => setIsCreating(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-white text-black text-[12px] font-bold rounded-full hover:bg-neutral-200 transition-all active:scale-95 shadow-lg"
-        >
-          <Plus className="w-4 h-4" />
-          New Agent
-        </button>
-      </motion.div>
 
-      {/* Create Agent Modal Form */}
-      <AnimatePresence>
-        {isCreating && (
-          <CreateAgentInput
-            onSubmit={handleCreateAgent}
-            onCancel={() => setIsCreating(false)}
-          />
+        <div className="ml-11 mt-2.5 space-y-1">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] text-white/25">Repeat</span>
+            <span className="text-[10px] text-white/50 font-medium">{cronToLabel(agent.cron_schedule)}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] text-white/25">Next run</span>
+            <span className="text-[10px] text-white/50 font-medium">{formatNextRun(nextRun)}</span>
+          </div>
+        </div>
+
+        {agent.last_run_at && (
+          <div className="ml-11 mt-2">
+            <button onClick={() => setExpanded(v => !v)} className="flex items-center gap-1 text-[10px] text-white/20 hover:text-white/40 transition-colors">
+              <ChevronDown className={cn('w-3 h-3 transition-transform', expanded && 'rotate-180')} />
+              Last run: {formatRunDate(agent.last_run_at)}
+            </button>
+            <AnimatePresence>
+              {expanded && (
+                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                  <p className="mt-1.5 text-[11px] text-white/30 leading-relaxed pl-4 border-l border-white/[0.06]">
+                    {agent.last_report_summary || 'Run completed.'}
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         )}
-      </AnimatePresence>
+      </div>
 
-      {/* Agent Cards */}
-      {agents.length > 0 ? (
-        <div className="space-y-3">
-          {agents.map((agent, i) => (
-            <AgentCard
-              key={agent.id}
-              agent={agent}
-              delay={i * 0.05}
-              onPause={() => handlePause(agent.id)}
-              onResume={() => handleResume(agent.id)}
-              onDelete={() => handleDelete(agent.id)}
-              onRunNow={() => handleRunNow(agent.id)}
-              onViewHistory={() => onViewHistory?.(agent.id)}
-            />
-          ))}
+      {/* Skip confirmations row */}
+      <div className="mx-4 mb-3 bg-[#0d0d0d] border border-white/[0.05] rounded-xl px-3.5 py-2.5 flex items-center justify-between">
+        <div>
+          <p className="text-[11px] font-semibold text-white">Skip confirmations</p>
+          <p className="text-[10px] text-white/25">No approval before sending or posting</p>
+        </div>
+        <Toggle checked={agent.skip_confirmations} onChange={onToggleConf} />
+      </div>
+    </motion.div>
+  );
+}
+
+// ── Main Component ─────────────────────────────────────────────────────────────
+
+export interface AgentsPanelProps {
+  className?: string;
+  onSendMessage?: (msg: string) => void;
+}
+
+export function AgentsPanel({ className, onSendMessage }: AgentsPanelProps) {
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editAgent, setEditAgent] = useState<Agent | null>(null);
+  const [templateInit, setTemplateInit] = useState<Partial<Agent> | null>(null);
+  const [tableError, setTableError] = useState(false);
+
+  const fetchAgents = async () => {
+    try {
+      const res = await fetch('/api/arcus/agents');
+      const data = await res.json();
+      if (data.error?.includes('not set up')) { setTableError(true); return; }
+      setAgents(data.agents || []);
+    } catch { /* ignore */ } finally { setLoading(false); }
+  };
+
+  useEffect(() => { fetchAgents(); }, []);
+
+  const saveTimezone = async (tz: string) => {
+    if (!tz) return;
+    try { await fetch('/api/arcus/agents/timezone', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ timezone: tz }) }); } catch { /* silent */ }
+  };
+
+  const handleCreate = async (data: Partial<Agent> & { _timezone?: string }) => {
+    const { _timezone, ...agentData } = data;
+    const res = await fetch('/api/arcus/agents', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: agentData.name, taskDescription: agentData.task_description, cronSchedule: agentData.cron_schedule, outputChannel: agentData.output_channel, slackChannel: agentData.slack_channel, skipConfirmations: agentData.skip_confirmations }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error);
+    if (_timezone) saveTimezone(_timezone);
+    toast.success(`"${agentData.name}" is now live`);
+    await fetchAgents();
+  };
+
+  const handleEdit = async (data: Partial<Agent> & { _timezone?: string }) => {
+    if (!editAgent) return;
+    const { _timezone, ...agentData } = data;
+    const res = await fetch('/api/arcus/agents', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: editAgent.id, ...agentData }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error);
+    if (_timezone) saveTimezone(_timezone);
+    toast.success('Schedule updated');
+    setEditAgent(null);
+    await fetchAgents();
+  };
+
+  const handleToggle = async (agent: Agent) => {
+    const newStatus = agent.status === 'paused' ? 'active' : 'paused';
+    await fetch('/api/arcus/agents', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: agent.id, status: newStatus }) });
+    setAgents(prev => prev.map(a => a.id === agent.id ? { ...a, status: newStatus } : a));
+  };
+
+  const handleToggleConf = async (agent: Agent) => {
+    const newVal = !agent.skip_confirmations;
+    await fetch('/api/arcus/agents', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: agent.id, skip_confirmations: newVal }) });
+    setAgents(prev => prev.map(a => a.id === agent.id ? { ...a, skip_confirmations: newVal } : a));
+  };
+
+  const handleDelete = async (agent: Agent) => {
+    if (!confirm(`Delete "${agent.name}"?`)) return;
+    await fetch(`/api/arcus/agents?id=${agent.id}`, { method: 'DELETE' });
+    setAgents(prev => prev.filter(a => a.id !== agent.id));
+    toast.success('Schedule deleted');
+  };
+
+  return (
+    <div className={cn('w-full max-w-2xl mx-auto py-6 px-1', className)}>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-[22px] font-bold text-white tracking-tight">
+            <span className="text-red-400">Scheduled</span>
+          </h2>
+          <p className="text-[12px] text-white/30 mt-0.5">Agents working for you around the clock</p>
+        </div>
+        <button onClick={() => setCreateOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-xl font-bold text-[12px] hover:bg-white/90 active:scale-95 transition-all">
+          <Plus className="w-3.5 h-3.5" />
+          New schedule
+        </button>
+      </div>
+
+      {tableError && (
+        <div className="mb-4 p-3 bg-yellow-500/5 border border-yellow-500/20 rounded-xl flex items-start gap-2">
+          <AlertCircle className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
+          <p className="text-[11px] text-white/40">Run the SQL migration in Supabase to enable agents. See <code className="text-white/60">arcus_agents</code> table setup.</p>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="flex items-center justify-center py-24">
+          <Loader2 className="w-6 h-6 text-white/20 animate-spin" />
+        </div>
+      ) : agents.length === 0 ? (
+        <div>
+          <div className="text-center py-8 mb-6">
+            <div className="w-14 h-14 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center mx-auto mb-3">
+              <Bot className="w-7 h-7 text-white/20" />
+            </div>
+            <h3 className="text-[14px] font-semibold text-white/50 mb-1">No agents yet</h3>
+            <p className="text-[12px] text-white/25 max-w-xs mx-auto">Activate a template or create your own schedule.</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {TEMPLATES.map((t, i) => (
+              <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
+                className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 flex flex-col hover:border-white/12 transition-all">
+                <div className="flex items-center gap-2 mb-2">
+                  <Clock className="w-3.5 h-3.5 text-white/30 flex-shrink-0" />
+                  <p className="text-[12px] font-bold text-white leading-tight">{t.name}</p>
+                </div>
+                <p className="text-[11px] text-white/35 leading-relaxed flex-1 mb-3">{t.description}</p>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-white/20 font-mono">{cronToLabel(t.cron_schedule)}</span>
+                  <button onClick={() => setTemplateInit(t)} className="px-3 py-1 rounded-lg bg-white text-black text-[10px] font-bold hover:bg-white/90 active:scale-95 transition-all">Activate</button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </div>
       ) : (
-        /* Empty State with Templates */
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-        >
-          {/* Empty State Message */}
-          <div className="text-center py-12 mb-8">
-            <div className="w-16 h-16 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center mx-auto mb-4">
-              <Bot className="w-8 h-8 text-white/20" />
-            </div>
-            <h3 className="text-[16px] font-medium text-white/60 mb-2">No agents yet</h3>
-            <p className="text-[13px] text-white/30 max-w-sm mx-auto">
-              Create agents that run automatically — triage your inbox, draft replies, and send follow-ups while you sleep.
-            </p>
-          </div>
-        </motion.div>
+        <div className="space-y-3">
+          <AnimatePresence mode="popLayout">
+            {agents.map(agent => (
+              <AgentCard key={agent.id} agent={agent}
+                onToggle={() => handleToggle(agent)}
+                onEdit={() => setEditAgent(agent)}
+                onDelete={() => handleDelete(agent)}
+                onToggleConf={() => handleToggleConf(agent)}
+              />
+            ))}
+          </AnimatePresence>
+        </div>
       )}
+
+      <AnimatePresence>
+        {(createOpen || templateInit) && (
+          <CreateModal key="create" onClose={() => { setCreateOpen(false); setTemplateInit(null); }} onSave={handleCreate}
+            initial={templateInit ? { name: templateInit.name, task_description: templateInit.task_description, cron_schedule: templateInit.cron_schedule, output_channel: templateInit.output_channel } : undefined} />
+        )}
+        {editAgent && (
+          <CreateModal key="edit" onClose={() => setEditAgent(null)} onSave={handleEdit} initial={editAgent} />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

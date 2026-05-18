@@ -3745,58 +3745,8 @@ export default function ChatInterface({
                             emailStats={emailStats}
                             meetings={meetings}
                             actionItems={actionItems}
-                            agents={scheduledAgents}
                             activeTab={dashboardTab}
                             onTabChange={setDashboardTab}
-                            onCreateAgent={async (desc, sched) => {
-                              // AgentsPanel now handles API persistence directly,
-                              // this is a fallback if AgentsPanel's internal API call fails
-                              try {
-                                const res = await fetch('/api/agent-talk/agents', {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ name: 'New Agent', description: desc, schedule: sched, agent_type: 'custom' })
-                                });
-                                if (res.ok) {
-                                  // Refresh agents list from server
-                                  const dashRes = await fetch('/api/agent-talk/dashboard');
-                                  if (dashRes.ok) {
-                                    const dashData = await dashRes.json();
-                                    setScheduledAgents(dashData.agents || []);
-                                  }
-                                }
-                              } catch (e) {
-                                console.error('Fallback agent create failed:', e);
-                              }
-                            }}
-                            onPauseAgent={async (id) => {
-                              setScheduledAgents(prev => prev.map(a => a.id === id ? { ...a, status: 'paused' } : a));
-                              toast.success('Agent paused');
-                              await fetch('/api/agent-talk/agents', {
-                                method: 'PATCH',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ id, is_active: false })
-                              });
-                            }}
-                            onResumeAgent={async (id) => {
-                              setScheduledAgents(prev => prev.map(a => a.id === id ? { ...a, status: 'active' } : a));
-                              toast.success('Agent resumed');
-                              await fetch('/api/agent-talk/agents', {
-                                method: 'PATCH',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ id, is_active: true })
-                              });
-                            }}
-                            onDeleteAgent={async (id) => {
-                              setScheduledAgents(prev => prev.filter(a => a.id !== id));
-                              toast.success('Agent deleted');
-                              await fetch(`/api/agent-talk/agents?id=${id}`, { method: 'DELETE' });
-                            }}
-                            onRunNow={(id) => {
-                              // AgentsPanel now triggers the prompt via onSendMessage internally
-                              // Just update the status here for visual feedback
-                              setScheduledAgents(prev => prev.map(a => a.id === id ? { ...a, status: 'running' } : a));
-                            }}
                           >
                             {/* Prompt box passed as children */}
                             <PromptInputBox

@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MorningBriefing } from './MorningBriefing';
-import { AgentsPanel, type ScheduledAgent } from './AgentsPanel';
+import { AgentsPanel } from './AgentsPanel';
 
 // ============================================================================
 // TYPES
@@ -58,14 +58,6 @@ interface ArcusDashboardProps {
     type: 'reply' | 'review' | 'approve' | 'follow-up';
     snippet: string;
   }>;
-
-  // Agents
-  agents?: ScheduledAgent[];
-  onCreateAgent?: (description: string, schedule: string) => void;
-  onPauseAgent?: (id: string) => void;
-  onResumeAgent?: (id: string) => void;
-  onDeleteAgent?: (id: string) => void;
-  onRunNow?: (id: string) => void;
 
   // State
   isLoading?: boolean;
@@ -148,12 +140,6 @@ export function ArcusDashboard({
   emailStats,
   meetings,
   actionItems,
-  agents,
-  onCreateAgent,
-  onPauseAgent,
-  onResumeAgent,
-  onDeleteAgent,
-  onRunNow,
   isLoading = false,
   activeTab: activeTabProp,
   onTabChange: onTabChangeProp,
@@ -261,12 +247,6 @@ export function ArcusDashboard({
             className="w-full max-w-3xl mx-auto"
           >
             <AgentsPanel
-              agents={agents}
-              onCreateAgent={onCreateAgent}
-              onPauseAgent={onPauseAgent}
-              onResumeAgent={onResumeAgent}
-              onDeleteAgent={onDeleteAgent}
-              onRunNow={onRunNow}
               onSendMessage={onSendMessage}
             />
           </motion.div>
