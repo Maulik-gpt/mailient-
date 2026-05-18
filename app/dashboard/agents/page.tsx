@@ -211,13 +211,47 @@ const TEMPLATES = [
   },
 ];
 
-const SCHEDULE_PRESETS = [
-  { label: 'Every morning', value: '0 7 * * *' },
-  { label: 'Every hour', value: '0 */1 * * *' },
-  { label: 'Every weekday', value: '0 9 * * 1-5' },
-  { label: 'Every Sunday eve', value: '0 18 * * 0' },
-  { label: 'Custom', value: 'custom' },
+const SCHEDULE_PATTERNS = [
+  { label: 'Every day', key: 'daily', needsTime: true, needsDay: false },
+  { label: 'Every hour', key: 'hourly', needsTime: false, needsDay: false },
+  { label: 'Every weekday', key: 'weekday', needsTime: true, needsDay: false },
+  { label: 'Every week', key: 'weekly', needsTime: true, needsDay: true },
+  { label: 'Custom cron', key: 'custom', needsTime: false, needsDay: false },
 ];
+
+const WEEK_DAYS = [
+  { label: 'Sunday', value: '0' },
+  { label: 'Monday', value: '1' },
+  { label: 'Tuesday', value: '2' },
+  { label: 'Wednesday', value: '3' },
+  { label: 'Thursday', value: '4' },
+  { label: 'Friday', value: '5' },
+  { label: 'Saturday', value: '6' },
+];
+
+function buildCron(patternKey: string, time: string, weekday: string): string {
+  const [h, m] = time.split(':').map(s => parseInt(s, 10));
+  const hh = isNaN(h) ? 7 : h;
+  const mm = isNaN(m) ? 0 : m;
+  switch (patternKey) {
+    case 'daily':   return `${mm} ${hh} * * *`;
+    case 'hourly':  return `0 */1 * * *`;
+    case 'weekday': return `${mm} ${hh} * * 1-5`;
+    case 'weekly':  return `${mm} ${hh} * * ${weekday}`;
+    default:        return '';
+  }
+}
+
+function parseCronToSchedule(cron: string): { key: string; time: string; weekday: string } {
+  if (!cron || cron === '0 */1 * * *') return { key: 'hourly', time: '07:00', weekday: '0' };
+  const parts = cron.split(' ');
+  if (parts.length !== 5) return { key: 'custom', time: '07:00', weekday: '0' };
+  const [mm, hh, , , dow] = parts;
+  const time = `${String(parseInt(hh) || 0).padStart(2, '0')}:${String(parseInt(mm) || 0).padStart(2, '0')}`;
+  if (dow === '1-5') return { key: 'weekday', time, weekday: '1' };
+  if (dow !== '*' && !dow.includes('/')) return { key: 'weekly', time, weekday: dow };
+  return { key: 'daily', time, weekday: '0' };
+}
 
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December'];
