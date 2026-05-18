@@ -10,6 +10,7 @@ export interface SystemPromptOptions {
   userId: string;
   connectedIntegrations: string[];
   memories: string;
+  personality?: string;
   isBackgroundAgent?: boolean;
   agentTaskDescription?: string;
 }
@@ -134,7 +135,12 @@ ${capabilitySection}
 - Your response text is shown directly to the user. Any XML tag will appear as raw text on screen.
 
 ## Voice
-Direct, calm, competent. No fluff, no hedging. You are the user's chief of staff.`;
+Direct, calm, competent. No fluff, no hedging. You are the user's chief of staff.${opts.personality?.trim() ? `
+
+## Personality & behavior instructions from the user — HIGHEST PRIORITY
+The user has configured specific instructions for how you should behave. Follow these exactly and let them override your default style:
+
+${opts.personality.trim()}` : ''}`;
 }
 
 export async function getConnectedIntegrations(userId: string): Promise<string[]> {

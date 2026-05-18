@@ -109,14 +109,15 @@ export async function POST(request: NextRequest) {
   }
 
   // Build context (run in parallel for speed)
-  const [connectedIntegrations, memories] = await Promise.all([
+  const [connectedIntegrations, memories, personalityData] = await Promise.all([
     getConnectedIntegrations(userId),
     searchMemories(userId, message, 5),
+    fetchPersonality(userId),
   ]);
 
   const systemPrompt = isPlanMode
     ? buildPlanSystemPrompt(userName, connectedIntegrations)
-    : buildSystemPrompt({ userName, userId, connectedIntegrations, memories });
+    : buildSystemPrompt({ userName, userId, connectedIntegrations, memories, personality: personalityData });
 
   // Sanitize history (last 20 turns)
   const sanitizedHistory = history
@@ -155,5 +156,22 @@ async function saveMemoryAsync(userId: string, userMessage: string, _conversatio
     await saveConversationTurn(userId, userMessage, '');
   } catch {
     // Silent
+  }
+}
+
+/** Fetch user's Arcus personality setting from user_profiles.preferences */
+async function fetchPersonality(userId: string): Promise<string> {
+  try {
+    const { getSupabaseAdmin } = await import('../../../../lib/supabase.js');
+    const supabase = getSupabaseAdmin();
+    const { data } = await supabase
+      .from('user_profiles')
+      .select('preferences')
+      .ilike('user_id', userId)
+      .maybeSingle();
+    const prefs = (data?.preferences as Record<string, unknown>) || {};
+    return (prefs.arcus_personality as string) || '';
+  } catch {
+    return '';
   }
 }
