@@ -1998,7 +1998,12 @@ export default function ChatInterface({
 
             case 'task_progress': {
               const completed = typeof data.completedCount === 'number' ? data.completedCount : 0;
-              if (currentTaskList) currentTaskList = { ...currentTaskList, completedCount: completed };
+              if (currentTaskList) {
+                currentTaskList = {
+                  tasks: currentTaskList.tasks,
+                  completedCount: completed
+                };
+              }
               setMessages(msgs => msgs.map(m => {
                 if (m.id !== assistantMsgId || m.type !== 'agent') return m;
                 const existing = (m as AgentMessage).meta?.taskList;
