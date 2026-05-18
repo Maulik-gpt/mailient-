@@ -267,19 +267,25 @@ function NewScheduleModal({
   onSave: (data: Partial<Agent>) => Promise<void>;
   initial?: Partial<Agent>;
 }) {
+  const parsed = initial?.cron_schedule ? parseCronToSchedule(initial.cron_schedule) : { key: 'daily', time: '07:00', weekday: '0' };
+
   const [name, setName] = useState(initial?.name || '');
   const [task, setTask] = useState(initial?.task_description || '');
-  const [preset, setPreset] = useState(initial?.cron_schedule || '0 7 * * *');
-  const [customCron, setCustomCron] = useState('');
+  const [patternKey, setPatternKey] = useState(parsed.key);
+  const [scheduleTime, setScheduleTime] = useState(parsed.time);
+  const [scheduleWeekday, setScheduleWeekday] = useState(parsed.weekday);
+  const [customCron, setCustomCron] = useState(patternKey === 'custom' ? (initial?.cron_schedule || '') : '');
   const [channel, setChannel] = useState<'gmail' | 'slack' | 'both'>(initial?.output_channel || 'gmail');
   const [slackCh, setSlackCh] = useState(initial?.slack_channel || '');
   const [skipConf, setSkipConf] = useState(initial?.skip_confirmations ?? false);
   const [saving, setSaving] = useState(false);
 
-  const cron = preset === 'custom' ? customCron : preset;
+  const activePat = SCHEDULE_PATTERNS.find(p => p.key === patternKey) || SCHEDULE_PATTERNS[0];
+  const cron = patternKey === 'custom' ? customCron : buildCron(patternKey, scheduleTime, scheduleWeekday);
 
   const handleSave = async () => {
     if (!task.trim()) { toast.error('Describe what you want Arcus to do.'); return; }
+    if (patternKey === 'custom' && !customCron.trim()) { toast.error('Enter a cron expression.'); return; }
     setSaving(true);
     try {
       const agentName = name.trim() || task.trim().slice(0, 40).replace(/\.$/, '') + (task.trim().length > 40 ? '…' : '');
@@ -324,7 +330,7 @@ function NewScheduleModal({
         </div>
 
         <div className="px-7 py-6 space-y-5">
-          {/* Task description — the main field */}
+          {/* Task description */}
           <textarea
             value={task}
             onChange={e => setTask(e.target.value)}
@@ -344,17 +350,19 @@ function NewScheduleModal({
             />
           </div>
 
-          {/* Schedule presets */}
+          {/* Schedule */}
           <div>
             <label className="block text-[11px] font-bold uppercase tracking-widest text-white/30 mb-3">Schedule</label>
-            <div className="flex flex-wrap gap-2">
-              {SCHEDULE_PRESETS.map(p => (
+
+            {/* Pattern pills */}
+            <div className="flex flex-wrap gap-2 mb-4">
+              {SCHEDULE_PATTERNS.map(p => (
                 <button
-                  key={p.value}
-                  onClick={() => setPreset(p.value)}
+                  key={p.key}
+                  onClick={() => setPatternKey(p.key)}
                   className={cn(
                     'px-3.5 py-1.5 rounded-full text-[12px] font-medium transition-all border',
-                    preset === p.value
+                    patternKey === p.key
                       ? 'bg-white text-black border-white'
                       : 'bg-white/5 border-white/10 text-white/50 hover:border-white/20 hover:text-white/70',
                   )}
@@ -363,13 +371,58 @@ function NewScheduleModal({
                 </button>
               ))}
             </div>
-            {preset === 'custom' && (
-              <input
-                value={customCron}
-                onChange={e => setCustomCron(e.target.value)}
-                placeholder="cron expression e.g. 0 9 * * 1-5"
-                className="mt-3 w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white font-mono text-[12px] placeholder:text-white/20 focus:outline-none focus:border-white/25 transition-colors"
-              />
+
+            {/* Time picker — shown for day/weekday/weekly */}
+            {activePat.needsTime && (
+              <div className="flex gap-3">
+                {activePat.needsDay && (
+                  <div className="flex-1">
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-white/25 mb-1.5">Day</label>
+                    <select
+                      value={scheduleWeekday}
+                      onChange={e => setScheduleWeekday(e.target.value)}
+                      className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl px-3 py-2.5 text-white text-[13px] focus:outline-none focus:border-white/25 transition-colors appearance-none"
+                    >
+                      {WEEK_DAYS.map(d => (
+                        <option key={d.value} value={d.value}>{d.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                <div className={activePat.needsDay ? 'flex-1' : 'w-full'}>
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-white/25 mb-1.5">Time (your local time)</label>
+                  <input
+                    type="time"
+                    value={scheduleTime}
+                    onChange={e => setScheduleTime(e.target.value)}
+                    className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl px-3 py-2.5 text-white text-[13px] focus:outline-none focus:border-white/25 transition-colors"
+                    style={{ colorScheme: 'dark' }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Custom cron input */}
+            {patternKey === 'custom' && (
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-white/25 mb-1.5">Cron expression (UTC)</label>
+                <input
+                  value={customCron}
+                  onChange={e => setCustomCron(e.target.value)}
+                  placeholder="e.g. 0 9 * * 1-5"
+                  className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl px-4 py-2.5 text-white font-mono text-[12px] placeholder:text-white/20 focus:outline-none focus:border-white/25 transition-colors"
+                />
+              </div>
+            )}
+
+            {/* Live preview */}
+            {cron && patternKey !== 'custom' && (
+              <p className="mt-2.5 text-[11px] text-white/25 font-mono">
+                Runs: <span className="text-white/50">{cronToLabel(cron)}</span>
+                {activePat.needsTime && (
+                  <span className="text-white/25"> · your local time · cron: {cron}</span>
+                )}
+              </p>
             )}
           </div>
 
@@ -382,7 +435,7 @@ function NewScheduleModal({
                   key={ch}
                   onClick={() => setChannel(ch)}
                   className={cn(
-                    'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-medium border transition-all capitalize',
+                    'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-medium border transition-all',
                     channel === ch
                       ? 'bg-white/10 border-white/30 text-white'
                       : 'bg-white/[0.03] border-white/8 text-white/40 hover:border-white/15 hover:text-white/70',

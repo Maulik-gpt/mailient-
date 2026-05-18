@@ -49,10 +49,29 @@ export async function GET(request: NextRequest) {
   const results: string[] = [];
   let ran = 0;
 
+  // Fetch timezones for all unique users in one batch
+  const uniqueUsers = [...new Set(agents.map((a: any) => a.user_id))];
+  const tzMap: Record<string, string> = {};
+  await Promise.all(
+    uniqueUsers.map(async (uid: string) => {
+      try {
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('preferences')
+          .ilike('user_id', uid)
+          .maybeSingle();
+        const prefs = (profile?.preferences as Record<string, unknown>) || {};
+        tzMap[uid] = (prefs.timezone as string) || 'UTC';
+      } catch {
+        tzMap[uid] = 'UTC';
+      }
+    }),
+  );
+
   for (const agent of agents) {
     try {
-      // Check if agent should run now based on its cron schedule
-      const shouldRun = shouldAgentRunNow(agent.cron_schedule, agent.last_run_at);
+      const userTz = tzMap[agent.user_id] || 'UTC';
+      const shouldRun = shouldAgentRunNow(agent.cron_schedule, agent.last_run_at, userTz);
       if (!shouldRun) continue;
 
       ran++;
@@ -97,49 +116,79 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * Determine if an agent should run now based on its cron schedule.
- * Matches the current UTC hour/minute against the cron expression.
- * Runs if: the cron matches this hour AND the agent hasn't already run in this window.
+ * Determine if an agent should run now, comparing the cron schedule against
+ * the user's local time (derived from their saved timezone preference).
  */
-function shouldAgentRunNow(cronSchedule: string, lastRunAt: string | null): boolean {
+function shouldAgentRunNow(cronSchedule: string, lastRunAt: string | null, timezone: string): boolean {
   const now = new Date();
-  const parts = cronSchedule.trim().split(/\s+/);
-  if (parts.length !== 5) return false;
-  const [minPart, hourPart, , , dowPart] = parts;
 
-  const nowMin = now.getUTCMinutes();
-  const nowHour = now.getUTCHours();
-  const nowDow = now.getUTCDay(); // 0=Sun
+  // Convert current UTC time to the user's local time
+  const localStr = now.toLocaleString('en-US', {
+    timeZone: timezone,
+    hour: 'numeric', minute: 'numeric', weekday: 'short',
+    hour12: false,
+  });
 
-  // Check hour
-  if (!matchCronField(hourPart, nowHour, 0, 23)) return false;
+  // Parse local hour, minute, day-of-week from the formatted string
+  // Format: "Mon, 07:35" or "07:35" depending on locale
+  let localHour = 0;
+  let localMin = 0;
+  let localDow = now.getDay(); // fallback to UTC day
 
-  // Check minute — cron runs in a 60-min window per hour, so match loosely:
-  // if the minute field is a specific value, we're within ±30 min of target
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      hour: 'numeric',
+      minute: 'numeric',
+      weekday: 'short',
+      hour12: false,
+    }).formatToParts(now);
+
+    for (const part of parts) {
+      if (part.type === 'hour') localHour = parseInt(part.value) % 24;
+      if (part.type === 'minute') localMin = parseInt(part.value);
+      if (part.type === 'weekday') {
+        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        localDow = days.indexOf(part.value);
+        if (localDow === -1) localDow = now.getDay();
+      }
+    }
+  } catch {
+    localHour = now.getUTCHours();
+    localMin = now.getUTCMinutes();
+    localDow = now.getUTCDay();
+  }
+
+  const cronParts = cronSchedule.trim().split(/\s+/);
+  if (cronParts.length !== 5) return false;
+  const [minPart, hourPart, , , dowPart] = cronParts;
+
+  // Check hour matches
+  if (!matchCronField(hourPart, localHour, 0, 23)) return false;
+
+  // Check day of week
+  if (!matchCronField(dowPart, localDow, 0, 6)) return false;
+
+  // For specific minute targets: ensure we're within ±30 min of target
+  // (since cron fires hourly, we fire anytime in that hour window)
   if (minPart !== '*' && !minPart.startsWith('*/')) {
     const targetMin = parseInt(minPart);
     if (!isNaN(targetMin)) {
-      const targetMs = new Date(
-        Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), nowHour, targetMin),
-      ).getTime();
-      if (Math.abs(now.getTime() - targetMs) > 35 * 60 * 1000) return false;
+      const diff = Math.abs(localMin - targetMin);
+      if (diff > 35) return false;
     }
   }
 
-  // Check day of week
-  if (!matchCronField(dowPart, nowDow, 0, 6)) return false;
-
-  // Prevent double-firing: if already ran in the last 55 minutes, skip
+  // Prevent double-firing: skip if already ran in the last 55 minutes
   if (lastRunAt) {
-    const last = new Date(lastRunAt);
-    const diffMin = (now.getTime() - last.getTime()) / 60000;
+    const diffMin = (now.getTime() - new Date(lastRunAt).getTime()) / 60000;
     if (diffMin < 55) return false;
   }
 
   return true;
 }
 
-function matchCronField(field: string, value: number, min: number, max: number): boolean {
+function matchCronField(field: string, value: number, _min: number, _max: number): boolean {
   if (field === '*') return true;
 
   // Step: */N
