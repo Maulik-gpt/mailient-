@@ -268,6 +268,7 @@ function NewScheduleModal({
   initial?: Partial<Agent>;
 }) {
   const parsed = initial?.cron_schedule ? parseCronToSchedule(initial.cron_schedule) : { key: 'daily', time: '07:00', weekday: '0' };
+  const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   const [name, setName] = useState(initial?.name || '');
   const [task, setTask] = useState(initial?.task_description || '');
@@ -296,6 +297,8 @@ function NewScheduleModal({
         output_channel: channel,
         slack_channel: channel !== 'gmail' ? slackCh || null : null,
         skip_confirmations: skipConf,
+        // @ts-ignore — extra field used by handleCreate to save timezone
+        _timezone: browserTz,
       });
       onClose();
     } catch (err: any) {
@@ -415,14 +418,16 @@ function NewScheduleModal({
               </div>
             )}
 
-            {/* Live preview */}
+            {/* Live preview + timezone */}
             {cron && patternKey !== 'custom' && (
-              <p className="mt-2.5 text-[11px] text-white/25 font-mono">
-                Runs: <span className="text-white/50">{cronToLabel(cron)}</span>
+              <div className="mt-2.5 flex items-center justify-between">
+                <p className="text-[11px] text-white/25 font-mono">
+                  Runs: <span className="text-white/50">{cronToLabel(cron)}</span>
+                </p>
                 {activePat.needsTime && (
-                  <span className="text-white/25"> · your local time · cron: {cron}</span>
+                  <p className="text-[11px] text-white/30 font-mono">{browserTz}</p>
                 )}
-              </p>
+              </div>
             )}
           </div>
 
@@ -848,34 +853,49 @@ export default function ScheduledPage() {
 
   useEffect(() => { fetchAgents(); }, []);
 
-  const handleCreate = async (data: Partial<Agent>) => {
+  const saveTimezone = async (tz: string) => {
+    if (!tz) return;
+    try {
+      await fetch('/api/arcus/agents/timezone', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ timezone: tz }),
+      });
+    } catch { /* silent — non-critical */ }
+  };
+
+  const handleCreate = async (data: Partial<Agent> & { _timezone?: string }) => {
+    const { _timezone, ...agentData } = data;
     const res = await fetch('/api/arcus/agents', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        name: data.name,
-        taskDescription: data.task_description,
-        cronSchedule: data.cron_schedule,
-        outputChannel: data.output_channel,
-        slackChannel: data.slack_channel,
-        skipConfirmations: data.skip_confirmations,
+        name: agentData.name,
+        taskDescription: agentData.task_description,
+        cronSchedule: agentData.cron_schedule,
+        outputChannel: agentData.output_channel,
+        slackChannel: agentData.slack_channel,
+        skipConfirmations: agentData.skip_confirmations,
       }),
     });
     const json = await res.json();
     if (!res.ok) throw new Error(json.error);
-    toast.success(`"${data.name}" is now live`);
+    if (_timezone) saveTimezone(_timezone);
+    toast.success(`"${agentData.name}" is now live`);
     await fetchAgents();
   };
 
-  const handleEdit = async (data: Partial<Agent>) => {
+  const handleEdit = async (data: Partial<Agent> & { _timezone?: string }) => {
     if (!editAgent) return;
+    const { _timezone, ...agentData } = data;
     const res = await fetch('/api/arcus/agents', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: editAgent.id, ...data }),
+      body: JSON.stringify({ id: editAgent.id, ...agentData }),
     });
     const json = await res.json();
     if (!res.ok) throw new Error(json.error);
+    if (_timezone) saveTimezone(_timezone);
     toast.success('Schedule updated');
     setEditAgent(null);
     await fetchAgents();
