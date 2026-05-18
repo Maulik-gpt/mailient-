@@ -1,6 +1,6 @@
 "use client";
 
-import { Send, Mail, Upload, User, User2, MessageCircle, DoorOpen, Bell, Mail as EmailIcon, MoreHorizontal, LogOut, Settings, ChevronRight, ChevronDown, CheckCircle2, Circle, Edit, History, LayoutGrid, Zap, Volume2, Sparkles, FileText, Calendar, BarChart3, PenTool, BrainCircuit, Search, Check, X, PanelLeft, Menu, Compass, Terminal, Share2, Bot } from 'lucide-react';
+import { Send, Mail, Upload, User, User2, MessageCircle, DoorOpen, Bell, Mail as EmailIcon, MoreHorizontal, LogOut, Settings, ChevronRight, ChevronDown, CheckCircle2, Circle, Edit, History, LayoutGrid, Zap, Volume2, Sparkles, FileText, Calendar, BarChart3, PenTool, BrainCircuit, Search, Check, X, PanelLeft, Menu, Compass, Terminal, Share2, Bot, Globe, MessageSquare } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
@@ -9,6 +9,9 @@ import { AddSquareIcon, Cancel01Icon, WorkHistoryIcon } from '@hugeicons/core-fr
 import { ChatHistoryModal } from './components/ChatHistoryModal';
 import { ThinkingLayer, ResultCard, type ThinkingStep, type ThinkingBlock, type SearchSession } from './components/ThinkingLayer';
 import { AgentExecutionTimeline, type AgentStep } from './components/AgentExecutionTimeline';
+import { LiveTaskWidget } from './components/LiveTaskWidget';
+import { DraftReplyBox } from './components/DraftReplyBox';
+import { ChatPlanCard, type PlanCardData } from './components/ChatPlanCard';
 import { CanvasPanel, type CanvasData } from './components/CanvasPanel';
 import { ArtifactsGalleryPanel } from './components/ArtifactsGalleryPanel';
 import PlanArtifactCard from './components/PlanArtifactCard';
@@ -478,7 +481,6 @@ interface AgentMessage {
     notesResult?: any;
     emailResult?: any;
     mission?: any;
-    planCard?: any;
     agentProcess?: any;
     completedSteps?: string[];
     thinkingBlocks?: ThinkingBlock[];
@@ -509,8 +511,19 @@ interface AgentMessage {
     recoveryHint?: any; // Phase 1: Error recovery guidance
     externalRefs?: any; // Phase 1: External references from execution
     requiresRetry?: boolean; // Phase 1: Whether retry is required
-    liveThinking?: string; // Real-time thoughts extracted from <thinking> tags
-    thinkingComplete?: boolean; // Whether the current thinking step is finished
+    liveThinking?: string;
+    thinkingComplete?: boolean;
+    draftReply?: {
+      content: string;
+      recipientEmail: string;
+      recipientName: string;
+      senderName: string;
+      subject: string;
+      threadId?: string;
+    };
+    planCard?: PlanCardData;
+    hasError?: boolean;
+    errorMessage?: string;
     searchExecution?: {
       mainQuery: string;
       subQueries: Array<{
@@ -737,26 +750,40 @@ function AgentThinkingSection({ content, isComplete }: { content: string, isComp
 function AgentTaskPill({ step }: { step: AgentStep }) {
   const getIcon = () => {
     switch (step.tool) {
+      case 'search_gmail':
       case 'search_inbox':
-      case 'search_web':
-      case 'search_notes':
         return <Search className="w-3.5 h-3.5" />;
       case 'read_email':
       case 'read_browser_page':
         return <Compass className="w-3.5 h-3.5" />;
+      case 'get_sent_emails':
       case 'save_draft':
-      case 'send_email':
+      case 'draft_reply':
         return <Mail className="w-3.5 h-3.5" />;
+      case 'send_email':
+        return <Send className="w-3.5 h-3.5" />;
       case 'schedule_meeting':
+      case 'get_calendar_events':
         return <Calendar className="w-3.5 h-3.5" />;
+      case 'web_search':
+      case 'search_web':
+        return <Globe className="w-3.5 h-3.5" />;
+      case 'search_notion':
+        return <FileText className="w-3.5 h-3.5" />;
+      case 'open_canvas':
+        return <Zap className="w-3.5 h-3.5" />;
+      case 'send_slack_message':
+        return <MessageSquare className="w-3.5 h-3.5" />;
       default:
         return <Terminal className="w-3.5 h-3.5" />;
     }
   };
 
+  const contextLine = step.context || step.params?.query || step.params?.subject || step.params?.title || '';
+
   return (
     <div className={cn(
-      "flex items-center gap-2.5 px-3 py-1.5 rounded-full w-fit mt-3 group/pill transition-all border",
+      "flex flex-col gap-0.5 px-3 py-1.5 rounded-2xl w-fit mt-2 group/pill transition-all border",
       step.status === 'active'
         ? "bg-white/[0.06] border-white/20 shadow-[0_0_10px_rgba(255,255,255,0.05)] overflow-hidden relative"
         : "bg-white/[0.03] border-white/[0.08] hover:bg-white/[0.05] hover:border-white/12"
@@ -768,55 +795,117 @@ function AgentTaskPill({ step }: { step: AgentStep }) {
           transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
         />
       )}
-      <div className={cn(
-        "flex items-center justify-center w-5 h-5 rounded-full border transition-all z-10 relative overflow-hidden",
-        step.status === 'active'
-          ? "bg-white/20 border-white/30 text-white shadow-[0_0_12px_rgba(255,255,255,0.4)]"
-          : "bg-white/5 border-white/10 text-white/40 group-hover/pill:text-white group-hover/pill:border-white/20"
-      )}>
-        {step.status === 'active' && (
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent w-[200%]"
-            animate={{ x: ['-100%', '100%'] }}
-            transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-          />
-        )}
-        {getIcon()}
-      </div>
-      <div className="z-10">
-        {step.status === 'active' ? (
-          <TextShimmer className="text-[13px] text-white/80 tracking-tight font-medium" duration={2}>
-            {step.label}
-          </TextShimmer>
-        ) : (
-          <span className="text-[13px] text-white/50 group-hover/pill:text-white/80 transition-colors tracking-tight font-medium">
-            {step.label}
-          </span>
-        )}
-      </div>
-      {step.status === 'active' && (
-        <div className="flex items-center gap-1 ml-1 z-10">
-          <motion.div
-            className="w-1 h-1 rounded-full bg-white/40"
-            animate={{ opacity: [0.3, 1, 0.3] }}
-            transition={{ repeat: Infinity, duration: 1.5, times: [0, 0.5, 1] }}
-          />
-          <motion.div
-            className="w-1 h-1 rounded-full bg-white/40"
-            animate={{ opacity: [0.3, 1, 0.3] }}
-            transition={{ repeat: Infinity, duration: 1.5, delay: 0.3, times: [0, 0.5, 1] }}
-          />
-          <motion.div
-            className="w-1 h-1 rounded-full bg-white/40"
-            animate={{ opacity: [0.3, 1, 0.3] }}
-            transition={{ repeat: Infinity, duration: 1.5, delay: 0.6, times: [0, 0.5, 1] }}
-          />
+      <div className="flex items-center gap-2.5 z-10 relative">
+        <div className={cn(
+          "flex items-center justify-center w-5 h-5 rounded-full border transition-all relative overflow-hidden flex-shrink-0",
+          step.status === 'active'
+            ? "bg-white/20 border-white/30 text-white shadow-[0_0_12px_rgba(255,255,255,0.4)]"
+            : "bg-white/5 border-white/10 text-white/40 group-hover/pill:text-white group-hover/pill:border-white/20"
+        )}>
+          {step.status === 'active' && (
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent w-[200%]"
+              animate={{ x: ['-100%', '100%'] }}
+              transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+            />
+          )}
+          {getIcon()}
         </div>
+        <div>
+          {step.status === 'active' ? (
+            <TextShimmer className="text-[13px] text-white/80 tracking-tight font-medium" duration={2}>
+              {step.label}
+            </TextShimmer>
+          ) : (
+            <span className="text-[13px] text-white/50 group-hover/pill:text-white/80 transition-colors tracking-tight font-medium">
+              {step.label}
+            </span>
+          )}
+        </div>
+        {step.status === 'active' && (
+          <div className="flex items-center gap-1 ml-1">
+            <motion.div className="w-1 h-1 rounded-full bg-white/40" animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1.5, times: [0, 0.5, 1] }} />
+            <motion.div className="w-1 h-1 rounded-full bg-white/40" animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1.5, delay: 0.3, times: [0, 0.5, 1] }} />
+            <motion.div className="w-1 h-1 rounded-full bg-white/40" animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1.5, delay: 0.6, times: [0, 0.5, 1] }} />
+          </div>
+        )}
+        {step.status === 'completed' && (
+          <Check className="w-3 h-3 text-green-400/50 ml-1" />
+        )}
+      </div>
+      {/* Context line — query/subject being searched */}
+      {contextLine && (
+        <p className={cn(
+          "text-[11px] pl-7 leading-tight truncate max-w-[280px]",
+          step.status === 'active' ? "text-white/35 italic" : "text-white/20"
+        )}>
+          {contextLine}
+        </p>
       )}
-      {step.status === 'completed' && (
-        <Check className="w-3 h-3 text-green-400/50 ml-1 z-10" />
+      {/* Result snippet — shown when completed */}
+      {step.status === 'completed' && step.summary && (
+        <p className="text-[11px] pl-7 text-white/25 leading-tight line-clamp-2 max-w-[280px]">
+          {step.summary}
+        </p>
       )}
     </div>
+  );
+}
+
+// ─── Arcus Error Card ──────────────────────────────────────────────────────────
+function ArcusErrorCard({ errorMessage, onRetry }: { errorMessage?: string; onRetry: () => void }) {
+  const [retrying, setRetrying] = useState(false);
+
+  const handleRetry = () => {
+    setRetrying(true);
+    onRetry();
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ type: 'spring', damping: 24, stiffness: 280 }}
+      className="flex items-center justify-between gap-4 px-4 py-3.5 rounded-2xl bg-[#1a1a1a] border border-white/[0.08] w-full max-w-md mt-1"
+    >
+      <div className="flex items-start gap-3">
+        {/* Warning icon */}
+        <div className="flex-shrink-0 w-8 h-8 rounded-full border border-white/10 bg-white/[0.04] flex items-center justify-center mt-0.5">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/50">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+        </div>
+        <div>
+          <p className="text-[13px] font-semibold text-white/80 leading-tight">Arcus was unable to reply.</p>
+          <p className="text-[12px] text-white/35 mt-0.5 leading-snug">
+            {errorMessage && errorMessage.length < 120
+              ? errorMessage
+              : 'Something went wrong, please refresh to reconnect or try again.'}
+          </p>
+        </div>
+      </div>
+
+      {/* Retry button */}
+      <button
+        onClick={handleRetry}
+        disabled={retrying}
+        className="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white text-black text-[12px] font-semibold hover:bg-white/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+      >
+        {retrying ? (
+          <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d="M21 12a9 9 0 11-6.219-8.56" strokeLinecap="round" />
+          </svg>
+        ) : (
+          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8" />
+            <path d="M3 3v5h5" />
+          </svg>
+        )}
+        Retry
+      </button>
+    </motion.div>
   );
 }
 
@@ -1756,6 +1845,7 @@ export default function ChatInterface({
           message: messageText,
           conversationId: conversationIdToUse,
           history,
+          isPlanMode: options.isPlanMode || false,
         }),
         signal: abortControllerRef.current.signal
       });
@@ -1830,13 +1920,24 @@ export default function ChatInterface({
                 setCanvasData({ type: cv.type || 'notes', title: cv.title, content: canvasContent, raw: cv.markdown });
                 setIsCanvasOpen(true);
 
-                // Persist the canvas content as a result card on the active message meta object
+                // Persist the canvas content + draft reply data on the active message meta
                 setMessages(msgs => msgs.map(m => {
                   if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+                  const draftReply = cv.type === 'email_draft' && cv.draftMeta
+                    ? {
+                        content: cv.draftMeta.body || '',
+                        recipientEmail: cv.draftMeta.to || '',
+                        recipientName: cv.draftMeta.to?.split('@')[0] || '',
+                        senderName: userName,
+                        subject: cv.draftMeta.subject || cv.title || '',
+                        threadId: cv.draftMeta.threadId,
+                      }
+                    : undefined;
                   return {
                     ...m,
                     meta: {
                       ...(m.meta || {}),
+                      ...(draftReply ? { draftReply } : {}),
                       result: {
                         type: cv.type || 'notes',
                         title: cv.title || 'Action Results Summary',
@@ -1994,12 +2095,55 @@ export default function ChatInterface({
               break;
 
             case 'error':
-              finalContent += `\nSomething went wrong: ${data.message}`;
               setMessages(prev => prev.map(m => {
                 if (m.id !== assistantMsgId || m.type !== 'agent') return m;
-                return { ...m, content: { text: finalContent.trim(), list: [], footer: '' }, meta: { ...(m.meta || {}), isStreaming: false, agentSteps: currentAgentSteps } };
+                return {
+                  ...m,
+                  content: { text: '', list: [], footer: '' },
+                  meta: {
+                    ...(m.meta || {}),
+                    isStreaming: false,
+                    hasError: true,
+                    errorMessage: data.message || 'Something went wrong, please try again.',
+                    agentSteps: currentAgentSteps,
+                  },
+                };
               }));
               break;
+
+            case 'plan': {
+              // Plan mode — store the plan card on the message meta
+              const planCard: PlanCardData = {
+                title: data.title || 'Plan',
+                markdown: data.markdown || '',
+                status: 'proposed',
+                createdAt: new Date().toISOString(),
+              };
+              finalProcessedText = ''; // plan card replaces the text message
+              streamFinishedNormally = true;
+              setMessages(msgs => msgs.map(m => {
+                if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+                return {
+                  ...m,
+                  content: { text: '', list: [], footer: '' },
+                  meta: {
+                    ...(m.meta || {}),
+                    isStreaming: false,
+                    planCard,
+                    // Also store as planArtifact so ArtifactsGalleryPanel can pick it up
+                    planArtifact: {
+                      title: planCard.title,
+                      objective: '',
+                      markdown: planCard.markdown,
+                      status: 'proposed',
+                      createdAt: planCard.createdAt,
+                      steps: [],
+                    },
+                  },
+                };
+              }));
+              break;
+            }
 
             case 'done':
               streamFinishedNormally = true;
@@ -2132,23 +2276,18 @@ export default function ChatInterface({
 
       setMessages(prev => prev.map(m => {
         if (m.id !== assistantMsgId || m.role !== 'assistant') return m;
-
-        // Ensure we don't leave the user with a blank message
-        const currentText = (m.content as any).text || '';
-        const errorMessage = err.message || 'The connection was lost during processing.';
-        const finalText = currentText
-          ? `${currentText}\n\n---\n*The process was interrupted: ${errorMessage}*`
-          : `${errorMessage}. Please try again.`;
-
+        const errMsg = err.message || 'The connection was lost during processing.';
         return {
           ...m,
-          content: { text: finalText, list: [], footer: '' },
+          content: { text: '', list: [], footer: '' },
           meta: {
             ...(m.meta || {}),
             isStreaming: false,
             limitReached: isLimitError,
-            liveThinking: ''
-          }
+            hasError: !isLimitError,
+            errorMessage: errMsg,
+            liveThinking: '',
+          },
         };
       }));
 
@@ -3612,7 +3751,7 @@ export default function ChatInterface({
                                        />
                                      )}
 
-                                     {((msg as AgentMessage).meta?.isStreaming !== true || (typeof msg.content === 'string' ? msg.content : msg.content.text).length > 0 || isAgentLoopActive) && (
+                                     {!((msg as AgentMessage).meta?.hasError) && ((msg as AgentMessage).meta?.isStreaming !== true || (typeof msg.content === 'string' ? msg.content : msg.content.text).length > 0 || isAgentLoopActive) && (
                                        <MessageContent
                                          content={msg.content}
                                          isUser={msg.role === 'user'}
@@ -3718,6 +3857,46 @@ export default function ChatInterface({
                                           isProcessing={isProcessingPlan}
                                         />
                                       </div>
+                                    )}
+
+                                    {/* Chat Plan Card — rendered when plan mode generates a plan */}
+                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.planCard && (
+                                      <ChatPlanCard
+                                        plan={(msg as AgentMessage).meta!.planCard!}
+                                        onExecute={(plan) => {
+                                          // Update card status to executing
+                                          setMessages(prev => prev.map(m =>
+                                            m.id === msg.id && m.type === 'agent'
+                                              ? { ...m, meta: { ...(m as AgentMessage).meta, planCard: { ...plan, status: 'executing' as const } } }
+                                              : m
+                                          ));
+                                          // Run the plan step by step via the agent loop
+                                          const execMessage = `Execute this plan step by step, using available tools for each action item:\n\n${plan.markdown}`;
+                                          if (currentConversationId) {
+                                            processAIMessage(execMessage, currentConversationId, false, [], { isPlanMode: false });
+                                          }
+                                          // Mark as completed after agent loop finishes (optimistic)
+                                          setTimeout(() => {
+                                            setMessages(prev => prev.map(m =>
+                                              m.id === msg.id && m.type === 'agent'
+                                                ? { ...m, meta: { ...(m as AgentMessage).meta, planCard: { ...plan, status: 'completed' as const } } }
+                                                : m
+                                            ));
+                                          }, 500);
+                                        }}
+                                        onCancel={(plan) => {
+                                          // Mark as cancelled
+                                          setMessages(prev => prev.map(m =>
+                                            m.id === msg.id && m.type === 'agent'
+                                              ? { ...m, meta: { ...(m as AgentMessage).meta, planCard: { ...plan, status: 'cancelled' as const } } }
+                                              : m
+                                          ));
+                                          // AI acknowledges cancellation
+                                          if (currentConversationId) {
+                                            processAIMessage('The user cancelled the plan. Ask them what else you can help with.', currentConversationId, false, [], { isPlanMode: false });
+                                          }
+                                        }}
+                                      />
                                     )}
 
                                     {/* Phase 2: Canvas Expansion Prompt */}
@@ -3904,8 +4083,49 @@ export default function ChatInterface({
                                       />
                                     )}
 
+                                    {/* Error card — replaces message when AI fails */}
+                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.hasError && (
+                                      <ArcusErrorCard
+                                        errorMessage={(msg as AgentMessage).meta?.errorMessage}
+                                        onRetry={() => {
+                                          // Find the last user message before this one
+                                          const msgIdx = messages.findIndex(m => m.id === msg.id);
+                                          const prevUser = [...messages.slice(0, msgIdx)].reverse().find(m => m.role === 'user');
+                                          const retryText = prevUser
+                                            ? (typeof prevUser.content === 'string' ? prevUser.content : (prevUser.content as any).text || '')
+                                            : '';
+                                          if (retryText && currentConversationId) {
+                                            // Clear the error message first
+                                            setMessages(prev => prev.filter(m => m.id !== msg.id));
+                                            processAIMessage(retryText, currentConversationId, false);
+                                          }
+                                        }}
+                                      />
+                                    )}
+
+                                    {/* Draft Reply Box — appears below message when a Gmail draft is ready */}
+                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.draftReply && !(msg as AgentMessage).meta?.isStreaming && (
+                                      <DraftReplyBox
+                                        isVisible={true}
+                                        draftData={(msg as AgentMessage).meta!.draftReply!}
+                                        onDismiss={() => {
+                                          setMessages(prev => prev.map(m =>
+                                            m.id === msg.id ? { ...m, meta: { ...(m as AgentMessage).meta, draftReply: undefined } } : m
+                                          ));
+                                        }}
+                                        onSendReply={async ({ content, recipientEmail, subject, threadId }) => {
+                                          const res = await fetch('/api/agent-talk/send-email', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ to: recipientEmail, subject, body: content, threadId }),
+                                          });
+                                          if (!res.ok) throw new Error('Failed to send email');
+                                        }}
+                                      />
+                                    )}
+
                                     {/* Action buttons — AFTER all cards */}
-                                    {msg.role === 'assistant' && !(msg as AgentMessage).meta?.limitReached && !(msg as AgentMessage).meta?.isStreaming && (
+                                    {msg.role === 'assistant' && !(msg as AgentMessage).meta?.limitReached && !(msg as AgentMessage).meta?.isStreaming && !(msg as AgentMessage).meta?.hasError && (
                                       <MessageActionButtons
                                         msg={msg}
                                         isLoading={isLoading}
@@ -3973,6 +4193,8 @@ export default function ChatInterface({
                       <div className="absolute bottom-full left-0 right-0 h-12 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none" />
 
                       <div className="max-w-3xl mx-auto w-full px-6 py-6 relative">
+                        {/* Live task widget — shows active/done tool steps above prompt */}
+                        <LiveTaskWidget steps={agentSteps} isActive={isAgentLoopActive} />
                         <PromptInputBox
                           onSend={(msg, files, opts) => handleSend(msg, files, opts)}
                           onStop={() => abortControllerRef.current?.abort()}

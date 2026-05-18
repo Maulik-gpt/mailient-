@@ -74,18 +74,21 @@ export function ArtifactsGalleryPanel({
   
   messages.forEach((msg, index) => {
     if (msg.role === 'assistant' && msg.meta) {
-      // 1. Plan Artifact
+      // 1. Plan Artifact (supports both legacy V3 plan format and new ChatPlanCard format)
       if (msg.meta.planArtifact) {
         const plan = msg.meta.planArtifact;
+        // Prefer the flat markdown if available (new format), fall back to reconstructing from steps
+        const rawMarkdown = plan.markdown
+          || `# ${plan.title || 'Strategic Mission Plan'}\n\nObjective: ${plan.objective || ''}\n\n${plan.steps?.map((s: any, idx: number) => `### Step ${idx + 1}: ${s.action}\n${s.description || s.human_readable || ''}\n`).join('\n') || ''}`;
         dynamicArtifacts.push({
           id: `dyn-plan-${index}`,
           type: 'action_plan',
-          tag: 'Action Plan · MD',
+          tag: 'Plan · MD',
           title: plan.title || 'Strategic Mission Plan',
-          subtitle: `Extracted from chat`,
+          subtitle: `Created from chat`,
           time: msg.time || 'Just now',
-          content: plan,
-          raw: `# ${plan.title || 'Strategic Mission Plan'}\n\nObjective: ${plan.objective || 'N/A'}\n\n${plan.steps?.map((s: any, idx: number) => `### Step ${idx + 1}: ${s.action}\n${s.description}\n`).join('\n') || ''}`
+          content: { type: 'action_plan', title: plan.title, markdown: rawMarkdown },
+          raw: rawMarkdown,
         });
       }
       

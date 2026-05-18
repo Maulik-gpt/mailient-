@@ -18,6 +18,37 @@ import { searchMemories, saveConversationTurn } from '../../../../lib/arcus/memo
 
 export const maxDuration = 60;
 
+function buildPlanSystemPrompt(userName: string): string {
+  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  return `You are Arcus, a strategic planning expert. Today is ${today}. The user's name is ${userName}.
+
+Your only job right now is to create a comprehensive, well-structured action plan.
+
+## Output rules — CRITICAL
+- Output ONLY the plan document as markdown. No preamble, no "here is your plan", no explanation before or after.
+- Start immediately with "# [Plan Title]" on the first line.
+- Use H1 (#) for the plan title only.
+- Use H2 (##) for major phases or sections.
+- Use H3 (###) for sub-sections.
+- Use H4-H6 for further nesting as needed.
+- Use bullet points (- ) for action items, resources, or lists.
+- Use --- to separate major sections.
+- Maximum 5000 characters total.
+- NEVER use emojis. Zero emojis allowed in any part of the plan.
+- NEVER use bracketed placeholders. Every item must be concrete and specific.
+- Write in direct, professional language. No hedging.
+
+## Plan structure guidance
+A good plan contains:
+1. A clear title and objective
+2. Context / background analysis
+3. Numbered phases or steps
+4. Specific action items under each phase
+5. Success criteria or expected outcomes
+
+Do not call any tools. Output the plan markdown directly now.`;
+}
+
 export async function POST(request: NextRequest) {
   // Auth
   const session = await auth();
@@ -32,10 +63,11 @@ export async function POST(request: NextRequest) {
     message?: string;
     history?: Array<{ role: 'user' | 'assistant'; content: string }>;
     conversationId?: string;
+    isPlanMode?: boolean;
   } = {};
   try { body = await request.json(); } catch { /* empty */ }
 
-  const { message, history = [], conversationId } = body;
+  const { message, history = [], conversationId, isPlanMode = false } = body;
   if (!message?.trim()) {
     return new Response(JSON.stringify({ error: 'message is required' }), { status: 400 });
   }
@@ -46,12 +78,9 @@ export async function POST(request: NextRequest) {
     searchMemories(userId, message, 5),
   ]);
 
-  const systemPrompt = buildSystemPrompt({
-    userName,
-    userId,
-    connectedIntegrations,
-    memories,
-  });
+  const systemPrompt = isPlanMode
+    ? buildPlanSystemPrompt(userName)
+    : buildSystemPrompt({ userName, userId, connectedIntegrations, memories });
 
   // Sanitize history (last 20 turns)
   const sanitizedHistory = history
@@ -66,6 +95,7 @@ export async function POST(request: NextRequest) {
     history: sanitizedHistory,
     userMessage: message,
     connectedIntegrations,
+    isPlanMode,
   });
 
   // After streaming, save to memory async (don't await — don't block the response)

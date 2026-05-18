@@ -400,7 +400,7 @@ export interface ToolResult {
     title: string;
     type: string;
     markdown: string;
-    draftMeta?: { to?: string; subject?: string; threadId?: string };
+    draftMeta?: { to?: string; subject?: string; threadId?: string; body?: string };
   };
 }
 
@@ -589,7 +589,7 @@ async function draftReply(userId: string, input: any): Promise<ToolResult> {
         '',
         `✅ [Open draft in Gmail](${previewUrl})`,
       ].join('\n'),
-      draftMeta: { to: input.to, subject, threadId: input.threadId },
+      draftMeta: { to: input.to, subject, threadId: input.threadId, body: input.body },
     },
   };
 }

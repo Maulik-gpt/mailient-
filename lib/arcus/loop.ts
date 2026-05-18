@@ -32,9 +32,16 @@ const MAX_NUDGES = 3; // max times we re-prompt the model to use tools instead o
 // Patterns that indicate the model wrote planning text instead of calling a tool
 const INTENT_PATTERN = /^(searching|looking|checking|reading|finding|fetching|let me|i['']ll|i will|i am going to|going to|will (search|check|look|read|find|fetch)|now (searching|checking|reading))/i;
 
+// Placeholders the model inserts when it hasn't actually called a tool yet
+const PLACEHOLDER_PATTERN = /\[\s*(I will|will be|to be|once generated|actual.*link|link here|pending|tbd|insert|placeholder|meet link|google meet link|conference link|calendar link|meeting link)\s*[^\]]*?\]/i;
+
 function isIntentText(text: string): boolean {
   const t = text.trim();
   return t.length > 0 && t.length < 500 && INTENT_PATTERN.test(t);
+}
+
+function hasPlaceholders(text: string): boolean {
+  return PLACEHOLDER_PATTERN.test(text);
 }
 
 function sseEvent(type: string, data: unknown): string {
@@ -51,11 +58,13 @@ export interface LoopOptions {
   history: Array<{ role: 'user' | 'assistant'; content: string }>;
   userMessage: string;
   connectedIntegrations?: string[];
+  isPlanMode?: boolean;
 }
 
 export function runAgentLoop(opts: LoopOptions): ReadableStream {
-  const { userId, systemPrompt, history, userMessage, connectedIntegrations = [] } = opts;
-  const availableTools = getAvailableTools(connectedIntegrations);
+  const { userId, systemPrompt, history, userMessage, connectedIntegrations = [], isPlanMode = false } = opts;
+  // In plan mode we pass no tools — the AI generates a plan document, not actions
+  const availableTools = isPlanMode ? [] : getAvailableTools(connectedIntegrations);
   const runId = crypto.randomUUID();
   const startedAt = Date.now();
 
@@ -160,16 +169,37 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
             continue;
           }
 
-          // 2b. Model gave a real final answer → done
+          // 2b. Model wrote a response with unfilled placeholders (e.g. "[I will provide the link]")
+          //     This means it described work it didn't actually do → nudge it to call tools
+          if (nudgeCount < MAX_NUDGES && hasPlaceholders(textContent)) {
+            nudgeCount++;
+            emit('thinking', { status: 'Completing task…' });
+            messages.push({
+              role: 'user',
+              content: 'Your response contains placeholder text like "[I will provide X]" or "[link here]". This is not acceptable. Call the required tool now and provide the actual result. Do not use any placeholder brackets.',
+            });
+            continue;
+          }
+
+          // 2c. Model gave a real final answer → done
           finalText = textContent;
           break;
         }
 
         if (!finalText) {
-          finalText = 'Done. Let me know if you need anything else.';
+          finalText = isPlanMode
+            ? 'I was unable to generate a plan. Please try again with a more specific request.'
+            : 'Done. Let me know if you need anything else.';
         }
 
-        emit('message', { content: finalText, canvasContent: canvasContent || undefined });
+        if (isPlanMode) {
+          // Extract title from the first H1 heading in the plan markdown
+          const titleMatch = finalText.match(/^#\s+(.+)$/m);
+          const planTitle = titleMatch ? titleMatch[1].trim() : 'Plan';
+          emit('plan', { title: planTitle, markdown: finalText });
+        } else {
+          emit('message', { content: finalText, canvasContent: canvasContent || undefined });
+        }
         emit('done', { runId, durationMs: Date.now() - startedAt, totalSteps: totalToolCalls });
 
       } catch (err: any) {
