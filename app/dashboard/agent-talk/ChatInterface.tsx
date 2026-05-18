@@ -706,16 +706,16 @@ function AgentThinkingSection({ content, isComplete }: { content: string, isComp
               initial={{ opacity: 0, x: -5 }}
               animate={{ opacity: 1, x: 0 }}
               className={cn(
-                "pl-6 border-l border-white/[0.03] py-0.5 transition-all",
-                isComplete ? "opacity-30 grayscale-[0.5]" : "opacity-100"
+                "pl-6 border-l border-white/[0.05] py-0.5 transition-all",
+                isComplete ? "opacity-70" : "opacity-100"
               )}
             >
               {content === 'SKELETON' ? (
                 <div className="py-2" />
               ) : (
                 <div className={cn(
-                  "text-[13.5px] leading-relaxed italic font-normal tracking-tight markdown-thought",
-                  isComplete ? "text-white/30" : "text-white/50"
+                  "text-[13px] leading-relaxed italic font-normal tracking-tight markdown-thought",
+                  isComplete ? "text-white/50" : "text-white/70"
                 )}>
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
@@ -934,10 +934,28 @@ function CollapsibleSteps({
 function ArcusErrorCard({ errorMessage, onRetry }: { errorMessage?: string; onRetry: () => void }) {
   const [retrying, setRetrying] = useState(false);
 
+  // Auto-retry once after a short delay when models are rate-limited
+  const isExhausted = errorMessage?.toLowerCase().includes('exhausted') || errorMessage?.toLowerCase().includes('timed out');
+  useEffect(() => {
+    if (isExhausted && !retrying) {
+      const t = setTimeout(() => {
+        setRetrying(true);
+        onRetry();
+      }, 3000);
+      return () => clearTimeout(t);
+    }
+  }, []);
+
   const handleRetry = () => {
     setRetrying(true);
     onRetry();
   };
+
+  const subtitle = isExhausted
+    ? 'AI models are under heavy load. Retrying automatically…'
+    : errorMessage && errorMessage.length < 120
+      ? errorMessage
+      : 'Something went wrong. Please refresh or try again.';
 
   return (
     <motion.div
@@ -957,11 +975,7 @@ function ArcusErrorCard({ errorMessage, onRetry }: { errorMessage?: string; onRe
         </div>
         <div>
           <p className="text-[13px] font-semibold text-white/80 leading-tight">Arcus was unable to reply.</p>
-          <p className="text-[12px] text-white/35 mt-0.5 leading-snug">
-            {errorMessage && errorMessage.length < 120
-              ? errorMessage
-              : 'Something went wrong, please refresh to reconnect or try again.'}
-          </p>
+          <p className="text-[12px] text-white/35 mt-0.5 leading-snug">{subtitle}</p>
         </div>
       </div>
 
@@ -2114,7 +2128,8 @@ export default function ChatInterface({
                 currentAgentNarratives = [...currentAgentNarratives, narrative];
                 setMessages(msgs => msgs.map(m => {
                   if (m.id !== assistantMsgId || m.type !== 'agent') return m;
-                  return { ...m, meta: { ...(m.meta || {}), agentNarratives: currentAgentNarratives } };
+                  // Also feed narrative into liveThinking so AgentThinkingSection shows real AI reasoning
+                  return { ...m, meta: { ...(m.meta || {}), agentNarratives: currentAgentNarratives, liveThinking: data.text.trim() } };
                 }));
               }
               break;

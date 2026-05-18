@@ -6,9 +6,13 @@
  * Rotates across three API keys × three models until one succeeds.
  */
 
+// Ordered by quality — all free except deepseek-chat-v3 which has a generous free tier
 const MODELS = [
+  'deepseek/deepseek-chat-v3-0324:free',
   'meta-llama/llama-3.3-70b-instruct:free',
-  'google/gemini-2.0-flash-001',
+  'google/gemini-2.0-flash-exp:free',
+  'qwen/qwen-2.5-72b-instruct:free',
+  'mistralai/mistral-7b-instruct:free',
   'openrouter/auto',
 ];
 
