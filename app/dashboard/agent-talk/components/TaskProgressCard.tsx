@@ -16,7 +16,8 @@ interface TaskProgressCardProps {
 }
 
 export function TaskProgressCard({ taskList, isActive }: TaskProgressCardProps) {
-  const [collapsed, setCollapsed] = useState(false);
+  // Collapsed by default — user expands upward
+  const [collapsed, setCollapsed] = useState(true);
   const { tasks, completedCount } = taskList;
   const total = tasks.length;
   const done = Math.min(completedCount, total);
@@ -25,53 +26,23 @@ export function TaskProgressCard({ taskList, isActive }: TaskProgressCardProps) 
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 6 }}
+      initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 4 }}
       transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-      className="mb-4 w-full rounded-2xl border border-white/[0.08] bg-[#161616] overflow-hidden"
+      className="w-full rounded-2xl border border-white/[0.08] bg-[#111111] overflow-hidden mb-2"
     >
-      {/* Header */}
-      <button
-        onClick={() => setCollapsed(c => !c)}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/[0.03] transition-colors"
-      >
-        <div className="flex items-center gap-2.5">
-          <span className="text-[13px] font-semibold text-white/80 tracking-tight">
-            Task progress
-          </span>
-          {isActive && done < total && (
-            <motion.span
-              className="inline-block w-1.5 h-1.5 rounded-full bg-white/30"
-              animate={{ opacity: [0.3, 1, 0.3] }}
-              transition={{ repeat: Infinity, duration: 1.4, ease: 'easeInOut' }}
-            />
-          )}
-        </div>
-
-        <div className="flex items-center gap-2.5">
-          <span className="text-[12px] font-mono text-white/30 tabular-nums">
-            {done} / {total}
-          </span>
-          <ChevronDown
-            className={cn(
-              'w-3.5 h-3.5 text-white/25 transition-transform duration-200',
-              collapsed ? '-rotate-90' : 'rotate-0',
-            )}
-          />
-        </div>
-      </button>
-
-      {/* Task rows */}
+      {/* Task rows — rendered ABOVE the header so expansion goes upward */}
       <AnimatePresence initial={false}>
         {!collapsed && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+            transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
             className="overflow-hidden"
           >
-            <div className="px-4 pb-3 flex flex-col gap-0.5 border-t border-white/[0.05] pt-2">
+            <div className="px-4 pt-3 pb-2 flex flex-col gap-0.5 border-b border-white/[0.05]">
               {tasks.map((task, idx) => {
                 const isCompleted = idx < done;
                 const isRunning = !isCompleted && isActive && idx === done;
@@ -81,10 +52,9 @@ export function TaskProgressCard({ taskList, isActive }: TaskProgressCardProps) 
                     key={idx}
                     initial={{ opacity: 0, x: -4 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.2, delay: idx * 0.04 }}
+                    transition={{ duration: 0.18, delay: idx * 0.03 }}
                     className="flex items-start gap-2.5 py-1.5"
                   >
-                    {/* Status icon */}
                     <div className="flex-shrink-0 mt-[1px]">
                       {isCompleted ? (
                         <motion.div
@@ -92,28 +62,27 @@ export function TaskProgressCard({ taskList, isActive }: TaskProgressCardProps) 
                           animate={{ scale: 1, opacity: 1 }}
                           transition={{ type: 'spring', damping: 20, stiffness: 350 }}
                         >
-                          <Check className="w-3.5 h-3.5 text-green-400" />
+                          <Check className="w-3.5 h-3.5 text-white/60" />
                         </motion.div>
                       ) : isRunning ? (
                         <motion.div
                           animate={{ opacity: [0.4, 1, 0.4] }}
                           transition={{ repeat: Infinity, duration: 1.4, ease: 'easeInOut' }}
                         >
-                          <Clock className="w-3.5 h-3.5 text-white/40" />
+                          <Clock className="w-3.5 h-3.5 text-white/50" />
                         </motion.div>
                       ) : (
                         <Clock className="w-3.5 h-3.5 text-white/20" />
                       )}
                     </div>
 
-                    {/* Task text */}
                     <span
                       className={cn(
                         'text-[13px] leading-snug tracking-tight transition-colors duration-500',
                         isCompleted
-                          ? 'text-white/70'
+                          ? 'text-white/60'
                           : isRunning
-                          ? 'text-white/55'
+                          ? 'text-white/80'
                           : 'text-white/25',
                       )}
                     >
@@ -126,6 +95,39 @@ export function TaskProgressCard({ taskList, isActive }: TaskProgressCardProps) 
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Header — always visible at bottom, acts as the toggle handle */}
+      <button
+        onClick={() => setCollapsed(c => !c)}
+        className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-white/[0.03] transition-colors"
+      >
+        <div className="flex items-center gap-2.5">
+          {/* Pulse dot while running */}
+          {isActive && done < total && (
+            <motion.span
+              className="inline-block w-1.5 h-1.5 rounded-full bg-white/40"
+              animate={{ opacity: [0.3, 1, 0.3] }}
+              transition={{ repeat: Infinity, duration: 1.4, ease: 'easeInOut' }}
+            />
+          )}
+          <span className="text-[12px] font-semibold text-white/60 tracking-tight">
+            Task progress
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2.5">
+          <span className="text-[12px] font-mono text-white/30 tabular-nums">
+            {done}/{total}
+          </span>
+          {/* Chevron flips: points down when collapsed (click to expand up), up when open */}
+          <ChevronDown
+            className={cn(
+              'w-3.5 h-3.5 text-white/25 transition-transform duration-200',
+              collapsed ? 'rotate-0' : 'rotate-180',
+            )}
+          />
+        </div>
+      </button>
     </motion.div>
   );
 }

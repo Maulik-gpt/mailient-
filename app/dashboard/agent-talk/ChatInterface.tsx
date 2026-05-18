@@ -631,60 +631,54 @@ function AgentThinkingSection({ content, isComplete }: { content: string, isComp
 
   return (
     <div className="flex flex-col gap-3 mt-4 mb-2 relative">
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
           {!isComplete ? (
-            <div className="relative w-5 h-5 flex-shrink-0">
-              {/* Inner Core */}
+            /* Minimal glowing orb — single dot + single pulse ring */
+            <div className="relative flex-shrink-0 w-4 h-4 flex items-center justify-center">
+              {/* Pulse ring */}
               <motion.div
-                className="absolute inset-1 rounded-full bg-white z-20 shadow-inner"
-                animate={{ scale: [0.9, 1.1, 0.9] }}
+                className="absolute inset-0 rounded-full border border-white/25"
+                animate={{ scale: [1, 1.7, 1], opacity: [0.5, 0, 0.5] }}
+                transition={{ repeat: Infinity, duration: 2, ease: "easeOut" }}
+              />
+              {/* Soft ambient glow */}
+              <motion.div
+                className="absolute inset-[-3px] rounded-full bg-white/8 blur-sm"
+                animate={{ opacity: [0.3, 0.7, 0.3] }}
                 transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
               />
-              {/* Middle Pulse */}
+              {/* Core dot */}
               <motion.div
-                className="absolute inset-0 rounded-full bg-white/40 z-10"
-                animate={{ scale: [1, 1.4, 1], opacity: [0.2, 0.5, 0.2] }}
-                transition={{ repeat: Infinity, duration: 2.8, ease: "easeInOut" }}
+                className="w-2 h-2 rounded-full bg-white z-10"
+                animate={{ opacity: [0.7, 1, 0.7], scale: [0.9, 1.05, 0.9] }}
+                transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
               />
-              {/* Outer Glow */}
-              <motion.div
-                className="absolute -inset-2 rounded-full bg-white/10 blur-md z-0"
-                animate={{ opacity: [0.1, 0.4, 0.1], scale: [0.9, 1.2, 0.9] }}
-                transition={{ repeat: Infinity, duration: 4.2, ease: "easeInOut" }}
-              />
-              {/* Shimmer Overlay on Orb */}
-              <div className="absolute inset-1 rounded-full overflow-hidden z-30 pointer-events-none">
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent w-[200%]"
-                  animate={{ x: ['-100%', '100%'] }}
-                  transition={{ repeat: Infinity, duration: 2.2, ease: "linear" }}
-                />
-              </div>
             </div>
           ) : (
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="w-5 h-5 rounded-full bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0"
+              className="w-4 h-4 rounded-full bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0"
             >
-              <CheckCircle2 className="w-3 h-3 text-white/40" />
+              <div className="w-1.5 h-1.5 rounded-full bg-white/25" />
             </motion.div>
           )}
 
           <div className="flex items-center gap-1.5 ml-0.5">
             {!isComplete ? (
-              <TextShimmer
-                className="text-[12px] font-medium text-white/90 tracking-wider select-none drop-shadow-[0_0_5px_rgba(255,255,255,0.2)] uppercase"
-                duration={2}
+              <motion.span
+                animate={{ opacity: [0.5, 0.9, 0.5] }}
+                transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                className="text-[11px] font-medium text-white/60 tracking-widest select-none uppercase"
               >
                 Thinking
-              </TextShimmer>
+              </motion.span>
             ) : (
               <motion.span
                 initial={{ opacity: 0, x: -5 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="text-[12px] font-medium text-white/30 tracking-wider select-none uppercase"
+                className="text-[11px] font-medium text-white/20 tracking-widest select-none uppercase"
               >
                 Thought
               </motion.span>
@@ -712,7 +706,7 @@ function AgentThinkingSection({ content, isComplete }: { content: string, isComp
               initial={{ opacity: 0, x: -5 }}
               animate={{ opacity: 1, x: 0 }}
               className={cn(
-                "pl-8 border-l border-white/[0.03] py-0.5 transition-all",
+                "pl-6 border-l border-white/[0.03] py-0.5 transition-all",
                 isComplete ? "opacity-30 grayscale-[0.5]" : "opacity-100"
               )}
             >
@@ -1362,6 +1356,7 @@ export default function ChatInterface({
   // Agent Loop execution timeline state (Phase 2)
   const [agentSteps, setAgentSteps] = useState<AgentStep[]>([]);
   const [isAgentLoopActive, setIsAgentLoopActive] = useState(false);
+  const [liveTaskList, setLiveTaskList] = useState<TaskList | null>(null);
   const [agentRunMeta, setAgentRunMeta] = useState<{ runId?: string; totalDurationMs?: number } | null>(null);
   const [liveActivityLine, setLiveActivityLine] = useState<string>('');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
@@ -1897,6 +1892,7 @@ export default function ChatInterface({
     setLiveActivityLine('');
     setAgentSteps([]);          // start empty — only tool_call events populate the timeline
     setLiveThinkingBlocks([]);
+    setLiveTaskList(null);
 
     // Add placeholder assistant message
     const placeholderMsg: AgentMessage = {
@@ -1988,6 +1984,7 @@ export default function ChatInterface({
             case 'task_list': {
               if (Array.isArray(data.tasks) && data.tasks.length > 0) {
                 currentTaskList = { tasks: data.tasks, completedCount: 0 };
+                setLiveTaskList(currentTaskList);
                 setMessages(msgs => msgs.map(m => {
                   if (m.id !== assistantMsgId || m.type !== 'agent') return m;
                   return { ...m, meta: { ...(m.meta || {}), taskList: currentTaskList! } };
@@ -1999,10 +1996,8 @@ export default function ChatInterface({
             case 'task_progress': {
               const completed = typeof data.completedCount === 'number' ? data.completedCount : 0;
               if (currentTaskList) {
-                currentTaskList = {
-                  tasks: currentTaskList.tasks,
-                  completedCount: completed
-                };
+                currentTaskList = { tasks: currentTaskList.tasks, completedCount: completed };
+                setLiveTaskList({ ...currentTaskList });
               }
               setMessages(msgs => msgs.map(m => {
                 if (m.id !== assistantMsgId || m.type !== 'agent') return m;
@@ -2306,6 +2301,7 @@ export default function ChatInterface({
               
               setAgentSteps(finalSteps);
               setIsAgentLoopActive(false);
+              setLiveTaskList(null);
               setLiveActivityLine('');
               setAgentRunMeta({ runId: data.runId, totalDurationMs: data.durationMs });
               break;
@@ -2459,6 +2455,7 @@ export default function ChatInterface({
     } finally {
       setIsLoading(false);
       setIsAgentLoopActive(false);
+      setLiveTaskList(null);
       setLiveThinkingBlocks([]);
       setTimeout(() => scrollToBottom(true), 100);
     }
@@ -3824,14 +3821,6 @@ export default function ChatInterface({
                                        />
                                      )}
 
-                                     {/* Task progress card — appears first, before execution steps */}
-                                     {msg.role === 'assistant' && (msg as AgentMessage).meta?.taskList && (
-                                       <TaskProgressCard
-                                         taskList={(msg as AgentMessage).meta!.taskList!}
-                                         isActive={(msg as AgentMessage).meta?.isStreaming !== false}
-                                       />
-                                     )}
-
                                      {/* Execution steps — above message text, collapsible */}
                                      {msg.role === 'assistant' && (msg as AgentMessage).meta?.agentSteps && !(msg as AgentMessage).meta?.limitReached && ((msg as AgentMessage).meta!.agentSteps!).length > 0 && (
                                        <CollapsibleSteps
@@ -4287,6 +4276,13 @@ export default function ChatInterface({
                       <div className="absolute bottom-full left-0 right-0 h-12 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none" />
 
                       <div className="max-w-3xl mx-auto w-full px-6 py-6 relative">
+                        {/* Task progress — collapsed by default, expands upward above prompt */}
+                        {liveTaskList && (
+                          <TaskProgressCard
+                            taskList={liveTaskList}
+                            isActive={isAgentLoopActive}
+                          />
+                        )}
                         {/* Live task widget — shows active/done tool steps above prompt */}
                         <LiveTaskWidget steps={agentSteps} isActive={isAgentLoopActive} />
                         <PromptInputBox

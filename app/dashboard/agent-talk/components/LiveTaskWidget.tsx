@@ -1,7 +1,8 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, Loader2, Search, Mail, Calendar, Globe, FileText, Zap, MessageSquare } from 'lucide-react';
+import { Check, Loader2, Search, Mail, Calendar, Globe, FileText, Zap, MessageSquare, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AgentStep } from './AgentExecutionTimeline';
 
@@ -37,23 +38,86 @@ function toolIcon(tool: string) {
 }
 
 export function LiveTaskWidget({ steps, isActive }: LiveTaskWidgetProps) {
-  const visible = isActive && steps.length > 0;
+  // Keep pills visible for a few seconds after run completes, then fade out
+  const [visible, setVisible] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  const collapseTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => {
+    if (isActive && steps.length > 0) {
+      // Show when run starts
+      setVisible(true);
+      setCollapsed(false);
+      clearTimeout(collapseTimer.current);
+      clearTimeout(hideTimer.current);
+    } else if (!isActive && steps.length > 0) {
+      // Run ended — collapse after 3s, hide after 4.5s
+      collapseTimer.current = setTimeout(() => {
+        setCollapsed(true);
+      }, 3000);
+      hideTimer.current = setTimeout(() => {
+        setVisible(false);
+      }, 4500);
+    }
+    return () => {
+      clearTimeout(collapseTimer.current);
+      clearTimeout(hideTimer.current);
+    };
+  }, [isActive, steps.length]);
+
+  // If steps appear while active but visible hasn't fired yet (edge case), show
+  useEffect(() => {
+    if (steps.length > 0 && isActive) {
+      setVisible(true);
+    }
+  }, [steps.length, isActive]);
 
   return (
     <AnimatePresence>
       {visible && (
         <motion.div
           initial={{ opacity: 0, y: 8, scale: 0.98 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 6, scale: 0.98 }}
+          animate={{ opacity: collapsed ? 0.4 : 1, y: 0, scale: collapsed ? 0.97 : 1 }}
+          exit={{ opacity: 0, y: 6, scale: 0.97 }}
           transition={{ type: 'spring', damping: 28, stiffness: 320 }}
           className="mb-3 w-full"
         >
-          <div className="flex flex-wrap gap-2 items-center">
-            {steps.map((step, i) => (
-              <TaskItem key={step.id} step={step} index={i} />
-            ))}
-          </div>
+          <AnimatePresence initial={false}>
+            {!collapsed ? (
+              <motion.div
+                key="pills"
+                initial={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                className="overflow-hidden"
+              >
+                <div className="flex flex-wrap gap-2 items-center">
+                  {steps.map((step, i) => (
+                    <TaskItem key={step.id} step={step} index={i} />
+                  ))}
+                </div>
+              </motion.div>
+            ) : (
+              <motion.button
+                key="collapsed"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 0.4, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.25 }}
+                onClick={() => {
+                  setCollapsed(false);
+                  clearTimeout(collapseTimer.current);
+                  clearTimeout(hideTimer.current);
+                }}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/[0.06] bg-white/[0.02] text-white/30 text-[11px] font-medium tracking-tight hover:opacity-70 transition-opacity"
+              >
+                <Check className="w-3 h-3" />
+                <span>{steps.filter(s => s.status === 'completed').length} actions done</span>
+                <ChevronDown className="w-3 h-3 rotate-180" />
+              </motion.button>
+            )}
+          </AnimatePresence>
         </motion.div>
       )}
     </AnimatePresence>
