@@ -3573,19 +3573,7 @@ export default function ChatInterface({
                           }}
                         />
 
-                        {/* Subscription Badge */}
-                        {currentPlan !== 'pro' && (
-                          <div className="flex items-center gap-1.5 px-3 py-1 bg-white dark:bg-[#111111] border border-neutral-200 dark:border-white/10 rounded-full shadow-sm transition-all group-hover:border-neutral-300 dark:group-hover:border-white/20">
-                            <span className="text-[10px] text-neutral-500 dark:text-white/40 font-medium tracking-wide whitespace-nowrap group-hover:text-black dark:group-hover:text-white/60 transition-colors">Free plan</span>
-                            <span className="text-[10px] text-neutral-300 dark:text-white/10">•</span>
-                            <button
-                              onClick={() => router.push('/pricing')}
-                              className="text-[10px] text-black dark:text-white transition-colors font-bold uppercase tracking-tight whitespace-nowrap hover:text-neutral-600 dark:hover:text-white"
-                            >
-                              Upgrade
-                            </button>
-                          </div>
-                        )}
+
 
                         <div className="flex items-center gap-1">
                           <Tooltip delayDuration={100}>
