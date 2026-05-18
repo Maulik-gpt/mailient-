@@ -1,14 +1,22 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Clock, Mail, Zap, Loader2, X, ChevronLeft, ChevronRight,
-  MoreHorizontal, Calendar as CalendarIcon, List, Slack, Pause, Play,
-  Trash2, Check, AlertCircle,
+  MoreHorizontal, List, Slack, Trash2, Edit2, AlertCircle, CalendarDays,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  DropdownMenuTrigger, DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/components/ui/dropdown-menu';
+import { DropdownMenu as DropdownMenuRoot } from 'radix-ui';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -32,16 +40,13 @@ function cronToLabel(cron: string): string {
   const parts = cron.split(' ');
   if (parts.length !== 5) return cron;
   const [minStr, hourStr, , , dowStr] = parts;
-
   if (hourStr.startsWith('*/')) {
     const n = hourStr.split('/')[1];
     return n === '1' ? 'Every hour' : `Every ${n} hours`;
   }
-
   const h = hourStr.padStart(2, '0');
   const m = minStr.padStart(2, '0');
   const time = `${h}:${m}`;
-
   if (dowStr === '*') return `Daily at ${time}`;
   if (dowStr === '0') return `Sundays at ${time}`;
   if (dowStr === '1-5') return `Weekdays at ${time}`;
@@ -57,7 +62,6 @@ function getNextRunDate(cron: string): Date {
   const parts = cron.split(' ');
   if (parts.length !== 5) return new Date(now.getTime() + 86400000);
   const [minStr, hourStr, , , dowStr] = parts;
-
   if (hourStr.startsWith('*/')) {
     const interval = parseInt(hourStr.split('/')[1]) || 1;
     const next = new Date(now);
@@ -65,15 +69,10 @@ function getNextRunDate(cron: string): Date {
     if (next <= now) next.setHours(next.getHours() + interval);
     return next;
   }
-
   const tH = parseInt(hourStr) || 0;
   const tM = parseInt(minStr) || 0;
-
   const candidate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), tH, tM, 0);
-
-  if (dowStr === '*') {
-    return candidate > now ? candidate : new Date(candidate.getTime() + 86400000);
-  }
+  if (dowStr === '*') return candidate > now ? candidate : new Date(candidate.getTime() + 86400000);
   if (dowStr === '1-5') {
     let next = new Date(candidate > now ? candidate : new Date(candidate.getTime() + 86400000));
     for (let i = 0; i < 7; i++) {
@@ -97,12 +96,10 @@ function getAgentRunsInMonth(agent: Agent, year: number, month: number): Date[] 
   const parts = agent.cron_schedule.split(' ');
   if (parts.length !== 5) return dates;
   const [minStr, hourStr, , , dowStr] = parts;
-
   const tH = hourStr.startsWith('*/') ? 0 : (parseInt(hourStr) || 0);
   const tM = parseInt(minStr) || 0;
   const interval = hourStr.startsWith('*/') ? parseInt(hourStr.split('/')[1]) || 1 : 0;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-
   for (let day = 1; day <= daysInMonth; day++) {
     const dow = new Date(year, month, day).getDay();
     let dayMatches = false;
@@ -110,13 +107,9 @@ function getAgentRunsInMonth(agent: Agent, year: number, month: number): Date[] 
     else if (dowStr === '0' && dow === 0) dayMatches = true;
     else if (dowStr === '1-5' && dow >= 1 && dow <= 5) dayMatches = true;
     else if (!isNaN(parseInt(dowStr)) && parseInt(dowStr) === dow) dayMatches = true;
-
     if (!dayMatches) continue;
-
     if (interval > 0) {
-      for (let h = 0; h < 24; h += interval) {
-        dates.push(new Date(year, month, day, h, tM, 0));
-      }
+      for (let h = 0; h < 24; h += interval) dates.push(new Date(year, month, day, h, tM, 0));
     } else {
       dates.push(new Date(year, month, day, tH, tM, 0));
     }
@@ -129,18 +122,14 @@ function formatTime(date: Date): string {
 }
 
 function formatNextRun(date: Date): string {
-  const y = date.getFullYear();
-  const m = date.getMonth() + 1;
-  const d = date.getDate();
-  return `${y}-${m}-${d} ${formatTime(date)}`;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    + ' · ' + formatTime(date);
 }
 
 function formatRunDate(iso: string): string {
   const d = new Date(iso);
-  const y = d.getFullYear();
-  const mo = d.getMonth() + 1;
-  const day = d.getDate();
-  return `${y}-${mo}-${day} ${formatTime(d)}`;
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    + ' · ' + formatTime(d);
 }
 
 // ── Toggle Switch ──────────────────────────────────────────────────────────────
@@ -148,84 +137,43 @@ function formatRunDate(iso: string): string {
 function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
   return (
     <button
-      onClick={onChange}
+      onClick={e => { e.stopPropagation(); onChange(); }}
       className={cn(
-        'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none',
-        checked ? 'bg-blue-500' : 'bg-white/15',
+        'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 focus:ring-offset-zinc-900',
+        checked ? 'bg-emerald-500' : 'bg-zinc-700',
       )}
     >
-      <span
-        className={cn(
-          'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200',
-          checked ? 'translate-x-5' : 'translate-x-0',
-        )}
-      />
+      <span className={cn(
+        'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out',
+        checked ? 'translate-x-5' : 'translate-x-0',
+      )} />
     </button>
   );
 }
 
-// ── Templates ──────────────────────────────────────────────────────────────────
+// ── Schedule constants ─────────────────────────────────────────────────────────
 
 const TEMPLATES = [
-  {
-    name: 'Morning Inbox Sweep',
-    description: 'Every morning at 7am, scans inbox for unanswered client emails, drafts replies in your tone, emails you a summary with links.',
-    cron_schedule: '0 7 * * *',
-    output_channel: 'gmail' as const,
-    task_description: 'Every morning at 7am, search my inbox for any unanswered client emails, study my recent sent emails to learn my writing tone and voice, draft a personalized reply for each unanswered email matching my style exactly, and email me a clear summary with the subject line, sender, and a link to each draft in Gmail.',
-  },
-  {
-    name: 'Meeting Autopilot',
-    description: 'Every morning at 9am, finds meeting requests, checks calendar availability, books them with Meet links, Slacks you a summary.',
-    cron_schedule: '0 9 * * *',
-    output_channel: 'both' as const,
-    task_description: 'Every morning at 9am, search my Gmail inbox for any meeting requests or scheduling emails, check my Google Calendar for availability in the proposed time slots, book confirmed meetings with Google Meet links, and send me a Slack message listing everything that was scheduled today.',
-  },
-  {
-    name: 'Weekly Opportunity Digest',
-    description: 'Every Sunday at 6pm, scans all emails from the week, identifies revenue opportunities and leads, writes a full digest.',
-    cron_schedule: '0 18 * * 0',
-    output_channel: 'gmail' as const,
-    task_description: 'Every Sunday at 6pm, search through all emails I received this week, identify any revenue opportunities, potential partnerships, warm leads, or high-priority follow-ups, and write a comprehensive weekly digest email summarizing everything I should know and act on in the coming week.',
-  },
-  {
-    name: 'Client Pulse',
-    description: 'Every hour, checks if email arrived from your top contacts. Sends an immediate Slack ping if so.',
-    cron_schedule: '0 */1 * * *',
-    output_channel: 'slack' as const,
-    task_description: 'Every hour, check if any new email arrived from my most important contacts. If so, immediately send me a Slack message with the sender name, subject line, and first two sentences so I can respond quickly without opening my inbox.',
-  },
-  {
-    name: 'Notion + Inbox Sync',
-    description: 'Every morning at 8am, cross-references your Notion tasks with Gmail, finds gaps, sends a daily project briefing.',
-    cron_schedule: '0 8 * * *',
-    output_channel: 'gmail' as const,
-    task_description: 'Every morning at 8am, read my current Notion task list, search my Gmail inbox for emails related to each active project, find which projects have unread messages, identify inbox items that should become Notion tasks, and email me a concise project briefing showing what is moving and what needs attention today.',
-  },
-  {
-    name: 'Lead Harvest',
-    description: 'Every morning at 5am, runs the full lead qualification flow across inbox and web, pushes to Notion, emails a harvest report.',
-    cron_schedule: '0 5 * * *',
-    output_channel: 'gmail' as const,
-    task_description: 'Every morning at 5am, search my inbox for any new inbound leads, partnership inquiries, or business development emails, use web search to research and qualify each lead, save qualified leads to my Notion database with key details, and email me a clean harvest report showing what was found, qualified, and saved.',
-  },
+  { name: 'Morning Inbox Sweep', description: 'Every morning at 7am, scans inbox for unanswered client emails, drafts replies in your tone, emails you a summary.', cron_schedule: '0 7 * * *', output_channel: 'gmail' as const, task_description: 'Every morning at 7am, search my inbox for any unanswered client emails, study my recent sent emails to learn my writing tone and voice, draft a personalized reply for each unanswered email matching my style exactly, and email me a clear summary with the subject line, sender, and a link to each draft in Gmail.' },
+  { name: 'Meeting Autopilot', description: 'Every morning at 9am, finds meeting requests, checks calendar availability, books them with Meet links.', cron_schedule: '0 9 * * *', output_channel: 'both' as const, task_description: 'Every morning at 9am, search my Gmail inbox for any meeting requests or scheduling emails, check my Google Calendar for availability in the proposed time slots, book confirmed meetings with Google Meet links, and send me a Slack message listing everything that was scheduled today.' },
+  { name: 'Weekly Opportunity Digest', description: 'Every Sunday at 6pm, scans all emails from the week, identifies revenue opportunities and leads.', cron_schedule: '0 18 * * 0', output_channel: 'gmail' as const, task_description: 'Every Sunday at 6pm, search through all emails I received this week, identify any revenue opportunities, potential partnerships, warm leads, or high-priority follow-ups, and write a comprehensive weekly digest email.' },
+  { name: 'Client Pulse', description: 'Every hour, checks if email arrived from your top contacts. Sends an immediate Slack ping.', cron_schedule: '0 */1 * * *', output_channel: 'slack' as const, task_description: 'Every hour, check if any new email arrived from my most important contacts. If so, immediately send me a Slack message with the sender name, subject line, and first two sentences.' },
+  { name: 'Notion + Inbox Sync', description: 'Every morning at 8am, cross-references your Notion tasks with Gmail, sends a project briefing.', cron_schedule: '0 8 * * *', output_channel: 'gmail' as const, task_description: 'Every morning at 8am, read my current Notion task list, search my Gmail inbox for emails related to each active project, find which projects have unread messages, and email me a concise project briefing.' },
+  { name: 'Lead Harvest', description: 'Every morning at 5am, runs the full lead qualification flow across inbox and web, pushes to Notion.', cron_schedule: '0 5 * * *', output_channel: 'gmail' as const, task_description: 'Every morning at 5am, search my inbox for any new inbound leads, partnership inquiries, or business development emails, use web search to research and qualify each lead, save qualified leads to my Notion database, and email me a harvest report.' },
 ];
 
 const SCHEDULE_PATTERNS = [
-  { label: 'Every day', key: 'daily', needsTime: true, needsDay: false },
-  { label: 'Every hour', key: 'hourly', needsTime: false, needsDay: false },
-  { label: 'Every weekday', key: 'weekday', needsTime: true, needsDay: false },
-  { label: 'Every week', key: 'weekly', needsTime: true, needsDay: true },
-  { label: 'Custom cron', key: 'custom', needsTime: false, needsDay: false },
+  { label: 'Every day',     key: 'daily',   needsTime: true,  needsDay: false },
+  { label: 'Every hour',   key: 'hourly',  needsTime: false, needsDay: false },
+  { label: 'Weekdays',     key: 'weekday', needsTime: true,  needsDay: false },
+  { label: 'Weekly',       key: 'weekly',  needsTime: true,  needsDay: true  },
+  { label: 'Custom cron',  key: 'custom',  needsTime: false, needsDay: false },
 ];
 
 const WEEK_DAYS = [
-  { label: 'Sunday', value: '0' },
-  { label: 'Monday', value: '1' },
-  { label: 'Tuesday', value: '2' },
-  { label: 'Wednesday', value: '3' },
-  { label: 'Thursday', value: '4' },
-  { label: 'Friday', value: '5' },
+  { label: 'Sunday', value: '0' }, { label: 'Monday', value: '1' },
+  { label: 'Tuesday', value: '2' }, { label: 'Wednesday', value: '3' },
+  { label: 'Thursday', value: '4' }, { label: 'Friday', value: '5' },
   { label: 'Saturday', value: '6' },
 ];
 
@@ -253,17 +201,29 @@ function parseCronToSchedule(cron: string): { key: string; time: string; weekday
   return { key: 'daily', time, weekday: '0' };
 }
 
-const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December'];
-const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
-// ── New Schedule Modal ─────────────────────────────────────────────────────────
+// ── Agent Color Map (deterministic from name) ──────────────────────────────────
 
-function NewScheduleModal({
-  open, onClose, onSave, initial,
-}: {
-  open: boolean;
-  onClose: () => void;
+const PILL_COLORS = [
+  'bg-violet-500/20 text-violet-300 border-violet-500/30',
+  'bg-sky-500/20 text-sky-300 border-sky-500/30',
+  'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+  'bg-amber-500/20 text-amber-300 border-amber-500/30',
+  'bg-rose-500/20 text-rose-300 border-rose-500/30',
+  'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
+];
+function agentColor(name: string) {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return PILL_COLORS[h % PILL_COLORS.length];
+}
+
+// ── New Schedule Modal (Dialog) ────────────────────────────────────────────────
+
+function NewScheduleModal({ open, onClose, onSave, initial }: {
+  open: boolean; onClose: () => void;
   onSave: (data: Partial<Agent>) => Promise<void>;
   initial?: Partial<Agent>;
 }) {
@@ -276,7 +236,7 @@ function NewScheduleModal({
   const [scheduleTime, setScheduleTime] = useState(parsed.time);
   const [scheduleWeekday, setScheduleWeekday] = useState(parsed.weekday);
   const [customCron, setCustomCron] = useState(patternKey === 'custom' ? (initial?.cron_schedule || '') : '');
-  const [channel, setChannel] = useState<'gmail' | 'slack' | 'both'>(initial?.output_channel || 'gmail');
+  const [channel, setChannel] = useState<'gmail'|'slack'|'both'>(initial?.output_channel || 'gmail');
   const [slackCh, setSlackCh] = useState(initial?.slack_channel || '');
   const [skipConf, setSkipConf] = useState(initial?.skip_confirmations ?? false);
   const [saving, setSaving] = useState(false);
@@ -291,13 +251,11 @@ function NewScheduleModal({
     try {
       const agentName = name.trim() || task.trim().slice(0, 40).replace(/\.$/, '') + (task.trim().length > 40 ? '…' : '');
       await onSave({
-        name: agentName,
-        task_description: task.trim(),
-        cron_schedule: cron || '0 7 * * *',
-        output_channel: channel,
+        name: agentName, task_description: task.trim(),
+        cron_schedule: cron || '0 7 * * *', output_channel: channel,
         slack_channel: channel !== 'gmail' ? slackCh || null : null,
         skip_confirmations: skipConf,
-        // @ts-ignore — extra field used by handleCreate to save timezone
+        // @ts-ignore
         _timezone: browserTz,
       });
       onClose();
@@ -308,66 +266,65 @@ function NewScheduleModal({
     }
   };
 
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 30 }}
-        className="relative w-full max-w-xl bg-[#111] border border-white/10 rounded-3xl overflow-y-auto max-h-[92vh] shadow-2xl"
+    <Dialog open={open} onOpenChange={v => !v && onClose()}>
+      <DialogContent
+        showCloseButton={false}
+        className={cn(
+          'w-full max-w-2xl bg-zinc-950 border border-zinc-700/50 rounded-2xl p-0 overflow-hidden shadow-2xl shadow-black/60',
+          'max-h-[90vh] overflow-y-auto',
+        )}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-7 pt-7 pb-0">
+        <div className="flex items-center justify-between px-8 pt-7 pb-5 border-b border-zinc-800/60">
           <div>
-            <h2 className="text-[18px] font-bold text-white">
+            <DialogTitle className="text-[20px] font-bold text-zinc-100">
               {initial?.id ? 'Edit schedule' : 'New schedule'}
-            </h2>
-            <p className="text-[13px] text-white/35 mt-0.5">Describe the job in plain English</p>
+            </DialogTitle>
+            <p className="text-[14px] text-zinc-500 mt-1">Describe the job and when to run it</p>
           </div>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full text-white/30 hover:text-white hover:bg-white/10 transition-all">
-            <X className="w-4 h-4" />
+          <button onClick={onClose} className="w-9 h-9 flex items-center justify-center rounded-xl text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-all">
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="px-7 py-6 space-y-5">
+        <div className="px-8 py-6 space-y-6">
           {/* Task description */}
-          <textarea
-            value={task}
-            onChange={e => setTask(e.target.value)}
-            placeholder="Describe what you want this agent to do..."
-            rows={5}
-            className="w-full bg-white/[0.04] border border-white/10 rounded-2xl px-5 py-4 text-white text-[14px] leading-relaxed placeholder:text-white/20 focus:outline-none focus:border-white/25 resize-none transition-colors"
-          />
+          <div>
+            <label className="block text-[12px] font-semibold uppercase tracking-widest text-zinc-500 mb-2.5">What should Arcus do?</label>
+            <textarea
+              value={task}
+              onChange={e => setTask(e.target.value)}
+              placeholder="Describe what you want this agent to do in plain English…"
+              rows={5}
+              className="w-full bg-zinc-900 border border-zinc-700/60 rounded-xl px-4 py-3.5 text-[15px] text-zinc-100 leading-relaxed placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500/30 resize-none transition-all"
+            />
+          </div>
 
           {/* Optional name */}
           <div>
-            <label className="block text-[11px] font-bold uppercase tracking-widest text-white/30 mb-2">Agent name (optional)</label>
+            <label className="block text-[12px] font-semibold uppercase tracking-widest text-zinc-500 mb-2.5">Agent name <span className="normal-case font-normal text-zinc-600">(optional)</span></label>
             <input
               value={name}
               onChange={e => setName(e.target.value)}
               placeholder="e.g. Morning Client Check"
-              className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-white text-[13px] placeholder:text-white/20 focus:outline-none focus:border-white/25 transition-colors"
+              className="w-full bg-zinc-900 border border-zinc-700/60 rounded-xl px-4 py-3 text-[15px] text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500/30 transition-all"
             />
           </div>
 
           {/* Schedule */}
           <div>
-            <label className="block text-[11px] font-bold uppercase tracking-widest text-white/30 mb-3">Schedule</label>
-
-            {/* Pattern pills */}
+            <label className="block text-[12px] font-semibold uppercase tracking-widest text-zinc-500 mb-3">Schedule</label>
             <div className="flex flex-wrap gap-2 mb-4">
               {SCHEDULE_PATTERNS.map(p => (
                 <button
                   key={p.key}
                   onClick={() => setPatternKey(p.key)}
                   className={cn(
-                    'px-3.5 py-1.5 rounded-full text-[12px] font-medium transition-all border',
+                    'px-4 py-2 rounded-lg text-[13px] font-medium transition-all border',
                     patternKey === p.key
-                      ? 'bg-white text-black border-white'
-                      : 'bg-white/5 border-white/10 text-white/50 hover:border-white/20 hover:text-white/70',
+                      ? 'bg-zinc-100 text-zinc-950 border-zinc-100'
+                      : 'bg-zinc-900 border-zinc-700/60 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200',
                   )}
                 >
                   {p.label}
@@ -375,80 +332,72 @@ function NewScheduleModal({
               ))}
             </div>
 
-            {/* Time picker — shown for day/weekday/weekly */}
             {activePat.needsTime && (
-              <div className="flex gap-3">
+              <div className="flex gap-4">
                 {activePat.needsDay && (
                   <div className="flex-1">
-                    <label className="block text-[10px] font-bold uppercase tracking-widest text-white/25 mb-1.5">Day</label>
+                    <label className="block text-[11px] font-semibold uppercase tracking-widest text-zinc-600 mb-2">Day</label>
                     <select
                       value={scheduleWeekday}
                       onChange={e => setScheduleWeekday(e.target.value)}
-                      className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl px-3 py-2.5 text-white text-[13px] focus:outline-none focus:border-white/25 transition-colors appearance-none"
+                      className="w-full bg-zinc-900 border border-zinc-700/60 rounded-xl px-4 py-3 text-[14px] text-zinc-100 focus:outline-none focus:border-zinc-500 transition-all appearance-none cursor-pointer"
                     >
-                      {WEEK_DAYS.map(d => (
-                        <option key={d.value} value={d.value}>{d.label}</option>
-                      ))}
+                      {WEEK_DAYS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
                     </select>
                   </div>
                 )}
                 <div className={activePat.needsDay ? 'flex-1' : 'w-full'}>
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-white/25 mb-1.5">Time (your local time)</label>
+                  <label className="block text-[11px] font-semibold uppercase tracking-widest text-zinc-600 mb-2">Time <span className="normal-case font-normal text-zinc-700">({browserTz})</span></label>
                   <input
                     type="time"
                     value={scheduleTime}
                     onChange={e => setScheduleTime(e.target.value)}
-                    className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl px-3 py-2.5 text-white text-[13px] focus:outline-none focus:border-white/25 transition-colors"
+                    className="w-full bg-zinc-900 border border-zinc-700/60 rounded-xl px-4 py-3 text-[14px] text-zinc-100 focus:outline-none focus:border-zinc-500 transition-all"
                     style={{ colorScheme: 'dark' }}
                   />
                 </div>
               </div>
             )}
 
-            {/* Custom cron input */}
             {patternKey === 'custom' && (
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-white/25 mb-1.5">Cron expression (UTC)</label>
+                <label className="block text-[11px] font-semibold uppercase tracking-widest text-zinc-600 mb-2">Cron expression (UTC)</label>
                 <input
                   value={customCron}
                   onChange={e => setCustomCron(e.target.value)}
                   placeholder="e.g. 0 9 * * 1-5"
-                  className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl px-4 py-2.5 text-white font-mono text-[12px] placeholder:text-white/20 focus:outline-none focus:border-white/25 transition-colors"
+                  className="w-full bg-zinc-900 border border-zinc-700/60 rounded-xl px-4 py-3 text-[14px] text-zinc-100 font-mono placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 transition-all"
                 />
               </div>
             )}
 
-            {/* Live preview + timezone */}
             {cron && patternKey !== 'custom' && (
-              <div className="mt-2.5 flex items-center justify-between">
-                <p className="text-[11px] text-white/25 font-mono">
-                  Runs: <span className="text-white/50">{cronToLabel(cron)}</span>
+              <div className="mt-3 px-4 py-2.5 bg-zinc-900/60 rounded-lg border border-zinc-800/50">
+                <p className="text-[13px] text-zinc-400">
+                  Runs: <span className="text-zinc-200 font-medium">{cronToLabel(cron)}</span>
                 </p>
-                {activePat.needsTime && (
-                  <p className="text-[11px] text-white/30 font-mono">{browserTz}</p>
-                )}
               </div>
             )}
           </div>
 
           {/* Output channel */}
           <div>
-            <label className="block text-[11px] font-bold uppercase tracking-widest text-white/30 mb-3">Deliver report to</label>
+            <label className="block text-[12px] font-semibold uppercase tracking-widest text-zinc-500 mb-3">Deliver report to</label>
             <div className="flex gap-2">
               {(['gmail', 'slack', 'both'] as const).map(ch => (
                 <button
                   key={ch}
                   onClick={() => setChannel(ch)}
                   className={cn(
-                    'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-medium border transition-all',
+                    'flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[14px] font-medium border transition-all',
                     channel === ch
-                      ? 'bg-white/10 border-white/30 text-white'
-                      : 'bg-white/[0.03] border-white/8 text-white/40 hover:border-white/15 hover:text-white/70',
+                      ? 'bg-zinc-100 text-zinc-950 border-zinc-100'
+                      : 'bg-zinc-900 border-zinc-700/60 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200',
                   )}
                 >
-                  {ch === 'gmail' && <Mail className="w-3.5 h-3.5" />}
-                  {ch === 'slack' && <Slack className="w-3.5 h-3.5" />}
-                  {ch === 'both' && <Zap className="w-3.5 h-3.5" />}
+                  {ch === 'gmail' && <Mail className="w-4 h-4" />}
+                  {ch === 'slack' && <Slack className="w-4 h-4" />}
+                  {ch === 'both' && <Zap className="w-4 h-4" />}
                   {ch === 'both' ? 'Both' : ch.charAt(0).toUpperCase() + ch.slice(1)}
                 </button>
               ))}
@@ -458,157 +407,115 @@ function NewScheduleModal({
                 value={slackCh}
                 onChange={e => setSlackCh(e.target.value)}
                 placeholder="Slack channel (e.g. #reports)"
-                className="mt-2 w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-[12px] placeholder:text-white/20 focus:outline-none focus:border-white/25 transition-colors"
+                className="mt-3 w-full bg-zinc-900 border border-zinc-700/60 rounded-xl px-4 py-3 text-[14px] text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 transition-all"
               />
             )}
           </div>
 
           {/* Skip confirmations */}
-          <div className="flex items-center justify-between bg-white/[0.03] rounded-2xl px-4 py-3.5 border border-white/[0.06]">
+          <div className="flex items-center justify-between bg-zinc-900/70 rounded-xl px-5 py-4 border border-zinc-800/60">
             <div>
-              <p className="text-[13px] font-semibold text-white">Skip confirmations</p>
-              <p className="text-[11px] text-white/30 mt-0.5">No approval needed before sending, publishing, or posting</p>
+              <p className="text-[15px] font-semibold text-zinc-100">Skip confirmations</p>
+              <p className="text-[13px] text-zinc-500 mt-0.5">No approval needed before sending, publishing, or posting</p>
             </div>
             <Toggle checked={skipConf} onChange={() => setSkipConf(v => !v)} />
           </div>
 
-          {/* Buttons */}
+          {/* Actions */}
           <div className="flex gap-3 pt-1">
-            <button
-              onClick={onClose}
-              className="flex-1 py-3 rounded-xl text-[13px] font-semibold text-white/50 bg-white/5 hover:bg-white/10 transition-all border border-white/10"
-            >
+            <button onClick={onClose} className="flex-1 py-3.5 rounded-xl text-[15px] font-semibold text-zinc-400 bg-zinc-900 hover:bg-zinc-800 transition-all border border-zinc-700/60">
               Cancel
             </button>
             <button
               onClick={handleSave}
               disabled={saving || !task.trim()}
-              className="flex-1 py-3 rounded-xl text-[13px] font-bold text-black bg-white hover:bg-white/90 active:scale-[0.98] transition-all disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2"
+              className="flex-1 py-3.5 rounded-xl text-[15px] font-bold text-zinc-950 bg-zinc-100 hover:bg-white active:scale-[0.98] transition-all disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
               {saving ? 'Saving…' : initial?.id ? 'Save changes' : 'Create schedule'}
             </button>
           </div>
         </div>
-      </motion.div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
-// ── Agent Detail Modal ─────────────────────────────────────────────────────────
+// ── Agent Detail Dialog ────────────────────────────────────────────────────────
 
-function AgentDetailModal({
-  agent, onClose, onToggle, onEdit, onDelete, onToggleConfirmations,
-}: {
-  agent: Agent;
-  onClose: () => void;
-  onToggle: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
-  onToggleConfirmations: () => void;
+function AgentDetailModal({ agent, onClose, onToggle, onEdit, onDelete, onToggleConfirmations }: {
+  agent: Agent; onClose: () => void; onToggle: () => void;
+  onEdit: () => void; onDelete: () => void; onToggleConfirmations: () => void;
 }) {
   const nextRun = getNextRunDate(agent.cron_schedule);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const color = agentColor(agent.name);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <motion.div
-        initial={{ opacity: 0, scale: 0.96, y: 16 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.96, y: 16 }}
-        className="relative w-full max-w-sm bg-[#141414] border border-white/10 rounded-3xl overflow-hidden shadow-2xl"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 pt-5 pb-4">
-          <h2 className="text-[13px] font-bold text-white/40 uppercase tracking-widest">Scheduled</h2>
-          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-full text-white/30 hover:text-white hover:bg-white/10 transition-all">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Agent name row */}
-        <div className="flex items-center gap-3 px-5 mb-2">
-          <h3 className="text-[15px] font-bold text-white flex-1 leading-snug">{agent.name}</h3>
-          <Toggle
-            checked={agent.status !== 'paused'}
-            onChange={onToggle}
-          />
-          <div className="relative">
-            <button
-              onClick={() => setMenuOpen(v => !v)}
-              className="w-7 h-7 flex items-center justify-center rounded-full text-white/30 hover:text-white hover:bg-white/10 transition-all"
-            >
-              <MoreHorizontal className="w-4 h-4" />
+    <Dialog open onOpenChange={v => !v && onClose()}>
+      <DialogContent showCloseButton={false} className="w-full max-w-md bg-zinc-950 border border-zinc-700/50 rounded-2xl p-0 overflow-hidden shadow-2xl shadow-black/60">
+        <div className="px-6 pt-6 pb-4 border-b border-zinc-800/60 flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className={cn('px-2.5 py-1 rounded-md text-[11px] font-semibold border', color)}>
+              {cronToLabel(agent.cron_schedule)}
+            </div>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Toggle checked={agent.status !== 'paused'} onChange={onToggle} />
+            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-all">
+              <X className="w-4 h-4" />
             </button>
-            <AnimatePresence>
-              {menuOpen && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.92, y: -4 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.92, y: -4 }}
-                  className="absolute right-0 top-9 w-36 bg-[#1e1e1e] border border-white/10 rounded-xl overflow-hidden shadow-xl z-10"
-                >
-                  <button onClick={() => { setMenuOpen(false); onEdit(); }} className="w-full px-4 py-2.5 text-left text-[12px] text-white/70 hover:bg-white/8 hover:text-white transition-all">
-                    Edit
-                  </button>
-                  <button onClick={() => { setMenuOpen(false); onDelete(); }} className="w-full px-4 py-2.5 text-left text-[12px] text-red-400 hover:bg-red-500/10 transition-all">
-                    Delete
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
           </div>
         </div>
 
-        {/* Description */}
-        <p className="px-5 text-[12px] text-white/40 leading-relaxed mb-4 line-clamp-3">
-          {agent.task_description}
-        </p>
+        <div className="px-6 py-5">
+          <h3 className="text-[18px] font-bold text-zinc-100 leading-snug mb-2">{agent.name}</h3>
+          <p className="text-[14px] text-zinc-400 leading-relaxed line-clamp-4 mb-5">{agent.task_description}</p>
 
-        {/* Info rows */}
-        <div className="mx-5 border border-white/[0.06] rounded-2xl overflow-hidden mb-4">
-          {[
-            { label: 'Repeat', value: cronToLabel(agent.cron_schedule) },
-            { label: 'Next run', value: formatNextRun(nextRun) },
-          ].map((row, i) => (
-            <div key={i} className={cn('flex items-center justify-between px-4 py-3', i > 0 && 'border-t border-white/[0.06]')}>
-              <span className="text-[12px] text-white/40">{row.label}</span>
-              <span className="text-[12px] text-white/70 font-medium">{row.value}</span>
-            </div>
-          ))}
-          <div className="flex items-center justify-between px-4 py-3 border-t border-white/[0.06]">
-            <span className="text-[12px] text-white/40">Skip confirmations</span>
-            <span className="text-[12px] text-white/70 font-medium">
-              {agent.skip_confirmations ? 'Always skip' : 'Ask first'}
-            </span>
+          <div className="space-y-2 mb-5">
+            {[
+              { label: 'Repeat', value: cronToLabel(agent.cron_schedule) },
+              { label: 'Next run', value: formatNextRun(nextRun) },
+              { label: 'Confirmations', value: agent.skip_confirmations ? 'Always skip' : 'Ask first' },
+              { label: 'Output', value: agent.output_channel === 'both' ? 'Gmail + Slack' : agent.output_channel.charAt(0).toUpperCase() + agent.output_channel.slice(1) },
+            ].map((row, i) => (
+              <div key={i} className="flex items-center justify-between py-2.5 px-4 bg-zinc-900/60 rounded-lg border border-zinc-800/50">
+                <span className="text-[13px] text-zinc-500">{row.label}</span>
+                <span className="text-[13px] text-zinc-200 font-medium">{row.value}</span>
+              </div>
+            ))}
           </div>
-        </div>
 
-        {/* Past runs */}
-        {agent.last_run_at && (
-          <>
-            <div className="px-5 mb-3">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-white/25">Past runs</p>
-            </div>
-            <div className="px-5 pb-5">
-              <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-4">
-                <p className="text-[12px] text-white/50 font-medium mb-1">
-                  {formatRunDate(agent.last_run_at)}
-                </p>
-                <p className="text-[12px] text-white/35 leading-relaxed line-clamp-3">
-                  {agent.last_report_summary || 'Run completed successfully.'}
-                </p>
+          {agent.last_run_at && (
+            <div className="mb-5">
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-600 mb-2">Last run</p>
+              <div className="bg-zinc-900/60 border border-zinc-800/50 rounded-lg p-4">
+                <p className="text-[13px] text-zinc-400 font-medium mb-1">{formatRunDate(agent.last_run_at)}</p>
+                <p className="text-[13px] text-zinc-500 leading-relaxed line-clamp-3">{agent.last_report_summary || 'Run completed successfully.'}</p>
               </div>
             </div>
-          </>
-        )}
-      </motion.div>
-    </div>
+          )}
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => { onClose(); onEdit(); }}
+              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-zinc-900 border border-zinc-700/60 text-[14px] font-semibold text-zinc-300 hover:bg-zinc-800 transition-all"
+            >
+              <Edit2 className="w-4 h-4" /> Edit
+            </button>
+            <button
+              onClick={() => { onClose(); onDelete(); }}
+              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-[14px] font-semibold text-red-400 hover:bg-red-500/20 transition-all"
+            >
+              <Trash2 className="w-4 h-4" /> Delete
+            </button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
-// ── Calendar View ──────────────────────────────────────────────────────────────
+// ── Full-Page Calendar View ────────────────────────────────────────────────────
 
 function CalendarView({ agents, onAgentClick }: { agents: Agent[]; onAgentClick: (a: Agent) => void }) {
   const today = new Date();
@@ -618,93 +525,93 @@ function CalendarView({ agents, onAgentClick }: { agents: Agent[]; onAgentClick:
   const firstDay = new Date(viewYear, viewMonth, 1).getDay();
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
 
-  // Build calendar grid (6 rows x 7 cols)
   const cells: Array<{ day: number | null; runs: Array<{ agent: Agent; date: Date }> }> = [];
   for (let i = 0; i < firstDay; i++) cells.push({ day: null, runs: [] });
   for (let d = 1; d <= daysInMonth; d++) {
     const runs: Array<{ agent: Agent; date: Date }> = [];
     for (const agent of agents) {
-      const agentRuns = getAgentRunsInMonth(agent, viewYear, viewMonth);
-      for (const runDate of agentRuns) {
-        if (runDate.getDate() === d) {
-          runs.push({ agent, date: runDate });
-        }
+      for (const runDate of getAgentRunsInMonth(agent, viewYear, viewMonth)) {
+        if (runDate.getDate() === d) runs.push({ agent, date: runDate });
       }
     }
-    cells.push({ day: d, runs: runs.slice(0, 2) }); // max 2 shown per cell
+    cells.push({ day: d, runs: runs.slice(0, 3) });
   }
   while (cells.length % 7 !== 0) cells.push({ day: null, runs: [] });
 
-  const prevMonth = () => {
-    if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11); }
-    else setViewMonth(m => m - 1);
-  };
-  const nextMonth = () => {
-    if (viewMonth === 11) { setViewYear(y => y + 1); setViewMonth(0); }
-    else setViewMonth(m => m + 1);
-  };
+  const prevMonth = () => { if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11); } else setViewMonth(m => m - 1); };
+  const nextMonth = () => { if (viewMonth === 11) { setViewYear(y => y + 1); setViewMonth(0); } else setViewMonth(m => m + 1); };
 
   return (
-    <div className="flex-1 overflow-hidden flex flex-col">
-      {/* Calendar nav */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <button onClick={prevMonth} className="w-8 h-8 flex items-center justify-center rounded-xl text-white/40 hover:text-white hover:bg-white/8 transition-all">
-            <ChevronLeft className="w-4 h-4" />
+    <div className="flex flex-col" style={{ height: 'calc(100vh - 196px)' }}>
+      {/* Nav */}
+      <div className="flex items-center justify-between mb-5 flex-shrink-0">
+        <div className="flex items-center gap-2">
+          <button onClick={prevMonth} aria-label="Previous month" className="w-9 h-9 flex items-center justify-center rounded-xl text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-all border border-transparent hover:border-zinc-700/60">
+            <ChevronLeft className="w-5 h-5" />
           </button>
-          <h3 className="text-[16px] font-bold text-white min-w-[140px] text-center">
+          <h3 className="text-[18px] font-bold text-zinc-100 min-w-[180px] text-center">
             {MONTH_NAMES[viewMonth]} {viewYear}
           </h3>
-          <button onClick={nextMonth} className="w-8 h-8 flex items-center justify-center rounded-xl text-white/40 hover:text-white hover:bg-white/8 transition-all">
-            <ChevronRight className="w-4 h-4" />
+          <button onClick={nextMonth} aria-label="Next month" className="w-9 h-9 flex items-center justify-center rounded-xl text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-all border border-transparent hover:border-zinc-700/60">
+            <ChevronRight className="w-5 h-5" />
           </button>
         </div>
         <button
           onClick={() => { setViewYear(today.getFullYear()); setViewMonth(today.getMonth()); }}
-          className="px-3.5 py-1.5 rounded-xl text-[12px] font-semibold text-white/60 border border-white/10 hover:border-white/25 hover:text-white transition-all"
+          className="px-4 py-2 rounded-xl text-[13px] font-semibold text-zinc-300 border border-zinc-700/60 hover:border-zinc-500 hover:text-zinc-100 transition-all"
         >
           Today
         </button>
       </div>
 
       {/* Day headers */}
-      <div className="grid grid-cols-7 mb-2">
+      <div className="grid grid-cols-7 mb-2 flex-shrink-0">
         {DAY_NAMES.map(d => (
-          <div key={d} className="text-center text-[12px] font-medium text-white/30 py-1">{d}</div>
+          <div key={d} className="text-center text-[13px] font-semibold text-zinc-500 py-2">{d}</div>
         ))}
       </div>
 
-      {/* Calendar grid */}
-      <div className="grid grid-cols-7 flex-1 gap-px bg-white/[0.04] rounded-2xl overflow-hidden border border-white/[0.06]">
+      {/* Grid */}
+      <div className="grid grid-cols-7 flex-1 border border-zinc-800/70 rounded-2xl overflow-hidden" style={{ gridTemplateRows: `repeat(${cells.length / 7}, 1fr)` }}>
         {cells.map((cell, idx) => {
           const isToday = cell.day === today.getDate() && viewMonth === today.getMonth() && viewYear === today.getFullYear();
-          const isPast = cell.day !== null && new Date(viewYear, viewMonth, cell.day) < today;
+          const isPast = cell.day !== null && new Date(viewYear, viewMonth, cell.day) < new Date(today.getFullYear(), today.getMonth(), today.getDate());
+          const isOtherMonth = cell.day === null;
           return (
             <div
               key={idx}
               className={cn(
-                'bg-[#0c0c0c] min-h-[90px] p-2 flex flex-col gap-1',
-                !cell.day && 'bg-[#080808]',
+                'flex flex-col p-2.5 border-r border-b border-zinc-800/50 last:border-r-0 overflow-hidden',
+                isOtherMonth ? 'bg-zinc-900/20' : 'bg-zinc-900/40 hover:bg-zinc-900/70 transition-colors',
+                idx % 7 === 6 && 'border-r-0',
               )}
             >
               {cell.day !== null && (
                 <>
                   <div className={cn(
-                    'w-6 h-6 flex items-center justify-center text-[12px] font-medium rounded-full self-end',
-                    isToday ? 'bg-white text-black font-bold' : isPast ? 'text-white/35' : 'text-white/70',
+                    'w-7 h-7 flex items-center justify-center text-[13px] font-semibold rounded-full self-end mb-1 flex-shrink-0',
+                    isToday ? 'bg-zinc-100 text-zinc-950 shadow-sm' : isPast ? 'text-zinc-600' : 'text-zinc-300',
                   )}>
                     {cell.day}
                   </div>
-                  {cell.runs.map(({ agent, date }, ri) => (
-                    <button
-                      key={ri}
-                      onClick={() => onAgentClick(agent)}
-                      className="text-left bg-[#1e1e1e] hover:bg-[#252525] rounded-md px-1.5 py-1 transition-colors"
-                    >
-                      <p className="text-[10px] font-medium text-white/60 truncate leading-none">{agent.name}</p>
-                      <p className="text-[9px] text-white/30 mt-0.5">{formatTime(date)}</p>
-                    </button>
-                  ))}
+                  <div className="space-y-1 overflow-hidden">
+                    {cell.runs.map(({ agent, date }, ri) => {
+                      const color = agentColor(agent.name);
+                      return (
+                        <button
+                          key={ri}
+                          onClick={() => onAgentClick(agent)}
+                          className={cn(
+                            'w-full text-left rounded-md px-2 py-1 border transition-all hover:opacity-90 active:scale-[0.98]',
+                            color,
+                          )}
+                        >
+                          <p className="text-[11px] font-semibold truncate leading-tight">{agent.name}</p>
+                          <p className="text-[10px] opacity-70 mt-0.5">{formatTime(date)}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </>
               )}
             </div>
@@ -715,12 +622,12 @@ function CalendarView({ agents, onAgentClick }: { agents: Agent[]; onAgentClick:
   );
 }
 
-// ── Template Cards (empty state) ───────────────────────────────────────────────
+// ── Template Cards ─────────────────────────────────────────────────────────────
 
 function TemplateCards({ onActivate }: { onActivate: (t: typeof TEMPLATES[0]) => void }) {
   return (
     <div>
-      <p className="text-[13px] text-white/30 mb-6 text-center">
+      <p className="text-[15px] text-zinc-400 mb-8 text-center">
         Get started with a pre-built agent — activate in one click, customize anytime.
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -729,21 +636,21 @@ function TemplateCards({ onActivate }: { onActivate: (t: typeof TEMPLATES[0]) =>
             key={i}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.05 }}
-            className="bg-[#0e0e0e] border border-white/[0.07] rounded-2xl p-5 flex flex-col hover:border-white/15 transition-all group"
+            transition={{ delay: i * 0.06 }}
+            className="bg-zinc-900/60 border border-zinc-800/70 rounded-2xl p-5 flex flex-col hover:border-zinc-600/70 hover:bg-zinc-900/80 transition-all group shadow-sm"
           >
-            <div className="flex items-center gap-2.5 mb-3">
-              <div className="w-8 h-8 rounded-xl bg-white/[0.05] flex items-center justify-center flex-shrink-0">
-                <Clock className="w-4 h-4 text-white/40" />
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-9 h-9 rounded-xl bg-zinc-800/80 flex items-center justify-center flex-shrink-0 group-hover:bg-zinc-700/80 transition-colors">
+                <Clock className="w-4.5 h-4.5 text-zinc-400" />
               </div>
-              <h4 className="text-[13px] font-bold text-white leading-tight">{t.name}</h4>
+              <h4 className="text-[15px] font-bold text-zinc-100 leading-tight">{t.name}</h4>
             </div>
-            <p className="text-[12px] text-white/40 leading-relaxed flex-1 mb-4">{t.description}</p>
+            <p className="text-[13px] text-zinc-400 leading-relaxed flex-1 mb-4">{t.description}</p>
             <div className="flex items-center justify-between">
-              <span className="text-[11px] text-white/25 font-mono">{cronToLabel(t.cron_schedule)}</span>
+              <span className="text-[12px] text-zinc-600 font-medium">{cronToLabel(t.cron_schedule)}</span>
               <button
                 onClick={() => onActivate(t)}
-                className="px-3.5 py-1.5 rounded-xl bg-white text-black text-[11px] font-bold hover:bg-white/90 active:scale-95 transition-all"
+                className="px-4 py-1.5 rounded-lg bg-zinc-100 text-zinc-950 text-[13px] font-bold hover:bg-white active:scale-95 transition-all"
               >
                 Activate
               </button>
@@ -757,15 +664,12 @@ function TemplateCards({ onActivate }: { onActivate: (t: typeof TEMPLATES[0]) =>
 
 // ── Agent Task Card ────────────────────────────────────────────────────────────
 
-function AgentTaskCard({
-  agent, onClick, onToggle, onToggleConfirmations,
-}: {
-  agent: Agent;
-  onClick: () => void;
-  onToggle: () => void;
-  onToggleConfirmations: () => void;
+function AgentTaskCard({ agent, onClick, onToggle, onEdit, onDelete, onToggleConfirmations }: {
+  agent: Agent; onClick: () => void; onToggle: () => void;
+  onEdit: () => void; onDelete: () => void; onToggleConfirmations: () => void;
 }) {
   const nextRun = getNextRunDate(agent.cron_schedule);
+  const color = agentColor(agent.name);
 
   return (
     <motion.div
@@ -773,54 +677,69 @@ function AgentTaskCard({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -6 }}
-      className="bg-[#111] border border-white/[0.08] rounded-2xl overflow-hidden hover:border-white/15 transition-all"
+      className="bg-zinc-900/60 border border-zinc-800/70 rounded-2xl overflow-hidden hover:border-zinc-700/70 transition-all shadow-sm group"
     >
-      {/* Main body */}
       <div className="p-5 pb-4">
-        <div className="flex items-start gap-3 mb-2">
-          <div className="w-9 h-9 rounded-xl bg-white/[0.05] flex items-center justify-center flex-shrink-0 mt-0.5">
-            <Clock className="w-4 h-4 text-white/40" />
+        <div className="flex items-start gap-3.5 mb-3">
+          <div className={cn('px-2.5 py-1 rounded-lg text-[11px] font-bold border flex-shrink-0 mt-0.5', color)}>
+            {cronToLabel(agent.cron_schedule).split(' ')[0]}
           </div>
           <div className="flex-1 min-w-0">
             <button
               onClick={onClick}
-              className="text-[14px] font-bold text-white text-left hover:text-white/80 transition-colors leading-tight line-clamp-1"
+              className="text-[16px] font-bold text-zinc-100 text-left hover:text-zinc-300 transition-colors leading-tight line-clamp-1 block w-full"
             >
               {agent.name}
             </button>
-            <p className="text-[12px] text-white/40 mt-1 leading-relaxed line-clamp-3">
-              {agent.task_description}
-            </p>
+            <p className="text-[13px] text-zinc-500 mt-1.5 leading-relaxed line-clamp-2">{agent.task_description}</p>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0 pt-0.5">
             <Toggle checked={agent.status !== 'paused'} onChange={onToggle} />
-            <button
-              onClick={onClick}
-              className="w-7 h-7 flex items-center justify-center rounded-full text-white/25 hover:text-white hover:bg-white/10 transition-all"
-            >
-              <MoreHorizontal className="w-4 h-4" />
-            </button>
+            <DropdownMenuRoot.Root>
+              <DropdownMenuTrigger asChild>
+                <button className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-all">
+                  <MoreHorizontal className="w-4 h-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-[140px] bg-zinc-900 border border-zinc-700/60 rounded-xl p-1 shadow-xl">
+                <DropdownMenuItem onClick={onEdit} className="flex items-center gap-2 px-3 py-2 text-[13px] text-zinc-300 hover:text-zinc-100 cursor-pointer rounded-lg">
+                  <Edit2 className="w-3.5 h-3.5" /> Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={onDelete} variant="destructive" className="flex items-center gap-2 px-3 py-2 text-[13px] cursor-pointer rounded-lg">
+                  <Trash2 className="w-3.5 h-3.5" /> Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenuRoot.Root>
           </div>
         </div>
 
-        {/* Repeat / Next run rows */}
-        <div className="ml-12 mt-3 space-y-1.5">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] text-white/30">Repeat</span>
-            <span className="text-[11px] text-white/55 font-medium">{cronToLabel(agent.cron_schedule)}</span>
+        <div className="flex items-center gap-4 mt-3 pt-3 border-t border-zinc-800/50">
+          <div className="flex-1">
+            <span className="text-[11px] font-semibold uppercase tracking-widest text-zinc-600 block mb-0.5">Schedule</span>
+            <span className="text-[13px] text-zinc-300 font-medium">{cronToLabel(agent.cron_schedule)}</span>
           </div>
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] text-white/30">Next run</span>
-            <span className="text-[11px] text-white/55 font-medium">{formatNextRun(nextRun)}</span>
+          <div className="flex-1">
+            <span className="text-[11px] font-semibold uppercase tracking-widest text-zinc-600 block mb-0.5">Next run</span>
+            <span className="text-[13px] text-zinc-300 font-medium">{formatNextRun(nextRun)}</span>
+          </div>
+          <div>
+            <span className={cn(
+              'inline-flex px-2.5 py-1 rounded-full text-[11px] font-semibold',
+              agent.status === 'active' ? 'bg-emerald-500/15 text-emerald-400' :
+              agent.status === 'running' ? 'bg-sky-500/15 text-sky-400' :
+              'bg-zinc-800 text-zinc-500',
+            )}>
+              {agent.status === 'running' ? 'Running…' : agent.status === 'active' ? 'Active' : 'Paused'}
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Skip confirmations bar */}
-      <div className="mx-5 mb-4 bg-[#0a0a0a] border border-white/[0.06] rounded-xl px-4 py-3 flex items-center justify-between">
+      {/* Skip confirmations */}
+      <div className="mx-5 mb-4 bg-zinc-950/60 border border-zinc-800/50 rounded-xl px-4 py-3 flex items-center justify-between">
         <div>
-          <p className="text-[12px] font-semibold text-white">Skip confirmations</p>
-          <p className="text-[11px] text-white/30 mt-0.5">No approval needed before sending, publishing, or posting</p>
+          <p className="text-[13px] font-semibold text-zinc-300">Skip confirmations</p>
+          <p className="text-[12px] text-zinc-600 mt-0.5">No approval needed before sending, publishing, or posting</p>
         </div>
         <Toggle checked={agent.skip_confirmations} onChange={onToggleConfirmations} />
       </div>
@@ -828,17 +747,26 @@ function AgentTaskCard({
   );
 }
 
-// ── Main Page ──────────────────────────────────────────────────────────────────
+// ── Inner Page (needs useSearchParams) ────────────────────────────────────────
 
-export default function ScheduledPage() {
+function ScheduledPageInner() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tab = (searchParams.get('tab') as 'calendar' | 'tasks') || 'tasks';
+
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<'calendar' | 'tasks'>('tasks');
   const [createOpen, setCreateOpen] = useState(false);
   const [editAgent, setEditAgent] = useState<Agent | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [tableError, setTableError] = useState(false);
   const [activatingTemplate, setActivatingTemplate] = useState<typeof TEMPLATES[0] | null>(null);
+
+  const setTab = (t: 'calendar' | 'tasks') => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', t);
+    router.replace(`?${params.toString()}`);
+  };
 
   const fetchAgents = async () => {
     try {
@@ -846,9 +774,7 @@ export default function ScheduledPage() {
       const data = await res.json();
       if (data.error?.includes('not set up')) { setTableError(true); return; }
       setAgents(data.agents || []);
-    } catch { /* ignore */ } finally {
-      setLoading(false);
-    }
+    } catch { /* ignore */ } finally { setLoading(false); }
   };
 
   useEffect(() => { fetchAgents(); }, []);
@@ -861,7 +787,7 @@ export default function ScheduledPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ timezone: tz }),
       });
-    } catch { /* silent — non-critical */ }
+    } catch { /* silent */ }
   };
 
   const handleCreate = async (data: Partial<Agent> & { _timezone?: string }) => {
@@ -869,14 +795,7 @@ export default function ScheduledPage() {
     const res = await fetch('/api/arcus/agents', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: agentData.name,
-        taskDescription: agentData.task_description,
-        cronSchedule: agentData.cron_schedule,
-        outputChannel: agentData.output_channel,
-        slackChannel: agentData.slack_channel,
-        skipConfirmations: agentData.skip_confirmations,
-      }),
+      body: JSON.stringify({ name: agentData.name, taskDescription: agentData.task_description, cronSchedule: agentData.cron_schedule, outputChannel: agentData.output_channel, slackChannel: agentData.slack_channel, skipConfirmations: agentData.skip_confirmations }),
     });
     const json = await res.json();
     if (!res.ok) throw new Error(json.error);
@@ -903,22 +822,14 @@ export default function ScheduledPage() {
 
   const handleToggle = async (agent: Agent) => {
     const newStatus = agent.status === 'paused' ? 'active' : 'paused';
-    await fetch('/api/arcus/agents', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: agent.id, status: newStatus }),
-    });
+    await fetch('/api/arcus/agents', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: agent.id, status: newStatus }) });
     setAgents(prev => prev.map(a => a.id === agent.id ? { ...a, status: newStatus } : a));
     if (selectedAgent?.id === agent.id) setSelectedAgent(a => a ? { ...a, status: newStatus } : a);
   };
 
   const handleToggleConfirmations = async (agent: Agent) => {
     const newVal = !agent.skip_confirmations;
-    await fetch('/api/arcus/agents', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: agent.id, skip_confirmations: newVal }),
-    });
+    await fetch('/api/arcus/agents', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: agent.id, skip_confirmations: newVal }) });
     setAgents(prev => prev.map(a => a.id === agent.id ? { ...a, skip_confirmations: newVal } : a));
     if (selectedAgent?.id === agent.id) setSelectedAgent(a => a ? { ...a, skip_confirmations: newVal } : a);
   };
@@ -931,23 +842,17 @@ export default function ScheduledPage() {
     toast.success('Schedule deleted');
   };
 
-  const handleActivateTemplate = async (t: typeof TEMPLATES[0]) => {
-    setActivatingTemplate(t);
-  };
-
   return (
-    <div className="min-h-screen bg-[#080808] text-white flex flex-col">
-      {/* Page header */}
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col">
+      {/* Header */}
       <div className="flex items-center justify-between px-8 pt-8 pb-0 flex-shrink-0">
         <div>
-          <h1 className="text-[28px] font-bold tracking-tight">
-            <span className="text-red-400">Scheduled</span>
-          </h1>
-          <p className="text-white/30 text-[13px] mt-0.5">Autonomous agents working for you around the clock</p>
+          <h1 className="text-[30px] font-bold tracking-tight text-zinc-100">Scheduled</h1>
+          <p className="text-zinc-500 text-[14px] mt-1">Autonomous agents working for you around the clock</p>
         </div>
         <button
           onClick={() => setCreateOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-white text-black rounded-xl font-bold text-[13px] hover:bg-white/90 active:scale-95 transition-all"
+          className="flex items-center gap-2 px-5 py-3 bg-zinc-100 text-zinc-950 rounded-xl font-bold text-[14px] hover:bg-white active:scale-95 transition-all shadow-sm"
         >
           <Plus className="w-4 h-4" />
           New schedule
@@ -955,47 +860,50 @@ export default function ScheduledPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-0 px-8 mt-6 border-b border-white/[0.06] flex-shrink-0">
-        {(['calendar', 'tasks'] as const).map(tab => (
+      <div className="flex items-center px-8 mt-6 border-b border-zinc-800/70 flex-shrink-0">
+        {([
+          { key: 'tasks', label: 'Tasks', icon: List },
+          { key: 'calendar', label: 'Calendar', icon: CalendarDays },
+        ] as const).map(({ key, label, icon: Icon }) => (
           <button
-            key={tab}
-            onClick={() => setView(tab)}
+            key={key}
+            onClick={() => setTab(key)}
             className={cn(
-              'px-1 py-3 mr-6 text-[14px] font-semibold capitalize transition-all border-b-2 -mb-px',
-              view === tab
-                ? 'text-white border-white'
-                : 'text-white/30 border-transparent hover:text-white/60',
+              'flex items-center gap-2 px-1 py-3.5 mr-8 text-[15px] font-semibold transition-all border-b-2 -mb-px',
+              tab === key
+                ? 'text-zinc-100 border-zinc-100'
+                : 'text-zinc-500 border-transparent hover:text-zinc-300',
             )}
           >
-            {tab}
+            <Icon className="w-4 h-4" />
+            {label}
           </button>
         ))}
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-8 py-7">
-        {/* DB error */}
         {tableError && (
-          <div className="mb-6 p-4 bg-yellow-500/5 border border-yellow-500/20 rounded-2xl flex items-start gap-3">
-            <AlertCircle className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
+          <div className="mb-6 p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-yellow-400 font-bold text-sm">Database not set up</p>
-              <p className="text-white/40 text-xs mt-0.5">Run the SQL migration in your Supabase project for the arcus_agents table. Also add column: <code className="text-white/60">skip_confirmations boolean default false</code></p>
+              <p className="text-amber-300 font-bold text-[14px]">Database not set up</p>
+              <p className="text-zinc-400 text-[13px] mt-0.5">Run the SQL migration in Supabase for the <code className="text-zinc-200">arcus_agents</code> table.</p>
             </div>
           </div>
         )}
 
         {loading ? (
           <div className="flex items-center justify-center py-32">
-            <Loader2 className="w-7 h-7 text-white/20 animate-spin" />
+            <Loader2 className="w-7 h-7 text-zinc-600 animate-spin" />
           </div>
-        ) : view === 'calendar' ? (
+        ) : tab === 'calendar' ? (
           <CalendarView
             agents={agents.filter(a => a.status !== 'paused')}
             onAgentClick={a => setSelectedAgent(a)}
           />
         ) : agents.length === 0 ? (
-          <TemplateCards onActivate={handleActivateTemplate} />
+          <TemplateCards onActivate={t => setActivatingTemplate(t)} />
         ) : (
           <div className="max-w-2xl mx-auto space-y-4">
             <AnimatePresence mode="popLayout">
@@ -1005,6 +913,8 @@ export default function ScheduledPage() {
                   agent={agent}
                   onClick={() => setSelectedAgent(agent)}
                   onToggle={() => handleToggle(agent)}
+                  onEdit={() => setEditAgent(agent)}
+                  onDelete={() => handleDelete(agent)}
                   onToggleConfirmations={() => handleToggleConfirmations(agent)}
                 />
               ))}
@@ -1030,13 +940,7 @@ export default function ScheduledPage() {
           />
         )}
         {editAgent && (
-          <NewScheduleModal
-            key="edit"
-            open
-            onClose={() => setEditAgent(null)}
-            onSave={handleEdit}
-            initial={editAgent}
-          />
+          <NewScheduleModal key="edit" open onClose={() => setEditAgent(null)} onSave={handleEdit} initial={editAgent} />
         )}
         {selectedAgent && (
           <AgentDetailModal
@@ -1050,5 +954,19 @@ export default function ScheduledPage() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+// ── Page export (Suspense required for useSearchParams) ────────────────────────
+
+export default function ScheduledPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <Loader2 className="w-7 h-7 text-zinc-600 animate-spin" />
+      </div>
+    }>
+      <ScheduledPageInner />
+    </Suspense>
   );
 }

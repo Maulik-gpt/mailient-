@@ -7,9 +7,9 @@
  */
 
 const MODELS = [
-  'google/gemini-2.0-flash-exp:free',    // best free tool-calling support
   'meta-llama/llama-3.3-70b-instruct:free',
-  'openrouter/auto',                      // let OpenRouter pick
+  'google/gemini-2.0-flash-001',
+  'openrouter/auto',
 ];
 
 function getKeys(): string[] {
