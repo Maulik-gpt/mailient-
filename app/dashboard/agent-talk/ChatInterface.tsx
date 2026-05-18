@@ -1380,7 +1380,7 @@ export default function ChatInterface({
         const res = await fetch('/api/agent-talk/dashboard');
         if (res.ok) {
           const data = await res.json();
-          if (data.userName) setUserName(data.userName);
+          if (data.userName) setUserName(data.userName.trim());
           setEmailStats(data.emailStats || emailStats);
           setMeetings(data.meetings || []);
           setActionItems(data.actionItems || []);

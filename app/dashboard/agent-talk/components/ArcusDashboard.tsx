@@ -170,7 +170,7 @@ export function ArcusDashboard({
     const selectedTemplate = DYNAMIC_GREETINGS[randomIndex];
     let resolvedGreeting = selectedTemplate;
     if (userName) {
-      resolvedGreeting = selectedTemplate.replace('{user}', userName);
+      resolvedGreeting = selectedTemplate.replace('{user}', userName.trim());
     } else {
       resolvedGreeting = selectedTemplate.replace(/,?\s*\{user\}/g, '');
     }
@@ -237,7 +237,7 @@ export function ArcusDashboard({
                     className="text-4xl md:text-6xl font-medium text-white tracking-tighter mb-4"
                     style={{ fontFamily: "'Montserrat', sans-serif" }}
                   >
-                    {greetingText || (userName ? `Hey ${userName}` : 'Ask anything about your emails')}
+                    {greetingText || (userName ? `Hey ${userName.trim()}` : 'Ask anything about your emails')}
                   </h1>
                   <p className="text-[15px] text-white/35 max-w-lg mx-auto leading-relaxed">
                     Arcus reads your inbox, drafts replies in your tone, books meetings, and manages everything — so you don't have to.

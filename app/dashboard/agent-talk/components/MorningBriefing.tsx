@@ -292,7 +292,7 @@ export function MorningBriefing({
     const selectedTemplate = DYNAMIC_GREETINGS[randomIndex];
     let resolvedGreeting = selectedTemplate;
     if (userName) {
-      resolvedGreeting = selectedTemplate.replace('{user}', userName);
+      resolvedGreeting = selectedTemplate.replace('{user}', userName.trim());
     } else {
       resolvedGreeting = selectedTemplate.replace(/,?\s*\{user\}/g, '');
     }
@@ -331,7 +331,7 @@ export function MorningBriefing({
           </div>
           <div>
             <h1 className="text-3xl md:text-4xl font-medium text-white tracking-tighter" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-              {greetingText || `${greeting}${userName ? `, ${userName}` : ''}`}
+              {greetingText || `${greeting}${userName ? `, ${userName.trim()}` : ''}`}
             </h1>
           </div>
         </div>
