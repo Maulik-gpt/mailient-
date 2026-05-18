@@ -560,32 +560,32 @@ function CalendarView({ agents, onAgentClick, onCreateNew }: {
   const nextMonth = () => { if (viewMonth === 11) { setViewYear(y => y + 1); setViewMonth(0); } else setViewMonth(m => m + 1); };
 
   return (
-    <div className="flex-1 flex flex-col min-h-0">
+    <div className="flex-1 flex flex-col min-h-0 bg-zinc-950">
       {/* Calendar nav bar */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800/60 flex-shrink-0">
-        <div className="flex items-center gap-1">
-          <button onClick={prevMonth} className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800 transition-all">
-            <ChevronLeft className="w-5 h-5" />
+      <div className="flex items-center justify-between px-8 py-5 border-b border-zinc-900 flex-shrink-0 bg-zinc-950/60 backdrop-blur-md">
+        <div className="flex items-center gap-2">
+          <button onClick={prevMonth} className="w-9 h-9 flex items-center justify-center rounded-xl text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 border border-zinc-900 hover:border-zinc-800 transition-all duration-150">
+            <ChevronLeft className="w-4.5 h-4.5" />
           </button>
-          <h3 className="text-[17px] font-semibold text-zinc-100 min-w-[160px] text-center">
+          <h3 className="text-[18px] font-extrabold text-zinc-100 min-w-[170px] text-center tracking-tight font-sans">
             {MONTH_NAMES[viewMonth]} {viewYear}
           </h3>
-          <button onClick={nextMonth} className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800 transition-all">
-            <ChevronRight className="w-5 h-5" />
+          <button onClick={nextMonth} className="w-9 h-9 flex items-center justify-center rounded-xl text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 border border-zinc-900 hover:border-zinc-800 transition-all duration-150">
+            <ChevronRight className="w-4.5 h-4.5" />
           </button>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <button
             onClick={() => { setViewYear(today.getFullYear()); setViewMonth(today.getMonth()); }}
-            className="px-4 py-1.5 rounded-lg text-[13px] font-semibold text-zinc-300 border border-zinc-700/60 hover:border-zinc-500 hover:text-white transition-all"
+            className="px-4 py-2 rounded-xl text-[13px] font-bold text-zinc-300 bg-zinc-900 border border-zinc-900 hover:border-zinc-800 hover:text-white transition-all duration-150 animate-none"
           >
             Today
           </button>
-          <div className="flex border border-zinc-700/60 rounded-lg overflow-hidden">
-            <button className="w-8 h-8 flex items-center justify-center bg-zinc-800 text-zinc-100 transition-all">
+          <div className="flex border border-zinc-900 bg-zinc-950 rounded-xl overflow-hidden p-0.5">
+            <button className="w-8 h-8 flex items-center justify-center bg-zinc-900 text-zinc-100 rounded-lg transition-all duration-150">
               <CalendarDays className="w-4 h-4" />
             </button>
-            <button className="w-8 h-8 flex items-center justify-center text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300 transition-all">
+            <button className="w-8 h-8 flex items-center justify-center text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300 rounded-lg transition-all duration-150">
               <List className="w-4 h-4" />
             </button>
           </div>
@@ -593,9 +593,9 @@ function CalendarView({ agents, onAgentClick, onCreateNew }: {
       </div>
 
       {/* Day-of-week headers */}
-      <div className="grid grid-cols-7 border-b border-zinc-800/60 flex-shrink-0">
+      <div className="grid grid-cols-7 border-b border-zinc-900/60 flex-shrink-0 bg-zinc-950">
         {DAY_NAMES.map(d => (
-          <div key={d} className="text-center text-[12px] font-medium text-zinc-500 py-2.5 border-r border-zinc-800/60 last:border-r-0">
+          <div key={d} className="text-center text-[11px] font-bold uppercase tracking-widest text-zinc-500 py-3.5 border-r border-zinc-900/40 last:border-r-0">
             {d}
           </div>
         ))}
@@ -603,7 +603,7 @@ function CalendarView({ agents, onAgentClick, onCreateNew }: {
 
       {/* Calendar grid — fills all remaining space */}
       <div
-        className="flex-1 grid grid-cols-7 min-h-0"
+        className="flex-1 grid grid-cols-7 min-h-0 bg-zinc-950"
         style={{ gridTemplateRows: `repeat(${weeks}, 1fr)` }}
       >
         {cells.map((cell, idx) => {
@@ -613,41 +613,53 @@ function CalendarView({ agents, onAgentClick, onCreateNew }: {
             <div
               key={idx}
               className={cn(
-                'flex flex-col border-r border-b border-zinc-800/60 overflow-hidden',
+                'flex flex-col border-r border-b border-zinc-900/60 p-2.5 overflow-hidden transition-all duration-200 group/cell',
                 idx % 7 === 6 && 'border-r-0',
-                cell.day === null && 'bg-[#0a0a0a]',
+                cell.day === null 
+                  ? 'bg-[#050505]' 
+                  : isToday 
+                    ? 'bg-zinc-900/45' 
+                    : 'bg-zinc-950/20 hover:bg-zinc-900/20',
               )}
             >
               {cell.day !== null && (
                 <>
                   {/* Date number row */}
-                  <div className="flex items-start justify-between px-2 pt-2 pb-1 flex-shrink-0">
-                    {isToday ? (
-                      <button
-                        onClick={onCreateNew}
-                        className="w-6 h-6 flex items-center justify-center rounded-full text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-all"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                      </button>
-                    ) : <span />}
+                  <div className="flex items-center justify-between mb-2 flex-shrink-0">
+                    <button
+                      onClick={onCreateNew}
+                      className={cn(
+                        'w-6 h-6 flex items-center justify-center rounded-lg text-zinc-600 hover:text-zinc-200 hover:bg-zinc-900 transition-all',
+                        isToday ? 'opacity-100' : 'opacity-0 group-hover/cell:opacity-100'
+                      )}
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
                     <div className={cn(
-                      'w-7 h-7 flex items-center justify-center text-[13px] font-medium rounded-full',
-                      isToday ? 'bg-white text-black font-bold' : isPast ? 'text-zinc-600' : 'text-zinc-300',
+                      'w-7 h-7 flex items-center justify-center text-[13px] font-bold rounded-full transition-colors',
+                      isToday 
+                        ? 'bg-zinc-100 text-zinc-950 shadow-sm shadow-white/10' 
+                        : isPast 
+                          ? 'text-zinc-700' 
+                          : 'text-zinc-400 group-hover/cell:text-zinc-200',
                     )}>
                       {cell.day}
                     </div>
                   </div>
 
                   {/* Event pills */}
-                  <div className="flex-1 px-1.5 pb-1.5 space-y-1 overflow-hidden">
+                  <div className="flex-1 space-y-1.5 overflow-y-auto custom-scroll pr-0.5">
                     {cell.runs.map(({ agent, date }, ri) => (
                       <button
                         key={ri}
                         onClick={() => onAgentClick(agent)}
-                        className="w-full text-left bg-zinc-800/80 hover:bg-zinc-700/80 border border-zinc-700/40 rounded-md px-2 py-1.5 transition-all active:scale-[0.98]"
+                        className="w-full text-left bg-zinc-900/90 border border-zinc-800/80 hover:bg-zinc-800 hover:border-zinc-700 rounded-lg px-2.5 py-2 transition-all duration-150 active:scale-[0.98] group flex flex-col justify-between min-h-[50px] shadow-sm shadow-black/20"
                       >
-                        <p className="text-[11px] font-medium text-zinc-100 truncate leading-tight">{agent.name}</p>
-                        <p className="text-[10px] text-zinc-500 mt-0.5">{formatTime(date)}</p>
+                        <p className="text-[12px] font-bold text-zinc-200 group-hover:text-white transition-colors truncate leading-tight">{agent.name}</p>
+                        <p className="text-[10px] text-zinc-500 font-mono mt-1 flex items-center gap-1.5">
+                          <span className="w-1 h-1 rounded-full bg-zinc-500 group-hover:bg-zinc-300 transition-colors" />
+                          {formatTime(date)}
+                        </p>
                       </button>
                     ))}
                   </div>

@@ -148,35 +148,35 @@ function MiniCalendar({ agents, onAgentClick }: { agents: Agent[]; onAgentClick:
     <div className="flex flex-col gap-3">
       {/* Nav */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1">
-          <button onClick={prevMonth} className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-all">
+        <div className="flex items-center gap-1.5">
+          <button onClick={prevMonth} className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-zinc-900 border border-zinc-900 hover:border-zinc-800 transition-all duration-150">
             <ChevronLeft className="w-4 h-4" />
           </button>
-          <span className="text-[15px] font-bold text-zinc-100 min-w-[150px] text-center">
+          <span className="text-[14px] font-extrabold text-zinc-100 min-w-[130px] text-center tracking-tight">
             {MONTH_NAMES[viewMonth]} {viewYear}
           </span>
-          <button onClick={nextMonth} className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-all">
+          <button onClick={nextMonth} className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-zinc-900 border border-zinc-900 hover:border-zinc-800 transition-all duration-150">
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
         <button
           onClick={() => { setViewYear(today.getFullYear()); setViewMonth(today.getMonth()); }}
-          className="px-3 py-1.5 rounded-lg text-[12px] font-semibold text-zinc-400 border border-zinc-700/60 hover:border-zinc-500 hover:text-zinc-200 transition-all"
+          className="px-3 py-1.5 rounded-lg text-[12px] font-bold text-zinc-400 border border-zinc-900 bg-zinc-900 hover:border-zinc-800 hover:text-zinc-200 transition-all duration-150"
         >
           Today
         </button>
       </div>
 
       {/* Day headers */}
-      <div className="grid grid-cols-7">
+      <div className="grid grid-cols-7 border-b border-zinc-900/60 pb-1.5">
         {DAY_NAMES.map(d => (
-          <div key={d} className="text-center text-[11px] font-semibold text-zinc-600 py-1">{d}</div>
+          <div key={d} className="text-center text-[10px] font-bold uppercase tracking-widest text-zinc-600 py-1">{d}</div>
         ))}
       </div>
 
       {/* Grid */}
       <div
-        className="grid grid-cols-7 border border-zinc-800/70 rounded-xl overflow-hidden"
+        className="grid grid-cols-7 border border-zinc-900 rounded-xl overflow-hidden bg-zinc-950"
         style={{ gridTemplateRows: `repeat(${cells.length / 7}, minmax(72px, 1fr))` }}
       >
         {cells.map((cell, idx) => {
@@ -186,16 +186,24 @@ function MiniCalendar({ agents, onAgentClick }: { agents: Agent[]; onAgentClick:
             <div
               key={idx}
               className={cn(
-                'flex flex-col p-1.5 border-r border-b border-zinc-800/50 overflow-hidden',
-                cell.day === null ? 'bg-zinc-900/20' : 'bg-zinc-900/40',
+                'flex flex-col p-1.5 border-r border-b border-zinc-900/60 overflow-hidden transition-colors duration-150 group/cell',
+                cell.day === null 
+                  ? 'bg-[#050505]' 
+                  : isToday
+                    ? 'bg-zinc-900/40'
+                    : 'bg-zinc-950/20 hover:bg-zinc-900/25',
                 idx % 7 === 6 && 'border-r-0',
               )}
             >
               {cell.day !== null && (
                 <>
                   <div className={cn(
-                    'w-6 h-6 flex items-center justify-center text-[11px] font-semibold rounded-full self-end mb-1 flex-shrink-0',
-                    isToday ? 'bg-zinc-100 text-zinc-950' : isPast ? 'text-zinc-700' : 'text-zinc-400',
+                    'w-6 h-6 flex items-center justify-center text-[11px] font-bold rounded-full self-end mb-1 flex-shrink-0 transition-colors',
+                    isToday 
+                      ? 'bg-zinc-100 text-zinc-950 shadow-sm shadow-white/10' 
+                      : isPast 
+                        ? 'text-zinc-700' 
+                        : 'text-zinc-500 group-hover/cell:text-zinc-300',
                   )}>
                     {cell.day}
                   </div>
@@ -203,9 +211,9 @@ function MiniCalendar({ agents, onAgentClick }: { agents: Agent[]; onAgentClick:
                     <button
                       key={ri}
                       onClick={() => onAgentClick(agent)}
-                      className="w-full text-left rounded px-1.5 py-1 border mb-0.5 bg-zinc-800/80 border-zinc-700/40 hover:bg-zinc-700/80 transition-all"
+                      className="w-full text-left rounded px-1.5 py-0.5 border border-zinc-800/80 bg-zinc-900/90 hover:bg-zinc-800 hover:border-zinc-700 transition-all duration-150 mb-0.5"
                     >
-                      <p className="text-[10px] font-medium text-zinc-100 truncate leading-tight">{agent.name}</p>
+                      <p className="text-[9px] font-medium text-zinc-300 truncate leading-normal">{agent.name}</p>
                     </button>
                   ))}
                 </>
