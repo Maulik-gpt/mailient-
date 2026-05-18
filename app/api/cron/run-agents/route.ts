@@ -98,28 +98,69 @@ export async function GET(request: NextRequest) {
 
 /**
  * Determine if an agent should run now based on its cron schedule.
- * Simple implementation: checks if last_run_at is older than the schedule interval.
+ * Matches the current UTC hour/minute against the cron expression.
+ * Runs if: the cron matches this hour AND the agent hasn't already run in this window.
  */
 function shouldAgentRunNow(cronSchedule: string, lastRunAt: string | null): boolean {
-  if (!lastRunAt) return true; // Never run → run now
-
-  const last = new Date(lastRunAt);
   const now = new Date();
-  const diffHours = (now.getTime() - last.getTime()) / (1000 * 60 * 60);
+  const parts = cronSchedule.trim().split(/\s+/);
+  if (parts.length !== 5) return false;
+  const [minPart, hourPart, , , dowPart] = parts;
 
-  // Simple heuristic based on common schedules
-  const scheduleMap: Record<string, number> = {
-    '0 7 * * *': 24,    // Every morning at 7am → 24h
-    '0 8 * * *': 24,
-    '0 9 * * *': 24,
-    '0 12 * * *': 24,
-    '0 */1 * * *': 1,   // Every hour
-    '*/15 * * * *': 0.25,
-    '0 18 * * 0': 168,  // Sunday 6pm → weekly
-  };
+  const nowMin = now.getUTCMinutes();
+  const nowHour = now.getUTCHours();
+  const nowDow = now.getUTCDay(); // 0=Sun
 
-  const intervalHours = scheduleMap[cronSchedule] ?? 24;
-  return diffHours >= intervalHours;
+  // Check hour
+  if (!matchCronField(hourPart, nowHour, 0, 23)) return false;
+
+  // Check minute — cron runs in a 60-min window per hour, so match loosely:
+  // if the minute field is a specific value, we're within ±30 min of target
+  if (minPart !== '*' && !minPart.startsWith('*/')) {
+    const targetMin = parseInt(minPart);
+    if (!isNaN(targetMin)) {
+      const targetMs = new Date(
+        Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), nowHour, targetMin),
+      ).getTime();
+      if (Math.abs(now.getTime() - targetMs) > 35 * 60 * 1000) return false;
+    }
+  }
+
+  // Check day of week
+  if (!matchCronField(dowPart, nowDow, 0, 6)) return false;
+
+  // Prevent double-firing: if already ran in the last 55 minutes, skip
+  if (lastRunAt) {
+    const last = new Date(lastRunAt);
+    const diffMin = (now.getTime() - last.getTime()) / 60000;
+    if (diffMin < 55) return false;
+  }
+
+  return true;
+}
+
+function matchCronField(field: string, value: number, min: number, max: number): boolean {
+  if (field === '*') return true;
+
+  // Step: */N
+  if (field.startsWith('*/')) {
+    const step = parseInt(field.slice(2));
+    return !isNaN(step) && value % step === 0;
+  }
+
+  // Range: N-M
+  if (field.includes('-') && !field.includes(',')) {
+    const [start, end] = field.split('-').map(Number);
+    return value >= start && value <= end;
+  }
+
+  // List: N,M,K
+  if (field.includes(',')) {
+    return field.split(',').map(Number).includes(value);
+  }
+
+  // Exact
+  return parseInt(field) === value;
 }
 
 /**

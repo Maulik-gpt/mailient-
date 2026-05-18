@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Mail, Send, Archive, Trash2, Star, Settings, Plus, ChevronRight, User, MessageCircle } from "lucide-react";
+import { Mail, Send, Archive, Trash2, Star, Settings, Plus, ChevronRight, User, MessageCircle, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import ProfileBubble from "@/components/ui/profile-bubble";
@@ -14,6 +14,7 @@ const CustomSidebar = ({ currentLabel, onLabelChange, labelCounts = {}, onCompos
   const mainLabels = [
     { id: 'INBOX', name: 'Inbox', icon: Mail, count: labelCounts.INBOX || 12 },
     { id: 'CHATS', name: 'Chat', icon: MessageCircle, count: 0, isRoute: true, route: '/dashboard/chats' },
+    { id: 'SCHEDULED', name: 'Scheduled', icon: Clock, count: 0, isRoute: true, route: '/dashboard/agents' },
     { id: 'SENT', name: 'Sent', icon: Send, count: 0 },
     { id: 'ARCHIVE', name: 'Archive', icon: Archive, count: 0 },
     { id: 'TRASH', name: 'Trash', icon: Trash2, count: 3 },
