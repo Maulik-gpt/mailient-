@@ -4,7 +4,8 @@ import { useState, useRef, useEffect } from 'react';
 import {
   X, FileText, Download, Sparkles, BarChart3, Mail,
   Search, Grid, Plus, Check, Play, FileSpreadsheet,
-  ChevronRight, ArrowRight, ShieldCheck, Terminal, HelpCircle
+  ChevronRight, ArrowRight, ShieldCheck, Terminal, HelpCircle,
+  Compass, Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -42,6 +43,9 @@ export function ArtifactsGalleryPanel({
   const [isResizing, setIsResizing] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const [allSessions, setAllSessions] = useState<any[]>([]);
+  const [isLoadingAll, setIsLoadingAll] = useState(false);
+
   // ─── Resize Handlers ─────────────────────────────────────────────────────────
   const startResizing = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -69,66 +73,97 @@ export function ArtifactsGalleryPanel({
     };
   }, [isResizing, isSidebarCollapsed]);
 
-  // ─── Dynamic session artifacts extraction (strictly from active messages) ───
-  const dynamicArtifacts: DynamicArtifactItem[] = [];
-  
-  messages.forEach((msg, index) => {
-    if (msg.role === 'assistant' && msg.meta) {
-      // 1. Plan Artifact — supports planCard (new), _planForDocs (new alias), and legacy planArtifact
-      const planSource = msg.meta.planCard || msg.meta._planForDocs || msg.meta.planArtifact;
-      if (planSource) {
-        const plan = planSource;
-        // Prefer the flat markdown if available (new format), fall back to reconstructing from steps
-        const rawMarkdown = plan.markdown
-          || `# ${plan.title || 'Strategic Mission Plan'}\n\nObjective: ${plan.objective || ''}\n\n${plan.steps?.map((s: any, idx: number) => `### Step ${idx + 1}: ${s.action}\n${s.description || s.human_readable || ''}\n`).join('\n') || ''}`;
-        dynamicArtifacts.push({
-          id: `dyn-plan-${index}`,
-          type: 'action_plan',
-          tag: 'Plan · MD',
-          title: plan.title || 'Strategic Mission Plan',
-          subtitle: `Created from chat`,
-          time: msg.time || 'Just now',
-          content: { type: 'action_plan', title: plan.title, markdown: rawMarkdown },
-          raw: rawMarkdown,
-        });
-      }
-      
-      // 2. Canvas Approval Specs
-      if (msg.meta.canvasApproval?.canvasData) {
-        const cv = msg.meta.canvasApproval.canvasData;
-        dynamicArtifacts.push({
-          id: `dyn-appr-${index}`,
-          type: cv.type || 'workflow',
-          tag: 'Mission Spec · JSON',
-          title: msg.meta.canvasApproval.title || 'Canvas Workflow Specification',
-          subtitle: `Extracted from chat`,
-          time: msg.time || 'Just now',
-          content: cv.content,
-          raw: cv.raw || JSON.stringify(cv.content, null, 2)
-        });
-      }
-      
-      // 3. Execution/Action Results
-      if (msg.meta.result?.canvasData) {
-        const cv = msg.meta.result.canvasData;
-        
-        let fileTag = 'Result · MD';
-        if (cv.type === 'analytics') fileTag = 'Analytics · MD';
-        else if (cv.type === 'email_draft' || cv.type === 'reply') fileTag = 'Email Draft · MD';
-        else if (cv.type === 'notes') fileTag = 'Document · MD';
-
-        dynamicArtifacts.push({
-          id: `dyn-res-${index}`,
-          type: cv.type || 'notes',
-          tag: fileTag,
-          title: msg.meta.result.title || 'Action Results Summary',
-          subtitle: `Extracted from chat`,
-          time: msg.time || 'Just now',
-          content: cv.content,
-          raw: cv.raw || (typeof cv.content === 'string' ? cv.content : JSON.stringify(cv.content, null, 2))
-        });
-      }
+  useEffect(() => {
+    if (isOpen) {
+      setIsLoadingAll(true);
+      fetch('/api/arcus/conversation')
+        .then(res => res.json())
+        .then(data => {
+          if (data && Array.isArray(data.sessions)) {
+            setAllSessions(data.sessions);
+          }
+        })
+        .catch(err => console.error('Error fetching all conversations for artifacts:', err))
+        .finally(() => setIsLoadingAll(false));
     }
+  }, [isOpen]);
+
+  // ─── Dynamic session artifacts extraction from active messages and previous chats ───
+  const dynamicArtifacts: DynamicArtifactItem[] = [];
+  const processedMessageIds = new Set<string>();
+
+  const extractFromMessages = (msgs: any[], chatTitle?: string) => {
+    if (!Array.isArray(msgs)) return;
+
+    msgs.forEach((msg, index) => {
+      const msgKey = msg.id || `${chatTitle || 'chat'}-${index}`;
+      if (processedMessageIds.has(msgKey)) return;
+      processedMessageIds.add(msgKey);
+
+      if (msg.role === 'assistant' && msg.meta) {
+        // 1. Plan Artifact
+        const planSource = msg.meta.planCard || msg.meta._planForDocs || msg.meta.planArtifact;
+        if (planSource) {
+          const plan = planSource;
+          const rawMarkdown = plan.markdown
+            || `# ${plan.title || 'Strategic Mission Plan'}\n\nObjective: ${plan.objective || ''}\n\n${plan.steps?.map((s: any, idx: number) => `### Step ${idx + 1}: ${s.action}\n${s.description || s.human_readable || ''}\n`).join('\n') || ''}`;
+          dynamicArtifacts.push({
+            id: `dyn-plan-${msgKey}`,
+            type: 'action_plan',
+            tag: 'Plan · MD',
+            title: plan.title || 'Strategic Mission Plan',
+            subtitle: chatTitle ? `From: ${chatTitle}` : `Created from chat`,
+            time: msg.time || 'Just now',
+            content: { type: 'action_plan', title: plan.title, markdown: rawMarkdown },
+            raw: rawMarkdown,
+          });
+        }
+        
+        // 2. Canvas Approval Specs
+        if (msg.meta.canvasApproval?.canvasData) {
+          const cv = msg.meta.canvasApproval.canvasData;
+          dynamicArtifacts.push({
+            id: `dyn-appr-${msgKey}`,
+            type: cv.type || 'workflow',
+            tag: 'Mission Spec · JSON',
+            title: msg.meta.canvasApproval.title || 'Canvas Workflow Specification',
+            subtitle: chatTitle ? `From: ${chatTitle}` : `Extracted from chat`,
+            time: msg.time || 'Just now',
+            content: cv.content,
+            raw: cv.raw || JSON.stringify(cv.content, null, 2)
+          });
+        }
+        
+        // 3. Execution/Action Results
+        if (msg.meta.result?.canvasData) {
+          const cv = msg.meta.result.canvasData;
+          
+          let fileTag = 'Result · MD';
+          if (cv.type === 'analytics') fileTag = 'Analytics · MD';
+          else if (cv.type === 'email_draft' || cv.type === 'reply') fileTag = 'Email Draft · MD';
+          else if (cv.type === 'notes') fileTag = 'Document · MD';
+
+          dynamicArtifacts.push({
+            id: `dyn-res-${msgKey}`,
+            type: cv.type || 'notes',
+            tag: fileTag,
+            title: msg.meta.result.title || 'Action Results Summary',
+            subtitle: chatTitle ? `From: ${chatTitle}` : `Extracted from chat`,
+            time: msg.time || 'Just now',
+            content: cv.content,
+            raw: cv.raw || (typeof cv.content === 'string' ? cv.content : JSON.stringify(cv.content, null, 2))
+          });
+        }
+      }
+    });
+  };
+
+  // First, extract from active chat messages (instant load)
+  extractFromMessages(messages, 'Active Session');
+
+  // Next, extract from all previous conversations
+  allSessions.forEach(session => {
+    extractFromMessages(session.messages, session.title);
   });
 
   // Filter based on search query
@@ -194,7 +229,13 @@ export function ArtifactsGalleryPanel({
           </div>
           <div>
             <h3 className="text-[14px] font-bold text-white tracking-tight lowercase">Documents & Artifacts</h3>
-            <p className="text-[10px] text-white/40 tracking-tight uppercase">Active session library</p>
+            {isLoadingAll ? (
+              <p className="text-[10px] text-zinc-500 tracking-tight uppercase flex items-center gap-1.5">
+                <Loader2 className="w-2.5 h-2.5 animate-spin" /> Synchronizing previous chats...
+              </p>
+            ) : (
+              <p className="text-[10px] text-white/40 tracking-tight uppercase">Workspace Library</p>
+            )}
           </div>
         </div>
 
