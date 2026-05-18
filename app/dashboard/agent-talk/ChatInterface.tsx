@@ -2130,14 +2130,10 @@ export default function ChatInterface({
                     ...(m.meta || {}),
                     isStreaming: false,
                     planCard,
-                    // Also store as planArtifact so ArtifactsGalleryPanel can pick it up
-                    planArtifact: {
+                    // _planForDocs: used only by ArtifactsGalleryPanel — does NOT trigger PlanCanvas
+                    _planForDocs: {
                       title: planCard.title,
-                      objective: '',
                       markdown: planCard.markdown,
-                      status: 'proposed',
-                      createdAt: planCard.createdAt,
-                      steps: [],
                     },
                   },
                 };

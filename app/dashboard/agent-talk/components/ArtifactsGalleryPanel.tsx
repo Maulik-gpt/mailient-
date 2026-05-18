@@ -74,9 +74,10 @@ export function ArtifactsGalleryPanel({
   
   messages.forEach((msg, index) => {
     if (msg.role === 'assistant' && msg.meta) {
-      // 1. Plan Artifact (supports both legacy V3 plan format and new ChatPlanCard format)
-      if (msg.meta.planArtifact) {
-        const plan = msg.meta.planArtifact;
+      // 1. Plan Artifact — supports planCard (new), _planForDocs (new alias), and legacy planArtifact
+      const planSource = msg.meta.planCard || msg.meta._planForDocs || msg.meta.planArtifact;
+      if (planSource) {
+        const plan = planSource;
         // Prefer the flat markdown if available (new format), fall back to reconstructing from steps
         const rawMarkdown = plan.markdown
           || `# ${plan.title || 'Strategic Mission Plan'}\n\nObjective: ${plan.objective || ''}\n\n${plan.steps?.map((s: any, idx: number) => `### Step ${idx + 1}: ${s.action}\n${s.description || s.human_readable || ''}\n`).join('\n') || ''}`;

@@ -220,21 +220,19 @@ function PlanMarkdown({ markdown }: { markdown: string }) {
           em: ({ children }) => (
             <em className="italic text-white/55">{children}</em>
           ),
-          code: ({ children, className }) => {
-            const isBlock = className?.includes('language-');
-            if (isBlock) {
-              return (
-                <pre className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-3 overflow-x-auto my-3">
-                  <code className="text-[12px] text-white/60 font-mono">{children}</code>
-                </pre>
-              );
-            }
-            return (
-              <code className="bg-white/[0.06] border border-white/[0.08] rounded px-1.5 py-0.5 text-[12px] text-white/70 font-mono">
-                {children}
-              </code>
-            );
-          },
+          pre: ({ children }) => (
+            <pre className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-3 overflow-x-auto my-3">
+              {children}
+            </pre>
+          ),
+          code: ({ children, className }) => (
+            <code className={className
+              ? 'text-[12px] text-white/60 font-mono'
+              : 'bg-white/[0.06] border border-white/[0.08] rounded px-1.5 py-0.5 text-[12px] text-white/70 font-mono'
+            }>
+              {children}
+            </code>
+          ),
           blockquote: ({ children }) => (
             <blockquote className="border-l-2 border-white/15 pl-3 my-2 text-white/45 italic text-[13px]">
               {children}
