@@ -1,7 +1,7 @@
 /**
- * Converts Markdown text → a .docx Blob using the `docx` package.
- * Handles: H1-H6, bold, italic, bullet lists, numbered lists, tables, blockquotes, code.
- * Returns a Blob that can be triggered for download in the browser.
+ * Converts Markdown → a premium .docx Blob (Google Docs-compatible).
+ * Clean white document: proper heading hierarchy, light-blue table headers,
+ * alternating rows, page header/footer, 1-inch margins.
  */
 
 import {
@@ -19,9 +19,34 @@ import {
   ShadingType,
   convertInchesToTwip,
   LevelFormat,
-  NumberFormat,
-  UnderlineType,
+  Header,
+  Footer,
+  PageNumber,
+  NumberValueElement,
 } from 'docx';
+
+// ─── Colours (document-safe: dark text on white) ──────────────────────────────
+const C = {
+  black:       '111111',
+  body:        '333333',
+  h1:          '111111',
+  h2:          '1F2937',
+  h3:          '374151',
+  h4:          '4B5563',
+  h5:          '6B7280',
+  h6:          '9CA3AF',
+  tableHead:   'E8F0FE', // Google Docs–style light-blue header row
+  tableAlt:    'F8F9FA', // light grey alternate row
+  tableWhite:  'FFFFFF',
+  tableBorder: 'C9D1D9',
+  code:        'F1F3F4', // light-grey code background
+  codeText:    '37474F',
+  blockquote:  'E8EAED',
+  bqText:      '5F6368',
+  link:        '1967D2', // Google Docs link blue
+  hr:          'E0E0E0',
+  headerText:  '9AA0A6',
+};
 
 // ─── Inline parser ────────────────────────────────────────────────────────────
 
@@ -30,42 +55,61 @@ interface Span {
   bold?: boolean;
   italics?: boolean;
   code?: boolean;
-  underline?: boolean;
+  link?: string;
 }
 
 function parseInline(raw: string): TextRun[] {
-  const spans: Span[] = [];
-  // Split on bold+italic, bold, italic, code in one pass
-  const parts = raw.split(/(\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|__[^_]+__|_[^_]+_)/);
-  for (const part of parts) {
-    if (!part) continue;
-    if (/^\*\*\*/.test(part)) {
-      spans.push({ text: part.slice(3, -3), bold: true, italics: true });
-    } else if (/^\*\*/.test(part)) {
-      spans.push({ text: part.slice(2, -2), bold: true });
-    } else if (/^__/.test(part)) {
-      spans.push({ text: part.slice(2, -2), bold: true });
-    } else if (/^\*/.test(part) || /^_/.test(part)) {
-      spans.push({ text: part.slice(1, -1), italics: true });
-    } else if (/^`/.test(part)) {
-      spans.push({ text: part.slice(1, -1), code: true });
+  // Strip inline HTML escapes from our html converter (shouldn't appear in raw MD)
+  const text = raw.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+
+  const tokens = text.split(
+    /(\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|__[^_]+__|_[^_]+_|\[([^\]]+)\]\(([^)]+)\))/,
+  );
+
+  const runs: TextRun[] = [];
+  for (let i = 0; i < tokens.length; i++) {
+    const t = tokens[i];
+    if (!t) continue;
+
+    if (/^\*\*\*/.test(t)) {
+      runs.push(new TextRun({ text: t.slice(3, -3), bold: true, italics: true, font: 'Calibri', color: C.body }));
+    } else if (/^\*\*|^__/.test(t)) {
+      const inner = /^\*\*/.test(t) ? t.slice(2, -2) : t.slice(2, -2);
+      runs.push(new TextRun({ text: inner, bold: true, font: 'Calibri', color: C.black }));
+    } else if (/^\*|^_/.test(t)) {
+      runs.push(new TextRun({ text: t.slice(1, -1), italics: true, font: 'Calibri', color: C.body }));
+    } else if (/^`/.test(t)) {
+      runs.push(new TextRun({
+        text: t.slice(1, -1),
+        font: 'Courier New',
+        size: 19,
+        color: C.codeText,
+        shading: { type: ShadingType.SOLID, fill: C.code, color: C.code },
+      }));
+    } else if (/^\[/.test(t)) {
+      // Link — extract text from the next captured group
+      const linkMatch = t.match(/^\[([^\]]+)\]\(([^)]+)\)/);
+      if (linkMatch) {
+        runs.push(new TextRun({
+          text: linkMatch[1],
+          color: C.link,
+          underline: { type: 'single' as any },
+          font: 'Calibri',
+        }));
+        i += 2; // skip the two capture groups
+      } else {
+        runs.push(new TextRun({ text: t, font: 'Calibri', color: C.body }));
+      }
     } else {
-      spans.push({ text: part });
+      runs.push(new TextRun({ text: t, font: 'Calibri', color: C.body }));
     }
   }
-  return spans.map(s => new TextRun({
-    text: s.text,
-    bold: s.bold,
-    italics: s.italics,
-    font: s.code ? 'Courier New' : 'Calibri',
-    size: s.code ? 18 : undefined, // 9pt for code
-    color: s.code ? '888888' : undefined,
-  }));
+  return runs.length ? runs : [new TextRun({ text: '', font: 'Calibri' })];
 }
 
 // ─── Block parser ─────────────────────────────────────────────────────────────
 
-const HEADING_LEVEL: Record<number, HeadingLevel> = {
+const HEADING_MAP: Record<number, typeof HeadingLevel[keyof typeof HeadingLevel]> = {
   1: HeadingLevel.HEADING_1,
   2: HeadingLevel.HEADING_2,
   3: HeadingLevel.HEADING_3,
@@ -74,65 +118,72 @@ const HEADING_LEVEL: Record<number, HeadingLevel> = {
   6: HeadingLevel.HEADING_6,
 };
 
+function tableCell(text: string, isHeader: boolean, colCount: number, rowIdx: number): TableCell {
+  const fill = isHeader
+    ? C.tableHead
+    : rowIdx % 2 === 1 ? C.tableAlt : C.tableWhite;
+
+  return new TableCell({
+    shading: { fill, type: ShadingType.SOLID, color: fill },
+    borders: {
+      top:    { style: BorderStyle.SINGLE, size: 4, color: C.tableBorder },
+      bottom: { style: BorderStyle.SINGLE, size: 4, color: C.tableBorder },
+      left:   { style: BorderStyle.SINGLE, size: 4, color: C.tableBorder },
+      right:  { style: BorderStyle.SINGLE, size: 4, color: C.tableBorder },
+    },
+    width: { size: Math.floor(9072 / colCount), type: WidthType.DXA },
+    margins: { top: 80, bottom: 80, left: 120, right: 120 },
+    children: [
+      new Paragraph({
+        children: isHeader
+          ? [new TextRun({ text: text.trim(), bold: true, font: 'Calibri', size: 20, color: C.black })]
+          : parseInline(text),
+        spacing: { before: 0, after: 0 },
+      }),
+    ],
+  });
+}
+
 function buildDocxChildren(markdown: string): (Paragraph | Table)[] {
   const lines = markdown.split('\n');
   const children: (Paragraph | Table)[] = [];
   let tableRows: string[][] = [];
   let tableHasHeader = false;
-  let inTableHeader = true;
-  let ulDepth = 0;
-  let olNum = 0;
+  let bodyRowIdx = 0;
 
   const flushTable = () => {
     if (!tableRows.length) return;
-    const colCount = tableRows[0].length;
-    const rows = tableRows.map((cells, rowIdx) =>
-      new TableRow({
-        tableHeader: rowIdx === 0 && tableHasHeader,
-        children: cells.map(cell =>
-          new TableCell({
-            shading: rowIdx === 0 && tableHasHeader
-              ? { fill: '2a2a2a', type: ShadingType.SOLID, color: '2a2a2a' }
-              : rowIdx % 2 === 1
-              ? { fill: '1f1f1f', type: ShadingType.SOLID, color: '1f1f1f' }
-              : { fill: '1a1a1a', type: ShadingType.SOLID, color: '1a1a1a' },
-            borders: {
-              top:    { style: BorderStyle.SINGLE, size: 1, color: '333333' },
-              bottom: { style: BorderStyle.SINGLE, size: 1, color: '333333' },
-              left:   { style: BorderStyle.SINGLE, size: 1, color: '333333' },
-              right:  { style: BorderStyle.SINGLE, size: 1, color: '333333' },
-            },
-            width: { size: Math.floor(9000 / colCount), type: WidthType.DXA },
-            children: [
-              new Paragraph({
-                children: parseInline(cell.trim()),
-                spacing: { before: 60, after: 60 },
-              }),
-            ],
-          }),
-        ),
-      }),
-    );
+    const colCount = Math.max(...tableRows.map(r => r.length));
+    bodyRowIdx = 0;
+
+    const rows = tableRows.map((cells, rowIdx) => {
+      const isHeader = rowIdx === 0 && tableHasHeader;
+      if (!isHeader) bodyRowIdx++;
+      return new TableRow({
+        tableHeader: isHeader,
+        children: cells.map(cell => tableCell(cell, isHeader, colCount, bodyRowIdx)),
+      });
+    });
+
     children.push(
       new Table({
         rows,
-        width: { size: 9000, type: WidthType.DXA },
+        width: { size: 9072, type: WidthType.DXA },
+        margins: { top: 0, bottom: 0, left: 0, right: 0 },
       }),
-      new Paragraph({ text: '' }),
+      new Paragraph({ text: '', spacing: { before: 80, after: 80 } }),
     );
     tableRows = [];
     tableHasHeader = false;
-    inTableHeader = true;
+    bodyRowIdx = 0;
   };
 
   for (const line of lines) {
-    // ── Table ────────────────────────────────────────────────────────────────
+    // ── Tables ────────────────────────────────────────────────────────────────
     if (line.startsWith('|')) {
       const cells = line.split('|').filter((_, i, a) => i > 0 && i < a.length - 1);
       if (cells.every(c => /^[-:\s]+$/.test(c))) {
-        // Separator row — mark that the previous row was the header
         tableHasHeader = tableRows.length > 0;
-        inTableHeader = false;
         continue;
       }
       tableRows.push(cells);
@@ -141,26 +192,41 @@ function buildDocxChildren(markdown: string): (Paragraph | Table)[] {
       flushTable();
     }
 
-    // ── Heading ──────────────────────────────────────────────────────────────
+    // ── Headings ──────────────────────────────────────────────────────────────
     const hm = line.match(/^(#{1,6})\s+(.+)/);
     if (hm) {
-      ulDepth = 0; olNum = 0;
+      const n = hm[1].length;
+      const headingColors = [C.h1, C.h2, C.h3, C.h4, C.h5, C.h6];
+      const headingSizes  = [56, 42, 32, 26, 22, 20]; // half-points (28pt, 21pt, 16pt…)
       children.push(
         new Paragraph({
-          heading: HEADING_LEVEL[hm[1].length],
-          children: parseInline(hm[2]),
-          spacing: { before: 200, after: 80 },
+          heading: HEADING_MAP[n],
+          children: [new TextRun({
+            text: hm[2].replace(/[*_`]/g, ''), // strip markdown syntax from headings
+            bold: n <= 4,
+            italics: n >= 5,
+            font: 'Calibri',
+            color: headingColors[n - 1],
+            size: headingSizes[n - 1],
+          })],
+          spacing: {
+            before: [400, 320, 240, 200, 160, 120][n - 1],
+            after:  [120, 100,  80,  60,  40,  40][n - 1],
+          },
+          ...(n === 1 ? {
+            border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: C.hr } },
+          } : {}),
         }),
       );
       continue;
     }
 
-    // ── HR ───────────────────────────────────────────────────────────────────
-    if (/^(-{3,}|\*{3,})$/.test(line.trim())) {
+    // ── Horizontal rule ───────────────────────────────────────────────────────
+    if (/^(-{3,}|\*{3,}|_{3,})$/.test(line.trim())) {
       children.push(
         new Paragraph({
-          border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: '333333' } },
-          spacing: { before: 100, after: 100 },
+          border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: C.hr } },
+          spacing: { before: 120, after: 120 },
           children: [],
         }),
       );
@@ -170,26 +236,24 @@ function buildDocxChildren(markdown: string): (Paragraph | Table)[] {
     // ── Bullet list ───────────────────────────────────────────────────────────
     const ulm = line.match(/^(\s*)[-*+]\s+(.+)/);
     if (ulm) {
-      olNum = 0;
       children.push(
         new Paragraph({
           numbering: { reference: 'bullet-list', level: 0 },
           children: parseInline(ulm[2]),
-          spacing: { before: 40, after: 40 },
+          spacing: { before: 40, after: 40, line: 300 },
         }),
       );
       continue;
     }
 
-    // ── Ordered list ──────────────────────────────────────────────────────────
+    // ── Ordered list ─────────────────────────────────────────────────────────
     const olm = line.match(/^\d+\.\s+(.+)/);
     if (olm) {
-      ulDepth = 0;
       children.push(
         new Paragraph({
           numbering: { reference: 'numbered-list', level: 0 },
           children: parseInline(olm[1]),
-          spacing: { before: 40, after: 40 },
+          spacing: { before: 40, after: 40, line: 300 },
         }),
       );
       continue;
@@ -200,10 +264,10 @@ function buildDocxChildren(markdown: string): (Paragraph | Table)[] {
     if (bqm) {
       children.push(
         new Paragraph({
-          children: parseInline(bqm[1]),
-          indent: { left: convertInchesToTwip(0.4) },
-          border: { left: { style: BorderStyle.SINGLE, size: 12, color: '555555' } },
-          spacing: { before: 80, after: 80 },
+          children: [new TextRun({ text: bqm[1], italics: true, font: 'Calibri', color: C.bqText })],
+          indent: { left: convertInchesToTwip(0.35) },
+          border: { left: { style: BorderStyle.SINGLE, size: 16, color: C.blockquote } },
+          spacing: { before: 80, after: 80, line: 300 },
         }),
       );
       continue;
@@ -211,17 +275,15 @@ function buildDocxChildren(markdown: string): (Paragraph | Table)[] {
 
     // ── Empty line ────────────────────────────────────────────────────────────
     if (line.trim() === '') {
-      ulDepth = 0; olNum = 0;
-      children.push(new Paragraph({ text: '', spacing: { before: 0, after: 80 } }));
+      children.push(new Paragraph({ text: '', spacing: { before: 0, after: 100 } }));
       continue;
     }
 
     // ── Paragraph ────────────────────────────────────────────────────────────
-    ulDepth = 0; olNum = 0;
     children.push(
       new Paragraph({
         children: parseInline(line),
-        spacing: { before: 40, after: 40 },
+        spacing: { before: 40, after: 80, line: 320 },
       }),
     );
   }
@@ -233,118 +295,149 @@ function buildDocxChildren(markdown: string): (Paragraph | Table)[] {
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 export async function markdownToDocxBlob(markdown: string, title: string): Promise<Blob> {
+  const dateStr = new Date().toLocaleDateString('en-US', {
+    year: 'numeric', month: 'long', day: 'numeric',
+  });
+
   const doc = new Document({
+    title,
+    description: `Generated by Arcus AI · ${dateStr}`,
+
     numbering: {
       config: [
         {
           reference: 'bullet-list',
-          levels: [
-            {
-              level: 0,
-              format: LevelFormat.BULLET,
-              text: '•',
-              alignment: AlignmentType.LEFT,
-              style: { paragraph: { indent: { left: convertInchesToTwip(0.5), hanging: convertInchesToTwip(0.25) } } },
+          levels: [{
+            level: 0,
+            format: LevelFormat.BULLET,
+            text: '•',
+            alignment: AlignmentType.LEFT,
+            style: {
+              run: { font: 'Symbol', color: C.body },
+              paragraph: {
+                indent: { left: convertInchesToTwip(0.375), hanging: convertInchesToTwip(0.25) },
+              },
             },
-          ],
+          }],
         },
         {
           reference: 'numbered-list',
-          levels: [
-            {
-              level: 0,
-              format: LevelFormat.DECIMAL,
-              text: '%1.',
-              alignment: AlignmentType.LEFT,
-              style: { paragraph: { indent: { left: convertInchesToTwip(0.5), hanging: convertInchesToTwip(0.25) } } },
+          levels: [{
+            level: 0,
+            format: LevelFormat.DECIMAL,
+            text: '%1.',
+            alignment: AlignmentType.LEFT,
+            style: {
+              run: { font: 'Calibri', color: C.body },
+              paragraph: {
+                indent: { left: convertInchesToTwip(0.375), hanging: convertInchesToTwip(0.25) },
+              },
             },
-          ],
+          }],
         },
       ],
     },
+
     styles: {
       default: {
         document: {
-          run: { font: 'Calibri', size: 22, color: '1a1a1a' },
-          paragraph: { spacing: { line: 320 } },
+          run: { font: 'Calibri', size: 22, color: C.body },       // 11pt body
+          paragraph: { spacing: { line: 320, lineRule: 'auto' as any } },
         },
       },
       paragraphStyles: [
         {
-          id: 'Heading1',
-          name: 'Heading 1',
-          basedOn: 'Normal',
-          next: 'Normal',
-          quickFormat: true,
-          run: { size: 48, bold: true, color: '111111', font: 'Calibri' },
+          id: 'Heading1', name: 'Heading 1', basedOn: 'Normal', next: 'Normal', quickFormat: true,
+          run: { size: 56, bold: true, color: C.h1, font: 'Calibri' },
           paragraph: { spacing: { before: 400, after: 120 } },
         },
         {
-          id: 'Heading2',
-          name: 'Heading 2',
-          basedOn: 'Normal',
-          next: 'Normal',
-          quickFormat: true,
-          run: { size: 36, bold: true, color: '222222', font: 'Calibri' },
+          id: 'Heading2', name: 'Heading 2', basedOn: 'Normal', next: 'Normal', quickFormat: true,
+          run: { size: 42, bold: true, color: C.h2, font: 'Calibri' },
           paragraph: { spacing: { before: 320, after: 100 } },
         },
         {
-          id: 'Heading3',
-          name: 'Heading 3',
-          basedOn: 'Normal',
-          next: 'Normal',
-          quickFormat: true,
-          run: { size: 28, bold: true, color: '333333', font: 'Calibri' },
+          id: 'Heading3', name: 'Heading 3', basedOn: 'Normal', next: 'Normal', quickFormat: true,
+          run: { size: 32, bold: true, color: C.h3, font: 'Calibri' },
           paragraph: { spacing: { before: 240, after: 80 } },
         },
         {
-          id: 'Heading4',
-          name: 'Heading 4',
-          basedOn: 'Normal',
-          next: 'Normal',
-          quickFormat: true,
-          run: { size: 24, bold: true, color: '444444', font: 'Calibri' },
+          id: 'Heading4', name: 'Heading 4', basedOn: 'Normal', next: 'Normal', quickFormat: true,
+          run: { size: 26, bold: true, color: C.h4, font: 'Calibri' },
           paragraph: { spacing: { before: 200, after: 60 } },
         },
         {
-          id: 'Heading5',
-          name: 'Heading 5',
-          basedOn: 'Normal',
-          next: 'Normal',
-          quickFormat: true,
-          run: { size: 22, bold: true, color: '666666', font: 'Calibri' },
+          id: 'Heading5', name: 'Heading 5', basedOn: 'Normal', next: 'Normal', quickFormat: true,
+          run: { size: 22, bold: true, italics: true, color: C.h5, font: 'Calibri' },
           paragraph: { spacing: { before: 160, after: 40 } },
         },
         {
-          id: 'Heading6',
-          name: 'Heading 6',
-          basedOn: 'Normal',
-          next: 'Normal',
-          quickFormat: true,
-          run: { size: 20, bold: true, italics: true, color: '888888', font: 'Calibri' },
+          id: 'Heading6', name: 'Heading 6', basedOn: 'Normal', next: 'Normal', quickFormat: true,
+          run: { size: 20, italics: true, color: C.h6, font: 'Calibri' },
           paragraph: { spacing: { before: 120, after: 40 } },
         },
       ],
     },
+
     sections: [
       {
         properties: {
           page: {
             margin: {
-              top: convertInchesToTwip(1),
+              top:    convertInchesToTwip(1),
               bottom: convertInchesToTwip(1),
-              left: convertInchesToTwip(1.25),
-              right: convertInchesToTwip(1.25),
+              left:   convertInchesToTwip(1),
+              right:  convertInchesToTwip(1),
+              header: convertInchesToTwip(0.5),
+              footer: convertInchesToTwip(0.5),
             },
           },
         },
+
+        // ── Page header: title on left, date on right ────────────────────────
+        headers: {
+          default: new Header({
+            children: [
+              new Paragraph({
+                children: [
+                  new TextRun({ text: title, font: 'Calibri', size: 16, color: C.headerText }),
+                  new TextRun({ text: '\t', font: 'Calibri', size: 16 }),
+                  new TextRun({ text: dateStr, font: 'Calibri', size: 16, color: C.headerText }),
+                ],
+                tabStops: [{ type: 'right' as any, position: 9072 }],
+                border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: C.hr } },
+                spacing: { after: 0 },
+              }),
+            ],
+          }),
+        },
+
+        // ── Page footer: "Generated by Arcus AI" + page number ──────────────
+        footers: {
+          default: new Footer({
+            children: [
+              new Paragraph({
+                children: [
+                  new TextRun({ text: 'Generated by Arcus AI  ·  ', font: 'Calibri', size: 16, color: C.headerText }),
+                  new TextRun({ text: 'Page ', font: 'Calibri', size: 16, color: C.headerText }),
+                  new NumberValueElement(PageNumber.CURRENT, {}),
+                  new TextRun({ text: ' of ', font: 'Calibri', size: 16, color: C.headerText }),
+                  new NumberValueElement(PageNumber.TOTAL_PAGES, {}),
+                ],
+                alignment: AlignmentType.CENTER,
+                border: { top: { style: BorderStyle.SINGLE, size: 4, color: C.hr } },
+                spacing: { before: 80 },
+              }),
+            ],
+          }),
+        },
+
         children: buildDocxChildren(markdown),
       },
     ],
   });
 
-  const buffer = await Packer.toBlob(doc);
-  return buffer;
+  return Packer.toBlob(doc);
 }
 
 export function triggerDocxDownload(blob: Blob, filename: string) {

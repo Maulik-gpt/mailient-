@@ -248,7 +248,7 @@ function getStepIcon(type: string, size = 'w-3.5 h-3.5') {
 /** Elapsed-time ticker shown on active steps */
 function ElapsedTimer({ startedAt }: { startedAt?: string }) {
   const [elapsed, setElapsed] = useState(0);
-  const ref = useRef<ReturnType<typeof setInterval>>();
+  const ref = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
   useEffect(() => {
     const start = startedAt ? new Date(startedAt).getTime() : Date.now();
@@ -788,8 +788,8 @@ export function ResultCard({ type, title, onView, rawContent }: ResultCardProps)
   const [downloading, setDownloading] = useState(false);
   const subtype = resultSubtypes[type] || 'Document';
   const isEmail = type === 'email_draft' || type === 'reply';
-  const sizeLabel = rawContent ? formatBytes(new Blob([rawContent]).size) : '';
-  const subtitle = `${subtype} · ${sizeLabel}`;
+  const sizeLabel = rawContent ? formatBytes(new Blob([rawContent]).size) : null;
+  const subtitle = sizeLabel ? `${subtype} · ${sizeLabel}` : subtype;
   const safeName = (title || 'document').toLowerCase().replace(/[^a-z0-9]+/g, '_');
 
   const handleDownload = async (e: React.MouseEvent) => {

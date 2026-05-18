@@ -47,19 +47,28 @@ export function HomeFeedSidebar({
     const router = useRouter();
     const pathname = usePathname();
     const [isMoreOptionsOpen, setIsMoreOptionsOpen] = useState(false);
-    const [isCollapsed, setIsCollapsed] = useState(() => {
-        if (typeof window !== 'undefined') {
-            const saved = localStorage.getItem('sidebar_collapsed');
-            return saved === 'true';
-        }
-        return false;
-    });
+    const [isCollapsed, setIsCollapsed] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
     const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
-    // Persist sidebar state
+    // Sync saved preference on client mount
     useEffect(() => {
-        localStorage.setItem('sidebar_collapsed', isCollapsed.toString());
-    }, [isCollapsed]);
+        const saved = localStorage.getItem('sidebar_collapsed');
+        if (saved === 'true') {
+            setIsCollapsed(true);
+        }
+        const timer = setTimeout(() => {
+            setIsMounted(true);
+        }, 50);
+        return () => clearTimeout(timer);
+    }, []);
+
+    // Persist sidebar state safely once mounted
+    useEffect(() => {
+        if (isMounted) {
+            localStorage.setItem('sidebar_collapsed', isCollapsed.toString());
+        }
+    }, [isCollapsed, isMounted]);
     const [userHandle, setUserHandle] = useState<string>('');
     const moreMenuRef = useRef<HTMLDivElement>(null);
 
@@ -124,13 +133,13 @@ export function HomeFeedSidebar({
                             ? (isOpen ? 0 : -260) 
                             : 0,
                     }}
-                    transition={{ 
+                    transition={isMounted ? { 
                         type: "spring", 
                         stiffness: 400, 
                         damping: 38,
                         mass: 1,
                         restDelta: 0.001
-                    }}
+                    } : { duration: 0 }}
                     className={`fixed left-0 top-0 h-screen bg-[#F9F8F6] dark:bg-[#0c0c0c] border-r border-[#EBE9E2] dark:border-white/5 flex flex-col z-[100] md:z-50 ${className} ${!isOpen ? 'pointer-events-none md:pointer-events-auto' : 'pointer-events-auto shadow-2xl'}`}
                 >
                     {/* Mobile Close Button */}

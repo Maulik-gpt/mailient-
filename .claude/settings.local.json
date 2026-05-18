@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc *)",
+      "Bash(node -e \"const d = require\\('docx'\\); console.log\\(['NumberValueElement','PageNumber','Header','Footer','NumberFormat'].filter\\(k => k in d\\).join\\(', '\\)\\); console.log\\('MISSING:', ['NumberValueElement','PageNumber','Header','Footer'].filter\\(k => !\\(k in d\\)\\).join\\(', '\\)\\)\")"
+    ]
+  }
+}
