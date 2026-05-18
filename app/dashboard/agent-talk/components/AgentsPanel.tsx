@@ -333,10 +333,10 @@ function CreateModal({ onClose, onSave, initial }: {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 24, scale: 0.98 }}
         transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-        className="relative w-full max-w-2xl bg-zinc-950 border border-zinc-700/50 rounded-2xl overflow-y-auto scrollbar-hide max-h-[90vh] shadow-2xl shadow-black/70"
+        className="relative w-full max-w-4xl bg-zinc-950 border border-zinc-700/50 rounded-2xl shadow-2xl shadow-black/70 overflow-hidden max-h-[95vh] flex flex-col"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-8 pt-7 pb-5 border-b border-zinc-800/60">
+        <div className="flex items-center justify-between px-8 pt-7 pb-5 border-b border-zinc-800/60 flex-shrink-0">
           <div>
             <h2 className="text-[20px] font-bold text-zinc-100">{initial?.id ? 'Edit schedule' : 'New schedule'}</h2>
             <p className="text-[14px] text-zinc-500 mt-1">Describe the job and when to run it</p>
@@ -346,142 +346,166 @@ function CreateModal({ onClose, onSave, initial }: {
           </button>
         </div>
 
-        <div className="px-8 py-6 space-y-6">
-          {/* Task */}
-          <div>
-            <label className="block text-[12px] font-semibold uppercase tracking-widest text-zinc-500 mb-2.5">What should Arcus do?</label>
-            <textarea
-              value={task}
-              onChange={e => setTask(e.target.value)}
-              placeholder="Describe what you want this agent to do in plain English…"
-              rows={4}
-              className="w-full bg-zinc-900 border border-zinc-700/60 rounded-xl px-4 py-3.5 text-[15px] text-zinc-100 leading-relaxed placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500/30 resize-none transition-all"
-            />
-          </div>
+        <div className="px-8 py-6 overflow-y-auto custom-scroll flex-1">
+          <style dangerouslySetInnerHTML={{ __html: `
+            .custom-scroll::-webkit-scrollbar {
+              width: 6px;
+              height: 6px;
+            }
+            .custom-scroll::-webkit-scrollbar-track {
+              background: transparent;
+            }
+            .custom-scroll::-webkit-scrollbar-thumb {
+              background: rgba(63, 63, 70, 0.4);
+              border-radius: 9999px;
+            }
+            .custom-scroll::-webkit-scrollbar-thumb:hover {
+              background: rgba(82, 82, 91, 0.6);
+            }
+          `}} />
 
-          {/* Name */}
-          <div>
-            <label className="block text-[12px] font-semibold uppercase tracking-widest text-zinc-500 mb-2.5">
-              Agent name <span className="normal-case font-normal text-zinc-600">(optional)</span>
-            </label>
-            <input
-              value={name}
-              onChange={e => setName(e.target.value)}
-              placeholder="e.g. Morning Client Check"
-              className="w-full bg-zinc-900 border border-zinc-700/60 rounded-xl px-4 py-3 text-[15px] text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500/30 transition-all"
-            />
-          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            {/* Left Column: Task & Name */}
+            <div className="lg:col-span-7 space-y-6">
+              {/* Task description */}
+              <div>
+                <label className="block text-[13px] font-semibold text-zinc-400 mb-2">What should Arcus do?</label>
+                <textarea
+                  value={task}
+                  onChange={e => setTask(e.target.value)}
+                  placeholder="Describe what you want this agent to do in plain English…"
+                  rows={8}
+                  className="w-full bg-zinc-900 border border-zinc-700/60 rounded-xl px-4 py-3.5 text-[15px] text-zinc-100 leading-relaxed placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500/30 resize-none transition-all"
+                />
+              </div>
 
-          {/* Schedule */}
-          <div>
-            <label className="block text-[12px] font-semibold uppercase tracking-widest text-zinc-500 mb-3">Schedule</label>
-            <div className="flex flex-wrap gap-2 mb-4">
-              {SCHEDULE_PATTERNS.map(p => (
-                <button
-                  key={p.key}
-                  onClick={() => setPatternKey(p.key)}
-                  className={cn(
-                    'px-4 py-2 rounded-lg text-[13px] font-medium transition-all border',
-                    patternKey === p.key
-                      ? 'bg-zinc-100 text-zinc-950 border-zinc-100'
-                      : 'bg-zinc-900 border-zinc-700/60 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200',
-                  )}
-                >
-                  {p.label}
-                </button>
-              ))}
+              {/* Optional name */}
+              <div>
+                <label className="block text-[13px] font-semibold text-zinc-400 mb-2">Agent name <span className="font-normal text-zinc-500">(optional)</span></label>
+                <input
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  placeholder="e.g. Morning Client Check"
+                  className="w-full bg-zinc-900 border border-zinc-700/60 rounded-xl px-4 py-3 text-[15px] text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500/30 transition-all"
+                />
+              </div>
             </div>
 
-            {activePat.needsTime && (
-              <div className="flex gap-4">
-                {activePat.needsDay && (
-                  <div className="flex-1">
-                    <label className="block text-[11px] font-semibold uppercase tracking-widest text-zinc-600 mb-2">Day</label>
-                    <select
-                      value={scheduleWeekday}
-                      onChange={e => setScheduleWeekday(e.target.value)}
-                      className="w-full bg-zinc-900 border border-zinc-700/60 rounded-xl px-4 py-3 text-[14px] text-zinc-100 focus:outline-none focus:border-zinc-500 transition-all appearance-none cursor-pointer"
+            {/* Right Column: Schedule & Deliver & Confirmations */}
+            <div className="lg:col-span-5 space-y-6">
+              {/* Schedule */}
+              <div>
+                <label className="block text-[13px] font-semibold text-zinc-400 mb-2">Schedule</label>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {SCHEDULE_PATTERNS.map(p => (
+                    <button
+                      key={p.key}
+                      onClick={() => setPatternKey(p.key)}
+                      className={cn(
+                        'px-3.5 py-1.5 rounded-lg text-[13px] font-medium transition-all border',
+                        patternKey === p.key
+                          ? 'bg-zinc-100 text-zinc-950 border-zinc-100'
+                          : 'bg-zinc-900 border-zinc-700/60 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200',
+                      )}
                     >
-                      {WEEK_DAYS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
-                    </select>
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+
+                {activePat.needsTime && (
+                  <div className="flex gap-4 mb-4">
+                    {activePat.needsDay && (
+                      <div className="flex-1">
+                        <label className="block text-[11px] font-semibold text-zinc-500 mb-1.5">Day</label>
+                        <select
+                          value={scheduleWeekday}
+                          onChange={e => setScheduleWeekday(e.target.value)}
+                          className="w-full bg-zinc-900 border border-zinc-700/60 rounded-xl px-4 py-3 text-[14px] text-zinc-100 focus:outline-none focus:border-zinc-500 transition-all appearance-none cursor-pointer"
+                        >
+                          {WEEK_DAYS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+                        </select>
+                      </div>
+                    )}
+                    <div className={activePat.needsDay ? 'flex-1' : 'w-full'}>
+                      <label className="block text-[11px] font-semibold text-zinc-500 mb-1.5">Time <span className="font-normal text-zinc-600">({browserTz})</span></label>
+                      <input
+                        type="time"
+                        value={scheduleTime}
+                        onChange={e => setScheduleTime(e.target.value)}
+                        className="w-full bg-zinc-900 border border-zinc-700/60 rounded-xl px-4 py-3 text-[14px] text-zinc-100 focus:outline-none focus:border-zinc-500 transition-all"
+                        style={{ colorScheme: 'dark' }}
+                      />
+                    </div>
                   </div>
                 )}
-                <div className={activePat.needsDay ? 'flex-1' : 'w-full'}>
-                  <label className="block text-[11px] font-semibold uppercase tracking-widest text-zinc-600 mb-2">
-                    Time <span className="normal-case font-normal text-zinc-700">({browserTz})</span>
-                  </label>
-                  <input
-                    type="time"
-                    value={scheduleTime}
-                    onChange={e => setScheduleTime(e.target.value)}
-                    className="w-full bg-zinc-900 border border-zinc-700/60 rounded-xl px-4 py-3 text-[14px] text-zinc-100 focus:outline-none focus:border-zinc-500 transition-all"
-                    style={{ colorScheme: 'dark' }}
-                  />
+
+                {patternKey === 'custom' && (
+                  <div className="mb-4">
+                    <label className="block text-[11px] font-semibold text-zinc-500 mb-1.5">Cron expression (UTC)</label>
+                    <input
+                      value={customCron}
+                      onChange={e => setCustomCron(e.target.value)}
+                      placeholder="e.g. 0 9 * * 1-5"
+                      className="w-full bg-zinc-900 border border-zinc-700/60 rounded-xl px-4 py-3 text-[14px] text-zinc-100 font-mono placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 transition-all"
+                    />
+                  </div>
+                )}
+
+                {cron && patternKey !== 'custom' && (
+                  <div className="px-4 py-2.5 bg-zinc-900/60 rounded-lg border border-zinc-800/50">
+                    <p className="text-[13px] text-zinc-400">
+                      Runs: <span className="text-zinc-200 font-medium">{cronToLabel(cron)}</span>
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Output channel */}
+              <div>
+                <label className="block text-[13px] font-semibold text-zinc-400 mb-2">Deliver report to</label>
+                <div className="flex gap-2">
+                  {(['gmail', 'slack', 'both'] as const).map(ch => (
+                    <button
+                      key={ch}
+                      onClick={() => setChannel(ch)}
+                      className={cn(
+                        'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[14px] font-medium border transition-all',
+                        channel === ch
+                          ? 'bg-zinc-100 text-zinc-950 border-zinc-100'
+                          : 'bg-zinc-900 border-zinc-700/60 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200',
+                      )}
+                    >
+                      {ch === 'gmail' && <Mail className="w-3.5 h-3.5" />}
+                      {ch === 'slack' && <Slack className="w-3.5 h-3.5" />}
+                      {ch === 'both' && <Zap className="w-3.5 h-3.5" />}
+                      {ch === 'both' ? 'Both' : ch.charAt(0).toUpperCase() + ch.slice(1)}
+                    </button>
+                  ))}
                 </div>
+                {channel !== 'gmail' && (
+                  <input
+                    value={slackCh}
+                    onChange={e => setSlackCh(e.target.value)}
+                    placeholder="Slack channel (e.g. #reports)"
+                    className="mt-3 w-full bg-zinc-900 border border-zinc-700/60 rounded-xl px-4 py-3 text-[14px] text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 transition-all"
+                  />
+                )}
               </div>
-            )}
 
-            {patternKey === 'custom' && (
-              <input
-                value={customCron}
-                onChange={e => setCustomCron(e.target.value)}
-                placeholder="e.g. 0 9 * * 1-5"
-                className="w-full bg-zinc-900 border border-zinc-700/60 rounded-xl px-4 py-3 text-[14px] text-zinc-100 font-mono placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 transition-all"
-              />
-            )}
-
-            {cron && patternKey !== 'custom' && (
-              <div className="mt-3 px-4 py-2.5 bg-zinc-900/60 rounded-lg border border-zinc-800/50">
-                <p className="text-[13px] text-zinc-400">
-                  Runs: <span className="text-zinc-200 font-medium">{cronToLabel(cron)}</span>
-                </p>
+              {/* Skip confirmations */}
+              <div className="flex items-center justify-between bg-zinc-900/70 rounded-xl px-4 py-3.5 border border-zinc-800/60">
+                <div>
+                  <p className="text-[14px] font-semibold text-zinc-100">Skip confirmations</p>
+                  <p className="text-[12px] text-zinc-500 mt-0.5">No approval needed before execution</p>
+                </div>
+                <Toggle checked={skipConf} onChange={() => setSkipConf(v => !v)} />
               </div>
-            )}
-          </div>
-
-          {/* Channel */}
-          <div>
-            <label className="block text-[12px] font-semibold uppercase tracking-widest text-zinc-500 mb-3">Deliver report to</label>
-            <div className="flex gap-2">
-              {(['gmail','slack','both'] as const).map(ch => (
-                <button
-                  key={ch}
-                  onClick={() => setChannel(ch)}
-                  className={cn(
-                    'flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[14px] font-medium border transition-all',
-                    channel === ch
-                      ? 'bg-zinc-100 text-zinc-950 border-zinc-100'
-                      : 'bg-zinc-900 border-zinc-700/60 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200',
-                  )}
-                >
-                  {ch === 'gmail' && <Mail className="w-4 h-4" />}
-                  {ch === 'slack' && <Slack className="w-4 h-4" />}
-                  {ch === 'both'  && <Zap className="w-4 h-4" />}
-                  {ch === 'both' ? 'Both' : ch.charAt(0).toUpperCase() + ch.slice(1)}
-                </button>
-              ))}
             </div>
-            {channel !== 'gmail' && (
-              <input
-                value={slackCh}
-                onChange={e => setSlackCh(e.target.value)}
-                placeholder="Slack channel (e.g. #reports)"
-                className="mt-3 w-full bg-zinc-900 border border-zinc-700/60 rounded-xl px-4 py-3 text-[14px] text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 transition-all"
-              />
-            )}
           </div>
 
-          {/* Skip confirmations */}
-          <div className="flex items-center justify-between bg-zinc-900/70 rounded-xl px-5 py-4 border border-zinc-800/60">
-            <div>
-              <p className="text-[15px] font-semibold text-zinc-100">Skip confirmations</p>
-              <p className="text-[13px] text-zinc-500 mt-0.5">No approval needed before sending, publishing, or posting</p>
-            </div>
-            <Toggle checked={skipConf} onChange={() => setSkipConf(v => !v)} />
-          </div>
-
-          {/* Buttons */}
-          <div className="flex gap-3">
+          {/* Actions */}
+          <div className="flex gap-3 pt-6 mt-6 border-t border-zinc-800/60">
             <button onClick={onClose} className="flex-1 py-3.5 rounded-xl text-[15px] font-semibold text-zinc-400 bg-zinc-900 hover:bg-zinc-800 transition-all border border-zinc-700/60">
               Cancel
             </button>
