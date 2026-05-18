@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, X, Play, Loader2, FileText, Download, Maximize2 } from 'lucide-react';
+import { Check, X, Play, Loader2, FileText, Download, Maximize2, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -28,6 +28,27 @@ function stripEmojis(str: string): string {
     .trim();
 }
 
+/** Extract readable plain text from markdown for the card preview */
+function extractPreview(markdown: string, maxLen = 260): string {
+  const text = markdown
+    .replace(/#{1,6}\s+/g, '')              // strip heading markers (inline too)
+    .replace(/^---+$/gm, '')                // hr on own line
+    .replace(/---+/g, '')                   // inline --- remnants
+    .replace(/\*\*(.*?)\*\*/g, '$1')        // bold
+    .replace(/\*(.*?)\*/g, '$1')            // italic
+    .replace(/^[-*+]\s+/gm, '')             // bullet points
+    .replace(/^\d+\.\s+/gm, '')             // ordered list
+    .replace(/`[^`]+`/g, '')                // inline code
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // links
+    .split('\n')
+    .map(l => l.trim())
+    .filter(Boolean)
+    .join(' ')
+    .replace(/\s{2,}/g, ' ');
+
+  return text.length > maxLen ? text.slice(0, maxLen).replace(/\s+\S*$/, '') + '…' : text;
+}
+
 function handleDownload(plan: PlanCardData) {
   try {
     const blob = new Blob([plan.markdown], { type: 'text/markdown;charset=utf-8' });
@@ -39,75 +60,66 @@ function handleDownload(plan: PlanCardData) {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  } catch {
-    // silent
-  }
+  } catch { /* silent */ }
 }
 
 // ─── Full-screen plan modal ────────────────────────────────────────────────────
 
-function PlanModal({
-  plan,
-  onClose,
-}: {
-  plan: PlanCardData;
-  onClose: () => void;
-}) {
-  // Close on Escape
+function PlanModal({ plan, onClose }: { plan: PlanCardData; onClose: () => void }) {
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', h);
+    return () => document.removeEventListener('keydown', h);
   }, [onClose]);
 
   return createPortal(
     <AnimatePresence>
       <motion.div
-        key="plan-modal-backdrop"
+        key="plan-modal-bg"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.18 }}
-        className="fixed inset-0 z-[9999] flex items-center justify-center p-6"
-        style={{ background: 'rgba(0,0,0,0.80)', backdropFilter: 'blur(8px)' }}
+        className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-8"
+        style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)' }}
         onClick={onClose}
       >
         <motion.div
           key="plan-modal-card"
-          initial={{ opacity: 0, scale: 0.96, y: 16 }}
+          initial={{ opacity: 0, scale: 0.97, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.96, y: 16 }}
-          transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-          className="relative w-full max-w-2xl max-h-[85vh] flex flex-col rounded-2xl border border-white/[0.10] bg-[#111111] shadow-2xl overflow-hidden"
+          exit={{ opacity: 0, scale: 0.97, y: 20 }}
+          transition={{ type: 'spring', damping: 26, stiffness: 300 }}
+          className="relative w-full max-w-5xl max-h-[90vh] flex flex-col rounded-2xl border border-white/[0.12] bg-[#0f0f0f] shadow-[0_32px_80px_rgba(0,0,0,0.6)] overflow-hidden"
           onClick={e => e.stopPropagation()}
         >
           {/* Top accent */}
-          <div className="h-px w-full bg-white/[0.15] flex-shrink-0" />
+          <div className="h-[2px] w-full bg-gradient-to-r from-white/5 via-white/20 to-white/5 flex-shrink-0" />
 
           {/* Modal header */}
-          <div className="flex items-center gap-3 px-5 py-4 border-b border-white/[0.06] flex-shrink-0">
-            <div className="w-8 h-8 rounded-lg bg-white/[0.06] border border-white/[0.10] flex items-center justify-center flex-shrink-0">
-              <FileText className="w-4 h-4 text-white/60" />
+          <div className="flex items-center gap-4 px-8 py-5 border-b border-white/[0.07] flex-shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-white/[0.07] border border-white/[0.12] flex items-center justify-center flex-shrink-0">
+              <FileText className="w-5 h-5 text-white/70" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-[10px] font-bold tracking-[0.08em] uppercase text-white/30 mb-0.5">
+              <div className="text-[10px] font-bold tracking-[0.10em] uppercase text-white/35 mb-1">
                 Plan Document
               </div>
-              <h2 className="text-[15px] font-semibold text-white/90 tracking-tight leading-tight truncate">
+              <h2 className="text-[18px] font-bold text-white tracking-tight leading-tight truncate">
                 {stripEmojis(plan.title)}
               </h2>
             </div>
-            <div className="flex items-center gap-1 flex-shrink-0">
+            <div className="flex items-center gap-1.5 flex-shrink-0">
               <button
                 onClick={() => handleDownload(plan)}
-                className="p-2 rounded-xl text-white/30 hover:text-white/70 hover:bg-white/[0.06] transition-all"
+                className="p-2.5 rounded-xl text-white/35 hover:text-white hover:bg-white/[0.08] border border-transparent hover:border-white/[0.10] transition-all"
                 title="Download as Markdown"
               >
                 <Download className="w-4 h-4" />
               </button>
               <button
                 onClick={onClose}
-                className="p-2 rounded-xl text-white/30 hover:text-white/70 hover:bg-white/[0.06] transition-all"
+                className="p-2.5 rounded-xl text-white/35 hover:text-white hover:bg-white/[0.08] border border-transparent hover:border-white/[0.10] transition-all"
                 title="Close"
               >
                 <X className="w-4 h-4" />
@@ -116,7 +128,7 @@ function PlanModal({
           </div>
 
           {/* Scrollable content */}
-          <div className="flex-1 overflow-y-auto px-6 py-5 scrollbar-thin scrollbar-thumb-white/10">
+          <div className="flex-1 overflow-y-auto px-8 py-7 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
             <PlanMarkdown markdown={plan.markdown} />
           </div>
         </motion.div>
@@ -126,7 +138,7 @@ function PlanModal({
   );
 }
 
-// ─── Compact plan card (always shown in chat) ─────────────────────────────────
+// ─── Compact document-style card (shown in chat) ───────────────────────────────
 
 export function ChatPlanCard({ plan, onExecute, onCancel }: ChatPlanCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -134,129 +146,141 @@ export function ChatPlanCard({ plan, onExecute, onCancel }: ChatPlanCardProps) {
 
   const isDone = plan.status === 'completed';
   const isCancelled = plan.status === 'cancelled';
+  const preview = extractPreview(plan.markdown);
 
   function handleExecute() {
     setIsExecuting(true);
     onExecute(plan);
   }
 
-  function handleCancel() {
-    onCancel(plan);
-  }
-
   return (
     <>
       <motion.div
-        initial={{ opacity: 0, y: 8, scale: 0.99 }}
+        initial={{ opacity: 0, y: 10, scale: 0.99 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ type: 'spring', damping: 26, stiffness: 280 }}
         className="mt-3 w-full"
       >
         <div
           className={cn(
-            'relative flex items-center gap-3 px-4 py-3 rounded-2xl border transition-all overflow-hidden',
+            'relative rounded-2xl border overflow-hidden transition-all',
             isDone
-              ? 'border-white/[0.06] bg-white/[0.02] opacity-70'
+              ? 'border-white/[0.07] bg-[#141414] opacity-75'
               : isCancelled
-              ? 'border-white/[0.04] bg-white/[0.01] opacity-40'
-              : 'border-white/[0.10] bg-[#141414]',
+              ? 'border-white/[0.04] bg-[#111] opacity-40'
+              : 'border-white/[0.11] bg-[#141414]',
           )}
         >
           {/* Top accent stripe */}
-          <div
-            className={cn(
-              'absolute top-0 left-0 right-0 h-px',
-              isDone ? 'bg-green-500/30' : isCancelled ? 'bg-white/5' : 'bg-white/15',
-            )}
-          />
+          <div className={cn(
+            'absolute top-0 left-0 right-0 h-px',
+            isDone ? 'bg-green-500/25' : isCancelled ? 'bg-white/5' : 'bg-white/[0.18]',
+          )} />
 
-          {/* Icon */}
-          <div
-            className={cn(
+          {/* ── Document header row ── */}
+          <div className="flex items-center gap-3 px-5 pt-4 pb-3">
+            {/* Icon */}
+            <div className={cn(
               'flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center border',
               isDone
-                ? 'bg-green-500/10 border-green-500/20 text-green-400'
+                ? 'bg-green-500/10 border-green-500/25 text-green-400'
                 : isCancelled
-                ? 'bg-white/5 border-white/10 text-white/20'
-                : 'bg-white/[0.06] border-white/[0.10] text-white/60',
-            )}
-          >
-            {isDone ? <Check className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
-          </div>
+                ? 'bg-white/5 border-white/10 text-white/25'
+                : 'bg-white/[0.07] border-white/[0.12] text-white/65',
+            )}>
+              {isDone ? <Check className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
+            </div>
 
-          {/* Title block */}
-          <div className="flex-1 min-w-0">
-            <div
-              className={cn(
-                'text-[10px] font-bold tracking-[0.08em] uppercase mb-0.5',
+            {/* Title + label */}
+            <div className="flex-1 min-w-0">
+              <div className={cn(
+                'text-[10px] font-bold tracking-[0.09em] uppercase mb-0.5',
                 isDone ? 'text-green-400/50' : isCancelled ? 'text-white/20' : 'text-white/35',
-              )}
-            >
-              {isDone ? 'Executed' : isCancelled ? 'Cancelled' : 'Plan'}
+              )}>
+                {isDone ? 'Executed' : isCancelled ? 'Cancelled' : 'Plan'}
+              </div>
+              <div className={cn(
+                'text-[15px] font-bold tracking-tight leading-tight truncate',
+                isDone ? 'text-white/50' : isCancelled ? 'text-white/20' : 'text-white',
+              )}>
+                {stripEmojis(plan.title)}
+              </div>
             </div>
-            <div
-              className={cn(
-                'text-[14px] font-semibold tracking-tight truncate leading-tight',
-                isDone ? 'text-white/45' : isCancelled ? 'text-white/20' : 'text-white/90',
-              )}
-            >
-              {stripEmojis(plan.title)}
-            </div>
-          </div>
 
-          {/* Right-side actions */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {/* View button — always visible */}
+            {/* "..." open modal button */}
             <button
               onClick={() => setIsModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-medium text-white/40 hover:text-white/70 hover:bg-white/[0.06] border border-white/[0.07] hover:border-white/[0.15] transition-all"
+              className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-white/30 hover:text-white/70 hover:bg-white/[0.07] transition-all"
               title="View full plan"
             >
-              <Maximize2 className="w-3 h-3" />
-              View
+              <MoreHorizontal className="w-4 h-4" />
             </button>
+          </div>
 
-            {/* Cancel */}
-            {!isDone && !isCancelled && (
+          {/* ── Content preview ── */}
+          {preview && !isCancelled && (
+            <div className="relative px-5 pb-4">
+              {/* Fade gradient at bottom */}
+              <div className="absolute bottom-4 left-0 right-0 h-8 bg-gradient-to-t from-[#141414] to-transparent pointer-events-none z-10" />
+              <p className={cn(
+                'text-[13px] leading-[1.7] line-clamp-3',
+                isDone ? 'text-white/35' : 'text-white/55',
+              )}>
+                {preview}
+              </p>
+            </div>
+          )}
+
+          {/* ── Action bar ── */}
+          {!isDone && !isCancelled && (
+            <div className="flex items-center gap-2 px-5 py-3 border-t border-white/[0.05]">
               <button
-                onClick={handleCancel}
+                onClick={() => setIsModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-medium text-white/40 hover:text-white/70 hover:bg-white/[0.06] border border-white/[0.08] hover:border-white/[0.18] transition-all"
+              >
+                <Maximize2 className="w-3 h-3" />
+                View plan
+              </button>
+
+              <div className="flex-1" />
+
+              <button
+                onClick={() => onCancel(plan)}
                 disabled={isExecuting}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-[12px] font-medium text-white/35 hover:text-white/60 hover:bg-white/[0.06] border border-white/[0.07] hover:border-white/[0.15] transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-[12px] font-medium text-white/35 hover:text-white/60 hover:bg-white/[0.05] border border-white/[0.07] transition-all disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 <X className="w-3 h-3" />
                 Cancel
               </button>
-            )}
 
-            {/* Execute */}
-            {!isDone && !isCancelled && (
               <button
                 onClick={handleExecute}
                 disabled={isExecuting}
-                className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-[12px] font-semibold text-black bg-white hover:bg-white/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-white/10"
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-[12px] font-semibold text-black bg-white hover:bg-white/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-white/10"
               >
                 {isExecuting ? (
-                  <>
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                    Executing…
-                  </>
+                  <><Loader2 className="w-3 h-3 animate-spin" />Executing…</>
                 ) : (
-                  <>
-                    <Play className="w-3 h-3" />
-                    Execute
-                  </>
+                  <><Play className="w-3 h-3" />Execute</>
                 )}
               </button>
-            )}
+            </div>
+          )}
 
-            {/* Done state label */}
-            {isDone && (
-              <div className="flex items-center gap-1.5 text-[12px] text-green-400/50">
-                <Check className="w-3 h-3" />
-                Done
-              </div>
-            )}
-          </div>
+          {/* Done footer */}
+          {isDone && (
+            <div className="flex items-center gap-2 px-5 py-3 border-t border-white/[0.05]">
+              <Check className="w-3.5 h-3.5 text-green-400/50" />
+              <span className="text-[12px] text-white/30">Plan executed successfully</span>
+              <div className="flex-1" />
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="text-[11px] text-white/25 hover:text-white/50 transition-colors"
+              >
+                View →
+              </button>
+            </div>
+          )}
         </div>
       </motion.div>
 
@@ -265,94 +289,115 @@ export function ChatPlanCard({ plan, onExecute, onCancel }: ChatPlanCardProps) {
   );
 }
 
-// ─── Markdown renderer ────────────────────────────────────────────────────────
+// ─── Markdown pre-processor ───────────────────────────────────────────────────
+// Fixes AI output where ## and --- appear inline rather than on their own lines
+
+function normalizeMarkdown(raw: string): string {
+  return raw
+    // Put heading markers that appear mid-line onto their own line
+    .replace(/([^\n#])\s{0,2}(#{1,6} )/g, '$1\n\n$2')
+    // Put --- separators that appear mid-line onto their own lines
+    .replace(/([^\n])\s*---+\s*([^\n-])/g, '$1\n\n---\n\n$2')
+    .replace(/([^\n])\s*---+\s*$/gm, '$1\n\n---')
+    // Ensure --- lines are truly isolated (not inside list items creating front-matter)
+    .replace(/^([-*+]\s[^\n]*)\n---+/gm, '$1\n\n---')
+    // Collapse 3+ consecutive blank lines to 2
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+// ─── Markdown renderer (modal) ────────────────────────────────────────────────
 
 function PlanMarkdown({ markdown }: { markdown: string }) {
-  const clean = stripEmojis(markdown);
+  const prepared = normalizeMarkdown(stripEmojis(markdown));
 
   return (
-    <div className="plan-markdown">
+    <div className="plan-markdown select-text">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
           h1: ({ children }) => (
-            <h1 className="text-[20px] font-bold text-white/90 tracking-tight mb-3 mt-1 leading-snug">
+            <h1 className="text-[28px] font-bold text-white tracking-tight mb-5 mt-2 leading-[1.2]">
               {children}
             </h1>
           ),
           h2: ({ children }) => (
-            <h2 className="text-[16px] font-semibold text-white/80 tracking-tight mb-2 mt-5 leading-snug">
-              {children}
-            </h2>
+            <div className="mt-9 mb-4">
+              <h2 className="text-[18px] font-bold text-white tracking-tight leading-snug">
+                {children}
+              </h2>
+              <div className="mt-2.5 h-px bg-gradient-to-r from-white/15 to-transparent" />
+            </div>
           ),
           h3: ({ children }) => (
-            <h3 className="text-[13px] font-semibold text-white/70 tracking-tight mb-1.5 mt-4 uppercase">
+            <h3 className="text-[15px] font-semibold text-white/90 tracking-tight mb-2.5 mt-6 uppercase letter-spacing-wide">
               {children}
             </h3>
           ),
           h4: ({ children }) => (
-            <h4 className="text-[13px] font-medium text-white/65 tracking-tight mb-1.5 mt-3">
+            <h4 className="text-[15px] font-semibold text-white/85 tracking-tight mb-2 mt-5">
               {children}
             </h4>
           ),
           h5: ({ children }) => (
-            <h5 className="text-[12px] font-medium text-white/55 tracking-tight mb-1 mt-2">
+            <h5 className="text-[14px] font-medium text-white/80 tracking-tight mb-1.5 mt-4">
               {children}
             </h5>
           ),
           h6: ({ children }) => (
-            <h6 className="text-[11px] font-medium text-white/45 tracking-wide uppercase mb-1 mt-2">
+            <h6 className="text-[12px] font-bold text-white/55 tracking-[0.08em] uppercase mb-2 mt-4">
               {children}
             </h6>
           ),
           p: ({ children }) => (
-            <p className="text-[13px] text-white/60 leading-[1.75] mb-3">
+            <p className="text-[15px] text-white/80 leading-[1.85] mb-4">
               {children}
             </p>
           ),
           ul: ({ children }) => (
-            <ul className="mb-3 space-y-1.5 pl-0">{children}</ul>
+            <ul className="mb-5 space-y-2.5 pl-0">{children}</ul>
           ),
           ol: ({ children }) => (
-            <ol className="mb-3 space-y-1.5 pl-0 list-none">{children}</ol>
+            <ol className="mb-5 pl-0 list-none space-y-2.5 counter-reset-none">{children}</ol>
           ),
           li: ({ children }) => (
-            <li className="flex items-start gap-2.5 text-[13px] text-white/60 leading-[1.65]">
-              <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-white/25 mt-[7px]" />
-              <span>{children}</span>
+            <li className="flex items-start gap-3 text-[15px] text-white/80 leading-[1.75]">
+              <span className="flex-shrink-0 w-[5px] h-[5px] rounded-full bg-white/35 mt-[11px]" />
+              <span className="flex-1">{children}</span>
             </li>
           ),
-          hr: () => <div className="my-5 border-t border-white/[0.08]" />,
+          hr: () => (
+            <div className="my-8 flex items-center gap-3">
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/12 to-transparent" />
+            </div>
+          ),
           strong: ({ children }) => (
-            <strong className="font-semibold text-white/85">{children}</strong>
+            <strong className="font-semibold text-white">{children}</strong>
           ),
           em: ({ children }) => (
-            <em className="italic text-white/55">{children}</em>
+            <em className="italic text-white/65">{children}</em>
           ),
           pre: ({ children }) => (
-            <pre className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-3 overflow-x-auto my-3">
+            <pre className="bg-white/[0.04] border border-white/[0.07] rounded-xl p-4 overflow-x-auto my-5 text-[13px]">
               {children}
             </pre>
           ),
           code: ({ children, className }) => (
-            <code
-              className={
-                className
-                  ? 'text-[12px] text-white/60 font-mono'
-                  : 'bg-white/[0.06] border border-white/[0.08] rounded px-1.5 py-0.5 text-[12px] text-white/70 font-mono'
-              }
-            >
+            <code className={className
+              ? 'text-[13px] text-white/75 font-mono'
+              : 'bg-white/[0.07] border border-white/[0.09] rounded-md px-1.5 py-0.5 text-[13px] text-white font-mono'
+            }>
               {children}
             </code>
           ),
           blockquote: ({ children }) => (
-            <blockquote className="border-l-2 border-white/15 pl-3 my-3 text-white/45 italic text-[13px]">
+            <blockquote className="border-l-[2px] border-white/20 pl-5 my-5 text-white/60 italic text-[15px] leading-[1.8]">
               {children}
             </blockquote>
           ),
         }}
       >
-        {clean}
+        {prepared}
       </ReactMarkdown>
     </div>
   );

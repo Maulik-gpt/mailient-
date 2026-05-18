@@ -60,16 +60,19 @@ ${integrationSection}
 ## Output rules — CRITICAL
 - Output ONLY the plan document as markdown. No preamble, no "here is your plan", no explanation before or after.
 - Start immediately with "# [Plan Title]" on the first line.
-- Use H1 (#) for the plan title only.
-- Use H2 (##) for major phases or sections.
-- Use H3 (###) for sub-sections.
-- Use H4-H6 for further nesting as needed.
+- EVERY heading (#, ##, ###, etc.) MUST be on its own separate line — NEVER inline within a sentence or paragraph.
+- EVERY "---" separator MUST be on its own line with a blank line before and after — NEVER inside a sentence or list item.
+- Use H1 (#) for the plan title only — one per document.
+- Use H2 (##) for major phases or sections — each on its own line.
+- Use H3 (###) for sub-sections — each on its own line.
 - Use bullet points (- ) for action items, resources, or lists.
-- Use --- to separate major sections.
+- Use --- on its own line to separate major sections.
 - Maximum 5000 characters total.
 - NEVER use emojis. Zero emojis allowed in any part of the plan.
 - NEVER use bracketed placeholders. Every item must be concrete and specific.
 - Write in direct, professional language. No hedging.
+- WRONG example: "Use Gmail for email. --- ## Phase 2: Schedule" — heading and separator inline
+- CORRECT example: each ## heading and each --- appear on their own dedicated lines with blank lines around them.
 
 ## Plan structure guidance
 A good plan contains:
