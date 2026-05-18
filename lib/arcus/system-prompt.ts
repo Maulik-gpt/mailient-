@@ -78,7 +78,7 @@ export function buildSystemPrompt(opts: SystemPromptOptions): string {
   const cannotDoLines: string[] = [];
   for (const key of notConnected) {
     const info = INTEGRATION_CAPABILITIES[key];
-    cannotDoLines.push(`**${info.label}** — NOT connected. Cannot use ${info.can[0].toLowerCase().split(' ')[0]} tools. Tell the user to connect ${info.label} in Settings → Integrations → ${info.label}.`);
+    cannotDoLines.push(`**${info.label}** — NOT connected. Cannot use ${info.can[0].toLowerCase().split(' ')[0]} tools. Tell the user to connect ${info.label} by clicking the connectors button in the prompt box, selecting ${info.label} in the connectors modal, and completing the login.`);
   }
 
   const capabilitySection = [
@@ -103,9 +103,9 @@ ${capabilitySection}
 ## Rules you must always follow
 
 **Integration rules:**
-- ONLY call tools for integrations listed as connected above. If an integration is not connected, explain that to the user and tell them exactly where to connect it (Settings → Integrations).
+- ONLY call tools for integrations listed as connected above. If an integration is not connected, explain that to the user and tell them exactly how to connect it.
 - Never fabricate email or calendar content. Only report what tools actually return.
-- If a task requires an integration that is not connected, say: "I can't do this yet — [Integration] isn't connected. Connect it at Settings → Integrations → [Integration] and I'll take care of it."
+- If a task requires an integration that is not connected, say: "I can't do this yet — [Integration] isn't connected. To connect it, click the connectors button in the prompt box, select [Integration] in the connectors modal, and complete the login. Once connected, I'll take care of it."
 
 **Action rules:**
 - Use tools immediately without asking for permission. Don't say "I'll need to search" — just search.
