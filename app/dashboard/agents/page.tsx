@@ -759,35 +759,47 @@ function AgentTaskCard({ agent, onClick, onToggle, onEdit, onDelete, onToggleCon
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -6 }}
-      className="bg-zinc-900/60 border border-zinc-800/70 rounded-2xl overflow-hidden hover:border-zinc-700/70 transition-all shadow-sm group"
+      className="bg-[#0a0a0b] border border-zinc-900 rounded-2xl overflow-hidden hover:border-zinc-800 hover:shadow-lg hover:shadow-black/20 transition-all duration-200 group"
     >
-      <div className="p-5 pb-4">
-        <div className="flex items-start gap-3.5 mb-3">
-          <div className="px-2.5 py-1 rounded-lg text-[11px] font-bold border flex-shrink-0 mt-0.5 border-zinc-700/60 bg-zinc-800/60 text-zinc-300">
-            {cronToLabel(agent.cron_schedule).split(' ')[0]}
-          </div>
+      <div className="p-6">
+        <div className="flex items-start gap-4">
+          {/* Left Column: Icon Badge & Details */}
           <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-3 mb-2.5 flex-wrap">
+              <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border border-zinc-800 bg-[#121214] text-zinc-400">
+                {cronToLabel(agent.cron_schedule).split(' ')[0]}
+              </span>
+              {agent.expires_at && (
+                <span className="px-2.5 py-1 rounded-lg text-[10px] font-semibold border border-amber-500/10 bg-amber-500/5 text-amber-500/80 flex items-center gap-1.5">
+                  <span className="w-1 h-1 rounded-full bg-amber-500 animate-pulse" />
+                  Expires {new Date(agent.expires_at + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                </span>
+              )}
+            </div>
+            
             <button
               onClick={onClick}
-              className="text-[16px] font-bold text-zinc-100 text-left hover:text-zinc-300 transition-colors leading-tight line-clamp-1 block w-full"
+              className="text-[17px] font-extrabold text-zinc-100 text-left hover:text-white transition-colors leading-tight line-clamp-1 block w-full tracking-tight"
             >
               {agent.name}
             </button>
-            <p className="text-[13px] text-zinc-500 mt-1.5 leading-relaxed line-clamp-2">{agent.task_description}</p>
+            <p className="text-[13px] text-zinc-500 mt-2 leading-relaxed line-clamp-2 pr-4">{agent.task_description}</p>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0 pt-0.5">
+
+          {/* Right Column: Toggle & More options */}
+          <div className="flex items-center gap-3.5 flex-shrink-0 pt-0.5">
             <Toggle checked={agent.status !== 'paused'} onChange={onToggle} />
             <DropdownMenuRoot.Root>
               <DropdownMenuTrigger asChild>
-                <button className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-all">
-                  <MoreHorizontal className="w-4 h-4" />
+                <button className="w-9 h-9 flex items-center justify-center rounded-xl text-zinc-500 hover:text-zinc-200 hover:bg-[#121214] border border-transparent hover:border-zinc-900 transition-all">
+                  <MoreHorizontal className="w-4.5 h-4.5" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="min-w-[140px] bg-zinc-900 border border-zinc-700/60 rounded-xl p-1 shadow-xl">
-                <DropdownMenuItem onClick={onEdit} className="flex items-center gap-2 px-3 py-2 text-[13px] text-zinc-300 hover:text-zinc-100 cursor-pointer rounded-lg">
-                  <Edit2 className="w-3.5 h-3.5" /> Edit
+              <DropdownMenuContent align="end" className="min-w-[140px] bg-zinc-900 border border-zinc-800 rounded-xl p-1 shadow-2xl">
+                <DropdownMenuItem onClick={onEdit} className="flex items-center gap-2 px-3 py-2 text-[13px] text-zinc-300 hover:text-zinc-100 cursor-pointer rounded-lg transition-colors">
+                  <Edit2 className="w-3.5 h-3.5" /> Edit schedule
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={onDelete} variant="destructive" className="flex items-center gap-2 px-3 py-2 text-[13px] cursor-pointer rounded-lg">
+                <DropdownMenuItem onClick={onDelete} variant="destructive" className="flex items-center gap-2 px-3 py-2 text-[13px] cursor-pointer rounded-lg transition-colors">
                   <Trash2 className="w-3.5 h-3.5" /> Delete
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -795,38 +807,42 @@ function AgentTaskCard({ agent, onClick, onToggle, onEdit, onDelete, onToggleCon
           </div>
         </div>
 
-        <div className="flex items-center gap-4 mt-3 pt-3 border-t border-zinc-800/50">
-          <div className="flex-1">
-            <span className="text-[11px] font-semibold uppercase tracking-widest text-zinc-600 block mb-0.5">Schedule</span>
-            <span className="text-[13px] text-zinc-300 font-medium">{cronToLabel(agent.cron_schedule)}</span>
+        {/* Separator & Metadata dashboard */}
+        <div className="grid grid-cols-3 gap-4 mt-5 pt-5 border-t border-zinc-900/60">
+          <div className="flex items-start gap-2.5">
+            <CalendarDays className="w-4.5 h-4.5 text-zinc-600 mt-0.5" />
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 block mb-0.5">Schedule</span>
+              <span className="text-[13px] text-zinc-300 font-semibold leading-none">{cronToLabel(agent.cron_schedule)}</span>
+            </div>
           </div>
-          <div className="flex-1">
-            <span className="text-[11px] font-semibold uppercase tracking-widest text-zinc-600 block mb-0.5">Next run</span>
-            <span className="text-[13px] text-zinc-300 font-medium">{formatNextRun(nextRun)}</span>
+          <div className="flex items-start gap-2.5">
+            <Clock className="w-4.5 h-4.5 text-zinc-600 mt-0.5" />
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 block mb-0.5">Next run</span>
+              <span className="text-[13px] text-zinc-300 font-semibold leading-none">{formatNextRun(nextRun)}</span>
+            </div>
           </div>
-          <div className="flex flex-col items-end gap-1.5">
+          <div className="flex flex-col items-end justify-center">
             <span className={cn(
-              'inline-flex px-2.5 py-1 rounded-full text-[11px] font-semibold border',
-              agent.status === 'active'  ? 'bg-zinc-800 text-zinc-300 border-zinc-700/60' :
-              agent.status === 'running' ? 'bg-zinc-700 text-zinc-100 border-zinc-600' :
-              'bg-transparent text-zinc-600 border-zinc-800',
+              'inline-flex px-3 py-1 rounded-xl text-[11px] font-bold border transition-colors shadow-sm',
+              agent.status === 'running'
+                ? 'bg-zinc-100 text-zinc-950 border-zinc-100'
+                : agent.status === 'active'
+                  ? 'bg-zinc-900 border-zinc-800 text-zinc-300'
+                  : 'bg-zinc-950 text-zinc-600 border-zinc-900',
             )}>
               {agent.status === 'running' ? 'Running' : agent.status === 'active' ? 'Active' : 'Paused'}
             </span>
-            {agent.expires_at && (
-              <span className="text-[11px] text-zinc-600">
-                Expires {new Date(agent.expires_at + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-              </span>
-            )}
           </div>
         </div>
       </div>
 
-      {/* Skip confirmations */}
-      <div className="mx-5 mb-4 bg-zinc-950/60 border border-zinc-800/50 rounded-xl px-4 py-3 flex items-center justify-between">
+      {/* Skip confirmations inside box */}
+      <div className="mx-6 mb-6 bg-[#121214] border border-zinc-900 rounded-2xl px-5 py-4 flex items-center justify-between transition-colors hover:bg-[#151517]">
         <div>
-          <p className="text-[13px] font-semibold text-zinc-300">Skip confirmations</p>
-          <p className="text-[12px] text-zinc-600 mt-0.5">No approval needed before sending, publishing, or posting</p>
+          <p className="text-[13px] font-bold text-zinc-200">Skip confirmations</p>
+          <p className="text-[12px] text-zinc-500 mt-0.5">No approval needed before execution</p>
         </div>
         <Toggle checked={agent.skip_confirmations} onChange={onToggleConfirmations} />
       </div>
