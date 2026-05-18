@@ -246,15 +246,16 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   },
   {
     name: 'draft_reply',
-    description: 'Save a reply as a Gmail draft. The draft appears in Gmail Drafts and is shown to the user. Use after reading the thread and analyzing the user\'s writing style. Always show the draft content in your reply message.',
+    description: 'Save a Gmail draft AND display it inline in the chat for the user to review and send with one click. Call this AFTER: (1) reading the thread, (2) analyzing sent emails for tone, (3) scheduling any meeting to get the Meet link. Write the body in the user\'s voice profile — match their tone, formality, greeting, and sign-off exactly. Include the Google Meet link in the body if a meeting was scheduled. STOP after calling this — do NOT call send_email. The user will send from the inline draft preview.',
     input_schema: {
       type: 'object',
       properties: {
         threadId: { type: 'string', description: 'Gmail thread ID (from read_email results)' },
         to: { type: 'string', description: 'Recipient email address' },
         subject: { type: 'string', description: 'Subject (usually "Re: original subject")' },
-        body: { type: 'string', description: 'Email body — must match the user\'s writing style' },
+        body: { type: 'string', description: 'Email body — written in the user\'s voice. Include Google Meet link if a meeting was scheduled.' },
         inReplyToMessageId: { type: 'string', description: 'RFC Message-ID for threading (from read_email)' },
+        recipientName: { type: 'string', description: 'Display name of the recipient (e.g. "Priya") — used in the draft preview UI' },
       },
       required: ['threadId', 'to', 'body'],
     },
@@ -361,6 +362,20 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
       required: ['channel', 'text'],
     },
   },
+  {
+    name: 'create_notion_page',
+    description: 'Create a new page in the user\'s Notion workspace. Use this to log meetings, conversations, action items, and tasks automatically. When logging a meeting or email, include: contact name, date, what was discussed, and any action items. Pass a database hint (e.g. "meetings", "tasks", "contacts") and Arcus will find the right database automatically.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: 'Page title, e.g. "Meeting with Priya — 2024-01-15" or "Task: Send proposal"' },
+        content: { type: 'string', description: 'Full page content in plain text or markdown. Include all relevant details: contact, date, discussion points, action items, links.' },
+        database: { type: 'string', description: 'Hint for which Notion database to log into, e.g. "meetings", "tasks", "contacts", "calendar". Arcus will search for a matching database.' },
+        parentId: { type: 'string', description: 'Explicit Notion page or database ID to create this page under. Use if you already know the exact parent.' },
+      },
+      required: ['title', 'content'],
+    },
+  },
 ];
 
 // ── Integration → tool mapping ─────────────────────────────────────────────────
@@ -374,6 +389,7 @@ const TOOL_INTEGRATION_MAP: Record<string, string | null> = {
   schedule_meeting: 'gcal',
   get_calendar_events: 'gcal',
   search_notion: 'notion',
+  create_notion_page: 'notion',
   open_canvas: null,
   web_search: null,
   send_slack_message: 'slack',
@@ -400,7 +416,7 @@ export interface ToolResult {
     title: string;
     type: string;
     markdown: string;
-    draftMeta?: { to?: string; subject?: string; threadId?: string; body?: string };
+    draftMeta?: { to?: string; subject?: string; threadId?: string; body?: string; recipientName?: string };
   };
 }
 
@@ -418,6 +434,7 @@ export async function executeTool(
     case 'schedule_meeting': return scheduleMeeting(userId, input);
     case 'get_calendar_events': return getCalendarEvents(userId, input);
     case 'search_notion': return searchNotion(userId, input);
+    case 'create_notion_page': return createNotionPage(userId, input);
     case 'open_canvas': return openCanvas(input);
     case 'web_search': return webSearch(input);
     case 'send_slack_message': return sendSlackMessage(userId, input);
@@ -572,13 +589,15 @@ async function draftReply(userId: string, input: any): Promise<ToolResult> {
   const draft = await res.json();
   const previewUrl = `https://mail.google.com/mail/u/0/#drafts/${draft.message?.id || ''}`;
 
+  const displayName = input.recipientName || input.to.split('@')[0];
+
   return {
-    output: `Draft saved successfully!\nDraft ID: ${draft.id}\nPreview: ${previewUrl}\nTo: ${input.to}\nSubject: ${subject}`,
+    output: `Draft saved. Displaying inline for user review.\nDraft ID: ${draft.id}\nTo: ${input.to} (${displayName})\nSubject: ${subject}\nThe user will send it from the chat draft preview — do NOT call send_email.`,
     canvasData: {
       title: `Draft: ${subject}`,
       type: 'email_draft',
       markdown: [
-        `**To:** ${input.to}`,
+        `**To:** ${displayName} <${input.to}>`,
         `**Subject:** ${subject}`,
         '',
         '---',
@@ -587,9 +606,9 @@ async function draftReply(userId: string, input: any): Promise<ToolResult> {
         '',
         '---',
         '',
-        `✅ [Open draft in Gmail](${previewUrl})`,
+        `[Open in Gmail](${previewUrl})`,
       ].join('\n'),
-      draftMeta: { to: input.to, subject, threadId: input.threadId, body: input.body },
+      draftMeta: { to: input.to, subject, threadId: input.threadId, body: input.body, recipientName: displayName },
     },
   };
 }
@@ -760,6 +779,132 @@ async function searchNotion(userId: string, input: any): Promise<ToolResult> {
   });
 
   return { output: `Found ${pages.length} Notion page(s):\n\n${lines.join('\n\n')}` };
+}
+
+async function createNotionPage(userId: string, input: any): Promise<ToolResult> {
+  const token = await getNotionToken(userId);
+  if (!token) return { output: 'Notion is not connected. Ask the user to connect Notion in Settings → Integrations.' };
+
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
+    'Notion-Version': '2022-06-28',
+  };
+
+  // Resolve parent: explicit ID → database search → first available page
+  let parentBlock: Record<string, any> | null = null;
+
+  if (input.parentId) {
+    // Caller provided an explicit ID — detect page vs database by trying database first
+    parentBlock = { type: 'database_id', database_id: input.parentId };
+  } else if (input.database) {
+    // Search for a matching database by hint keyword
+    try {
+      const searchRes = await fetch('https://api.notion.com/v1/search', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          query: input.database,
+          filter: { value: 'database', property: 'object' },
+          page_size: 5,
+        }),
+        signal: AbortSignal.timeout(10000),
+      });
+      if (searchRes.ok) {
+        const searchData = await searchRes.json();
+        const db = searchData.results?.[0];
+        if (db) parentBlock = { type: 'database_id', database_id: db.id };
+      }
+    } catch { /* fallthrough */ }
+  }
+
+  // Fallback: find any page in the workspace to parent under
+  if (!parentBlock) {
+    try {
+      const fallbackRes = await fetch('https://api.notion.com/v1/search', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ filter: { value: 'page', property: 'object' }, page_size: 1 }),
+        signal: AbortSignal.timeout(8000),
+      });
+      if (fallbackRes.ok) {
+        const fb = await fallbackRes.json();
+        const pg = fb.results?.[0];
+        if (pg) parentBlock = { type: 'page_id', page_id: pg.id };
+      }
+    } catch { /* fallthrough */ }
+  }
+
+  if (!parentBlock) {
+    return { output: 'Could not determine a Notion parent page or database. Please pass a parentId or connect Notion with workspace access.' };
+  }
+
+  // Convert content text into Notion paragraph blocks (split on double newline for sections)
+  const paragraphs = input.content
+    .split(/\n{2,}/)
+    .map((chunk: string) => chunk.trim())
+    .filter(Boolean)
+    .slice(0, 80) // Notion max 100 blocks per request
+    .map((text: string) => ({
+      object: 'block',
+      type: 'paragraph',
+      paragraph: {
+        rich_text: [{ type: 'text', text: { content: text.slice(0, 2000) } }],
+      },
+    }));
+
+  // Build the page body — title goes in properties for databases, children for pages
+  const isDatabase = parentBlock.type === 'database_id';
+  const pageBody: Record<string, any> = {
+    parent: parentBlock,
+    properties: isDatabase
+      ? { title: { title: [{ type: 'text', text: { content: input.title } }] } }
+      : { title: { title: [{ type: 'text', text: { content: input.title } }] } },
+    children: paragraphs,
+  };
+
+  const createRes = await fetch('https://api.notion.com/v1/pages', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(pageBody),
+    signal: AbortSignal.timeout(15000),
+  });
+
+  if (!createRes.ok) {
+    const err = await createRes.text().catch(() => '');
+    // If database parent rejected (schema mismatch), fall back to a free-form page
+    if (isDatabase && (createRes.status === 400 || createRes.status === 422)) {
+      try {
+        const fallbackPageRes = await fetch('https://api.notion.com/v1/search', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ filter: { value: 'page', property: 'object' }, page_size: 1 }),
+          signal: AbortSignal.timeout(8000),
+        });
+        if (fallbackPageRes.ok) {
+          const fb = await fallbackPageRes.json();
+          const pg = fb.results?.[0];
+          if (pg) {
+            const retryBody = { ...pageBody, parent: { type: 'page_id', page_id: pg.id } };
+            const retryRes = await fetch('https://api.notion.com/v1/pages', {
+              method: 'POST',
+              headers,
+              body: JSON.stringify(retryBody),
+              signal: AbortSignal.timeout(12000),
+            });
+            if (retryRes.ok) {
+              const created = await retryRes.json();
+              return { output: `Notion page created: "${input.title}"\nURL: ${created.url}` };
+            }
+          }
+        }
+      } catch { /* fallthrough */ }
+    }
+    return { output: `Failed to create Notion page (${createRes.status}): ${err.slice(0, 200)}` };
+  }
+
+  const created = await createRes.json();
+  return { output: `Notion page created: "${input.title}"\nURL: ${created.url}` };
 }
 
 function openCanvas(input: any): ToolResult {

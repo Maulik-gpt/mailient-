@@ -2050,7 +2050,7 @@ export default function ChatInterface({
                     ? {
                         content: cv.draftMeta.body || '',
                         recipientEmail: cv.draftMeta.to || '',
-                        recipientName: cv.draftMeta.to?.split('@')[0] || '',
+                        recipientName: cv.draftMeta.recipientName || cv.draftMeta.to?.split('@')[0] || 'Recipient',
                         senderName: userName,
                         subject: cv.draftMeta.subject || cv.title || '',
                         threadId: cv.draftMeta.threadId,
@@ -4192,6 +4192,23 @@ export default function ChatInterface({
                                             body: JSON.stringify({ to: recipientEmail, subject, body: content, threadId }),
                                           });
                                           if (!res.ok) throw new Error('Failed to send email');
+
+                                          // Dismiss the draft box
+                                          setMessages(prev => prev.map(m =>
+                                            m.id === msg.id ? { ...m, meta: { ...(m as AgentMessage).meta, draftReply: undefined } } : m
+                                          ));
+
+                                          // Inject a confirmation message from Arcus
+                                          const recipientName = (msg as AgentMessage).meta?.draftReply?.recipientName || recipientEmail.split('@')[0];
+                                          const confirmId = Date.now() + 2;
+                                          setMessages(prev => [...prev, {
+                                            id: confirmId,
+                                            role: 'assistant' as const,
+                                            type: 'agent' as const,
+                                            content: { text: `✅ Email sent to **${recipientName}**. They'll receive the message — including the meeting details and Google Meet link — in their inbox.`, list: [], footer: '' },
+                                            time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+                                            meta: {},
+                                          } as any]);
                                         }}
                                       />
                                     )}
