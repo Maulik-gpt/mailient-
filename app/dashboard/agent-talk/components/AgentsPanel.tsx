@@ -4,8 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Plus, Clock, Mail, Zap, Loader2, X, Trash2, Slack,
-  MoreHorizontal, Check, AlertCircle, ChevronDown, Bot,
+  Plus, Clock, Mail, Zap, Loader2, X, Slack,
+  MoreHorizontal, AlertCircle, ChevronDown, Edit2, Trash2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -73,22 +73,24 @@ function getNextRunDate(cron: string): Date {
 }
 
 function formatNextRun(date: Date): string {
-  return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()} ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    + ' · ' + date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 }
 
 function formatRunDate(iso: string): string {
   const d = new Date(iso);
-  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()} ${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    + ' · ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 }
 
 // ── Schedule helpers ───────────────────────────────────────────────────────────
 
 const SCHEDULE_PATTERNS = [
-  { label: 'Every day', key: 'daily', needsTime: true, needsDay: false },
-  { label: 'Every hour', key: 'hourly', needsTime: false, needsDay: false },
-  { label: 'Every weekday', key: 'weekday', needsTime: true, needsDay: false },
-  { label: 'Every week', key: 'weekly', needsTime: true, needsDay: true },
-  { label: 'Custom cron', key: 'custom', needsTime: false, needsDay: false },
+  { label: 'Every day',  key: 'daily',   needsTime: true,  needsDay: false },
+  { label: 'Every hour', key: 'hourly',  needsTime: false, needsDay: false },
+  { label: 'Weekdays',   key: 'weekday', needsTime: true,  needsDay: false },
+  { label: 'Weekly',     key: 'weekly',  needsTime: true,  needsDay: true  },
+  { label: 'Custom',     key: 'custom',  needsTime: false, needsDay: false },
 ];
 
 const WEEK_DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].map((l, i) => ({ label: l, value: String(i) }));
@@ -97,10 +99,10 @@ function buildCron(key: string, time: string, weekday: string): string {
   const [h, m] = time.split(':').map(s => parseInt(s, 10));
   const hh = isNaN(h) ? 7 : h;
   const mm = isNaN(m) ? 0 : m;
-  if (key === 'daily') return `${mm} ${hh} * * *`;
-  if (key === 'hourly') return `0 */1 * * *`;
+  if (key === 'daily')   return `${mm} ${hh} * * *`;
+  if (key === 'hourly')  return `0 */1 * * *`;
   if (key === 'weekday') return `${mm} ${hh} * * 1-5`;
-  if (key === 'weekly') return `${mm} ${hh} * * ${weekday}`;
+  if (key === 'weekly')  return `${mm} ${hh} * * ${weekday}`;
   return '';
 }
 
@@ -115,16 +117,37 @@ function parseCronToSchedule(cron: string) {
   return { key: 'daily', time, weekday: '0' };
 }
 
+// ── Agent color (deterministic) ────────────────────────────────────────────────
+
+const PILL_COLORS = [
+  'bg-violet-500/20 text-violet-300 border-violet-500/30',
+  'bg-sky-500/20 text-sky-300 border-sky-500/30',
+  'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+  'bg-amber-500/20 text-amber-300 border-amber-500/30',
+  'bg-rose-500/20 text-rose-300 border-rose-500/30',
+  'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
+];
+function agentColor(name: string) {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return PILL_COLORS[h % PILL_COLORS.length];
+}
+
 // ── Toggle ─────────────────────────────────────────────────────────────────────
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
   return (
     <button
-      onClick={onChange}
-      className={cn('relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200',
-        checked ? 'bg-blue-500' : 'bg-white/15')}
+      onClick={e => { e.stopPropagation(); onChange(); }}
+      className={cn(
+        'relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none',
+        checked ? 'bg-emerald-500' : 'bg-zinc-700',
+      )}
     >
-      <span className={cn('inline-block h-5 w-5 transform rounded-full bg-white shadow transition duration-200', checked ? 'translate-x-5' : 'translate-x-0')} />
+      <span className={cn(
+        'inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition duration-200 ease-in-out',
+        checked ? 'translate-x-5' : 'translate-x-0',
+      )} />
     </button>
   );
 }
@@ -132,15 +155,15 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void 
 // ── Templates ──────────────────────────────────────────────────────────────────
 
 const TEMPLATES = [
-  { name: 'Morning Inbox Sweep', description: 'Scan inbox for unanswered client emails, draft replies in your tone, email a summary with links.', cron_schedule: '0 7 * * *', output_channel: 'gmail' as const, task_description: 'Every morning at 7am, search my inbox for any unanswered client emails, study my recent sent emails to learn my writing tone, draft a personalized reply for each one, and email me a clear summary with links to each draft.' },
-  { name: 'Meeting Autopilot', description: 'Find meeting requests, check calendar availability, book with Meet links, Slack you a summary.', cron_schedule: '0 9 * * *', output_channel: 'both' as const, task_description: 'Every morning at 9am, search my Gmail inbox for meeting requests, check my Google Calendar for availability, book confirmed meetings with Google Meet links, and send me a Slack message listing what was scheduled.' },
-  { name: 'Weekly Opportunity Digest', description: 'Scan all emails from the week, identify revenue opportunities and leads, email a full digest every Sunday.', cron_schedule: '0 18 * * 0', output_channel: 'gmail' as const, task_description: 'Every Sunday at 6pm, search through all emails I received this week, identify revenue opportunities, potential partnerships, and warm leads, and write a comprehensive weekly digest email.' },
+  { name: 'Morning Inbox Sweep', description: 'Scan inbox for unanswered client emails, draft replies in your tone, email a summary.', cron_schedule: '0 7 * * *', output_channel: 'gmail' as const, task_description: 'Every morning at 7am, search my inbox for any unanswered client emails, study my recent sent emails to learn my writing tone, draft a personalized reply for each one, and email me a clear summary with links to each draft.' },
+  { name: 'Meeting Autopilot', description: 'Find meeting requests, check calendar, book with Meet links, Slack you a summary.', cron_schedule: '0 9 * * *', output_channel: 'both' as const, task_description: 'Every morning at 9am, search my Gmail inbox for meeting requests, check my Google Calendar for availability, book confirmed meetings with Google Meet links, and send me a Slack message listing what was scheduled.' },
+  { name: 'Weekly Opportunity Digest', description: 'Scan all emails from the week, identify revenue opportunities and leads, email a full digest.', cron_schedule: '0 18 * * 0', output_channel: 'gmail' as const, task_description: 'Every Sunday at 6pm, search through all emails I received this week, identify revenue opportunities, potential partnerships, and warm leads, and write a comprehensive weekly digest email.' },
   { name: 'Client Pulse', description: 'Every hour, checks if email arrived from your top contacts. Sends an immediate Slack ping.', cron_schedule: '0 */1 * * *', output_channel: 'slack' as const, task_description: 'Every hour, check if any new email arrived from my most important contacts. If so, immediately send me a Slack message with the sender name, subject line, and first two sentences.' },
-  { name: 'Notion + Inbox Sync', description: 'Cross-reference your Notion tasks with Gmail, find gaps, send a daily project briefing.', cron_schedule: '0 8 * * *', output_channel: 'gmail' as const, task_description: 'Every morning at 8am, read my Notion task list, search Gmail for emails related to each project, identify gaps, and email me a concise project briefing.' },
+  { name: 'Notion + Inbox Sync', description: 'Cross-reference Notion tasks with Gmail, find gaps, send a daily project briefing.', cron_schedule: '0 8 * * *', output_channel: 'gmail' as const, task_description: 'Every morning at 8am, read my Notion task list, search Gmail for emails related to each project, identify gaps, and email me a concise project briefing.' },
   { name: 'Lead Harvest', description: 'Run the lead qualification flow across inbox and web, push to Notion, email a harvest report.', cron_schedule: '0 5 * * *', output_channel: 'gmail' as const, task_description: 'Every morning at 5am, search my inbox for inbound leads, research and qualify each one via web search, save qualified leads to Notion, and email me a harvest report.' },
 ];
 
-// ── Create Modal ───────────────────────────────────────────────────────────────
+// ── Create / Edit Modal ────────────────────────────────────────────────────────
 
 function CreateModal({ onClose, onSave, initial }: {
   onClose: () => void;
@@ -184,102 +207,170 @@ function CreateModal({ onClose, onSave, initial }: {
 
   return createPortal(
     <div className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={onClose} />
       <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 30 }}
-        className="relative w-full max-w-xl bg-[#141414] border border-white/10 rounded-3xl overflow-y-auto max-h-[92vh] shadow-2xl"
+        initial={{ opacity: 0, y: 24, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 24, scale: 0.98 }}
+        transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+        className="relative w-full max-w-2xl bg-zinc-950 border border-zinc-700/50 rounded-2xl overflow-y-auto max-h-[90vh] shadow-2xl shadow-black/70"
       >
-        <div className="flex items-center justify-between px-7 pt-7 pb-0">
+        {/* Header */}
+        <div className="flex items-center justify-between px-8 pt-7 pb-5 border-b border-zinc-800/60">
           <div>
-            <h2 className="text-[17px] font-bold text-white">{initial?.id ? 'Edit schedule' : 'New schedule'}</h2>
-            <p className="text-[12px] text-white/35 mt-0.5">Describe the job in plain English</p>
+            <h2 className="text-[20px] font-bold text-zinc-100">{initial?.id ? 'Edit schedule' : 'New schedule'}</h2>
+            <p className="text-[14px] text-zinc-500 mt-1">Describe the job and when to run it</p>
           </div>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full text-white/30 hover:text-white hover:bg-white/10 transition-all">
-            <X className="w-4 h-4" />
+          <button onClick={onClose} className="w-9 h-9 flex items-center justify-center rounded-xl text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-all">
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="px-7 py-5 space-y-4">
-          <textarea
-            value={task}
-            onChange={e => setTask(e.target.value)}
-            placeholder="Describe what you want this agent to do..."
-            rows={4}
-            className="w-full bg-white/[0.04] border border-white/10 rounded-2xl px-4 py-3.5 text-white text-[13px] leading-relaxed placeholder:text-white/20 focus:outline-none focus:border-white/25 resize-none transition-colors"
-          />
-
+        <div className="px-8 py-6 space-y-6">
+          {/* Task */}
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-widest text-white/30 mb-2">Agent name (optional)</label>
-            <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Morning Client Check" className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-white text-[12px] placeholder:text-white/20 focus:outline-none focus:border-white/25 transition-colors" />
+            <label className="block text-[12px] font-semibold uppercase tracking-widest text-zinc-500 mb-2.5">What should Arcus do?</label>
+            <textarea
+              value={task}
+              onChange={e => setTask(e.target.value)}
+              placeholder="Describe what you want this agent to do in plain English…"
+              rows={4}
+              className="w-full bg-zinc-900 border border-zinc-700/60 rounded-xl px-4 py-3.5 text-[15px] text-zinc-100 leading-relaxed placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500/30 resize-none transition-all"
+            />
           </div>
 
+          {/* Name */}
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-widest text-white/30 mb-2.5">Schedule</label>
-            <div className="flex flex-wrap gap-2 mb-3">
+            <label className="block text-[12px] font-semibold uppercase tracking-widest text-zinc-500 mb-2.5">
+              Agent name <span className="normal-case font-normal text-zinc-600">(optional)</span>
+            </label>
+            <input
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="e.g. Morning Client Check"
+              className="w-full bg-zinc-900 border border-zinc-700/60 rounded-xl px-4 py-3 text-[15px] text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500/30 transition-all"
+            />
+          </div>
+
+          {/* Schedule */}
+          <div>
+            <label className="block text-[12px] font-semibold uppercase tracking-widest text-zinc-500 mb-3">Schedule</label>
+            <div className="flex flex-wrap gap-2 mb-4">
               {SCHEDULE_PATTERNS.map(p => (
-                <button key={p.key} onClick={() => setPatternKey(p.key)} className={cn('px-3 py-1.5 rounded-full text-[11px] font-medium transition-all border', patternKey === p.key ? 'bg-white text-black border-white' : 'bg-white/5 border-white/10 text-white/50 hover:border-white/20 hover:text-white/70')}>
+                <button
+                  key={p.key}
+                  onClick={() => setPatternKey(p.key)}
+                  className={cn(
+                    'px-4 py-2 rounded-lg text-[13px] font-medium transition-all border',
+                    patternKey === p.key
+                      ? 'bg-zinc-100 text-zinc-950 border-zinc-100'
+                      : 'bg-zinc-900 border-zinc-700/60 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200',
+                  )}
+                >
                   {p.label}
                 </button>
               ))}
             </div>
 
             {activePat.needsTime && (
-              <div className="flex gap-3">
+              <div className="flex gap-4">
                 {activePat.needsDay && (
                   <div className="flex-1">
-                    <label className="block text-[10px] text-white/25 mb-1">Day</label>
-                    <select value={scheduleWeekday} onChange={e => setScheduleWeekday(e.target.value)} className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl px-3 py-2 text-white text-[12px] focus:outline-none focus:border-white/25 transition-colors appearance-none">
+                    <label className="block text-[11px] font-semibold uppercase tracking-widest text-zinc-600 mb-2">Day</label>
+                    <select
+                      value={scheduleWeekday}
+                      onChange={e => setScheduleWeekday(e.target.value)}
+                      className="w-full bg-zinc-900 border border-zinc-700/60 rounded-xl px-4 py-3 text-[14px] text-zinc-100 focus:outline-none focus:border-zinc-500 transition-all appearance-none cursor-pointer"
+                    >
                       {WEEK_DAYS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
                     </select>
                   </div>
                 )}
                 <div className={activePat.needsDay ? 'flex-1' : 'w-full'}>
-                  <label className="block text-[10px] text-white/25 mb-1">Time (your local time · {browserTz})</label>
-                  <input type="time" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl px-3 py-2 text-white text-[12px] focus:outline-none focus:border-white/25 transition-colors" style={{ colorScheme: 'dark' }} />
+                  <label className="block text-[11px] font-semibold uppercase tracking-widest text-zinc-600 mb-2">
+                    Time <span className="normal-case font-normal text-zinc-700">({browserTz})</span>
+                  </label>
+                  <input
+                    type="time"
+                    value={scheduleTime}
+                    onChange={e => setScheduleTime(e.target.value)}
+                    className="w-full bg-zinc-900 border border-zinc-700/60 rounded-xl px-4 py-3 text-[14px] text-zinc-100 focus:outline-none focus:border-zinc-500 transition-all"
+                    style={{ colorScheme: 'dark' }}
+                  />
                 </div>
               </div>
             )}
 
             {patternKey === 'custom' && (
-              <input value={customCron} onChange={e => setCustomCron(e.target.value)} placeholder="e.g. 0 9 * * 1-5" className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl px-4 py-2 text-white font-mono text-[11px] placeholder:text-white/20 focus:outline-none focus:border-white/25 transition-colors" />
+              <input
+                value={customCron}
+                onChange={e => setCustomCron(e.target.value)}
+                placeholder="e.g. 0 9 * * 1-5"
+                className="w-full bg-zinc-900 border border-zinc-700/60 rounded-xl px-4 py-3 text-[14px] text-zinc-100 font-mono placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 transition-all"
+              />
             )}
 
             {cron && patternKey !== 'custom' && (
-              <p className="mt-2 text-[10px] text-white/25 font-mono">Runs: <span className="text-white/45">{cronToLabel(cron)}</span></p>
+              <div className="mt-3 px-4 py-2.5 bg-zinc-900/60 rounded-lg border border-zinc-800/50">
+                <p className="text-[13px] text-zinc-400">
+                  Runs: <span className="text-zinc-200 font-medium">{cronToLabel(cron)}</span>
+                </p>
+              </div>
             )}
           </div>
 
+          {/* Channel */}
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-widest text-white/30 mb-2.5">Deliver report to</label>
+            <label className="block text-[12px] font-semibold uppercase tracking-widest text-zinc-500 mb-3">Deliver report to</label>
             <div className="flex gap-2">
               {(['gmail','slack','both'] as const).map(ch => (
-                <button key={ch} onClick={() => setChannel(ch)} className={cn('flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[11px] font-medium border transition-all', channel === ch ? 'bg-white/10 border-white/30 text-white' : 'bg-white/[0.03] border-white/8 text-white/40 hover:border-white/15 hover:text-white/70')}>
-                  {ch === 'gmail' && <Mail className="w-3 h-3" />}
-                  {ch === 'slack' && <Slack className="w-3 h-3" />}
-                  {ch === 'both' && <Zap className="w-3 h-3" />}
+                <button
+                  key={ch}
+                  onClick={() => setChannel(ch)}
+                  className={cn(
+                    'flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[14px] font-medium border transition-all',
+                    channel === ch
+                      ? 'bg-zinc-100 text-zinc-950 border-zinc-100'
+                      : 'bg-zinc-900 border-zinc-700/60 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200',
+                  )}
+                >
+                  {ch === 'gmail' && <Mail className="w-4 h-4" />}
+                  {ch === 'slack' && <Slack className="w-4 h-4" />}
+                  {ch === 'both'  && <Zap className="w-4 h-4" />}
                   {ch === 'both' ? 'Both' : ch.charAt(0).toUpperCase() + ch.slice(1)}
                 </button>
               ))}
             </div>
             {channel !== 'gmail' && (
-              <input value={slackCh} onChange={e => setSlackCh(e.target.value)} placeholder="Slack channel (e.g. #reports)" className="mt-2 w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-[11px] placeholder:text-white/20 focus:outline-none focus:border-white/25 transition-colors" />
+              <input
+                value={slackCh}
+                onChange={e => setSlackCh(e.target.value)}
+                placeholder="Slack channel (e.g. #reports)"
+                className="mt-3 w-full bg-zinc-900 border border-zinc-700/60 rounded-xl px-4 py-3 text-[14px] text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 transition-all"
+              />
             )}
           </div>
 
-          <div className="flex items-center justify-between bg-white/[0.03] rounded-xl px-4 py-3 border border-white/[0.06]">
+          {/* Skip confirmations */}
+          <div className="flex items-center justify-between bg-zinc-900/70 rounded-xl px-5 py-4 border border-zinc-800/60">
             <div>
-              <p className="text-[12px] font-semibold text-white">Skip confirmations</p>
-              <p className="text-[10px] text-white/30 mt-0.5">No approval needed before sending or posting</p>
+              <p className="text-[15px] font-semibold text-zinc-100">Skip confirmations</p>
+              <p className="text-[13px] text-zinc-500 mt-0.5">No approval needed before sending, publishing, or posting</p>
             </div>
             <Toggle checked={skipConf} onChange={() => setSkipConf(v => !v)} />
           </div>
 
+          {/* Buttons */}
           <div className="flex gap-3">
-            <button onClick={onClose} className="flex-1 py-2.5 rounded-xl text-[12px] font-semibold text-white/50 bg-white/5 hover:bg-white/10 transition-all border border-white/10">Cancel</button>
-            <button onClick={handleSave} disabled={saving || !task.trim()} className="flex-1 py-2.5 rounded-xl text-[12px] font-bold text-black bg-white hover:bg-white/90 active:scale-[0.98] transition-all disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2">
-              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+            <button onClick={onClose} className="flex-1 py-3.5 rounded-xl text-[15px] font-semibold text-zinc-400 bg-zinc-900 hover:bg-zinc-800 transition-all border border-zinc-700/60">
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving || !task.trim()}
+              className="flex-1 py-3.5 rounded-xl text-[15px] font-bold text-zinc-950 bg-zinc-100 hover:bg-white active:scale-[0.98] transition-all disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2"
+            >
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
               {saving ? 'Saving…' : initial?.id ? 'Save changes' : 'Create schedule'}
             </button>
           </div>
@@ -298,31 +389,54 @@ function AgentCard({ agent, onToggle, onEdit, onDelete, onToggleConf }: {
   const [menuOpen, setMenuOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const nextRun = getNextRunDate(agent.cron_schedule);
+  const color = agentColor(agent.name);
 
   return (
-    <motion.div layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
-      className="bg-white/[0.03] border border-white/[0.07] rounded-2xl overflow-hidden hover:border-white/12 transition-all">
-      <div className="p-4">
-        <div className="flex items-start gap-3">
-          <div className="w-8 h-8 rounded-xl bg-white/[0.05] border border-white/[0.06] flex items-center justify-center flex-shrink-0 mt-0.5">
-            <Clock className="w-3.5 h-3.5 text-white/40" />
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -4 }}
+      className="bg-zinc-900/60 border border-zinc-800/70 rounded-2xl overflow-hidden hover:border-zinc-700/70 transition-all shadow-sm"
+    >
+      <div className="p-5 pb-4">
+        <div className="flex items-start gap-3.5">
+          <div className={cn('px-2.5 py-1 rounded-lg text-[11px] font-bold border flex-shrink-0 mt-0.5', color)}>
+            {cronToLabel(agent.cron_schedule).split(' ')[0]}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-bold text-white leading-tight line-clamp-1">{agent.name}</p>
-            <p className="text-[11px] text-white/40 mt-1 leading-relaxed line-clamp-2">{agent.task_description}</p>
+            <p className="text-[15px] font-bold text-zinc-100 leading-tight line-clamp-1">{agent.name}</p>
+            <p className="text-[13px] text-zinc-500 mt-1 leading-relaxed line-clamp-2">{agent.task_description}</p>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0 pt-0.5">
             <Toggle checked={agent.status !== 'paused'} onChange={onToggle} />
             <div className="relative">
-              <button onClick={() => setMenuOpen(v => !v)} className="w-6 h-6 flex items-center justify-center rounded-lg text-white/25 hover:text-white hover:bg-white/10 transition-all">
-                <MoreHorizontal className="w-3.5 h-3.5" />
+              <button
+                onClick={() => setMenuOpen(v => !v)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-all"
+              >
+                <MoreHorizontal className="w-4 h-4" />
               </button>
               <AnimatePresence>
                 {menuOpen && (
-                  <motion.div initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.92 }}
-                    className="absolute right-0 top-8 w-32 bg-[#1e1e1e] border border-white/10 rounded-xl overflow-hidden shadow-xl z-10">
-                    <button onClick={() => { setMenuOpen(false); onEdit(); }} className="w-full px-3 py-2 text-left text-[11px] text-white/70 hover:bg-white/8 hover:text-white transition-all">Edit</button>
-                    <button onClick={() => { setMenuOpen(false); onDelete(); }} className="w-full px-3 py-2 text-left text-[11px] text-red-400 hover:bg-red-500/10 transition-all">Delete</button>
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.92, y: -4 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.92, y: -4 }}
+                    className="absolute right-0 top-10 w-36 bg-zinc-900 border border-zinc-700/60 rounded-xl overflow-hidden shadow-xl z-20"
+                  >
+                    <button
+                      onClick={() => { setMenuOpen(false); onEdit(); }}
+                      className="w-full flex items-center gap-2 px-3.5 py-2.5 text-[13px] text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 transition-all"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" /> Edit
+                    </button>
+                    <button
+                      onClick={() => { setMenuOpen(false); onDelete(); }}
+                      className="w-full flex items-center gap-2 px-3.5 py-2.5 text-[13px] text-red-400 hover:bg-red-500/10 transition-all"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" /> Delete
+                    </button>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -330,27 +444,47 @@ function AgentCard({ agent, onToggle, onEdit, onDelete, onToggleConf }: {
           </div>
         </div>
 
-        <div className="ml-11 mt-2.5 space-y-1">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] text-white/25">Repeat</span>
-            <span className="text-[10px] text-white/50 font-medium">{cronToLabel(agent.cron_schedule)}</span>
+        {/* Info rows */}
+        <div className="flex items-center gap-6 mt-4 pt-3.5 border-t border-zinc-800/50">
+          <div>
+            <span className="text-[11px] font-semibold uppercase tracking-widest text-zinc-600 block mb-0.5">Schedule</span>
+            <span className="text-[13px] text-zinc-300 font-medium">{cronToLabel(agent.cron_schedule)}</span>
           </div>
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] text-white/25">Next run</span>
-            <span className="text-[10px] text-white/50 font-medium">{formatNextRun(nextRun)}</span>
+          <div>
+            <span className="text-[11px] font-semibold uppercase tracking-widest text-zinc-600 block mb-0.5">Next run</span>
+            <span className="text-[13px] text-zinc-300 font-medium">{formatNextRun(nextRun)}</span>
+          </div>
+          <div className="ml-auto">
+            <span className={cn(
+              'inline-flex px-2.5 py-1 rounded-full text-[11px] font-semibold',
+              agent.status === 'active'  ? 'bg-emerald-500/15 text-emerald-400' :
+              agent.status === 'running' ? 'bg-sky-500/15 text-sky-400' :
+              'bg-zinc-800 text-zinc-500',
+            )}>
+              {agent.status === 'running' ? 'Running…' : agent.status === 'active' ? 'Active' : 'Paused'}
+            </span>
           </div>
         </div>
 
+        {/* Last run expandable */}
         {agent.last_run_at && (
-          <div className="ml-11 mt-2">
-            <button onClick={() => setExpanded(v => !v)} className="flex items-center gap-1 text-[10px] text-white/20 hover:text-white/40 transition-colors">
-              <ChevronDown className={cn('w-3 h-3 transition-transform', expanded && 'rotate-180')} />
+          <div className="mt-3">
+            <button
+              onClick={() => setExpanded(v => !v)}
+              className="flex items-center gap-1.5 text-[12px] text-zinc-600 hover:text-zinc-400 transition-colors"
+            >
+              <ChevronDown className={cn('w-3.5 h-3.5 transition-transform', expanded && 'rotate-180')} />
               Last run: {formatRunDate(agent.last_run_at)}
             </button>
             <AnimatePresence>
               {expanded && (
-                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                  <p className="mt-1.5 text-[11px] text-white/30 leading-relaxed pl-4 border-l border-white/[0.06]">
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden"
+                >
+                  <p className="mt-2 text-[13px] text-zinc-500 leading-relaxed pl-4 border-l border-zinc-800">
                     {agent.last_report_summary || 'Run completed.'}
                   </p>
                 </motion.div>
@@ -360,11 +494,11 @@ function AgentCard({ agent, onToggle, onEdit, onDelete, onToggleConf }: {
         )}
       </div>
 
-      {/* Skip confirmations row */}
-      <div className="mx-4 mb-3 bg-[#0d0d0d] border border-white/[0.05] rounded-xl px-3.5 py-2.5 flex items-center justify-between">
+      {/* Skip confirmations */}
+      <div className="mx-5 mb-4 bg-zinc-950/60 border border-zinc-800/50 rounded-xl px-4 py-3 flex items-center justify-between">
         <div>
-          <p className="text-[11px] font-semibold text-white">Skip confirmations</p>
-          <p className="text-[10px] text-white/25">No approval before sending or posting</p>
+          <p className="text-[13px] font-semibold text-zinc-300">Skip confirmations</p>
+          <p className="text-[12px] text-zinc-600 mt-0.5">No approval needed before sending or posting</p>
         </div>
         <Toggle checked={agent.skip_confirmations} onChange={onToggleConf} />
       </div>
@@ -457,49 +591,58 @@ export function AgentsPanel({ className, onSendMessage }: AgentsPanelProps) {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-[22px] font-bold text-white tracking-tight">
-            <span className="text-red-400">Scheduled</span>
-          </h2>
-          <p className="text-[12px] text-white/30 mt-0.5">Agents working for you around the clock</p>
+          <h2 className="text-[24px] font-bold text-zinc-100 tracking-tight">Scheduled</h2>
+          <p className="text-[14px] text-zinc-500 mt-0.5">Agents working for you around the clock</p>
         </div>
-        <button onClick={() => setCreateOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-xl font-bold text-[12px] hover:bg-white/90 active:scale-95 transition-all">
-          <Plus className="w-3.5 h-3.5" />
+        <button
+          onClick={() => setCreateOpen(true)}
+          className="flex items-center gap-2 px-5 py-2.5 bg-zinc-100 text-zinc-950 rounded-xl font-bold text-[14px] hover:bg-white active:scale-95 transition-all shadow-sm"
+        >
+          <Plus className="w-4 h-4" />
           New schedule
         </button>
       </div>
 
       {tableError && (
-        <div className="mb-4 p-3 bg-yellow-500/5 border border-yellow-500/20 rounded-xl flex items-start gap-2">
-          <AlertCircle className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
-          <p className="text-[11px] text-white/40">Run the SQL migration in Supabase to enable agents. See <code className="text-white/60">arcus_agents</code> table setup.</p>
+        <div className="mb-5 p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl flex items-start gap-3">
+          <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+          <p className="text-[13px] text-zinc-400">Run the SQL migration in Supabase to enable agents (<code className="text-zinc-300">arcus_agents</code> table).</p>
         </div>
       )}
 
       {loading ? (
         <div className="flex items-center justify-center py-24">
-          <Loader2 className="w-6 h-6 text-white/20 animate-spin" />
+          <Loader2 className="w-6 h-6 text-zinc-600 animate-spin" />
         </div>
       ) : agents.length === 0 ? (
         <div>
-          <div className="text-center py-8 mb-6">
-            <div className="w-14 h-14 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center mx-auto mb-3">
-              <Bot className="w-7 h-7 text-white/20" />
-            </div>
-            <h3 className="text-[14px] font-semibold text-white/50 mb-1">No agents yet</h3>
-            <p className="text-[12px] text-white/25 max-w-xs mx-auto">Activate a template or create your own schedule.</p>
-          </div>
+          <p className="text-[14px] text-zinc-500 mb-6 text-center">
+            Get started with a pre-built agent — activate in one click, customize anytime.
+          </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {TEMPLATES.map((t, i) => (
-              <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-                className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 flex flex-col hover:border-white/12 transition-all">
-                <div className="flex items-center gap-2 mb-2">
-                  <Clock className="w-3.5 h-3.5 text-white/30 flex-shrink-0" />
-                  <p className="text-[12px] font-bold text-white leading-tight">{t.name}</p>
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+                className="bg-zinc-900/60 border border-zinc-800/70 rounded-2xl p-4 flex flex-col hover:border-zinc-700/70 hover:bg-zinc-900/80 transition-all group"
+              >
+                <div className="flex items-center gap-2.5 mb-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-zinc-800/80 flex items-center justify-center flex-shrink-0">
+                    <Clock className="w-4 h-4 text-zinc-400" />
+                  </div>
+                  <p className="text-[14px] font-bold text-zinc-100 leading-tight">{t.name}</p>
                 </div>
-                <p className="text-[11px] text-white/35 leading-relaxed flex-1 mb-3">{t.description}</p>
+                <p className="text-[13px] text-zinc-500 leading-relaxed flex-1 mb-3">{t.description}</p>
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-white/20 font-mono">{cronToLabel(t.cron_schedule)}</span>
-                  <button onClick={() => setTemplateInit(t)} className="px-3 py-1 rounded-lg bg-white text-black text-[10px] font-bold hover:bg-white/90 active:scale-95 transition-all">Activate</button>
+                  <span className="text-[12px] text-zinc-600 font-medium">{cronToLabel(t.cron_schedule)}</span>
+                  <button
+                    onClick={() => setTemplateInit(t)}
+                    className="px-3.5 py-1.5 rounded-lg bg-zinc-100 text-zinc-950 text-[12px] font-bold hover:bg-white active:scale-95 transition-all"
+                  >
+                    Activate
+                  </button>
                 </div>
               </motion.div>
             ))}
@@ -509,7 +652,9 @@ export function AgentsPanel({ className, onSendMessage }: AgentsPanelProps) {
         <div className="space-y-3">
           <AnimatePresence mode="popLayout">
             {agents.map(agent => (
-              <AgentCard key={agent.id} agent={agent}
+              <AgentCard
+                key={agent.id}
+                agent={agent}
                 onToggle={() => handleToggle(agent)}
                 onEdit={() => setEditAgent(agent)}
                 onDelete={() => handleDelete(agent)}
@@ -522,8 +667,17 @@ export function AgentsPanel({ className, onSendMessage }: AgentsPanelProps) {
 
       <AnimatePresence>
         {(createOpen || templateInit) && (
-          <CreateModal key="create" onClose={() => { setCreateOpen(false); setTemplateInit(null); }} onSave={handleCreate}
-            initial={templateInit ? { name: templateInit.name, task_description: templateInit.task_description, cron_schedule: templateInit.cron_schedule, output_channel: templateInit.output_channel } : undefined} />
+          <CreateModal
+            key="create"
+            onClose={() => { setCreateOpen(false); setTemplateInit(null); }}
+            onSave={handleCreate}
+            initial={templateInit ? {
+              name: templateInit.name,
+              task_description: templateInit.task_description,
+              cron_schedule: templateInit.cron_schedule,
+              output_channel: templateInit.output_channel,
+            } : undefined}
+          />
         )}
         {editAgent && (
           <CreateModal key="edit" onClose={() => setEditAgent(null)} onSave={handleEdit} initial={editAgent} />
