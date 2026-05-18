@@ -22,6 +22,7 @@ interface Agent {
   slack_channel: string | null;
   status: 'active' | 'paused' | 'running';
   skip_confirmations: boolean;
+  expires_at: string | null;
   last_run_at: string | null;
   last_report_summary: string | null;
   created_at: string;
@@ -132,6 +133,10 @@ function MiniCalendar({ agents, onAgentClick }: { agents: Agent[]; onAgentClick:
     const runs: Array<{ agent: Agent; date: Date }> = [];
     if (cellDate >= todayStart) {
       for (const agent of agents) {
+        const expiry = agent.expires_at
+          ? (() => { const [y, mo, dy] = agent.expires_at!.split('T')[0].split('-').map(Number); return new Date(y, mo - 1, dy); })()
+          : null;
+        if (expiry && cellDate > expiry) continue;
         for (const runDate of getAgentRunsInMonth(agent, viewYear, viewMonth)) {
           if (runDate.getDate() === d) runs.push({ agent, date: runDate });
         }
@@ -310,19 +315,23 @@ function CreateModal({ onClose, onSave, initial }: {
   const [channel, setChannel] = useState<'gmail'|'slack'|'both'>(initial?.output_channel || 'gmail');
   const [slackCh, setSlackCh] = useState(initial?.slack_channel || '');
   const [skipConf, setSkipConf] = useState(initial?.skip_confirmations ?? false);
+  const [hasExpiry, setHasExpiry] = useState(!!initial?.expires_at);
+  const [expiresAt, setExpiresAt] = useState(initial?.expires_at ? initial.expires_at.split('T')[0] : '');
   const [saving, setSaving] = useState(false);
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
   const activePat = SCHEDULE_PATTERNS.find(p => p.key === patternKey) || SCHEDULE_PATTERNS[0];
   const cron = patternKey === 'custom' ? customCron : buildCron(patternKey, scheduleTime, scheduleWeekday);
+  const todayStr = new Date().toISOString().split('T')[0];
 
   const handleSave = async () => {
     if (!task.trim()) { toast.error('Describe what you want Arcus to do.'); return; }
+    if (hasExpiry && !expiresAt) { toast.error('Pick an expiration date or disable expiration.'); return; }
     setSaving(true);
     try {
       const agentName = name.trim() || task.trim().slice(0, 40) + (task.trim().length > 40 ? '…' : '');
-      await onSave({ name: agentName, task_description: task.trim(), cron_schedule: cron || '0 7 * * *', output_channel: channel, slack_channel: channel !== 'gmail' ? slackCh || null : null, skip_confirmations: skipConf, _timezone: browserTz });
+      await onSave({ name: agentName, task_description: task.trim(), cron_schedule: cron || '0 7 * * *', output_channel: channel, slack_channel: channel !== 'gmail' ? slackCh || null : null, skip_confirmations: skipConf, expires_at: hasExpiry && expiresAt ? expiresAt : null, _timezone: browserTz });
       onClose();
     } catch (err: any) {
       toast.error(err.message || 'Failed to save.');
@@ -509,6 +518,27 @@ function CreateModal({ onClose, onSave, initial }: {
                 </div>
                 <Toggle checked={skipConf} onChange={() => setSkipConf(v => !v)} />
               </div>
+
+              {/* Expiration date */}
+              <div>
+                <div className="flex items-center justify-between bg-zinc-900/70 rounded-xl px-4 py-3.5 border border-zinc-800/60">
+                  <div>
+                    <p className="text-[14px] font-semibold text-zinc-100">Expiration date</p>
+                    <p className="text-[12px] text-zinc-500 mt-0.5">Agent stops running after this date</p>
+                  </div>
+                  <Toggle checked={hasExpiry} onChange={() => { setHasExpiry(v => !v); if (hasExpiry) setExpiresAt(''); }} />
+                </div>
+                {hasExpiry && (
+                  <input
+                    type="date"
+                    value={expiresAt}
+                    onChange={e => setExpiresAt(e.target.value)}
+                    min={todayStr}
+                    className="mt-2 w-full bg-zinc-900 border border-zinc-700/60 rounded-xl px-4 py-3 text-[14px] text-zinc-100 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500/30 transition-all"
+                    style={{ colorScheme: 'dark' }}
+                  />
+                )}
+              </div>
             </div>
           </div>
 
@@ -605,7 +635,7 @@ function AgentCard({ agent, onToggle, onEdit, onDelete, onToggleConf }: {
             <span className="text-[11px] font-semibold uppercase tracking-widest text-zinc-600 block mb-0.5">Next run</span>
             <span className="text-[13px] text-zinc-300 font-medium">{formatNextRun(nextRun)}</span>
           </div>
-          <div className="ml-auto">
+          <div className="ml-auto flex flex-col items-end gap-1.5">
             <span className={cn(
               'inline-flex px-2.5 py-1 rounded-full text-[11px] font-semibold',
               agent.status === 'active'  ? 'bg-zinc-800 text-zinc-300 border border-zinc-700/60' :
@@ -614,6 +644,11 @@ function AgentCard({ agent, onToggle, onEdit, onDelete, onToggleConf }: {
             )}>
               {agent.status === 'running' ? 'Running…' : agent.status === 'active' ? 'Active' : 'Paused'}
             </span>
+            {agent.expires_at && (
+              <span className="text-[11px] text-zinc-600">
+                Expires {new Date(agent.expires_at + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </span>
+            )}
           </div>
         </div>
 
@@ -694,7 +729,7 @@ export function AgentsPanel({ className, onSendMessage }: AgentsPanelProps) {
     const res = await fetch('/api/arcus/agents', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: agentData.name, taskDescription: agentData.task_description, cronSchedule: agentData.cron_schedule, outputChannel: agentData.output_channel, slackChannel: agentData.slack_channel, skipConfirmations: agentData.skip_confirmations }),
+      body: JSON.stringify({ name: agentData.name, taskDescription: agentData.task_description, cronSchedule: agentData.cron_schedule, outputChannel: agentData.output_channel, slackChannel: agentData.slack_channel, skipConfirmations: agentData.skip_confirmations, expiresAt: agentData.expires_at ?? null }),
     });
     const json = await res.json();
     if (!res.ok) throw new Error(json.error);

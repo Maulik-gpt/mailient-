@@ -17,6 +17,7 @@
  *     slack_channel text,
  *     status text not null default 'active',
  *     skip_confirmations boolean not null default false,
+ *     expires_at date,
  *     last_run_at timestamptz,
  *     last_report_summary text,
  *     created_at timestamptz default now()
@@ -24,8 +25,9 @@
  *   alter table arcus_agents enable row level security;
  *   create policy "users own their agents" on arcus_agents using (user_id = auth.email());
  *
- *   -- If table already exists, add column:
+ *   -- If table already exists, add columns:
  *   alter table arcus_agents add column if not exists skip_confirmations boolean not null default false;
+ *   alter table arcus_agents add column if not exists expires_at date;
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -63,7 +65,7 @@ export async function POST(request: NextRequest) {
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await request.json().catch(() => ({}));
-  const { name, taskDescription, cronSchedule, outputChannel, slackChannel, skipConfirmations } = body;
+  const { name, taskDescription, cronSchedule, outputChannel, slackChannel, skipConfirmations, expiresAt } = body;
 
   if (!name?.trim() || !taskDescription?.trim()) {
     return NextResponse.json({ error: 'name and taskDescription are required' }, { status: 400 });
@@ -80,6 +82,7 @@ export async function POST(request: NextRequest) {
       output_channel: outputChannel || 'gmail',
       slack_channel: slackChannel || null,
       skip_confirmations: skipConfirmations ?? false,
+      expires_at: expiresAt || null,
       status: 'active',
     })
     .select()
@@ -101,7 +104,7 @@ export async function PATCH(request: NextRequest) {
   const { id, ...updates } = body;
   if (!id) return NextResponse.json({ error: 'id is required' }, { status: 400 });
 
-  const allowed = ['name', 'task_description', 'cron_schedule', 'output_channel', 'slack_channel', 'status', 'skip_confirmations'];
+  const allowed = ['name', 'task_description', 'cron_schedule', 'output_channel', 'slack_channel', 'status', 'skip_confirmations', 'expires_at'];
   const sanitized: Record<string, any> = {};
   for (const key of allowed) {
     if (key in updates) sanitized[key] = updates[key];
