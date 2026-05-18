@@ -3341,6 +3341,7 @@ export default function ChatInterface({
               colors={isDark ? ["#000000", "#111111", "#080808", "#111111"] : ["#F9FAFB", "#F3F4F6", "#E5E7EB", "#F9FAFB"]}
               className={isDark ? "opacity-100" : "opacity-40"}
               deform={GRA_DEFORM}
+              isPlaying={false}
             />
             <div className={cn(
               "absolute -top-[10%] -right-[10%] w-[60%] h-[60%] rounded-full blur-[140px]",

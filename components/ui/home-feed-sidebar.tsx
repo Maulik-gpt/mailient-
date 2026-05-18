@@ -123,7 +123,6 @@ export function HomeFeedSidebar({
                         x: typeof window !== 'undefined' && window.innerWidth < 768 
                             ? (isOpen ? 0 : -260) 
                             : 0,
-                        backgroundColor: isCollapsed ? (typeof window !== 'undefined' && document.documentElement.classList.contains('dark') ? '#0c0c0c' : '#F9F8F6') : (typeof window !== 'undefined' && document.documentElement.classList.contains('dark') ? '#0c0c0c' : '#F9F8F6')
                     }}
                     transition={{ 
                         type: "spring", 
