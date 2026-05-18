@@ -436,6 +436,145 @@ function PremiumDatePicker({ value, onChange, minDate }: {
   );
 }
 
+function PremiumTimePicker({ value, onChange }: {
+  value: string;
+  onChange: (val: string) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  
+  const [hour24, minuteStr] = value.split(':');
+  const initialHour = parseInt(hour24) || 0;
+  const initialMinute = parseInt(minuteStr) || 0;
+  
+  const initialPeriod = initialHour >= 12 ? 'PM' : 'AM';
+  const initialHour12 = initialHour % 12 === 0 ? 12 : initialHour % 12;
+
+  const [selectedHour, setSelectedHour] = useState(initialHour12);
+  const [selectedMinute, setSelectedMinute] = useState(initialMinute);
+  const [selectedPeriod, setSelectedPeriod] = useState<'AM'|'PM'>(initialPeriod);
+
+  useEffect(() => {
+    const [h24, mStr] = value.split(':');
+    const h = parseInt(h24) || 0;
+    const m = parseInt(mStr) || 0;
+    setSelectedHour(h % 12 === 0 ? 12 : h % 12);
+    setSelectedMinute(m);
+    setSelectedPeriod(h >= 12 ? 'PM' : 'AM');
+  }, [value]);
+
+  const updateTime = (h12: number, m: number, p: 'AM'|'PM') => {
+    let h24 = h12 % 12;
+    if (p === 'PM') h24 += 12;
+    const timeStr = `${String(h24).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    onChange(timeStr);
+  };
+
+  const handleHourSelect = (h: number) => {
+    setSelectedHour(h);
+    updateTime(h, selectedMinute, selectedPeriod);
+  };
+
+  const handleMinuteSelect = (m: number) => {
+    setSelectedMinute(m);
+    updateTime(selectedHour, m, selectedPeriod);
+  };
+
+  const handlePeriodSelect = (p: 'AM'|'PM') => {
+    setSelectedPeriod(p);
+    updateTime(selectedHour, selectedMinute, p);
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClose = () => setIsOpen(false);
+    window.addEventListener('click', handleClose);
+    return () => window.removeEventListener('click', handleClose);
+  }, [isOpen]);
+
+  const displayString = `${String(selectedHour).padStart(2, '0')}:${String(selectedMinute).padStart(2, '0')} ${selectedPeriod}`;
+
+  return (
+    <div className="relative w-full" onClick={e => e.stopPropagation()}>
+      <div
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full bg-[#121214] border border-[#242427] rounded-xl px-4 py-3 text-[14px] text-zinc-100 flex items-center justify-between cursor-pointer hover:border-zinc-700 transition-all select-none shadow-inner"
+      >
+        <span className="text-zinc-200 font-bold font-mono">
+          {displayString}
+        </span>
+        <Clock className="w-4 h-4 text-zinc-555" />
+      </div>
+
+      {isOpen && (
+        <div className="absolute top-full right-0 lg:left-0 mt-2 w-64 bg-[#0c0c0d] border border-zinc-900 rounded-2xl shadow-2xl p-4 z-50 select-none animate-in fade-in slide-in-from-top-2 duration-150 flex gap-3">
+          {/* Hours Column */}
+          <div className="flex-1 flex flex-col items-center">
+            <span className="text-[10px] uppercase tracking-wider text-zinc-600 font-extrabold mb-2">Hour</span>
+            <div className="h-40 overflow-y-auto w-full custom-scroll space-y-1">
+              {[12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(h => (
+                <button
+                  key={h}
+                  onClick={() => handleHourSelect(h)}
+                  className={cn(
+                    "w-full text-center py-1 rounded-lg text-[13px] font-bold transition-all",
+                    selectedHour === h
+                      ? "bg-zinc-100 text-zinc-950 font-bold"
+                      : "text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200"
+                  )}
+                >
+                  {String(h).padStart(2, '0')}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Minutes Column */}
+          <div className="flex-1 flex flex-col items-center border-l border-zinc-900/80 pl-2">
+            <span className="text-[10px] uppercase tracking-wider text-zinc-600 font-extrabold mb-2">Min</span>
+            <div className="h-40 overflow-y-auto w-full custom-scroll space-y-1">
+              {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(m => (
+                <button
+                  key={m}
+                  onClick={() => handleMinuteSelect(m)}
+                  className={cn(
+                    "w-full text-center py-1 rounded-lg text-[13px] font-bold transition-all",
+                    selectedMinute === m
+                      ? "bg-zinc-100 text-zinc-950 font-bold"
+                      : "text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200"
+                  )}
+                >
+                  {String(m).padStart(2, '0')}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* AM/PM Column */}
+          <div className="w-14 flex flex-col items-center border-l border-zinc-900/80 pl-2">
+            <span className="text-[10px] uppercase tracking-wider text-zinc-600 font-extrabold mb-2">Period</span>
+            <div className="flex flex-col gap-1.5 w-full">
+              {(['AM', 'PM'] as const).map(p => (
+                <button
+                  key={p}
+                  onClick={() => handlePeriodSelect(p)}
+                  className={cn(
+                    "w-full text-center py-2.5 rounded-lg text-[12px] font-extrabold transition-all",
+                    selectedPeriod === p
+                      ? "bg-zinc-100 text-zinc-950 font-bold"
+                      : "text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200"
+                  )}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── New Schedule Modal (Dialog) ────────────────────────────────────────────────
 
 function NewScheduleModal({ open, onClose, onSave, initial }: {
@@ -592,12 +731,9 @@ function NewScheduleModal({ open, onClose, onSave, initial }: {
                     )}
                     <div className={activePat.needsDay ? 'flex-1' : 'w-full'}>
                       <label className="block text-[11px] font-bold text-zinc-550 mb-1.5">Time <span className="font-normal text-zinc-600">({browserTz})</span></label>
-                      <input
-                        type="time"
+                      <PremiumTimePicker
                         value={scheduleTime}
-                        onChange={e => setScheduleTime(e.target.value)}
-                        className="w-full bg-[#121214] border border-[#242427] rounded-xl px-4 py-3 text-[14px] text-zinc-100 focus:outline-none focus:border-zinc-700 transition-all font-mono"
-                        style={{ colorScheme: 'dark' }}
+                        onChange={setScheduleTime}
                       />
                     </div>
                   </div>
