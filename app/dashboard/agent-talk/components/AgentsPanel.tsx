@@ -123,13 +123,18 @@ function MiniCalendar({ agents, onAgentClick }: { agents: Agent[]; onAgentClick:
   const firstDay = new Date(viewYear, viewMonth, 1).getDay();
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
 
+  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
   const cells: Array<{ day: number | null; runs: Array<{ agent: Agent; date: Date }> }> = [];
   for (let i = 0; i < firstDay; i++) cells.push({ day: null, runs: [] });
   for (let d = 1; d <= daysInMonth; d++) {
+    const cellDate = new Date(viewYear, viewMonth, d);
     const runs: Array<{ agent: Agent; date: Date }> = [];
-    for (const agent of agents) {
-      for (const runDate of getAgentRunsInMonth(agent, viewYear, viewMonth)) {
-        if (runDate.getDate() === d) runs.push({ agent, date: runDate });
+    if (cellDate >= todayStart) {
+      for (const agent of agents) {
+        for (const runDate of getAgentRunsInMonth(agent, viewYear, viewMonth)) {
+          if (runDate.getDate() === d) runs.push({ agent, date: runDate });
+        }
       }
     }
     cells.push({ day: d, runs: runs.slice(0, 2) });
@@ -256,7 +261,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void 
       onClick={e => { e.stopPropagation(); onChange(); }}
       className={cn(
         'relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none',
-        checked ? 'bg-emerald-500' : 'bg-zinc-700',
+        checked ? 'bg-zinc-300' : 'bg-zinc-700',
       )}
     >
       <span className={cn(
@@ -571,9 +576,9 @@ function AgentCard({ agent, onToggle, onEdit, onDelete, onToggleConf }: {
           <div className="ml-auto">
             <span className={cn(
               'inline-flex px-2.5 py-1 rounded-full text-[11px] font-semibold',
-              agent.status === 'active'  ? 'bg-emerald-500/15 text-emerald-400' :
-              agent.status === 'running' ? 'bg-sky-500/15 text-sky-400' :
-              'bg-zinc-800 text-zinc-500',
+              agent.status === 'active'  ? 'bg-zinc-800 text-zinc-300 border border-zinc-700/60' :
+              agent.status === 'running' ? 'bg-zinc-700 text-zinc-100 border border-zinc-600' :
+              'bg-transparent text-zinc-600 border border-zinc-800',
             )}>
               {agent.status === 'running' ? 'Running…' : agent.status === 'active' ? 'Active' : 'Paused'}
             </span>

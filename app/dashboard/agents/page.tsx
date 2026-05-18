@@ -140,7 +140,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void 
       onClick={e => { e.stopPropagation(); onChange(); }}
       className={cn(
         'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 focus:ring-offset-zinc-900',
-        checked ? 'bg-emerald-500' : 'bg-zinc-700',
+        checked ? 'bg-zinc-300' : 'bg-zinc-700',
       )}
     >
       <span className={cn(
@@ -512,13 +512,18 @@ function CalendarView({ agents, onAgentClick, onCreateNew }: {
   const firstDay = new Date(viewYear, viewMonth, 1).getDay();
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
 
+  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
   const cells: Array<{ day: number | null; runs: Array<{ agent: Agent; date: Date }> }> = [];
   for (let i = 0; i < firstDay; i++) cells.push({ day: null, runs: [] });
   for (let d = 1; d <= daysInMonth; d++) {
+    const cellDate = new Date(viewYear, viewMonth, d);
     const runs: Array<{ agent: Agent; date: Date }> = [];
-    for (const agent of agents) {
-      for (const runDate of getAgentRunsInMonth(agent, viewYear, viewMonth)) {
-        if (runDate.getDate() === d) runs.push({ agent, date: runDate });
+    if (cellDate >= todayStart) {
+      for (const agent of agents) {
+        for (const runDate of getAgentRunsInMonth(agent, viewYear, viewMonth)) {
+          if (runDate.getDate() === d) runs.push({ agent, date: runDate });
+        }
       }
     }
     cells.push({ day: d, runs });
@@ -530,7 +535,7 @@ function CalendarView({ agents, onAgentClick, onCreateNew }: {
   const nextMonth = () => { if (viewMonth === 11) { setViewYear(y => y + 1); setViewMonth(0); } else setViewMonth(m => m + 1); };
 
   return (
-    <div className="flex flex-col h-full min-h-0">
+    <div className="flex-1 flex flex-col min-h-0">
       {/* Calendar nav bar */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800/60 flex-shrink-0">
         <div className="flex items-center gap-1">
@@ -851,7 +856,7 @@ function ScheduledPageInner() {
   };
 
   return (
-    <div className="h-screen bg-zinc-950 text-zinc-100 flex flex-col overflow-hidden">
+    <div className="bg-zinc-950 text-zinc-100 flex flex-col overflow-hidden" style={{ height: '100dvh' }}>
       {/* Header */}
       <div className="flex items-center justify-between px-8 pt-8 pb-0 flex-shrink-0">
         <div>
