@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Clock, Mail, Zap, Loader2, X, Slack,
   MoreHorizontal, AlertCircle, ChevronDown, Edit2, Trash2,
+  List, CalendarDays, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -81,6 +82,138 @@ function formatRunDate(iso: string): string {
   const d = new Date(iso);
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
     + ' · ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+}
+
+// ── Calendar helpers ───────────────────────────────────────────────────────────
+
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+function getAgentRunsInMonth(agent: Agent, year: number, month: number): Date[] {
+  const dates: Date[] = [];
+  const parts = agent.cron_schedule.split(' ');
+  if (parts.length !== 5) return dates;
+  const [minStr, hourStr, , , dowStr] = parts;
+  const tH = hourStr.startsWith('*/') ? 0 : (parseInt(hourStr) || 0);
+  const tM = parseInt(minStr) || 0;
+  const interval = hourStr.startsWith('*/') ? parseInt(hourStr.split('/')[1]) || 1 : 0;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dow = new Date(year, month, day).getDay();
+    let match = false;
+    if (dowStr === '*') match = true;
+    else if (dowStr === '0' && dow === 0) match = true;
+    else if (dowStr === '1-5' && dow >= 1 && dow <= 5) match = true;
+    else if (!isNaN(parseInt(dowStr)) && parseInt(dowStr) === dow) match = true;
+    if (!match) continue;
+    if (interval > 0) {
+      dates.push(new Date(year, month, day, 0, tM, 0));
+    } else {
+      dates.push(new Date(year, month, day, tH, tM, 0));
+    }
+  }
+  return dates;
+}
+
+function MiniCalendar({ agents, onAgentClick }: { agents: Agent[]; onAgentClick: (a: Agent) => void }) {
+  const today = new Date();
+  const [viewYear, setViewYear] = useState(today.getFullYear());
+  const [viewMonth, setViewMonth] = useState(today.getMonth());
+
+  const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+
+  const cells: Array<{ day: number | null; runs: Array<{ agent: Agent; date: Date }> }> = [];
+  for (let i = 0; i < firstDay; i++) cells.push({ day: null, runs: [] });
+  for (let d = 1; d <= daysInMonth; d++) {
+    const runs: Array<{ agent: Agent; date: Date }> = [];
+    for (const agent of agents) {
+      for (const runDate of getAgentRunsInMonth(agent, viewYear, viewMonth)) {
+        if (runDate.getDate() === d) runs.push({ agent, date: runDate });
+      }
+    }
+    cells.push({ day: d, runs: runs.slice(0, 2) });
+  }
+  while (cells.length % 7 !== 0) cells.push({ day: null, runs: [] });
+
+  const prevMonth = () => { if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11); } else setViewMonth(m => m - 1); };
+  const nextMonth = () => { if (viewMonth === 11) { setViewYear(y => y + 1); setViewMonth(0); } else setViewMonth(m => m + 1); };
+
+  return (
+    <div className="flex flex-col gap-3">
+      {/* Nav */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1">
+          <button onClick={prevMonth} className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-all">
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <span className="text-[15px] font-bold text-zinc-100 min-w-[150px] text-center">
+            {MONTH_NAMES[viewMonth]} {viewYear}
+          </span>
+          <button onClick={nextMonth} className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-all">
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+        <button
+          onClick={() => { setViewYear(today.getFullYear()); setViewMonth(today.getMonth()); }}
+          className="px-3 py-1.5 rounded-lg text-[12px] font-semibold text-zinc-400 border border-zinc-700/60 hover:border-zinc-500 hover:text-zinc-200 transition-all"
+        >
+          Today
+        </button>
+      </div>
+
+      {/* Day headers */}
+      <div className="grid grid-cols-7">
+        {DAY_NAMES.map(d => (
+          <div key={d} className="text-center text-[11px] font-semibold text-zinc-600 py-1">{d}</div>
+        ))}
+      </div>
+
+      {/* Grid */}
+      <div
+        className="grid grid-cols-7 border border-zinc-800/70 rounded-xl overflow-hidden"
+        style={{ gridTemplateRows: `repeat(${cells.length / 7}, minmax(72px, 1fr))` }}
+      >
+        {cells.map((cell, idx) => {
+          const isToday = cell.day === today.getDate() && viewMonth === today.getMonth() && viewYear === today.getFullYear();
+          const isPast = cell.day !== null && new Date(viewYear, viewMonth, cell.day) < new Date(today.getFullYear(), today.getMonth(), today.getDate());
+          return (
+            <div
+              key={idx}
+              className={cn(
+                'flex flex-col p-1.5 border-r border-b border-zinc-800/50 overflow-hidden',
+                cell.day === null ? 'bg-zinc-900/20' : 'bg-zinc-900/40',
+                idx % 7 === 6 && 'border-r-0',
+              )}
+            >
+              {cell.day !== null && (
+                <>
+                  <div className={cn(
+                    'w-6 h-6 flex items-center justify-center text-[11px] font-semibold rounded-full self-end mb-1 flex-shrink-0',
+                    isToday ? 'bg-zinc-100 text-zinc-950' : isPast ? 'text-zinc-700' : 'text-zinc-400',
+                  )}>
+                    {cell.day}
+                  </div>
+                  {cell.runs.map(({ agent }, ri) => {
+                    const color = agentColor(agent.name);
+                    return (
+                      <button
+                        key={ri}
+                        onClick={() => onAgentClick(agent)}
+                        className={cn('w-full text-left rounded px-1 py-0.5 border mb-0.5 hover:opacity-80 transition-all', color)}
+                      >
+                        <p className="text-[10px] font-semibold truncate leading-tight">{agent.name}</p>
+                      </button>
+                    );
+                  })}
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 // ── Schedule helpers ───────────────────────────────────────────────────────────
@@ -213,7 +346,7 @@ function CreateModal({ onClose, onSave, initial }: {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 24, scale: 0.98 }}
         transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-        className="relative w-full max-w-2xl bg-zinc-950 border border-zinc-700/50 rounded-2xl overflow-y-auto max-h-[90vh] shadow-2xl shadow-black/70"
+        className="relative w-full max-w-2xl bg-zinc-950 border border-zinc-700/50 rounded-2xl overflow-y-auto scrollbar-hide max-h-[90vh] shadow-2xl shadow-black/70"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-8 pt-7 pb-5 border-b border-zinc-800/60">
@@ -516,6 +649,7 @@ export interface AgentsPanelProps {
 export function AgentsPanel({ className, onSendMessage }: AgentsPanelProps) {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<'tasks' | 'calendar'>('tasks');
   const [createOpen, setCreateOpen] = useState(false);
   const [editAgent, setEditAgent] = useState<Agent | null>(null);
   const [templateInit, setTemplateInit] = useState<Partial<Agent> | null>(null);
@@ -603,6 +737,26 @@ export function AgentsPanel({ className, onSendMessage }: AgentsPanelProps) {
         </button>
       </div>
 
+      {/* Tabs */}
+      <div className="flex items-center border-b border-zinc-800/70 mb-5">
+        {([
+          { key: 'tasks',    label: 'Tasks',    Icon: List },
+          { key: 'calendar', label: 'Calendar', Icon: CalendarDays },
+        ] as const).map(({ key, label, Icon }) => (
+          <button
+            key={key}
+            onClick={() => setTab(key)}
+            className={cn(
+              'flex items-center gap-1.5 px-1 py-3 mr-6 text-[14px] font-semibold transition-all border-b-2 -mb-px',
+              tab === key ? 'text-zinc-100 border-zinc-100' : 'text-zinc-500 border-transparent hover:text-zinc-300',
+            )}
+          >
+            <Icon className="w-4 h-4" />
+            {label}
+          </button>
+        ))}
+      </div>
+
       {tableError && (
         <div className="mb-5 p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl flex items-start gap-3">
           <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
@@ -614,6 +768,11 @@ export function AgentsPanel({ className, onSendMessage }: AgentsPanelProps) {
         <div className="flex items-center justify-center py-24">
           <Loader2 className="w-6 h-6 text-zinc-600 animate-spin" />
         </div>
+      ) : tab === 'calendar' ? (
+        <MiniCalendar
+          agents={agents.filter(a => a.status !== 'paused')}
+          onAgentClick={() => {}}
+        />
       ) : agents.length === 0 ? (
         <div>
           <p className="text-[14px] text-zinc-500 mb-6 text-center">
