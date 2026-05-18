@@ -204,22 +204,6 @@ function parseCronToSchedule(cron: string): { key: string; time: string; weekday
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
-// ── Agent Color Map (deterministic from name) ──────────────────────────────────
-
-const PILL_COLORS = [
-  'bg-violet-500/20 text-violet-300 border-violet-500/30',
-  'bg-sky-500/20 text-sky-300 border-sky-500/30',
-  'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
-  'bg-amber-500/20 text-amber-300 border-amber-500/30',
-  'bg-rose-500/20 text-rose-300 border-rose-500/30',
-  'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
-];
-function agentColor(name: string) {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
-  return PILL_COLORS[h % PILL_COLORS.length];
-}
-
 // ── New Schedule Modal (Dialog) ────────────────────────────────────────────────
 
 function NewScheduleModal({ open, onClose, onSave, initial }: {
@@ -448,14 +432,13 @@ function AgentDetailModal({ agent, onClose, onToggle, onEdit, onDelete, onToggle
   onEdit: () => void; onDelete: () => void; onToggleConfirmations: () => void;
 }) {
   const nextRun = getNextRunDate(agent.cron_schedule);
-  const color = agentColor(agent.name);
 
   return (
     <Dialog open onOpenChange={v => !v && onClose()}>
       <DialogContent showCloseButton={false} className="w-full max-w-md bg-zinc-950 border border-zinc-700/50 rounded-2xl p-0 overflow-hidden shadow-2xl shadow-black/60">
         <div className="px-6 pt-6 pb-4 border-b border-zinc-800/60 flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className={cn('px-2.5 py-1 rounded-md text-[11px] font-semibold border', color)}>
+            <div className="px-2.5 py-1 rounded-md text-[11px] font-semibold border border-zinc-700/60 bg-zinc-800/60 text-zinc-300">
               {cronToLabel(agent.cron_schedule)}
             </div>
           </div>
@@ -517,7 +500,11 @@ function AgentDetailModal({ agent, onClose, onToggle, onEdit, onDelete, onToggle
 
 // ── Full-Page Calendar View ────────────────────────────────────────────────────
 
-function CalendarView({ agents, onAgentClick }: { agents: Agent[]; onAgentClick: (a: Agent) => void }) {
+function CalendarView({ agents, onAgentClick, onCreateNew }: {
+  agents: Agent[];
+  onAgentClick: (a: Agent) => void;
+  onCreateNew: () => void;
+}) {
   const today = new Date();
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
@@ -534,83 +521,105 @@ function CalendarView({ agents, onAgentClick }: { agents: Agent[]; onAgentClick:
         if (runDate.getDate() === d) runs.push({ agent, date: runDate });
       }
     }
-    cells.push({ day: d, runs: runs.slice(0, 3) });
+    cells.push({ day: d, runs });
   }
   while (cells.length % 7 !== 0) cells.push({ day: null, runs: [] });
+  const weeks = cells.length / 7;
 
   const prevMonth = () => { if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11); } else setViewMonth(m => m - 1); };
   const nextMonth = () => { if (viewMonth === 11) { setViewYear(y => y + 1); setViewMonth(0); } else setViewMonth(m => m + 1); };
 
   return (
-    <div className="flex flex-col" style={{ height: 'calc(100vh - 196px)' }}>
-      {/* Nav */}
-      <div className="flex items-center justify-between mb-5 flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <button onClick={prevMonth} aria-label="Previous month" className="w-9 h-9 flex items-center justify-center rounded-xl text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-all border border-transparent hover:border-zinc-700/60">
+    <div className="flex flex-col h-full min-h-0">
+      {/* Calendar nav bar */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800/60 flex-shrink-0">
+        <div className="flex items-center gap-1">
+          <button onClick={prevMonth} className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800 transition-all">
             <ChevronLeft className="w-5 h-5" />
           </button>
-          <h3 className="text-[18px] font-bold text-zinc-100 min-w-[180px] text-center">
+          <h3 className="text-[17px] font-semibold text-zinc-100 min-w-[160px] text-center">
             {MONTH_NAMES[viewMonth]} {viewYear}
           </h3>
-          <button onClick={nextMonth} aria-label="Next month" className="w-9 h-9 flex items-center justify-center rounded-xl text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-all border border-transparent hover:border-zinc-700/60">
+          <button onClick={nextMonth} className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800 transition-all">
             <ChevronRight className="w-5 h-5" />
           </button>
         </div>
-        <button
-          onClick={() => { setViewYear(today.getFullYear()); setViewMonth(today.getMonth()); }}
-          className="px-4 py-2 rounded-xl text-[13px] font-semibold text-zinc-300 border border-zinc-700/60 hover:border-zinc-500 hover:text-zinc-100 transition-all"
-        >
-          Today
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => { setViewYear(today.getFullYear()); setViewMonth(today.getMonth()); }}
+            className="px-4 py-1.5 rounded-lg text-[13px] font-semibold text-zinc-300 border border-zinc-700/60 hover:border-zinc-500 hover:text-white transition-all"
+          >
+            Today
+          </button>
+          <div className="flex border border-zinc-700/60 rounded-lg overflow-hidden">
+            <button className="w-8 h-8 flex items-center justify-center bg-zinc-800 text-zinc-100 transition-all">
+              <CalendarDays className="w-4 h-4" />
+            </button>
+            <button className="w-8 h-8 flex items-center justify-center text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300 transition-all">
+              <List className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Day headers */}
-      <div className="grid grid-cols-7 mb-2 flex-shrink-0">
+      {/* Day-of-week headers */}
+      <div className="grid grid-cols-7 border-b border-zinc-800/60 flex-shrink-0">
         {DAY_NAMES.map(d => (
-          <div key={d} className="text-center text-[13px] font-semibold text-zinc-500 py-2">{d}</div>
+          <div key={d} className="text-center text-[12px] font-medium text-zinc-500 py-2.5 border-r border-zinc-800/60 last:border-r-0">
+            {d}
+          </div>
         ))}
       </div>
 
-      {/* Grid */}
-      <div className="grid grid-cols-7 flex-1 border border-zinc-800/70 rounded-2xl overflow-hidden" style={{ gridTemplateRows: `repeat(${cells.length / 7}, 1fr)` }}>
+      {/* Calendar grid — fills all remaining space */}
+      <div
+        className="flex-1 grid grid-cols-7 min-h-0"
+        style={{ gridTemplateRows: `repeat(${weeks}, 1fr)` }}
+      >
         {cells.map((cell, idx) => {
           const isToday = cell.day === today.getDate() && viewMonth === today.getMonth() && viewYear === today.getFullYear();
           const isPast = cell.day !== null && new Date(viewYear, viewMonth, cell.day) < new Date(today.getFullYear(), today.getMonth(), today.getDate());
-          const isOtherMonth = cell.day === null;
           return (
             <div
               key={idx}
               className={cn(
-                'flex flex-col p-2.5 border-r border-b border-zinc-800/50 last:border-r-0 overflow-hidden',
-                isOtherMonth ? 'bg-zinc-900/20' : 'bg-zinc-900/40 hover:bg-zinc-900/70 transition-colors',
+                'flex flex-col border-r border-b border-zinc-800/60 overflow-hidden',
                 idx % 7 === 6 && 'border-r-0',
+                cell.day === null && 'bg-[#0a0a0a]',
               )}
             >
               {cell.day !== null && (
                 <>
-                  <div className={cn(
-                    'w-7 h-7 flex items-center justify-center text-[13px] font-semibold rounded-full self-end mb-1 flex-shrink-0',
-                    isToday ? 'bg-zinc-100 text-zinc-950 shadow-sm' : isPast ? 'text-zinc-600' : 'text-zinc-300',
-                  )}>
-                    {cell.day}
+                  {/* Date number row */}
+                  <div className="flex items-start justify-between px-2 pt-2 pb-1 flex-shrink-0">
+                    {isToday ? (
+                      <button
+                        onClick={onCreateNew}
+                        className="w-6 h-6 flex items-center justify-center rounded-full text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-all"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
+                    ) : <span />}
+                    <div className={cn(
+                      'w-7 h-7 flex items-center justify-center text-[13px] font-medium rounded-full',
+                      isToday ? 'bg-white text-black font-bold' : isPast ? 'text-zinc-600' : 'text-zinc-300',
+                    )}>
+                      {cell.day}
+                    </div>
                   </div>
-                  <div className="space-y-1 overflow-hidden">
-                    {cell.runs.map(({ agent, date }, ri) => {
-                      const color = agentColor(agent.name);
-                      return (
-                        <button
-                          key={ri}
-                          onClick={() => onAgentClick(agent)}
-                          className={cn(
-                            'w-full text-left rounded-md px-2 py-1 border transition-all hover:opacity-90 active:scale-[0.98]',
-                            color,
-                          )}
-                        >
-                          <p className="text-[11px] font-semibold truncate leading-tight">{agent.name}</p>
-                          <p className="text-[10px] opacity-70 mt-0.5">{formatTime(date)}</p>
-                        </button>
-                      );
-                    })}
+
+                  {/* Event pills */}
+                  <div className="flex-1 px-1.5 pb-1.5 space-y-1 overflow-hidden">
+                    {cell.runs.map(({ agent, date }, ri) => (
+                      <button
+                        key={ri}
+                        onClick={() => onAgentClick(agent)}
+                        className="w-full text-left bg-zinc-800/80 hover:bg-zinc-700/80 border border-zinc-700/40 rounded-md px-2 py-1.5 transition-all active:scale-[0.98]"
+                      >
+                        <p className="text-[11px] font-medium text-zinc-100 truncate leading-tight">{agent.name}</p>
+                        <p className="text-[10px] text-zinc-500 mt-0.5">{formatTime(date)}</p>
+                      </button>
+                    ))}
                   </div>
                 </>
               )}
@@ -669,7 +678,6 @@ function AgentTaskCard({ agent, onClick, onToggle, onEdit, onDelete, onToggleCon
   onEdit: () => void; onDelete: () => void; onToggleConfirmations: () => void;
 }) {
   const nextRun = getNextRunDate(agent.cron_schedule);
-  const color = agentColor(agent.name);
 
   return (
     <motion.div
@@ -681,7 +689,7 @@ function AgentTaskCard({ agent, onClick, onToggle, onEdit, onDelete, onToggleCon
     >
       <div className="p-5 pb-4">
         <div className="flex items-start gap-3.5 mb-3">
-          <div className={cn('px-2.5 py-1 rounded-lg text-[11px] font-bold border flex-shrink-0 mt-0.5', color)}>
+          <div className="px-2.5 py-1 rounded-lg text-[11px] font-bold border flex-shrink-0 mt-0.5 border-zinc-700/60 bg-zinc-800/60 text-zinc-300">
             {cronToLabel(agent.cron_schedule).split(' ')[0]}
           </div>
           <div className="flex-1 min-w-0">
@@ -724,12 +732,12 @@ function AgentTaskCard({ agent, onClick, onToggle, onEdit, onDelete, onToggleCon
           </div>
           <div>
             <span className={cn(
-              'inline-flex px-2.5 py-1 rounded-full text-[11px] font-semibold',
-              agent.status === 'active' ? 'bg-emerald-500/15 text-emerald-400' :
-              agent.status === 'running' ? 'bg-sky-500/15 text-sky-400' :
-              'bg-zinc-800 text-zinc-500',
+              'inline-flex px-2.5 py-1 rounded-full text-[11px] font-semibold border',
+              agent.status === 'active'  ? 'bg-zinc-800 text-zinc-300 border-zinc-700/60' :
+              agent.status === 'running' ? 'bg-zinc-700 text-zinc-100 border-zinc-600' :
+              'bg-transparent text-zinc-600 border-zinc-800',
             )}>
-              {agent.status === 'running' ? 'Running…' : agent.status === 'active' ? 'Active' : 'Paused'}
+              {agent.status === 'running' ? 'Running' : agent.status === 'active' ? 'Active' : 'Paused'}
             </span>
           </div>
         </div>
@@ -843,7 +851,7 @@ function ScheduledPageInner() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col">
+    <div className="h-screen bg-zinc-950 text-zinc-100 flex flex-col overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-8 pt-8 pb-0 flex-shrink-0">
         <div>
@@ -882,46 +890,58 @@ function ScheduledPageInner() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-8 py-7">
-        {tableError && (
-          <div className="mb-6 p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-amber-300 font-bold text-[14px]">Database not set up</p>
-              <p className="text-zinc-400 text-[13px] mt-0.5">Run the SQL migration in Supabase for the <code className="text-zinc-200">arcus_agents</code> table.</p>
+      {loading ? (
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="w-7 h-7 text-zinc-600 animate-spin" />
+        </div>
+      ) : tab === 'calendar' ? (
+        /* Calendar: no padding, fills remaining viewport height */
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          {tableError && (
+            <div className="mx-8 mt-4 p-3 bg-zinc-900 border border-zinc-700/60 rounded-xl flex items-start gap-3 flex-shrink-0">
+              <AlertCircle className="w-4 h-4 text-zinc-400 flex-shrink-0 mt-0.5" />
+              <p className="text-[13px] text-zinc-400">Run the SQL migration in Supabase for the <code className="text-zinc-200">arcus_agents</code> table.</p>
             </div>
-          </div>
-        )}
-
-        {loading ? (
-          <div className="flex items-center justify-center py-32">
-            <Loader2 className="w-7 h-7 text-zinc-600 animate-spin" />
-          </div>
-        ) : tab === 'calendar' ? (
+          )}
           <CalendarView
             agents={agents.filter(a => a.status !== 'paused')}
             onAgentClick={a => setSelectedAgent(a)}
+            onCreateNew={() => setCreateOpen(true)}
           />
-        ) : agents.length === 0 ? (
-          <TemplateCards onActivate={t => setActivatingTemplate(t)} />
-        ) : (
-          <div className="max-w-2xl mx-auto space-y-4">
-            <AnimatePresence mode="popLayout">
-              {agents.map(agent => (
-                <AgentTaskCard
-                  key={agent.id}
-                  agent={agent}
-                  onClick={() => setSelectedAgent(agent)}
-                  onToggle={() => handleToggle(agent)}
-                  onEdit={() => setEditAgent(agent)}
-                  onDelete={() => handleDelete(agent)}
-                  onToggleConfirmations={() => handleToggleConfirmations(agent)}
-                />
-              ))}
-            </AnimatePresence>
-          </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        /* Tasks: padded scroll area */
+        <div className="flex-1 overflow-y-auto px-8 py-7">
+          {tableError && (
+            <div className="mb-6 p-4 bg-zinc-900/60 border border-zinc-700/40 rounded-xl flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-zinc-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-zinc-300 font-bold text-[14px]">Database not set up</p>
+                <p className="text-zinc-500 text-[13px] mt-0.5">Run the SQL migration in Supabase for the <code className="text-zinc-300">arcus_agents</code> table.</p>
+              </div>
+            </div>
+          )}
+          {agents.length === 0 ? (
+            <TemplateCards onActivate={t => setActivatingTemplate(t)} />
+          ) : (
+            <div className="max-w-2xl mx-auto space-y-4">
+              <AnimatePresence mode="popLayout">
+                {agents.map(agent => (
+                  <AgentTaskCard
+                    key={agent.id}
+                    agent={agent}
+                    onClick={() => setSelectedAgent(agent)}
+                    onToggle={() => handleToggle(agent)}
+                    onEdit={() => setEditAgent(agent)}
+                    onDelete={() => handleDelete(agent)}
+                    onToggleConfirmations={() => handleToggleConfirmations(agent)}
+                  />
+                ))}
+              </AnimatePresence>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Modals */}
       <AnimatePresence>
