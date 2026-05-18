@@ -1181,41 +1181,17 @@ export function AgentsPanel({ className, onSendMessage }: AgentsPanelProps) {
           onAgentClick={() => {}}
         />
       ) : tab === 'marketplace' ? (
-        <div>
-          <h3 className="text-[18px] font-extrabold text-zinc-100 tracking-tight mb-2.5 font-sans">Templates</h3>
-          <p className="text-[13px] text-zinc-500 mb-6">
-            Get started with a pre-built agent — activate in one click, customize anytime.
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {TEMPLATES.map((t, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-                className="bg-zinc-900/60 border border-zinc-800/70 rounded-2xl p-4 flex flex-col hover:border-zinc-700/70 hover:bg-zinc-900/80 transition-all group justify-between min-h-[190px]"
-              >
-                <div>
-                  <div className="flex items-center gap-2.5 mb-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-zinc-800/80 flex items-center justify-center flex-shrink-0">
-                      <Clock className="w-4 h-4 text-zinc-400" />
-                    </div>
-                    <p className="text-[14px] font-bold text-zinc-100 leading-tight">{t.name}</p>
-                  </div>
-                  <p className="text-[13px] text-zinc-500 leading-relaxed mb-3">{t.description}</p>
-                </div>
-                <div className="flex items-center justify-between mt-auto">
-                  <span className="text-[12px] text-zinc-650 font-bold uppercase tracking-wider">{cronToLabel(t.cron_schedule)}</span>
-                  <button
-                    onClick={() => setTemplateInit(t)}
-                    className="px-3.5 py-1.5 rounded-lg bg-zinc-100 text-zinc-950 text-[12px] font-bold hover:bg-white active:scale-95 transition-all"
-                  >
-                    Activate
-                  </button>
-                </div>
-              </motion.div>
-            ))}
+        <div className="flex flex-col items-center justify-center py-16 px-4 bg-zinc-900/10 border border-zinc-800/40 rounded-3xl text-center">
+          <div className="w-12 h-12 rounded-2xl bg-zinc-900/80 flex items-center justify-center mb-4 border border-zinc-800">
+            <Compass className="w-6 h-6 text-zinc-400 animate-pulse" />
           </div>
+          <h3 className="text-[18px] font-extrabold text-zinc-100 tracking-tight mb-2 font-sans">Marketplace Coming Soon</h3>
+          <p className="text-[13px] text-zinc-550 max-w-sm leading-relaxed mb-1">
+            Pre-built agents, custom automation workflows, and community-shared templates will be available here soon.
+          </p>
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-zinc-800/60 text-zinc-400 border border-zinc-800/80 mt-4 uppercase tracking-wider">
+            Under Development
+          </span>
         </div>
       ) : agents.length === 0 ? (
         <div>

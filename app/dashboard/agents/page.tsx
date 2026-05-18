@@ -1370,46 +1370,24 @@ function ScheduledPageInner() {
           />
         </div>
       ) : tab === 'marketplace' ? (
-        <div className="flex-1 overflow-y-auto px-8 py-7">
+        <div className="flex-1 overflow-y-auto px-8 py-7 flex flex-col items-center justify-center">
           {tableError && (
-            <div className="mb-6 p-4 bg-[#121214] border border-zinc-900 rounded-xl flex items-start gap-3">
+            <div className="w-full max-w-md mb-6 p-4 bg-[#121214] border border-zinc-900 rounded-xl flex items-start gap-3">
               <AlertCircle className="w-4 h-4 text-zinc-400 flex-shrink-0 mt-0.5" />
               <p className="text-[13px] text-zinc-400">Run the SQL migration in Supabase to enable agents (<code className="text-zinc-350">arcus_agents</code> table).</p>
             </div>
           )}
-          <h3 className="text-[20px] font-extrabold text-zinc-100 tracking-tight mb-2.5 font-sans">Templates</h3>
-          <p className="text-[14px] text-zinc-555 mb-8 max-w-2xl">
-            Get started with a pre-built agent — activate in one click, customize anytime.
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {TEMPLATES.map((t, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-                className="bg-[#0a0a0b] border border-zinc-900 rounded-2xl p-5 flex flex-col hover:border-zinc-800 hover:bg-zinc-900/10 transition-all group justify-between min-h-[210px] shadow-sm"
-              >
-                <div>
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-9 h-9 rounded-xl bg-[#121214] border border-zinc-900 flex items-center justify-center flex-shrink-0 group-hover:bg-zinc-800 transition-colors">
-                      <Clock className="w-4.5 h-4.5 text-zinc-500" />
-                    </div>
-                    <p className="text-[14px] font-bold text-zinc-200 group-hover:text-white transition-colors leading-tight">{t.name}</p>
-                  </div>
-                  <p className="text-[12.5px] text-zinc-550 leading-relaxed mb-4">{t.description}</p>
-                </div>
-                <div className="flex items-center justify-between mt-auto">
-                  <span className="text-[11px] text-zinc-650 font-bold uppercase tracking-wider">{cronToLabel(t.cron_schedule)}</span>
-                  <button
-                    onClick={() => setActivatingTemplate(t)}
-                    className="px-4 py-1.5 rounded-lg bg-zinc-100 text-zinc-950 text-[12px] font-bold hover:bg-white active:scale-95 transition-all"
-                  >
-                    Activate
-                  </button>
-                </div>
-              </motion.div>
-            ))}
+          <div className="max-w-md w-full py-16 px-6 bg-[#0a0a0b] border border-zinc-900 rounded-3xl text-center flex flex-col items-center shadow-lg shadow-black/40">
+            <div className="w-14 h-14 rounded-2xl bg-[#121214] border border-zinc-800/80 flex items-center justify-center mb-5">
+              <Compass className="w-7 h-7 text-zinc-400 animate-pulse" />
+            </div>
+            <h3 className="text-[20px] font-extrabold text-zinc-100 tracking-tight mb-2.5 font-sans">Marketplace Coming Soon</h3>
+            <p className="text-[13.5px] text-zinc-500 leading-relaxed mb-6">
+              Pre-built agents, custom automation workflows, and community-shared templates will be available here soon.
+            </p>
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold bg-[#121214] text-zinc-450 border border-zinc-800 uppercase tracking-widest">
+              Under Development
+            </span>
           </div>
         </div>
       ) : (

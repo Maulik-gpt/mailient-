@@ -3445,6 +3445,9 @@ export default function ChatInterface({
                           >
                             <Bot className="w-3.5 h-3.5" />
                             Agent
+                            <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 text-[8px] font-extrabold tracking-wider uppercase border border-amber-500/20 ml-0.5">
+                              Beta
+                            </span>
                             {scheduledAgents && scheduledAgents.filter(a => a.status === 'running').length > 0 && (
                               <motion.div
                                 className="w-1.5 h-1.5 bg-green-400 rounded-full"
