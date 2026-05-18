@@ -194,18 +194,15 @@ function MiniCalendar({ agents, onAgentClick }: { agents: Agent[]; onAgentClick:
                   )}>
                     {cell.day}
                   </div>
-                  {cell.runs.map(({ agent }, ri) => {
-                    const color = agentColor(agent.name);
-                    return (
-                      <button
-                        key={ri}
-                        onClick={() => onAgentClick(agent)}
-                        className={cn('w-full text-left rounded px-1 py-0.5 border mb-0.5 hover:opacity-80 transition-all', color)}
-                      >
-                        <p className="text-[10px] font-semibold truncate leading-tight">{agent.name}</p>
-                      </button>
-                    );
-                  })}
+                  {cell.runs.map(({ agent }, ri) => (
+                    <button
+                      key={ri}
+                      onClick={() => onAgentClick(agent)}
+                      className="w-full text-left rounded px-1.5 py-1 border mb-0.5 bg-zinc-800/80 border-zinc-700/40 hover:bg-zinc-700/80 transition-all"
+                    >
+                      <p className="text-[10px] font-medium text-zinc-100 truncate leading-tight">{agent.name}</p>
+                    </button>
+                  ))}
                 </>
               )}
             </div>
@@ -250,21 +247,6 @@ function parseCronToSchedule(cron: string) {
   return { key: 'daily', time, weekday: '0' };
 }
 
-// ── Agent color (deterministic) ────────────────────────────────────────────────
-
-const PILL_COLORS = [
-  'bg-violet-500/20 text-violet-300 border-violet-500/30',
-  'bg-sky-500/20 text-sky-300 border-sky-500/30',
-  'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
-  'bg-amber-500/20 text-amber-300 border-amber-500/30',
-  'bg-rose-500/20 text-rose-300 border-rose-500/30',
-  'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
-];
-function agentColor(name: string) {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
-  return PILL_COLORS[h % PILL_COLORS.length];
-}
 
 // ── Toggle ─────────────────────────────────────────────────────────────────────
 
@@ -522,7 +504,6 @@ function AgentCard({ agent, onToggle, onEdit, onDelete, onToggleConf }: {
   const [menuOpen, setMenuOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const nextRun = getNextRunDate(agent.cron_schedule);
-  const color = agentColor(agent.name);
 
   return (
     <motion.div
@@ -534,7 +515,7 @@ function AgentCard({ agent, onToggle, onEdit, onDelete, onToggleConf }: {
     >
       <div className="p-5 pb-4">
         <div className="flex items-start gap-3.5">
-          <div className={cn('px-2.5 py-1 rounded-lg text-[11px] font-bold border flex-shrink-0 mt-0.5', color)}>
+          <div className="px-2.5 py-1 rounded-lg text-[11px] font-bold border flex-shrink-0 mt-0.5 bg-zinc-800/60 border-zinc-700/60 text-zinc-300">
             {cronToLabel(agent.cron_schedule).split(' ')[0]}
           </div>
           <div className="flex-1 min-w-0">
