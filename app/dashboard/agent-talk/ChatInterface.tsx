@@ -4345,10 +4345,10 @@ export default function ChatInterface({
                 {isCanvasOpen && canvasData ? (
                   <motion.div
                     key="canvas-panel"
-                    initial={{ width: 0, opacity: 0 }}
-                    animate={{ width: 'auto', opacity: 1 }}
-                    exit={{ width: 0, opacity: 0 }}
-                    transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ duration: 0.2, ease: 'easeOut' }}
                     className="h-full flex-shrink-0 bg-[#161616] border border-neutral-200 dark:border-white/5 rounded-[32px] z-50 overflow-hidden order-2 relative shadow-2xl"
                   >
                     <CanvasPanel
@@ -4363,10 +4363,10 @@ export default function ChatInterface({
                 ) : showArtifactsPanel ? (
                   <motion.div
                     key="artifacts-gallery"
-                    initial={{ width: 0, opacity: 0 }}
-                    animate={{ width: 'auto', opacity: 1 }}
-                    exit={{ width: 0, opacity: 0 }}
-                    transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ duration: 0.2, ease: 'easeOut' }}
                     className="h-full flex-shrink-0 bg-[#161616] border border-neutral-200 dark:border-white/5 rounded-[32px] z-50 overflow-hidden order-2 relative shadow-2xl"
                   >
                     <ArtifactsGalleryPanel
