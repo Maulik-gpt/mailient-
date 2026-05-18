@@ -8,6 +8,7 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import { AddSquareIcon, Cancel01Icon, WorkHistoryIcon } from '@hugeicons/core-free-icons';
 import { ChatHistoryModal } from './components/ChatHistoryModal';
 import { ThinkingLayer, ResultCard, type ThinkingStep, type ThinkingBlock, type SearchSession } from './components/ThinkingLayer';
+import { ConnectorRequiredPanel, type ConnectorRequiredEntry } from './components/ThinkingLayerV2';
 import { AgentExecutionTimeline, type AgentStep, type AgentNarrative } from './components/AgentExecutionTimeline';
 import { TaskProgressCard, type TaskList } from './components/TaskProgressCard';
 import { LiveTaskWidget } from './components/LiveTaskWidget';
@@ -551,6 +552,11 @@ interface AgentMessage {
     suggestions?: string[];
     canvasExpansion?: boolean; // Phase 2: Whether to show canvas expansion prompt
     continueClicked?: boolean; // Whether the 'Continue' button after credit replenishment was clicked
+    connectorRequired?: {
+      connectors: ConnectorRequiredEntry[];
+      waitingForUser?: boolean;
+      dismissed?: boolean;
+    };
   };
 }
 
@@ -4174,6 +4180,32 @@ export default function ChatInterface({
                                           });
                                           if (!res.ok) throw new Error('Failed to send email');
                                         }}
+                                      />
+                                    )}
+
+                                    {/* Connector Required Panel — shown when execution needs an integration */}
+                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.connectorRequired && !(msg as AgentMessage).meta?.connectorRequired?.dismissed && (
+                                      <ConnectorRequiredPanel
+                                        connectors={(msg as AgentMessage).meta!.connectorRequired!.connectors}
+                                        waitingForUser={(msg as AgentMessage).meta!.connectorRequired!.waitingForUser ?? true}
+                                        onConnect={(id) => {
+                                          setIsIntegrationsModalOpen(true);
+                                        }}
+                                        onSkip={() => {
+                                          setMessages(prev => prev.map(m =>
+                                            m.id === msg.id
+                                              ? { ...m, meta: { ...(m as AgentMessage).meta, connectorRequired: { ...(m as AgentMessage).meta!.connectorRequired!, dismissed: true } } }
+                                              : m
+                                          ));
+                                        }}
+                                        onApply={() => {
+                                          setMessages(prev => prev.map(m =>
+                                            m.id === msg.id
+                                              ? { ...m, meta: { ...(m as AgentMessage).meta, connectorRequired: { ...(m as AgentMessage).meta!.connectorRequired!, dismissed: true, waitingForUser: false } } }
+                                              : m
+                                          ));
+                                        }}
+                                        onViewAll={() => setIsIntegrationsModalOpen(true)}
                                       />
                                     )}
 
