@@ -78,12 +78,13 @@ function getConfig(type: string) {
 export function CanvasPanel({
   isOpen, onClose, canvasData, onExecute, isExecuting, isSidebarCollapsed,
 }: CanvasPanelProps) {
-  const [editMode, setEditMode]     = useState(false);
-  const [editedBody, setEditedBody] = useState('');
-  const [copied, setCopied]         = useState(false);
-  const [width, setWidth]           = useState(540);
-  const [isResizing, setIsResizing] = useState(false);
-  const [isClient, setIsClient]     = useState(false);
+  const [editMode, setEditMode]           = useState(false);
+  const [editedBody, setEditedBody]       = useState('');
+  const [copied, setCopied]               = useState(false);
+  const [downloadingDocx, setDownloadingDocx] = useState(false);
+  const [width, setWidth]                 = useState(540);
+  const [isResizing, setIsResizing]       = useState(false);
+  const [isClient, setIsClient]           = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setIsClient(true); }, []);
@@ -129,6 +130,45 @@ export function CanvasPanel({
     navigator.clipboard.writeText(getTextContent());
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDownloadDocx = async () => {
+    if (downloadingDocx) return;
+    const text = getTextContent();
+    if (!text) return;
+    const isEmail = canvasData?.type === 'email_draft' || canvasData?.type === 'reply';
+    const safeName = (canvasData?.title || 'document').toLowerCase().replace(/[^a-z0-9]+/g, '_');
+
+    if (isEmail) {
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${safeName}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      return;
+    }
+
+    setDownloadingDocx(true);
+    try {
+      const { markdownToDocxBlob, triggerDocxDownload } = await import('@/lib/arcus/docx-export');
+      const blob = await markdownToDocxBlob(text, canvasData?.title || 'document');
+      triggerDocxDownload(blob, safeName);
+    } catch {
+      const blob = new Blob([text], { type: 'text/markdown;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${safeName}.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } finally {
+      setDownloadingDocx(false);
+    }
   };
 
   const handleSend = () => {
@@ -187,6 +227,16 @@ export function CanvasPanel({
             className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-white/8 text-white/40 hover:text-white/80 transition-all"
           >
             {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+          </button>
+          <button
+            onClick={handleDownloadDocx}
+            title={isEmail ? 'Download .txt' : 'Download .docx'}
+            className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-white/8 text-white/40 hover:text-white/80 transition-all"
+          >
+            {downloadingDocx
+              ? <Loader2 className="w-4 h-4 animate-spin" />
+              : <Download className="w-4 h-4" />
+            }
           </button>
           <button
             onClick={onClose}

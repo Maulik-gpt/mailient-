@@ -5,7 +5,7 @@ import {
   ChevronDown, ChevronRight,
   Terminal, FileText, Search, BrainCircuit, Pencil, Code2, Sparkles,
   CheckCircle2, Loader2, AlertTriangle, Clock, Globe, Database,
-  ListTodo, Mail, Calendar, Zap, X, Link2, ExternalLink,
+  ListTodo, Mail, Calendar, Zap, X, Link2, ExternalLink, Download,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -740,7 +740,7 @@ export function ThinkingLayer({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ResultCard — file artifact card (kept, restyled for full opacity)
+// ResultCard — artifact card matching the Mailient file-card design
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface ResultCardProps {
@@ -750,72 +750,117 @@ interface ResultCardProps {
   rawContent?: string;
 }
 
-const resultIcons: Record<string, React.ReactNode> = {
-  email_draft:      <Mail className="w-5 h-5 text-zinc-300" />,
-  summary:          <FileText className="w-5 h-5 text-zinc-300" />,
-  research:         <Search className="w-5 h-5 text-zinc-300" />,
-  action_plan:      <Zap className="w-5 h-5 text-zinc-300" />,
-  reply:            <Mail className="w-5 h-5 text-zinc-300" />,
-  notes:            <FileText className="w-5 h-5 text-zinc-300" />,
-  meeting_schedule: <Calendar className="w-5 h-5 text-zinc-300" />,
-  report:           <FileText className="w-5 h-5 text-zinc-300" />,
-  analysis:         <FileText className="w-5 h-5 text-zinc-300" />,
+// Label shown as the file subtitle e.g. "Markdown · 3.97 KB"
+const resultSubtypes: Record<string, string> = {
+  email_draft:      'Email',
+  summary:          'Markdown',
+  research:         'Markdown',
+  action_plan:      'Markdown',
+  reply:            'Email',
+  notes:            'Markdown',
+  meeting_schedule: 'Markdown',
+  report:           'Markdown',
+  analysis:         'Markdown',
 };
 
-const resultLabels: Record<string, string> = {
-  email_draft:      'Email · Draft',
-  summary:          'Document · MD',
-  research:         'Report · MD',
-  action_plan:      'Plan · MD',
-  reply:            'Email · Reply',
-  notes:            'Notes · MD',
-  meeting_schedule: 'Schedule · MD',
-  report:           'Report · MD',
-  analysis:         'Analysis · MD',
-};
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+// Blue Google Docs-style document icon
+function DocIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 40 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="40" height="48" rx="4" fill="#4A90D9" />
+      <rect x="6" y="14" width="28" height="3" rx="1.5" fill="white" fillOpacity="0.9" />
+      <rect x="6" y="21" width="28" height="3" rx="1.5" fill="white" fillOpacity="0.9" />
+      <rect x="6" y="28" width="20" height="3" rx="1.5" fill="white" fillOpacity="0.7" />
+      <rect x="6" y="35" width="14" height="3" rx="1.5" fill="white" fillOpacity="0.5" />
+      <rect x="26" y="0" width="14" height="14" rx="0" fill="#2563EB" fillOpacity="0.6" />
+      <path d="M26 0 L40 14 L26 14 Z" fill="#1D4ED8" fillOpacity="0.5" />
+    </svg>
+  );
+}
 
 export function ResultCard({ type, title, onView, rawContent }: ResultCardProps) {
-  const label = resultLabels[type] || 'Document · MD';
+  const [downloading, setDownloading] = useState(false);
+  const subtype = resultSubtypes[type] || 'Document';
+  const isEmail = type === 'email_draft' || type === 'reply';
+  const sizeLabel = rawContent ? formatBytes(new Blob([rawContent]).size) : '';
+  const subtitle = `${subtype} · ${sizeLabel}`;
+  const safeName = (title || 'document').toLowerCase().replace(/[^a-z0-9]+/g, '_');
 
-  const handleDownload = (e: React.MouseEvent) => {
+  const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!rawContent) return;
-    const blob = new Blob([rawContent], { type: 'text/markdown;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    const safe = (title || 'document').toLowerCase().replace(/[^a-z0-9]+/g, '_');
-    a.setAttribute('download', `${safe}.${type === 'email_draft' || type === 'reply' ? 'txt' : 'md'}`);
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    if (!rawContent || downloading) return;
+
+    if (isEmail) {
+      // Plain text for emails
+      const blob = new Blob([rawContent], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${safeName}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      return;
+    }
+
+    setDownloading(true);
+    try {
+      const { markdownToDocxBlob, triggerDocxDownload } = await import('@/lib/arcus/docx-export');
+      const blob = await markdownToDocxBlob(rawContent, title || 'document');
+      triggerDocxDownload(blob, safeName);
+    } catch {
+      // Fallback to markdown if docx fails
+      const blob = new Blob([rawContent], { type: 'text/markdown;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${safeName}.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } finally {
+      setDownloading(false);
+    }
   };
 
   return (
     <motion.div
-      whileHover={{ y: -1 }}
+      whileHover={{ scale: 1.01 }}
       whileTap={{ scale: 0.99 }}
       onClick={onView}
-      className="group relative flex items-center gap-4 p-4 mt-2 mb-2 w-full max-w-[580px] bg-zinc-900 border border-zinc-700/60 rounded-2xl transition-all hover:bg-zinc-800 hover:border-zinc-600 cursor-pointer"
+      className="group relative flex items-center gap-3.5 p-3.5 mt-2 mb-2 w-full max-w-[480px] bg-zinc-900 border border-zinc-800/80 rounded-2xl transition-all hover:bg-zinc-800/80 hover:border-zinc-700 cursor-pointer"
     >
-      {/* Tilted icon card */}
-      <div className="relative w-11 h-12 rounded-xl bg-zinc-800 border border-zinc-700/60 flex items-center justify-center flex-shrink-0 shadow-md transform -rotate-3 overflow-hidden transition-transform group-hover:rotate-0">
-        {resultIcons[type] || <FileText className="w-5 h-5 text-zinc-300" />}
+      {/* Document icon — mimics the screenshot file card icon */}
+      <div className="flex-shrink-0 w-10 h-12 relative">
+        <DocIcon className="w-full h-full drop-shadow-sm" />
       </div>
 
-      <div className="flex flex-col items-start gap-0.5 flex-1 min-w-0">
-        <span className="text-zinc-100 text-[14px] font-semibold tracking-tight truncate group-hover:text-white transition-colors">
+      {/* Title + subtitle */}
+      <div className="flex-1 min-w-0">
+        <p className="text-[13px] font-semibold text-zinc-100 truncate leading-snug group-hover:text-white transition-colors">
           {title || 'Untitled Document'}
-        </span>
-        <span className="text-[12px] text-zinc-500 font-medium">{label}</span>
+        </p>
+        <p className="text-[12px] text-zinc-500 mt-0.5 font-medium">{subtitle}</p>
       </div>
 
+      {/* Download button */}
       {rawContent && (
         <button
           onClick={handleDownload}
-          className="px-4 py-1.5 rounded-xl border border-zinc-700/60 bg-zinc-800 text-[12px] font-semibold text-zinc-200 hover:bg-zinc-700 hover:border-zinc-600 transition-all active:scale-95 flex-shrink-0"
+          title={isEmail ? 'Download .txt' : 'Download .docx'}
+          className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-xl bg-zinc-800 border border-zinc-700/60 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-700 hover:border-zinc-600 transition-all active:scale-95"
         >
-          Download
+          {downloading
+            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            : <Download className="w-3.5 h-3.5" />
+          }
         </button>
       )}
     </motion.div>
