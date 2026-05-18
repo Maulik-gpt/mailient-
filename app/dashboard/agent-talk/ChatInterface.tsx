@@ -1297,7 +1297,7 @@ export default function ChatInterface({
 
   // Arcus view mode: 'feed' (default) or 'plan_mode' (daily brief)
   const [arcusView, setArcusView] = useState<'feed' | 'plan_mode'>('feed');
-  const [dashboardTab, setDashboardTab] = useState<'home' | 'agents' | 'marketplace'>('home');
+  const [dashboardTab, setDashboardTab] = useState<'home' | 'agents'>('home');
 
   // Arcus V3 Plan Mode Brief
   const {
@@ -3447,18 +3447,6 @@ export default function ChatInterface({
                                 transition={{ repeat: Infinity, duration: 1.5 }}
                               />
                             )}
-                          </button>
-                          <button
-                            onClick={() => setDashboardTab('marketplace')}
-                            className={cn(
-                              "px-5 py-2 rounded-full text-[12px] font-bold transition-all flex items-center gap-2",
-                              dashboardTab === 'marketplace'
-                                ? "bg-white/[0.08] text-white border border-white/[0.12]"
-                                : "text-white/40 hover:text-white/60 border border-transparent"
-                            )}
-                          >
-                            <Compass className="w-3.5 h-3.5" />
-                            Marketplace
                           </button>
                         </motion.div>
                       </div>

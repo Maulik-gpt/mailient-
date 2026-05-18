@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Clock, Mail, Zap, Loader2, X, ChevronLeft, ChevronRight,
-  MoreHorizontal, List, Slack, Trash2, Edit2, AlertCircle, CalendarDays,
+  MoreHorizontal, List, Slack, Trash2, Edit2, AlertCircle, CalendarDays, Compass,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -1219,7 +1219,7 @@ function AgentTaskCard({ agent, onClick, onToggle, onEdit, onDelete, onToggleCon
 function ScheduledPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const tab = (searchParams.get('tab') as 'calendar' | 'tasks') || 'tasks';
+  const tab = (searchParams.get('tab') as 'calendar' | 'tasks' | 'marketplace') || 'tasks';
 
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1229,7 +1229,7 @@ function ScheduledPageInner() {
   const [tableError, setTableError] = useState(false);
   const [activatingTemplate, setActivatingTemplate] = useState<typeof TEMPLATES[0] | null>(null);
 
-  const setTab = (t: 'calendar' | 'tasks') => {
+  const setTab = (t: 'calendar' | 'tasks' | 'marketplace') => {
     const params = new URLSearchParams(searchParams.toString());
     params.set('tab', t);
     router.replace(`?${params.toString()}`);
@@ -1331,6 +1331,7 @@ function ScheduledPageInner() {
         {([
           { key: 'tasks', label: 'Tasks', icon: List },
           { key: 'calendar', label: 'Calendar', icon: CalendarDays },
+          { key: 'marketplace', label: 'Marketplace', icon: Compass },
         ] as const).map(({ key, label, icon: Icon }) => (
           <button
             key={key}
@@ -1367,6 +1368,49 @@ function ScheduledPageInner() {
             onAgentClick={a => setSelectedAgent(a)}
             onCreateNew={() => setCreateOpen(true)}
           />
+        </div>
+      ) : tab === 'marketplace' ? (
+        <div className="flex-1 overflow-y-auto px-8 py-7">
+          {tableError && (
+            <div className="mb-6 p-4 bg-[#121214] border border-zinc-900 rounded-xl flex items-start gap-3">
+              <AlertCircle className="w-4 h-4 text-zinc-400 flex-shrink-0 mt-0.5" />
+              <p className="text-[13px] text-zinc-400">Run the SQL migration in Supabase to enable agents (<code className="text-zinc-350">arcus_agents</code> table).</p>
+            </div>
+          )}
+          <h3 className="text-[20px] font-extrabold text-zinc-100 tracking-tight mb-2.5 font-sans">Templates</h3>
+          <p className="text-[14px] text-zinc-555 mb-8 max-w-2xl">
+            Get started with a pre-built agent — activate in one click, customize anytime.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {TEMPLATES.map((t, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+                className="bg-[#0a0a0b] border border-zinc-900 rounded-2xl p-5 flex flex-col hover:border-zinc-800 hover:bg-zinc-900/10 transition-all group justify-between min-h-[210px] shadow-sm"
+              >
+                <div>
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-9 h-9 rounded-xl bg-[#121214] border border-zinc-900 flex items-center justify-center flex-shrink-0 group-hover:bg-zinc-800 transition-colors">
+                      <Clock className="w-4.5 h-4.5 text-zinc-500" />
+                    </div>
+                    <p className="text-[14px] font-bold text-zinc-200 group-hover:text-white transition-colors leading-tight">{t.name}</p>
+                  </div>
+                  <p className="text-[12.5px] text-zinc-550 leading-relaxed mb-4">{t.description}</p>
+                </div>
+                <div className="flex items-center justify-between mt-auto">
+                  <span className="text-[11px] text-zinc-650 font-bold uppercase tracking-wider">{cronToLabel(t.cron_schedule)}</span>
+                  <button
+                    onClick={() => setActivatingTemplate(t)}
+                    className="px-4 py-1.5 rounded-lg bg-zinc-100 text-zinc-950 text-[12px] font-bold hover:bg-white active:scale-95 transition-all"
+                  >
+                    Activate
+                  </button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </div>
       ) : (
         /* Tasks: padded scroll area */

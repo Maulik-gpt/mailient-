@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Clock, Mail, Zap, Loader2, X, Slack,
   MoreHorizontal, AlertCircle, ChevronDown, Edit2, Trash2,
-  List, CalendarDays, ChevronLeft, ChevronRight,
+  List, CalendarDays, ChevronLeft, ChevronRight, Compass,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -1055,7 +1055,7 @@ export interface AgentsPanelProps {
 export function AgentsPanel({ className, onSendMessage }: AgentsPanelProps) {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'tasks' | 'calendar'>('tasks');
+  const [tab, setTab] = useState<'tasks' | 'calendar' | 'marketplace'>('tasks');
   const [createOpen, setCreateOpen] = useState(false);
   const [editAgent, setEditAgent] = useState<Agent | null>(null);
   const [templateInit, setTemplateInit] = useState<Partial<Agent> | null>(null);
@@ -1148,6 +1148,7 @@ export function AgentsPanel({ className, onSendMessage }: AgentsPanelProps) {
         {([
           { key: 'tasks',    label: 'Tasks',    Icon: List },
           { key: 'calendar', label: 'Calendar', Icon: CalendarDays },
+          { key: 'marketplace', label: 'Marketplace', Icon: Compass },
         ] as const).map(({ key, label, Icon }) => (
           <button
             key={key}
@@ -1179,6 +1180,43 @@ export function AgentsPanel({ className, onSendMessage }: AgentsPanelProps) {
           agents={agents.filter(a => a.status !== 'paused')}
           onAgentClick={() => {}}
         />
+      ) : tab === 'marketplace' ? (
+        <div>
+          <h3 className="text-[18px] font-extrabold text-zinc-100 tracking-tight mb-2.5 font-sans">Templates</h3>
+          <p className="text-[13px] text-zinc-500 mb-6">
+            Get started with a pre-built agent — activate in one click, customize anytime.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {TEMPLATES.map((t, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+                className="bg-zinc-900/60 border border-zinc-800/70 rounded-2xl p-4 flex flex-col hover:border-zinc-700/70 hover:bg-zinc-900/80 transition-all group justify-between min-h-[190px]"
+              >
+                <div>
+                  <div className="flex items-center gap-2.5 mb-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-zinc-800/80 flex items-center justify-center flex-shrink-0">
+                      <Clock className="w-4 h-4 text-zinc-400" />
+                    </div>
+                    <p className="text-[14px] font-bold text-zinc-100 leading-tight">{t.name}</p>
+                  </div>
+                  <p className="text-[13px] text-zinc-500 leading-relaxed mb-3">{t.description}</p>
+                </div>
+                <div className="flex items-center justify-between mt-auto">
+                  <span className="text-[12px] text-zinc-650 font-bold uppercase tracking-wider">{cronToLabel(t.cron_schedule)}</span>
+                  <button
+                    onClick={() => setTemplateInit(t)}
+                    className="px-3.5 py-1.5 rounded-lg bg-zinc-100 text-zinc-950 text-[12px] font-bold hover:bg-white active:scale-95 transition-all"
+                  >
+                    Activate
+                  </button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
       ) : agents.length === 0 ? (
         <div>
           <p className="text-[14px] text-zinc-500 mb-6 text-center">
