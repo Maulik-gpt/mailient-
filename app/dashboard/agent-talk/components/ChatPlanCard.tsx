@@ -233,10 +233,10 @@ export function ChatPlanCard({ plan, onExecute, onCancel }: ChatPlanCardProps) {
 
           {/* ── Action bar ── */}
           {!isDone && !isCancelled && (
-            <div className="flex items-center gap-2 px-5 py-3 border-t border-white/[0.05]">
+            <div className="flex items-center gap-2 px-5 py-3 border-t border-white/[0.09] bg-white/[0.02]">
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-medium text-white/40 hover:text-white/70 hover:bg-white/[0.06] border border-white/[0.08] hover:border-white/[0.18] transition-all"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold text-white/70 hover:text-white hover:bg-white/[0.08] border border-white/[0.14] hover:border-white/[0.25] transition-all"
               >
                 <Maximize2 className="w-3 h-3" />
                 View plan
@@ -247,7 +247,7 @@ export function ChatPlanCard({ plan, onExecute, onCancel }: ChatPlanCardProps) {
               <button
                 onClick={() => onCancel(plan)}
                 disabled={isExecuting}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-[12px] font-medium text-white/35 hover:text-white/60 hover:bg-white/[0.05] border border-white/[0.07] transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-[12px] font-semibold text-white/50 hover:text-white hover:bg-white/[0.06] border border-white/[0.12] hover:border-white/[0.22] transition-all disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 <X className="w-3 h-3" />
                 Cancel
@@ -256,7 +256,7 @@ export function ChatPlanCard({ plan, onExecute, onCancel }: ChatPlanCardProps) {
               <button
                 onClick={handleExecute}
                 disabled={isExecuting}
-                className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-[12px] font-semibold text-black bg-white hover:bg-white/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-white/10"
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-[12px] font-bold text-black bg-white hover:bg-neutral-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-white/15 hover:shadow-white/20 active:scale-95"
               >
                 {isExecuting ? (
                   <><Loader2 className="w-3 h-3 animate-spin" />Executing…</>
