@@ -633,28 +633,12 @@ const NoScrollbarStyles = () => (
   `}</style>
 );
 
-
 const THINKING_LABELS = ['Thinking', 'Reasoning', 'Analyzing', 'Planning', 'Processing'];
 
 function AgentThinkingSection({ content, isComplete }: { content: string, isComplete?: boolean }) {
-  const [isOpen, setIsOpen] = useState(true);
   const [timer, setTimer] = useState(0);
   const [labelIdx, setLabelIdx] = useState(0);
-  const [accumulatedThought, setAccumulatedThought] = useState('');
-  const contentRef = useRef<HTMLDivElement>(null);
   const startTimeRef = useRef(Date.now());
-  const scrollPosRef = useRef(0);
-  const scrollRafRef = useRef<number | null>(null);
-
-  // Accumulate real narrative text (ignore short status-only messages)
-  useEffect(() => {
-    if (!content || content === 'SKELETON') return;
-    const isStatusOnly = content.length < 60 &&
-      /^(thinking|processing|working|checking|preparing|completing|interpreting|summaris|done|reaching)/i.test(content.trim());
-    if (!isStatusOnly) {
-      setAccumulatedThought(prev => prev ? `${prev}\n\n${content}` : content);
-    }
-  }, [content]);
 
   // Rolling label cycle
   useEffect(() => {
@@ -671,34 +655,7 @@ function AgentThinkingSection({ content, isComplete }: { content: string, isComp
     return () => clearInterval(id);
   }, [isComplete]);
 
-  // rAF auto-scroll — stops when complete or collapsed
-  useEffect(() => {
-    if (isComplete || !isOpen) {
-      if (scrollRafRef.current) cancelAnimationFrame(scrollRafRef.current);
-      return;
-    }
-    let lastTime = 0;
-    const PX_PER_SEC = 28;
-    const tick = (ts: number) => {
-      const el = contentRef.current;
-      if (!el) { scrollRafRef.current = requestAnimationFrame(tick); return; }
-      const delta = lastTime ? (ts - lastTime) / 1000 : 0;
-      lastTime = ts;
-      const maxScroll = el.scrollHeight - el.clientHeight;
-      if (maxScroll > 0) {
-        scrollPosRef.current += PX_PER_SEC * delta;
-        if (scrollPosRef.current >= maxScroll) scrollPosRef.current = 0;
-        el.scrollTop = scrollPosRef.current;
-      }
-      scrollRafRef.current = requestAnimationFrame(tick);
-    };
-    scrollRafRef.current = requestAnimationFrame(tick);
-    return () => { if (scrollRafRef.current) cancelAnimationFrame(scrollRafRef.current); };
-  }, [isComplete, isOpen]);
-
   if (!content) return null;
-
-  const displayText = accumulatedThought || 'Analyzing your request…';
 
   return (
     <div className="flex flex-col gap-2 mt-3 mb-2 min-w-0">
@@ -743,45 +700,7 @@ function AgentThinkingSection({ content, isComplete }: { content: string, isComp
         {!isComplete && (
           <span className="text-[11px] font-mono text-white/25 tabular-nums shrink-0">{timer}s</span>
         )}
-
-        <button
-          onClick={() => setIsOpen(v => !v)}
-          className="ml-auto flex-shrink-0 text-white/15 hover:text-white/40 transition-colors"
-        >
-          <motion.div animate={{ rotate: isOpen ? 90 : 0 }} transition={{ duration: 0.15 }}>
-            <ChevronRight className="w-3.5 h-3.5" />
-          </motion.div>
-        </button>
       </div>
-
-      {/* Scrolling thought card */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.18 }}
-            className="overflow-hidden"
-          >
-            <div className={cn(
-              'relative h-[148px] overflow-hidden rounded-xl border transition-all',
-              isComplete ? 'bg-white/[0.015] border-white/[0.04]' : 'bg-white/[0.03] border-white/[0.06]'
-            )}>
-              <div className="absolute top-0 left-0 right-0 h-9 bg-gradient-to-b from-black/80 to-transparent z-10 pointer-events-none rounded-t-xl" />
-              <div className="absolute bottom-0 left-0 right-0 h-9 bg-gradient-to-t from-black/80 to-transparent z-10 pointer-events-none rounded-b-xl" />
-              <div ref={contentRef} className="h-full overflow-hidden px-4 py-3" style={{ scrollBehavior: 'auto' }}>
-                <p className={cn(
-                  'text-[12px] leading-relaxed whitespace-pre-wrap font-normal',
-                  isComplete ? 'text-white/25' : 'text-white/45'
-                )}>
-                  {displayText}
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       <style jsx global>{`
         @keyframes shimmer-text {
