@@ -288,10 +288,13 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                 {
                   role: 'system',
                   content:
-                    'You are a task planner. Given the user\'s request, output a JSON array of 3-5 short action items ' +
-                    '(max 10 words each) describing what you will do step-by-step. ' +
+                    'You are a task planner. Decide if the user\'s request is a COMPLEX MULTI-STEP task that requires 3 or more distinct tool calls (e.g. search inbox → read thread → draft reply, or search → schedule → notify). ' +
+                    'Complex tasks involve real work: searching emails, reading threads, drafting messages, scheduling meetings, managing calendar, writing documents. ' +
+                    'Simple tasks (casual replies, single questions, short responses, basic greetings, anything needing 0-2 tool calls) do NOT get a task list — output an empty array []. ' +
+                    'For complex tasks only, output a JSON array of 3-5 short action items (max 10 words each). ' +
                     'Output ONLY the raw JSON array with no extra text, no markdown fences. ' +
-                    'Example: ["Search inbox for recent emails","Read top 3 matching threads","Draft a reply matching user tone"]',
+                    'Examples of complex (output array): "Search my inbox and draft a reply" → ["Search inbox for matching emails","Read top email thread","Analyze writing style","Draft reply matching tone"] ' +
+                    'Examples of simple (output []): "write a friendly reply", "say hello", "what should I do today", "reply casually"',
                 },
                 { role: 'user', content: userMessage },
               ],
@@ -302,7 +305,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
             const match = raw.match(/\[[\s\S]*\]/);
             if (match) {
               const tasks: string[] = JSON.parse(match[0]);
-              if (Array.isArray(tasks) && tasks.length >= 2) {
+              if (Array.isArray(tasks) && tasks.length >= 3) {
                 const clean = tasks.slice(0, 6).map(t => String(t).trim()).filter(Boolean);
                 taskCount = clean.length;
                 emit('task_list', { tasks: clean });
