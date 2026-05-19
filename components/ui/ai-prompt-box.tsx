@@ -341,10 +341,10 @@ const PromptInput = forwardRef<HTMLDivElement, PromptInputProps>(
             onFocus={onFocus}
             onBlur={onBlur}
             className={cn(
-              "rounded-[32px] bg-white/[0.06] dark:bg-[#000000] p-2 transition-all duration-300 relative",
-              "border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.06)]",
-              !hideShadow && "shadow-[0_20px_60px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)]",
-              isLoading && "border-white/[0.12] shadow-[0_0_0_1px_rgba(255,255,255,0.06),0_20px_60px_rgba(0,0,0,0.5)]",
+              "rounded-[32px] bg-white/[0.06] dark:bg-white/[0.08] backdrop-blur-2xl p-2 transition-all duration-300 relative",
+              "border border-white/[0.12] shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.08)]",
+              !hideShadow && "shadow-[0_20px_60px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.08)]",
+              isLoading && "border-white/[0.16] shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_20px_60px_rgba(0,0,0,0.5)]",
               className
             )}
             onDragOver={onDragOver}
@@ -749,9 +749,9 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         className={cn(
-          "w-full bg-white/[0.06] dark:bg-[#000000] border border-white/[0.08] transition-all duration-300 ease-in-out focus:ring-0 focus:outline-none focus-within:ring-0 focus-within:outline-none",
-          "shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.06)]",
-          !props.hideShadow && "shadow-[0_20px_60px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)]",
+          "w-full bg-white/[0.06] dark:bg-white/[0.08] backdrop-blur-2xl border border-white/[0.12] transition-all duration-300 ease-in-out focus:ring-0 focus:outline-none focus-within:ring-0 focus-within:outline-none",
+          "shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.08)]",
+          !props.hideShadow && "shadow-[0_20px_60px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.08)]",
           isRecording && "ring-1 ring-white/20",
           className
         )}
