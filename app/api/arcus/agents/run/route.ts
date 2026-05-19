@@ -2,18 +2,26 @@
  * Run a background agent immediately ("Run now" from the agent card).
  * POST /api/arcus/agents/run  { id }
  *
- * Runs the agent's task through the agentic loop right now and persists the
- * result as a new conversation (arcus_chat_sessions) so it shows up in chat
- * history. Returns the new conversationId for client-side navigation.
+ * Streams the agentic loop as Server-Sent Events (identical event format to
+ * /api/arcus/chat) so the browser sees live progress and the HTTP response
+ * is flushed immediately. The previous implementation drained the entire
+ * loop server-side before responding, which exceeded Vercel's 60s function
+ * cap and returned a 504 — the route never reached the conversation-save
+ * code, so "Run now" appeared to do nothing.
+ *
+ * The client consumes the stream and persists the conversation via
+ * /api/arcus/conversation once the report is produced.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '../../../../../lib/auth.js';
-import { getSupabaseAdmin, DatabaseService } from '../../../../../lib/supabase.js';
-import { runAgentTask } from '../../../../../lib/arcus/run-agent';
+// @ts-ignore
+const { auth } = require('../../../../../lib/auth.js');
+import { getSupabaseAdmin } from '../../../../../lib/supabase.js';
+import { buildAgentLoopArgs } from '../../../../../lib/arcus/run-agent';
+import { runAgentLoop } from '../../../../../lib/arcus/loop';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60; // Vercel Hobby cap; the agentic loop may need most of it
+export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   const session = await auth();
@@ -37,50 +45,43 @@ export async function POST(request: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!agent) return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
 
-  let report: string;
-  try {
-    report = await runAgentTask(agent);
-  } catch (err: any) {
-    return NextResponse.json({ error: `Agent run failed: ${err.message}` }, { status: 500 });
-  }
-
-  // Record the run on the agent row (same fields the scheduled runner updates).
-  await supabase
-    .from('arcus_agents')
-    .update({ last_run_at: new Date().toISOString(), last_report_summary: report.slice(0, 500) })
-    .eq('id', agent.id);
-
-  // Persist as a new conversation so it appears in chat history.
   const conversationId =
     (globalThis.crypto?.randomUUID?.() as string | undefined) ||
     `agentrun_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
 
-  const time = new Date().toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
+  let args;
+  try {
+    // Leave headroom under the 60s function cap so the loop forces a final
+    // report before Vercel kills the function mid-stream.
+    args = await buildAgentLoopArgs(agent, { maxToolCalls: 14, deadlineMs: 50_000 });
+  } catch (err: any) {
+    return NextResponse.json({ error: `Agent setup failed: ${err.message}` }, { status: 500 });
+  }
+
+  let stream: ReadableStream;
+  try {
+    stream = runAgentLoop(args);
+  } catch (err: any) {
+    return NextResponse.json({ error: `Agent run failed: ${err.message}` }, { status: 500 });
+  }
+
+  // Record that a manual run happened (fire-and-forget — must not block the
+  // stream). last_run_at is intentionally left untouched so a manual run
+  // doesn't suppress the next scheduled run via the cron anti-double-run guard.
+  supabase
+    .from('arcus_agents')
+    .update({ last_report_summary: `Manual run started ${new Date().toISOString()}` })
+    .eq('id', agent.id)
+    .then(() => {}, () => {});
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache, no-transform',
+      Connection: 'keep-alive',
+      'X-Conversation-Id': conversationId,
+      'X-Agent-Name': encodeURIComponent(agent.name || 'Agent'),
+      'X-Agent-Task': encodeURIComponent(agent.task_description || ''),
+    },
   });
-
-  const messages = [
-    {
-      id: Date.now(),
-      type: 'user',
-      role: 'user',
-      content: agent.task_description,
-      time,
-    },
-    {
-      id: Date.now() + 1,
-      type: 'agent',
-      role: 'assistant',
-      content: { text: report, list: [], footer: '' },
-      time,
-      meta: { agentSteps: [], agentNarratives: [], ranBy: 'run_now', agentName: agent.name },
-    },
-  ];
-
-  const db = new DatabaseService();
-  await db.saveArcusChatSession(session.user.email, conversationId, messages, agent.name);
-
-  return NextResponse.json({ success: true, conversationId });
 }

@@ -29,10 +29,22 @@ When writing your final report, follow this structure EXACTLY:
 - Keep the tone playful, warm, and helpful — like a brilliant assistant who loves their job
 - Do NOT wrap the response in a code block`;
 
-export async function runAgentTask(agent: {
-  user_id: string;
-  task_description: string;
-}): Promise<string> {
+export interface AgentRunBudget {
+  /** Hard cap on tool calls (default: loop default of 20). */
+  maxToolCalls?: number;
+  /** Wall-clock budget in ms before the loop forces a final report. */
+  deadlineMs?: number;
+}
+
+/**
+ * Build the runAgentLoop arguments for a background agent. Shared by the
+ * streaming "Run now" route and the synchronous cron runner so both produce
+ * identical agent behaviour.
+ */
+export async function buildAgentLoopArgs(
+  agent: { user_id: string; task_description: string },
+  budget: AgentRunBudget = {},
+) {
   const userId = agent.user_id;
   const taskDescription = agent.task_description;
 
@@ -50,13 +62,23 @@ export async function runAgentTask(agent: {
     agentTaskDescription: taskDescription,
   });
 
-  const stream = runAgentLoop({
+  return {
     userId,
     systemPrompt,
-    history: [],
+    history: [] as Array<{ role: 'user' | 'assistant'; content: string }>,
     userMessage: taskDescription + REPORT_FORMAT_SUFFIX,
     connectedIntegrations,
-  });
+    maxToolCalls: budget.maxToolCalls,
+    deadlineMs: budget.deadlineMs,
+  };
+}
+
+export async function runAgentTask(
+  agent: { user_id: string; task_description: string },
+  budget: AgentRunBudget = {},
+): Promise<string> {
+  const args = await buildAgentLoopArgs(agent, budget);
+  const stream = runAgentLoop(args);
 
   const reader = stream.getReader();
   const decoder = new TextDecoder();

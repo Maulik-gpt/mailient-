@@ -62,6 +62,15 @@ export async function GET(request: NextRequest) {
   const results: string[] = [];
   let ran = 0;
 
+  // Vercel kills this function at maxDuration (60s). Reserve a safety margin
+  // for report delivery (Gmail/Slack) and DB writes, then split the rest
+  // across the agents that actually need to run this tick so none gets
+  // killed mid-loop and silently produces nothing.
+  const FUNCTION_BUDGET_MS = 58_000;
+  const DELIVERY_RESERVE_MS = 9_000;
+  const cronStartedAt = Date.now();
+  const timeLeftMs = () => FUNCTION_BUDGET_MS - (Date.now() - cronStartedAt);
+
   // Batch-fetch timezones
   const uniqueUsers = Array.from(new Set(agents.map((a: any) => a.user_id as string)));
   const tzMap: Record<string, string> = {};
@@ -109,12 +118,23 @@ export async function GET(request: NextRequest) {
       const userTz = tzMap[agent.user_id] || 'UTC';
       if (!shouldAgentRunNow(agent.cron_schedule, agent.last_run_at, userTz)) continue;
 
+      // Stop launching new agents once there isn't enough time left to run
+      // one and still deliver its report within this function invocation.
+      const remaining = timeLeftMs() - DELIVERY_RESERVE_MS;
+      if (remaining < 12_000) {
+        results.push(`Deferred (out of time this tick): ${agent.name}`);
+        continue;
+      }
+
       ran++;
       results.push(`Running: ${agent.name} (${agent.user_id})`);
 
       await supabase.from('arcus_agents').update({ status: 'running' }).eq('id', agent.id);
 
-      const report = await runAgentTask(agent);
+      const report = await runAgentTask(agent, {
+        maxToolCalls: 10,
+        deadlineMs: remaining,
+      });
 
       if (agent.output_channel === 'gmail' || agent.output_channel === 'both') {
         await sendGmailReport(agent.user_id, agent.name, report);

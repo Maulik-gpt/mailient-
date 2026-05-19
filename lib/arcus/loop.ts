@@ -139,6 +139,19 @@ export interface LoopOptions {
   userMessage: string;
   connectedIntegrations?: string[];
   isPlanMode?: boolean;
+  /**
+   * Hard cap on tool calls for this run. Defaults to MAX_TOOL_CALLS.
+   * Background/cron runs pass a smaller value so the whole loop finishes
+   * within Vercel's 60s function limit (otherwise the platform kills it
+   * mid-run and no report is ever produced or delivered).
+   */
+  maxToolCalls?: number;
+  /**
+   * Wall-clock budget in ms. Once exceeded, the loop stops calling tools
+   * and forces a final summary from whatever it has so far. Lets scheduled
+   * runs always emit a report instead of being 504'd into oblivion.
+   */
+  deadlineMs?: number;
 }
 
 // ── Main loop ──────────────────────────────────────────────────────────────────
@@ -151,11 +164,19 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
     userMessage,
     connectedIntegrations = [],
     isPlanMode = false,
+    maxToolCalls,
+    deadlineMs,
   } = opts;
 
   const availableTools = isPlanMode ? [] : getAvailableTools(connectedIntegrations);
+  const toolCallLimit =
+    typeof maxToolCalls === 'number' && maxToolCalls > 0
+      ? Math.min(maxToolCalls, MAX_TOOL_CALLS)
+      : MAX_TOOL_CALLS;
   const runId = crypto.randomUUID();
   const startedAt = Date.now();
+  const deadlineAt =
+    typeof deadlineMs === 'number' && deadlineMs > 0 ? startedAt + deadlineMs : Infinity;
   // Newsletter/promo filtering should apply to ANY email-listing task, not only
   // ones that match inbox keywords — otherwise promos leak into summaries and
   // "reply to X" results. The only time we keep them is when the user is
@@ -397,10 +418,15 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
               }
             }
 
+            const overDeadline = Date.now() >= deadlineAt;
             for (const tc of toolCalls) {
               if (tc.name === 'ask_user') continue; // skip — handled above
-              if (totalToolCalls >= MAX_TOOL_CALLS) {
-                emit('thinking', { status: 'Reached tool call limit. Summarising…' });
+              if (totalToolCalls >= toolCallLimit || overDeadline) {
+                emit('thinking', {
+                  status: overDeadline
+                    ? 'Time budget reached — finalising the report…'
+                    : 'Reached tool call limit. Summarising…',
+                });
                 break;
               }
 
@@ -497,7 +523,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
 
             iteration++;
 
-            if (totalToolCalls >= MAX_TOOL_CALLS) {
+            if (totalToolCalls >= toolCallLimit || Date.now() >= deadlineAt) {
               emit('thinking', { status: 'Preparing final response…' });
               const finalResponse = await callLLM(
                 [...messages, { role: 'user', content: 'Please provide your final response now based on everything you have found.' }],

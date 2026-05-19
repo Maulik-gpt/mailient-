@@ -1138,18 +1138,100 @@ export function AgentsPanel({ className, onSendMessage }: AgentsPanelProps) {
   const handleRunNow = async (agent: Agent) => {
     if (runningId) return;
     setRunningId(agent.id);
-    const toastId = toast.loading(`Running "${agent.name}"…`);
+    const toastId = toast.loading(`Starting "${agent.name}"…`);
     try {
       const res = await fetch('/api/arcus/agents/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: agent.id }),
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Run failed');
-      toast.success(`"${agent.name}" finished — opening conversation`, { id: toastId });
+
+      if (!res.ok || !res.body) {
+        let msg = 'Run failed';
+        try { msg = (await res.json()).error || msg; } catch { /* non-JSON */ }
+        throw new Error(msg);
+      }
+
+      const conversationId =
+        res.headers.get('X-Conversation-Id') ||
+        (globalThis.crypto?.randomUUID?.() as string);
+      const agentName =
+        decodeURIComponent(res.headers.get('X-Agent-Name') || '') || agent.name;
+      const agentTask =
+        decodeURIComponent(res.headers.get('X-Agent-Task') || '') ||
+        agent.task_description;
+
+      // Consume the SSE stream (same event format as /api/arcus/chat).
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let currentEventType = '';
+      let report = '';
+      let streamError = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        for (const line of lines) {
+          if (line.startsWith('event: ')) {
+            currentEventType = line.slice(7).trim();
+            continue;
+          }
+          if (!line.startsWith('data: ') || !currentEventType) continue;
+          let data: any;
+          try { data = JSON.parse(line.slice(6).trim()); } catch { continue; }
+
+          if (currentEventType === 'thinking' && data.status) {
+            toast.loading(`"${agentName}": ${data.status}`, { id: toastId });
+          } else if (currentEventType === 'tool_call' && data.tool) {
+            toast.loading(`"${agentName}": ${String(data.tool).replace(/_/g, ' ')}…`, { id: toastId });
+          } else if (currentEventType === 'message' && data.content) {
+            report = data.content;
+          } else if (currentEventType === 'error') {
+            streamError = data.message || 'Agent run failed';
+          }
+          currentEventType = '';
+        }
+      }
+
+      if (!report) {
+        throw new Error(streamError || 'Agent finished but produced no report.');
+      }
+
+      // Persist as a conversation so it appears in chat history — same shape
+      // the old synchronous route saved.
+      const time = new Date().toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      });
+      const messages = [
+        { id: Date.now(), type: 'user', role: 'user', content: agentTask, time },
+        {
+          id: Date.now() + 1,
+          type: 'agent',
+          role: 'assistant',
+          content: { text: report, list: [], footer: '' },
+          time,
+          meta: { agentSteps: [], agentNarratives: [], ranBy: 'run_now', agentName },
+        },
+      ];
+
+      const saveRes = await fetch('/api/arcus/conversation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ conversationId, messages, title: agentName }),
+      });
+      if (!saveRes.ok) {
+        console.error('[Arcus:RunNow] conversation save failed', await saveRes.text());
+      }
+
+      toast.success(`"${agentName}" finished — opening conversation`, { id: toastId });
       await fetchAgents();
-      if (json.conversationId) router.push(`/dashboard/agent-talk/${json.conversationId}`);
+      router.push(`/dashboard/agent-talk/${conversationId}`);
     } catch (err: any) {
       toast.error(err.message || 'Run failed', { id: toastId });
     } finally {
