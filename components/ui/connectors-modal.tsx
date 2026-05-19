@@ -393,12 +393,12 @@ export function ConnectorsModal({
                   <button
                     key={app.id}
                     onClick={() => setSelectedApp(app)}
-                    className="flex items-start gap-6 p-6 rounded-[2rem] bg-white/40 border border-black/[0.04] hover:bg-white/70 hover:border-black/[0.08] transition-all text-left group shadow-sm"
+                    className="flex items-start gap-6 p-6 rounded-[2rem] bg-[#F0F0F2] border border-black/[0.04] hover:bg-[#E5E5E9] hover:border-black/[0.08] transition-all text-left group shadow-sm"
                   >
                     <div 
                       className={cn(
                         "w-16 h-16 rounded-2xl flex items-center justify-center border border-black/[0.05] shrink-0 shadow-lg group-hover:scale-110 transition-transform p-3",
-                        app.id === 'notion' ? "bg-white" : "bg-black/5"
+                        app.id === 'notion' ? "bg-[#FAFAFA]" : "bg-black/5"
                       )}
                     >
                       <app.icon className="w-full h-full" />
@@ -505,7 +505,7 @@ export function ConnectorsModal({
                     <div className="relative flex-1">
                       <button
                         onClick={() => setManageDropdownOpen(!manageDropdownOpen)}
-                        className="w-full py-4 bg-white/80 border border-black/[0.06] text-neutral-855 rounded-2xl font-bold text-[15px] hover:bg-white active:scale-95 transition-all flex items-center justify-center gap-2"
+                        className="w-full py-4 bg-[#F0F0F2] border border-black/[0.06] text-neutral-800 rounded-2xl font-bold text-[15px] hover:bg-[#E5E5E9] active:scale-95 transition-all flex items-center justify-center gap-2"
                       >
                         Manage
                         <ChevronDown className={cn("w-4 h-4 transition-transform", manageDropdownOpen && "rotate-180")} />
@@ -645,7 +645,7 @@ export function ConnectorsModal({
                           value={feedback}
                           onChange={(e) => setFeedback(e.target.value)}
                           placeholder="Share your thoughts..."
-                          className="w-full h-40 bg-white/80 border border-black/[0.06] rounded-2xl p-5 text-[14px] text-neutral-900 placeholder:text-black/25 focus:outline-none focus:border-black/15 transition-all resize-none leading-relaxed"
+                          className="w-full h-40 bg-[#F0F0F2] border border-black/[0.06] rounded-2xl p-5 text-[14px] text-neutral-900 placeholder:text-black/25 focus:outline-none focus:border-black/15 transition-all resize-none leading-relaxed"
                           autoFocus
                           onKeyDown={(e) => {
                             if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
