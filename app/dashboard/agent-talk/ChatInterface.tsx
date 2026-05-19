@@ -37,6 +37,7 @@ import { HomeFeedSidebar } from "@/components/ui/home-feed-sidebar";
 import { TextShimmer } from '@/components/ui/text-shimmer';
 import WordBlurStream from '../../../src/WordBlurStream';
 import { GlassButton, GlassTabContainer } from "@/components/ui/apple-tahoe-liquid-glass-button";
+import { ArcusLogo } from "@/components/ui/arcus-logo";
 
 import { UsageLimitModal } from '@/components/ui/usage-limit-modal';
 import { SettingsCard } from '@/components/ui/settings-card';
@@ -4018,7 +4019,7 @@ export default function ChatInterface({
                                     {msg.role === 'user' && <UserMessageCopyButton msg={msg} />}
                                     {msg.role === 'assistant' && msg.meta?.limitReached && (
                                       <div className="flex items-center gap-2 mb-3 opacity-60">
-                                        <img src="/arcus-ai-icon.jpg" className="w-4 h-4 rounded-md grayscale" />
+                                        <ArcusLogo size={16} />
                                         <span className="text-[12px] text-black dark:text-white/90 font-medium tracking-tight">Arcus AI</span>
                                         <span className="px-1.5 py-0.5 bg-black/10 dark:bg-white/10 text-black dark:text-white/40 text-[9px] font-bold rounded uppercase tracking-widest leading-none">Lite</span>
                                       </div>

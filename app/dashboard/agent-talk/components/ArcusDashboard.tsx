@@ -26,6 +26,7 @@ import {
 import { cn } from '@/lib/utils';
 import { MorningBriefing } from './MorningBriefing';
 import { AgentsPanel } from './AgentsPanel';
+import { ArcusLogo } from '@/components/ui/arcus-logo';
 
 // ============================================================================
 // TYPES
@@ -213,11 +214,7 @@ export function ArcusDashboard({
               <div className="flex flex-col justify-center min-h-[65vh] py-4">
                 <div className="flex-1 flex flex-col justify-center text-center">
                   <div className="flex justify-center mb-8">
-                    <img
-                      src="/arcus-ai-icon.jpg"
-                      className="w-16 h-16 object-cover rounded-[24px] shadow-2xl grayscale brightness-110"
-                      alt="Arcus AI"
-                    />
+                    <ArcusLogo size={64} />
                   </div>
                   <h1
                     className="text-4xl md:text-6xl font-medium text-white tracking-tighter mb-4"

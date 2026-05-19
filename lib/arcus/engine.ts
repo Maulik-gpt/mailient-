@@ -11,6 +11,18 @@
  * run they are skipped in later rounds to avoid hammering rate-limited slots.
  */
 
+// ── Logger ─────────────────────────────────────────────────────────────────────
+
+function ts() { return new Date().toISOString().slice(11, 23); }
+
+function log(level: 'info' | 'warn' | 'error', module: string, msg: string, extra?: Record<string, unknown>) {
+  const prefix = `[Arcus:${module}] ${ts()}`;
+  const line = extra ? `${prefix} ${msg} ${JSON.stringify(extra)}` : `${prefix} ${msg}`;
+  if (level === 'error') console.error(line);
+  else if (level === 'warn') console.warn(line);
+  else console.log(line);
+}
+
 // ── Model lists ────────────────────────────────────────────────────────────────
 
 /**
@@ -204,7 +216,12 @@ export async function callLLM(
   options: { maxTokens?: number; temperature?: number } = {}
 ): Promise<LLMResponse> {
   const keys = getKeys();
-  if (!keys.length) throw new Error('No OpenRouter API keys configured.');
+  if (!keys.length) {
+    log('error', 'Engine', 'No OpenRouter API keys configured — set OPENROUTER_API_KEY in .env');
+    throw new Error('No OpenRouter API keys configured.');
+  }
+
+  log('info', 'Engine', `callLLM start`, { keys: keys.length, tools: tools.map(t => t.name), maxTokens: options.maxTokens ?? 4096 });
 
   const openAIMessages = toOpenAIMessages(messages);
   const openAITools = tools.length ? toOpenAITools(tools) : undefined;
@@ -248,22 +265,22 @@ export async function callLLM(
 
         if (res.status === 401 || res.status === 403) {
           deadKeys.add(key);
-          console.warn(`[Arcus Engine] Key ending …${key.slice(-4)} is invalid (${res.status}).`);
+          log('error', 'Engine', `API key …${key.slice(-4)} rejected`, { status: res.status, model, body: body.slice(0, 200) });
           return null;
         }
 
         if (res.status === 429 || res.status === 402) {
           rateLimitedModels.set(model, rateHits + 1);
+          log('warn', 'Engine', `Rate-limited`, { model, key: `…${key.slice(-4)}`, hits: rateHits + 1, body: body.slice(0, 120) });
           return null;
         }
 
-        // 400 bad request (unsupported feature on this model — e.g. tool calls)
         if (res.status === 400) {
-          console.warn(`[Arcus Engine] ${model} returned 400 — skipping.`);
+          log('warn', 'Engine', `Bad request (likely unsupported feature)`, { model, body: body.slice(0, 200) });
           return null;
         }
 
-        console.warn(`[Arcus Engine] ${model} HTTP ${res.status}: ${body.slice(0, 120)}`);
+        log('error', 'Engine', `Unexpected HTTP error`, { model, status: res.status, body: body.slice(0, 300) });
         return null;
       }
 
@@ -275,25 +292,34 @@ export async function callLLM(
         if (code === 429 || code === 402 || data.error?.message?.includes('rate limit')) {
           rateLimitedModels.set(model, rateHits + 1);
         }
-        console.warn(`[Arcus Engine] ${model} error payload:`, data.error?.message ?? JSON.stringify(data.error).slice(0, 120));
+        log('error', 'Engine', `Model returned error in 200 body`, {
+          model,
+          code,
+          message: data.error?.message,
+          metadata: data.error?.metadata,
+        });
         return null;
       }
 
       const parsed = parseOpenAIResponse(data);
       if (!parsed) {
-        console.warn(`[Arcus Engine] ${model} returned empty content.`);
+        log('warn', 'Engine', `Model returned empty/unparseable content`, {
+          model,
+          finish_reason: data.choices?.[0]?.finish_reason,
+          raw: JSON.stringify(data.choices?.[0]?.message ?? {}).slice(0, 200),
+        });
         return null;
       }
 
-      // Reset rate-limit counter on success
+      log('info', 'Engine', `Success`, { model, key: `…${key.slice(-4)}`, stop_reason: parsed.stop_reason, blocks: parsed.content.length });
       rateLimitedModels.delete(model);
       return parsed;
 
     } catch (err: any) {
       if (err.name === 'TimeoutError' || err.name === 'AbortError') {
-        console.warn(`[Arcus Engine] ${model} timed out.`);
+        log('warn', 'Engine', `Timeout`, { model, after: '45s' });
       } else {
-        console.warn(`[Arcus Engine] ${model} fetch error: ${err.message}`);
+        log('error', 'Engine', `Fetch threw`, { model, error: err.message, stack: err.stack?.slice(0, 300) });
       }
       return null;
     }
@@ -316,23 +342,32 @@ export async function callLLM(
 
   // ── Round 1: tool-capable models, no delay ────────────────────────────────
   const round1Models = hasTools ? TOOL_CAPABLE_MODELS : [...TOOL_CAPABLE_MODELS, ...FALLBACK_MODELS];
+  log('info', 'Engine', `Round 1 — ${round1Models.length} models, ${keys.length} keys`);
   const r1 = await sweepModels(round1Models);
   if (r1) return r1;
 
   // ── Round 2: all models including fallbacks (3 s pause) ───────────────────
+  log('warn', 'Engine', 'Round 1 exhausted — waiting 3 s then retrying all models');
   await sleep(3000);
   const round2Models = [...TOOL_CAPABLE_MODELS, ...FALLBACK_MODELS];
-  // Reset rate-limit hits so models get a fresh chance after the pause
   rateLimitedModels.clear();
+  log('info', 'Engine', `Round 2 — ${round2Models.length} models`);
   const r2 = await sweepModels(round2Models);
   if (r2) return r2;
 
   // ── Round 3: tool-capable only, 8 s total from start (5 s more) ──────────
+  log('warn', 'Engine', 'Round 2 exhausted — waiting 5 s for final retry');
   await sleep(5000);
   rateLimitedModels.clear();
+  log('info', 'Engine', `Round 3 — ${TOOL_CAPABLE_MODELS.length} tool-capable models`);
   const r3 = await sweepModels(TOOL_CAPABLE_MODELS);
   if (r3) return r3;
 
+  log('error', 'Engine', 'All 3 rounds exhausted — no model responded successfully', {
+    keys: keys.length,
+    deadKeys: [...deadKeys].map(k => `…${k.slice(-4)}`),
+    rateLimitedModels: Object.fromEntries(rateLimitedModels),
+  });
   throw new Error('All models are currently busy. Please try again in a moment.');
 }
 

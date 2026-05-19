@@ -47,6 +47,15 @@ import type { LLMMessage } from './engine';
 
 const ASK_USER_SCHEMA = TOOL_SCHEMAS.find(s => s.name === 'ask_user')!;
 
+function ts() { return new Date().toISOString().slice(11, 23); }
+function log(level: 'info' | 'warn' | 'error', msg: string, extra?: Record<string, unknown>) {
+  const prefix = `[Arcus:Loop] ${ts()}`;
+  const line = extra ? `${prefix} ${msg} ${JSON.stringify(extra)}` : `${prefix} ${msg}`;
+  if (level === 'error') console.error(line);
+  else if (level === 'warn') console.warn(line);
+  else console.log(line);
+}
+
 export const MAX_TOOL_CALLS = 20;
 const MAX_NUDGES = 3;
 
@@ -116,6 +125,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
       };
 
       try {
+        log('info', 'run_start', { runId, isPlanMode, tools: availableTools.map(t => t.name), msgLen: userMessage.length });
         emit('run_start', { runId, message: userMessage });
 
         // ── Pre-plan clarification pass ─────────────────────────────────────
@@ -277,6 +287,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
               }
 
               totalToolCalls++;
+              log('info', `tool_call #${totalToolCalls}`, { tool: tc.name, iteration, input: JSON.stringify(tc.input).slice(0, 200) });
               emit('tool_call', { tool: tc.name, params: tc.input, iteration });
 
               try {
@@ -294,6 +305,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                   emit('canvas', result.canvasData);
                 }
 
+                log('info', `tool_result ok`, { tool: tc.name, outputLen: result.output.length, hasCanvas: !!result.canvasData });
                 emit('tool_result', {
                   tool: tc.name,
                   success: true,
@@ -301,12 +313,12 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                   iteration,
                 });
 
-                // ── Layer 3: Track outcome ──────────────────────────────────
                 outcomes.push({ tool: tc.name, ok: true });
                 toolResults.push({ type: 'tool_result', tool_use_id: tc.id, content: result.output });
 
               } catch (err: any) {
                 const errorMsg = err?.message ?? 'Unknown error';
+                log('error', `tool_result fail`, { tool: tc.name, error: errorMsg, stack: err?.stack?.slice(0, 300) });
                 emit('tool_result', { tool: tc.name, success: false, summary: errorMsg, iteration });
                 outcomes.push({ tool: tc.name, ok: false, error: errorMsg });
                 toolResults.push({ type: 'tool_result', tool_use_id: tc.id, content: `Error: ${errorMsg}` });
@@ -404,7 +416,12 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
         emit('done', { runId, durationMs: Date.now() - startedAt, totalSteps: totalToolCalls });
 
       } catch (err: any) {
-        console.error('[Arcus Loop] Error:', err.message);
+        log('error', 'Unhandled loop error', {
+          message: err.message,
+          name: err.name,
+          stack: err.stack?.slice(0, 500),
+          runId,
+        });
         emit('error', { message: err.message || 'Something went wrong. Please try again.' });
       } finally {
         try { controller.close(); } catch { /* already closed */ }

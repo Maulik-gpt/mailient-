@@ -447,25 +447,43 @@ export interface ToolResult {
   };
 }
 
+function ts() { return new Date().toISOString().slice(11, 23); }
+
 export async function executeTool(
   name: string,
   input: Record<string, any>,
   userId: string
 ): Promise<ToolResult> {
-  switch (name) {
-    case 'search_gmail': return searchGmail(userId, input);
-    case 'read_email': return readEmail(userId, input);
-    case 'get_sent_emails': return getSentEmails(userId, input);
-    case 'draft_reply': return draftReply(userId, input);
-    case 'send_email': return sendEmail(userId, input);
-    case 'schedule_meeting': return scheduleMeeting(userId, input);
-    case 'get_calendar_events': return getCalendarEvents(userId, input);
-    case 'search_notion': return searchNotion(userId, input);
-    case 'create_notion_page': return createNotionPage(userId, input);
-    case 'open_canvas': return openCanvas(input);
-    case 'web_search': return webSearch(input);
-    case 'send_slack_message': return sendSlackMessage(userId, input);
-    default: return { output: `Unknown tool: ${name}` };
+  const start = Date.now();
+  try {
+    let result: ToolResult;
+    switch (name) {
+      case 'search_gmail':      result = await searchGmail(userId, input); break;
+      case 'read_email':        result = await readEmail(userId, input); break;
+      case 'get_sent_emails':   result = await getSentEmails(userId, input); break;
+      case 'draft_reply':       result = await draftReply(userId, input); break;
+      case 'send_email':        result = await sendEmail(userId, input); break;
+      case 'schedule_meeting':  result = await scheduleMeeting(userId, input); break;
+      case 'get_calendar_events': result = await getCalendarEvents(userId, input); break;
+      case 'search_notion':     result = await searchNotion(userId, input); break;
+      case 'create_notion_page': result = await createNotionPage(userId, input); break;
+      case 'open_canvas':       result = openCanvas(input); break;
+      case 'web_search':        result = await webSearch(input); break;
+      case 'send_slack_message': result = await sendSlackMessage(userId, input); break;
+      default:
+        console.warn(`[Arcus:Tools] ${ts()} Unknown tool requested: "${name}"`);
+        return { output: `Unknown tool: ${name}` };
+    }
+    console.log(`[Arcus:Tools] ${ts()} ${name} ok (${Date.now() - start}ms) output=${result.output.length}chars`);
+    return result;
+  } catch (err: any) {
+    console.error(`[Arcus:Tools] ${ts()} ${name} FAILED (${Date.now() - start}ms)`, {
+      error: err.message,
+      stack: err.stack?.slice(0, 400),
+      input: JSON.stringify(input).slice(0, 200),
+      userId,
+    });
+    throw err;
   }
 }
 

@@ -85,10 +85,23 @@ A good plan contains:
 Do not call any tools. Output the plan markdown directly now.`;
 }
 
+function ts() { return new Date().toISOString().slice(11, 23); }
+function log(level: 'info' | 'warn' | 'error', msg: string, extra?: Record<string, unknown>) {
+  const line = extra
+    ? `[Arcus:Route] ${ts()} ${msg} ${JSON.stringify(extra)}`
+    : `[Arcus:Route] ${ts()} ${msg}`;
+  if (level === 'error') console.error(line);
+  else if (level === 'warn') console.warn(line);
+  else console.log(line);
+}
+
 export async function POST(request: NextRequest) {
+  const reqStart = Date.now();
+
   // Auth
   const session = await auth();
   if (!session?.user?.email) {
+    log('warn', 'Unauthorized request — no session');
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
   }
   const userId = session.user.email.toLowerCase();
@@ -101,19 +114,41 @@ export async function POST(request: NextRequest) {
     conversationId?: string;
     isPlanMode?: boolean;
   } = {};
-  try { body = await request.json(); } catch { /* empty */ }
+  try {
+    body = await request.json();
+  } catch (e: any) {
+    log('error', 'Failed to parse request body', { error: e.message });
+    return new Response(JSON.stringify({ error: 'Invalid JSON body' }), { status: 400 });
+  }
 
   const { message, history = [], conversationId, isPlanMode = false } = body;
   if (!message?.trim()) {
+    log('warn', 'Empty message received', { userId });
     return new Response(JSON.stringify({ error: 'message is required' }), { status: 400 });
   }
 
+  log('info', 'Request received', {
+    userId,
+    isPlanMode,
+    historyTurns: history.length,
+    msgPreview: message.slice(0, 80),
+    conversationId,
+  });
+
   // Build context (run in parallel for speed)
-  const [connectedIntegrations, memories, personalityData] = await Promise.all([
-    getConnectedIntegrations(userId),
-    searchMemories(userId, message, 5),
-    fetchPersonality(userId),
-  ]);
+  let connectedIntegrations: string[] = [];
+  let memories = '';
+  let personalityData = '';
+  try {
+    [connectedIntegrations, memories, personalityData] = await Promise.all([
+      getConnectedIntegrations(userId),
+      searchMemories(userId, message, 5),
+      fetchPersonality(userId),
+    ]);
+    log('info', 'Context ready', { integrations: connectedIntegrations, memoryChars: memories.length });
+  } catch (e: any) {
+    log('error', 'Context build failed — continuing with empty context', { error: e.message, stack: e.stack?.slice(0, 300) });
+  }
 
   const systemPrompt = isPlanMode
     ? buildPlanSystemPrompt(userName, connectedIntegrations)
@@ -125,18 +160,23 @@ export async function POST(request: NextRequest) {
     .filter(h => h.role && h.content?.trim())
     .map(h => ({ role: h.role as 'user' | 'assistant', content: h.content }));
 
-  // Start agentic loop — pass connected integrations so only available tools are used
-  const stream = runAgentLoop({
-    userId,
-    systemPrompt,
-    history: sanitizedHistory,
-    userMessage: message,
-    connectedIntegrations,
-    isPlanMode,
-  });
+  log('info', 'Starting agent loop', { tools: connectedIntegrations, historyKept: sanitizedHistory.length, setupMs: Date.now() - reqStart });
 
-  // After streaming, save to memory async (don't await — don't block the response)
-  // We capture the final text from the stream in a background task
+  let stream: ReadableStream;
+  try {
+    stream = runAgentLoop({
+      userId,
+      systemPrompt,
+      history: sanitizedHistory,
+      userMessage: message,
+      connectedIntegrations,
+      isPlanMode,
+    });
+  } catch (e: any) {
+    log('error', 'runAgentLoop threw synchronously', { error: e.message, stack: e.stack?.slice(0, 300) });
+    return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500 });
+  }
+
   saveMemoryAsync(userId, message, conversationId);
 
   return new Response(stream, {
@@ -152,10 +192,9 @@ export async function POST(request: NextRequest) {
 /** Save memory async after response completes — doesn't block streaming */
 async function saveMemoryAsync(userId: string, userMessage: string, _conversationId?: string) {
   try {
-    // Extract and store structured insights: relationship flags, preferences, context
     await extractAndSaveInsights(userId, userMessage, '');
-  } catch {
-    // Silent
+  } catch (e: any) {
+    console.warn(`[Arcus:Route] ${ts()} Memory save failed (non-fatal)`, { error: e.message });
   }
 }
 
