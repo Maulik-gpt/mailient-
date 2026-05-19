@@ -1,14 +1,13 @@
 /**
  * Arcus Engine — OpenRouter caller using OpenAI-compatible API format.
  *
- * Converts tool schemas and message history to OpenAI format before sending.
- * Retry strategy:
- *   - Round 1: all keys × tool-capable models (no delay)
- *   - Round 2: all keys × all free models (3 s delay)
- *   - Round 3: all keys × tool-capable models again (8 s delay)
- * Keys that return 401/403 are skipped for the remainder of the run.
- * Models that return 429/402 accumulate a soft-skip count; after 2 hits in a
- * run they are skipped in later rounds to avoid hammering rate-limited slots.
+ * Strategy: race all (model × key) pairs in parallel — first success wins.
+ * This replaces the old sequential sweep (which could wait 45 s per model).
+ *
+ * Round 1 — race all keys × TOOL_CAPABLE_MODELS simultaneously (no delay)
+ * Round 2 — 2 s pause, race all keys × ALL_FREE_MODELS (wider net)
+ * Round 3 — 1 s pause, try openrouter/auto per key (let OR pick any free model)
+ * Emergency — 1 s pause, strip tools, race top models (text-only answer)
  */
 
 // ── Logger ─────────────────────────────────────────────────────────────────────
@@ -52,6 +51,11 @@ const FALLBACK_MODELS = [
   'qwen/qwen3-14b:free',
   'qwen/qwen3-8b:free',
   'mistralai/mistral-7b-instruct:free',
+];
+
+const ALL_FREE_MODELS = [
+  ...TOOL_CAPABLE_MODELS,
+  ...FALLBACK_MODELS,
 ];
 
 /** Top models used in Round 4 text-only emergency (no tools, no tool_choice). */
@@ -227,8 +231,6 @@ export async function callLLM(
     throw new Error('No OpenRouter API keys configured.');
   }
 
-  log('info', 'Engine', `callLLM start`, { keys: keys.length, tools: tools.map(t => t.name), maxTokens: options.maxTokens ?? 4096 });
-
   const openAIMessages = toOpenAIMessages(messages);
   const openAITools = tools.length ? toOpenAITools(tools) : undefined;
   const hasTools = !!openAITools;
@@ -243,16 +245,11 @@ export async function callLLM(
     baseBody.tool_choice = 'auto';
   }
 
-  // Per-run tracking
-  const deadKeys = new Set<string>();             // 401/403 — auth failure
-  const rateLimitedModels = new Map<string, number>(); // model → 429 count
+  // 401/403 keys are dead for this run
+  const deadKeys = new Set<string>();
 
-  async function tryModel(key: string, model: string): Promise<LLMResponse | null> {
+  async function tryOne(key: string, model: string, body: Record<string, any>): Promise<LLMResponse | null> {
     if (deadKeys.has(key)) return null;
-
-    const rateHits = rateLimitedModels.get(model) ?? 0;
-    if (rateHits >= 2) return null; // deprioritise after 2 consecutive 429s
-
     try {
       const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
@@ -262,159 +259,91 @@ export async function callLLM(
           'HTTP-Referer': 'https://mailient.xyz',
           'X-Title': 'Arcus AI',
         },
-        body: JSON.stringify({ ...baseBody, model }),
-        signal: AbortSignal.timeout(20000),
+        body: JSON.stringify({ ...body, model }),
+        signal: AbortSignal.timeout(25000),
       });
 
       if (!res.ok) {
-        const body = await res.text().catch(() => '');
-
+        const txt = await res.text().catch(() => '');
         if (res.status === 401 || res.status === 403) {
           deadKeys.add(key);
-          log('error', 'Engine', `API key …${key.slice(-4)} rejected`, { status: res.status, model, body: body.slice(0, 200) });
-          return null;
+          log('error', 'Engine', `Key dead`, { key: `…${key.slice(-4)}`, status: res.status });
+        } else {
+          log('warn', 'Engine', `HTTP ${res.status}`, { model, key: `…${key.slice(-4)}`, body: txt.slice(0, 200) });
         }
-
-        if (res.status === 429 || res.status === 402) {
-          rateLimitedModels.set(model, rateHits + 1);
-          log('warn', 'Engine', `Rate-limited`, { model, key: `…${key.slice(-4)}`, hits: rateHits + 1, body: body.slice(0, 120) });
-          return null;
-        }
-
-        if (res.status === 400) {
-          log('warn', 'Engine', `Bad request (likely unsupported feature)`, { model, body: body.slice(0, 200) });
-          return null;
-        }
-
-        log('error', 'Engine', `Unexpected HTTP error`, { model, status: res.status, body: body.slice(0, 300) });
         return null;
       }
 
       const data = await res.json();
-
-      // OpenRouter sometimes wraps an error in a 200
       if (data.error) {
-        const code = data.error?.code ?? data.error?.status;
-        if (code === 429 || code === 402 || data.error?.message?.includes('rate limit')) {
-          rateLimitedModels.set(model, rateHits + 1);
-        }
-        log('error', 'Engine', `Model returned error in 200 body`, {
+        log('warn', 'Engine', `OR error in body`, {
           model,
-          code,
-          message: data.error?.message,
-          metadata: data.error?.metadata,
+          key: `…${key.slice(-4)}`,
+          code: data.error?.code,
+          msg: (data.error?.message ?? '').slice(0, 150),
         });
         return null;
       }
 
       const parsed = parseOpenAIResponse(data);
       if (!parsed) {
-        log('warn', 'Engine', `Model returned empty/unparseable content`, {
-          model,
-          finish_reason: data.choices?.[0]?.finish_reason,
-          raw: JSON.stringify(data.choices?.[0]?.message ?? {}).slice(0, 200),
-        });
+        log('warn', 'Engine', `Empty response`, { model, finish: data.choices?.[0]?.finish_reason });
         return null;
       }
 
-      log('info', 'Engine', `Success`, { model, key: `…${key.slice(-4)}`, stop_reason: parsed.stop_reason, blocks: parsed.content.length });
-      rateLimitedModels.delete(model);
+      log('info', 'Engine', `OK`, { model: data.model ?? model, key: `…${key.slice(-4)}`, stop: parsed.stop_reason });
       return parsed;
 
     } catch (err: any) {
-      if (err.name === 'TimeoutError' || err.name === 'AbortError') {
-        log('warn', 'Engine', `Timeout`, { model, after: '45s' });
-      } else {
-        log('error', 'Engine', `Fetch threw`, { model, error: err.message, stack: err.stack?.slice(0, 300) });
-      }
+      const isTimeout = err.name === 'TimeoutError' || err.name === 'AbortError';
+      log('warn', 'Engine', isTimeout ? `Timeout (25s)` : `Fetch error`, {
+        model, key: `…${key.slice(-4)}`, ...(isTimeout ? {} : { error: err.message }),
+      });
       return null;
     }
   }
 
-  async function sweepModels(models: string[]): Promise<LLMResponse | null> {
-    for (const key of keys) {
-      if (deadKeys.has(key)) continue;
-      for (const model of models) {
-        const result = await tryModel(key, model);
-        if (result) return result;
-      }
-    }
-    return null;
+  // Race all (model × key) pairs simultaneously — first non-null wins.
+  async function race(modelList: string[], body: Record<string, any>): Promise<LLMResponse | null> {
+    const active = keys.filter(k => !deadKeys.has(k));
+    if (!active.length) return null;
+    const pairs = modelList.flatMap(m => active.map(k => ({ m, k })));
+    log('info', 'Engine', `Racing`, { pairs: pairs.length, models: modelList.length, keys: active.length });
+    return Promise.any(
+      pairs.map(({ m, k }) => tryOne(k, m, body).then(r => r ?? Promise.reject(null)))
+    ).catch(() => null);
   }
 
-  function sleep(ms: number) {
-    return new Promise<void>(r => setTimeout(r, ms));
-  }
+  function sleep(ms: number) { return new Promise<void>(r => setTimeout(r, ms)); }
 
-  // ── Round 1: tool-capable models, no delay ────────────────────────────────
-  const round1Models = hasTools ? TOOL_CAPABLE_MODELS : [...TOOL_CAPABLE_MODELS, ...FALLBACK_MODELS];
-  log('info', 'Engine', `Round 1 — ${round1Models.length} models, ${keys.length} keys`);
-  const r1 = await sweepModels(round1Models);
+  // ── Round 1: race all keys × tool-capable free models ────────────────────
+  const r1Models = hasTools ? TOOL_CAPABLE_MODELS : ALL_FREE_MODELS;
+  const r1 = await race(r1Models, baseBody);
   if (r1) return r1;
 
-  // ── Round 2: all models including fallbacks (3 s pause) ───────────────────
-  log('warn', 'Engine', 'Round 1 exhausted — waiting 3 s then retrying all models');
-  await sleep(3000);
-  const round2Models = [...TOOL_CAPABLE_MODELS, ...FALLBACK_MODELS];
-  rateLimitedModels.clear();
-  log('info', 'Engine', `Round 2 — ${round2Models.length} models`);
-  const r2 = await sweepModels(round2Models);
+  // ── Round 2: 2 s pause, race all keys × full free list ────────────────────
+  log('warn', 'Engine', 'Round 1 failed — retrying in 2 s with full free list');
+  await sleep(2000);
+  const r2 = await race(ALL_FREE_MODELS, baseBody);
   if (r2) return r2;
 
-  // ── Round 3: tool-capable only (5 s more) ────────────────────────────────
-  log('warn', 'Engine', 'Round 2 exhausted — waiting 5 s for final retry');
-  await sleep(5000);
-  rateLimitedModels.clear();
-  log('info', 'Engine', `Round 3 — ${TOOL_CAPABLE_MODELS.length} tool-capable models`);
-  const r3 = await sweepModels(TOOL_CAPABLE_MODELS);
+  // ── Round 3: 1 s pause, openrouter/auto — let OR pick any free model ──────
+  log('warn', 'Engine', 'Round 2 failed — trying openrouter/auto');
+  await sleep(1000);
+  const r3 = await race(['openrouter/auto'], baseBody);
   if (r3) return r3;
 
-  // ── Round 4: emergency text-only (strip tools entirely) ──────────────────
-  // Some models refuse tool_choice when rate-limited but still answer text.
-  log('warn', 'Engine', 'Round 3 exhausted — trying text-only emergency round');
-  await sleep(2000);
-  rateLimitedModels.clear();
-  const emergencyBody = { ...baseBody };
+  // ── Emergency: strip tools, race top models for a plain text answer ────────
+  log('warn', 'Engine', 'Round 3 failed — emergency text-only round');
+  await sleep(1000);
+  const emergencyBody: Record<string, any> = { ...baseBody };
   delete emergencyBody.tools;
   delete emergencyBody.tool_choice;
+  const r4 = await race(EMERGENCY_MODELS, emergencyBody);
+  if (r4) return r4;
 
-  for (const key of keys) {
-    if (deadKeys.has(key)) continue;
-    for (const model of EMERGENCY_MODELS) {
-      try {
-        log('info', 'Engine', `Emergency attempt`, { model, key: `…${key.slice(-4)}` });
-        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${key}`,
-            'Content-Type': 'application/json',
-            'HTTP-Referer': 'https://mailient.xyz',
-            'X-Title': 'Arcus AI',
-          },
-          body: JSON.stringify({ ...emergencyBody, model }),
-          signal: AbortSignal.timeout(20000),
-        });
-        if (!res.ok) {
-          if (res.status === 401 || res.status === 403) deadKeys.add(key);
-          continue;
-        }
-        const data = await res.json();
-        if (data.error) continue;
-        const parsed = parseOpenAIResponse(data);
-        if (parsed) {
-          log('info', 'Engine', `Emergency success (text-only)`, { model, key: `…${key.slice(-4)}` });
-          return parsed;
-        }
-      } catch {
-        continue;
-      }
-    }
-  }
-
-  log('error', 'Engine', 'All 4 rounds exhausted — no model responded successfully', {
-    keys: keys.length,
-    deadKeys: [...deadKeys].map(k => `…${k.slice(-4)}`),
-    rateLimitedModels: Object.fromEntries(rateLimitedModels),
+  log('error', 'Engine', 'All rounds exhausted', {
+    keys: keys.length, deadKeys: [...deadKeys].map(k => `…${k.slice(-4)}`),
   });
   throw new Error('All models are currently busy. Please try again in a moment.');
 }

@@ -186,7 +186,7 @@ export function ArcusWorkspace({
         animate={{ scale: 1, opacity: 1 }}
         className={cn(
           "fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-xl",
-          "bg-white dark:bg-[#0a0a0a] border border-white/[0.08] shadow-2xl shadow-black/50",
+          "bg-arcus-bg-elevated border border-arcus-border shadow-2xl shadow-black/50",
           "hover:border-white/[0.12] transition-all group",
           className
         )}
@@ -212,7 +212,7 @@ export function ArcusWorkspace({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        "bg-white dark:bg-[#0a0a0a] border border-white/[0.08] rounded-2xl overflow-hidden",
+        "bg-arcus-bg-elevated border border-arcus-border rounded-2xl overflow-hidden",
         "shadow-2xl shadow-black/50",
         compact ? "max-w-md" : "w-full max-w-4xl",
         className
@@ -220,7 +220,7 @@ export function ArcusWorkspace({
     >
       {/* Header */}
       {showHeader && (
-        <div className="px-5 py-4 border-b border-white/[0.06]">
+        <div className="px-5 py-4 border-b border-arcus-border/60">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {/* Status */}
@@ -233,10 +233,10 @@ export function ArcusWorkspace({
               </div>
 
               <div>
-                <h2 className="text-[15px] font-semibold text-black/90 dark:text-white/90">
+                <h2 className="text-[15px] font-semibold text-arcus-fg">
                   Arcus Workspace
                 </h2>
-                <p className="text-[12px] text-black/40 dark:text-white/40">
+                <p className="text-[12px] text-arcus-fg-secondary">
                   {plan?.title || runtime?.runId.slice(-8) || 'Ready'}
                 </p>
               </div>
@@ -245,14 +245,14 @@ export function ArcusWorkspace({
             {/* View Switcher */}
             <div className="flex items-center gap-2">
               {plan && (
-                <div className="flex items-center gap-1 p-1 bg-white/[0.03] rounded-lg">
+                <div className="flex items-center gap-1 p-1 bg-arcus-surface rounded-lg">
                   <button
                     onClick={() => setActiveView('plan')}
                     className={cn(
                       "px-3 py-1.5 rounded-md text-[12px] font-medium transition-all flex items-center gap-1.5",
                       activeView === 'plan'
-                        ? "bg-white/[0.08] text-black dark:text-white"
-                        : "text-black/40 dark:text-white/40 hover:text-black/60 dark:text-white/60"
+                        ? "bg-arcus-raised text-arcus-fg"
+                        : "text-arcus-fg-secondary hover:text-arcus-fg"
                     )}
                   >
                     <ListTodo className="w-3.5 h-3.5" />
@@ -264,8 +264,8 @@ export function ArcusWorkspace({
                       className={cn(
                         "px-3 py-1.5 rounded-md text-[12px] font-medium transition-all flex items-center gap-1.5",
                         activeView === 'runtime'
-                          ? "bg-white/[0.08] text-black dark:text-white"
-                          : "text-black/40 dark:text-white/40 hover:text-black/60 dark:text-white/60"
+                          ? "bg-arcus-raised text-arcus-fg"
+                          : "text-arcus-fg-secondary hover:text-arcus-fg"
                       )}
                     >
                       <Activity className="w-3.5 h-3.5" />
@@ -379,16 +379,16 @@ export function ArcusWorkspace({
 
       {/* Footer Actions */}
       {isExpanded && (
-        <div className="px-5 py-3 border-t border-white/[0.06] bg-white/[0.02]">
+        <div className="px-5 py-3 border-t border-arcus-border/60 bg-arcus-surface/20">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               {runtime?.status && (
-                <span className="text-[12px] text-black/40 dark:text-white/40 font-mono">
+                <span className="text-[12px] text-arcus-fg-secondary font-mono">
                   Run: {runtime.runId.slice(-12)}
                 </span>
               )}
               {plan?.planId && (
-                <span className="text-[12px] text-black/40 dark:text-white/40 font-mono">
+                <span className="text-[12px] text-arcus-fg-secondary font-mono">
                   Plan: {plan.planId.slice(-12)}
                 </span>
               )}
@@ -398,7 +398,7 @@ export function ArcusWorkspace({
               {needsApproval && onApprovePlan && (
                 <button
                   onClick={onApprovePlan}
-                  className="px-4 py-2 rounded-lg bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 hover:bg-black/[0.010] dark:bg-white/20 border border-white/30 text-black dark:text-white text-[13px] font-medium transition-all flex items-center gap-2"
+                  className="px-4 py-2 rounded-lg bg-arcus-surface hover:bg-arcus-surface-hover border border-arcus-border text-arcus-fg text-[13px] font-medium transition-all flex items-center gap-2"
                 >
                   <Shield className="w-4 h-4" />
                   Approve
@@ -408,7 +408,7 @@ export function ArcusWorkspace({
               {isPaused && onResume && (
                 <button
                   onClick={onResume}
-                  className="px-4 py-2 rounded-lg bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 hover:bg-black/[0.010] dark:bg-white/20 border border-white/30 text-black dark:text-white text-[13px] font-medium transition-all flex items-center gap-2"
+                  className="px-4 py-2 rounded-lg bg-arcus-surface hover:bg-arcus-surface-hover border border-arcus-border text-arcus-fg text-[13px] font-medium transition-all flex items-center gap-2"
                 >
                   <RefreshCw className="w-4 h-4" />
                   Resume
@@ -418,7 +418,7 @@ export function ArcusWorkspace({
               {isRunning && onCancel && (
                 <button
                   onClick={onCancel}
-                  className="px-4 py-2 rounded-lg bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 hover:bg-black/[0.010] dark:bg-white/20 border border-white/30 text-black/70 dark:text-white/70 text-[13px] font-medium transition-all"
+                  className="px-4 py-2 rounded-lg bg-arcus-surface hover:bg-arcus-surface-hover border border-arcus-border text-arcus-fg-secondary hover:text-arcus-fg text-[13px] font-medium transition-all"
                 >
                   Cancel
                 </button>
@@ -427,7 +427,7 @@ export function ArcusWorkspace({
               {hasError && onRetry && (
                 <button
                   onClick={onRetry}
-                  className="px-4 py-2 rounded-lg bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 hover:bg-black/[0.010] dark:bg-white/20 border border-white/30 text-black dark:text-white text-[13px] font-medium transition-all flex items-center gap-2"
+                  className="px-4 py-2 rounded-lg bg-arcus-surface hover:bg-arcus-surface-hover border border-arcus-border text-arcus-fg text-[13px] font-medium transition-all flex items-center gap-2"
                 >
                   <RefreshCw className="w-4 h-4" />
                   Retry

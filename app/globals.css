@@ -23,21 +23,21 @@
      --arcus-fg-inverse   #000000   on white tiles
 ──────────────────────────────────────────────────────────────────────────── */
 :root {
-  /* Arcus surfaces */
-  --arcus-bg:               #000000;
-  --arcus-bg-elevated:      #0A0A0A;
-  --arcus-surface:          #141414;
-  --arcus-surface-hover:    #1A1A1A;
-  --arcus-raised:           #232323;
-  --arcus-border:           #2A2A2A;
-  --arcus-divider:          #363636;
+  /* Arcus surfaces - Light Theme (Graphite palette) */
+  --arcus-bg:               #EBEBEB; /* Light Graphite 850 */
+  --arcus-bg-elevated:      #F5F5F5; /* Light Graphite 900 (Lighter than background) */
+  --arcus-surface:          #FAFAFA; /* Light Graphite 950 (Lighter than elevated) */
+  --arcus-surface-hover:    #FFFFFF; /* Light Graphite 1000 */
+  --arcus-raised:           #FAFAFA; /* Light Graphite 950 */
+  --arcus-border:           #D4D4D4; /* Light Graphite 700 */
+  --arcus-divider:          #E0E0E0; /* Light Graphite 800 */
 
   /* Arcus text */
-  --arcus-fg:               #FAFAFA;
-  --arcus-fg-secondary:     #A0A0A0;
-  --arcus-fg-tertiary:      #737373;
-  --arcus-fg-muted:         #525252;
-  --arcus-fg-inverse:       #000000;
+  --arcus-fg:               #1A1A1A; /* Dark Graphite 850 (No pure black!) */
+  --arcus-fg-secondary:     #525252; /* Dark Graphite 500 */
+  --arcus-fg-tertiary:      #737373; /* Dark Graphite 400 */
+  --arcus-fg-muted:         #8A8A8A; /* Light Graphite 500 */
+  --arcus-fg-inverse:       #FAFAFA; /* Light Graphite 950 */
 }
 
 /* --- Premium Interactive Polish --- */
@@ -573,6 +573,22 @@ body,
 
 /* ===== DARK THEME ===== */
 .dark {
+  /* Arcus surfaces - Dark Theme (Graphite palette, not pure black) */
+  --arcus-bg:               #141414; /* Dark Graphite 900 (No pure black!) */
+  --arcus-bg-elevated:      #1A1A1A; /* Dark Graphite 850 (Lighter than background) */
+  --arcus-surface:          #232323; /* Dark Graphite 800 (Lighter than elevated) */
+  --arcus-surface-hover:    #2A2A2A; /* Dark Graphite 700 */
+  --arcus-raised:           #363636; /* Dark Graphite 600 */
+  --arcus-border:           #2A2A2A; /* Dark Graphite 700 */
+  --arcus-divider:          #2A2A2A; /* Dark Graphite 700 */
+
+  /* Arcus text */
+  --arcus-fg:               #F5F5F5; /* Light Graphite 900 (No pure white!) */
+  --arcus-fg-secondary:     #B8B8B8; /* Light Graphite 600 */
+  --arcus-fg-tertiary:      #8A8A8A; /* Light Graphite 500 */
+  --arcus-fg-muted:         #6B6B6B; /* Light Graphite 400 */
+  --arcus-fg-inverse:       #141414; /* Dark Graphite 900 */
+
   --background: #000000;
   --foreground: #f7f8f8;
   --card: #23252a;

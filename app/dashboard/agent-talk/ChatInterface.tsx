@@ -3526,14 +3526,14 @@ export default function ChatInterface({
           currentPlan={usageLimitModalData?.currentPlan || 'starter'}
         />
 
-        <div className="flex h-full w-full text-black dark:text-graphite-text bg-white dark:bg-black selection:bg-black selection:text-white dark:selection:bg-white dark:selection:text-black overflow-hidden relative tracking-tight" style={{ height: '100vh', overflow: 'hidden' }}>
+        <div className="flex h-full w-full text-arcus-fg bg-arcus-bg selection:bg-arcus-surface selection:text-arcus-fg dark:selection:bg-arcus-surface dark:selection:text-arcus-fg overflow-hidden relative tracking-tight" style={{ height: '100vh', overflow: 'hidden' }}>
           {/* Apple-style Premium Grain Overlay */}
           <div className="absolute inset-0 pointer-events-none opacity-[0.03] z-[100] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] brightness-100 contrast-150" />
 
           {/* Subtle Ambient Glows for Depth */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
             <GradientWave
-              colors={isDark ? ["#000000", "#111111", "#080808", "#111111"] : ["#F9FAFB", "#F3F4F6", "#E5E7EB", "#F9FAFB"]}
+              colors={isDark ? ["#141414", "#1A1A1A", "#232323", "#1A1A1A"] : ["#EBEBEB", "#F5F5F5", "#FAFAFA", "#F5F5F5"]}
               className={isDark ? "opacity-100" : "opacity-40"}
               deform={GRA_DEFORM}
               isPlaying={false}
@@ -3595,7 +3595,7 @@ export default function ChatInterface({
             {/* Main Layout Wrapper - Absolute positioned to fill screen strictly */}
             <div
               className={cn(
-                "absolute inset-0 bg-white dark:bg-black overflow-hidden flex flex-col md:flex-row",
+                "absolute inset-0 bg-arcus-bg overflow-hidden flex flex-col md:flex-row",
                 !isEmbedded ? (isSidebarCollapsed ? "md:left-20" : "md:left-64") : "left-0",
                 "left-0"
               )}
