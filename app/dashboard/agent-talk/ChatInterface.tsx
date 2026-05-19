@@ -3550,12 +3550,12 @@ export default function ChatInterface({
                 animate={{ x: 0, opacity: 1 }}
                 exit={{ x: '110%', opacity: 0 }}
                 transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                className="fixed right-4 top-4 bottom-4 w-80 bg-arcus-surface border border-arcus-border flex flex-col z-[100] shadow-2xl rounded-[32px] overflow-hidden"
+                className="fixed right-4 top-4 bottom-4 w-80 bg-[#F4F5F8] dark:bg-[#0A0A0A] border border-[#E2E8F0] dark:border-[#2A2A2A] flex flex-col z-[100] shadow-2xl rounded-[32px] overflow-hidden"
               >
                 <div className="absolute top-6 right-6 z-[110]">
                   <button
                     onClick={() => setShowHistory(false)}
-                    className="p-2 hover:bg-black/5 dark:bg-white/5 rounded-full transition-all text-black hover:text-black dark:text-white/60"
+                    className="p-2 hover:bg-[#ECEFF1] dark:hover:bg-[#1A1A1A] rounded-full transition-all text-[#475569] hover:text-[#0A0B0D] dark:text-[#737373] dark:hover:text-white"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -4590,7 +4590,7 @@ export default function ChatInterface({
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 20 }}
                     transition={{ duration: 0.2, ease: 'easeOut' }}
-                    className="h-full flex-shrink-0 bg-arcus-surface border border-arcus-border rounded-[32px] z-50 overflow-hidden order-2 relative shadow-2xl"
+                    className="h-full flex-shrink-0 bg-[#F4F5F8] dark:bg-[#0A0A0A] border border-[#E2E8F0] dark:border-[#2A2A2A] rounded-[32px] z-50 overflow-hidden order-2 relative shadow-2xl"
                   >
                     <ArtifactsGalleryPanel
                       isOpen={showArtifactsPanel}

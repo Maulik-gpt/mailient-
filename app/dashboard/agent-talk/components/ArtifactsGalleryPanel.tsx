@@ -216,7 +216,7 @@ export function ArtifactsGalleryPanel({
   return (
     <div
       className={cn(
-        'h-[calc(100vh-32px)] flex flex-col flex-shrink-0 relative bg-arcus-bg border-l border-arcus-border shadow-2xl rounded-r-[32px] overflow-hidden'
+        'h-[calc(100vh-32px)] flex flex-col flex-shrink-0 relative bg-[#F4F5F8] dark:bg-[#0A0A0A] border-l border-[#E2E8F0] dark:border-[#2A2A2A] shadow-2xl rounded-r-[32px] overflow-hidden'
       )}
       style={{ width: panelWidth }}
       ref={scrollRef}
@@ -233,26 +233,26 @@ export function ArtifactsGalleryPanel({
       </div>
 
       {/* Header section */}
-      <div className="px-6 py-5 border-b border-white/[0.03] flex items-center justify-between shrink-0 relative z-10">
+      <div className="px-6 py-5 border-b border-[#E2E8F0] dark:border-white/[0.03] flex items-center justify-between shrink-0 relative z-10">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-arcus-elevated border border-arcus-border flex items-center justify-center">
-            <Library className="w-4 h-4 text-arcus-fg-secondary" />
+          <div className="w-8 h-8 rounded-xl bg-white dark:bg-[#141414] border border-[#E2E8F0] dark:border-[#2A2A2A] flex items-center justify-center">
+            <Library className="w-4 h-4 text-[#475569] dark:text-arcus-fg-secondary" />
           </div>
           <div>
-            <h3 className="text-[14px] font-bold text-white tracking-tight lowercase">Library</h3>
+            <h3 className="text-[14px] font-bold text-[#0A0B0D] dark:text-white tracking-tight lowercase">Library</h3>
             {isLoadingAll ? (
               <p className="text-[10px] text-arcus-fg-muted tracking-tight uppercase flex items-center gap-1.5">
                 <Loader2 className="w-2.5 h-2.5 animate-spin" /> Syncing all conversations...
               </p>
             ) : (
-              <p className="text-[10px] text-arcus-fg-tertiary tracking-tight uppercase">All conversations</p>
+              <p className="text-[10px] text-[#475569] dark:text-arcus-fg-tertiary tracking-tight uppercase">All conversations</p>
             )}
           </div>
         </div>
 
         <button
           onClick={onClose}
-          className="p-2 hover:bg-arcus-surface rounded-xl transition-all text-arcus-fg-tertiary hover:text-white"
+          className="p-2 hover:bg-[#ECEFF1] dark:hover:bg-[#1A1A1A] rounded-xl transition-all text-[#475569] dark:text-arcus-fg-tertiary hover:text-[#0A0B0D] dark:hover:text-white"
         >
           <X className="w-4 h-4" />
         </button>
@@ -260,15 +260,15 @@ export function ArtifactsGalleryPanel({
 
       {/* Search Input (only shown if there are active artifacts) */}
       {dynamicArtifacts.length > 0 && (
-        <div className="px-6 py-4 border-b border-white/[0.03] shrink-0 relative z-10">
+        <div className="px-6 py-4 border-b border-[#E2E8F0] dark:border-white/[0.03] shrink-0 relative z-10">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-arcus-fg-muted" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94A3B8] dark:text-arcus-fg-muted" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search library..."
-              className="w-full pl-9 pr-4 py-2 bg-arcus-elevated border border-arcus-border rounded-xl text-[13px] text-white placeholder:text-arcus-fg-muted focus:outline-none focus:border-white/20 transition-all font-medium tracking-tight"
+              className="w-full pl-9 pr-4 py-2 bg-white dark:bg-[#141414] border border-[#E2E8F0] dark:border-[#2A2A2A] rounded-xl text-[13px] text-[#0A0B0D] dark:text-white placeholder:text-[#94A3B8] dark:placeholder:text-[#525252] focus:outline-none focus:border-[#737373] dark:focus:border-white/20 transition-all font-medium tracking-tight"
             />
           </div>
         </div>
@@ -298,16 +298,16 @@ export function ArtifactsGalleryPanel({
                   <div
                     key={art.id}
                     onClick={() => handleSelect(art)}
-                    className="group p-4 bg-arcus-elevated hover:bg-arcus-elevated border border-arcus-border hover:border-arcus-divider rounded-2xl transition-all duration-200 ease-out cursor-pointer relative"
+                    className="group p-4 bg-white dark:bg-[#141414] hover:bg-[#F1F5F9] dark:hover:bg-[#1A1A1A] border border-[#E2E8F0] dark:border-[#2A2A2A] hover:border-[#94A3B8] dark:hover:border-[#363636] rounded-2xl transition-all duration-200 ease-out cursor-pointer relative"
                   >
                     {/* Top row: tag + download */}
                     <div className="flex items-center justify-between mb-2.5">
-                      <span className="px-2 py-0.5 rounded-full bg-arcus-elevated border border-arcus-border text-[9px] font-mono text-arcus-fg-secondary tracking-wide">
+                      <span className="px-2 py-0.5 rounded-full bg-white dark:bg-[#141414] border border-[#E2E8F0] dark:border-[#2A2A2A] text-[9px] font-mono text-[#475569] dark:text-[#A0A0A0] tracking-wide">
                         {art.tag}
                       </span>
                       <button
                         onClick={(e) => handleDownload(e, art)}
-                        className="p-1.5 hover:bg-arcus-surface-hover rounded-lg transition-colors text-arcus-fg-muted hover:text-arcus-fg-secondary opacity-0 group-hover:opacity-100"
+                        className="p-1.5 hover:bg-[#ECEFF1] dark:hover:bg-[#1A1A1A] rounded-lg transition-colors text-[#94A3B8] dark:text-[#525252] hover:text-[#475569] dark:hover:text-[#A0A0A0] opacity-0 group-hover:opacity-100"
                         title="Download .docx"
                       >
                         {isDownloading
@@ -317,21 +317,21 @@ export function ArtifactsGalleryPanel({
                     </div>
 
                     {/* Title */}
-                    <h5 className="text-[13px] font-semibold text-white leading-snug tracking-tight mb-1.5">
+                    <h5 className="text-[13px] font-semibold text-[#0A0B0D] dark:text-white leading-snug tracking-tight mb-1.5">
                       {art.title}
                     </h5>
 
                     {/* Content preview */}
                     {snippet && (
-                      <p className="text-[12px] text-arcus-fg-muted leading-relaxed line-clamp-2 mb-3">
+                      <p className="text-[12px] text-[#475569] dark:text-[#525252] leading-relaxed line-clamp-2 mb-3">
                         {snippet}{snippet.length === 120 ? '…' : ''}
                       </p>
                     )}
 
                     {/* Footer */}
-                    <div className="flex items-center justify-between pt-2.5 border-t border-arcus-border text-[10px] text-arcus-fg-muted font-mono">
+                    <div className="flex items-center justify-between pt-2.5 border-t border-[#E2E8F0] dark:border-[#2A2A2A] text-[10px] text-[#475569] dark:text-[#525252] font-mono">
                       <span className="truncate max-w-[55%]">{art.subtitle}</span>
-                      <span className="flex items-center gap-1 shrink-0 text-arcus-fg-tertiary group-hover:text-arcus-fg-secondary transition-colors">
+                      <span className="flex items-center gap-1 shrink-0 text-[#94A3B8] dark:text-arcus-fg-tertiary group-hover:text-[#475569] dark:group-hover:text-arcus-fg-secondary transition-colors">
                         Open in Canvas <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
                       </span>
                     </div>
@@ -350,15 +350,15 @@ export function ArtifactsGalleryPanel({
         ) : (
           /* PREMIUM MONOCHROMATIC EMPTY STATE */
           <div className="h-full flex flex-col items-center justify-center text-center px-6 py-12">
-            <div className="w-16 h-16 rounded-2xl bg-arcus-elevated border border-arcus-border flex items-center justify-center mb-6">
-              <Sparkles className="w-6 h-6 text-arcus-fg-muted animate-pulse" />
+            <div className="w-16 h-16 rounded-2xl bg-white dark:bg-[#141414] border border-[#E2E8F0] dark:border-[#2A2A2A] flex items-center justify-center mb-6">
+              <Sparkles className="w-6 h-6 text-[#94A3B8] dark:text-arcus-fg-muted animate-pulse" />
             </div>
             
-            <h4 className="text-white text-[15px] font-bold tracking-tight mb-2 lowercase">
+            <h4 className="text-[#0A0B0D] dark:text-white text-[15px] font-bold tracking-tight mb-2 lowercase">
               Your library is empty
             </h4>
 
-            <p className="text-arcus-fg-tertiary text-[12px] leading-relaxed max-w-[280px]">
+            <p className="text-[#475569] dark:text-arcus-fg-tertiary text-[12px] leading-relaxed max-w-[280px]">
               Documents, plans, and drafts created by Arcus across all your conversations will appear here — searchable and downloadable as .docx.
             </p>
           </div>
