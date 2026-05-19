@@ -6,8 +6,11 @@ import {
   Terminal, FileText, Search, BrainCircuit, Pencil, Code2, Sparkles,
   CheckCircle2, Loader2, AlertTriangle, Clock, Globe, Database,
   ListTodo, Mail, Calendar, Zap, X, Link2, ExternalLink, Download,
+  MoreHorizontal,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { cn } from '@/lib/utils';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -786,26 +789,32 @@ function DocIcon({ className }: { className?: string }) {
 
 export function ResultCard({ type, title, onView, rawContent }: ResultCardProps) {
   const [downloading, setDownloading] = useState(false);
-  const subtype = resultSubtypes[type] || 'Document';
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const isEmail = type === 'email_draft' || type === 'reply';
-  const sizeLabel = rawContent ? formatBytes(new Blob([rawContent]).size) : null;
-  const subtitle = sizeLabel ? `${subtype} · ${sizeLabel}` : subtype;
   const safeName = (title || 'document').toLowerCase().replace(/[^a-z0-9]+/g, '_');
 
-  const handleDownload = async (e: React.MouseEvent) => {
-    e.stopPropagation();
+  // Close menu on outside click
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [menuOpen]);
+
+  const handleDownload = async (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     if (!rawContent || downloading) return;
+    setMenuOpen(false);
 
     if (isEmail) {
-      // Plain text for emails
       const blob = new Blob([rawContent], { type: 'text/plain;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url;
-      a.download = `${safeName}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      a.href = url; a.download = `${safeName}.txt`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 2000);
       return;
     }
@@ -816,53 +825,130 @@ export function ResultCard({ type, title, onView, rawContent }: ResultCardProps)
       const blob = await markdownToDocxBlob(rawContent, title || 'document');
       triggerDocxDownload(blob, safeName);
     } catch {
-      // Fallback to markdown if docx fails
       const blob = new Blob([rawContent], { type: 'text/markdown;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url;
-      a.download = `${safeName}.md`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      a.href = url; a.download = `${safeName}.md`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
     } finally {
       setDownloading(false);
     }
   };
 
+  // Truncate preview to avoid rendering enormous documents
+  const previewContent = rawContent ? rawContent.slice(0, 1200) : '';
+
   return (
     <motion.div
-      whileHover={{ scale: 1.01 }}
-      whileTap={{ scale: 0.99 }}
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
       onClick={onView}
-      className="group relative flex items-center gap-3.5 p-3.5 mt-2 mb-2 w-full max-w-[480px] bg-arcus-surface border border-arcus-border rounded-2xl transition-all hover:bg-arcus-raised/80 hover:border-arcus-divider cursor-pointer"
+      className="group relative mt-2 mb-1 w-full rounded-2xl bg-[#191919] border border-white/[0.07] overflow-hidden cursor-pointer hover:border-white/[0.13] transition-all"
     >
-      {/* Document icon — mimics the screenshot file card icon */}
-      <div className="flex-shrink-0 w-10 h-12 relative">
-        <DocIcon className="w-full h-full drop-shadow-sm" />
-      </div>
-
-      {/* Title + subtitle */}
-      <div className="flex-1 min-w-0">
-        <p className="text-[13px] font-semibold text-arcus-fg truncate leading-snug group-hover:text-white transition-colors">
+      {/* ── Header ── */}
+      <div className="flex items-center gap-3 px-4 py-3.5 border-b border-white/[0.06]">
+        <div className="flex-shrink-0 w-[22px] h-[26px]">
+          <DocIcon className="w-full h-full drop-shadow-sm" />
+        </div>
+        <p className="flex-1 min-w-0 text-[14px] font-semibold text-white/90 leading-snug line-clamp-2">
           {title || 'Untitled Document'}
         </p>
-        <p className="text-[12px] text-arcus-fg-muted mt-0.5 font-medium">{subtitle}</p>
+        {/* Three-dot menu */}
+        <div ref={menuRef} className="relative flex-shrink-0" onClick={e => e.stopPropagation()}>
+          <button
+            onClick={() => setMenuOpen(v => !v)}
+            className="w-7 h-7 flex items-center justify-center rounded-lg text-white/30 hover:text-white/70 hover:bg-white/[0.06] transition-all"
+          >
+            <MoreHorizontal className="w-4 h-4" />
+          </button>
+          <AnimatePresence>
+            {menuOpen && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                transition={{ duration: 0.12 }}
+                className="absolute right-0 top-full mt-1 z-50 min-w-[140px] bg-[#242424] border border-white/10 rounded-xl shadow-2xl shadow-black/60 overflow-hidden"
+              >
+                <button
+                  onClick={onView}
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-white/70 hover:text-white hover:bg-white/[0.05] transition-colors"
+                >
+                  <FileText className="w-3.5 h-3.5" /> Open
+                </button>
+                {rawContent && (
+                  <button
+                    onClick={() => handleDownload()}
+                    className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-white/70 hover:text-white hover:bg-white/[0.05] transition-colors"
+                  >
+                    {downloading
+                      ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      : <Download className="w-3.5 h-3.5" />
+                    }
+                    {isEmail ? 'Download .txt' : 'Download .docx'}
+                  </button>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
-      {/* Download button */}
-      {rawContent && (
-        <button
-          onClick={handleDownload}
-          title={isEmail ? 'Download .txt' : 'Download .docx'}
-          className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-xl bg-arcus-raised border border-arcus-divider text-arcus-fg-tertiary hover:text-arcus-fg hover:bg-arcus-divider hover:border-arcus-divider transition-all active:scale-95"
-        >
-          {downloading
-            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            : <Download className="w-3.5 h-3.5" />
-          }
-        </button>
+      {/* ── Markdown preview ── */}
+      {previewContent && (
+        <div className="relative px-4 pt-3.5 pb-0 max-h-[280px] overflow-hidden">
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+              h1: ({ children }) => (
+                <h1 className="text-[18px] font-bold text-white/85 mb-2 mt-1 leading-snug">{children}</h1>
+              ),
+              h2: ({ children }) => (
+                <h2 className="text-[16px] font-bold text-white/80 mb-1.5 mt-3 leading-snug">{children}</h2>
+              ),
+              h3: ({ children }) => (
+                <h3 className="text-[13px] font-semibold text-white/55 mb-1 mt-2 leading-snug">{children}</h3>
+              ),
+              p: ({ children }) => (
+                <p className="text-[13px] text-white/55 leading-relaxed mb-2">{children}</p>
+              ),
+              ul: ({ children }) => (
+                <ul className="list-disc pl-4 mb-2 space-y-0.5">{children}</ul>
+              ),
+              ol: ({ children }) => (
+                <ol className="list-decimal pl-4 mb-2 space-y-0.5">{children}</ol>
+              ),
+              li: ({ children }) => (
+                <li className="text-[13px] text-white/50 leading-relaxed">{children}</li>
+              ),
+              strong: ({ children }) => (
+                <strong className="font-semibold text-white/70">{children}</strong>
+              ),
+              hr: () => <hr className="border-white/[0.07] my-2" />,
+              code: ({ children }) => (
+                <code className="text-[12px] bg-white/[0.06] px-1 py-0.5 rounded text-white/60">{children}</code>
+              ),
+            }}
+          >
+            {previewContent}
+          </ReactMarkdown>
+          {/* Gradient fade at bottom */}
+          <div className="absolute bottom-0 inset-x-0 h-14 bg-gradient-to-t from-[#191919] to-transparent pointer-events-none" />
+        </div>
       )}
+
+      {/* ── Footer — click hint ── */}
+      <div className="px-4 py-2.5 flex items-center justify-between">
+        <span className="text-[11px] text-white/20 group-hover:text-white/35 transition-colors">
+          Click to open in canvas
+        </span>
+        {rawContent && (
+          <span className="text-[11px] text-white/20 font-mono">
+            {formatBytes(new Blob([rawContent]).size)}
+          </span>
+        )}
+      </div>
     </motion.div>
   );
 }

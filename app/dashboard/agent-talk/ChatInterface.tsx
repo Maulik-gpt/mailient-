@@ -4404,6 +4404,13 @@ export default function ChatInterface({
                                       />
                                     )}
 
+                                    {/* Scheduled Agent Card — directly below the spec doc card */}
+                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.scheduledAgent && (
+                                      <ScheduledAgentCard
+                                        data={(msg as AgentMessage).meta!.scheduledAgent!}
+                                      />
+                                    )}
+
                                     {/* Error card — replaces message when AI fails */}
                                     {msg.role === 'assistant' && (msg as AgentMessage).meta?.hasError && (
                                       <ArcusErrorCard
@@ -4428,13 +4435,6 @@ export default function ChatInterface({
                                     {msg.role === 'assistant' && (msg as AgentMessage).meta?.actionResult && !(msg as AgentMessage).meta?.isStreaming && (
                                       <ActionResultCard
                                         data={(msg as AgentMessage).meta!.actionResult!}
-                                      />
-                                    )}
-
-                                    {/* Scheduled Agent Card — shown as soon as create_scheduled_agent fires */}
-                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.scheduledAgent && (
-                                      <ScheduledAgentCard
-                                        data={(msg as AgentMessage).meta!.scheduledAgent!}
                                       />
                                     )}
 
