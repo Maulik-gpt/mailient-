@@ -2098,6 +2098,29 @@ export default function ChatInterface({
               const cv = data;
               if (!cv?.title) break;
 
+              // ── Scheduled agent card ─────────────────────────────────────────
+              // Created via create_scheduled_agent. Renders an inline card that
+              // opens a detail sidebar; never opens the canvas panel.
+              if (cv.type === 'scheduled_agent' && cv.pageMeta) {
+                const a: string[] = cv.pageMeta.attendees || [];
+                const scheduledAgent: ScheduledAgentData = {
+                  id: cv.pageMeta.pageId || '',
+                  name: cv.title,
+                  task: cv.pageMeta.contentPreview || '',
+                  scheduleLabel: a[0] || 'Scheduled',
+                  cron: a[1] || '',
+                  channel: a[2] || 'gmail',
+                  skipConfirmations: a[3] === 'true',
+                  status: a[4] || 'active',
+                  nextRun: cv.pageMeta.startTime,
+                };
+                setMessages(msgs => msgs.map(m => {
+                  if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+                  return { ...m, meta: { ...(m.meta || {}), scheduledAgent } };
+                }));
+                break;
+              }
+
               // ── Action result cards (Notion page, Calendar event) ────────────
               // These get a rich inline card rather than opening the canvas panel.
               const isActionCard = cv.type === 'notion_page' || cv.type === 'calendar_event';
@@ -4405,6 +4428,13 @@ export default function ChatInterface({
                                     {msg.role === 'assistant' && (msg as AgentMessage).meta?.actionResult && !(msg as AgentMessage).meta?.isStreaming && (
                                       <ActionResultCard
                                         data={(msg as AgentMessage).meta!.actionResult!}
+                                      />
+                                    )}
+
+                                    {/* Scheduled Agent Card — shown after create_scheduled_agent succeeds */}
+                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.scheduledAgent && !(msg as AgentMessage).meta?.isStreaming && (
+                                      <ScheduledAgentCard
+                                        data={(msg as AgentMessage).meta!.scheduledAgent!}
                                       />
                                     )}
 
