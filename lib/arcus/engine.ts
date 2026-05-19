@@ -1,13 +1,14 @@
 /**
  * Arcus Engine — OpenRouter caller using OpenAI-compatible API format.
  *
- * Strategy: race all (model × key) pairs in parallel — first success wins.
- * This replaces the old sequential sweep (which could wait 45 s per model).
+ * Concurrency design: race all API keys for ONE model at a time (max N_keys concurrent).
+ * Firing all (model × key) pairs simultaneously hammers OpenRouter and triggers
+ * IP-level rate limits on every call.
  *
- * Round 1 — race all keys × TOOL_CAPABLE_MODELS simultaneously (no delay)
- * Round 2 — 2 s pause, race all keys × ALL_FREE_MODELS (wider net)
- * Round 3 — 1 s pause, try openrouter/auto per key (let OR pick any free model)
- * Emergency — 1 s pause, strip tools, race top models (text-only answer)
+ * Strategy:
+ *   1. openrouter/auto — OR picks the best available model internally
+ *   2. Sequential free model fallbacks, racing all keys per model
+ *   3. Emergency text-only (strip tool schemas, try openrouter/auto + top 2 models)
  */
 
 // ── Logger ─────────────────────────────────────────────────────────────────────
@@ -58,13 +59,6 @@ const ALL_FREE_MODELS = [
   ...FALLBACK_MODELS,
 ];
 
-/** Top models used in Round 4 text-only emergency (no tools, no tool_choice). */
-const EMERGENCY_MODELS = [
-  'deepseek/deepseek-chat-v3-0324:free',
-  'meta-llama/llama-4-maverick:free',
-  'google/gemini-2.5-flash-preview:free',
-  'meta-llama/llama-3.3-70b-instruct:free',
-];
 
 function getKeys(): string[] {
   return [
@@ -245,10 +239,9 @@ export async function callLLM(
     baseBody.tool_choice = 'auto';
   }
 
-  // 401/403 keys are dead for this run
   const deadKeys = new Set<string>();
 
-  async function tryOne(key: string, model: string, body: Record<string, any>): Promise<LLMResponse | null> {
+  async function tryOne(key: string, model: string, body: Record<string, any>, timeoutMs = 20000): Promise<LLMResponse | null> {
     if (deadKeys.has(key)) return null;
     try {
       const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -260,7 +253,7 @@ export async function callLLM(
           'X-Title': 'Arcus AI',
         },
         body: JSON.stringify({ ...body, model }),
-        signal: AbortSignal.timeout(25000),
+        signal: AbortSignal.timeout(timeoutMs),
       });
 
       if (!res.ok) {
@@ -269,18 +262,17 @@ export async function callLLM(
           deadKeys.add(key);
           log('error', 'Engine', `Key dead`, { key: `…${key.slice(-4)}`, status: res.status });
         } else {
-          log('warn', 'Engine', `HTTP ${res.status}`, { model, key: `…${key.slice(-4)}`, body: txt.slice(0, 200) });
+          log('warn', 'Engine', `HTTP ${res.status}`, { model, key: `…${key.slice(-4)}`, resp: txt.slice(0, 200) });
         }
         return null;
       }
 
       const data = await res.json();
       if (data.error) {
-        log('warn', 'Engine', `OR error in body`, {
-          model,
-          key: `…${key.slice(-4)}`,
+        log('warn', 'Engine', `OR error`, {
+          model, key: `…${key.slice(-4)}`,
           code: data.error?.code,
-          msg: (data.error?.message ?? '').slice(0, 150),
+          msg: String(data.error?.message ?? data.error ?? '').slice(0, 200),
         });
         return null;
       }
@@ -296,51 +288,53 @@ export async function callLLM(
 
     } catch (err: any) {
       const isTimeout = err.name === 'TimeoutError' || err.name === 'AbortError';
-      log('warn', 'Engine', isTimeout ? `Timeout (25s)` : `Fetch error`, {
-        model, key: `…${key.slice(-4)}`, ...(isTimeout ? {} : { error: err.message }),
+      log('warn', 'Engine', isTimeout ? `Timeout` : `Fetch error`, {
+        model, key: `…${key.slice(-4)}`, ms: timeoutMs, ...(isTimeout ? {} : { err: err.message }),
       });
       return null;
     }
   }
 
-  // Race all (model × key) pairs simultaneously — first non-null wins.
-  async function race(modelList: string[], body: Record<string, any>): Promise<LLMResponse | null> {
+  // Race all active keys for a single model — max N_keys concurrent requests.
+  async function tryModel(model: string, body: Record<string, any>, timeoutMs = 20000): Promise<LLMResponse | null> {
     const active = keys.filter(k => !deadKeys.has(k));
     if (!active.length) return null;
-    const pairs = modelList.flatMap(m => active.map(k => ({ m, k })));
-    log('info', 'Engine', `Racing`, { pairs: pairs.length, models: modelList.length, keys: active.length });
+    log('info', 'Engine', `Trying`, { model, keys: active.length });
     return Promise.any(
-      pairs.map(({ m, k }) => tryOne(k, m, body).then(r => r ?? Promise.reject(null)))
+      active.map(k => tryOne(k, model, body, timeoutMs).then(r => r ?? Promise.reject(null)))
     ).catch(() => null);
   }
 
   function sleep(ms: number) { return new Promise<void>(r => setTimeout(r, ms)); }
 
-  // ── Round 1: race all keys × tool-capable free models ────────────────────
-  const r1Models = hasTools ? TOOL_CAPABLE_MODELS : ALL_FREE_MODELS;
-  const r1 = await race(r1Models, baseBody);
-  if (r1) return r1;
+  // 1. openrouter/auto — let OR route to the best model it can find
+  log('info', 'Engine', 'Step 1: openrouter/auto', { hasTools, keys: keys.length });
+  const autoResult = await tryModel('openrouter/auto', baseBody);
+  if (autoResult) return autoResult;
 
-  // ── Round 2: 2 s pause, race all keys × full free list ────────────────────
-  log('warn', 'Engine', 'Round 1 failed — retrying in 2 s with full free list');
-  await sleep(2000);
-  const r2 = await race(ALL_FREE_MODELS, baseBody);
-  if (r2) return r2;
+  // 2. Sequential free model fallbacks — one model at a time, all keys race each
+  const fallbackList = hasTools ? TOOL_CAPABLE_MODELS : ALL_FREE_MODELS;
+  for (let i = 0; i < fallbackList.length; i++) {
+    await sleep(i === 0 ? 500 : 1000);
+    const result = await tryModel(fallbackList[i], baseBody, 15000);
+    if (result) return result;
+  }
 
-  // ── Round 3: 1 s pause, openrouter/auto — let OR pick any free model ──────
-  log('warn', 'Engine', 'Round 2 failed — trying openrouter/auto');
+  // 3. Emergency: strip tool schemas, try openrouter/auto + top 2 free models
+  log('warn', 'Engine', 'All models failed — emergency text-only round');
   await sleep(1000);
-  const r3 = await race(['openrouter/auto'], baseBody);
-  if (r3) return r3;
+  const noToolsBody: Record<string, any> = { ...baseBody };
+  delete noToolsBody.tools;
+  delete noToolsBody.tool_choice;
 
-  // ── Emergency: strip tools, race top models for a plain text answer ────────
-  log('warn', 'Engine', 'Round 3 failed — emergency text-only round');
-  await sleep(1000);
-  const emergencyBody: Record<string, any> = { ...baseBody };
-  delete emergencyBody.tools;
-  delete emergencyBody.tool_choice;
-  const r4 = await race(EMERGENCY_MODELS, emergencyBody);
-  if (r4) return r4;
+  const emAuto = await tryModel('openrouter/auto', noToolsBody, 15000);
+  if (emAuto) return emAuto;
+
+  for (const model of ['deepseek/deepseek-chat-v3-0324:free', 'meta-llama/llama-4-maverick:free']) {
+    await sleep(500);
+    const r = await tryModel(model, noToolsBody, 15000);
+    if (r) return r;
+  }
 
   log('error', 'Engine', 'All rounds exhausted', {
     keys: keys.length, deadKeys: [...deadKeys].map(k => `…${k.slice(-4)}`),
