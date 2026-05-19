@@ -41,9 +41,11 @@
 
 import crypto from 'crypto';
 import { callLLM, getText, getToolCalls, sanitizeModelText } from './engine';
-import { executeTool, getAvailableTools } from './tools';
+import { executeTool, getAvailableTools, TOOL_SCHEMAS } from './tools';
 import { processGmailResults, isInboxTask, isVagueInstruction } from './inbox-pipeline';
 import type { LLMMessage } from './engine';
+
+const ASK_USER_SCHEMA = TOOL_SCHEMAS.find(s => s.name === 'ask_user')!;
 
 export const MAX_TOOL_CALLS = 20;
 const MAX_NUDGES = 3;
@@ -115,6 +117,49 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
 
       try {
         emit('run_start', { runId, message: userMessage });
+
+        // ── Pre-plan clarification pass ─────────────────────────────────────
+        // Before generating a plan, give the AI a chance to ask the user
+        // clarifying questions. Only skipped when answers are already in history.
+        if (isPlanMode) {
+          emit('thinking', { status: 'Checking if I need more details…' });
+
+          const alreadyAnswered = history.some(h =>
+            h.role === 'user' && /^Q:[\s\S]*\nA:/.test(h.content)
+          );
+
+          if (!alreadyAnswered) {
+            const clarifyRes = await callLLM(
+              [
+                {
+                  role: 'system',
+                  content:
+                    'You are about to create a detailed plan for the user. ' +
+                    'Before you do, decide: is the request clear enough to plan immediately, ' +
+                    'or are there 1-3 key unknowns that would significantly change the plan? ' +
+                    'If genuinely ambiguous, call the ask_user tool with concise questions (each with 2-3 short options where applicable). ' +
+                    'If the request is clear enough, respond with ONLY the word "proceed" — no other text.',
+                },
+                ...history.map(h => ({ role: h.role as 'user' | 'assistant', content: h.content })),
+                { role: 'user', content: userMessage },
+              ],
+              [ASK_USER_SCHEMA],
+              { maxTokens: 400, temperature: 0.2 },
+            );
+
+            const clarifyToolCalls = getToolCalls(clarifyRes.content);
+            const askCall = clarifyToolCalls.find(tc => tc.name === 'ask_user');
+            if (askCall) {
+              const questions = askCall.input?.questions ?? [];
+              if (questions.length > 0) {
+                emit('question', { questions, runId });
+                emit('done', { runId, durationMs: Date.now() - startedAt, totalSteps: 0 });
+                controller.close();
+                return;
+              }
+            }
+          }
+        }
 
         // ── Layer 1: Vague instruction detection ────────────────────────────
         if (!isPlanMode && availableTools.length > 0 && isVagueInstruction(userMessage)) {
