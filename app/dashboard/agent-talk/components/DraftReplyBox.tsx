@@ -227,7 +227,7 @@ export function DraftReplyBox({
     };
 
     return (
-        <div className="bg-[#1C1C1C] border border-white/[0.08] rounded-[24px] overflow-hidden shadow-2xl animate-in fade-in slide-in-from-bottom-6 duration-700 max-w-2xl mx-auto my-6 relative select-text">
+        <div className="bg-[#242424] border border-white/[0.08] rounded-[24px] overflow-hidden shadow-2xl animate-in fade-in slide-in-from-bottom-6 duration-700 max-w-2xl mx-auto my-6 relative select-text">
             {/* Technical subtle noise overlay */}
             <div className="absolute inset-0 pointer-events-none opacity-[0.015] z-[0] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] brightness-100 contrast-150" />
 
@@ -235,7 +235,7 @@ export function DraftReplyBox({
             <div className="absolute -top-24 -right-24 w-48 h-48 bg-white/[0.02] rounded-full blur-[60px] pointer-events-none" />
 
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-5 border-b border-white/[0.04] bg-[#222222]/30 relative z-10">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-white/[0.04] bg-[#333333]/30 relative z-10">
                 <div className="flex items-center gap-4">
                     <ArcusLogo size={36} className="shrink-0" />
                     <div>
@@ -274,7 +274,7 @@ export function DraftReplyBox({
             </div>
 
             {/* Recipient & Subject Strip */}
-            <div className="px-6 py-4 bg-[#222222]/15 border-b border-white/[0.04] flex flex-col gap-2 relative z-10">
+            <div className="px-6 py-4 bg-[#333333]/15 border-b border-white/[0.04] flex flex-col gap-2 relative z-10">
                 <div className="flex items-center gap-4 text-xs tracking-wide">
                     <span className="text-zinc-500 font-bold uppercase tracking-widest w-12 shrink-0">To</span>
                     <span className="text-zinc-200 font-semibold">{draftData.recipientName}</span>
@@ -295,7 +295,7 @@ export function DraftReplyBox({
                     <textarea
                         value={editedContent}
                         onChange={(e) => setEditedContent(e.target.value)}
-                        className="w-full min-h-[200px] bg-[#1E1E1E] border border-white/[0.06] focus:border-white/[0.12] rounded-2xl p-6 text-zinc-100 text-[15px] leading-[1.8] resize-none focus:outline-none transition-all duration-300 placeholder:text-zinc-600 font-sans selection:bg-blue-500/30"
+                        className="w-full min-h-[200px] bg-[#1A1A1A] border border-white/[0.06] focus:border-white/[0.12] rounded-2xl p-6 text-zinc-100 text-[15px] leading-[1.8] resize-none focus:outline-none transition-all duration-300 placeholder:text-zinc-600 font-sans selection:bg-blue-500/30"
                         placeholder="Type your message here..."
                         autoFocus
                     />
@@ -416,7 +416,7 @@ export function DraftReplyBox({
             </div>
 
             {/* Footer / Controls */}
-            <div className="px-8 py-5 bg-[#222222]/30 border-t border-white/[0.04] flex items-center justify-between relative z-10">
+            <div className="px-8 py-5 bg-[#333333]/30 border-t border-white/[0.04] flex items-center justify-between relative z-10">
                 <div className="flex items-center gap-3">
                     {sendError ? (
                         <div className="flex items-center gap-2 text-red-400 text-[10px] tracking-wider bg-red-500/5 px-4 py-2 rounded-xl border border-red-500/10 uppercase font-bold">

@@ -171,13 +171,13 @@ const MarkdownComponents: any = {
     );
   },
   table: ({ children }: any) => (
-    <div className="my-6 w-full overflow-hidden rounded-xl border border-arcus-border bg-arcus-elevated backdrop-blur-sm">
+    <div className="my-6 w-full overflow-hidden rounded-xl border border-white/[0.08] bg-[#1C1C1C] shadow-xl">
       <table className="w-full border-collapse text-sm text-left">
         {children}
       </table>
     </div>
   ),
-  thead: ({ children }: any) => <thead className="bg-arcus-surface border-b border-arcus-border">{children}</thead>,
+  thead: ({ children }: any) => <thead className="bg-[#242424] border-b border-white/[0.08]">{children}</thead>,
   th: ({ children }: any) => <th className="px-4 py-3 font-bold text-white uppercase tracking-wider text-[11px]">{children}</th>,
   td: ({ children }: any) => {
     // Highlight status symbols in table cells
@@ -185,12 +185,12 @@ const MarkdownComponents: any = {
     const hasStatus = /[✅❌⚠️⏳💰🚀🔥⚡📊📈]/.test(text.toString());
     return (
       <td className={cn(
-        "px-4 py-2.5 text-white border-b border-arcus-border last:border-0",
+        "px-4 py-2.5 text-white border-b border-white/[0.06] last:border-0",
         hasStatus && "font-medium"
       )}>{children}</td>
     );
   },
-  tr: ({ children }: any) => <tr className="hover:bg-white/[0.02] transition-colors">{children}</tr>,
+  tr: ({ children }: any) => <tr className="hover:bg-white/[0.04] transition-colors">{children}</tr>,
   hr: () => <div className="my-6 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />,
   blockquote: ({ children }: any) => (
     <blockquote className="border-l-2 border-white/30 pl-4 py-2 my-4 bg-white/[0.02] rounded-r-lg">

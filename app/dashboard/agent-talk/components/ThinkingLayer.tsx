@@ -313,7 +313,7 @@ export function ResultCard({ type, title, onView, rawContent }: ResultCardProps)
             whileHover={{ y: -1 }}
             whileTap={{ scale: 0.99 }}
             onClick={onView}
-            className="group relative flex items-center gap-4 p-4 mt-3 mb-3 w-full max-w-[620px] bg-black/[0.15] dark:bg-white/[0.02] border border-neutral-200 dark:border-white/[0.06] rounded-2xl transition-all hover:bg-neutral-100 dark:hover:bg-white/[0.04] hover:border-neutral-300 dark:hover:border-white/[0.12] cursor-pointer"
+            className="group relative flex items-center gap-4 p-4 mt-3 mb-3 w-full max-w-[620px] bg-black/[0.15] dark:bg-[#222222] border border-neutral-200 dark:border-white/[0.08] rounded-2xl transition-all hover:bg-neutral-100 dark:hover:bg-[#2A2A2A] hover:border-neutral-300 dark:hover:border-white/[0.12] cursor-pointer shadow-lg"
         >
             {/* Tilted Graphic card container */}
             <div className="relative w-11 h-12 rounded-lg bg-gradient-to-br from-white/[0.06] to-white/[0.01] border border-white/[0.08] flex items-center justify-center shrink-0 shadow-lg transform -rotate-3 overflow-hidden transition-transform group-hover:rotate-0">
