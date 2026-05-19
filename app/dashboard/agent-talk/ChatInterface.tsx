@@ -36,6 +36,7 @@ import { RainbowButton } from '@/components/ui/rainbow-button';
 import { HomeFeedSidebar } from "@/components/ui/home-feed-sidebar";
 import { TextShimmer } from '@/components/ui/text-shimmer';
 import WordBlurStream from '../../../src/WordBlurStream';
+import { GlassButton } from "@/components/ui/apple-tahoe-liquid-glass-button";
 
 import { UsageLimitModal } from '@/components/ui/usage-limit-modal';
 import { SettingsCard } from '@/components/ui/settings-card';
@@ -3613,26 +3614,30 @@ export default function ChatInterface({
                           transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                           className="flex items-center gap-1 p-1 bg-arcus-surface border border-arcus-border rounded-full shadow-lg"
                         >
-                          <button
+                          <GlassButton
+                            size="sm"
                             onClick={() => setDashboardTab('home')}
                             className={cn(
-                              "px-5 py-2 rounded-full text-[12px] font-bold transition-all flex items-center gap-2",
+                              "px-5 py-2 rounded-full text-[12px] font-bold transition-all flex items-center gap-2 border border-transparent shadow-none",
                               dashboardTab === 'home'
-                                ? "bg-arcus-surface text-arcus-fg border border-arcus-divider"
-                                : "text-arcus-fg-tertiary hover:text-arcus-fg-secondary border border-transparent"
+                                ? "text-arcus-fg border-arcus-divider"
+                                : "text-arcus-fg-tertiary hover:text-arcus-fg-secondary"
                             )}
+                            glassColor={dashboardTab === 'home' ? "oklch(from var(--arcus-raised) l c h / 40%)" : "transparent"}
                           >
                             <Sparkles className="w-3.5 h-3.5" />
                             Home
-                          </button>
-                          <button
+                          </GlassButton>
+                          <GlassButton
+                            size="sm"
                             onClick={() => setDashboardTab('agents')}
                             className={cn(
-                              "px-5 py-2 rounded-full text-[12px] font-bold transition-all flex items-center gap-2",
+                              "px-5 py-2 rounded-full text-[12px] font-bold transition-all flex items-center gap-2 border border-transparent shadow-none",
                               dashboardTab === 'agents'
-                                ? "bg-arcus-surface text-arcus-fg border border-arcus-divider"
-                                : "text-arcus-fg-tertiary hover:text-arcus-fg-secondary border border-transparent"
+                                ? "text-arcus-fg border-arcus-divider"
+                                : "text-arcus-fg-tertiary hover:text-arcus-fg-secondary"
                             )}
+                            glassColor={dashboardTab === 'agents' ? "oklch(from var(--arcus-raised) l c h / 40%)" : "transparent"}
                           >
                             <Bot className="w-3.5 h-3.5" />
                             Agent
@@ -3646,7 +3651,7 @@ export default function ChatInterface({
                                 transition={{ repeat: Infinity, duration: 1.5 }}
                               />
                             )}
-                          </button>
+                          </GlassButton>
                         </motion.div>
                       </div>
                     )}
