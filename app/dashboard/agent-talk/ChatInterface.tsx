@@ -2380,9 +2380,13 @@ export default function ChatInterface({
                     hasError: true,
                     errorMessage: data.message || 'Something went wrong, please try again.',
                     agentSteps: currentAgentSteps,
+                    liveThinking: '',
                   },
                 };
               }));
+              // Close canvas if open — error state should not show stale canvas
+              setIsCanvasOpen(false);
+              setCanvasData(null);
               break;
 
             case 'question': {
@@ -2580,6 +2584,9 @@ export default function ChatInterface({
     } catch (err: any) {
       if (err.name === 'AbortError') { setMessages(prev => prev.filter(m => m.id !== assistantMsgId)); return; }
       console.error('[AgentLoop] Error:', err);
+      // Close stale canvas on hard failure
+      setIsCanvasOpen(false);
+      setCanvasData(null);
 
       const isLimitError = err.message?.toLowerCase().includes('limit') ||
         err.message?.toLowerCase().includes('credits') ||
@@ -2621,9 +2628,9 @@ export default function ChatInterface({
           id: assistantMsgId,
           type: 'agent',
           role: 'assistant',
-          content: { text: errorContentText, list: [], footer: '' },
+          content: { text: '', list: [], footer: '' },
           time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
-          meta: { limitReached: isLimitError }
+          meta: { limitReached: isLimitError, hasError: !isLimitError, errorMessage: err.message || 'The connection was lost during processing.' },
         };
         
         allMsgs = [...allMsgs, agentMsg];
@@ -4035,7 +4042,12 @@ export default function ChatInterface({
                                        />
                                      )}
 
-                                     {!((msg as AgentMessage).meta?.hasError) && ((msg as AgentMessage).meta?.isStreaming !== true || (typeof msg.content === 'string' ? msg.content : msg.content.text).length > 0 || isAgentLoopActive) && (
+                                     {!((msg as AgentMessage).meta?.hasError) && ((msg as AgentMessage).meta?.isStreaming !== true || (typeof msg.content === 'string' ? msg.content : msg.content.text).length > 0 || isAgentLoopActive) && !(
+                                       // Suppress skeleton bars while the thinking card is showing with no real content yet
+                                       (msg as AgentMessage).meta?.liveThinking &&
+                                       !(msg as AgentMessage).meta?.thinkingComplete &&
+                                       (typeof msg.content === 'string' ? msg.content : (msg.content as any)?.text || '').length === 0
+                                     ) && (
                                        <MessageContent
                                          content={msg.content}
                                          isUser={msg.role === 'user'}
