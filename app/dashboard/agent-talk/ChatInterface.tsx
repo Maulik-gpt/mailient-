@@ -4539,7 +4539,7 @@ export default function ChatInterface({
                       <div
                         className="absolute bottom-full left-0 right-0 h-12 pointer-events-none"
                         style={{
-                          background: `linear-gradient(to top, ${isDark ? '#191919' : '#EBEBEB'} 0%, ${isDark ? 'rgba(25, 25, 25, 0.95)' : 'rgba(235, 235, 235, 0.95)'} 50%, transparent 100%)`
+                          background: `linear-gradient(to top, ${isDark ? '#1A1A1A' : '#EBEBEB'} 0%, ${isDark ? 'rgba(26, 26, 26, 0.95)' : 'rgba(235, 235, 235, 0.95)'} 50%, transparent 100%)`
                         }}
                       />
 
