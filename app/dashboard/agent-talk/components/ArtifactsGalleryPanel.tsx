@@ -192,6 +192,50 @@ export function ArtifactsGalleryPanel({
     <AnimatePresence>
       {isOpen && (
         <>
+          {/* Precise Graphite theme inline styles for 100% exact color palette match */}
+          <style dangerouslySetInnerHTML={{__html: `
+            .dark-graphite-modal {
+              background-color: #1A1A1A !important;
+              border-color: #232323 !important;
+            }
+            .dark-graphite-header {
+              border-bottom-color: #2A2A2A !important;
+            }
+            .dark-graphite-icon-wrapper {
+              background-color: #232323 !important;
+              border-color: #2A2A2A !important;
+            }
+            .dark-graphite-item {
+              background-color: #232323 !important;
+              border-color: #2A2A2A !important;
+              transition: all 0.15s ease-in-out !important;
+            }
+            .dark-graphite-item:hover {
+              background-color: #2A2A2A !important;
+              border-color: #363636 !important;
+            }
+            .dark-graphite-tag {
+              background-color: #1A1A1A !important;
+              border-color: #2A2A2A !important;
+              color: #737373 !important;
+            }
+            .dark-graphite-divider {
+              border-top-color: #2A2A2A !important;
+            }
+            .dark-graphite-search-input {
+              background-color: #232323 !important;
+              border-color: #2A2A2A !important;
+              color: #E2E8F0 !important;
+            }
+            .dark-graphite-search-input:focus {
+              border-color: #363636 !important;
+            }
+            .dark-graphite-close-btn:hover {
+              background-color: #2A2A2A !important;
+              color: #FFFFFF !important;
+            }
+          `}} />
+
           {/* Blurred backdrop */}
           <motion.div
             key="library-backdrop"
@@ -216,8 +260,8 @@ export function ArtifactsGalleryPanel({
             className={cn(
               'fixed z-[201] inset-0 m-auto',
               'w-[min(800px,calc(100vw-32px))] h-[min(720px,calc(100vh-80px))]',
-              'flex flex-col rounded-[28px] overflow-hidden shadow-2xl transition-colors duration-300',
-              isDark ? 'bg-arcus-bg-elevated border border-arcus-border text-arcus-fg' : 'bg-[#EAEAEA] border border-black/10 text-black',
+              'flex flex-col rounded-[28px] overflow-hidden shadow-2xl transition-colors duration-300 border',
+              isDark ? 'dark-graphite-modal text-white' : 'bg-[#EAEAEA] border-black/10 text-black',
             )}
             onClick={e => e.stopPropagation()}
           >
@@ -227,23 +271,23 @@ export function ArtifactsGalleryPanel({
             {/* Header */}
             <div className={cn(
               "px-6 py-5 border-b flex items-center justify-between shrink-0 relative z-10",
-              isDark ? "border-arcus-border" : "border-black/10"
+              isDark ? "dark-graphite-header" : "border-black/10"
             )}>
               <div className="flex items-center gap-3">
                 <div className={cn(
                   "w-8 h-8 rounded-xl border flex items-center justify-center",
-                  isDark ? "bg-arcus-surface border-arcus-border" : "bg-black/5 border-black/10"
+                  isDark ? "dark-graphite-icon-wrapper" : "bg-black/5 border-black/10"
                 )}>
-                  <Library className={cn("w-4 h-4", isDark ? "text-arcus-fg-secondary" : "text-black/60")} />
+                  <Library className={cn("w-4 h-4", isDark ? "text-[#737373]" : "text-black/60")} />
                 </div>
                 <div>
-                  <h3 className={cn("text-[14px] font-bold tracking-tight lowercase", isDark ? "text-arcus-fg" : "text-black/90")}>Library</h3>
+                  <h3 className={cn("text-[14px] font-bold tracking-tight lowercase", isDark ? "text-white" : "text-black/90")}>Library</h3>
                   {isLoadingAll ? (
-                    <p className={cn("text-[10px] tracking-tight uppercase flex items-center gap-1.5", isDark ? "text-arcus-fg-tertiary" : "text-black/40")}>
+                    <p className={cn("text-[10px] tracking-tight uppercase flex items-center gap-1.5", isDark ? "text-[#737373]" : "text-black/40")}>
                       <Loader2 className="w-2.5 h-2.5 animate-spin" /> Syncing conversations…
                     </p>
                   ) : (
-                    <p className={cn("text-[10px] tracking-tight uppercase", isDark ? "text-arcus-fg-tertiary" : "text-black/40")}>
+                    <p className={cn("text-[10px] tracking-tight uppercase", isDark ? "text-[#737373]" : "text-black/40")}>
                       {filteredArtifacts.length} document{filteredArtifacts.length !== 1 ? 's' : ''}
                     </p>
                   )}
@@ -255,7 +299,7 @@ export function ArtifactsGalleryPanel({
                 className={cn(
                   "p-2 rounded-xl transition-all",
                   isDark 
-                    ? "text-arcus-fg-tertiary hover:text-arcus-fg hover:bg-arcus-surface" 
+                    ? "dark-graphite-close-btn text-[#737373]" 
                     : "text-black/40 hover:text-black/70 hover:bg-black/8"
                 )}
               >
@@ -267,19 +311,19 @@ export function ArtifactsGalleryPanel({
             {dynamicArtifacts.length > 0 && (
               <div className={cn(
                 "px-6 py-4 border-b shrink-0 relative z-10",
-                isDark ? "border-arcus-border" : "border-black/10"
+                isDark ? "dark-graphite-header" : "border-black/10"
               )}>
                 <div className="relative">
-                  <Search className={cn("absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4", isDark ? "text-arcus-fg-tertiary" : "text-black/30")} />
+                  <Search className={cn("absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4", isDark ? "text-[#737373]" : "text-black/30")} />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
                     placeholder="Search library…"
                     className={cn(
-                      "w-full pl-9 pr-4 py-2.5 rounded-xl text-[13px] transition-all font-medium focus:outline-none",
+                      "w-full pl-9 pr-4 py-2.5 rounded-xl text-[13px] transition-all font-medium focus:outline-none border",
                       isDark 
-                        ? "bg-arcus-surface border border-arcus-border text-arcus-fg placeholder:text-arcus-fg-tertiary focus:border-arcus-fg-secondary" 
+                        ? "dark-graphite-search-input placeholder:text-[#525252]" 
                         : "bg-black/5 border border-black/10 text-black/80 placeholder:text-black/30 focus:border-black/20"
                     )}
                   />
@@ -295,8 +339,8 @@ export function ArtifactsGalleryPanel({
               {dynamicArtifacts.length > 0 ? (
                 <div className="space-y-5">
                   <div className="flex items-center justify-between">
-                    <h4 className={cn("text-[10px] font-bold uppercase tracking-wider", isDark ? "text-arcus-fg-tertiary" : "text-black/40")}>All Documents</h4>
-                    <span className={cn("text-[10px] font-mono", isDark ? "text-arcus-fg-muted" : "text-black/30")}>{filteredArtifacts.length} total</span>
+                    <h4 className={cn("text-[10px] font-bold uppercase tracking-wider", isDark ? "text-[#737373]" : "text-black/40")}>All Documents</h4>
+                    <span className={cn("text-[10px] font-mono", isDark ? "text-[#525252]" : "text-black/30")}>{filteredArtifacts.length} total</span>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -315,7 +359,7 @@ export function ArtifactsGalleryPanel({
                           className={cn(
                             "group p-4 rounded-2xl transition-all duration-150 cursor-pointer border flex flex-col justify-between",
                             isDark 
-                              ? "bg-arcus-surface hover:bg-arcus-surface-hover border-arcus-border" 
+                              ? "dark-graphite-item" 
                               : "bg-black/5 hover:bg-black/8 border-black/8 hover:border-black/15"
                           )}
                         >
@@ -324,7 +368,7 @@ export function ArtifactsGalleryPanel({
                               <span className={cn(
                                 "px-2 py-0.5 rounded-full text-[9px] font-mono tracking-wide border",
                                 isDark 
-                                  ? "bg-arcus-bg border-arcus-border text-arcus-fg-secondary" 
+                                  ? "dark-graphite-tag" 
                                   : "bg-black/6 border-black/8 text-black/50"
                               )}>
                                 {art.tag}
@@ -334,7 +378,7 @@ export function ArtifactsGalleryPanel({
                                 className={cn(
                                   "p-1.5 rounded-lg transition-colors opacity-0 group-hover:opacity-100",
                                   isDark 
-                                    ? "hover:bg-arcus-surface-hover text-arcus-fg-muted hover:text-arcus-fg-secondary" 
+                                    ? "hover:bg-[#363636] text-[#737373] hover:text-white" 
                                     : "hover:bg-black/8 text-black/30 hover:text-black/60"
                                 )}
                                 title="Download .docx"
@@ -345,12 +389,12 @@ export function ArtifactsGalleryPanel({
                               </button>
                             </div>
 
-                            <h5 className={cn("text-[13px] font-semibold leading-snug tracking-tight mb-1.5", isDark ? "text-arcus-fg" : "text-black/85")}>
+                            <h5 className={cn("text-[13px] font-semibold leading-snug tracking-tight mb-1.5", isDark ? "text-white" : "text-black/85")}>
                               {art.title}
                             </h5>
 
                             {snippet && (
-                              <p className={cn("text-[12px] leading-relaxed line-clamp-2 mb-3", isDark ? "text-arcus-fg-secondary" : "text-black/45")}>
+                              <p className={cn("text-[12px] leading-relaxed line-clamp-2 mb-3", isDark ? "text-[#737373]" : "text-black/45")}>
                                 {snippet}{snippet.length === 120 ? '…' : ''}
                               </p>
                             )}
@@ -358,13 +402,13 @@ export function ArtifactsGalleryPanel({
 
                           <div className={cn(
                             "flex items-center justify-between pt-2.5 border-t text-[10px] font-mono mt-auto",
-                            isDark ? "border-arcus-border" : "border-black/8"
+                            isDark ? "dark-graphite-divider" : "border-black/8"
                           )}>
-                            <span className={cn("truncate max-w-[50%]", isDark ? "text-arcus-fg-tertiary" : "text-black/35")}>{art.subtitle}</span>
+                            <span className={cn("truncate max-w-[50%]", isDark ? "text-[#737373]" : "text-black/35")}>{art.subtitle}</span>
                             <span className={cn(
                               "flex items-center gap-1 transition-colors shrink-0",
                               isDark 
-                                ? "text-arcus-fg-tertiary group-hover:text-arcus-fg-secondary" 
+                                ? "text-[#737373] group-hover:text-white" 
                                 : "text-black/35 group-hover:text-black/55"
                             )}>
                               Open in Canvas <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
@@ -376,8 +420,8 @@ export function ArtifactsGalleryPanel({
 
                     {filteredArtifacts.length === 0 && (
                       <div className="py-12 flex flex-col items-center justify-center text-center col-span-2">
-                        <FileText className={cn("w-8 h-8 mb-3", isDark ? "text-arcus-fg-muted/20" : "text-black/20")} />
-                        <p className={cn("text-[12px] font-medium", isDark ? "text-arcus-fg-tertiary" : "text-black/35")}>No results for "{searchQuery}"</p>
+                        <FileText className={cn("w-8 h-8 mb-3", isDark ? "text-[#737373]/30" : "text-black/20")} />
+                        <p className={cn("text-[12px] font-medium", isDark ? "text-[#737373]" : "text-black/35")}>No results for "{searchQuery}"</p>
                       </div>
                     )}
                   </div>
@@ -386,14 +430,14 @@ export function ArtifactsGalleryPanel({
                 <div className="h-full flex flex-col items-center justify-center text-center px-6 py-12">
                   <div className={cn(
                     "w-16 h-16 rounded-2xl border flex items-center justify-center mb-6",
-                    isDark ? "bg-arcus-surface border-arcus-border" : "bg-black/5 border-black/8"
+                    isDark ? "dark-graphite-icon-wrapper" : "bg-black/5 border-black/8"
                   )}>
-                    <Sparkles className={cn("w-6 h-6 animate-pulse", isDark ? "text-arcus-fg-tertiary" : "text-black/25")} />
+                    <Sparkles className={cn("w-6 h-6 animate-pulse", isDark ? "text-[#737373]" : "text-black/25")} />
                   </div>
-                  <h4 className={cn("text-[15px] font-bold tracking-tight mb-2 lowercase", isDark ? "text-arcus-fg-secondary" : "text-black/70")}>
+                  <h4 className={cn("text-[15px] font-bold tracking-tight mb-2 lowercase", isDark ? "text-[#737373]" : "text-black/70")}>
                     Your library is empty
                   </h4>
-                  <p className={cn("text-[12px] leading-relaxed max-w-[260px]", isDark ? "text-arcus-fg-tertiary" : "text-black/40")}>
+                  <p className={cn("text-[12px] leading-relaxed max-w-[260px]", isDark ? "text-[#737373]" : "text-black/40")}>
                     Documents, plans, and drafts created by Arcus across all your conversations will appear here — searchable and downloadable as .docx.
                   </p>
                 </div>

@@ -146,6 +146,17 @@ async function getGcalToken(userId: string): Promise<string | null> {
   }
 }
 
+// Shown when the Calendar API rejects the token for lack of calendar scope.
+// This happens when the only Google token on file is the Gmail/login token
+// (no calendar.events scope). The fix is a dedicated Calendar reconnect.
+const CALENDAR_SCOPE_MESSAGE =
+  'Google Calendar access needs to be re-authorized. The current Google connection only has email permissions, not calendar permissions. ' +
+  'Tell the user: "I need calendar access to do that. Click the connectors button in the prompt box, choose Google Calendar, and complete the Google sign-in — then ask me again."';
+
+function isScopeError(status: number): boolean {
+  return status === 403 || status === 401;
+}
+
 async function getNotionToken(userId: string): Promise<string | null> {
   try {
     const supabase = getSupabaseAdmin();
@@ -744,6 +755,7 @@ async function scheduleMeeting(userId: string, input: any): Promise<ToolResult> 
   }
 
   if (!res.ok) {
+    if (isScopeError(res.status)) return { output: CALENDAR_SCOPE_MESSAGE };
     const err = await res.text().catch(() => '');
     return { output: `Failed to create event (${res.status}): ${err.slice(0, 200)}` };
   }
@@ -797,7 +809,10 @@ async function getCalendarEvents(userId: string, input: any): Promise<ToolResult
     const newToken = await refreshGoogleToken(userId);
     if (newToken) { token = newToken; res = await fetch(calEventsUrl, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(10000) }); }
   }
-  if (!res.ok) return { output: `Calendar fetch failed (${res.status}).` };
+  if (!res.ok) {
+    if (isScopeError(res.status)) return { output: CALENDAR_SCOPE_MESSAGE };
+    return { output: `Calendar fetch failed (${res.status}).` };
+  }
 
   const data = await res.json();
   const events = data.items || [];

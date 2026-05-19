@@ -6,7 +6,7 @@ import {
   BarChart3, Zap, Globe, Calendar, ArrowRight, Send,
   Download, ChevronLeft, ChevronRight, Loader2,
   AlertTriangle, CheckCircle2, Clock, ListTodo, Target,
-  HelpCircle, Shield, Play,
+  HelpCircle, Shield, Play, Printer,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -169,6 +169,34 @@ export function CanvasPanel({
     } finally {
       setDownloadingDocx(false);
     }
+  };
+
+  // Export the current document as a PDF via the browser's print engine.
+  // Dependency-free and produces a clean, properly typeset page.
+  const handleExportPdf = () => {
+    const text = getTextContent();
+    if (!text) return;
+    const title = canvasData?.title || 'Document';
+    const win = window.open('', '_blank', 'width=820,height=1000');
+    if (!win) return;
+    const esc = (s: string) =>
+      s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title>
+      <style>
+        @page { margin: 22mm 20mm; }
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+               color: #111; line-height: 1.7; font-size: 12.5pt; max-width: 720px; margin: 0 auto; padding: 24px; }
+        h1 { font-size: 22pt; margin: 0 0 14px; letter-spacing: -0.01em; }
+        h2 { font-size: 15pt; margin: 26px 0 8px; }
+        h3 { font-size: 13pt; margin: 20px 0 6px; }
+        p, li { font-size: 12.5pt; }
+        hr { border: none; border-top: 1px solid #ddd; margin: 22px 0; }
+        pre { white-space: pre-wrap; }
+      </style></head><body><pre style="white-space:pre-wrap;font-family:inherit;border:none;margin:0">${esc(text)}</pre>
+      <script>window.onload=function(){setTimeout(function(){window.print();},250);}<\/script>
+      </body></html>`);
+    win.document.close();
   };
 
   const handleSend = () => {

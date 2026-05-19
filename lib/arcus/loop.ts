@@ -42,7 +42,7 @@
 import crypto from 'crypto';
 import { callLLM, getText, getRawText, getToolCalls, sanitizeModelText } from './engine';
 import { executeTool, getAvailableTools, TOOL_SCHEMAS } from './tools';
-import { processGmailResults, isInboxTask, isVagueInstruction, isBroadContextTask } from './inbox-pipeline';
+import { processGmailResults, isVagueInstruction, isBroadContextTask } from './inbox-pipeline';
 import type { LLMMessage } from './engine';
 
 const ASK_USER_SCHEMA = TOOL_SCHEMAS.find(s => s.name === 'ask_user')!;
@@ -64,12 +64,52 @@ const MAX_NUDGES = 3;
 const INTENT_PATTERN = /^(searching|looking|checking|reading|finding|fetching|let me|i['']ll|i will|i am going to|going to|will (search|check|look|read|find|fetch)|now (searching|checking|reading))/i;
 const PLACEHOLDER_PATTERN = /\[\s*(I will|will be|to be|once generated|actual.*link|link here|pending|tbd|insert|placeholder|meet link|google meet link|conference link|calendar link|meeting link)\s*[^\]]*?\]/i;
 
+// Bracketed directives where the model *describes* a tool action instead of
+// performing it — e.g. "[open canvas with the proof report]",
+// "[draft the reply here]", "[schedule the meeting]". These must trigger a
+// nudge so the model actually calls the tool rather than narrating it.
+const ACTION_PLACEHOLDER_PATTERN = /\[\s*(open(s|ing)?\s+(the\s+)?canvas|canvas\s*:|(create|generate|render|build|produce|put)\s+(a\s+|the\s+|this\s+)?(canvas|notion|page|document|report|summary|draft|plan|table)|draft\s+(a\s+|the\s+)?(reply|email|response|message)|schedule\s+(a\s+|the\s+)?(meeting|call|event)|send\s+(a\s+|an?\s+|the\s+)?(email|message|slack|reply))\b[^\]]*\]/i;
+
 function isIntentText(text: string): boolean {
   return text.trim().length > 0 && text.trim().length < 500 && INTENT_PATTERN.test(text.trim());
 }
 
 function hasPlaceholders(text: string): boolean {
-  return PLACEHOLDER_PATTERN.test(text);
+  return PLACEHOLDER_PATTERN.test(text) || ACTION_PLACEHOLDER_PATTERN.test(text);
+}
+
+// ── Error humanizer ────────────────────────────────────────────────────────────
+//
+// Raw tool errors (stack traces, "403", "fetch failed", AbortError) must never
+// reach the user or even the LLM verbatim — they make Arcus feel broken and
+// mechanical. This converts them into a plain-English explanation plus a
+// concrete alternative the model can act on or relay.
+
+function humanizeError(tool: string, raw: string): string {
+  const e = (raw || '').toLowerCase();
+  const friendlyTool = tool.replace(/_/g, ' ');
+
+  if (/abort|timeout|timed out|etimedout/.test(e)) {
+    return `The ${friendlyTool} step took too long to respond. This is usually a temporary network hiccup — I can retry it, or continue with the other steps and come back to this one.`;
+  }
+  if (/\b401\b|unauthorized|invalid[_\s-]?grant|token (expired|invalid)/.test(e)) {
+    return `The connection for ${friendlyTool} has expired and needs to be re-authorized. Ask the user to reconnect it via the connectors button in the prompt box, then try again.`;
+  }
+  if (/\b403\b|insufficient|forbidden|scope/.test(e)) {
+    return `Arcus doesn't have permission for ${friendlyTool} yet — the connected account is missing that specific access. Ask the user to reconnect that integration with full permissions via the connectors button.`;
+  }
+  if (/not connected|connect .* in settings|connect .* in integrations/.test(e)) {
+    return raw; // these are already user-friendly, written by the tools
+  }
+  if (/\b429\b|rate limit|quota|exhausted/.test(e)) {
+    return `The ${friendlyTool} service is rate-limiting requests right now. I can wait a moment and retry, or proceed with the rest of the task first.`;
+  }
+  if (/\b5\d\d\b|server error|bad gateway|unavailable/.test(e)) {
+    return `${friendlyTool[0].toUpperCase()}${friendlyTool.slice(1)} is temporarily unavailable on the provider's side. This isn't something on our end — retrying shortly usually works.`;
+  }
+  // Unknown — keep it short and non-technical, drop any stack noise.
+  const firstLine = (raw || 'unknown error').split('\n')[0].slice(0, 160);
+  return `The ${friendlyTool} step didn't complete (${firstLine}). I'll continue with everything else and flag this so you can decide how to handle it.`;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -116,7 +156,12 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
   const availableTools = isPlanMode ? [] : getAvailableTools(connectedIntegrations);
   const runId = crypto.randomUUID();
   const startedAt = Date.now();
-  const inboxTask = isInboxTask(userMessage);
+  // Newsletter/promo filtering should apply to ANY email-listing task, not only
+  // ones that match inbox keywords — otherwise promos leak into summaries and
+  // "reply to X" results. The only time we keep them is when the user is
+  // explicitly hunting for a newsletter/promotional/receipt email.
+  const wantsPromos = /\b(newsletter|promotion(al)?|promo|unsubscribe|marketing|receipt|digest|sale|coupon)\b/i.test(userMessage);
+  const filterNewsletters = !wantsPromos;
 
   return new ReadableStream({
     async start(controller) {
@@ -367,7 +412,9 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                 let result = await executeTool(tc.name, tc.input, userId);
 
                 // ── Layer 2: Inbox pipeline ─────────────────────────────────
-                if (tc.name === 'search_gmail' && inboxTask) {
+                // Runs on every Gmail search (not only keyword-matched inbox
+                // tasks) so newsletters/promotions are consistently filtered.
+                if (tc.name === 'search_gmail' && filterNewsletters) {
                   const { annotated, archiveCount } = processGmailResults(result.output);
                   archivedCount += archiveCount;
                   result = { ...result, output: annotated };
@@ -418,10 +465,11 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
 
               } catch (err: any) {
                 const errorMsg = err?.message ?? 'Unknown error';
+                const friendly = humanizeError(tc.name, errorMsg);
                 log('error', `tool_result fail`, { tool: tc.name, error: errorMsg, stack: err?.stack?.slice(0, 300) });
-                emit('tool_result', { tool: tc.name, success: false, summary: errorMsg, iteration });
-                outcomes.push({ tool: tc.name, ok: false, error: errorMsg });
-                toolResults.push({ type: 'tool_result', tool_use_id: tc.id, content: `Error: ${errorMsg}` });
+                emit('tool_result', { tool: tc.name, success: false, summary: friendly, iteration });
+                outcomes.push({ tool: tc.name, ok: false, error: friendly });
+                toolResults.push({ type: 'tool_result', tool_use_id: tc.id, content: friendly });
               }
             }
 
@@ -466,7 +514,13 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
             emit('thinking', { status: 'Completing task…' });
             messages.push({
               role: 'user',
-              content: 'Your response contains placeholder text like "[I will provide X]" or "[link here]". This is not acceptable. Call the required tool now and provide the actual result. Do not use any placeholder brackets.',
+              content:
+                'Your response contains a bracketed directive instead of a real action — e.g. "[open canvas with the report]", "[draft the reply here]", or "[link here]". ' +
+                'Brackets describing an action are never acceptable. Actually call the tool now: ' +
+                'if it says open/show canvas, call open_canvas with the full markdown content; ' +
+                'if it says draft a reply, call draft_reply with the real body; ' +
+                'if it says schedule, call schedule_meeting. ' +
+                'Produce the actual result via the tool — do not write the action in brackets.',
             });
             continue;
           }
@@ -498,9 +552,21 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
         }
 
         if (!finalText) {
-          finalText = isPlanMode
-            ? 'I was unable to generate a plan. Please try again with a more specific request.'
-            : 'I\'ve completed the requested actions. Let me know if you need any changes.';
+          if (isPlanMode) {
+            finalText = 'I was unable to generate a plan. Please try again with a more specific request.';
+          } else {
+            // Build a natural recap from what actually happened rather than a
+            // canned line, so the close never feels mechanical.
+            const okTools = [...new Set(outcomes.filter(o => o.ok).map(o => o.tool.replace(/_/g, ' ')))];
+            if (okTools.length > 0) {
+              const list = okTools.length === 1
+                ? okTools[0]
+                : `${okTools.slice(0, -1).join(', ')} and ${okTools[okTools.length - 1]}`;
+              finalText = `Done — I handled ${list} for you. Let me know if you'd like any changes.`;
+            } else {
+              finalText = 'I wasn\'t able to complete that this time. Tell me a bit more and I\'ll take another run at it.';
+            }
+          }
         }
 
         // ── Layer 2 end: append archive count ──────────────────────────────
