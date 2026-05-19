@@ -4528,8 +4528,13 @@ export default function ChatInterface({
                       className="absolute bottom-0 left-0 right-0 z-50 bg-arcus-bg"
                       style={{ backgroundColor: 'var(--arcus-bg)' }}
                     >
-                      {/* Shadow gradient to hide content as it scrolls under prompt box */}
-                      <div className="absolute bottom-full left-0 right-0 h-12 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none" />
+                      {/* Dynamic, theme-aware shadow gradient to hide content seamlessly as it scrolls under the prompt box */}
+                      <div
+                        className="absolute bottom-full left-0 right-0 h-12 pointer-events-none"
+                        style={{
+                          background: `linear-gradient(to top, ${isDark ? '#141414' : '#EBEBEB'} 0%, ${isDark ? 'rgba(20, 20, 20, 0.95)' : 'rgba(235, 235, 235, 0.95)'} 50%, transparent 100%)`
+                        }}
+                      />
 
                       <div className="max-w-3xl mx-auto w-full px-6 py-6 relative">
                         {/* Ask User Card — appears when AI needs clarification */}

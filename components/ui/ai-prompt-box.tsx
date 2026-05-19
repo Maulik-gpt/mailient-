@@ -68,7 +68,7 @@ const TooltipContent = forwardRef<
     ref={ref}
     sideOffset={sideOffset}
     className={cn(
-      "z-50 overflow-hidden rounded-md border border-arcus-raised bg-white dark:bg-black px-3 py-1.5 text-sm text-black dark:text-white shadow-md animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+      "z-50 overflow-hidden rounded-md border border-arcus-border bg-arcus-surface px-3 py-1.5 text-sm text-arcus-fg shadow-md animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
       className
     )}
     {...props}
@@ -103,14 +103,14 @@ const DialogContent = forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-[90vw] md:max-w-[800px] translate-x-[-50%] translate-y-[-50%] gap-4 border border-arcus-raised bg-white dark:bg-black p-0 shadow-xl duration-300 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 rounded-2xl",
+        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-[90vw] md:max-w-[800px] translate-x-[-50%] translate-y-[-50%] gap-4 border border-arcus-border bg-arcus-surface p-0 shadow-xl duration-300 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 rounded-2xl",
         className
       )}
       {...props}
     >
       {children}
-      <DialogPrimitive.Close className="absolute right-4 top-4 z-10 rounded-full bg-arcus-raised/80 p-2 hover:bg-arcus-raised transition-all">
-        <X className="h-5 w-5 text-neutral-900 dark:text-gray-200 hover:text-white" />
+      <DialogPrimitive.Close className="absolute right-4 top-4 z-10 rounded-full bg-arcus-bg/80 p-2 hover:bg-arcus-bg-elevated transition-all">
+        <X className="h-5 w-5 text-arcus-fg-secondary hover:text-arcus-fg" />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>
     </DialogPrimitive.Content>
@@ -124,7 +124,7 @@ const DialogTitle = forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Title
     ref={ref}
-    className={cn("text-lg font-semibold leading-none tracking-tight text-gray-100", className)}
+    className={cn("text-lg font-semibold leading-none tracking-tight text-arcus-fg", className)}
     {...props}
   />
 ));
@@ -138,9 +138,9 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = "default", size = "default", ...props }, ref) => {
     const variantClasses = {
-      default: "bg-black dark:bg-white hover:bg-black/90 dark:hover:bg-white/80 text-white dark:text-black",
-      outline: "border border-white/10 bg-transparent hover:bg-black/[0.05] dark:bg-white/5",
-      ghost: "bg-transparent hover:bg-black/[0.05] dark:bg-white/5",
+      default: "bg-arcus-fg hover:bg-arcus-fg/90 text-arcus-fg-inverse",
+      outline: "border border-arcus-border bg-transparent hover:bg-arcus-surface-hover/30",
+      ghost: "bg-transparent hover:bg-arcus-surface-hover/30",
     };
     const sizeClasses = {
       default: "h-10 px-4 py-2",
