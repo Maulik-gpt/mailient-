@@ -1547,14 +1547,14 @@ textarea,
   --sidebar-border: hsl(214.3 31.8% 91.4%);
   --sidebar-ring: hsl(222.2 84% 4.9%);
 
-  /* Arcus Design System Overrides - Light Mode */
-  --arcus-bg:               #F4F5F8;
-  --arcus-bg-elevated:      #FFFFFF;
-  --arcus-surface:          #FFFFFF;
-  --arcus-surface-hover:    #F1F5F9;
-  --arcus-raised:           #ECEFF1;
-  --arcus-border:           #E2E8F0;
-  --arcus-divider:          #E2E8F0;
+  /* Arcus Design System Overrides - Light Mode (Graphite - True Inversion) */
+  --arcus-bg:               #FFFFFF; /* Canvas - Pure white canvas app ground */
+  --arcus-bg-elevated:      #FAFAFA; /* Surface - Sidebar, headers, dock chrome */
+  --arcus-surface:          #F5F5F5; /* Hover/Card - Cards at rest, soft graphite tile */
+  --arcus-surface-hover:    #EBEBEB; /* Raised/Popover hover, dropdown rows */
+  --arcus-raised:           #E0E0E0; /* Pressed tiles, modals, info banners */
+  --arcus-border:           #E0E0E0; /* border 800 */
+  --arcus-divider:          #D4D4D4; /* divider 700 */
 
   /* Arcus Design System Text Overrides - Light Mode (Exact specs from user) */
   --arcus-fg:               #0F172A;

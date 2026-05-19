@@ -274,7 +274,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void 
       onClick={e => { e.stopPropagation(); onChange(); }}
       className={cn(
         'relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none',
-        checked ? 'bg-zinc-300' : 'bg-arcus-raised',
+        checked ? 'bg-arcus-fg' : 'bg-arcus-raised',
       )}
     >
       <span className={cn(
@@ -447,7 +447,7 @@ function PremiumDatePicker({ value, onChange, minDate }: {
       </div>
 
       {isOpen && (
-        <div className="absolute bottom-full left-0 mb-2 w-72 bg-[#0A0A0C]/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-4.5 z-[100] select-none animate-in fade-in slide-in-from-bottom-2 duration-150">
+        <div className="absolute bottom-full left-0 mb-2 w-72 bg-arcus-surface backdrop-blur-xl border border-arcus-border rounded-2xl shadow-2xl p-4.5 z-[100] select-none animate-in fade-in slide-in-from-bottom-2 duration-150">
           <div className="flex items-center justify-between mb-3.5">
             <div className="flex gap-1">
               <button onClick={handlePrevYear} className="p-1.5 hover:bg-arcus-surface text-arcus-fg-muted hover:text-arcus-fg-secondary rounded-lg transition-colors text-[10px] font-extrabold font-mono">
@@ -493,7 +493,7 @@ function PremiumDatePicker({ value, onChange, minDate }: {
                     cell.isDisabled && 'text-arcus-raised/30 cursor-not-allowed hover:bg-transparent',
                     !cell.isDisabled && !isSelected && 'hover:bg-arcus-surface/50',
                     isTodayCell && !isSelected && 'border border-arcus-border text-arcus-fg',
-                    isSelected && 'bg-zinc-100 text-zinc-950 font-bold shadow-md shadow-white/5'
+                    isSelected && 'bg-arcus-fg text-arcus-fg-inverse font-bold shadow-md'
                   )}
                 >
                   {cell.day}
@@ -586,7 +586,7 @@ function PremiumTimePicker({ value, onChange }: {
       </div>
 
       {isOpen && (
-        <div className="absolute bottom-full right-0 lg:left-0 mb-2 w-64 bg-[#0A0A0C]/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-4 z-[100] select-none animate-in fade-in slide-in-from-bottom-2 duration-150 flex gap-3">
+        <div className="absolute bottom-full right-0 lg:left-0 mb-2 w-64 bg-arcus-surface backdrop-blur-xl border border-arcus-border rounded-2xl shadow-2xl p-4 z-[100] select-none animate-in fade-in slide-in-from-bottom-2 duration-150 flex gap-3">
           {/* Hours Column */}
           <div className="flex-1 flex flex-col items-center">
             <span className="text-[10px] uppercase tracking-wider text-arcus-fg-muted font-extrabold mb-2">Hour</span>
@@ -598,8 +598,8 @@ function PremiumTimePicker({ value, onChange }: {
                   className={cn(
                     "w-full text-center py-1 rounded-lg text-[13px] font-bold transition-all",
                     selectedHour === h
-                      ? "bg-zinc-100 text-zinc-950 font-bold"
-                      : "text-arcus-fg-secondary hover:bg-arcus-surface/50 hover:text-arcus-fg"
+                      ? "bg-arcus-fg text-arcus-fg-inverse font-bold shadow-sm"
+                      : "text-arcus-fg-secondary hover:bg-arcus-surface-hover/50 hover:text-arcus-fg"
                   )}
                 >
                   {String(h).padStart(2, '0')}
@@ -619,8 +619,8 @@ function PremiumTimePicker({ value, onChange }: {
                   className={cn(
                     "w-full text-center py-1 rounded-lg text-[13px] font-bold transition-all",
                     selectedMinute === m
-                      ? "bg-zinc-100 text-zinc-950 font-bold"
-                      : "text-arcus-fg-secondary hover:bg-arcus-surface/50 hover:text-arcus-fg"
+                      ? "bg-arcus-fg text-arcus-fg-inverse font-bold shadow-sm"
+                      : "text-arcus-fg-secondary hover:bg-arcus-surface-hover/50 hover:text-arcus-fg"
                   )}
                 >
                   {String(m).padStart(2, '0')}
@@ -640,8 +640,8 @@ function PremiumTimePicker({ value, onChange }: {
                   className={cn(
                     "w-full text-center py-2.5 rounded-lg text-[12px] font-extrabold transition-all",
                     selectedPeriod === p
-                      ? "bg-zinc-100 text-zinc-950 font-bold"
-                      : "text-arcus-fg-secondary hover:bg-arcus-surface/50 hover:text-arcus-fg"
+                      ? "bg-arcus-fg text-arcus-fg-inverse font-bold shadow-sm"
+                      : "text-arcus-fg-secondary hover:bg-arcus-surface-hover/50 hover:text-arcus-fg"
                   )}
                 >
                   {p}
@@ -709,7 +709,7 @@ function CreateModal({ onClose, onSave, initial }: {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 24, scale: 0.98 }}
         transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-        className="relative w-full max-w-4xl bg-[#0A0A0C]/85 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] shadow-2xl shadow-black/70 overflow-hidden max-h-[95vh] flex flex-col"
+        className="relative w-full max-w-4xl bg-arcus-bg-elevated/95 backdrop-blur-2xl border border-arcus-border rounded-[2.5rem] shadow-2xl overflow-hidden max-h-[95vh] flex flex-col"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-8 pt-7 pb-5 border-b border-arcus-border/60 flex-shrink-0">
@@ -780,7 +780,7 @@ function CreateModal({ onClose, onSave, initial }: {
                       className={cn(
                         'px-3.5 py-1.5 rounded-lg text-[13px] font-bold transition-all border',
                         patternKey === p.key
-                          ? 'bg-zinc-100 text-zinc-950 border-zinc-100 shadow-sm'
+                          ? 'bg-arcus-fg text-arcus-fg-inverse border-arcus-fg shadow-sm'
                           : 'bg-arcus-surface border-arcus-border text-arcus-fg-secondary hover:border-arcus-divider hover:text-arcus-fg',
                       )}
                     >
@@ -845,7 +845,7 @@ function CreateModal({ onClose, onSave, initial }: {
                       className={cn(
                         'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[14px] font-bold border transition-all',
                         channel === ch
-                          ? 'bg-zinc-100 text-zinc-950 border-zinc-100 shadow-sm'
+                          ? 'bg-arcus-fg text-arcus-fg-inverse border-arcus-fg shadow-sm'
                           : 'bg-arcus-surface border-arcus-border text-arcus-fg-secondary hover:border-arcus-divider hover:text-arcus-fg',
                       )}
                     >
@@ -903,7 +903,7 @@ function CreateModal({ onClose, onSave, initial }: {
             <button
               onClick={handleSave}
               disabled={saving || !task.trim()}
-              className="flex-1 py-3.5 rounded-xl text-[15px] font-bold text-zinc-950 bg-zinc-100 hover:bg-white active:scale-[0.98] transition-all disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2"
+              className="flex-1 py-3.5 rounded-xl text-[15px] font-bold text-arcus-fg-inverse bg-arcus-fg hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
               {saving ? 'Saving…' : initial?.id ? 'Save changes' : 'Create schedule'}
@@ -931,7 +931,7 @@ function AgentCard({ agent, onToggle, onEdit, onDelete, onToggleConf }: {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -4 }}
-      className="bg-[#141414]/65 backdrop-blur-xl border border-white/[0.08] rounded-2xl overflow-hidden hover:border-white/20 transition-all shadow-sm"
+      className="bg-arcus-surface/65 backdrop-blur-xl border border-arcus-border rounded-2xl overflow-hidden hover:border-arcus-divider transition-all shadow-sm"
     >
       <div className="p-5 pb-4">
         <div className="flex items-start gap-3.5">
@@ -957,7 +957,7 @@ function AgentCard({ agent, onToggle, onEdit, onDelete, onToggleConf }: {
                     initial={{ opacity: 0, scale: 0.92, y: -4 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.92, y: -4 }}
-                    className="absolute right-0 top-10 w-36 bg-[#141414]/90 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden shadow-2xl z-20"
+                    className="absolute right-0 top-10 w-36 bg-arcus-surface backdrop-blur-xl border border-arcus-border rounded-xl overflow-hidden shadow-2xl z-20"
                   >
                     <button
                       onClick={() => { setMenuOpen(false); onEdit(); }}
@@ -1136,7 +1136,7 @@ export function AgentsPanel({ className, onSendMessage }: AgentsPanelProps) {
         </div>
         <button
           onClick={() => setCreateOpen(true)}
-          className="flex items-center gap-2 px-5 py-2.5 bg-zinc-100 text-zinc-950 rounded-xl font-bold text-[14px] hover:bg-white active:scale-95 transition-all shadow-sm"
+          className="flex items-center gap-2 px-5 py-2.5 bg-arcus-fg text-arcus-fg-inverse rounded-xl font-bold text-[14px] hover:opacity-90 active:scale-95 transition-all shadow-sm"
         >
           <Plus className="w-4 h-4" />
           New schedule
@@ -1155,7 +1155,7 @@ export function AgentsPanel({ className, onSendMessage }: AgentsPanelProps) {
             onClick={() => setTab(key)}
             className={cn(
               'flex items-center gap-1.5 px-1 py-3 mr-6 text-[14px] font-semibold transition-all border-b-2 -mb-px',
-              tab === key ? 'text-arcus-fg border-zinc-100' : 'text-arcus-fg-muted border-transparent hover:text-arcus-fg-secondary',
+              tab === key ? 'text-arcus-fg border-arcus-fg' : 'text-arcus-fg-muted border-transparent hover:text-arcus-fg-secondary',
             )}
           >
             <Icon className="w-4 h-4" />
@@ -1205,7 +1205,7 @@ export function AgentsPanel({ className, onSendMessage }: AgentsPanelProps) {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
-                className="bg-[#141414]/60 backdrop-blur-xl border border-white/[0.08] rounded-2xl p-4 flex flex-col hover:border-white/20 hover:bg-[#141414]/85 transition-all group"
+                className="bg-arcus-surface/60 backdrop-blur-xl border border-arcus-border rounded-2xl p-4 flex flex-col hover:border-arcus-divider hover:bg-arcus-surface transition-all group"
               >
                 <div className="flex items-center gap-2.5 mb-2.5">
                   <div className="w-8 h-8 rounded-xl bg-arcus-raised/80 flex items-center justify-center flex-shrink-0">
@@ -1218,7 +1218,7 @@ export function AgentsPanel({ className, onSendMessage }: AgentsPanelProps) {
                   <span className="text-[12px] text-arcus-fg-muted font-medium">{cronToLabel(t.cron_schedule)}</span>
                   <button
                     onClick={() => setTemplateInit(t)}
-                    className="px-3.5 py-1.5 rounded-lg bg-zinc-100 text-zinc-950 text-[12px] font-bold hover:bg-white active:scale-95 transition-all"
+                    className="px-3.5 py-1.5 rounded-lg bg-arcus-fg text-arcus-fg-inverse text-[12px] font-bold hover:opacity-90 active:scale-95 transition-all"
                   >
                     Activate
                   </button>
