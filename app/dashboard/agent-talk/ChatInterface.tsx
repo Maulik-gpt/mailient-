@@ -4577,27 +4577,6 @@ export default function ChatInterface({
                       isSidebarCollapsed={isSidebarCollapsed}
                     />
                   </motion.div>
-                ) : showArtifactsPanel ? (
-                  <motion.div
-                    key="artifacts-gallery"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    transition={{ duration: 0.2, ease: 'easeOut' }}
-                    className="h-full flex-shrink-0 bg-[#F4F5F8] dark:bg-[#0A0A0A] border border-[#E2E8F0] dark:border-[#2A2A2A] rounded-[32px] z-50 overflow-hidden order-2 relative shadow-2xl"
-                  >
-                    <ArtifactsGalleryPanel
-                      isOpen={showArtifactsPanel}
-                      onClose={() => setShowArtifactsPanel(false)}
-                      onSelectArtifact={(data) => {
-                        setCanvasData(data);
-                        setIsCanvasOpen(true);
-                        setShowArtifactsPanel(false);
-                      }}
-                      isSidebarCollapsed={isSidebarCollapsed}
-                      messages={messages}
-                    />
-                  </motion.div>
                 ) : null}
               </AnimatePresence>
             </div>
@@ -4614,6 +4593,18 @@ export default function ChatInterface({
           }}
         />
         <PersonalitySettingsModal isOpen={isPersonalityModalOpen} onClose={() => setIsPersonalityModalOpen(false)} onSave={handleSavePersonality} initialPersonality={savedPersonality} />
+
+        {/* Library overlay modal */}
+        <ArtifactsGalleryPanel
+          isOpen={showArtifactsPanel}
+          onClose={() => setShowArtifactsPanel(false)}
+          onSelectArtifact={(data) => {
+            setCanvasData(data);
+            setIsCanvasOpen(true);
+            setShowArtifactsPanel(false);
+          }}
+          messages={messages}
+        />
 
         {/* Global Modals for Sidebar Actions */}
         <AnimatePresence>
