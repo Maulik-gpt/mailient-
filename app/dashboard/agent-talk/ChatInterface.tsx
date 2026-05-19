@@ -529,6 +529,12 @@ interface AgentMessage {
     planIntro?: string;
     hasError?: boolean;
     errorMessage?: string;
+    needsConfirmation?: boolean;
+    partialFailure?: {
+      done: string[];
+      failed: { tool: string; error: string }[];
+      question: string;
+    };
     searchExecution?: {
       mainQuery: string;
       subQueries: Array<{
@@ -996,6 +1002,92 @@ function ArcusErrorCard({ errorMessage, onRetry }: { errorMessage?: string; onRe
           </svg>
         )}
         Retry
+      </button>
+    </motion.div>
+  );
+}
+
+// ─── Partial Failure Card ──────────────────────────────────────────────────────
+function PartialFailureCard({
+  done,
+  failed,
+  question,
+}: {
+  done: string[];
+  failed: { tool: string; error: string }[];
+  question: string;
+}) {
+  const toolLabel = (name: string) =>
+    name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ type: 'spring', damping: 24, stiffness: 260 }}
+      className="mt-4 rounded-2xl overflow-hidden border border-white/[0.08] bg-white/[0.02]"
+    >
+      {/* Done section */}
+      {done.length > 0 && (
+        <div className="px-4 py-3 border-b border-white/[0.06]">
+          <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Done</p>
+          <div className="flex flex-col gap-1">
+            {done.map(t => (
+              <div key={t} className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-green-400/60 flex-shrink-0" />
+                <span className="text-[12px] text-white/60 font-mono">{toolLabel(t)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {/* Failed section */}
+      <div className="px-4 py-3 border-b border-white/[0.06]">
+        <p className="text-[10px] font-bold text-red-400/60 uppercase tracking-widest mb-2">Needs attention</p>
+        <div className="flex flex-col gap-2">
+          {failed.map(f => (
+            <div key={f.tool}>
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-red-400/60 flex-shrink-0" />
+                <span className="text-[12px] text-white/70 font-semibold font-mono">{toolLabel(f.tool)}</span>
+              </div>
+              <p className="text-[11px] text-white/30 pl-3.5 mt-0.5 leading-snug">{f.error}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+      {/* Recovery question */}
+      <div className="px-4 py-3">
+        <p className="text-[12px] text-white/50 leading-snug">{question}</p>
+      </div>
+    </motion.div>
+  );
+}
+
+// ─── Proceed Confirm Buttons ───────────────────────────────────────────────────
+function ProceedConfirmButtons({ onProceed, onDismiss }: { onProceed: () => void; onDismiss: () => void }) {
+  const [dismissed, setDismissed] = useState(false);
+
+  if (dismissed) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.15, type: 'spring', damping: 24, stiffness: 260 }}
+      className="flex items-center gap-2 mt-3"
+    >
+      <button
+        onClick={() => { onProceed(); setDismissed(true); }}
+        className="px-4 py-2 rounded-xl bg-white text-black text-[12px] font-semibold hover:bg-white/90 transition-all shadow-sm"
+      >
+        Yes, proceed
+      </button>
+      <button
+        onClick={() => { onDismiss(); setDismissed(true); }}
+        className="px-4 py-2 rounded-xl bg-white/[0.05] border border-white/[0.08] text-white/50 text-[12px] font-medium hover:bg-white/[0.08] hover:text-white/70 transition-all"
+      >
+        Cancel
       </button>
     </motion.div>
   );
@@ -2106,9 +2198,16 @@ export default function ChatInterface({
             }
 
             case 'tool_result': {
+              const toolSuccess = data.success !== false;
               const nextResultSteps = currentAgentSteps.map(s =>
                 s.status === 'active'
-                  ? { ...s, status: 'completed' as const, completedAt: Date.now(), summary: data.summary || `${data.tool} done`, label: getStepLabel(s.tool || '', s.params || {}, 'completed') }
+                  ? {
+                      ...s,
+                      status: toolSuccess ? 'completed' as const : 'error' as const,
+                      completedAt: Date.now(),
+                      summary: data.summary || `${data.tool} ${toolSuccess ? 'done' : 'failed'}`,
+                      label: getStepLabel(s.tool || '', s.params || {}, toolSuccess ? 'completed' : 'error'),
+                    }
                   : s
               );
               currentAgentSteps = nextResultSteps;
@@ -2249,6 +2348,25 @@ export default function ChatInterface({
               }));
               break;
 
+            case 'partial_failure': {
+              // Structured failure report from Layer 3 of the agentic loop
+              setMessages(msgs => msgs.map(m => {
+                if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+                return {
+                  ...m,
+                  meta: {
+                    ...(m.meta || {}),
+                    partialFailure: {
+                      done: data.done || [],
+                      failed: data.failed || [],
+                      question: data.question || '',
+                    },
+                  },
+                };
+              }));
+              break;
+            }
+
             case 'plan': {
               // Plan mode — store the plan card on the message meta
               const planCard: PlanCardData = {
@@ -2294,10 +2412,13 @@ export default function ChatInterface({
                 }
               }
 
+              // Detect vague-instruction planning pass response — ends with "Should I proceed?"
+              const needsConfirmation = /should\s+i\s+proceed\??$/i.test(finalProcessedText.trim());
+
               const finalSteps = currentAgentSteps.map(s =>
                 s.status === 'active' ? { ...s, status: 'completed' as const, completedAt: Date.now() } : s
               );
-              
+
               setMessages(msgs => msgs.map(m => {
                 if (m.id !== assistantMsgId || m.role !== 'assistant') return m;
                 return {
@@ -2306,6 +2427,7 @@ export default function ChatInterface({
                   meta: {
                     ...(m.meta || {}),
                     isStreaming: false,
+                    needsConfirmation,
                     agentSteps: finalSteps,
                     agentRunId: data?.runId,
                     agentDurationMs: data?.durationMs,
@@ -3854,6 +3976,27 @@ export default function ChatInterface({
                                          isTyping={isLoading && msg.role === 'assistant' && msg.id === messages[messages.length - 1].id}
                                          isNewResponse={msg.role === 'assistant' && msg.id === messages[messages.length - 1].id && !isLoading}
                                          hideLinks={msg.role === 'assistant' && (msg as AgentMessage).meta?.limitReached}
+                                       />
+                                     )}
+
+                                     {/* Partial failure card — shown when some tools failed during a run */}
+                                     {msg.role === 'assistant' && (msg as AgentMessage).meta?.partialFailure && (
+                                       <PartialFailureCard
+                                         done={(msg as AgentMessage).meta!.partialFailure!.done}
+                                         failed={(msg as AgentMessage).meta!.partialFailure!.failed}
+                                         question={(msg as AgentMessage).meta!.partialFailure!.question}
+                                       />
+                                     )}
+
+                                     {/* Proceed / Cancel buttons — shown when Arcus interpreted a vague instruction */}
+                                     {msg.role === 'assistant' && (msg as AgentMessage).meta?.needsConfirmation && !isLoading && (
+                                       <ProceedConfirmButtons
+                                         onProceed={() => handleSend('Yes, proceed.')}
+                                         onDismiss={() => {
+                                           setMessages(prev => prev.map(m =>
+                                             m.id === msg.id ? { ...m, meta: { ...(m as AgentMessage).meta, needsConfirmation: false } } : m
+                                           ));
+                                         }}
                                        />
                                      )}
 

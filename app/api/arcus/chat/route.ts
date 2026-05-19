@@ -14,7 +14,7 @@ import { NextRequest } from 'next/server';
 import { auth } from '../../../../lib/auth.js';
 import { runAgentLoop } from '../../../../lib/arcus/loop';
 import { buildSystemPrompt, getConnectedIntegrations } from '../../../../lib/arcus/system-prompt';
-import { searchMemories, saveConversationTurn } from '../../../../lib/arcus/memory';
+import { searchMemories, extractAndSaveInsights } from '../../../../lib/arcus/memory';
 
 export const maxDuration = 60;
 
@@ -152,8 +152,8 @@ export async function POST(request: NextRequest) {
 /** Save memory async after response completes — doesn't block streaming */
 async function saveMemoryAsync(userId: string, userMessage: string, _conversationId?: string) {
   try {
-    // We save just the user message intent now; the full turn is saved in ChatInterface after done
-    await saveConversationTurn(userId, userMessage, '');
+    // Extract and store structured insights: relationship flags, preferences, context
+    await extractAndSaveInsights(userId, userMessage, '');
   } catch {
     // Silent
   }

@@ -1,22 +1,40 @@
 /**
  * Arcus Agentic Loop
  *
- * SSE streaming agentic loop. Calls the LLM, executes tools, loops until done.
+ * SSE streaming agentic loop with three infrastructure layers added
+ * on top of the core LLM → tool → loop cycle:
  *
- * Key behaviours:
- * - If the model writes "intent text" (describes what it will do) without calling tools,
- *   we inject a nudge and loop again — max 3 nudges to prevent infinite loops.
- * - Only exits when the model produces text with NO tool calls after having done some work,
- *   or when it clearly gives a final answer on first contact.
- * - Soft cap of 20 tool calls. After the cap, forces a final summary.
+ * Layer 1 — Vague instruction detection
+ *   Before the main loop starts, the user message is checked against
+ *   known vague-instruction patterns. If vague, a short planning-mode
+ *   LLM call generates a 2-sentence plan + "Should I proceed?" and the
+ *   stream ends. On the next user message (any form of yes), full
+ *   execution runs with the plan already in history.
+ *
+ * Layer 2 — Inbox pipeline
+ *   search_gmail results on inbox-related tasks are passed through the
+ *   inbox pipeline before the LLM sees them: classified by priority tier,
+ *   sorted (client threads → revenue → scheduling → general), and
+ *   newsletters/promotions silently removed. Archive count accumulates
+ *   and is reported at the end.
+ *
+ * Layer 3 — Failure tracking and partial failure reporting
+ *   Every tool call records either a success (tool name) or a failure
+ *   (tool name + error). If the task partially fails, the final message
+ *   always includes a Done / Needs attention section regardless of what
+ *   the LLM wrote. One targeted recovery question is appended.
  *
  * SSE events:
  *   run_start     → { runId, message }
  *   thinking      → { status }
+ *   narrative     → { text, iteration }
  *   tool_call     → { tool, params, iteration }
  *   tool_result   → { tool, success, summary, iteration }
  *   canvas        → { title, type, markdown, draftMeta? }
+ *   task_list     → { tasks }
+ *   task_progress → { completedCount }
  *   message       → { content, canvasContent? }
+ *   plan          → { title, markdown }
  *   error         → { message }
  *   done          → { runId, durationMs, totalSteps }
  */
@@ -24,25 +42,26 @@
 import crypto from 'crypto';
 import { callLLM, getText, getToolCalls, sanitizeModelText } from './engine';
 import { executeTool, getAvailableTools } from './tools';
+import { processGmailResults, isInboxTask, isVagueInstruction } from './inbox-pipeline';
 import type { LLMMessage } from './engine';
 
 export const MAX_TOOL_CALLS = 20;
-const MAX_NUDGES = 3; // max times we re-prompt the model to use tools instead of narrating
+const MAX_NUDGES = 3;
 
-// Patterns that indicate the model wrote planning text instead of calling a tool
+// ── Pattern guards ─────────────────────────────────────────────────────────────
+
 const INTENT_PATTERN = /^(searching|looking|checking|reading|finding|fetching|let me|i['']ll|i will|i am going to|going to|will (search|check|look|read|find|fetch)|now (searching|checking|reading))/i;
-
-// Placeholders the model inserts when it hasn't actually called a tool yet
 const PLACEHOLDER_PATTERN = /\[\s*(I will|will be|to be|once generated|actual.*link|link here|pending|tbd|insert|placeholder|meet link|google meet link|conference link|calendar link|meeting link)\s*[^\]]*?\]/i;
 
 function isIntentText(text: string): boolean {
-  const t = text.trim();
-  return t.length > 0 && t.length < 500 && INTENT_PATTERN.test(t);
+  return text.trim().length > 0 && text.trim().length < 500 && INTENT_PATTERN.test(text.trim());
 }
 
 function hasPlaceholders(text: string): boolean {
   return PLACEHOLDER_PATTERN.test(text);
 }
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
 
 function sseEvent(type: string, data: unknown): string {
   return `event: ${type}\ndata: ${JSON.stringify(data)}\n\n`;
@@ -51,6 +70,16 @@ function sseEvent(type: string, data: unknown): string {
 function encode(s: string): Uint8Array {
   return new TextEncoder().encode(s);
 }
+
+// ── Tool outcome tracking ──────────────────────────────────────────────────────
+
+interface ToolOutcome {
+  tool: string;
+  ok: boolean;
+  error?: string;
+}
+
+// ── Types ──────────────────────────────────────────────────────────────────────
 
 export interface LoopOptions {
   userId: string;
@@ -61,12 +90,22 @@ export interface LoopOptions {
   isPlanMode?: boolean;
 }
 
+// ── Main loop ──────────────────────────────────────────────────────────────────
+
 export function runAgentLoop(opts: LoopOptions): ReadableStream {
-  const { userId, systemPrompt, history, userMessage, connectedIntegrations = [], isPlanMode = false } = opts;
-  // In plan mode we pass no tools — the AI generates a plan document, not actions
+  const {
+    userId,
+    systemPrompt,
+    history,
+    userMessage,
+    connectedIntegrations = [],
+    isPlanMode = false,
+  } = opts;
+
   const availableTools = isPlanMode ? [] : getAvailableTools(connectedIntegrations);
   const runId = crypto.randomUUID();
   const startedAt = Date.now();
+  const inboxTask = isInboxTask(userMessage);
 
   return new ReadableStream({
     async start(controller) {
@@ -77,9 +116,42 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
       try {
         emit('run_start', { runId, message: userMessage });
 
+        // ── Layer 1: Vague instruction detection ────────────────────────────
+        if (!isPlanMode && availableTools.length > 0 && isVagueInstruction(userMessage)) {
+          emit('thinking', { status: 'Interpreting your request…' });
+
+          const vagueRes = await callLLM(
+            [
+              { role: 'system', content: systemPrompt },
+              {
+                role: 'system',
+                content:
+                  'The user has given a broad instruction. Do NOT call any tools. ' +
+                  'Interpret their request using your knowledge of what tools are available and what you can do. ' +
+                  'Respond in exactly two sentences: ' +
+                  '(1) What specific actions you will take (tools in order, who you will contact, what you will produce). ' +
+                  '(2) What the outcome will be for the user. ' +
+                  'Then on a new line, write exactly: "Should I proceed?" ' +
+                  'Be specific and confident. No hedging.',
+              },
+              ...history.map(h => ({ role: h.role as 'user' | 'assistant', content: h.content })),
+              { role: 'user', content: userMessage },
+            ],
+            [], // no tools — this is a planning pass only
+            { maxTokens: 300, temperature: 0.2 },
+          );
+
+          const planText = sanitizeModelText(getText(vagueRes.content));
+          emit('message', { content: planText });
+          emit('done', { runId, durationMs: Date.now() - startedAt, totalSteps: 0 });
+          controller.close();
+          return;
+        }
+
+        // ── Pre-loop: generate task list ────────────────────────────────────
         const messages: LLMMessage[] = [
           { role: 'system', content: systemPrompt },
-          ...history.map(h => ({ role: h.role, content: h.content })),
+          ...history.map(h => ({ role: h.role as 'user' | 'assistant', content: h.content })),
           { role: 'user', content: userMessage },
         ];
 
@@ -88,18 +160,27 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
         let finalText = '';
         let canvasContent: any = null;
         let iteration = 0;
-        let taskCount = 0; // total tasks emitted (for progress tracking)
+        let taskCount = 0;
+        let archivedCount = 0;
+        const outcomes: ToolOutcome[] = [];
 
-        // ── Pre-loop: generate a task list so the user sees what's coming ─────
         if (!isPlanMode && availableTools.length > 0) {
           try {
-            const tlRes = await callLLM([
-              {
-                role: 'system',
-                content: `You are a task planner. Given the user's request, output a JSON array of 3-5 short action items (max 10 words each) describing what you will do step-by-step. Output ONLY the raw JSON array with no extra text, no markdown fences. Example: ["Search inbox for recent emails","Read top 3 matching threads","Draft a reply matching user tone","Send the draft"]`,
-              },
-              { role: 'user', content: userMessage },
-            ], [], { maxTokens: 200 });
+            const tlRes = await callLLM(
+              [
+                {
+                  role: 'system',
+                  content:
+                    'You are a task planner. Given the user\'s request, output a JSON array of 3-5 short action items ' +
+                    '(max 10 words each) describing what you will do step-by-step. ' +
+                    'Output ONLY the raw JSON array with no extra text, no markdown fences. ' +
+                    'Example: ["Search inbox for recent emails","Read top 3 matching threads","Draft a reply matching user tone"]',
+                },
+                { role: 'user', content: userMessage },
+              ],
+              [],
+              { maxTokens: 200 },
+            );
             const raw = getText(tlRes.content).trim();
             const match = raw.match(/\[[\s\S]*\]/);
             if (match) {
@@ -110,11 +191,12 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                 emit('task_list', { tasks: clean });
               }
             }
-          } catch { /* silent — task list is optional */ }
+          } catch { /* task list is optional */ }
         }
 
         emit('thinking', { status: 'Thinking…' });
 
+        // ── Main agentic loop ───────────────────────────────────────────────
         while (true) {
           const response = await callLLM(messages, availableTools);
           messages.push({ role: 'assistant', content: response.content });
@@ -122,10 +204,8 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
           const toolCalls = getToolCalls(response.content);
           const textContent = sanitizeModelText(getText(response.content));
 
-          // ── Case 1: Model wants to call tools → execute them ──────────────
+          // ── Case 1: Tool calls ────────────────────────────────────────────
           if (toolCalls.length > 0) {
-            // Emit any intermediate narrative text the model wrote alongside tool calls
-            // (e.g. "I found X and Y — now I'll check Z"). Shown between step groups.
             if (textContent && textContent.length >= 20 && textContent.length <= 2000 && !isIntentText(textContent)) {
               emit('narrative', { text: textContent, iteration });
             }
@@ -142,7 +222,14 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
               emit('tool_call', { tool: tc.name, params: tc.input, iteration });
 
               try {
-                const result = await executeTool(tc.name, tc.input, userId);
+                let result = await executeTool(tc.name, tc.input, userId);
+
+                // ── Layer 2: Inbox pipeline ─────────────────────────────────
+                if (tc.name === 'search_gmail' && inboxTask) {
+                  const { annotated, archiveCount } = processGmailResults(result.output);
+                  archivedCount += archiveCount;
+                  result = { ...result, output: annotated };
+                }
 
                 if (result.canvasData) {
                   canvasContent = result.canvasData;
@@ -156,10 +243,15 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                   iteration,
                 });
 
+                // ── Layer 3: Track outcome ──────────────────────────────────
+                outcomes.push({ tool: tc.name, ok: true });
                 toolResults.push({ type: 'tool_result', tool_use_id: tc.id, content: result.output });
+
               } catch (err: any) {
-                emit('tool_result', { tool: tc.name, success: false, summary: err.message, iteration });
-                toolResults.push({ type: 'tool_result', tool_use_id: tc.id, content: `Error: ${err.message}` });
+                const errorMsg = err?.message ?? 'Unknown error';
+                emit('tool_result', { tool: tc.name, success: false, summary: errorMsg, iteration });
+                outcomes.push({ tool: tc.name, ok: false, error: errorMsg });
+                toolResults.push({ type: 'tool_result', tool_use_id: tc.id, content: `Error: ${errorMsg}` });
               }
             }
 
@@ -169,7 +261,6 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
 
             iteration++;
 
-            // Hit the cap → force a final summary with no tools
             if (totalToolCalls >= MAX_TOOL_CALLS) {
               emit('thinking', { status: 'Preparing final response…' });
               const finalResponse = await callLLM(
@@ -180,21 +271,15 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
               break;
             }
 
-            // Advance task progress — one task per completed iteration (rough mapping)
             if (taskCount > 0) {
-              const completedSoFar = Math.min(iteration, taskCount - 1);
-              emit('task_progress', { completedCount: completedSoFar });
+              emit('task_progress', { completedCount: Math.min(iteration, taskCount - 1) });
             }
 
-            // Loop — let the model decide what to do next
             emit('thinking', { status: 'Processing results…' });
             continue;
           }
 
-          // ── Case 2: No tool calls ─────────────────────────────────────────
-
-          // 2a. Model narrated intent instead of acting AND hasn't done any work yet
-          //     → nudge it to actually call the tools
+          // ── Case 2a: Intent text without tools — nudge ────────────────────
           if (totalToolCalls === 0 && nudgeCount < MAX_NUDGES && isIntentText(textContent)) {
             nudgeCount++;
             emit('thinking', { status: 'Working on it…' });
@@ -205,8 +290,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
             continue;
           }
 
-          // 2b. Model wrote a response with unfilled placeholders (e.g. "[I will provide the link]")
-          //     This means it described work it didn't actually do → nudge it to call tools
+          // ── Case 2b: Unfilled placeholders — nudge ────────────────────────
           if (nudgeCount < MAX_NUDGES && hasPlaceholders(textContent)) {
             nudgeCount++;
             emit('thinking', { status: 'Completing task…' });
@@ -217,7 +301,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
             continue;
           }
 
-          // 2c. Model gave a real final answer → done
+          // ── Case 2c: Real final answer ────────────────────────────────────
           finalText = textContent;
           break;
         }
@@ -228,19 +312,37 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
             : 'Done. Let me know if you need anything else.';
         }
 
-        // All tasks complete when we reach the final answer
+        // ── Layer 2 end: append archive count ──────────────────────────────
+        if (archivedCount > 0) {
+          finalText = finalText.trimEnd() + `\n\nArchived ${archivedCount} newsletter${archivedCount !== 1 ? 's' : ''} and promotional email${archivedCount !== 1 ? 's' : ''}.`;
+        }
+
+        // ── Layer 3 end: emit partial failure as structured SSE event ──────
+        const failed = outcomes.filter(o => !o.ok);
+        const succeeded = outcomes.filter(o => o.ok);
+        if (failed.length > 0 && totalToolCalls > 0) {
+          const question = failed.length === 1
+            ? `How would you like to handle the ${failed[0].tool} failure?`
+            : 'How would you like to handle these failures?';
+          emit('partial_failure', {
+            done: succeeded.map(o => o.tool),
+            failed: failed.map(o => ({ tool: o.tool, error: o.error ?? 'unknown error' })),
+            question,
+          });
+        }
+
         if (taskCount > 0) {
           emit('task_progress', { completedCount: taskCount });
         }
 
         if (isPlanMode) {
-          // Extract title from the first H1 heading in the plan markdown
           const titleMatch = finalText.match(/^#\s+(.+)$/m);
           const planTitle = titleMatch ? titleMatch[1].trim() : 'Plan';
           emit('plan', { title: planTitle, markdown: finalText });
         } else {
           emit('message', { content: finalText, canvasContent: canvasContent || undefined });
         }
+
         emit('done', { runId, durationMs: Date.now() - startedAt, totalSteps: totalToolCalls });
 
       } catch (err: any) {
