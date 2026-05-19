@@ -274,7 +274,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void 
       onClick={e => { e.stopPropagation(); onChange(); }}
       className={cn(
         'relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none',
-        checked ? 'bg-arcus-fg' : 'bg-arcus-raised',
+        checked ? 'bg-emerald-500' : 'bg-neutral-300 dark:bg-neutral-800',
       )}
     >
       <span className={cn(
