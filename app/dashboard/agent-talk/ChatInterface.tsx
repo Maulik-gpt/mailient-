@@ -2463,11 +2463,10 @@ export default function ChatInterface({
               finalProcessedText = finalContent.trim();
               if (!finalProcessedText && stepIndex > 0) {
                 const completedSteps = currentAgentSteps.filter(s => s.status === 'completed');
-                if (completedSteps.length > 0) {
-                  finalProcessedText = `I've finished executing the plan. Successfully completed ${completedSteps.length} action(s).`;
-                } else {
-                  finalProcessedText = "I've completed the initialization, but haven't found a reason to provide a detailed text response yet.";
-                }
+                const toolNames = completedSteps.map(s => s.label || (s as any).tool || '').filter(Boolean).join(', ');
+                finalProcessedText = completedSteps.length > 0
+                  ? `I completed the following steps: ${toolNames}. Let me know if you need any changes or have follow-up questions.`
+                  : "I've completed the requested actions. Let me know if you need anything else.";
               }
 
               // Detect vague-instruction planning pass response — ends with "Should I proceed?"
