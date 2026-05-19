@@ -213,7 +213,10 @@ export function CanvasPanel({
   const panelWidth = isClient && window.innerWidth < 768 ? 'calc(100vw - 24px)' : `${width}px`;
 
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, x: 40, scale: 0.985 }}
+      animate={{ opacity: 1, x: 0, scale: 1 }}
+      transition={{ duration: 0.34, ease: [0.16, 1, 0.3, 1] }}
       className={cn(
         'h-[calc(100vh-32px)] flex flex-col flex-shrink-0 relative',
         'bg-arcus-elevated border border-arcus-border rounded-[24px] shadow-[0_32px_80px_-8px_rgba(0,0,0,0.8)]',
@@ -247,14 +250,21 @@ export function CanvasPanel({
           </h2>
         </div>
 
-        {/* Actions */}
-        <div className="flex items-center gap-1 shrink-0 ml-3">
+        {/* Toolbar */}
+        <div className="flex items-center gap-0.5 shrink-0 ml-3">
           <button
             onClick={handleCopy}
             title="Copy content"
             className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-arcus-surface text-arcus-fg-tertiary hover:text-arcus-fg-secondary transition-all"
           >
             {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+          </button>
+          <button
+            onClick={handleExportPdf}
+            title="Export as PDF"
+            className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-arcus-surface text-arcus-fg-tertiary hover:text-arcus-fg-secondary transition-all"
+          >
+            <Printer className="w-4 h-4" />
           </button>
           <button
             onClick={handleDownloadDocx}
@@ -266,6 +276,17 @@ export function CanvasPanel({
               : <Download className="w-4 h-4" />
             }
           </button>
+          {isEmail && (
+            <button
+              onClick={handleSend}
+              title="Send as Email"
+              disabled={isExecuting}
+              className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-arcus-surface text-arcus-fg-tertiary hover:text-emerald-400 transition-all disabled:opacity-40"
+            >
+              {isExecuting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            </button>
+          )}
+          <div className="w-px h-4 bg-arcus-border mx-1" />
           <button
             onClick={onClose}
             title="Close"
@@ -317,11 +338,18 @@ export function CanvasPanel({
 
       {/* ── Footer ───────────────────────────────────────────────────────────── */}
       <footer className="shrink-0 border-t border-white/[0.03] bg-arcus-elevated px-5 py-3.5 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          {/* Word count */}
+        <div className="flex items-center gap-2.5">
           <span className="text-[11px] text-arcus-fg-muted tabular-nums">
             {wordCount(getTextContent())} words
           </span>
+          {isEmail && (
+            <>
+              <span className="w-px h-3 bg-arcus-border" />
+              <span className="text-[11px] text-arcus-fg-muted tabular-nums">
+                {(editMode ? editedBody : (canvasData.content?.body || extractEmailBody(canvasData.raw || ''))).length} characters
+              </span>
+            </>
+          )}
         </div>
 
         <div className="flex items-center gap-2">
@@ -362,7 +390,7 @@ export function CanvasPanel({
         .canvas-scroll::-webkit-scrollbar-thumb    { background: rgba(255,255,255,0.06); border-radius: 8px; }
         .canvas-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.12); }
       `}</style>
-    </div>
+    </motion.div>
   );
 }
 

@@ -409,11 +409,29 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
               emit('tool_call', { tool: tc.name, params: tc.input, iteration });
 
               try {
+                // ── Newsletter logic, layer 1: filter at the SOURCE ─────────
+                // Gmail already classifies promotions/social/forums far more
+                // reliably than any snippet regex. Exclude those categories in
+                // the query itself so promos never enter the result set —
+                // unless the user is explicitly hunting for them, or already
+                // scoped the query to a category/label themselves.
+                if (
+                  tc.name === 'search_gmail' &&
+                  filterNewsletters &&
+                  typeof tc.input?.query === 'string' &&
+                  !/category:|label:|in:(sent|drafts|spam|trash)/i.test(tc.input.query)
+                ) {
+                  tc.input = {
+                    ...tc.input,
+                    query: `${tc.input.query} -category:promotions -category:social -category:forums`.trim(),
+                  };
+                }
+
                 let result = await executeTool(tc.name, tc.input, userId);
 
-                // ── Layer 2: Inbox pipeline ─────────────────────────────────
-                // Runs on every Gmail search (not only keyword-matched inbox
-                // tasks) so newsletters/promotions are consistently filtered.
+                // ── Newsletter logic, layer 2: classify what slipped through ─
+                // Safety net for promos that escape Gmail's category filter
+                // (e.g. marketing sent to the Primary tab).
                 if (tc.name === 'search_gmail' && filterNewsletters) {
                   const { annotated, archiveCount } = processGmailResults(result.output);
                   archivedCount += archiveCount;
