@@ -140,7 +140,7 @@ export function HomeFeedSidebar({
                         mass: 1,
                         restDelta: 0.001
                     } : { duration: 0 }}
-                    className={`fixed left-0 top-0 h-screen bg-[#F9F8F6] dark:bg-arcus-surface border-r border-[#EBE9E2] dark:border-arcus-border flex flex-col z-[100] md:z-50 ${className} ${!isOpen ? 'pointer-events-none md:pointer-events-auto' : 'pointer-events-auto shadow-2xl'}`}
+                    className={`fixed left-0 top-0 h-screen bg-[#F9F8F6] dark:bg-black border-r border-[#EBE9E2] dark:border-white/[0.06] flex flex-col z-[100] md:z-50 ${className} ${!isOpen ? 'pointer-events-none md:pointer-events-auto' : 'pointer-events-auto shadow-2xl'}`}
                 >
                     {/* Mobile Close Button */}
                     <AnimatePresence>
@@ -153,7 +153,7 @@ export function HomeFeedSidebar({
                             >
                                 <button 
                                     onClick={onClose}
-                                    className="p-2 hover:bg-black/5 dark:hover:bg-arcus-surface rounded-full transition-colors text-neutral-600 dark:text-arcus-fg-tertiary"
+                                    className="p-2 hover:bg-black/5 dark:hover:bg-white/[0.05] rounded-full transition-colors text-neutral-600 dark:text-arcus-fg-tertiary"
                                 >
                                     <X className="w-5 h-5" />
                                 </button>
@@ -210,7 +210,7 @@ export function HomeFeedSidebar({
                                 animate={{ opacity: 1, scale: 1 }}
                                 whileHover={{ scale: 1.1, x: 2 }}
                                 onClick={() => setIsCollapsed(!isCollapsed)}
-                                className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-[#F9F8F6] dark:bg-arcus-surface border border-[#EBE9E2] dark:border-arcus-divider rounded-full flex items-center justify-center text-neutral-600 dark:text-arcus-fg-tertiary hover:text-neutral-900 dark:hover:text-white shadow-sm z-50 transition-all"
+                                className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-[#F9F8F6] dark:bg-black border border-[#EBE9E2] dark:border-white/[0.1] rounded-full flex items-center justify-center text-neutral-600 dark:text-arcus-fg-tertiary hover:text-neutral-900 dark:hover:text-white shadow-sm z-50 transition-all"
                              >
                                 <PanelLeft className="w-3.5 h-3.5 rotate-180" />
                              </motion.button>
@@ -233,9 +233,9 @@ export function HomeFeedSidebar({
                                                 initial={false}
                                                 onClick={() => router.push(item.route)}
                                                 className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3 px-3'} py-2.5 rounded-xl transition-all duration-200 group relative ${
-                                                    isActive 
-                                                    ? 'bg-black/5 dark:bg-arcus-raised text-[#1A1A1A] dark:text-white font-semibold border border-[#EBE9E2] dark:border-arcus-divider'
-                                                    : 'text-[#666666] dark:text-arcus-fg-tertiary hover:text-[#1A1A1A] dark:hover:text-white hover:bg-black/5 dark:hover:bg-arcus-elevated'
+                                                    isActive
+                                                    ? 'bg-black/5 dark:bg-white/[0.08] text-[#1A1A1A] dark:text-white font-semibold border border-[#EBE9E2] dark:border-white/[0.1]'
+                                                    : 'text-[#666666] dark:text-arcus-fg-tertiary hover:text-[#1A1A1A] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/[0.05]'
                                                 }`}
                                             >
                                                 <motion.div layout>
@@ -319,7 +319,7 @@ export function HomeFeedSidebar({
                     </div>
 
                     {/* User Detail (Only shown when expanded) */}
-                    <div className="px-3 pb-6 border-t border-[#EBE9E2] dark:border-arcus-border">
+                    <div className="px-3 pb-6 border-t border-[#EBE9E2] dark:border-white/[0.06]">
                         <AnimatePresence mode="wait">
                             {!isCollapsed ? (
                                 <motion.div 
@@ -332,7 +332,7 @@ export function HomeFeedSidebar({
                                 >
                                     <button
                                         onClick={() => setIsMoreOptionsOpen(!isMoreOptionsOpen)}
-                                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-arcus-surface transition-all group"
+                                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/[0.05] transition-all group"
                                     >
                                         <motion.div 
                                             layout
@@ -368,12 +368,12 @@ export function HomeFeedSidebar({
                                                         setIsFeedbackOpen(true);
                                                         setIsMoreOptionsOpen(false);
                                                     }}
-                                                    className="w-full flex items-center gap-3 px-3 py-2 text-neutral-600 dark:text-arcus-fg-tertiary hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-arcus-surface rounded-lg transition-all text-sm group"
+                                                    className="w-full flex items-center gap-3 px-3 py-2 text-neutral-600 dark:text-arcus-fg-tertiary hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/[0.05] rounded-lg transition-all text-sm group"
                                                 >
                                                     <MessageCircle size={16} className="text-neutral-600 dark:text-arcus-fg-tertiary group-hover:text-black dark:group-hover:text-white transition-colors" />
                                                     <span>Feedback</span>
                                                 </button>
-                                                <div className="h-px w-full bg-black/5 dark:bg-arcus-surface my-1" />
+                                                <div className="h-px w-full bg-black/5 dark:bg-white/[0.06] my-1" />
                                                 <button
                                                     onClick={handleLogout}
                                                     className="w-full flex items-center gap-3 px-3 py-2 text-red-500/80 hover:bg-red-500/5 rounded-lg transition-all text-sm"
