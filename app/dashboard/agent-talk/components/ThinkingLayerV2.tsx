@@ -125,46 +125,46 @@ export function ConnectorRequiredPanel({
   return (
     <div className="w-full my-4">
       {/* Card */}
-      <div className="bg-zinc-900 border border-zinc-700/60 rounded-2xl overflow-hidden shadow-xl shadow-black/40">
+      <div className="bg-arcus-surface border border-arcus-divider rounded-2xl overflow-hidden shadow-xl shadow-black/40">
         {/* Header */}
-        <div className="px-5 pt-5 pb-3 border-b border-zinc-800/60">
-          <p className="text-[13px] font-bold text-zinc-100 uppercase tracking-widest">
+        <div className="px-5 pt-5 pb-3 border-b border-arcus-border">
+          <p className="text-[13px] font-bold text-arcus-fg uppercase tracking-widest">
             Recommended for this task
           </p>
         </div>
 
         {/* Connector rows */}
-        <div className="divide-y divide-zinc-800/60">
+        <div className="divide-y divide-arcus-border">
           {connectors.map((c) => (
             <div key={c.id} className="flex items-center gap-4 px-5 py-4">
               {/* Icon */}
               <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-zinc-800 border border-zinc-700/60"
+                className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-arcus-raised border border-arcus-divider"
                 style={c.color ? { backgroundColor: c.color + '18', borderColor: c.color + '40' } : {}}
               >
                 {c.icon ? (
                   <img src={c.icon} alt={c.name} className="w-5 h-5 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                 ) : (
-                  <Link2 className="w-4 h-4 text-zinc-400" />
+                  <Link2 className="w-4 h-4 text-arcus-fg-tertiary" />
                 )}
               </div>
 
               {/* Name + status + description */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
-                  <span className="text-[14px] font-bold text-zinc-100">{c.name}</span>
+                  <span className="text-[14px] font-bold text-arcus-fg">{c.name}</span>
                   {!c.connected && (
-                    <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-zinc-800 border border-zinc-700 text-zinc-400">
+                    <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-arcus-raised border border-arcus-divider text-arcus-fg-tertiary">
                       Not connected
                     </span>
                   )}
                   {c.connected && (
-                    <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-zinc-800 border border-zinc-600 text-zinc-200">
+                    <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-arcus-raised border border-arcus-divider text-arcus-fg">
                       Connected
                     </span>
                   )}
                 </div>
-                <p className="text-[13px] text-zinc-400 leading-snug line-clamp-1">{c.description}</p>
+                <p className="text-[13px] text-arcus-fg-tertiary leading-snug line-clamp-1">{c.description}</p>
               </div>
 
               {/* Connect button */}
@@ -177,21 +177,21 @@ export function ConnectorRequiredPanel({
                 </button>
               )}
               {c.connected && (
-                <CheckCircle2 className="w-5 h-5 text-zinc-300 flex-shrink-0" />
+                <CheckCircle2 className="w-5 h-5 text-arcus-fg-secondary flex-shrink-0" />
               )}
             </div>
           ))}
         </div>
 
         {/* Footer actions */}
-        <div className="px-5 py-4 border-t border-zinc-800/60 flex items-center justify-between gap-4">
+        <div className="px-5 py-4 border-t border-arcus-border flex items-center justify-between gap-4">
           {onViewAll ? (
             <button
               onClick={onViewAll}
-              className="text-[13px] text-zinc-400 hover:text-zinc-100 transition-colors flex items-center gap-1.5"
+              className="text-[13px] text-arcus-fg-tertiary hover:text-arcus-fg transition-colors flex items-center gap-1.5"
             >
               Looking for something else?{' '}
-              <span className="text-zinc-200 font-semibold underline underline-offset-2">View all connectors</span>
+              <span className="text-arcus-fg font-semibold underline underline-offset-2">View all connectors</span>
               <ExternalLink className="w-3 h-3" />
             </button>
           ) : <span />}
@@ -199,7 +199,7 @@ export function ConnectorRequiredPanel({
           <div className="flex items-center gap-2 flex-shrink-0">
             <button
               onClick={onSkip}
-              className="px-4 py-2 rounded-xl text-[13px] font-semibold text-zinc-300 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700/60 transition-all"
+              className="px-4 py-2 rounded-xl text-[13px] font-semibold text-arcus-fg-secondary bg-arcus-raised hover:bg-arcus-divider border border-arcus-divider transition-all"
             >
               Skip
             </button>
@@ -217,9 +217,9 @@ export function ConnectorRequiredPanel({
       {waitingForUser && (
         <div className="flex items-center gap-2.5 mt-3 px-1">
           <div className="relative w-4 h-4 flex-shrink-0">
-            <div className="w-4 h-4 rounded-full border-2 border-zinc-500 border-t-zinc-200 animate-spin" />
+            <div className="w-4 h-4 rounded-full border-2 border-arcus-fg-tertiary border-t-arcus-fg animate-spin" />
           </div>
-          <p className="text-[13px] font-semibold text-zinc-300">
+          <p className="text-[13px] font-semibold text-arcus-fg-secondary">
             Arcus will continue working after your reply
           </p>
         </div>
@@ -261,7 +261,7 @@ function ElapsedTimer({ startedAt }: { startedAt?: string }) {
   const m = Math.floor(elapsed / 60);
   const s = elapsed % 60;
   return (
-    <span className="text-[11px] font-mono text-zinc-500">
+    <span className="text-[11px] font-mono text-arcus-fg-muted">
       {m > 0 ? `${m}:${String(s).padStart(2, '0')}` : `${s}s`}
     </span>
   );
@@ -292,10 +292,10 @@ function StepRow({
       className={cn(
         'rounded-xl border overflow-hidden transition-colors',
         isActive
-          ? 'bg-zinc-900 border-zinc-700/80'
+          ? 'bg-arcus-surface border-arcus-divider'
           : isDone
-          ? 'bg-zinc-900/50 border-zinc-800/60'
-          : 'bg-zinc-900/30 border-zinc-800/40',
+          ? 'bg-arcus-surface/50 border-arcus-border'
+          : 'bg-arcus-elevated border-arcus-border',
       )}
     >
       {/* Step header */}
@@ -306,12 +306,12 @@ function StepRow({
         {/* Status icon */}
         <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
           {isDone ? (
-            <CheckCircle2 className="w-4.5 h-4.5 text-zinc-300" />
+            <CheckCircle2 className="w-4.5 h-4.5 text-arcus-fg-secondary" />
           ) : isActive ? (
-            <Loader2 className="w-4 h-4 text-zinc-100 animate-spin" />
+            <Loader2 className="w-4 h-4 text-arcus-fg animate-spin" />
           ) : (
-            <div className="w-4 h-4 rounded-full border-2 border-zinc-700 flex items-center justify-center">
-              <div className="w-1.5 h-1.5 rounded-full bg-zinc-700" />
+            <div className="w-4 h-4 rounded-full border-2 border-arcus-divider flex items-center justify-center">
+              <div className="w-1.5 h-1.5 rounded-full bg-arcus-divider" />
             </div>
           )}
         </div>
@@ -320,7 +320,7 @@ function StepRow({
         <span
           className={cn(
             'flex-1 text-[14px] font-semibold leading-snug',
-            isDone ? 'text-zinc-400' : 'text-zinc-100',
+            isDone ? 'text-arcus-fg-tertiary' : 'text-arcus-fg',
           )}
         >
           {block.title}
@@ -329,13 +329,13 @@ function StepRow({
         {/* Right side: counter + elapsed + chevron */}
         <div className="flex items-center gap-2.5 flex-shrink-0">
           {isActive && <ElapsedTimer />}
-          <span className="text-[12px] font-medium text-zinc-500">
+          <span className="text-[12px] font-medium text-arcus-fg-muted">
             {index + 1}/{total}
           </span>
           {open ? (
-            <ChevronDown className="w-4 h-4 text-zinc-600" />
+            <ChevronDown className="w-4 h-4 text-arcus-fg-muted" />
           ) : (
-            <ChevronRight className="w-4 h-4 text-zinc-600" />
+            <ChevronRight className="w-4 h-4 text-arcus-fg-muted" />
           )}
         </div>
       </button>
@@ -348,11 +348,11 @@ function StepRow({
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.18 }}
-            className="overflow-hidden border-t border-zinc-800/60"
+            className="overflow-hidden border-t border-arcus-border"
           >
             <div className="px-4 py-3 space-y-0.5">
               {block.initialContext && (
-                <p className="text-[13px] text-zinc-400 leading-relaxed mb-3 pl-1">
+                <p className="text-[13px] text-arcus-fg-tertiary leading-relaxed mb-3 pl-1">
                   {block.initialContext}
                 </p>
               )}
@@ -362,20 +362,20 @@ function StepRow({
                   key={step.id}
                   className={cn(
                     'flex items-center gap-3 py-1.5 px-2 rounded-lg',
-                    step.status === 'active' ? 'bg-zinc-800/50' : '',
+                    step.status === 'active' ? 'bg-arcus-raised/50' : '',
                   )}
                 >
                   {/* Sub-step status dot */}
                   <div className="flex-shrink-0">
                     {step.status === 'completed' ? (
-                      <CheckCircle2 className="w-3.5 h-3.5 text-zinc-500" />
+                      <CheckCircle2 className="w-3.5 h-3.5 text-arcus-fg-muted" />
                     ) : step.status === 'active' ? (
-                      <Loader2 className="w-3.5 h-3.5 text-zinc-300 animate-spin" />
+                      <Loader2 className="w-3.5 h-3.5 text-arcus-fg-secondary animate-spin" />
                     ) : step.status === 'error' ? (
                       <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
                     ) : (
-                      <div className="w-3.5 h-3.5 rounded-sm border border-zinc-700 flex items-center justify-center bg-zinc-800/60">
-                        <div className="text-zinc-600 flex items-center justify-center">
+                      <div className="w-3.5 h-3.5 rounded-sm border border-arcus-divider flex items-center justify-center bg-arcus-raised/50">
+                        <div className="text-arcus-fg-muted flex items-center justify-center">
                           {getStepIcon(step.type, 'w-2.5 h-2.5')}
                         </div>
                       </div>
@@ -388,8 +388,8 @@ function StepRow({
                       className={cn(
                         'w-5 h-5 rounded flex items-center justify-center flex-shrink-0',
                         step.status === 'completed'
-                          ? 'bg-zinc-800 text-zinc-500'
-                          : 'bg-zinc-700 text-zinc-200',
+                          ? 'bg-arcus-raised text-arcus-fg-muted'
+                          : 'bg-arcus-divider text-arcus-fg',
                       )}
                     >
                       {getStepIcon(step.type, 'w-3 h-3')}
@@ -400,23 +400,23 @@ function StepRow({
                     className={cn(
                       'text-[13px] font-medium leading-snug flex-1',
                       step.status === 'completed'
-                        ? 'text-zinc-500'
+                        ? 'text-arcus-fg-muted'
                         : step.status === 'active'
-                        ? 'text-zinc-200'
-                        : 'text-zinc-500',
+                        ? 'text-arcus-fg'
+                        : 'text-arcus-fg-muted',
                     )}
                   >
                     {step.label}
                   </span>
 
                   {step.status === 'active' && (
-                    <span className="text-[11px] text-zinc-500 italic flex-shrink-0">Running…</span>
+                    <span className="text-[11px] text-arcus-fg-muted italic flex-shrink-0">Running…</span>
                   )}
                 </div>
               ))}
 
               {(block.interimConclusion || block.nextActionContext) && (
-                <p className="text-[13px] text-zinc-400 leading-relaxed mt-3 pl-1">
+                <p className="text-[13px] text-arcus-fg-tertiary leading-relaxed mt-3 pl-1">
                   {block.interimConclusion}{block.nextActionContext ? ' ' + block.nextActionContext : ''}
                 </p>
               )}
@@ -455,14 +455,14 @@ function TodoItemRow({
       className={cn(
         'rounded-xl border overflow-hidden transition-colors',
         isRunning
-          ? 'bg-zinc-900 border-zinc-700/80'
+          ? 'bg-arcus-surface border-arcus-divider'
           : isDone
-          ? 'bg-zinc-900/50 border-zinc-800/60'
+          ? 'bg-arcus-surface/50 border-arcus-border'
           : isFailed
           ? 'bg-red-500/5 border-red-500/20'
           : isBlocked
-          ? 'bg-zinc-900/60 border-zinc-700/60'
-          : 'bg-zinc-900/30 border-zinc-800/40',
+          ? 'bg-arcus-surface/60 border-arcus-divider'
+          : 'bg-arcus-elevated border-arcus-border',
       )}
     >
       <button
@@ -472,16 +472,16 @@ function TodoItemRow({
         {/* Status */}
         <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
           {isDone ? (
-            <CheckCircle2 className="w-4 h-4 text-zinc-300" />
+            <CheckCircle2 className="w-4 h-4 text-arcus-fg-secondary" />
           ) : isRunning ? (
-            <Loader2 className="w-4 h-4 text-zinc-100 animate-spin" />
+            <Loader2 className="w-4 h-4 text-arcus-fg animate-spin" />
           ) : isFailed ? (
             <AlertTriangle className="w-4 h-4 text-red-400" />
           ) : isBlocked ? (
-            <div className="w-4 h-4 rounded-full border-2 border-zinc-500" />
+            <div className="w-4 h-4 rounded-full border-2 border-arcus-fg-tertiary" />
           ) : (
-            <div className="w-4 h-4 rounded-full border-2 border-zinc-700 flex items-center justify-center">
-              <div className="w-1.5 h-1.5 rounded-full bg-zinc-700" />
+            <div className="w-4 h-4 rounded-full border-2 border-arcus-divider flex items-center justify-center">
+              <div className="w-1.5 h-1.5 rounded-full bg-arcus-divider" />
             </div>
           )}
         </div>
@@ -490,7 +490,7 @@ function TodoItemRow({
         <span
           className={cn(
             'flex-1 text-[14px] font-semibold leading-snug',
-            isDone ? 'text-zinc-400' : isFailed ? 'text-red-400' : 'text-zinc-100',
+            isDone ? 'text-arcus-fg-tertiary' : isFailed ? 'text-red-400' : 'text-arcus-fg',
           )}
         >
           {todo.title}
@@ -498,11 +498,11 @@ function TodoItemRow({
 
         <div className="flex items-center gap-2.5 flex-shrink-0">
           {isRunning && <ElapsedTimer startedAt={todo.startedAt} />}
-          <span className="text-[12px] font-medium text-zinc-500">{index + 1}/{total}</span>
+          <span className="text-[12px] font-medium text-arcus-fg-muted">{index + 1}/{total}</span>
           {open ? (
-            <ChevronDown className="w-4 h-4 text-zinc-600" />
+            <ChevronDown className="w-4 h-4 text-arcus-fg-muted" />
           ) : (
-            <ChevronRight className="w-4 h-4 text-zinc-600" />
+            <ChevronRight className="w-4 h-4 text-arcus-fg-muted" />
           )}
         </div>
       </button>
@@ -514,11 +514,11 @@ function TodoItemRow({
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="overflow-hidden border-t border-zinc-800/60"
+            className="overflow-hidden border-t border-arcus-border"
           >
             <div className="px-4 py-3 space-y-2">
               {todo.description && (
-                <p className="text-[13px] text-zinc-400 leading-relaxed">{todo.description}</p>
+                <p className="text-[13px] text-arcus-fg-tertiary leading-relaxed">{todo.description}</p>
               )}
               {todo.errorMessage && (
                 <div className="flex items-start gap-2 p-2.5 bg-red-500/10 border border-red-500/20 rounded-lg">
@@ -527,7 +527,7 @@ function TodoItemRow({
                 </div>
               )}
               {todo.resultPayload && isDone && (
-                <p className="text-[12px] text-zinc-400">
+                <p className="text-[12px] text-arcus-fg-tertiary">
                   {todo.resultPayload.message || 'Completed successfully.'}
                 </p>
               )}
@@ -555,22 +555,22 @@ function TodoGraphPanel({ graph }: { graph: TodoGraph }) {
       {/* Header row */}
       <div className="flex items-center justify-between px-1 mb-1">
         <div className="flex items-center gap-2">
-          <ListTodo className="w-4 h-4 text-zinc-500" />
-          <span className="text-[13px] font-bold text-zinc-100 tracking-tight">{graph.title}</span>
+          <ListTodo className="w-4 h-4 text-arcus-fg-muted" />
+          <span className="text-[13px] font-bold text-arcus-fg tracking-tight">{graph.title}</span>
         </div>
-        <span className="text-[12px] text-zinc-500">
+        <span className="text-[12px] text-arcus-fg-muted">
           {graph.progress.completed}/{graph.progress.total}
         </span>
       </div>
 
       {/* Progress bar */}
       {isExecuting && graph.progress.total > 0 && (
-        <div className="h-1 bg-zinc-800 rounded-full overflow-hidden mb-3">
+        <div className="h-1 bg-arcus-raised rounded-full overflow-hidden mb-3">
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${progress}%` }}
             transition={{ duration: 0.4 }}
-            className="h-full bg-zinc-300 rounded-full"
+            className="h-full bg-arcus-fg-secondary rounded-full"
           />
         </div>
       )}
@@ -609,10 +609,10 @@ function SearchTransparencyPanel({ sessions }: { sessions: SearchSession[] }) {
     <div className="w-full">
       <button
         onClick={() => setOpen(v => !v)}
-        className="flex items-center gap-2 text-[13px] font-semibold text-zinc-300 hover:text-zinc-100 transition-colors mb-2"
+        className="flex items-center gap-2 text-[13px] font-semibold text-arcus-fg-secondary hover:text-arcus-fg transition-colors mb-2"
       >
         {allDone ? `Completed ${done} search${done !== 1 ? 'es' : ''}` : `Searching… (${done}/${sessions.length})`}
-        {open ? <ChevronDown className="w-3.5 h-3.5 text-zinc-500" /> : <ChevronRight className="w-3.5 h-3.5 text-zinc-500" />}
+        {open ? <ChevronDown className="w-3.5 h-3.5 text-arcus-fg-muted" /> : <ChevronRight className="w-3.5 h-3.5 text-arcus-fg-muted" />}
       </button>
 
       <AnimatePresence>
@@ -623,24 +623,24 @@ function SearchTransparencyPanel({ sessions }: { sessions: SearchSession[] }) {
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
           >
-            <div className="space-y-2 pl-1 border-l border-zinc-800 ml-1">
+            <div className="space-y-2 pl-1 border-l border-arcus-border ml-1">
               {sessions.map((session) => {
                 const cfg = sourceTypeConfig[session.sourceType] || sourceTypeConfig.web;
                 const searching = session.status === 'searching' || session.status === 'source_processing';
                 return (
                   <div key={session.sessionId} className="pl-3 py-1">
                     <div className="flex items-center gap-2.5 mb-1">
-                      <div className="text-zinc-500">{cfg.icon}</div>
-                      <span className={cn('text-[13px] font-semibold', searching ? 'text-zinc-200' : 'text-zinc-400')}>
+                      <div className="text-arcus-fg-muted">{cfg.icon}</div>
+                      <span className={cn('text-[13px] font-semibold', searching ? 'text-arcus-fg' : 'text-arcus-fg-tertiary')}>
                         {searching ? `Scanning ${cfg.label}…` : `${cfg.label} — ${session.resultCount ?? 0} results`}
                       </span>
-                      {searching && <Loader2 className="w-3 h-3 text-zinc-400 animate-spin" />}
+                      {searching && <Loader2 className="w-3 h-3 text-arcus-fg-tertiary animate-spin" />}
                     </div>
                     {session.selectedSnippets?.map((s, i) => (
                       <div key={i} className="flex items-center gap-2 pl-5 py-0.5">
-                        <div className="w-1 h-1 rounded-full bg-zinc-600 flex-shrink-0" />
-                        <span className="text-[12px] text-zinc-400 truncate">{s.subject || s.title || 'Result'}</span>
-                        {s.from && <span className="text-[11px] text-zinc-600 flex-shrink-0">{s.from.split('<')[0].trim()}</span>}
+                        <div className="w-1 h-1 rounded-full bg-arcus-fg-muted flex-shrink-0" />
+                        <span className="text-[12px] text-arcus-fg-tertiary truncate">{s.subject || s.title || 'Result'}</span>
+                        {s.from && <span className="text-[11px] text-arcus-fg-muted flex-shrink-0">{s.from.split('<')[0].trim()}</span>}
                       </div>
                     ))}
                   </div>
@@ -704,8 +704,8 @@ export function ThinkingLayer({
           animate={{ opacity: 1 }}
           className="flex items-center gap-2.5 px-1 py-2"
         >
-          <Loader2 className="w-3.5 h-3.5 text-zinc-500 animate-spin flex-shrink-0" />
-          <p className="text-[13px] font-medium text-zinc-400 italic leading-snug">
+          <Loader2 className="w-3.5 h-3.5 text-arcus-fg-muted animate-spin flex-shrink-0" />
+          <p className="text-[13px] font-medium text-arcus-fg-tertiary italic leading-snug">
             {currentThought}
           </p>
         </motion.div>
@@ -718,17 +718,17 @@ export function ThinkingLayer({
             {[0, 1, 2].map(i => (
               <motion.div
                 key={i}
-                className="w-1.5 h-1.5 rounded-full bg-zinc-500"
+                className="w-1.5 h-1.5 rounded-full bg-arcus-fg-muted"
                 animate={{ opacity: [0.3, 1, 0.3] }}
                 transition={{ duration: 1.2, delay: i * 0.2, repeat: Infinity }}
               />
             ))}
           </div>
-          <span className="text-[13px] font-medium text-zinc-400">Thinking…</span>
+          <span className="text-[13px] font-medium text-arcus-fg-tertiary">Thinking…</span>
           {onStop && (
             <button
               onClick={onStop}
-              className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold text-zinc-400 hover:text-zinc-100 bg-zinc-800/60 hover:bg-zinc-700/80 border border-zinc-700/60 transition-all"
+              className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold text-arcus-fg-tertiary hover:text-arcus-fg bg-arcus-raised/50 hover:bg-arcus-divider/80 border border-arcus-divider transition-all"
             >
               <X className="w-3 h-3" /> Stop
             </button>
@@ -835,7 +835,7 @@ export function ResultCard({ type, title, onView, rawContent }: ResultCardProps)
       whileHover={{ scale: 1.01 }}
       whileTap={{ scale: 0.99 }}
       onClick={onView}
-      className="group relative flex items-center gap-3.5 p-3.5 mt-2 mb-2 w-full max-w-[480px] bg-zinc-900 border border-zinc-800/80 rounded-2xl transition-all hover:bg-zinc-800/80 hover:border-zinc-700 cursor-pointer"
+      className="group relative flex items-center gap-3.5 p-3.5 mt-2 mb-2 w-full max-w-[480px] bg-arcus-surface border border-arcus-border rounded-2xl transition-all hover:bg-arcus-raised/80 hover:border-arcus-divider cursor-pointer"
     >
       {/* Document icon — mimics the screenshot file card icon */}
       <div className="flex-shrink-0 w-10 h-12 relative">
@@ -844,10 +844,10 @@ export function ResultCard({ type, title, onView, rawContent }: ResultCardProps)
 
       {/* Title + subtitle */}
       <div className="flex-1 min-w-0">
-        <p className="text-[13px] font-semibold text-zinc-100 truncate leading-snug group-hover:text-white transition-colors">
+        <p className="text-[13px] font-semibold text-arcus-fg truncate leading-snug group-hover:text-white transition-colors">
           {title || 'Untitled Document'}
         </p>
-        <p className="text-[12px] text-zinc-500 mt-0.5 font-medium">{subtitle}</p>
+        <p className="text-[12px] text-arcus-fg-muted mt-0.5 font-medium">{subtitle}</p>
       </div>
 
       {/* Download button */}
@@ -855,7 +855,7 @@ export function ResultCard({ type, title, onView, rawContent }: ResultCardProps)
         <button
           onClick={handleDownload}
           title={isEmail ? 'Download .txt' : 'Download .docx'}
-          className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-xl bg-zinc-800 border border-zinc-700/60 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-700 hover:border-zinc-600 transition-all active:scale-95"
+          className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-xl bg-arcus-raised border border-arcus-divider text-arcus-fg-tertiary hover:text-arcus-fg hover:bg-arcus-divider hover:border-arcus-divider transition-all active:scale-95"
         >
           {downloading
             ? <Loader2 className="w-3.5 h-3.5 animate-spin" />

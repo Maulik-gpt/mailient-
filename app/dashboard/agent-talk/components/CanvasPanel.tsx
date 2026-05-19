@@ -51,22 +51,22 @@ const TYPE_CONFIG: Record<string, {
   badge: string;
   badgeText: string;
 }> = {
-  email_draft:     { label: 'Email Draft',   Icon: Mail,      accent: '#ffffff', badge: 'bg-white/[0.04] border-white/[0.08]', badgeText: 'text-white/80' },
-  reply:           { label: 'Reply',          Icon: Mail,      accent: '#ffffff', badge: 'bg-white/[0.04] border-white/[0.08]', badgeText: 'text-white/80' },
-  report:          { label: 'Report',         Icon: FileText,  accent: '#ffffff', badge: 'bg-white/[0.04] border-white/[0.08]', badgeText: 'text-white/80' },
-  notes:           { label: 'Notes',          Icon: Edit3,     accent: '#ffffff', badge: 'bg-white/[0.04] border-white/[0.08]', badgeText: 'text-white/80' },
-  analysis:        { label: 'Analysis',       Icon: BarChart3, accent: '#ffffff', badge: 'bg-white/[0.04] border-white/[0.08]', badgeText: 'text-white/80' },
-  analytics:       { label: 'Analytics',      Icon: BarChart3, accent: '#ffffff', badge: 'bg-white/[0.04] border-white/[0.08]', badgeText: 'text-white/80' },
-  action_plan:     { label: 'Action Plan',    Icon: Zap,       accent: '#ffffff', badge: 'bg-white/[0.04] border-white/[0.08]', badgeText: 'text-white/80' },
-  research:        { label: 'Research',       Icon: Globe,     accent: '#ffffff', badge: 'bg-white/[0.04] border-white/[0.08]', badgeText: 'text-white/80' },
-  summary:         { label: 'Summary',        Icon: FileText,  accent: '#ffffff', badge: 'bg-white/[0.04] border-white/[0.08]', badgeText: 'text-white/80' },
-  meeting_schedule:{ label: 'Schedule',       Icon: Calendar,  accent: '#ffffff', badge: 'bg-white/[0.04] border-white/[0.08]', badgeText: 'text-white/80' },
-  workflow:        { label: 'Workflow',        Icon: Sparkles,  accent: '#ffffff', badge: 'bg-white/[0.04] border-white/[0.08]', badgeText: 'text-white/80' },
-  execution:       { label: 'Execution',       Icon: Play,      accent: '#ffffff', badge: 'bg-white/[0.04] border-white/[0.08]', badgeText: 'text-white/80' },
-  artifacts:       { label: 'Files',           Icon: FileText,  accent: '#ffffff', badge: 'bg-white/[0.04] border-white/[0.08]', badgeText: 'text-white/80' },
-  action_outputs:  { label: 'Results',         Icon: CheckCircle2, accent: '#ffffff', badge: 'bg-white/[0.04] border-white/[0.08]', badgeText: 'text-white/80' },
-  next_actions:    { label: 'Next Steps',      Icon: ArrowRight, accent: '#ffffff', badge: 'bg-white/[0.04] border-white/[0.08]', badgeText: 'text-white/80' },
-  none:            { label: 'Document',        Icon: Sparkles,  accent: '#ffffff', badge: 'bg-white/[0.04] border-white/[0.08]', badgeText: 'text-white/80' },
+  email_draft:     { label: 'Email Draft',   Icon: Mail,      accent: '#ffffff', badge: 'bg-arcus-elevated border-arcus-border', badgeText: 'text-arcus-fg-secondary' },
+  reply:           { label: 'Reply',          Icon: Mail,      accent: '#ffffff', badge: 'bg-arcus-elevated border-arcus-border', badgeText: 'text-arcus-fg-secondary' },
+  report:          { label: 'Report',         Icon: FileText,  accent: '#ffffff', badge: 'bg-arcus-elevated border-arcus-border', badgeText: 'text-arcus-fg-secondary' },
+  notes:           { label: 'Notes',          Icon: Edit3,     accent: '#ffffff', badge: 'bg-arcus-elevated border-arcus-border', badgeText: 'text-arcus-fg-secondary' },
+  analysis:        { label: 'Analysis',       Icon: BarChart3, accent: '#ffffff', badge: 'bg-arcus-elevated border-arcus-border', badgeText: 'text-arcus-fg-secondary' },
+  analytics:       { label: 'Analytics',      Icon: BarChart3, accent: '#ffffff', badge: 'bg-arcus-elevated border-arcus-border', badgeText: 'text-arcus-fg-secondary' },
+  action_plan:     { label: 'Action Plan',    Icon: Zap,       accent: '#ffffff', badge: 'bg-arcus-elevated border-arcus-border', badgeText: 'text-arcus-fg-secondary' },
+  research:        { label: 'Research',       Icon: Globe,     accent: '#ffffff', badge: 'bg-arcus-elevated border-arcus-border', badgeText: 'text-arcus-fg-secondary' },
+  summary:         { label: 'Summary',        Icon: FileText,  accent: '#ffffff', badge: 'bg-arcus-elevated border-arcus-border', badgeText: 'text-arcus-fg-secondary' },
+  meeting_schedule:{ label: 'Schedule',       Icon: Calendar,  accent: '#ffffff', badge: 'bg-arcus-elevated border-arcus-border', badgeText: 'text-arcus-fg-secondary' },
+  workflow:        { label: 'Workflow',        Icon: Sparkles,  accent: '#ffffff', badge: 'bg-arcus-elevated border-arcus-border', badgeText: 'text-arcus-fg-secondary' },
+  execution:       { label: 'Execution',       Icon: Play,      accent: '#ffffff', badge: 'bg-arcus-elevated border-arcus-border', badgeText: 'text-arcus-fg-secondary' },
+  artifacts:       { label: 'Files',           Icon: FileText,  accent: '#ffffff', badge: 'bg-arcus-elevated border-arcus-border', badgeText: 'text-arcus-fg-secondary' },
+  action_outputs:  { label: 'Results',         Icon: CheckCircle2, accent: '#ffffff', badge: 'bg-arcus-elevated border-arcus-border', badgeText: 'text-arcus-fg-secondary' },
+  next_actions:    { label: 'Next Steps',      Icon: ArrowRight, accent: '#ffffff', badge: 'bg-arcus-elevated border-arcus-border', badgeText: 'text-arcus-fg-secondary' },
+  none:            { label: 'Document',        Icon: Sparkles,  accent: '#ffffff', badge: 'bg-arcus-elevated border-arcus-border', badgeText: 'text-arcus-fg-secondary' },
 };
 
 function getConfig(type: string) {
@@ -188,7 +188,7 @@ export function CanvasPanel({
     <div
       className={cn(
         'h-[calc(100vh-32px)] flex flex-col flex-shrink-0 relative',
-        'bg-[#0c0c0d] border border-white/[0.07] rounded-[24px] shadow-[0_32px_80px_-8px_rgba(0,0,0,0.8)]',
+        'bg-arcus-elevated border border-arcus-border rounded-[24px] shadow-[0_32px_80px_-8px_rgba(0,0,0,0.8)]',
         'overflow-hidden select-text m-3',
         isResizing ? 'cursor-ew-resize' : '',
       )}
@@ -203,18 +203,18 @@ export function CanvasPanel({
       {/* Resize handle */}
       <div
         onMouseDown={startResizing}
-        className="hidden md:block absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize z-10 hover:bg-white/10 transition-colors"
+        className="hidden md:block absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize z-10 hover:bg-arcus-surface-hover transition-colors"
       />
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <header className="shrink-0 flex items-center justify-between px-5 py-3.5 border-b border-white/[0.06] bg-[#0e0e10]">
+      <header className="shrink-0 flex items-center justify-between px-5 py-3.5 border-b border-arcus-border bg-arcus-elevated">
         {/* Type badge + title */}
         <div className="flex items-center gap-3 min-w-0">
           <span className={cn('flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-semibold tracking-wide shrink-0', cfg.badge, cfg.badgeText)}>
             <cfg.Icon className="w-3.5 h-3.5" />
             {cfg.label}
           </span>
-          <h2 className="text-[13px] font-semibold text-white/80 truncate leading-tight">
+          <h2 className="text-[13px] font-semibold text-arcus-fg-secondary truncate leading-tight">
             {canvasData.title || 'Document'}
           </h2>
         </div>
@@ -224,14 +224,14 @@ export function CanvasPanel({
           <button
             onClick={handleCopy}
             title="Copy content"
-            className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-white/8 text-white/40 hover:text-white/80 transition-all"
+            className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-arcus-surface text-arcus-fg-tertiary hover:text-arcus-fg-secondary transition-all"
           >
             {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
           </button>
           <button
             onClick={handleDownloadDocx}
             title={isEmail ? 'Download .txt' : 'Download .docx'}
-            className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-white/8 text-white/40 hover:text-white/80 transition-all"
+            className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-arcus-surface text-arcus-fg-tertiary hover:text-arcus-fg-secondary transition-all"
           >
             {downloadingDocx
               ? <Loader2 className="w-4 h-4 animate-spin" />
@@ -241,7 +241,7 @@ export function CanvasPanel({
           <button
             onClick={onClose}
             title="Close"
-            className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-white/8 text-white/40 hover:text-white/80 transition-all"
+            className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-arcus-surface text-arcus-fg-tertiary hover:text-arcus-fg-secondary transition-all"
           >
             <X className="w-4 h-4" />
           </button>
@@ -250,7 +250,7 @@ export function CanvasPanel({
 
       {/* ── Email metadata strip ────────────────────────────────────────────── */}
       {isEmail && (
-        <div className="shrink-0 border-b border-white/[0.06] bg-[#0e0e10]/60">
+        <div className="shrink-0 border-b border-arcus-border bg-arcus-elevated/60">
           <EmailField label="To"      value={canvasData.content?.to      || ''} />
           <EmailField label="Subject" value={canvasData.content?.subject || ''} last />
         </div>
@@ -267,12 +267,12 @@ export function CanvasPanel({
                   <textarea
                     value={editedBody}
                     onChange={e => setEditedBody(e.target.value)}
-                    className="w-full min-h-[360px] bg-transparent text-[14px] text-white/80 leading-relaxed resize-none focus:outline-none font-sans"
+                    className="w-full min-h-[360px] bg-transparent text-[14px] text-arcus-fg-secondary leading-relaxed resize-none focus:outline-none font-sans"
                     autoFocus
                     placeholder="Email body…"
                   />
                 ) : (
-                  <div className="prose-canvas text-[14px] text-white/80 leading-relaxed whitespace-pre-wrap font-sans">
+                  <div className="prose-canvas text-[14px] text-arcus-fg-secondary leading-relaxed whitespace-pre-wrap font-sans">
                     {canvasData.content?.body || extractEmailBody(canvasData.raw || '')}
                   </div>
                 )}
@@ -288,10 +288,10 @@ export function CanvasPanel({
       </div>
 
       {/* ── Footer ───────────────────────────────────────────────────────────── */}
-      <footer className="shrink-0 border-t border-white/[0.06] bg-[#0e0e10] px-5 py-3.5 flex items-center justify-between gap-3">
+      <footer className="shrink-0 border-t border-arcus-border bg-arcus-elevated px-5 py-3.5 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           {/* Word count */}
-          <span className="text-[11px] text-white/25 tabular-nums">
+          <span className="text-[11px] text-arcus-fg-muted tabular-nums">
             {wordCount(getTextContent())} words
           </span>
         </div>
@@ -342,9 +342,9 @@ export function CanvasPanel({
 
 function EmailField({ label, value, last }: { label: string; value: string; last?: boolean }) {
   return (
-    <div className={cn('flex items-start gap-3 px-6 py-2.5', !last && 'border-b border-white/[0.04]')}>
-      <span className="text-[11px] font-semibold text-white/25 uppercase tracking-widest w-[42px] shrink-0 pt-[1px]">{label}</span>
-      <span className="text-[13px] text-white/70 leading-snug">{value || '—'}</span>
+    <div className={cn('flex items-start gap-3 px-6 py-2.5', !last && 'border-b border-arcus-border')}>
+      <span className="text-[11px] font-semibold text-arcus-fg-muted uppercase tracking-widest w-[42px] shrink-0 pt-[1px]">{label}</span>
+      <span className="text-[13px] text-arcus-fg-secondary leading-snug">{value || '—'}</span>
     </div>
   );
 }
@@ -368,7 +368,7 @@ function FooterButton({
         'flex items-center gap-1.5 px-3.5 h-8 rounded-xl text-[12px] font-semibold transition-all active:scale-95 disabled:opacity-50',
         variant === 'primary'
           ? 'bg-white text-black hover:bg-white/90'
-          : 'text-white/50 hover:text-white/80 hover:bg-white/8',
+          : 'text-arcus-fg-tertiary hover:text-arcus-fg-secondary hover:bg-arcus-surface',
       )}
     >
       {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : icon}
@@ -417,9 +417,9 @@ function MetaInsights({ type, content }: { type: string; content: string }) {
   const tags = getTags();
 
   return (
-    <div className="flex flex-wrap items-center gap-2 mb-6 p-3 px-4 rounded-xl bg-white/[0.02] border border-white/[0.04] backdrop-blur-md">
-      <div className="flex items-center gap-1.5 text-[10px] font-bold text-white/35 uppercase tracking-widest mr-2 shrink-0">
-        <Sparkles className="w-3.5 h-3.5 text-white/60" />
+    <div className="flex flex-wrap items-center gap-2 mb-6 p-3 px-4 rounded-xl bg-arcus-elevated border border-arcus-border backdrop-blur-md">
+      <div className="flex items-center gap-1.5 text-[10px] font-bold text-arcus-fg-muted uppercase tracking-widest mr-2 shrink-0">
+        <Sparkles className="w-3.5 h-3.5 text-arcus-fg-secondary" />
         Meta Insights
       </div>
       <div className="flex flex-wrap gap-2">
@@ -432,7 +432,7 @@ function MetaInsights({ type, content }: { type: string; content: string }) {
                 ? "bg-white text-black border-white animate-pulse"
                 : tag === 'Revenue Deal'
                 ? "bg-white/80 text-black border-white"
-                : "bg-white/[0.04] border-white/[0.06] text-white/60"
+                : "bg-arcus-elevated border-arcus-border text-arcus-fg-secondary"
             )}
           >
             {tag}
@@ -551,7 +551,7 @@ function InteractiveChart({ data }: { data: ChartData }) {
     const circumference = 2 * Math.PI * radius;
 
     return (
-      <div className="my-6 p-6 rounded-2xl bg-white/[0.02] border border-white/[0.05] flex flex-col sm:flex-row items-center gap-8 backdrop-blur-md">
+      <div className="my-6 p-6 rounded-2xl bg-arcus-elevated border border-arcus-border flex flex-col sm:flex-row items-center gap-8 backdrop-blur-md">
         <div className="relative w-[180px] h-[180px] flex-shrink-0">
           <svg viewBox="0 0 200 200" className="w-full h-full transform -rotate-90">
             {values.map((v, idx) => {
@@ -582,13 +582,13 @@ function InteractiveChart({ data }: { data: ChartData }) {
             })}
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <span className="text-[10px] text-white/30 font-semibold uppercase tracking-wider">Total</span>
+            <span className="text-[10px] text-arcus-fg-muted font-semibold uppercase tracking-wider">Total</span>
             <span className="text-[20px] font-bold text-white tracking-tight">{total}</span>
           </div>
         </div>
 
         <div className="flex-1 flex flex-col gap-3 w-full">
-          {data.title && <h4 className="text-[13px] font-bold text-white/90 mb-1">{data.title}</h4>}
+          {data.title && <h4 className="text-[13px] font-bold text-arcus-fg mb-1">{data.title}</h4>}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {data.labels.map((label, idx) => {
               const val = values[idx] || 0;
@@ -600,20 +600,20 @@ function InteractiveChart({ data }: { data: ChartData }) {
                   key={idx}
                   className={cn(
                     "flex items-center justify-between p-2 rounded-xl border transition-all duration-200 cursor-pointer",
-                    isHovered 
-                      ? "bg-white/[0.06] border-white/[0.12] scale-[1.02]" 
-                      : "bg-white/[0.01] border-transparent"
+                    isHovered
+                      ? "bg-arcus-surface border-arcus-divider scale-[1.02]"
+                      : "bg-arcus-elevated border-transparent"
                   )}
                   onMouseEnter={() => setHoveredIdx(idx)}
                   onMouseLeave={() => setHoveredIdx(null)}
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: colors[idx % colors.length] }} />
-                    <span className="text-[12px] font-medium text-white/70 truncate">{label}</span>
+                    <span className="text-[12px] font-medium text-arcus-fg-secondary truncate">{label}</span>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-[12px] font-semibold text-white/90">{val}</span>
-                    <span className="text-[10px] text-white/40 font-mono">({pct}%)</span>
+                    <span className="text-[12px] font-semibold text-arcus-fg">{val}</span>
+                    <span className="text-[10px] text-arcus-fg-tertiary font-mono">({pct}%)</span>
                   </div>
                 </div>
               );
@@ -649,15 +649,15 @@ function InteractiveChart({ data }: { data: ChartData }) {
   const getY = (value: number) => chartHeight - paddingY - ((value - minVal) * (chartHeight - paddingY * 2)) / gridMax;
 
   return (
-    <div className="my-6 p-6 rounded-2xl bg-white/[0.02] border border-white/[0.05] flex flex-col gap-4 backdrop-blur-md">
+    <div className="my-6 p-6 rounded-2xl bg-arcus-elevated border border-arcus-border flex flex-col gap-4 backdrop-blur-md">
       {data.title && (
         <div className="flex items-center justify-between">
-          <h4 className="text-[13px] font-bold text-white/95">{data.title}</h4>
+          <h4 className="text-[13px] font-bold text-arcus-fg">{data.title}</h4>
           <div className="flex items-center gap-3">
             {datasets.map((d, idx) => (
               <div key={idx} className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: colors[idx % colors.length] }} />
-                <span className="text-[10px] text-white/50 font-medium">{d.label}</span>
+                <span className="text-[10px] text-arcus-fg-tertiary font-medium">{d.label}</span>
               </div>
             ))}
           </div>
@@ -748,7 +748,7 @@ function InteractiveChart({ data }: { data: ChartData }) {
                       cy={y}
                       r={isHovered ? 4.5 : 3}
                       fill={colors[dIdx % colors.length]}
-                      stroke="#0c0c0d"
+                      stroke="#0A0A0A"
                       strokeWidth={1.5}
                       className="transition-all duration-150 cursor-pointer"
                       onMouseEnter={() => setHoveredIdx(idx)}
@@ -781,13 +781,13 @@ function InteractiveChart({ data }: { data: ChartData }) {
 
         {hoveredIdx !== null && (
           <div 
-            className="absolute z-10 px-2.5 py-1.5 rounded-lg bg-black/90 border border-white/10 text-[10px] text-white/90 flex flex-col gap-1 pointer-events-none shadow-lg"
+            className="absolute z-10 px-2.5 py-1.5 rounded-lg bg-arcus-bg/90 border border-arcus-divider text-[10px] text-arcus-fg flex flex-col gap-1 pointer-events-none shadow-lg"
             style={{
               left: `${Math.min(getX(hoveredIdx) * 0.9, 240)}px`,
               top: '10px'
             }}
           >
-            <span className="font-bold text-white/50 uppercase">{labels[hoveredIdx]}</span>
+            <span className="font-bold text-arcus-fg-tertiary uppercase">{labels[hoveredIdx]}</span>
             {datasets.map((d, dIdx) => (
               <div key={dIdx} className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: colors[dIdx % colors.length] }} />
@@ -806,8 +806,8 @@ function InteractiveChart({ data }: { data: ChartData }) {
 function MarkdownView({ content }: { content: string }) {
   if (!content) return (
     <div className="flex flex-col items-center justify-center py-20 opacity-30">
-      <Sparkles className="w-8 h-8 text-white/30 mb-3" />
-      <p className="text-[13px] text-white/40">No content</p>
+      <Sparkles className="w-8 h-8 text-arcus-fg-muted mb-3" />
+      <p className="text-[13px] text-arcus-fg-tertiary">No content</p>
     </div>
   );
 
@@ -816,39 +816,39 @@ function MarkdownView({ content }: { content: string }) {
       remarkPlugins={[remarkGfm]}
       components={{
         h1: ({ children }) => (
-          <h1 className="text-[22px] font-bold text-white/95 leading-tight mb-5 mt-2 tracking-tight">{children}</h1>
+          <h1 className="text-[22px] font-bold text-arcus-fg leading-tight mb-5 mt-2 tracking-tight">{children}</h1>
         ),
         h2: ({ children }) => (
-          <h2 className="text-[17px] font-semibold text-white/90 leading-snug mb-3 mt-6 tracking-tight">{children}</h2>
+          <h2 className="text-[17px] font-semibold text-arcus-fg leading-snug mb-3 mt-6 tracking-tight">{children}</h2>
         ),
         h3: ({ children }) => (
-          <h3 className="text-[14px] font-semibold text-white/80 leading-snug mb-2.5 mt-5">{children}</h3>
+          <h3 className="text-[14px] font-semibold text-arcus-fg-secondary leading-snug mb-2.5 mt-5">{children}</h3>
         ),
         p: ({ children }) => (
-          <p className="text-[14px] text-white/75 leading-[1.75] mb-4">{children}</p>
+          <p className="text-[14px] text-arcus-fg-secondary leading-[1.75] mb-4">{children}</p>
         ),
         ul: ({ children }) => (
           <ul className="mb-4 space-y-1.5 list-none pl-0">{children}</ul>
         ),
         ol: ({ children }) => (
-          <ol className="mb-4 space-y-1.5 pl-5 list-decimal marker:text-white/30">{children}</ol>
+          <ol className="mb-4 space-y-1.5 pl-5 list-decimal marker:text-arcus-fg-muted">{children}</ol>
         ),
         li: ({ children, ...props }: any) => (
           props.ordered
-            ? <li className="text-[13.5px] text-white/75 leading-relaxed pl-1">{children}</li>
-            : <li className="flex items-start gap-2.5 text-[13.5px] text-white/75 leading-relaxed list-none">
-                <span className="w-1.5 h-1.5 rounded-full bg-white/25 mt-[7px] shrink-0" />
+            ? <li className="text-[13.5px] text-arcus-fg-secondary leading-relaxed pl-1">{children}</li>
+            : <li className="flex items-start gap-2.5 text-[13.5px] text-arcus-fg-secondary leading-relaxed list-none">
+                <span className="w-1.5 h-1.5 rounded-full bg-arcus-fg-muted mt-[7px] shrink-0" />
                 <span className="flex-1">{children}</span>
               </li>
         ),
         strong: ({ children }) => (
-          <strong className="font-semibold text-white/90">{children}</strong>
+          <strong className="font-semibold text-arcus-fg">{children}</strong>
         ),
         em: ({ children }) => (
-          <em className="italic text-white/70">{children}</em>
+          <em className="italic text-arcus-fg-secondary">{children}</em>
         ),
         blockquote: ({ children }) => (
-          <blockquote className="border-l-2 border-white/20 pl-4 my-4 text-[13.5px] text-white/50 italic leading-relaxed">
+          <blockquote className="border-l-2 border-arcus-fg-muted pl-4 my-4 text-[13.5px] text-arcus-fg-tertiary italic leading-relaxed">
             {children}
           </blockquote>
         ),
@@ -864,16 +864,16 @@ function MarkdownView({ content }: { content: string }) {
           }
 
           return inline ? (
-            <code className="px-1.5 py-0.5 rounded-md bg-white/8 text-[12.5px] font-mono text-white/75 border border-white/10">
+            <code className="px-1.5 py-0.5 rounded-md bg-arcus-surface text-[12.5px] font-mono text-arcus-fg-secondary border border-arcus-divider">
               {children}
             </code>
           ) : (
-            <pre className="my-4 rounded-xl bg-[#161618] border border-white/[0.07] overflow-x-auto">
-              <code className="block p-4 text-[12.5px] font-mono text-white/75 leading-relaxed">{children}</code>
+            <pre className="my-4 rounded-xl bg-arcus-surface border border-arcus-border overflow-x-auto">
+              <code className="block p-4 text-[12.5px] font-mono text-arcus-fg-secondary leading-relaxed">{children}</code>
             </pre>
           );
         },
-        hr: () => <hr className="my-6 border-white/[0.08]" />,
+        hr: () => <hr className="my-6 border-arcus-border" />,
         a: ({ href, children }) => (
           <a href={href} target="_blank" rel="noopener noreferrer"
             className="text-white underline underline-offset-2 hover:text-white/80 transition-colors">
@@ -881,21 +881,21 @@ function MarkdownView({ content }: { content: string }) {
           </a>
         ),
         table: ({ children }) => (
-          <div className="my-5 overflow-x-auto rounded-xl border border-white/[0.08]">
+          <div className="my-5 overflow-x-auto rounded-xl border border-arcus-border">
             <table className="w-full text-[13px]">{children}</table>
           </div>
         ),
         thead: ({ children }) => (
-          <thead className="bg-white/[0.04] border-b border-white/[0.08]">{children}</thead>
+          <thead className="bg-arcus-elevated border-b border-arcus-border">{children}</thead>
         ),
         tbody: ({ children }) => (
-          <tbody className="divide-y divide-white/[0.05]">{children}</tbody>
+          <tbody className="divide-y divide-arcus-border">{children}</tbody>
         ),
         th: ({ children }) => (
-          <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-white/40 uppercase tracking-wider">{children}</th>
+          <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-arcus-fg-tertiary uppercase tracking-wider">{children}</th>
         ),
         td: ({ children }) => (
-          <td className="px-4 py-3 text-white/65">{children}</td>
+          <td className="px-4 py-3 text-arcus-fg-secondary">{children}</td>
         ),
       }}
     >

@@ -154,34 +154,34 @@ function MiniCalendar({ agents, onAgentClick }: { agents: Agent[]; onAgentClick:
       {/* Nav */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
-          <button onClick={prevMonth} className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-zinc-900 border border-zinc-900 hover:border-zinc-800 transition-all duration-150">
+          <button onClick={prevMonth} className="w-8 h-8 flex items-center justify-center rounded-lg text-arcus-fg-muted hover:text-arcus-fg hover:bg-arcus-surface border border-arcus-surface hover:border-arcus-raised transition-all duration-150">
             <ChevronLeft className="w-4 h-4" />
           </button>
-          <span className="text-[14px] font-extrabold text-zinc-100 min-w-[130px] text-center tracking-tight">
+          <span className="text-[14px] font-extrabold text-arcus-fg min-w-[130px] text-center tracking-tight">
             {MONTH_NAMES[viewMonth]} {viewYear}
           </span>
-          <button onClick={nextMonth} className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-zinc-900 border border-zinc-900 hover:border-zinc-800 transition-all duration-150">
+          <button onClick={nextMonth} className="w-8 h-8 flex items-center justify-center rounded-lg text-arcus-fg-muted hover:text-arcus-fg hover:bg-arcus-surface border border-arcus-surface hover:border-arcus-raised transition-all duration-150">
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
         <button
           onClick={() => { setViewYear(today.getFullYear()); setViewMonth(today.getMonth()); }}
-          className="px-3 py-1.5 rounded-lg text-[12px] font-bold text-zinc-400 border border-zinc-900 bg-zinc-900 hover:border-zinc-800 hover:text-zinc-200 transition-all duration-150"
+          className="px-3 py-1.5 rounded-lg text-[12px] font-bold text-arcus-fg-secondary border border-arcus-surface bg-arcus-surface hover:border-arcus-raised hover:text-arcus-fg transition-all duration-150"
         >
           Today
         </button>
       </div>
 
       {/* Day headers */}
-      <div className="grid grid-cols-7 border-b border-zinc-900/60 pb-1.5">
+      <div className="grid grid-cols-7 border-b border-arcus-border/60 pb-1.5">
         {DAY_NAMES.map(d => (
-          <div key={d} className="text-center text-[10px] font-bold uppercase tracking-widest text-zinc-600 py-1">{d}</div>
+          <div key={d} className="text-center text-[10px] font-bold uppercase tracking-widest text-arcus-fg-muted py-1">{d}</div>
         ))}
       </div>
 
       {/* Grid */}
       <div
-        className="grid grid-cols-7 border border-zinc-900 rounded-xl overflow-hidden bg-zinc-950"
+        className="grid grid-cols-7 border border-arcus-border rounded-xl overflow-hidden bg-arcus-elevated"
         style={{ gridTemplateRows: `repeat(${cells.length / 7}, minmax(72px, 1fr))` }}
       >
         {cells.map((cell, idx) => {
@@ -191,12 +191,12 @@ function MiniCalendar({ agents, onAgentClick }: { agents: Agent[]; onAgentClick:
             <div
               key={idx}
               className={cn(
-                'flex flex-col p-1.5 border-r border-b border-zinc-900/60 overflow-hidden transition-colors duration-150 group/cell',
-                cell.day === null 
-                  ? 'bg-[#050505]' 
+                'flex flex-col p-1.5 border-r border-b border-arcus-border/60 overflow-hidden transition-colors duration-150 group/cell',
+                cell.day === null
+                  ? 'bg-arcus-bg'
                   : isToday
-                    ? 'bg-zinc-900/40'
-                    : 'bg-zinc-950/20 hover:bg-zinc-900/25',
+                    ? 'bg-arcus-surface/40'
+                    : 'bg-arcus-elevated/20 hover:bg-arcus-surface/25',
                 idx % 7 === 6 && 'border-r-0',
               )}
             >
@@ -204,11 +204,11 @@ function MiniCalendar({ agents, onAgentClick }: { agents: Agent[]; onAgentClick:
                 <>
                   <div className={cn(
                     'w-6 h-6 flex items-center justify-center text-[11px] font-bold rounded-full self-end mb-1 flex-shrink-0 transition-colors',
-                    isToday 
-                      ? 'bg-zinc-100 text-zinc-950 shadow-sm shadow-white/10' 
-                      : isPast 
-                        ? 'text-zinc-700' 
-                        : 'text-zinc-500 group-hover/cell:text-zinc-300',
+                    isToday
+                      ? 'bg-zinc-100 text-zinc-950 shadow-sm shadow-white/10'
+                      : isPast
+                        ? 'text-arcus-fg-muted'
+                        : 'text-arcus-fg-muted group-hover/cell:text-arcus-fg-secondary',
                   )}>
                     {cell.day}
                   </div>
@@ -216,9 +216,9 @@ function MiniCalendar({ agents, onAgentClick }: { agents: Agent[]; onAgentClick:
                     <button
                       key={ri}
                       onClick={() => onAgentClick(agent)}
-                      className="w-full text-left rounded px-1.5 py-0.5 border border-zinc-800/80 bg-zinc-900/90 hover:bg-zinc-800 hover:border-zinc-700 transition-all duration-150 mb-0.5"
+                      className="w-full text-left rounded px-1.5 py-0.5 border border-arcus-divider/80 bg-arcus-surface/90 hover:bg-arcus-raised hover:border-arcus-divider transition-all duration-150 mb-0.5"
                     >
-                      <p className="text-[9px] font-medium text-zinc-300 truncate leading-normal">{agent.name}</p>
+                      <p className="text-[9px] font-medium text-arcus-fg-secondary truncate leading-normal">{agent.name}</p>
                     </button>
                   ))}
                 </>
@@ -274,7 +274,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void 
       onClick={e => { e.stopPropagation(); onChange(); }}
       className={cn(
         'relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none',
-        checked ? 'bg-zinc-300' : 'bg-zinc-700',
+        checked ? 'bg-zinc-300' : 'bg-arcus-raised',
       )}
     >
       <span className={cn(
@@ -425,9 +425,9 @@ function PremiumDatePicker({ value, onChange, minDate }: {
     <div className="relative w-full" onClick={e => e.stopPropagation()}>
       <div
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full bg-[#121214] border border-[#242427] rounded-xl px-4 py-3 text-[14px] text-zinc-100 flex items-center justify-between cursor-pointer hover:border-zinc-700 transition-all select-none shadow-inner"
+        className="w-full bg-arcus-surface border border-arcus-border rounded-xl px-4 py-3 text-[14px] text-arcus-fg flex items-center justify-between cursor-pointer hover:border-arcus-divider transition-all select-none shadow-inner"
       >
-        <span className={cn(selectedDate ? 'text-zinc-200 font-medium' : 'text-zinc-650')}>
+        <span className={cn(selectedDate ? 'text-arcus-fg font-medium' : 'text-arcus-fg-muted')}>
           {formattedValue}
         </span>
         <div className="flex items-center gap-2">
@@ -437,42 +437,42 @@ function PremiumDatePicker({ value, onChange, minDate }: {
                 e.stopPropagation();
                 onChange('');
               }}
-              className="p-1 text-zinc-555 hover:text-zinc-300 rounded-lg hover:bg-zinc-800 transition-colors"
+              className="p-1 text-arcus-fg-muted hover:text-arcus-fg-secondary rounded-lg hover:bg-arcus-raised transition-colors"
             >
               <X className="w-3.5 h-3.5" />
             </button>
           )}
-          <CalendarDays className="w-4 h-4 text-zinc-555" />
+          <CalendarDays className="w-4 h-4 text-arcus-fg-muted" />
         </div>
       </div>
 
       {isOpen && (
-        <div className="absolute bottom-full left-0 mb-2 w-72 bg-[#0c0c0d] border border-zinc-900 rounded-2xl shadow-2xl p-4.5 z-50 select-none animate-in fade-in slide-in-from-bottom-2 duration-150">
+        <div className="absolute bottom-full left-0 mb-2 w-72 bg-arcus-elevated border border-arcus-border rounded-2xl shadow-2xl p-4.5 z-50 select-none animate-in fade-in slide-in-from-bottom-2 duration-150">
           <div className="flex items-center justify-between mb-3.5">
             <div className="flex gap-1">
-              <button onClick={handlePrevYear} className="p-1.5 hover:bg-zinc-900 text-zinc-600 hover:text-zinc-350 rounded-lg transition-colors text-[10px] font-extrabold font-mono">
+              <button onClick={handlePrevYear} className="p-1.5 hover:bg-arcus-surface text-arcus-fg-muted hover:text-arcus-fg-secondary rounded-lg transition-colors text-[10px] font-extrabold font-mono">
                 &lt;&lt;
               </button>
-              <button onClick={handlePrevMonth} className="p-1.5 hover:bg-zinc-900 text-zinc-600 hover:text-zinc-350 rounded-lg transition-colors text-[10px] font-extrabold font-mono">
+              <button onClick={handlePrevMonth} className="p-1.5 hover:bg-arcus-surface text-arcus-fg-muted hover:text-arcus-fg-secondary rounded-lg transition-colors text-[10px] font-extrabold font-mono">
                 &lt;
               </button>
             </div>
             
-            <span className="text-[13px] font-extrabold text-zinc-200 tracking-tight font-sans">
+            <span className="text-[13px] font-extrabold text-arcus-fg tracking-tight font-sans">
               {MONTH_NAMES[viewMonth]} {viewYear}
             </span>
 
             <div className="flex gap-1">
-              <button onClick={handleNextMonth} className="p-1.5 hover:bg-zinc-900 text-zinc-600 hover:text-zinc-350 rounded-lg transition-colors text-[10px] font-extrabold font-mono">
+              <button onClick={handleNextMonth} className="p-1.5 hover:bg-arcus-surface text-arcus-fg-muted hover:text-arcus-fg-secondary rounded-lg transition-colors text-[10px] font-extrabold font-mono">
                 &gt;
               </button>
-              <button onClick={handleNextYear} className="p-1.5 hover:bg-zinc-900 text-zinc-600 hover:text-zinc-350 rounded-lg transition-colors text-[10px] font-extrabold font-mono">
+              <button onClick={handleNextYear} className="p-1.5 hover:bg-arcus-surface text-arcus-fg-muted hover:text-arcus-fg-secondary rounded-lg transition-colors text-[10px] font-extrabold font-mono">
                 &gt;&gt;
               </button>
             </div>
           </div>
 
-          <div className="grid grid-cols-7 text-center text-[10px] font-extrabold uppercase tracking-wider text-zinc-600 mb-2">
+          <div className="grid grid-cols-7 text-center text-[10px] font-extrabold uppercase tracking-wider text-arcus-fg-muted mb-2">
             {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
               <div key={d}>{d}</div>
             ))}
@@ -489,10 +489,10 @@ function PremiumDatePicker({ value, onChange, minDate }: {
                   disabled={cell.isDisabled}
                   className={cn(
                     'text-[12px] py-1.5 rounded-lg text-center font-bold transition-all',
-                    cell.isCurrentMonth ? 'text-zinc-300' : 'text-zinc-700',
-                    cell.isDisabled && 'text-zinc-800/30 cursor-not-allowed hover:bg-transparent',
-                    !cell.isDisabled && !isSelected && 'hover:bg-zinc-900/50',
-                    isTodayCell && !isSelected && 'border border-zinc-900 text-zinc-100',
+                    cell.isCurrentMonth ? 'text-arcus-fg-secondary' : 'text-arcus-fg-muted',
+                    cell.isDisabled && 'text-arcus-raised/30 cursor-not-allowed hover:bg-transparent',
+                    !cell.isDisabled && !isSelected && 'hover:bg-arcus-surface/50',
+                    isTodayCell && !isSelected && 'border border-arcus-border text-arcus-fg',
                     isSelected && 'bg-zinc-100 text-zinc-950 font-bold shadow-md shadow-white/5'
                   )}
                 >
@@ -502,11 +502,11 @@ function PremiumDatePicker({ value, onChange, minDate }: {
             })}
           </div>
 
-          <div className="flex items-center justify-between border-t border-zinc-900/80 mt-3 pt-2.5">
-            <button onClick={handleClear} className="text-[11px] font-extrabold text-zinc-550 hover:text-zinc-350 transition-colors">
+          <div className="flex items-center justify-between border-t border-arcus-border/80 mt-3 pt-2.5">
+            <button onClick={handleClear} className="text-[11px] font-extrabold text-arcus-fg-muted hover:text-arcus-fg-secondary transition-colors">
               Clear
             </button>
-            <button onClick={handleToday} className="text-[11px] font-extrabold text-zinc-400 hover:text-zinc-200 transition-colors">
+            <button onClick={handleToday} className="text-[11px] font-extrabold text-arcus-fg-secondary hover:text-arcus-fg transition-colors">
               Today
             </button>
           </div>
@@ -577,19 +577,19 @@ function PremiumTimePicker({ value, onChange }: {
     <div className="relative w-full" onClick={e => e.stopPropagation()}>
       <div
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full bg-[#121214] border border-[#242427] rounded-xl px-4 py-3 text-[14px] text-zinc-100 flex items-center justify-between cursor-pointer hover:border-zinc-700 transition-all select-none shadow-inner"
+        className="w-full bg-arcus-surface border border-arcus-border rounded-xl px-4 py-3 text-[14px] text-arcus-fg flex items-center justify-between cursor-pointer hover:border-arcus-divider transition-all select-none shadow-inner"
       >
-        <span className="text-zinc-200 font-bold font-mono">
+        <span className="text-arcus-fg font-bold font-mono">
           {displayString}
         </span>
-        <Clock className="w-4 h-4 text-zinc-555" />
+        <Clock className="w-4 h-4 text-arcus-fg-muted" />
       </div>
 
       {isOpen && (
-        <div className="absolute bottom-full right-0 lg:left-0 mb-2 w-64 bg-[#0c0c0d] border border-zinc-900 rounded-2xl shadow-2xl p-4 z-50 select-none animate-in fade-in slide-in-from-bottom-2 duration-150 flex gap-3">
+        <div className="absolute bottom-full right-0 lg:left-0 mb-2 w-64 bg-arcus-elevated border border-arcus-border rounded-2xl shadow-2xl p-4 z-50 select-none animate-in fade-in slide-in-from-bottom-2 duration-150 flex gap-3">
           {/* Hours Column */}
           <div className="flex-1 flex flex-col items-center">
-            <span className="text-[10px] uppercase tracking-wider text-zinc-600 font-extrabold mb-2">Hour</span>
+            <span className="text-[10px] uppercase tracking-wider text-arcus-fg-muted font-extrabold mb-2">Hour</span>
             <div className="h-40 overflow-y-auto w-full custom-scroll space-y-1">
               {[12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(h => (
                 <button
@@ -599,7 +599,7 @@ function PremiumTimePicker({ value, onChange }: {
                     "w-full text-center py-1 rounded-lg text-[13px] font-bold transition-all",
                     selectedHour === h
                       ? "bg-zinc-100 text-zinc-950 font-bold"
-                      : "text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200"
+                      : "text-arcus-fg-secondary hover:bg-arcus-surface/50 hover:text-arcus-fg"
                   )}
                 >
                   {String(h).padStart(2, '0')}
@@ -609,8 +609,8 @@ function PremiumTimePicker({ value, onChange }: {
           </div>
 
           {/* Minutes Column */}
-          <div className="flex-1 flex flex-col items-center border-l border-zinc-900/80 pl-2">
-            <span className="text-[10px] uppercase tracking-wider text-zinc-600 font-extrabold mb-2">Min</span>
+          <div className="flex-1 flex flex-col items-center border-l border-arcus-border/80 pl-2">
+            <span className="text-[10px] uppercase tracking-wider text-arcus-fg-muted font-extrabold mb-2">Min</span>
             <div className="h-40 overflow-y-auto w-full custom-scroll space-y-1">
               {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(m => (
                 <button
@@ -620,7 +620,7 @@ function PremiumTimePicker({ value, onChange }: {
                     "w-full text-center py-1 rounded-lg text-[13px] font-bold transition-all",
                     selectedMinute === m
                       ? "bg-zinc-100 text-zinc-950 font-bold"
-                      : "text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200"
+                      : "text-arcus-fg-secondary hover:bg-arcus-surface/50 hover:text-arcus-fg"
                   )}
                 >
                   {String(m).padStart(2, '0')}
@@ -630,8 +630,8 @@ function PremiumTimePicker({ value, onChange }: {
           </div>
 
           {/* AM/PM Column */}
-          <div className="w-14 flex flex-col items-center border-l border-zinc-900/80 pl-2">
-            <span className="text-[10px] uppercase tracking-wider text-zinc-600 font-extrabold mb-2">Period</span>
+          <div className="w-14 flex flex-col items-center border-l border-arcus-border/80 pl-2">
+            <span className="text-[10px] uppercase tracking-wider text-arcus-fg-muted font-extrabold mb-2">Period</span>
             <div className="flex flex-col gap-1.5 w-full">
               {(['AM', 'PM'] as const).map(p => (
                 <button
@@ -641,7 +641,7 @@ function PremiumTimePicker({ value, onChange }: {
                     "w-full text-center py-2.5 rounded-lg text-[12px] font-extrabold transition-all",
                     selectedPeriod === p
                       ? "bg-zinc-100 text-zinc-950 font-bold"
-                      : "text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200"
+                      : "text-arcus-fg-secondary hover:bg-arcus-surface/50 hover:text-arcus-fg"
                   )}
                 >
                   {p}
@@ -709,20 +709,20 @@ function CreateModal({ onClose, onSave, initial }: {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 24, scale: 0.98 }}
         transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-        className="relative w-full max-w-4xl bg-[#0a0a0b] border border-zinc-900 rounded-2xl shadow-2xl shadow-black/70 overflow-hidden max-h-[95vh] flex flex-col"
+        className="relative w-full max-w-4xl bg-arcus-elevated border border-arcus-border rounded-2xl shadow-2xl shadow-black/70 overflow-hidden max-h-[95vh] flex flex-col"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-8 pt-7 pb-5 border-b border-zinc-900/60 flex-shrink-0">
+        <div className="flex items-center justify-between px-8 pt-7 pb-5 border-b border-arcus-border/60 flex-shrink-0">
           <div>
-            <h2 className="text-[20px] font-extrabold text-zinc-100 tracking-tight">{initial?.id ? 'Edit schedule' : 'New schedule'}</h2>
-            <p className="text-[14px] text-zinc-550 mt-1">Describe the job and when to run it</p>
+            <h2 className="text-[20px] font-extrabold text-arcus-fg tracking-tight">{initial?.id ? 'Edit schedule' : 'New schedule'}</h2>
+            <p className="text-[14px] text-arcus-fg-muted mt-1">Describe the job and when to run it</p>
           </div>
-          <button onClick={onClose} className="w-9 h-9 flex items-center justify-center rounded-xl text-zinc-550 hover:text-zinc-200 hover:bg-[#121214] border border-transparent hover:border-zinc-900 transition-all">
+          <button onClick={onClose} className="w-9 h-9 flex items-center justify-center rounded-xl text-arcus-fg-muted hover:text-arcus-fg hover:bg-arcus-surface border border-transparent hover:border-arcus-border transition-all">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="px-8 py-6 overflow-y-auto custom-scroll flex-1 bg-[#0a0a0b]">
+        <div className="px-8 py-6 overflow-y-auto custom-scroll flex-1 bg-arcus-elevated">
           <style dangerouslySetInnerHTML={{ __html: `
             .custom-scroll::-webkit-scrollbar {
               width: 6px;
@@ -745,24 +745,24 @@ function CreateModal({ onClose, onSave, initial }: {
             <div className="lg:col-span-7 space-y-6">
               {/* Task description */}
               <div>
-                <label className="block text-[13px] font-bold text-zinc-400 mb-2">What should Arcus do?</label>
+                <label className="block text-[13px] font-bold text-arcus-fg-secondary mb-2">What should Arcus do?</label>
                 <textarea
                   value={task}
                   onChange={e => setTask(e.target.value)}
                   placeholder="Describe what you want this agent to do in plain English…"
                   rows={8}
-                  className="w-full bg-[#121214] border border-[#242427] rounded-xl px-4 py-3.5 text-[15px] text-zinc-100 leading-relaxed placeholder:text-zinc-650 focus:outline-none focus:border-zinc-700 transition-all resize-none animate-none"
+                  className="w-full bg-arcus-surface border border-arcus-border rounded-xl px-4 py-3.5 text-[15px] text-arcus-fg leading-relaxed placeholder:text-arcus-fg-muted focus:outline-none focus:border-arcus-divider transition-all resize-none animate-none"
                 />
               </div>
 
               {/* Optional name */}
               <div>
-                <label className="block text-[13px] font-bold text-zinc-400 mb-2">Agent name <span className="font-normal text-zinc-550">(optional)</span></label>
+                <label className="block text-[13px] font-bold text-arcus-fg-secondary mb-2">Agent name <span className="font-normal text-arcus-fg-muted">(optional)</span></label>
                 <input
                   value={name}
                   onChange={e => setName(e.target.value)}
                   placeholder="e.g. Morning Client Check"
-                  className="w-full bg-[#121214] border border-[#242427] rounded-xl px-4 py-3 text-[15px] text-zinc-100 placeholder:text-zinc-655 focus:outline-none focus:border-zinc-700 transition-all"
+                  className="w-full bg-arcus-surface border border-arcus-border rounded-xl px-4 py-3 text-[15px] text-arcus-fg placeholder:text-arcus-fg-muted focus:outline-none focus:border-arcus-divider transition-all"
                 />
               </div>
             </div>
@@ -771,7 +771,7 @@ function CreateModal({ onClose, onSave, initial }: {
             <div className="lg:col-span-5 space-y-6">
               {/* Schedule */}
               <div>
-                <label className="block text-[13px] font-bold text-zinc-400 mb-2">Schedule</label>
+                <label className="block text-[13px] font-bold text-arcus-fg-secondary mb-2">Schedule</label>
                 <div className="flex flex-wrap gap-2 mb-4">
                   {SCHEDULE_PATTERNS.map(p => (
                     <button
@@ -781,7 +781,7 @@ function CreateModal({ onClose, onSave, initial }: {
                         'px-3.5 py-1.5 rounded-lg text-[13px] font-bold transition-all border',
                         patternKey === p.key
                           ? 'bg-zinc-100 text-zinc-950 border-zinc-100 shadow-sm'
-                          : 'bg-[#121214] border-[#242427] text-zinc-400 hover:border-zinc-700 hover:text-zinc-200',
+                          : 'bg-arcus-surface border-arcus-border text-arcus-fg-secondary hover:border-arcus-divider hover:text-arcus-fg',
                       )}
                     >
                       {p.label}
@@ -793,18 +793,18 @@ function CreateModal({ onClose, onSave, initial }: {
                   <div className="flex gap-4 mb-4">
                     {activePat.needsDay && (
                       <div className="flex-1">
-                        <label className="block text-[11px] font-bold text-zinc-550 mb-1.5">Day</label>
+                        <label className="block text-[11px] font-bold text-arcus-fg-muted mb-1.5">Day</label>
                         <select
                           value={scheduleWeekday}
                           onChange={e => setScheduleWeekday(e.target.value)}
-                          className="w-full bg-[#121214] border border-[#242427] rounded-xl px-4 py-3 text-[14px] text-zinc-100 focus:outline-none focus:border-zinc-700 transition-all appearance-none cursor-pointer font-bold"
+                          className="w-full bg-arcus-surface border border-arcus-border rounded-xl px-4 py-3 text-[14px] text-arcus-fg focus:outline-none focus:border-arcus-divider transition-all appearance-none cursor-pointer font-bold"
                         >
                           {WEEK_DAYS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
                         </select>
                       </div>
                     )}
                     <div className={activePat.needsDay ? 'flex-1' : 'w-full'}>
-                      <label className="block text-[11px] font-bold text-zinc-555 mb-1.5">Time <span className="font-normal text-zinc-600">({browserTz})</span></label>
+                      <label className="block text-[11px] font-bold text-arcus-fg-muted mb-1.5">Time <span className="font-normal text-arcus-fg-muted">({browserTz})</span></label>
                       <PremiumTimePicker
                         value={scheduleTime}
                         onChange={setScheduleTime}
@@ -815,20 +815,20 @@ function CreateModal({ onClose, onSave, initial }: {
 
                 {patternKey === 'custom' && (
                   <div className="mb-4">
-                    <label className="block text-[11px] font-bold text-zinc-555 mb-1.5">Cron expression (UTC)</label>
+                    <label className="block text-[11px] font-bold text-arcus-fg-muted mb-1.5">Cron expression (UTC)</label>
                     <input
                       value={customCron}
                       onChange={e => setCustomCron(e.target.value)}
                       placeholder="e.g. 0 9 * * 1-5"
-                      className="w-full bg-[#121214] border border-[#242427] rounded-xl px-4 py-3 text-[14px] text-zinc-100 font-mono placeholder:text-[#3a3a3e] focus:outline-none focus:border-zinc-700 transition-all"
+                      className="w-full bg-arcus-surface border border-arcus-border rounded-xl px-4 py-3 text-[14px] text-arcus-fg font-mono placeholder:text-arcus-fg-muted focus:outline-none focus:border-arcus-divider transition-all"
                     />
                   </div>
                 )}
 
                 {cron && patternKey !== 'custom' && (
-                  <div className="px-4 py-3 bg-[#121214]/60 rounded-xl border border-zinc-900">
-                    <p className="text-[13px] text-zinc-400">
-                      Runs: <span className="text-zinc-200 font-bold">{cronToLabel(cron)}</span>
+                  <div className="px-4 py-3 bg-arcus-surface/60 rounded-xl border border-arcus-border">
+                    <p className="text-[13px] text-arcus-fg-secondary">
+                      Runs: <span className="text-arcus-fg font-bold">{cronToLabel(cron)}</span>
                     </p>
                   </div>
                 )}
@@ -836,7 +836,7 @@ function CreateModal({ onClose, onSave, initial }: {
 
               {/* Output channel */}
               <div>
-                <label className="block text-[13px] font-bold text-zinc-400 mb-2">Deliver report to</label>
+                <label className="block text-[13px] font-bold text-arcus-fg-secondary mb-2">Deliver report to</label>
                 <div className="flex gap-2">
                   {(['gmail', 'slack', 'both'] as const).map(ch => (
                     <button
@@ -846,7 +846,7 @@ function CreateModal({ onClose, onSave, initial }: {
                         'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[14px] font-bold border transition-all',
                         channel === ch
                           ? 'bg-zinc-100 text-zinc-950 border-zinc-100 shadow-sm'
-                          : 'bg-[#121214] border-[#242427] text-zinc-400 hover:border-zinc-700 hover:text-zinc-200',
+                          : 'bg-arcus-surface border-arcus-border text-arcus-fg-secondary hover:border-arcus-divider hover:text-arcus-fg',
                       )}
                     >
                       {ch === 'gmail' && <Mail className="w-3.5 h-3.5" />}
@@ -861,26 +861,26 @@ function CreateModal({ onClose, onSave, initial }: {
                     value={slackCh}
                     onChange={e => setSlackCh(e.target.value)}
                     placeholder="Slack channel (e.g. #reports)"
-                    className="mt-3 w-full bg-[#121214] border border-[#242427] rounded-xl px-4 py-3 text-[14px] text-zinc-100 placeholder:text-zinc-655 focus:outline-none focus:border-zinc-700 transition-all"
+                    className="mt-3 w-full bg-arcus-surface border border-arcus-border rounded-xl px-4 py-3 text-[14px] text-arcus-fg placeholder:text-arcus-fg-muted focus:outline-none focus:border-arcus-divider transition-all"
                   />
                 )}
               </div>
 
               {/* Skip confirmations */}
-              <div className="flex items-center justify-between bg-[#121214] border border-zinc-900 rounded-xl px-4 py-3.5">
+              <div className="flex items-center justify-between bg-arcus-surface border border-arcus-border rounded-xl px-4 py-3.5">
                 <div>
-                  <p className="text-[14px] font-bold text-zinc-100">Skip confirmations</p>
-                  <p className="text-[12px] text-zinc-550 mt-0.5">No approval needed before execution</p>
+                  <p className="text-[14px] font-bold text-arcus-fg">Skip confirmations</p>
+                  <p className="text-[12px] text-arcus-fg-muted mt-0.5">No approval needed before execution</p>
                 </div>
                 <Toggle checked={skipConf} onChange={() => setSkipConf(v => !v)} />
               </div>
 
               {/* Expiration date */}
               <div>
-                <div className="flex items-center justify-between bg-[#121214] border border-zinc-900 rounded-xl px-4 py-3.5 mb-2">
+                <div className="flex items-center justify-between bg-arcus-surface border border-arcus-border rounded-xl px-4 py-3.5 mb-2">
                   <div>
-                    <p className="text-[14px] font-bold text-zinc-100">Expiration date</p>
-                    <p className="text-[12px] text-zinc-550 mt-0.5">Agent stops running after this date</p>
+                    <p className="text-[14px] font-bold text-arcus-fg">Expiration date</p>
+                    <p className="text-[12px] text-arcus-fg-muted mt-0.5">Agent stops running after this date</p>
                   </div>
                   <Toggle checked={hasExpiry} onChange={() => { setHasExpiry(v => !v); if (hasExpiry) setExpiresAt(''); }} />
                 </div>
@@ -896,8 +896,8 @@ function CreateModal({ onClose, onSave, initial }: {
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-6 mt-6 border-t border-zinc-900/60">
-            <button onClick={onClose} className="flex-1 py-3.5 rounded-xl text-[15px] font-bold text-zinc-400 bg-[#121214] hover:bg-zinc-900 transition-all border border-[#242427]">
+          <div className="flex gap-3 pt-6 mt-6 border-t border-arcus-border/60">
+            <button onClick={onClose} className="flex-1 py-3.5 rounded-xl text-[15px] font-bold text-arcus-fg-secondary bg-arcus-surface hover:bg-arcus-surface-hover transition-all border border-arcus-border">
               Cancel
             </button>
             <button
@@ -931,23 +931,23 @@ function AgentCard({ agent, onToggle, onEdit, onDelete, onToggleConf }: {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -4 }}
-      className="bg-zinc-900/60 border border-zinc-800/70 rounded-2xl overflow-hidden hover:border-zinc-700/70 transition-all shadow-sm"
+      className="bg-arcus-surface/60 border border-arcus-divider/70 rounded-2xl overflow-hidden hover:border-arcus-divider/70 transition-all shadow-sm"
     >
       <div className="p-5 pb-4">
         <div className="flex items-start gap-3.5">
-          <div className="px-2.5 py-1 rounded-lg text-[11px] font-bold border flex-shrink-0 mt-0.5 bg-zinc-800/60 border-zinc-700/60 text-zinc-300">
+          <div className="px-2.5 py-1 rounded-lg text-[11px] font-bold border flex-shrink-0 mt-0.5 bg-arcus-raised/60 border-arcus-divider/60 text-arcus-fg-secondary">
             {cronToLabel(agent.cron_schedule).split(' ')[0]}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[15px] font-bold text-zinc-100 leading-tight line-clamp-1">{agent.name}</p>
-            <p className="text-[13px] text-zinc-500 mt-1 leading-relaxed line-clamp-2">{agent.task_description}</p>
+            <p className="text-[15px] font-bold text-arcus-fg leading-tight line-clamp-1">{agent.name}</p>
+            <p className="text-[13px] text-arcus-fg-muted mt-1 leading-relaxed line-clamp-2">{agent.task_description}</p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0 pt-0.5">
             <Toggle checked={agent.status !== 'paused'} onChange={onToggle} />
             <div className="relative">
               <button
                 onClick={() => setMenuOpen(v => !v)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-all"
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-arcus-fg-muted hover:text-arcus-fg hover:bg-arcus-raised transition-all"
               >
                 <MoreHorizontal className="w-4 h-4" />
               </button>
@@ -957,11 +957,11 @@ function AgentCard({ agent, onToggle, onEdit, onDelete, onToggleConf }: {
                     initial={{ opacity: 0, scale: 0.92, y: -4 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.92, y: -4 }}
-                    className="absolute right-0 top-10 w-36 bg-zinc-900 border border-zinc-700/60 rounded-xl overflow-hidden shadow-xl z-20"
+                    className="absolute right-0 top-10 w-36 bg-arcus-surface border border-arcus-divider/60 rounded-xl overflow-hidden shadow-xl z-20"
                   >
                     <button
                       onClick={() => { setMenuOpen(false); onEdit(); }}
-                      className="w-full flex items-center gap-2 px-3.5 py-2.5 text-[13px] text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 transition-all"
+                      className="w-full flex items-center gap-2 px-3.5 py-2.5 text-[13px] text-arcus-fg-secondary hover:bg-arcus-raised hover:text-arcus-fg transition-all"
                     >
                       <Edit2 className="w-3.5 h-3.5" /> Edit
                     </button>
@@ -979,26 +979,26 @@ function AgentCard({ agent, onToggle, onEdit, onDelete, onToggleConf }: {
         </div>
 
         {/* Info rows */}
-        <div className="flex items-center gap-6 mt-4 pt-3.5 border-t border-zinc-800/50">
+        <div className="flex items-center gap-6 mt-4 pt-3.5 border-t border-arcus-divider/50">
           <div>
-            <span className="text-[11px] font-semibold uppercase tracking-widest text-zinc-600 block mb-0.5">Schedule</span>
-            <span className="text-[13px] text-zinc-300 font-medium">{cronToLabel(agent.cron_schedule)}</span>
+            <span className="text-[11px] font-semibold uppercase tracking-widest text-arcus-fg-muted block mb-0.5">Schedule</span>
+            <span className="text-[13px] text-arcus-fg-secondary font-medium">{cronToLabel(agent.cron_schedule)}</span>
           </div>
           <div>
-            <span className="text-[11px] font-semibold uppercase tracking-widest text-zinc-600 block mb-0.5">Next run</span>
-            <span className="text-[13px] text-zinc-300 font-medium">{formatNextRun(nextRun)}</span>
+            <span className="text-[11px] font-semibold uppercase tracking-widest text-arcus-fg-muted block mb-0.5">Next run</span>
+            <span className="text-[13px] text-arcus-fg-secondary font-medium">{formatNextRun(nextRun)}</span>
           </div>
           <div className="ml-auto flex flex-col items-end gap-1.5">
             <span className={cn(
               'inline-flex px-2.5 py-1 rounded-full text-[11px] font-semibold',
-              agent.status === 'active'  ? 'bg-zinc-800 text-zinc-300 border border-zinc-700/60' :
-              agent.status === 'running' ? 'bg-zinc-700 text-zinc-100 border border-zinc-600' :
-              'bg-transparent text-zinc-600 border border-zinc-800',
+              agent.status === 'active'  ? 'bg-arcus-raised text-arcus-fg-secondary border border-arcus-divider/60' :
+              agent.status === 'running' ? 'bg-arcus-raised text-arcus-fg border border-arcus-divider' :
+              'bg-transparent text-arcus-fg-muted border border-arcus-divider',
             )}>
               {agent.status === 'running' ? 'Running…' : agent.status === 'active' ? 'Active' : 'Paused'}
             </span>
             {agent.expires_at && (
-              <span className="text-[11px] text-zinc-600">
+              <span className="text-[11px] text-arcus-fg-muted">
                 Expires {new Date(agent.expires_at + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
               </span>
             )}
@@ -1010,7 +1010,7 @@ function AgentCard({ agent, onToggle, onEdit, onDelete, onToggleConf }: {
           <div className="mt-3">
             <button
               onClick={() => setExpanded(v => !v)}
-              className="flex items-center gap-1.5 text-[12px] text-zinc-600 hover:text-zinc-400 transition-colors"
+              className="flex items-center gap-1.5 text-[12px] text-arcus-fg-muted hover:text-arcus-fg-secondary transition-colors"
             >
               <ChevronDown className={cn('w-3.5 h-3.5 transition-transform', expanded && 'rotate-180')} />
               Last run: {formatRunDate(agent.last_run_at)}
@@ -1023,7 +1023,7 @@ function AgentCard({ agent, onToggle, onEdit, onDelete, onToggleConf }: {
                   exit={{ height: 0, opacity: 0 }}
                   className="overflow-hidden"
                 >
-                  <p className="mt-2 text-[13px] text-zinc-500 leading-relaxed pl-4 border-l border-zinc-800">
+                  <p className="mt-2 text-[13px] text-arcus-fg-muted leading-relaxed pl-4 border-l border-arcus-divider">
                     {agent.last_report_summary || 'Run completed.'}
                   </p>
                 </motion.div>
@@ -1034,10 +1034,10 @@ function AgentCard({ agent, onToggle, onEdit, onDelete, onToggleConf }: {
       </div>
 
       {/* Skip confirmations */}
-      <div className="mx-5 mb-4 bg-zinc-950/60 border border-zinc-800/50 rounded-xl px-4 py-3 flex items-center justify-between">
+      <div className="mx-5 mb-4 bg-arcus-elevated/60 border border-arcus-divider/50 rounded-xl px-4 py-3 flex items-center justify-between">
         <div>
-          <p className="text-[13px] font-semibold text-zinc-300">Skip confirmations</p>
-          <p className="text-[12px] text-zinc-600 mt-0.5">No approval needed before sending or posting</p>
+          <p className="text-[13px] font-semibold text-arcus-fg-secondary">Skip confirmations</p>
+          <p className="text-[12px] text-arcus-fg-muted mt-0.5">No approval needed before sending or posting</p>
         </div>
         <Toggle checked={agent.skip_confirmations} onChange={onToggleConf} />
       </div>
@@ -1131,8 +1131,8 @@ export function AgentsPanel({ className, onSendMessage }: AgentsPanelProps) {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-[24px] font-bold text-zinc-100 tracking-tight">Scheduled</h2>
-          <p className="text-[14px] text-zinc-500 mt-0.5">Agents working for you around the clock</p>
+          <h2 className="text-[24px] font-bold text-arcus-fg tracking-tight">Scheduled</h2>
+          <p className="text-[14px] text-arcus-fg-muted mt-0.5">Agents working for you around the clock</p>
         </div>
         <button
           onClick={() => setCreateOpen(true)}
@@ -1144,7 +1144,7 @@ export function AgentsPanel({ className, onSendMessage }: AgentsPanelProps) {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center border-b border-zinc-800/70 mb-5">
+      <div className="flex items-center border-b border-arcus-divider/70 mb-5">
         {([
           { key: 'tasks',    label: 'Tasks',    Icon: List },
           { key: 'calendar', label: 'Calendar', Icon: CalendarDays },
@@ -1155,7 +1155,7 @@ export function AgentsPanel({ className, onSendMessage }: AgentsPanelProps) {
             onClick={() => setTab(key)}
             className={cn(
               'flex items-center gap-1.5 px-1 py-3 mr-6 text-[14px] font-semibold transition-all border-b-2 -mb-px',
-              tab === key ? 'text-zinc-100 border-zinc-100' : 'text-zinc-500 border-transparent hover:text-zinc-300',
+              tab === key ? 'text-arcus-fg border-zinc-100' : 'text-arcus-fg-muted border-transparent hover:text-arcus-fg-secondary',
             )}
           >
             <Icon className="w-4 h-4" />
@@ -1167,13 +1167,13 @@ export function AgentsPanel({ className, onSendMessage }: AgentsPanelProps) {
       {tableError && (
         <div className="mb-5 p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl flex items-start gap-3">
           <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-          <p className="text-[13px] text-zinc-400">Run the SQL migration in Supabase to enable agents (<code className="text-zinc-300">arcus_agents</code> table).</p>
+          <p className="text-[13px] text-arcus-fg-secondary">Run the SQL migration in Supabase to enable agents (<code className="text-arcus-fg-secondary">arcus_agents</code> table).</p>
         </div>
       )}
 
       {loading ? (
         <div className="flex items-center justify-center py-24">
-          <Loader2 className="w-6 h-6 text-zinc-600 animate-spin" />
+          <Loader2 className="w-6 h-6 text-arcus-fg-muted animate-spin" />
         </div>
       ) : tab === 'calendar' ? (
         <MiniCalendar
@@ -1181,21 +1181,21 @@ export function AgentsPanel({ className, onSendMessage }: AgentsPanelProps) {
           onAgentClick={() => {}}
         />
       ) : tab === 'marketplace' ? (
-        <div className="flex flex-col items-center justify-center py-16 px-4 bg-zinc-900/10 border border-zinc-800/40 rounded-3xl text-center">
-          <div className="w-12 h-12 rounded-2xl bg-zinc-900/80 flex items-center justify-center mb-4 border border-zinc-800">
-            <Compass className="w-6 h-6 text-zinc-400 animate-pulse" />
+        <div className="flex flex-col items-center justify-center py-16 px-4 bg-arcus-surface/10 border border-arcus-divider/40 rounded-3xl text-center">
+          <div className="w-12 h-12 rounded-2xl bg-arcus-surface/80 flex items-center justify-center mb-4 border border-arcus-divider">
+            <Compass className="w-6 h-6 text-arcus-fg-secondary animate-pulse" />
           </div>
-          <h3 className="text-[18px] font-extrabold text-zinc-100 tracking-tight mb-2 font-sans">Marketplace Coming Soon</h3>
-          <p className="text-[13px] text-zinc-550 max-w-sm leading-relaxed mb-1">
+          <h3 className="text-[18px] font-extrabold text-arcus-fg tracking-tight mb-2 font-sans">Marketplace Coming Soon</h3>
+          <p className="text-[13px] text-arcus-fg-muted max-w-sm leading-relaxed mb-1">
             Pre-built agents, custom automation workflows, and community-shared templates will be available here soon.
           </p>
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-zinc-800/60 text-zinc-400 border border-zinc-800/80 mt-4 uppercase tracking-wider">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-arcus-raised/60 text-arcus-fg-secondary border border-arcus-divider/80 mt-4 uppercase tracking-wider">
             Under Development
           </span>
         </div>
       ) : agents.length === 0 ? (
         <div>
-          <p className="text-[14px] text-zinc-500 mb-6 text-center">
+          <p className="text-[14px] text-arcus-fg-muted mb-6 text-center">
             Get started with a pre-built agent — activate in one click, customize anytime.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1205,17 +1205,17 @@ export function AgentsPanel({ className, onSendMessage }: AgentsPanelProps) {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
-                className="bg-zinc-900/60 border border-zinc-800/70 rounded-2xl p-4 flex flex-col hover:border-zinc-700/70 hover:bg-zinc-900/80 transition-all group"
+                className="bg-arcus-surface/60 border border-arcus-divider/70 rounded-2xl p-4 flex flex-col hover:border-arcus-divider/70 hover:bg-arcus-surface/80 transition-all group"
               >
                 <div className="flex items-center gap-2.5 mb-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-zinc-800/80 flex items-center justify-center flex-shrink-0">
-                    <Clock className="w-4 h-4 text-zinc-400" />
+                  <div className="w-8 h-8 rounded-xl bg-arcus-raised/80 flex items-center justify-center flex-shrink-0">
+                    <Clock className="w-4 h-4 text-arcus-fg-secondary" />
                   </div>
-                  <p className="text-[14px] font-bold text-zinc-100 leading-tight">{t.name}</p>
+                  <p className="text-[14px] font-bold text-arcus-fg leading-tight">{t.name}</p>
                 </div>
-                <p className="text-[13px] text-zinc-500 leading-relaxed flex-1 mb-3">{t.description}</p>
+                <p className="text-[13px] text-arcus-fg-muted leading-relaxed flex-1 mb-3">{t.description}</p>
                 <div className="flex items-center justify-between">
-                  <span className="text-[12px] text-zinc-600 font-medium">{cronToLabel(t.cron_schedule)}</span>
+                  <span className="text-[12px] text-arcus-fg-muted font-medium">{cronToLabel(t.cron_schedule)}</span>
                   <button
                     onClick={() => setTemplateInit(t)}
                     className="px-3.5 py-1.5 rounded-lg bg-zinc-100 text-zinc-950 text-[12px] font-bold hover:bg-white active:scale-95 transition-all"

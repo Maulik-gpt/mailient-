@@ -140,7 +140,7 @@ export function HomeFeedSidebar({
                         mass: 1,
                         restDelta: 0.001
                     } : { duration: 0 }}
-                    className={`fixed left-0 top-0 h-screen bg-[#F9F8F6] dark:bg-[#0c0c0c] border-r border-[#EBE9E2] dark:border-white/5 flex flex-col z-[100] md:z-50 ${className} ${!isOpen ? 'pointer-events-none md:pointer-events-auto' : 'pointer-events-auto shadow-2xl'}`}
+                    className={`fixed left-0 top-0 h-screen bg-[#F9F8F6] dark:bg-arcus-elevated border-r border-[#EBE9E2] dark:border-arcus-border flex flex-col z-[100] md:z-50 ${className} ${!isOpen ? 'pointer-events-none md:pointer-events-auto' : 'pointer-events-auto shadow-2xl'}`}
                 >
                     {/* Mobile Close Button */}
                     <AnimatePresence>
@@ -153,7 +153,7 @@ export function HomeFeedSidebar({
                             >
                                 <button 
                                     onClick={onClose}
-                                    className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors text-neutral-600 dark:text-neutral-400"
+                                    className="p-2 hover:bg-black/5 dark:hover:bg-arcus-surface rounded-full transition-colors text-neutral-600 dark:text-arcus-fg-tertiary"
                                 >
                                     <X className="w-5 h-5" />
                                 </button>
@@ -198,7 +198,7 @@ export function HomeFeedSidebar({
                                 animate={{ opacity: 1 }}
                                 transition={{ delay: 0.1 }}
                                 onClick={() => setIsCollapsed(!isCollapsed)}
-                                className="p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white border border-transparent hover:border-[#EBE9E2] dark:hover:border-white/10"
+                                className="p-1.5 hover:bg-black/5 dark:hover:bg-arcus-surface rounded-lg transition-colors text-neutral-600 dark:text-arcus-fg-tertiary hover:text-neutral-900 dark:hover:text-white border border-transparent hover:border-[#EBE9E2] dark:hover:border-arcus-divider"
                             >
                                 <PanelLeft className={`w-5 h-5 transition-transform duration-500 ${isCollapsed ? 'rotate-180' : ''}`} />
                             </motion.button>
@@ -210,7 +210,7 @@ export function HomeFeedSidebar({
                                 animate={{ opacity: 1, scale: 1 }}
                                 whileHover={{ scale: 1.1, x: 2 }}
                                 onClick={() => setIsCollapsed(!isCollapsed)}
-                                className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white dark:bg-[#0c0c0c] border border-[#EBE9E2] dark:border-white/10 rounded-full flex items-center justify-center text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white shadow-sm z-50 transition-all"
+                                className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white dark:bg-arcus-elevated border border-[#EBE9E2] dark:border-arcus-divider rounded-full flex items-center justify-center text-neutral-600 dark:text-arcus-fg-tertiary hover:text-neutral-900 dark:hover:text-white shadow-sm z-50 transition-all"
                              >
                                 <PanelLeft className="w-3.5 h-3.5 rotate-180" />
                              </motion.button>
@@ -234,12 +234,12 @@ export function HomeFeedSidebar({
                                                 onClick={() => router.push(item.route)}
                                                 className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3 px-3'} py-2.5 rounded-xl transition-all duration-200 group relative ${
                                                     isActive 
-                                                    ? 'bg-white/[0.05] text-[#1A1A1A] dark:text-white font-semibold shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] border border-[#EBE9E2] dark:border-white/10' 
-                                                    : 'text-[#666666] dark:text-neutral-400 hover:text-[#1A1A1A] dark:hover:text-white'
+                                                    ? 'bg-white/[0.05] text-[#1A1A1A] dark:text-white font-semibold shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] border border-[#EBE9E2] dark:border-arcus-divider'
+                                                    : 'text-[#666666] dark:text-arcus-fg-tertiary hover:text-[#1A1A1A] dark:hover:text-white'
                                                 }`}
                                             >
                                                 <motion.div layout>
-                                                    <Icon size={20} className={`transition-colors duration-300 ${isActive ? 'text-amber-500' : 'text-[#666666] dark:text-neutral-500 group-hover:text-black dark:group-hover:text-white'}`} strokeWidth={ isActive ? 2 : 1.5} />
+                                                    <Icon size={20} className={`transition-colors duration-300 ${isActive ? 'text-amber-500' : 'text-[#666666] dark:text-arcus-fg-tertiary group-hover:text-black dark:group-hover:text-white'}`} strokeWidth={ isActive ? 2 : 1.5} />
                                                 </motion.div>
                                                 
                                                 <AnimatePresence mode="popLayout">
@@ -290,12 +290,12 @@ export function HomeFeedSidebar({
                                             }}
                                             className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3 px-3'} py-2.5 rounded-xl transition-all duration-200 group ${
                                                 isActive 
-                                                ? 'bg-white/[0.05] text-[#1A1A1A] dark:text-white font-semibold shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] border border-[#EBE9E2] dark:border-white/10' 
-                                                : 'text-[#666666] dark:text-neutral-400 hover:text-[#1A1A1A] dark:hover:text-white'
+                                                ? 'bg-white/[0.05] text-[#1A1A1A] dark:text-white font-semibold shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] border border-[#EBE9E2] dark:border-arcus-divider'
+                                                : 'text-[#666666] dark:text-arcus-fg-tertiary hover:text-[#1A1A1A] dark:hover:text-white'
                                             }`}
                                         >
                                             <motion.div layout>
-                                                <Icon size={20} className={`transition-colors duration-300 ${isActive ? 'text-[#1A1A1A] dark:text-white' : 'text-[#666666] dark:text-neutral-500 group-hover:text-black dark:group-hover:text-white'}`} strokeWidth={1.5} />
+                                                <Icon size={20} className={`transition-colors duration-300 ${isActive ? 'text-[#1A1A1A] dark:text-white' : 'text-[#666666] dark:text-arcus-fg-tertiary group-hover:text-black dark:group-hover:text-white'}`} strokeWidth={1.5} />
                                             </motion.div>
                                             
                                             <AnimatePresence mode="popLayout">
@@ -319,7 +319,7 @@ export function HomeFeedSidebar({
                     </div>
 
                     {/* User Detail (Only shown when expanded) */}
-                    <div className="px-3 pb-6 border-t border-[#EBE9E2] dark:border-white/5">
+                    <div className="px-3 pb-6 border-t border-[#EBE9E2] dark:border-arcus-border">
                         <AnimatePresence mode="wait">
                             {!isCollapsed ? (
                                 <motion.div 
@@ -332,11 +332,11 @@ export function HomeFeedSidebar({
                                 >
                                     <button
                                         onClick={() => setIsMoreOptionsOpen(!isMoreOptionsOpen)}
-                                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/[0.05] transition-all group"
+                                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-arcus-surface transition-all group"
                                     >
                                         <motion.div 
                                             layout
-                                            className="w-7 h-7 rounded-full overflow-hidden border border-[#EBE9E2] dark:border-white/10 bg-white dark:bg-black shrink-0"
+                                            className="w-7 h-7 rounded-full overflow-hidden border border-[#EBE9E2] dark:border-arcus-divider bg-white dark:bg-black shrink-0"
                                         >
                                             <img
                                                 src={(session?.user?.image?.startsWith('http') || session?.user?.image?.startsWith('/')) ? session.user.image : "/user-avatar.png?v=2"}
@@ -348,11 +348,11 @@ export function HomeFeedSidebar({
                                             <span className="text-[13px] font-medium text-[#1A1A1A] dark:text-white truncate w-full">
                                                 {session?.user?.name || 'Account'}
                                             </span>
-                                            <span className="text-[10px] text-[#666666] dark:text-neutral-500 truncate w-full">
+                                            <span className="text-[10px] text-[#666666] dark:text-arcus-fg-tertiary truncate w-full">
                                                 Manage Profile
                                             </span>
                                         </div>
-                                        <ChevronRight className={`ml-auto w-4 h-4 text-[#666666] dark:text-neutral-600 transition-transform ${isMoreOptionsOpen ? 'rotate-90' : ''}`} />
+                                        <ChevronRight className={`ml-auto w-4 h-4 text-[#666666] dark:text-arcus-fg-tertiary transition-transform ${isMoreOptionsOpen ? 'rotate-90' : ''}`} />
                                     </button>
                                     
                                     <AnimatePresence>
@@ -368,12 +368,12 @@ export function HomeFeedSidebar({
                                                         setIsFeedbackOpen(true);
                                                         setIsMoreOptionsOpen(false);
                                                     }}
-                                                    className="w-full flex items-center gap-3 px-3 py-2 text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/[0.05] rounded-lg transition-all text-sm group"
+                                                    className="w-full flex items-center gap-3 px-3 py-2 text-neutral-600 dark:text-arcus-fg-tertiary hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-arcus-surface rounded-lg transition-all text-sm group"
                                                 >
-                                                    <MessageCircle size={16} className="text-neutral-600 dark:text-neutral-500 group-hover:text-black dark:group-hover:text-white transition-colors" />
+                                                    <MessageCircle size={16} className="text-neutral-600 dark:text-arcus-fg-tertiary group-hover:text-black dark:group-hover:text-white transition-colors" />
                                                     <span>Feedback</span>
                                                 </button>
-                                                <div className="h-px w-full bg-black/5 dark:bg-white/[0.05] my-1" />
+                                                <div className="h-px w-full bg-black/5 dark:bg-arcus-surface my-1" />
                                                 <button
                                                     onClick={handleLogout}
                                                     className="w-full flex items-center gap-3 px-3 py-2 text-red-500/80 hover:bg-red-500/5 rounded-lg transition-all text-sm"
@@ -396,7 +396,7 @@ export function HomeFeedSidebar({
                                      <motion.div 
                                         whileHover={{ scale: 1.1 }}
                                         whileTap={{ scale: 0.9 }}
-                                        className="w-8 h-8 rounded-full overflow-hidden border border-[#EBE9E2] dark:border-white/10 bg-white dark:bg-black cursor-pointer" 
+                                        className="w-8 h-8 rounded-full overflow-hidden border border-[#EBE9E2] dark:border-arcus-divider bg-white dark:bg-black cursor-pointer"
                                         onClick={() => setIsCollapsed(false)}
                                     >
                                         <img

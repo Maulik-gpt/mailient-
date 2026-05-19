@@ -3,6 +3,43 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* ─── Arcus Design System — Color Tokens ──────────────────────────────────────
+   Neutral ramp (linear-grade):
+     1000 #000000  canvas
+     950  #0A0A0A  bg-elevated
+     900  #141414  surface
+     850  #1A1A1A  surface-hover
+     800  #232323  raised
+     700  #2A2A2A  border
+     600  #363636  divider
+     500  #525252  fg-muted
+     400  #737373  fg-tertiary
+
+   Text scale (on --arcus-bg):
+     --arcus-fg           #FAFAFA   headlines, body
+     --arcus-fg-secondary #A0A0A0   sub-titles, descriptions
+     --arcus-fg-tertiary  #737373   timestamps, captions
+     --arcus-fg-muted     #525252   disabled, hints
+     --arcus-fg-inverse   #000000   on white tiles
+──────────────────────────────────────────────────────────────────────────── */
+:root {
+  /* Arcus surfaces */
+  --arcus-bg:               #000000;
+  --arcus-bg-elevated:      #0A0A0A;
+  --arcus-surface:          #141414;
+  --arcus-surface-hover:    #1A1A1A;
+  --arcus-raised:           #232323;
+  --arcus-border:           #2A2A2A;
+  --arcus-divider:          #363636;
+
+  /* Arcus text */
+  --arcus-fg:               #FAFAFA;
+  --arcus-fg-secondary:     #A0A0A0;
+  --arcus-fg-tertiary:      #737373;
+  --arcus-fg-muted:         #525252;
+  --arcus-fg-inverse:       #000000;
+}
+
 /* --- Premium Interactive Polish --- */
 :root {
   --custom-cursor: url('/macos-cursor.svg') 11 5, pointer;

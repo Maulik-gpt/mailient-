@@ -167,13 +167,13 @@ const MarkdownComponents: any = {
     );
   },
   table: ({ children }: any) => (
-    <div className="my-6 w-full overflow-hidden rounded-xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm">
+    <div className="my-6 w-full overflow-hidden rounded-xl border border-arcus-border bg-arcus-elevated backdrop-blur-sm">
       <table className="w-full border-collapse text-sm text-left">
         {children}
       </table>
     </div>
   ),
-  thead: ({ children }: any) => <thead className="bg-white/[0.06] border-b border-white/[0.1]">{children}</thead>,
+  thead: ({ children }: any) => <thead className="bg-arcus-surface border-b border-arcus-border">{children}</thead>,
   th: ({ children }: any) => <th className="px-4 py-3 font-bold text-white uppercase tracking-wider text-[11px]">{children}</th>,
   td: ({ children }: any) => {
     // Highlight status symbols in table cells
@@ -181,7 +181,7 @@ const MarkdownComponents: any = {
     const hasStatus = /[✅❌⚠️⏳💰🚀🔥⚡📊📈]/.test(text.toString());
     return (
       <td className={cn(
-        "px-4 py-2.5 text-white border-b border-white/[0.03] last:border-0",
+        "px-4 py-2.5 text-white border-b border-arcus-border last:border-0",
         hasStatus && "font-medium"
       )}>{children}</td>
     );
@@ -201,7 +201,7 @@ const MarkdownComponents: any = {
         "font-mono text-sm",
         inline
           ? "px-1.5 py-0.5 rounded bg-white/[0.08] text-white"
-          : "block p-4 bg-[#0a0a0a] border border-white/[0.08] rounded-lg text-white my-4 overflow-x-auto",
+          : "block p-4 bg-arcus-elevated border border-arcus-border rounded-lg text-white my-4 overflow-x-auto",
         className
       )} {...props}>
         {children}
@@ -209,7 +209,7 @@ const MarkdownComponents: any = {
     );
   },
   pre: ({ children }: any) => (
-    <pre className="block my-4 bg-[#0a0a0a] border border-white/[0.08] rounded-lg overflow-hidden">
+    <pre className="block my-4 bg-arcus-elevated border border-arcus-border rounded-lg overflow-hidden">
       {children}
     </pre>
   ),
@@ -361,7 +361,7 @@ const MissionStatusHeader = ({ mission }: { mission: any }) => {
   };
 
   return (
-    <div className="flex items-center gap-3 px-4 py-2 bg-[#111111] border border-neutral-200 dark:border-white/5 rounded-xl w-fit mb-8 shadow-sm">
+    <div className="flex items-center gap-3 px-4 py-2 bg-arcus-surface border border-arcus-border rounded-xl w-fit mb-8 shadow-sm">
       <div className="flex items-center gap-2">
         <div className="w-1.5 h-1.5 rounded-full bg-white/40 animate-pulse shrink-0" />
         <span className="text-black dark:text-white/95 text-[13px] font-bold tracking-tight">{mission.goal}</span>
@@ -665,7 +665,7 @@ function AgentThinkingSection({ content, isComplete }: { content: string, isComp
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="w-4 h-4 rounded-full bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0"
+              className="w-4 h-4 rounded-full bg-arcus-elevated border border-arcus-border flex items-center justify-center flex-shrink-0"
             >
               <div className="w-1.5 h-1.5 rounded-full bg-white/25" />
             </motion.div>
@@ -712,7 +712,7 @@ function AgentThinkingSection({ content, isComplete }: { content: string, isComp
               initial={{ opacity: 0, x: -5 }}
               animate={{ opacity: 1, x: 0 }}
               className={cn(
-                "pl-6 border-l border-white/[0.05] py-0.5 transition-all",
+                "pl-6 border-l border-arcus-border py-0.5 transition-all",
                 isComplete ? "opacity-70" : "opacity-100"
               )}
             >
@@ -736,7 +736,7 @@ function AgentThinkingSection({ content, isComplete }: { content: string, isComp
                       ol: ({ children }: any) => <ol className="list-decimal pl-4 mb-2 space-y-1 text-white/40">{children}</ol>,
                       hr: () => <hr className="my-4 border-0 h-px bg-white/[0.05]" />,
                       table: ({ children }: any) => (
-                        <div className="my-4 w-full overflow-hidden rounded-xl border border-white/[0.05] bg-white/[0.01]">
+                        <div className="my-4 w-full overflow-hidden rounded-xl border border-arcus-border bg-arcus-elevated">
                           <table className="w-full border-collapse text-[12px] text-left">
                             {children}
                           </table>
@@ -795,8 +795,8 @@ function AgentTaskPill({ step }: { step: AgentStep }) {
     <div className={cn(
       "flex flex-col gap-0.5 px-3 py-1.5 rounded-2xl w-fit mt-2 group/pill transition-all border",
       step.status === 'active'
-        ? "bg-white/[0.06] border-white/20 shadow-[0_0_10px_rgba(255,255,255,0.05)] overflow-hidden relative"
-        : "bg-white/[0.03] border-white/[0.08] hover:bg-white/[0.05] hover:border-white/12"
+        ? "bg-arcus-surface border-arcus-divider shadow-[0_0_10px_rgba(255,255,255,0.05)] overflow-hidden relative"
+        : "bg-arcus-elevated border-arcus-border hover:bg-arcus-surface hover:border-arcus-divider"
     )}>
       {step.status === 'active' && (
         <motion.div
@@ -810,7 +810,7 @@ function AgentTaskPill({ step }: { step: AgentStep }) {
           "flex items-center justify-center w-5 h-5 rounded-full border transition-all relative overflow-hidden flex-shrink-0",
           step.status === 'active'
             ? "bg-white/20 border-white/30 text-white shadow-[0_0_12px_rgba(255,255,255,0.4)]"
-            : "bg-white/5 border-white/10 text-white/40 group-hover/pill:text-white group-hover/pill:border-white/20"
+            : "bg-arcus-elevated border-arcus-border text-arcus-fg-tertiary group-hover/pill:text-arcus-fg group-hover/pill:border-arcus-divider"
         )}>
           {step.status === 'active' && (
             <motion.div
@@ -968,11 +968,11 @@ function ArcusErrorCard({ errorMessage, onRetry }: { errorMessage?: string; onRe
       initial={{ opacity: 0, y: 6, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ type: 'spring', damping: 24, stiffness: 280 }}
-      className="flex items-center justify-between gap-4 px-4 py-3.5 rounded-2xl bg-[#1a1a1a] border border-white/[0.08] w-full max-w-md mt-1"
+      className="flex items-center justify-between gap-4 px-4 py-3.5 rounded-2xl bg-arcus-surface-hover border border-arcus-border w-full max-w-md mt-1"
     >
       <div className="flex items-start gap-3">
         {/* Warning icon */}
-        <div className="flex-shrink-0 w-8 h-8 rounded-full border border-white/10 bg-white/[0.04] flex items-center justify-center mt-0.5">
+        <div className="flex-shrink-0 w-8 h-8 rounded-full border border-arcus-border bg-arcus-elevated flex items-center justify-center mt-0.5">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/50">
             <circle cx="12" cy="12" r="10" />
             <line x1="12" y1="8" x2="12" y2="12" />
@@ -1025,40 +1025,40 @@ function PartialFailureCard({
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: 'spring', damping: 24, stiffness: 260 }}
-      className="mt-4 rounded-2xl overflow-hidden border border-white/[0.08] bg-white/[0.02]"
+      className="mt-4 rounded-2xl overflow-hidden border border-arcus-border bg-arcus-elevated"
     >
       {/* Done section */}
       {done.length > 0 && (
-        <div className="px-4 py-3 border-b border-white/[0.06]">
-          <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Done</p>
+        <div className="px-4 py-3 border-b border-arcus-border">
+          <p className="text-[10px] font-bold text-arcus-fg-muted uppercase tracking-widest mb-2">Done</p>
           <div className="flex flex-col gap-1">
             {done.map(t => (
               <div key={t} className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 rounded-full bg-green-400/60 flex-shrink-0" />
-                <span className="text-[12px] text-white/60 font-mono">{toolLabel(t)}</span>
+                <span className="text-[12px] text-arcus-fg-secondary font-mono">{toolLabel(t)}</span>
               </div>
             ))}
           </div>
         </div>
       )}
       {/* Failed section */}
-      <div className="px-4 py-3 border-b border-white/[0.06]">
+      <div className="px-4 py-3 border-b border-arcus-border">
         <p className="text-[10px] font-bold text-red-400/60 uppercase tracking-widest mb-2">Needs attention</p>
         <div className="flex flex-col gap-2">
           {failed.map(f => (
             <div key={f.tool}>
               <div className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 rounded-full bg-red-400/60 flex-shrink-0" />
-                <span className="text-[12px] text-white/70 font-semibold font-mono">{toolLabel(f.tool)}</span>
+                <span className="text-[12px] text-arcus-fg font-semibold font-mono">{toolLabel(f.tool)}</span>
               </div>
-              <p className="text-[11px] text-white/30 pl-3.5 mt-0.5 leading-snug">{f.error}</p>
+              <p className="text-[11px] text-arcus-fg-muted pl-3.5 mt-0.5 leading-snug">{f.error}</p>
             </div>
           ))}
         </div>
       </div>
       {/* Recovery question */}
       <div className="px-4 py-3">
-        <p className="text-[12px] text-white/50 leading-snug">{question}</p>
+        <p className="text-[12px] text-arcus-fg-tertiary leading-snug">{question}</p>
       </div>
     </motion.div>
   );
@@ -1085,7 +1085,7 @@ function ProceedConfirmButtons({ onProceed, onDismiss }: { onProceed: () => void
       </button>
       <button
         onClick={() => { onDismiss(); setDismissed(true); }}
-        className="px-4 py-2 rounded-xl bg-white/[0.05] border border-white/[0.08] text-white/50 text-[12px] font-medium hover:bg-white/[0.08] hover:text-white/70 transition-all"
+        className="px-4 py-2 rounded-xl bg-arcus-surface border border-arcus-border text-arcus-fg-tertiary text-[12px] font-medium hover:bg-arcus-raised hover:text-arcus-fg-secondary transition-all"
       >
         Cancel
       </button>
@@ -1107,7 +1107,7 @@ const UserMessageCopyButton = ({ msg }: { msg: Message }) => {
   return (
     <button
       onClick={handleCopy}
-      className="absolute top-2 right-2 z-20 w-8 h-8 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-white/40 hover:text-white hover:bg-white/10 opacity-0 group-hover/msg:opacity-100 transition-all shadow-lg backdrop-blur-md"
+      className="absolute top-2 right-2 z-20 w-8 h-8 flex items-center justify-center rounded-xl bg-arcus-elevated border border-arcus-border text-arcus-fg-tertiary hover:text-arcus-fg hover:bg-arcus-surface opacity-0 group-hover/msg:opacity-100 transition-all shadow-lg backdrop-blur-md"
       title="Copy message"
     >
       <AnimatePresence mode="wait">
@@ -1184,7 +1184,7 @@ const MessageActionButtons = ({ msg, onFeedback, onRegenerate, isLoading, onShar
 
   return (
     <div className={cn("mt-5 flex items-center gap-2 transition-opacity", isLoading ? "opacity-30 pointer-events-none" : "group-hover/msg:opacity-100")}>
-      <div className="flex items-center gap-1.5 p-1.5 bg-white/[0.02] border border-white/[0.05] rounded-full backdrop-blur-md">
+      <div className="flex items-center gap-1.5 p-1.5 bg-arcus-elevated border border-arcus-border rounded-full backdrop-blur-md">
         {/* Copy Button */}
         <Tooltip delayDuration={200}>
           <TooltipTrigger asChild>
@@ -1205,7 +1205,7 @@ const MessageActionButtons = ({ msg, onFeedback, onRegenerate, isLoading, onShar
               </AnimatePresence>
             </button>
           </TooltipTrigger>
-          <TooltipContent className="bg-[#1a1a1a] border-white/10 text-white rounded-xl px-3 py-2 shadow-2xl">
+          <TooltipContent className="bg-arcus-surface-hover border-arcus-border text-white rounded-xl px-3 py-2 shadow-2xl">
             <div className="flex items-center gap-2">
               <span className="text-[11px] font-bold">Copy text</span>
               <span className="text-white/20 text-[10px] font-mono">⌘C</span>
@@ -1236,7 +1236,7 @@ const MessageActionButtons = ({ msg, onFeedback, onRegenerate, isLoading, onShar
               </AnimatePresence>
             </button>
           </TooltipTrigger>
-          <TooltipContent className="bg-[#1a1a1a] border-white/10 text-white rounded-xl px-3 py-2 shadow-2xl">
+          <TooltipContent className="bg-arcus-surface-hover border-arcus-border text-white rounded-xl px-3 py-2 shadow-2xl">
             <div className="flex items-center gap-2">
               <span className="text-[11px] font-bold">Share link</span>
               <span className="text-white/20 text-[10px] font-mono">⌘L</span>
@@ -1259,7 +1259,7 @@ const MessageActionButtons = ({ msg, onFeedback, onRegenerate, isLoading, onShar
               </motion.div>
             </button>
           </TooltipTrigger>
-          <TooltipContent className="bg-[#1a1a1a] border-white/10 text-white rounded-xl px-3 py-2 shadow-2xl">
+          <TooltipContent className="bg-arcus-surface-hover border-arcus-border text-white rounded-xl px-3 py-2 shadow-2xl">
             <span className="text-[11px] font-bold">Helpful</span>
           </TooltipContent>
         </Tooltip>
@@ -1279,7 +1279,7 @@ const MessageActionButtons = ({ msg, onFeedback, onRegenerate, isLoading, onShar
               </motion.div>
             </button>
           </TooltipTrigger>
-          <TooltipContent className="bg-[#1a1a1a] border-white/10 text-white rounded-xl px-3 py-2 shadow-2xl">
+          <TooltipContent className="bg-arcus-surface-hover border-arcus-border text-white rounded-xl px-3 py-2 shadow-2xl">
             <span className="text-[11px] font-bold">Not helpful</span>
           </TooltipContent>
         </Tooltip>
@@ -1299,7 +1299,7 @@ const MessageActionButtons = ({ msg, onFeedback, onRegenerate, isLoading, onShar
               </motion.div>
             </button>
           </TooltipTrigger>
-          <TooltipContent className="bg-[#1a1a1a] border-white/10 text-white rounded-xl px-3 py-2 shadow-2xl">
+          <TooltipContent className="bg-arcus-surface-hover border-arcus-border text-white rounded-xl px-3 py-2 shadow-2xl">
             <span className="text-[11px] font-bold">Regenerate</span>
           </TooltipContent>
         </Tooltip>
@@ -3494,7 +3494,7 @@ export default function ChatInterface({
                 animate={{ x: 0, opacity: 1 }}
                 exit={{ x: '110%', opacity: 0 }}
                 transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                className="fixed right-4 top-4 bottom-4 w-80 bg-[#111111] border border-white/[0.08] flex flex-col z-[100] shadow-2xl rounded-[32px] overflow-hidden"
+                className="fixed right-4 top-4 bottom-4 w-80 bg-arcus-surface border border-arcus-border flex flex-col z-[100] shadow-2xl rounded-[32px] overflow-hidden"
               >
                 <div className="absolute top-6 right-6 z-[110]">
                   <button
@@ -3542,11 +3542,11 @@ export default function ChatInterface({
             >
               {/* Chat Column (Order 1 - LEFT) - Premium Refinement */}
               <div
-                className="flex-1 flex flex-col relative h-full min-w-0 order-1 bg-black backdrop-blur-3xl border-x border-t border-white/[0.05] rounded-t-[40px] shadow-[0_-20px_50px_-15px_rgba(0,0,0,0.5)] overflow-hidden"
+                className="flex-1 flex flex-col relative h-full min-w-0 order-1 bg-arcus-bg backdrop-blur-3xl border-x border-t border-arcus-border rounded-t-[40px] shadow-[0_-20px_50px_-15px_rgba(0,0,0,0.5)] overflow-hidden"
                 style={{ display: 'flex', flexDirection: 'column', height: '100%', maxHeight: '100%' }}
               >
                 {/* Header - Glassmorphic fixed height */}
-                <div className="shrink-0 z-40 bg-black/[0.02] dark:bg-black/40 backdrop-blur-md border-b border-neutral-200 dark:border-white/[0.03]" style={{ flexShrink: 0 }}>
+                <div className="shrink-0 z-40 bg-arcus-bg/40 backdrop-blur-md border-b border-arcus-border" style={{ flexShrink: 0 }}>
                   <div className="relative px-8 py-4">
                     {/* Centered Agent/Home Toggle */}
                     {isInitialMode && arcusView === 'feed' && (
@@ -3555,15 +3555,15 @@ export default function ChatInterface({
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                          className="flex items-center gap-1 p-1 bg-white/[0.03] border border-white/[0.06] rounded-full shadow-lg"
+                          className="flex items-center gap-1 p-1 bg-arcus-surface border border-arcus-border rounded-full shadow-lg"
                         >
                           <button
                             onClick={() => setDashboardTab('home')}
                             className={cn(
                               "px-5 py-2 rounded-full text-[12px] font-bold transition-all flex items-center gap-2",
                               dashboardTab === 'home'
-                                ? "bg-white/[0.08] text-white border border-white/[0.12]"
-                                : "text-white/40 hover:text-white/60 border border-transparent"
+                                ? "bg-arcus-surface text-arcus-fg border border-arcus-divider"
+                                : "text-arcus-fg-tertiary hover:text-arcus-fg-secondary border border-transparent"
                             )}
                           >
                             <Sparkles className="w-3.5 h-3.5" />
@@ -3574,8 +3574,8 @@ export default function ChatInterface({
                             className={cn(
                               "px-5 py-2 rounded-full text-[12px] font-bold transition-all flex items-center gap-2",
                               dashboardTab === 'agents'
-                                ? "bg-white/[0.08] text-white border border-white/[0.12]"
-                                : "text-white/40 hover:text-white/60 border border-transparent"
+                                ? "bg-arcus-surface text-arcus-fg border border-arcus-divider"
+                                : "text-arcus-fg-tertiary hover:text-arcus-fg-secondary border border-transparent"
                             )}
                           >
                             <Bot className="w-3.5 h-3.5" />
@@ -3609,7 +3609,7 @@ export default function ChatInterface({
                         {/* Leftmost: Title and Dropdown with refined Zinc styling */}
                         {!isInitialMode && (
                           <div className="relative" ref={titleMenuRef}>
-                            <div className="flex items-center bg-white/[0.03] border border-white/[0.08] rounded-xl overflow-hidden shadow-xl transition-all hover:border-white/15 group">
+                            <div className="flex items-center bg-arcus-surface border border-arcus-border rounded-xl overflow-hidden shadow-xl transition-all hover:border-arcus-divider group">
                               <button
                                 onClick={() => setIsTitleMenuOpen(!isTitleMenuOpen)}
                                 className="pl-4 pr-3 py-2 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition-colors flex items-center gap-2.5 max-w-[280px]"
@@ -3631,7 +3631,7 @@ export default function ChatInterface({
 
                         {/* Dropdown Menu */}
                         {isTitleMenuOpen && (
-                          <div className="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-[#1a1a1a] border border-white/[0.08] rounded-xl shadow-2xl py-1.5 z-[100] animate-in fade-in zoom-in-95 duration-200">
+                          <div className="absolute top-full left-0 mt-2 w-48 bg-arcus-surface-hover border border-arcus-border rounded-xl shadow-2xl py-1.5 z-[100] animate-in fade-in zoom-in-95 duration-200">
                             <button
                               onClick={() => {
                                 setIsStarred(!isStarred);
@@ -3922,12 +3922,12 @@ export default function ChatInterface({
                             >
                               <div className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'} max-w-full items-start`}>
                                 {msg.role === 'user' && (
-                                  <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center border overflow-hidden bg-[#2b2b2b] border-white/10">
+                                  <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center border overflow-hidden bg-arcus-raised border-arcus-border">
                                     <User2 className="w-4 h-4 text-white/50" />
                                   </div>
                                 )}
                                 <div className="flex flex-col max-w-[95%] group/msg">
-                                  <div className={`transition-all relative overflow-hidden ${msg.role === 'user' ? 'px-5 py-3 rounded-[24px] bg-[#111]/95 backdrop-blur-2xl border border-white/[0.12] text-white shadow-2xl ring-1 ring-white/5' : 'text-white px-0 py-1'}`}>
+                                  <div className={`transition-all relative overflow-hidden ${msg.role === 'user' ? 'px-5 py-3 rounded-[24px] bg-arcus-surface/95 backdrop-blur-2xl border border-arcus-divider text-white shadow-2xl ring-1 ring-arcus-border' : 'text-white px-0 py-1'}`}>
                                     {msg.role === 'user' && isLoading && msg.id === messages.filter(m => m.role === 'user').pop()?.id && (
                                       <motion.div 
                                         className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.08] to-transparent w-[200%] pointer-events-none"
@@ -4001,9 +4001,9 @@ export default function ChatInterface({
                                      )}
 
                                     {msg.role === 'user' && (msg as UserMessage).attachments && (msg as UserMessage).attachments!.length > 0 && (
-                                      <div className="mt-3 flex flex-wrap gap-2 pt-3 border-t border-neutral-200 dark:border-white/10">
+                                      <div className="mt-3 flex flex-wrap gap-2 pt-3 border-t border-arcus-border">
                                         {(msg as UserMessage).attachments!.map((file, idx) => (
-                                          <div key={idx} className="flex items-center gap-2 p-2 bg-black/5 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 max-w-[200px]">
+                                          <div key={idx} className="flex items-center gap-2 p-2 bg-arcus-elevated rounded-lg border border-arcus-border max-w-[200px]">
                                             {file.type.startsWith('image/') ? (
                                               <div className="w-8 h-8 rounded-md overflow-hidden flex-shrink-0">
                                                 <img src={file.url} alt={file.name} className="w-full h-full object-cover" />
@@ -4025,7 +4025,7 @@ export default function ChatInterface({
                                       <div className="mt-4 space-y-3 pt-4 border-t border-graphite-border/50">
                                         <div className="grid grid-cols-1 gap-3">
                                           {msg.notes.map((note: any, idx: number) => (
-                                            <div key={note.id || idx} className="bg-white/[0.04] border border-white/[0.08] rounded-xl p-4">
+                                            <div key={note.id || idx} className="bg-arcus-elevated border border-arcus-border rounded-xl p-4">
                                               <div className="text-graphite-text font-medium leading-snug mb-1">{note.subject || '(No Subject)'}</div>
                                               {note.content && <div className="text-graphite-muted text-sm line-clamp-2">{note.content}</div>}
                                             </div>
@@ -4035,13 +4035,13 @@ export default function ChatInterface({
                                     )}
 
                                     {msg.role === 'assistant' && msg.meta?.internalThought && (
-                                      <details className="mt-4 border-t border-neutral-200 dark:border-white/5 pt-3 group/thought">
+                                      <details className="mt-4 border-t border-arcus-border pt-3 group/thought">
                                         <summary className="flex items-center gap-2 cursor-pointer text-black hover:text-black dark:text-white/60 transition-colors list-none">
                                           <BrainCircuit className="w-3.5 h-3.5" />
                                           <span className="text-[11px] font-bold tracking-wide uppercase">Internal Reasoning</span>
                                           <ChevronDown className="w-3 h-3 transition-transform group-open/thought:rotate-180" />
                                         </summary>
-                                        <div className="mt-2 pl-4 border-l border-neutral-200 dark:border-white/10 py-2">
+                                        <div className="mt-2 pl-4 border-l border-arcus-border py-2">
                                           <p className="text-black dark:text-white/40 text-[12px] leading-relaxed whitespace-pre-wrap italic">
                                             {msg.meta.internalThought}
                                           </p>
@@ -4117,7 +4117,7 @@ export default function ChatInterface({
                                     {/* Phase 2: Canvas Expansion Prompt */}
                                     {msg.role === 'assistant' && (msg as AgentMessage).meta?.canvasExpansion && (
                                       <div
-                                        className="mt-4 p-4 rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-black/[0.02] dark:bg-white/[0.02] backdrop-blur-sm"
+                                        className="mt-4 p-4 rounded-2xl border border-arcus-border bg-arcus-elevated backdrop-blur-sm"
                                       >
                                         <p className="text-[13px] text-black/50 dark:text-white/50 mb-3">
                                           This content is quite rich. Would you like to expand it on the canvas for a better view?
@@ -4182,7 +4182,7 @@ export default function ChatInterface({
                                           </a>
                                         </div>
 
-                                        <div className="group relative flex items-center justify-between gap-4 px-6 py-4 w-full max-w-[700px] bg-[#0a0a0a] border border-white/[0.08] rounded-2xl transition-all duration-500 hover:border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden mt-4">
+                                        <div className="group relative flex items-center justify-between gap-4 px-6 py-4 w-full max-w-[700px] bg-arcus-elevated border border-arcus-border rounded-2xl transition-all duration-500 hover:border-arcus-divider shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden mt-4">
                                           {/* Premium Sweep Animation */}
                                           <motion.div
                                             className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/[0.05] to-transparent w-[200%]"
@@ -4230,11 +4230,11 @@ export default function ChatInterface({
                                     {msg.role === 'assistant' && (msg as AgentMessage).meta?.canvasApproval && (
                                       <div className="mt-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
                                         <div className={cn(
-                                          "relative group overflow-hidden bg-white dark:bg-[#1a1a1a] border border-neutral-200 dark:border-white/5 rounded-2xl p-5 shadow-2xl transition-all",
+                                          "relative group overflow-hidden bg-arcus-surface-hover border border-arcus-border rounded-2xl p-5 shadow-2xl transition-all",
                                           (msg as AgentMessage).meta!.canvasApproval!.status !== 'pending' && "opacity-60"
                                         )}>
                                           <div className="flex items-start gap-3.5 relative z-10">
-                                            <div className="w-10 h-10 rounded-xl bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/10 flex items-center justify-center shrink-0">
+                                            <div className="w-10 h-10 rounded-xl bg-arcus-elevated border border-arcus-border flex items-center justify-center shrink-0">
                                               <Sparkles className={cn("w-5 h-5", (msg as AgentMessage).meta!.canvasApproval!.status === 'accepted' ? "text-blue-400" : "text-black dark:text-white/40")} />
                                             </div>
                                             <div className="flex-1 min-w-0">
@@ -4248,7 +4248,7 @@ export default function ChatInterface({
                                           </div>
 
                                           {(msg as AgentMessage).meta!.canvasApproval!.status === 'pending' ? (
-                                            <div className="flex items-center gap-2 mt-5 pt-4 border-t border-white/[0.03]">
+                                            <div className="flex items-center gap-2 mt-5 pt-4 border-t border-arcus-border">
                                               <button
                                                 onClick={() => handleAcceptCanvas(msg.id as number)}
                                                 className="px-5 py-2 bg-white hover:bg-neutral-200 text-black font-bold text-[12px] rounded-full transition-all flex items-center gap-2 active:scale-95"
@@ -4264,8 +4264,8 @@ export default function ChatInterface({
                                               </button>
                                             </div>
                                           ) : (
-                                            <div className="flex items-center gap-2 mt-5 pt-4 border-t border-white/[0.03]">
-                                              <div className="flex items-center gap-2 px-3 py-1.5 bg-black/5 dark:bg-white/5 rounded-full border border-neutral-200 dark:border-white/5">
+                                            <div className="flex items-center gap-2 mt-5 pt-4 border-t border-arcus-border">
+                                              <div className="flex items-center gap-2 px-3 py-1.5 bg-arcus-elevated rounded-full border border-arcus-border">
                                                 {(msg as AgentMessage).meta!.canvasApproval!.status === 'accepted' ? (
                                                   <div className="flex items-center gap-2 text-blue-400 text-[12px] font-bold">
                                                     <Check className="w-4 h-4" />
@@ -4444,8 +4444,8 @@ export default function ChatInterface({
                   {/* Fixed Prompt Box for Conversation Mode */}
                   {!isInitialMode && (
                     <div
-                      className="absolute bottom-0 left-0 right-0 z-50 bg-black"
-                      style={{ backgroundColor: '#000000' }}
+                      className="absolute bottom-0 left-0 right-0 z-50 bg-arcus-bg"
+                      style={{ backgroundColor: 'var(--arcus-bg)' }}
                     >
                       {/* Shadow gradient to hide content as it scrolls under prompt box */}
                       <div className="absolute bottom-full left-0 right-0 h-12 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none" />
@@ -4499,7 +4499,7 @@ export default function ChatInterface({
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 20 }}
                     transition={{ duration: 0.2, ease: 'easeOut' }}
-                    className="h-full flex-shrink-0 bg-[#161616] border border-neutral-200 dark:border-white/5 rounded-[32px] z-50 overflow-hidden order-2 relative shadow-2xl"
+                    className="h-full flex-shrink-0 bg-arcus-surface border border-arcus-border rounded-[32px] z-50 overflow-hidden order-2 relative shadow-2xl"
                   >
                     <CanvasPanel
                       isOpen={isCanvasOpen}
@@ -4517,7 +4517,7 @@ export default function ChatInterface({
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 20 }}
                     transition={{ duration: 0.2, ease: 'easeOut' }}
-                    className="h-full flex-shrink-0 bg-[#161616] border border-neutral-200 dark:border-white/5 rounded-[32px] z-50 overflow-hidden order-2 relative shadow-2xl"
+                    className="h-full flex-shrink-0 bg-arcus-surface border border-arcus-border rounded-[32px] z-50 overflow-hidden order-2 relative shadow-2xl"
                   >
                     <ArtifactsGalleryPanel
                       isOpen={showArtifactsPanel}
@@ -4581,22 +4581,22 @@ export default function ChatInterface({
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#111] border border-white/10 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl"
+                className="bg-arcus-surface border border-arcus-border rounded-2xl w-full max-w-md overflow-hidden shadow-2xl"
               >
                 <div className="p-6">
                   <h3 className="text-white text-lg font-bold mb-2 tracking-tight">
                     {feedbackModal.type === 'like' ? 'What did you like about this?' : 'How can we improve this?'}
                   </h3>
-                  <p className="text-white/50 text-[13px] mb-4">
+                  <p className="text-arcus-fg-tertiary text-[13px] mb-4">
                     {feedbackModal.type === 'like' ? 'Your feedback helps Arcus learn your preferences and tailor future responses.' : 'Your feedback helps Arcus avoid mistakes and improve reasoning accuracy.'}
                   </p>
                   <textarea
-                    className="w-full h-32 bg-black border border-white/10 rounded-xl p-4 text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 resize-none text-[13px]"
+                    className="w-full h-32 bg-arcus-bg border border-arcus-border rounded-xl p-4 text-white placeholder:text-arcus-fg-muted focus:outline-none focus:border-arcus-divider resize-none text-[13px]"
                     placeholder={feedbackModal.type === 'like' ? 'I liked how...' : 'It would be better if...'}
                     autoFocus
                   />
                 </div>
-                <div className="px-6 py-4 bg-[#0a0a0a] border-t border-white/5 flex items-center justify-end gap-3">
+                <div className="px-6 py-4 bg-arcus-elevated border-t border-arcus-border flex items-center justify-end gap-3">
                   <button onClick={() => setFeedbackModal(prev => ({ ...prev, isOpen: false }))} className="px-4 py-2 text-white/50 hover:text-white text-[13px] font-medium transition-colors">Cancel</button>
                   <button onClick={() => {
                     toast.success('Feedback submitted', { description: 'Thank you for helping improve Arcus AI.' });
@@ -4616,10 +4616,10 @@ export default function ChatInterface({
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#111] border border-white/10 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl"
+                className="bg-arcus-surface border border-arcus-border rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl"
               >
                 <div className="p-6 text-center">
-                  <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4 border border-white/10">
+                  <div className="w-12 h-12 rounded-full bg-arcus-elevated flex items-center justify-center mx-auto mb-4 border border-arcus-border">
                     <svg className="w-6 h-6 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
@@ -4629,7 +4629,7 @@ export default function ChatInterface({
                     This will remove the current response and Arcus will attempt to generate a new one based on your request.
                   </p>
                 </div>
-                <div className="px-6 py-4 bg-[#0a0a0a] border-t border-white/5 flex items-center gap-3">
+                <div className="px-6 py-4 bg-arcus-elevated border-t border-arcus-border flex items-center gap-3">
                   <button onClick={() => setRegenerateModal({ isOpen: false, msgId: null })} className="flex-1 px-4 py-2.5 text-white/50 hover:text-white text-[13px] font-bold transition-colors bg-white/5 hover:bg-white/10 rounded-xl">Cancel</button>
                   <button onClick={handleConfirmRegenerate} className="flex-1 px-4 py-2.5 bg-white text-black text-[13px] font-bold rounded-xl hover:bg-neutral-200 transition-colors">Regenerate</button>
                 </div>

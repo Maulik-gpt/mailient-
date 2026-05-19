@@ -286,7 +286,7 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
       </div>
       
       {/* Footer / Feedback Section */}
-      <div className="p-4 border-t border-white/[0.03] bg-[#0d0d0d]">
+      <div className="p-4 border-t border-white/[0.03] bg-arcus-elevated">
         <AnimatePresence mode="wait">
           {!isFeedbackOpen ? (
             <motion.button
@@ -305,7 +305,7 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
               initial={{ opacity: 0, y: 10, scale: 0.95 }} 
               animate={{ opacity: 1, y: 0, scale: 1 }} 
               exit={{ opacity: 0, y: 10, scale: 0.95 }}
-              className="w-full bg-neutral-100 dark:bg-[#161616] border border-neutral-200 dark:border-white/10 rounded-2xl p-4 shadow-2xl relative overflow-hidden"
+              className="w-full bg-neutral-100 dark:bg-arcus-surface border border-neutral-200 dark:border-arcus-border rounded-2xl p-4 shadow-2xl relative overflow-hidden"
             >
                <textarea
                  autoFocus

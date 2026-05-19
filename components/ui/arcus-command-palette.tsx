@@ -130,7 +130,7 @@ export function ArcusCommandPalette() {
                         exit={{ opacity: 0, y: -20, scale: 0.96 }}
                         transition={{ type: 'spring', damping: 28, stiffness: 380 }}
                         onClick={(e) => e.stopPropagation()}
-                        className="relative w-full max-w-[680px] mx-4 bg-[#0A0A0A] rounded-[24px] border border-white/[0.08] shadow-[0_40px_120px_-20px_rgba(0,0,0,0.9)] overflow-hidden flex flex-col ring-1 ring-white/5"
+                        className="relative w-full max-w-[680px] mx-4 bg-arcus-elevated rounded-[24px] border border-arcus-border shadow-[0_40px_120px_-20px_rgba(0,0,0,0.9)] overflow-hidden flex flex-col ring-1 ring-white/5"
                     >
                         {/* Dynamic glow effect */}
                         <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-96 h-96 bg-blue-500/[0.05] rounded-full blur-[100px] pointer-events-none" />
@@ -171,7 +171,7 @@ export function ArcusCommandPalette() {
                                             handleSend();
                                         }
                                     }}
-                                    className="w-full bg-white/[0.03] border border-white/[0.08] rounded-2xl px-6 py-5 pr-16 text-[17px] text-white placeholder:text-white/20 focus:outline-none focus:border-white/20 focus:bg-white/[0.05] focus:ring-4 focus:ring-white/[0.02] transition-all duration-300 font-light tracking-tight"
+                                    className="w-full bg-white/[0.03] border border-arcus-border rounded-2xl px-6 py-5 pr-16 text-[17px] text-white placeholder:text-white/20 focus:outline-none focus:border-white/20 focus:bg-white/[0.05] focus:ring-4 focus:ring-white/[0.02] transition-all duration-300 font-light tracking-tight"
                                     placeholder="What do you want the agent to do?"
                                 />
                                 

@@ -68,7 +68,7 @@ const TooltipContent = forwardRef<
     ref={ref}
     sideOffset={sideOffset}
     className={cn(
-      "z-50 overflow-hidden rounded-md border border-[#333333] bg-white dark:bg-black px-3 py-1.5 text-sm text-black dark:text-white shadow-md animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+      "z-50 overflow-hidden rounded-md border border-arcus-raised bg-white dark:bg-black px-3 py-1.5 text-sm text-black dark:text-white shadow-md animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
       className
     )}
     {...props}
@@ -103,13 +103,13 @@ const DialogContent = forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-[90vw] md:max-w-[800px] translate-x-[-50%] translate-y-[-50%] gap-4 border border-[#333333] bg-white dark:bg-black p-0 shadow-xl duration-300 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 rounded-2xl",
+        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-[90vw] md:max-w-[800px] translate-x-[-50%] translate-y-[-50%] gap-4 border border-arcus-raised bg-white dark:bg-black p-0 shadow-xl duration-300 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 rounded-2xl",
         className
       )}
       {...props}
     >
       {children}
-      <DialogPrimitive.Close className="absolute right-4 top-4 z-10 rounded-full bg-[#2E3033]/80 p-2 hover:bg-[#2E3033] transition-all">
+      <DialogPrimitive.Close className="absolute right-4 top-4 z-10 rounded-full bg-arcus-raised/80 p-2 hover:bg-arcus-raised transition-all">
         <X className="h-5 w-5 text-neutral-900 dark:text-gray-200 hover:text-white" />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>
@@ -341,7 +341,7 @@ const PromptInput = forwardRef<HTMLDivElement, PromptInputProps>(
             onFocus={onFocus}
              onBlur={onBlur}
               className={cn(
-               "rounded-[32px] border border-white/[0.08] bg-white dark:bg-[#0e0e10] backdrop-blur-3xl p-2 transition-all duration-300 relative overflow-hidden ring-1 ring-white/5",
+               "rounded-[32px] border border-arcus-border bg-white dark:bg-[#0e0e10] backdrop-blur-3xl p-2 transition-all duration-300 relative overflow-hidden ring-1 ring-white/5",
                !hideShadow && "shadow-[0_20px_50px_rgba(0,0,0,0.5)]",
                isLoading && "border-red-500/70",
                className
@@ -748,7 +748,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
          onFocus={() => setIsFocused(true)}
          onBlur={() => setIsFocused(false)}
          className={cn(
-          "w-full bg-white dark:bg-[#0e0e10] backdrop-blur-3xl border border-white/[0.08] ring-1 ring-white/5 transition-all duration-300 ease-in-out focus:ring-0 focus:outline-none focus-within:ring-0 focus-within:outline-none",
+          "w-full bg-white dark:bg-[#0e0e10] backdrop-blur-3xl border border-arcus-border ring-1 ring-white/5 transition-all duration-300 ease-in-out focus:ring-0 focus:outline-none focus-within:ring-0 focus-within:outline-none",
           !props.hideShadow && "shadow-[0_20px_50px_rgba(0,0,0,0.5)]",
           isRecording && "border-red-500/70",
           className
@@ -778,7 +778,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                   exit={{ opacity: 0, scale: 0.9 }}
                   className="relative group"
                 >
-                  <div className="bg-neutral-50 dark:bg-[#1a1a1a] border border-white/10 rounded-xl overflow-hidden p-1 flex items-center gap-2 pr-3 min-w-[120px] max-w-[200px]">
+                  <div className="bg-neutral-50 dark:bg-arcus-surface-hover border border-arcus-border rounded-xl overflow-hidden p-1 flex items-center gap-2 pr-3 min-w-[120px] max-w-[200px]">
                     {isImageFile(file) && filePreviews[file.name] ? (
                       <div
                         className="w-10 h-10 rounded-lg overflow-hidden cursor-pointer"
@@ -841,7 +841,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
           />
         )}
 
-        <PromptInputActions className="flex items-center justify-between gap-1 p-0 pt-2 border-t border-white/[0.05] mt-1 relative z-10">
+        <PromptInputActions className="flex items-center justify-between gap-1 p-0 pt-2 border-t border-arcus-border/60 mt-1 relative z-10">
           <div
             className={cn(
               "flex items-center gap-2 transition-opacity duration-300",
@@ -868,7 +868,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      className="absolute bottom-full left-0 mb-2 w-64 bg-neutral-50 dark:bg-[#1a1a1a] border border-white/10 rounded-2xl shadow-2xl z-[70] overflow-hidden p-1.5"
+                      className="absolute bottom-full left-0 mb-2 w-64 bg-neutral-50 dark:bg-arcus-surface-hover border border-arcus-border rounded-2xl shadow-2xl z-[70] overflow-hidden p-1.5"
                     >
                       {MODES.map((mode) => (
                         <div key={mode.id} className="relative group">
@@ -890,7 +890,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                           </button>
 
                           {/* Tooltip / Description for each mode on hover */}
-                          <div className="absolute left-full ml-2 top-0 invisible group-hover:visible w-48 bg-white dark:bg-[#1a1a1a] border border-black/5 dark:border-white/10 rounded-xl p-3 shadow-xl z-[80]">
+                          <div className="absolute left-full ml-2 top-0 invisible group-hover:visible w-48 bg-white dark:bg-arcus-surface-hover border border-black/5 dark:border-arcus-border rounded-xl p-3 shadow-xl z-[80]">
                             <p className="text-[11px] text-black/60 dark:text-white/60 leading-relaxed">
                               {mode.description}
                             </p>
@@ -955,7 +955,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
             <PromptInputAction tooltip="Change the Model">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="bg-[#2a2a2a] hover:bg-[#333333] border-none shadow-none px-4 py-1.5 rounded-full h-8 min-w-[70px] flex items-center justify-center transition-all duration-300 outline-none">
+                  <button className="bg-arcus-raised hover:bg-arcus-raised border-none shadow-none px-4 py-1.5 rounded-full h-8 min-w-[70px] flex items-center justify-center transition-all duration-300 outline-none">
                     <div className="flex items-center gap-1.5">
                       {activeModelId !== 'auto' && React.createElement(AI_MODELS.find(m => m.id === activeModelId)?.icon || AutoLogo, { className: "w-3.5 h-3.5" })}
                       <span className="text-[13px] font-semibold text-white/90">

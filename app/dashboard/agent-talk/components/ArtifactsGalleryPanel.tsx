@@ -216,7 +216,7 @@ export function ArtifactsGalleryPanel({
   return (
     <div
       className={cn(
-        'h-[calc(100vh-32px)] flex flex-col flex-shrink-0 relative bg-black border-l border-white/[0.08] shadow-2xl rounded-r-[32px] overflow-hidden'
+        'h-[calc(100vh-32px)] flex flex-col flex-shrink-0 relative bg-arcus-bg border-l border-arcus-border shadow-2xl rounded-r-[32px] overflow-hidden'
       )}
       style={{ width: panelWidth }}
       ref={scrollRef}
@@ -227,32 +227,32 @@ export function ArtifactsGalleryPanel({
       {/* Resize Handle */}
       <div
         onMouseDown={startResizing}
-        className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize z-[100] group/resize hover:bg-white/10 transition-colors"
+        className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize z-[100] group/resize hover:bg-arcus-surface-hover transition-colors"
       >
-        <div className="absolute left-[2px] top-1/2 -translate-y-1/2 w-[2px] h-8 rounded-full bg-white/10 group-hover/resize:bg-white/30 transition-colors" />
+        <div className="absolute left-[2px] top-1/2 -translate-y-1/2 w-[2px] h-8 rounded-full bg-arcus-surface-hover group-hover/resize:bg-white/30 transition-colors" />
       </div>
 
       {/* Header section */}
-      <div className="px-6 py-5 border-b border-white/[0.08] flex items-center justify-between shrink-0 relative z-10">
+      <div className="px-6 py-5 border-b border-arcus-border flex items-center justify-between shrink-0 relative z-10">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center">
-            <Library className="w-4 h-4 text-white/80" />
+          <div className="w-8 h-8 rounded-xl bg-arcus-elevated border border-arcus-border flex items-center justify-center">
+            <Library className="w-4 h-4 text-arcus-fg-secondary" />
           </div>
           <div>
             <h3 className="text-[14px] font-bold text-white tracking-tight lowercase">Library</h3>
             {isLoadingAll ? (
-              <p className="text-[10px] text-zinc-500 tracking-tight uppercase flex items-center gap-1.5">
+              <p className="text-[10px] text-arcus-fg-muted tracking-tight uppercase flex items-center gap-1.5">
                 <Loader2 className="w-2.5 h-2.5 animate-spin" /> Syncing all conversations...
               </p>
             ) : (
-              <p className="text-[10px] text-white/40 tracking-tight uppercase">All conversations</p>
+              <p className="text-[10px] text-arcus-fg-tertiary tracking-tight uppercase">All conversations</p>
             )}
           </div>
         </div>
 
         <button
           onClick={onClose}
-          className="p-2 hover:bg-white/[0.06] rounded-xl transition-all text-white/40 hover:text-white"
+          className="p-2 hover:bg-arcus-surface rounded-xl transition-all text-arcus-fg-tertiary hover:text-white"
         >
           <X className="w-4 h-4" />
         </button>
@@ -260,28 +260,28 @@ export function ArtifactsGalleryPanel({
 
       {/* Search Input (only shown if there are active artifacts) */}
       {dynamicArtifacts.length > 0 && (
-        <div className="px-6 py-4 border-b border-white/[0.04] shrink-0 relative z-10">
+        <div className="px-6 py-4 border-b border-arcus-border shrink-0 relative z-10">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-arcus-fg-muted" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search library..."
-              className="w-full pl-9 pr-4 py-2 bg-white/[0.03] border border-white/[0.06] rounded-xl text-[13px] text-white placeholder:text-white/20 focus:outline-none focus:border-white/20 transition-all font-medium tracking-tight"
+              className="w-full pl-9 pr-4 py-2 bg-arcus-elevated border border-arcus-border rounded-xl text-[13px] text-white placeholder:text-arcus-fg-muted focus:outline-none focus:border-white/20 transition-all font-medium tracking-tight"
             />
           </div>
         </div>
       )}
 
       {/* Scrollable Gallery Content */}
-      <div className="flex-1 overflow-y-auto px-6 py-6 relative z-10 select-none scrollbar-thin scrollbar-thumb-white/10">
+      <div className="flex-1 overflow-y-auto px-6 py-6 relative z-10 select-none scrollbar-thin scrollbar-thumb-arcus-surface-hover">
         
         {dynamicArtifacts.length > 0 ? (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h4 className="text-[11px] font-bold text-white/40 uppercase tracking-wider">All Documents</h4>
-              <span className="text-[10px] text-white/30 font-mono">{filteredArtifacts.length} total</span>
+              <h4 className="text-[11px] font-bold text-arcus-fg-tertiary uppercase tracking-wider">All Documents</h4>
+              <span className="text-[10px] text-arcus-fg-muted font-mono">{filteredArtifacts.length} total</span>
             </div>
 
             {/* Grid Layout of Dynamic Artifacts */}
@@ -298,16 +298,16 @@ export function ArtifactsGalleryPanel({
                   <div
                     key={art.id}
                     onClick={() => handleSelect(art)}
-                    className="group p-4 bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.06] hover:border-white/[0.14] rounded-2xl transition-all duration-200 ease-out cursor-pointer relative"
+                    className="group p-4 bg-arcus-elevated hover:bg-arcus-elevated border border-arcus-border hover:border-arcus-divider rounded-2xl transition-all duration-200 ease-out cursor-pointer relative"
                   >
                     {/* Top row: tag + download */}
                     <div className="flex items-center justify-between mb-2.5">
-                      <span className="px-2 py-0.5 rounded-full bg-white/[0.04] border border-white/[0.06] text-[9px] font-mono text-white/60 tracking-wide">
+                      <span className="px-2 py-0.5 rounded-full bg-arcus-elevated border border-arcus-border text-[9px] font-mono text-arcus-fg-secondary tracking-wide">
                         {art.tag}
                       </span>
                       <button
                         onClick={(e) => handleDownload(e, art)}
-                        className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-white/30 hover:text-white/80 opacity-0 group-hover:opacity-100"
+                        className="p-1.5 hover:bg-arcus-surface-hover rounded-lg transition-colors text-arcus-fg-muted hover:text-arcus-fg-secondary opacity-0 group-hover:opacity-100"
                         title="Download .docx"
                       >
                         {isDownloading
@@ -323,15 +323,15 @@ export function ArtifactsGalleryPanel({
 
                     {/* Content preview */}
                     {snippet && (
-                      <p className="text-[12px] text-white/35 leading-relaxed line-clamp-2 mb-3">
+                      <p className="text-[12px] text-arcus-fg-muted leading-relaxed line-clamp-2 mb-3">
                         {snippet}{snippet.length === 120 ? '…' : ''}
                       </p>
                     )}
 
                     {/* Footer */}
-                    <div className="flex items-center justify-between pt-2.5 border-t border-white/[0.04] text-[10px] text-white/30 font-mono">
+                    <div className="flex items-center justify-between pt-2.5 border-t border-arcus-border text-[10px] text-arcus-fg-muted font-mono">
                       <span className="truncate max-w-[55%]">{art.subtitle}</span>
-                      <span className="flex items-center gap-1 shrink-0 text-white/40 group-hover:text-white/70 transition-colors">
+                      <span className="flex items-center gap-1 shrink-0 text-arcus-fg-tertiary group-hover:text-arcus-fg-secondary transition-colors">
                         Open in Canvas <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
                       </span>
                     </div>
@@ -341,8 +341,8 @@ export function ArtifactsGalleryPanel({
 
               {filteredArtifacts.length === 0 && (
                 <div className="py-12 flex flex-col items-center justify-center text-center">
-                  <FileText className="w-8 h-8 text-white/10 mb-3" />
-                  <p className="text-[12px] text-white/30 font-medium">No search results matching "{searchQuery}"</p>
+                  <FileText className="w-8 h-8 text-arcus-fg-muted mb-3" />
+                  <p className="text-[12px] text-arcus-fg-muted font-medium">No search results matching "{searchQuery}"</p>
                 </div>
               )}
             </div>
@@ -350,15 +350,15 @@ export function ArtifactsGalleryPanel({
         ) : (
           /* PREMIUM MONOCHROMATIC EMPTY STATE */
           <div className="h-full flex flex-col items-center justify-center text-center px-6 py-12">
-            <div className="w-16 h-16 rounded-2xl bg-white/[0.02] border border-white/[0.06] flex items-center justify-center mb-6">
-              <Sparkles className="w-6 h-6 text-white/20 animate-pulse" />
+            <div className="w-16 h-16 rounded-2xl bg-arcus-elevated border border-arcus-border flex items-center justify-center mb-6">
+              <Sparkles className="w-6 h-6 text-arcus-fg-muted animate-pulse" />
             </div>
             
             <h4 className="text-white text-[15px] font-bold tracking-tight mb-2 lowercase">
               Your library is empty
             </h4>
 
-            <p className="text-white/40 text-[12px] leading-relaxed max-w-[280px]">
+            <p className="text-arcus-fg-tertiary text-[12px] leading-relaxed max-w-[280px]">
               Documents, plans, and drafts created by Arcus across all your conversations will appear here — searchable and downloadable as .docx.
             </p>
           </div>

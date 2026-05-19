@@ -110,7 +110,7 @@ export function LiveTaskWidget({ steps, isActive }: LiveTaskWidgetProps) {
                   clearTimeout(collapseTimer.current);
                   clearTimeout(hideTimer.current);
                 }}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/[0.06] bg-white/[0.02] text-white/30 text-[11px] font-medium tracking-tight hover:opacity-70 transition-opacity"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-arcus-border bg-arcus-elevated text-arcus-fg-muted text-[11px] font-medium tracking-tight hover:opacity-70 transition-opacity"
               >
                 <Check className="w-3 h-3" />
                 <span>{steps.filter(s => s.status === 'completed').length} actions done</span>
@@ -136,15 +136,15 @@ function TaskItem({ step, index }: { step: AgentStep; index: number }) {
       transition={{ delay: index * 0.04, type: 'spring', damping: 22, stiffness: 300 }}
       className={cn(
         'flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-medium tracking-tight transition-all relative overflow-hidden',
-        isActive && 'bg-white/[0.06] border-white/20 text-white',
-        isDone && !isError && 'bg-transparent border-white/[0.06] text-white/25',
+        isActive && 'bg-arcus-surface border-white/20 text-white',
+        isDone && !isError && 'bg-transparent border-arcus-border text-arcus-fg-muted',
         isError && 'bg-red-500/5 border-red-500/20 text-red-400/60',
       )}
     >
       {/* Shimmer sweep for active */}
       {isActive && (
         <motion.div
-          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.06] to-transparent w-[200%]"
+          className="absolute inset-0 bg-gradient-to-r from-transparent via-arcus-surface to-transparent w-[200%]"
           animate={{ x: ['-100%', '100%'] }}
           transition={{ repeat: Infinity, duration: 1.8, ease: 'linear' }}
         />
@@ -154,7 +154,7 @@ function TaskItem({ step, index }: { step: AgentStep; index: number }) {
       <span className={cn(
         'flex items-center justify-center w-4 h-4 rounded-full border transition-all z-10 relative',
         isActive && 'bg-white/20 border-white/30 text-white',
-        isDone && !isError && 'bg-white/5 border-white/10 text-white/20',
+        isDone && !isError && 'bg-arcus-elevated border-arcus-border text-arcus-fg-muted',
         isError && 'bg-red-500/10 border-red-500/20 text-red-400/50',
       )}>
         {isActive ? (

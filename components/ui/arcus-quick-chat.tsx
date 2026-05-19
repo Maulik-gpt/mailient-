@@ -222,10 +222,10 @@ export const ArcusQuickChat: React.FC<ArcusQuickChatProps> = ({ isOpen, onClose,
           className="fixed bottom-6 right-6 z-[3000] w-[450px] h-[80vh] flex flex-col origin-bottom-right"
         >
           {/* Main Card */}
-          <div className="relative group bg-[#050505] border border-white/[0.12] rounded-[2rem] shadow-[0_30px_70px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col ring-1 ring-white/10 h-full">
+          <div className="relative group bg-arcus-bg border border-arcus-divider rounded-[2rem] shadow-[0_30px_70px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col ring-1 ring-white/10 h-full">
             
             {/* Header */}
-            <div className="px-6 py-5 border-b border-white/[0.08] flex items-center justify-between bg-white/[0.02]">
+            <div className="px-6 py-5 border-b border-arcus-border flex items-center justify-between bg-white/[0.02]">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 shadow-[0_0_15px_rgba(255,255,255,0.05)]">
                   <BrainCircuit className="w-5 h-5 text-white/80" />
@@ -452,8 +452,8 @@ export const ArcusQuickChat: React.FC<ArcusQuickChatProps> = ({ isOpen, onClose,
             </div>
 
             {/* Input Area */}
-            <div className="p-6 bg-white/[0.02] border-t border-white/[0.08] mt-auto">
-              <div className="relative flex items-center gap-2 bg-white/[0.05] border border-white/[0.12] rounded-[1.5rem] p-1.5 focus-within:border-white/40 transition-all shadow-inner">
+            <div className="p-6 bg-white/[0.02] border-t border-arcus-border mt-auto">
+              <div className="relative flex items-center gap-2 bg-white/[0.05] border border-arcus-divider rounded-[1.5rem] p-1.5 focus-within:border-white/40 transition-all shadow-inner">
                 <input
                   type="text"
                   value={input}

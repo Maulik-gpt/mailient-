@@ -145,11 +145,11 @@ export function ArcusTerminalLoader({ loading = true }: ArcusTerminalLoaderProps
           </motion.div>
 
           {/* Terminal header */}
-          <div className="flex items-center gap-2 px-4 py-3 bg-gradient-to-b from-[#2a2a2a] to-[#1f1f1f] border-b border-[#333333]">
+          <div className="flex items-center gap-2 px-4 py-3 bg-gradient-to-b from-arcus-raised to-arcus-surface-hover border-b border-arcus-raised">
             <div className="flex gap-1.5">
-              <div className="w-3 h-3 rounded-full bg-[#3d3d3d] hover:bg-[#4d4d4d] transition-colors" />
-              <div className="w-3 h-3 rounded-full bg-[#3d3d3d] hover:bg-[#4d4d4d] transition-colors" />
-              <div className="w-3 h-3 rounded-full bg-[#3d3d3d] hover:bg-[#4d4d4d] transition-colors" />
+              <div className="w-3 h-3 rounded-full bg-arcus-raised hover:bg-arcus-raised transition-colors" />
+              <div className="w-3 h-3 rounded-full bg-arcus-raised hover:bg-arcus-raised transition-colors" />
+              <div className="w-3 h-3 rounded-full bg-arcus-raised hover:bg-arcus-raised transition-colors" />
             </div>
             <div className="flex-1 text-center">
               <span className="text-xs font-serif font-medium text-[#8a8a8a] tracking-wide">
@@ -166,10 +166,10 @@ export function ArcusTerminalLoader({ loading = true }: ArcusTerminalLoaderProps
           <div
             ref={scrollContainerRef}
             onScroll={handleScroll}
-            className="h-[380px] overflow-y-auto p-6 font-mono text-[13px] bg-[#0f0f0f] custom-scrollbar"
+            className="h-[380px] overflow-y-auto p-6 font-mono text-[13px] bg-arcus-surface custom-scrollbar"
             style={{
               scrollbarWidth: "thin",
-              scrollbarColor: "#2a2a2a #0f0f0f",
+              scrollbarColor: "var(--arcus-raised) var(--arcus-surface)",
             }}
           >
             {completedLines.map((lineIndex) => (
@@ -202,7 +202,7 @@ export function ArcusTerminalLoader({ loading = true }: ArcusTerminalLoaderProps
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.2 }}
-                className="mt-6 pt-4 border-t border-[#1a1a1a]"
+                className="mt-6 pt-4 border-t border-arcus-surface-hover"
               >
                 <div className="flex items-center gap-2 text-[#6a6a6a]">
                   <span className="text-[#7a7a7a] select-none shrink-0">$</span>
@@ -222,7 +222,7 @@ export function ArcusTerminalLoader({ loading = true }: ArcusTerminalLoaderProps
           </div>
 
           {/* Terminal footer */}
-          <div className="px-4 py-2 bg-gradient-to-t from-[#1a1a1a] to-[#151515] border-t border-[#2a2a2a]">
+          <div className="px-4 py-2 bg-gradient-to-t from-arcus-surface-hover to-arcus-surface border-t border-arcus-raised">
             <div className="flex justify-between items-center text-[10px] text-[#6a6a6a] uppercase tracking-widest">
               <span className="font-mono">
                 Log: {completedLines.length}/{terminalSteps.length}

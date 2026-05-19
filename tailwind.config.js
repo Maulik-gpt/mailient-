@@ -24,6 +24,21 @@ export default {
         sans: ['Satoshi', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       colors: {
+        /* ── Arcus design system ── */
+        arcus: {
+          bg:             "var(--arcus-bg)",
+          elevated:       "var(--arcus-bg-elevated)",
+          surface:        "var(--arcus-surface)",
+          "surface-hover":"var(--arcus-surface-hover)",
+          raised:         "var(--arcus-raised)",
+          border:         "var(--arcus-border)",
+          divider:        "var(--arcus-divider)",
+          fg:             "var(--arcus-fg)",
+          "fg-secondary": "var(--arcus-fg-secondary)",
+          "fg-tertiary":  "var(--arcus-fg-tertiary)",
+          "fg-muted":     "var(--arcus-fg-muted)",
+          "fg-inverse":   "var(--arcus-fg-inverse)",
+        },
         border: "var(--border)",
         input: "var(--input)",
         ring: "var(--ring)",

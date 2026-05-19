@@ -90,19 +90,19 @@ function PlanModal({ plan, onClose }: { plan: PlanCardData; onClose: () => void 
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.97, y: 20 }}
           transition={{ type: 'spring', damping: 26, stiffness: 300 }}
-          className="relative w-full max-w-5xl max-h-[90vh] flex flex-col rounded-2xl border border-white/[0.12] bg-[#0f0f0f] shadow-[0_32px_80px_rgba(0,0,0,0.6)] overflow-hidden"
+          className="relative w-full max-w-5xl max-h-[90vh] flex flex-col rounded-2xl border border-arcus-divider bg-arcus-surface shadow-[0_32px_80px_rgba(0,0,0,0.6)] overflow-hidden"
           onClick={e => e.stopPropagation()}
         >
           {/* Top accent */}
           <div className="h-[2px] w-full bg-gradient-to-r from-white/5 via-white/20 to-white/5 flex-shrink-0" />
 
           {/* Modal header */}
-          <div className="flex items-center gap-4 px-8 py-5 border-b border-white/[0.07] flex-shrink-0">
-            <div className="w-10 h-10 rounded-xl bg-white/[0.07] border border-white/[0.12] flex items-center justify-center flex-shrink-0">
-              <FileText className="w-5 h-5 text-white/70" />
+          <div className="flex items-center gap-4 px-8 py-5 border-b border-arcus-border flex-shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-arcus-surface border border-arcus-divider flex items-center justify-center flex-shrink-0">
+              <FileText className="w-5 h-5 text-arcus-fg-secondary" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-[10px] font-bold tracking-[0.10em] uppercase text-white/35 mb-1">
+              <div className="text-[10px] font-bold tracking-[0.10em] uppercase text-arcus-fg-muted mb-1">
                 Plan Document
               </div>
               <h2 className="text-[18px] font-bold text-white tracking-tight leading-tight truncate">
@@ -112,14 +112,14 @@ function PlanModal({ plan, onClose }: { plan: PlanCardData; onClose: () => void 
             <div className="flex items-center gap-1.5 flex-shrink-0">
               <button
                 onClick={() => handleDownload(plan)}
-                className="p-2.5 rounded-xl text-white/35 hover:text-white hover:bg-white/[0.08] border border-transparent hover:border-white/[0.10] transition-all"
+                className="p-2.5 rounded-xl text-arcus-fg-muted hover:text-white hover:bg-arcus-surface border border-transparent hover:border-arcus-border transition-all"
                 title="Download as Markdown"
               >
                 <Download className="w-4 h-4" />
               </button>
               <button
                 onClick={onClose}
-                className="p-2.5 rounded-xl text-white/35 hover:text-white hover:bg-white/[0.08] border border-transparent hover:border-white/[0.10] transition-all"
+                className="p-2.5 rounded-xl text-arcus-fg-muted hover:text-white hover:bg-arcus-surface border border-transparent hover:border-arcus-border transition-all"
                 title="Close"
               >
                 <X className="w-4 h-4" />
@@ -128,7 +128,7 @@ function PlanModal({ plan, onClose }: { plan: PlanCardData; onClose: () => void 
           </div>
 
           {/* Scrollable content */}
-          <div className="flex-1 overflow-y-auto px-8 py-7 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+          <div className="flex-1 overflow-y-auto px-8 py-7 scrollbar-thin scrollbar-thumb-arcus-surface-hover scrollbar-track-transparent">
             <PlanMarkdown markdown={plan.markdown} />
           </div>
         </motion.div>
@@ -165,10 +165,10 @@ export function ChatPlanCard({ plan, onExecute, onCancel }: ChatPlanCardProps) {
           className={cn(
             'relative rounded-2xl border overflow-hidden transition-all',
             isDone
-              ? 'border-white/[0.07] bg-[#141414] opacity-75'
+              ? 'border-arcus-border bg-arcus-surface opacity-75'
               : isCancelled
-              ? 'border-white/[0.04] bg-[#111] opacity-40'
-              : 'border-white/[0.11] bg-[#141414]',
+              ? 'border-arcus-border bg-arcus-surface opacity-40'
+              : 'border-arcus-divider bg-arcus-surface',
           )}
         >
           {/* Top accent stripe */}
@@ -185,8 +185,8 @@ export function ChatPlanCard({ plan, onExecute, onCancel }: ChatPlanCardProps) {
               isDone
                 ? 'bg-green-500/10 border-green-500/25 text-green-400'
                 : isCancelled
-                ? 'bg-white/5 border-white/10 text-white/25'
-                : 'bg-white/[0.07] border-white/[0.12] text-white/65',
+                ? 'bg-arcus-elevated border-arcus-border text-arcus-fg-muted'
+                : 'bg-arcus-surface border-arcus-divider text-arcus-fg-secondary',
             )}>
               {isDone ? <Check className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
             </div>
@@ -195,13 +195,13 @@ export function ChatPlanCard({ plan, onExecute, onCancel }: ChatPlanCardProps) {
             <div className="flex-1 min-w-0">
               <div className={cn(
                 'text-[10px] font-bold tracking-[0.09em] uppercase mb-0.5',
-                isDone ? 'text-green-400/50' : isCancelled ? 'text-white/20' : 'text-white/35',
+                isDone ? 'text-green-400/50' : isCancelled ? 'text-arcus-fg-muted' : 'text-arcus-fg-muted',
               )}>
                 {isDone ? 'Executed' : isCancelled ? 'Cancelled' : 'Plan'}
               </div>
               <div className={cn(
                 'text-[15px] font-bold tracking-tight leading-tight truncate',
-                isDone ? 'text-white/50' : isCancelled ? 'text-white/20' : 'text-white',
+                isDone ? 'text-arcus-fg-secondary' : isCancelled ? 'text-arcus-fg-muted' : 'text-white',
               )}>
                 {stripEmojis(plan.title)}
               </div>
@@ -210,7 +210,7 @@ export function ChatPlanCard({ plan, onExecute, onCancel }: ChatPlanCardProps) {
             {/* "..." open modal button */}
             <button
               onClick={() => setIsModalOpen(true)}
-              className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-white/30 hover:text-white/70 hover:bg-white/[0.07] transition-all"
+              className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-arcus-fg-muted hover:text-arcus-fg-secondary hover:bg-arcus-surface transition-all"
               title="View full plan"
             >
               <MoreHorizontal className="w-4 h-4" />
@@ -221,10 +221,10 @@ export function ChatPlanCard({ plan, onExecute, onCancel }: ChatPlanCardProps) {
           {preview && !isCancelled && (
             <div className="relative px-5 pb-4">
               {/* Fade gradient at bottom */}
-              <div className="absolute bottom-4 left-0 right-0 h-8 bg-gradient-to-t from-[#141414] to-transparent pointer-events-none z-10" />
+              <div className="absolute bottom-4 left-0 right-0 h-8 bg-gradient-to-t from-arcus-surface to-transparent pointer-events-none z-10" />
               <p className={cn(
                 'text-[13px] leading-[1.7] line-clamp-3',
-                isDone ? 'text-white/35' : 'text-white/55',
+                isDone ? 'text-arcus-fg-muted' : 'text-arcus-fg-secondary',
               )}>
                 {preview}
               </p>
@@ -233,10 +233,10 @@ export function ChatPlanCard({ plan, onExecute, onCancel }: ChatPlanCardProps) {
 
           {/* ── Action bar ── */}
           {!isDone && !isCancelled && (
-            <div className="flex items-center gap-2 px-5 py-3 border-t border-white/[0.09] bg-white/[0.02]">
+            <div className="flex items-center gap-2 px-5 py-3 border-t border-arcus-border bg-arcus-elevated">
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold text-white/70 hover:text-white hover:bg-white/[0.08] border border-white/[0.14] hover:border-white/[0.25] transition-all"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold text-arcus-fg-secondary hover:text-white hover:bg-arcus-surface border border-arcus-divider hover:border-arcus-divider transition-all"
               >
                 <Maximize2 className="w-3 h-3" />
                 View plan
@@ -247,7 +247,7 @@ export function ChatPlanCard({ plan, onExecute, onCancel }: ChatPlanCardProps) {
               <button
                 onClick={() => onCancel(plan)}
                 disabled={isExecuting}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-[12px] font-semibold text-white/50 hover:text-white hover:bg-white/[0.06] border border-white/[0.12] hover:border-white/[0.22] transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-[12px] font-semibold text-arcus-fg-secondary hover:text-white hover:bg-arcus-surface border border-arcus-divider hover:border-arcus-divider transition-all disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 <X className="w-3 h-3" />
                 Cancel
@@ -269,13 +269,13 @@ export function ChatPlanCard({ plan, onExecute, onCancel }: ChatPlanCardProps) {
 
           {/* Done footer */}
           {isDone && (
-            <div className="flex items-center gap-2 px-5 py-3 border-t border-white/[0.05]">
+            <div className="flex items-center gap-2 px-5 py-3 border-t border-arcus-border">
               <Check className="w-3.5 h-3.5 text-green-400/50" />
-              <span className="text-[12px] text-white/30">Plan executed successfully</span>
+              <span className="text-[12px] text-arcus-fg-muted">Plan executed successfully</span>
               <div className="flex-1" />
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="text-[11px] text-white/25 hover:text-white/50 transition-colors"
+                className="text-[11px] text-arcus-fg-muted hover:text-arcus-fg-secondary transition-colors"
               >
                 View →
               </button>
@@ -330,27 +330,27 @@ function PlanMarkdown({ markdown }: { markdown: string }) {
             </div>
           ),
           h3: ({ children }) => (
-            <h3 className="text-[15px] font-semibold text-white/90 tracking-tight mb-2.5 mt-6 uppercase letter-spacing-wide">
+            <h3 className="text-[15px] font-semibold text-arcus-fg tracking-tight mb-2.5 mt-6 uppercase letter-spacing-wide">
               {children}
             </h3>
           ),
           h4: ({ children }) => (
-            <h4 className="text-[15px] font-semibold text-white/85 tracking-tight mb-2 mt-5">
+            <h4 className="text-[15px] font-semibold text-arcus-fg-secondary tracking-tight mb-2 mt-5">
               {children}
             </h4>
           ),
           h5: ({ children }) => (
-            <h5 className="text-[14px] font-medium text-white/80 tracking-tight mb-1.5 mt-4">
+            <h5 className="text-[14px] font-medium text-arcus-fg-secondary tracking-tight mb-1.5 mt-4">
               {children}
             </h5>
           ),
           h6: ({ children }) => (
-            <h6 className="text-[12px] font-bold text-white/55 tracking-[0.08em] uppercase mb-2 mt-4">
+            <h6 className="text-[12px] font-bold text-arcus-fg-secondary tracking-[0.08em] uppercase mb-2 mt-4">
               {children}
             </h6>
           ),
           p: ({ children }) => (
-            <p className="text-[15px] text-white/80 leading-[1.85] mb-4">
+            <p className="text-[15px] text-arcus-fg-secondary leading-[1.85] mb-4">
               {children}
             </p>
           ),
@@ -361,8 +361,8 @@ function PlanMarkdown({ markdown }: { markdown: string }) {
             <ol className="mb-5 pl-0 list-none space-y-2.5 counter-reset-none">{children}</ol>
           ),
           li: ({ children }) => (
-            <li className="flex items-start gap-3 text-[15px] text-white/80 leading-[1.75]">
-              <span className="flex-shrink-0 w-[5px] h-[5px] rounded-full bg-white/35 mt-[11px]" />
+            <li className="flex items-start gap-3 text-[15px] text-arcus-fg-secondary leading-[1.75]">
+              <span className="flex-shrink-0 w-[5px] h-[5px] rounded-full bg-arcus-fg-muted mt-[11px]" />
               <span className="flex-1">{children}</span>
             </li>
           ),
@@ -375,23 +375,23 @@ function PlanMarkdown({ markdown }: { markdown: string }) {
             <strong className="font-semibold text-white">{children}</strong>
           ),
           em: ({ children }) => (
-            <em className="italic text-white/65">{children}</em>
+            <em className="italic text-arcus-fg-secondary">{children}</em>
           ),
           pre: ({ children }) => (
-            <pre className="bg-white/[0.04] border border-white/[0.07] rounded-xl p-4 overflow-x-auto my-5 text-[13px]">
+            <pre className="bg-arcus-elevated border border-arcus-border rounded-xl p-4 overflow-x-auto my-5 text-[13px]">
               {children}
             </pre>
           ),
           code: ({ children, className }) => (
             <code className={className
-              ? 'text-[13px] text-white/75 font-mono'
-              : 'bg-white/[0.07] border border-white/[0.09] rounded-md px-1.5 py-0.5 text-[13px] text-white font-mono'
+              ? 'text-[13px] text-arcus-fg-secondary font-mono'
+              : 'bg-arcus-surface border border-arcus-border rounded-md px-1.5 py-0.5 text-[13px] text-white font-mono'
             }>
               {children}
             </code>
           ),
           blockquote: ({ children }) => (
-            <blockquote className="border-l-[2px] border-white/20 pl-5 my-5 text-white/60 italic text-[15px] leading-[1.8]">
+            <blockquote className="border-l-[2px] border-white/20 pl-5 my-5 text-arcus-fg-secondary italic text-[15px] leading-[1.8]">
               {children}
             </blockquote>
           ),
