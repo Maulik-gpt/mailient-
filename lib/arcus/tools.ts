@@ -445,6 +445,7 @@ export interface ToolResult {
     type: string;
     markdown: string;
     draftMeta?: { to?: string; subject?: string; threadId?: string; body?: string; recipientName?: string };
+    pageMeta?: { url?: string; pageId?: string; contentPreview?: string; meetLink?: string; startTime?: string; attendees?: string[] };
   };
 }
 
@@ -752,14 +753,24 @@ async function scheduleMeeting(userId: string, input: any): Promise<ToolResult> 
 
   return {
     output: [
-      `✅ Meeting created!`,
-      `Title: ${created.summary}`,
+      `Meeting created: "${created.summary}"`,
       `Start: ${created.start?.dateTime}`,
-      `End: ${created.end?.dateTime}`,
-      `Calendar: ${created.htmlLink}`,
       meetLink ? `Meet: ${meetLink}` : '',
-      input.attendees?.length ? `Invites sent to: ${input.attendees.join(', ')}` : '',
+      input.attendees?.length ? `Attendees: ${input.attendees.join(', ')}` : '',
+      `Now confirm to the user what was scheduled and provide the meet link.`,
     ].filter(Boolean).join('\n'),
+    canvasData: {
+      title: created.summary || input.title || 'Meeting',
+      type: 'calendar_event',
+      markdown: '',
+      pageMeta: {
+        url: created.htmlLink,
+        meetLink,
+        startTime: created.start?.dateTime,
+        attendees: input.attendees || [],
+        contentPreview: input.description || '',
+      },
+    },
   };
 }
 
@@ -956,7 +967,25 @@ async function createNotionPage(userId: string, input: any): Promise<ToolResult>
   }
 
   const created = await createRes.json();
-  return { output: `Notion page created: "${input.title}"\nURL: ${created.url}` };
+  const contentPreview = (input.content || '')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/[*_`~]/g, '')
+    .replace(/\n+/g, ' ')
+    .trim()
+    .slice(0, 160);
+  return {
+    output: `Notion page created: "${input.title}"\nURL: ${created.url}\nNow summarize what you created and tell the user to open it.`,
+    canvasData: {
+      title: input.title,
+      type: 'notion_page',
+      markdown: input.content || '',
+      pageMeta: {
+        url: created.url,
+        pageId: created.id,
+        contentPreview,
+      },
+    },
+  };
 }
 
 function openCanvas(input: any): ToolResult {

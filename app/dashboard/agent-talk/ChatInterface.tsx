@@ -14,6 +14,7 @@ import { AgentExecutionTimeline, type AgentStep, type AgentNarrative } from './c
 import { TaskProgressCard, type TaskList } from './components/TaskProgressCard';
 import { LiveTaskWidget } from './components/LiveTaskWidget';
 import { DraftReplyBox } from './components/DraftReplyBox';
+import { ActionResultCard } from './components/ActionResultCard';
 import { ChatPlanCard, type PlanCardData } from './components/ChatPlanCard';
 import { CanvasPanel, type CanvasData } from './components/CanvasPanel';
 import { ArtifactsGalleryPanel } from './components/ArtifactsGalleryPanel';
@@ -538,6 +539,15 @@ interface AgentMessage {
       done: string[];
       failed: { tool: string; error: string }[];
       question: string;
+    };
+    actionResult?: {
+      type: 'notion_page' | 'calendar_event';
+      title: string;
+      url?: string;
+      meetLink?: string;
+      startTime?: string;
+      attendees?: string[];
+      contentPreview?: string;
     };
     searchExecution?: {
       mainQuery: string;
@@ -1935,6 +1945,7 @@ export default function ChatInterface({
       case 'schedule_meeting': return isActive ? `Scheduling meeting${params?.title ? ` "${params.title}"` : '...'}` : `Scheduled meeting${params?.title ? ` "${params.title}"` : ''}`;
       case 'get_calendar_events': return isActive ? 'Reading your calendar...' : 'Read calendar';
       case 'search_notion': return isActive ? `Searching Notion${params?.query ? ` for "${params.query}"` : '...'}` : `Searched Notion${params?.query ? ` for "${params.query}"` : ''}`;
+      case 'create_notion_page': return isActive ? `Creating page${params?.title ? ` "${params.title}"` : '...'}` : `Created page${params?.title ? ` "${params.title}"` : ''}`;
       case 'open_canvas': return isActive ? `Opening canvas${params?.title ? ` "${params.title}"` : '...'}` : `Opened canvas${params?.title ? ` "${params.title}"` : ''}`;
       case 'web_search': return isActive ? `Searching web${params?.query ? ` for "${params.query}"` : '...'}` : `Searched web${params?.query ? ` for "${params.query}"` : ''}`;
       case 'send_slack_message': return isActive ? `Sending Slack message${params?.channel ? ` to ${params.channel}` : '...'}` : `Sent Slack message${params?.channel ? ` to ${params.channel}` : ''}`;
@@ -2083,19 +2094,45 @@ export default function ChatInterface({
             }
 
             case 'canvas': {
-              // Tool produced canvas content — open the panel immediately if it's not a draft or reply
               const cv = data;
-              if (cv?.title && cv?.markdown) {
+              if (!cv?.title) break;
+
+              // ── Action result cards (Notion page, Calendar event) ────────────
+              // These get a rich inline card rather than opening the canvas panel.
+              const isActionCard = cv.type === 'notion_page' || cv.type === 'calendar_event';
+              if (isActionCard && cv.pageMeta) {
+                setMessages(msgs => msgs.map(m => {
+                  if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+                  return {
+                    ...m,
+                    meta: {
+                      ...(m.meta || {}),
+                      actionResult: {
+                        type: cv.type,
+                        title: cv.title,
+                        url: cv.pageMeta.url,
+                        meetLink: cv.pageMeta.meetLink,
+                        startTime: cv.pageMeta.startTime,
+                        attendees: cv.pageMeta.attendees,
+                        contentPreview: cv.pageMeta.contentPreview,
+                      },
+                    },
+                  };
+                }));
+                break;
+              }
+
+              // ── Standard canvas panel (documents, email drafts, notes) ────────
+              if (cv.markdown) {
                 const canvasContent = cv.type === 'email_draft' && cv.draftMeta
                   ? cv.draftMeta
                   : cv.markdown;
-                
+
                 if (cv.type !== 'email_draft' && cv.type !== 'reply') {
                   setCanvasData({ type: cv.type || 'notes', title: cv.title, content: canvasContent, raw: cv.markdown });
                   setIsCanvasOpen(true);
                 }
 
-                // Persist the canvas content + draft reply data on the active message meta
                 setMessages(msgs => msgs.map(m => {
                   if (m.id !== assistantMsgId || m.type !== 'agent') return m;
                   const draftReply = cv.type === 'email_draft' && cv.draftMeta
@@ -2120,10 +2157,10 @@ export default function ChatInterface({
                           type: cv.type || 'notes',
                           title: cv.title || 'Action Results Summary',
                           content: canvasContent,
-                          raw: cv.markdown
-                        }
-                      }
-                    }
+                          raw: cv.markdown,
+                        },
+                      },
+                    },
                   };
                 }));
               }
@@ -4360,6 +4397,13 @@ export default function ChatInterface({
                                             processAIMessage(retryText, currentConversationId, false);
                                           }
                                         }}
+                                      />
+                                    )}
+
+                                    {/* Action Result Card — shown after Notion page created or meeting scheduled */}
+                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.actionResult && !(msg as AgentMessage).meta?.isStreaming && (
+                                      <ActionResultCard
+                                        data={(msg as AgentMessage).meta!.actionResult!}
                                       />
                                     )}
 
