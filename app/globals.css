@@ -574,7 +574,7 @@ body,
 /* ===== DARK THEME ===== */
 .dark {
   /* Arcus surfaces - Dark Theme (Graphite palette, not pure black) */
-  --arcus-bg:               #292929;
+  --arcus-bg:               #000000;
   --arcus-bg-elevated:      #1A1A1A; /* Dark Graphite 850 (Lighter than background) */
   --arcus-surface:          #232323; /* Dark Graphite 800 (Lighter than elevated) */
   --arcus-surface-hover:    #2A2A2A; /* Dark Graphite 700 */
