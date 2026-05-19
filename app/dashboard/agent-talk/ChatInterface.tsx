@@ -3496,22 +3496,20 @@ export default function ChatInterface({
           {/* Apple-style Premium Grain Overlay */}
           <div className="absolute inset-0 pointer-events-none opacity-[0.03] z-[100] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] brightness-100 contrast-150" />
 
-          {/* Subtle Ambient Glows for Depth */}
+          {/* Subtle Ambient Glows for Depth - Disabled in dark mode for pure plain black */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-            <GradientWave
-              colors={isDark ? ["#141414", "#1A1A1A", "#232323", "#1A1A1A"] : ["#EBEBEB", "#F5F5F5", "#FAFAFA", "#F5F5F5"]}
-              className={isDark ? "opacity-100" : "opacity-40"}
-              deform={GRA_DEFORM}
-              isPlaying={false}
-            />
-            <div className={cn(
-              "absolute -top-[10%] -right-[10%] w-[60%] h-[60%] rounded-full blur-[140px]",
-              isDark ? "bg-graphite-surface-2/40" : "bg-neutral-200/50"
-            )} />
-            <div className={cn(
-              "absolute -bottom-[10%] -left-[10%] w-[50%] h-[50%] rounded-full blur-[120px]",
-              isDark ? "bg-graphite-surface/30" : "bg-neutral-100/40"
-            )} />
+            {!isDark && (
+              <>
+                <GradientWave
+                  colors={["#EBEBEB", "#F5F5F5", "#FAFAFA", "#F5F5F5"]}
+                  className="opacity-40"
+                  deform={GRA_DEFORM}
+                  isPlaying={false}
+                />
+                <div className="absolute -top-[10%] -right-[10%] w-[60%] h-[60%] rounded-full blur-[140px] bg-neutral-200/50" />
+                <div className="absolute -bottom-[10%] -left-[10%] w-[50%] h-[50%] rounded-full blur-[120px] bg-neutral-100/40" />
+              </>
+            )}
           </div>
 
           <AnimatePresence>
