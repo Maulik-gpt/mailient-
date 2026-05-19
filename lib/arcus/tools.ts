@@ -376,6 +376,32 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
       required: ['title', 'content'],
     },
   },
+  {
+    name: 'ask_user',
+    description: 'Ask the user clarifying questions before proceeding. Use this ONLY when the instruction is genuinely ambiguous and you cannot make a reasonable default decision. Keep questions concise. Provide 2-3 short option labels when the answer space is bounded; omit options for open-ended questions. Maximum 3 questions per call.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        questions: {
+          type: 'array',
+          description: 'One to three questions to ask the user.',
+          items: {
+            type: 'object',
+            properties: {
+              text: { type: 'string', description: 'The question text.' },
+              options: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Optional: 2-3 short predefined choice labels. Always omit if any answer is valid.',
+              },
+            },
+            required: ['text'],
+          },
+        },
+      },
+      required: ['questions'],
+    },
+  },
 ];
 
 // ── Integration → tool mapping ─────────────────────────────────────────────────
@@ -393,6 +419,7 @@ const TOOL_INTEGRATION_MAP: Record<string, string | null> = {
   open_canvas: null,
   web_search: null,
   send_slack_message: 'slack',
+  ask_user: null,
 };
 
 /**

@@ -9,6 +9,7 @@ import { AddSquareIcon, Cancel01Icon, WorkHistoryIcon } from '@hugeicons/core-fr
 import { ChatHistoryModal } from './components/ChatHistoryModal';
 import { ThinkingLayer, ResultCard, type ThinkingStep, type ThinkingBlock, type SearchSession } from './components/ThinkingLayer';
 import { ConnectorRequiredPanel, type ConnectorRequiredEntry } from './components/ThinkingLayerV2';
+import { AskUserCard, type AskQuestion } from './components/AskUserCard';
 import { AgentExecutionTimeline, type AgentStep, type AgentNarrative } from './components/AgentExecutionTimeline';
 import { TaskProgressCard, type TaskList } from './components/TaskProgressCard';
 import { LiveTaskWidget } from './components/LiveTaskWidget';
@@ -958,10 +959,10 @@ function ArcusErrorCard({ errorMessage, onRetry }: { errorMessage?: string; onRe
   };
 
   const subtitle = isExhausted
-    ? 'AI models are under heavy load. Retrying automatically…'
+    ? 'All models busy — retrying in 3 seconds…'
     : errorMessage && errorMessage.length < 120
       ? errorMessage
-      : 'Something went wrong. Please refresh or try again.';
+      : 'Something went wrong. Please try again.';
 
   return (
     <motion.div
@@ -1464,6 +1465,7 @@ export default function ChatInterface({
   const [isAgentLoopActive, setIsAgentLoopActive] = useState(false);
   const [liveTaskList, setLiveTaskList] = useState<TaskList | null>(null);
   const [agentRunMeta, setAgentRunMeta] = useState<{ runId?: string; totalDurationMs?: number } | null>(null);
+  const [pendingQuestion, setPendingQuestion] = useState<{ questions: AskQuestion[]; runId: string } | null>(null);
   const [liveActivityLine, setLiveActivityLine] = useState<string>('');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -2348,6 +2350,17 @@ export default function ChatInterface({
               }));
               break;
 
+            case 'question': {
+              // AI needs user input before it can proceed
+              setPendingQuestion({
+                questions: data.questions || [],
+                runId: data.runId || '',
+              });
+              setIsLoading(false);
+              setIsAgentLoopActive(false);
+              break;
+            }
+
             case 'partial_failure': {
               // Structured failure report from Layer 3 of the agentic loop
               setMessages(msgs => msgs.map(m => {
@@ -3128,6 +3141,9 @@ export default function ChatInterface({
   const handleSend = async (forcedMessage?: string, files?: File[], options: { isDeepThinking?: boolean; isCanvas?: boolean; isSearch?: boolean; isPlanMode?: boolean; modelId?: string } = {}) => {
     const messageText = (forcedMessage || message).trim();
     if (!messageText && (!files || files.length === 0)) return;
+
+    // Clear any pending question card (user may be typing manually instead)
+    if (!forcedMessage) setPendingQuestion(null);
 
     const isDeepThinking = options?.isDeepThinking || false;
     const isCanvas = options?.isCanvas || false;
@@ -3927,7 +3943,7 @@ export default function ChatInterface({
                                   </div>
                                 )}
                                 <div className="flex flex-col max-w-[95%] group/msg">
-                                  <div className={`transition-all relative overflow-hidden ${msg.role === 'user' ? 'px-5 py-3 rounded-[24px] bg-arcus-surface/95 backdrop-blur-2xl border border-arcus-divider text-white shadow-2xl ring-1 ring-arcus-border' : 'text-white px-0 py-1'}`}>
+                                  <div className={`transition-all relative overflow-hidden ${msg.role === 'user' ? 'px-5 py-3 rounded-[24px] bg-white/[0.07] backdrop-blur-xl border border-white/[0.1] text-white shadow-[0_4px_24px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.08)]' : 'text-white px-0 py-1'}`}>
                                     {msg.role === 'user' && isLoading && msg.id === messages.filter(m => m.role === 'user').pop()?.id && (
                                       <motion.div 
                                         className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.08] to-transparent w-[200%] pointer-events-none"
@@ -4451,6 +4467,23 @@ export default function ChatInterface({
                       <div className="absolute bottom-full left-0 right-0 h-12 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none" />
 
                       <div className="max-w-3xl mx-auto w-full px-6 py-6 relative">
+                        {/* Ask User Card — appears when AI needs clarification */}
+                        <AnimatePresence>
+                          {pendingQuestion && (
+                            <AskUserCard
+                              questions={pendingQuestion.questions}
+                              onSubmit={(answers) => {
+                                setPendingQuestion(null);
+                                const formatted = pendingQuestion.questions
+                                  .map((q, i) => `Q: ${q.text}\nA: ${answers[i]}`)
+                                  .join('\n\n');
+                                handleSend(formatted);
+                              }}
+                              onDismiss={() => setPendingQuestion(null)}
+                            />
+                          )}
+                        </AnimatePresence>
+
                         {/* Task progress — collapsed by default, expands upward above prompt */}
                         {liveTaskList && (
                           <TaskProgressCard

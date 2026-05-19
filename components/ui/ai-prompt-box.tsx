@@ -341,9 +341,10 @@ const PromptInput = forwardRef<HTMLDivElement, PromptInputProps>(
             onFocus={onFocus}
              onBlur={onBlur}
               className={cn(
-               "rounded-[32px] border border-arcus-border bg-white dark:bg-[#0e0e10] backdrop-blur-3xl p-2 transition-all duration-300 relative overflow-hidden ring-1 ring-white/5",
-               !hideShadow && "shadow-[0_20px_50px_rgba(0,0,0,0.5)]",
-               isLoading && "border-red-500/70",
+               "rounded-[32px] bg-white/[0.06] dark:bg-white/[0.04] backdrop-blur-2xl p-2 transition-all duration-300 relative overflow-hidden",
+               "border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.06)]",
+               !hideShadow && "shadow-[0_20px_60px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)]",
+               isLoading && "border-white/[0.12] shadow-[0_0_0_1px_rgba(255,255,255,0.06),0_20px_60px_rgba(0,0,0,0.5)]",
                className
              )}
             onDragOver={onDragOver}
@@ -748,9 +749,10 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
          onFocus={() => setIsFocused(true)}
          onBlur={() => setIsFocused(false)}
          className={cn(
-          "w-full bg-white dark:bg-[#0e0e10] backdrop-blur-3xl border border-arcus-border ring-1 ring-white/5 transition-all duration-300 ease-in-out focus:ring-0 focus:outline-none focus-within:ring-0 focus-within:outline-none",
-          !props.hideShadow && "shadow-[0_20px_50px_rgba(0,0,0,0.5)]",
-          isRecording && "border-red-500/70",
+          "w-full bg-white/[0.06] dark:bg-white/[0.04] backdrop-blur-2xl border border-white/[0.08] transition-all duration-300 ease-in-out focus:ring-0 focus:outline-none focus-within:ring-0 focus-within:outline-none",
+          "shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.06)]",
+          !props.hideShadow && "shadow-[0_20px_60px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)]",
+          isRecording && "ring-1 ring-white/20",
           className
         )}
       >

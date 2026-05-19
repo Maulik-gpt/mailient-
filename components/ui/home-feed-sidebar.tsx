@@ -140,7 +140,7 @@ export function HomeFeedSidebar({
                         mass: 1,
                         restDelta: 0.001
                     } : { duration: 0 }}
-                    className={`fixed left-0 top-0 h-screen bg-[#F9F8F6] dark:bg-arcus-elevated border-r border-[#EBE9E2] dark:border-arcus-border flex flex-col z-[100] md:z-50 ${className} ${!isOpen ? 'pointer-events-none md:pointer-events-auto' : 'pointer-events-auto shadow-2xl'}`}
+                    className={`fixed left-0 top-0 h-screen bg-[#F9F8F6] dark:bg-arcus-surface border-r border-[#EBE9E2] dark:border-arcus-border flex flex-col z-[100] md:z-50 ${className} ${!isOpen ? 'pointer-events-none md:pointer-events-auto' : 'pointer-events-auto shadow-2xl'}`}
                 >
                     {/* Mobile Close Button */}
                     <AnimatePresence>
@@ -205,12 +205,12 @@ export function HomeFeedSidebar({
                         )}
 
                         {isCollapsed && (
-                             <motion.button 
+                             <motion.button
                                 initial={{ opacity: 0, scale: 0.5 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 whileHover={{ scale: 1.1, x: 2 }}
                                 onClick={() => setIsCollapsed(!isCollapsed)}
-                                className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white dark:bg-arcus-elevated border border-[#EBE9E2] dark:border-arcus-divider rounded-full flex items-center justify-center text-neutral-600 dark:text-arcus-fg-tertiary hover:text-neutral-900 dark:hover:text-white shadow-sm z-50 transition-all"
+                                className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-[#F9F8F6] dark:bg-arcus-surface border border-[#EBE9E2] dark:border-arcus-divider rounded-full flex items-center justify-center text-neutral-600 dark:text-arcus-fg-tertiary hover:text-neutral-900 dark:hover:text-white shadow-sm z-50 transition-all"
                              >
                                 <PanelLeft className="w-3.5 h-3.5 rotate-180" />
                              </motion.button>
@@ -234,8 +234,8 @@ export function HomeFeedSidebar({
                                                 onClick={() => router.push(item.route)}
                                                 className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3 px-3'} py-2.5 rounded-xl transition-all duration-200 group relative ${
                                                     isActive 
-                                                    ? 'bg-white/[0.05] text-[#1A1A1A] dark:text-white font-semibold shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] border border-[#EBE9E2] dark:border-arcus-divider'
-                                                    : 'text-[#666666] dark:text-arcus-fg-tertiary hover:text-[#1A1A1A] dark:hover:text-white'
+                                                    ? 'bg-black/5 dark:bg-arcus-raised text-[#1A1A1A] dark:text-white font-semibold border border-[#EBE9E2] dark:border-arcus-divider'
+                                                    : 'text-[#666666] dark:text-arcus-fg-tertiary hover:text-[#1A1A1A] dark:hover:text-white hover:bg-black/5 dark:hover:bg-arcus-elevated'
                                                 }`}
                                             >
                                                 <motion.div layout>
@@ -290,8 +290,8 @@ export function HomeFeedSidebar({
                                             }}
                                             className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3 px-3'} py-2.5 rounded-xl transition-all duration-200 group ${
                                                 isActive 
-                                                ? 'bg-white/[0.05] text-[#1A1A1A] dark:text-white font-semibold shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] border border-[#EBE9E2] dark:border-arcus-divider'
-                                                : 'text-[#666666] dark:text-arcus-fg-tertiary hover:text-[#1A1A1A] dark:hover:text-white'
+                                                ? 'bg-black/5 dark:bg-arcus-raised text-[#1A1A1A] dark:text-white font-semibold border border-[#EBE9E2] dark:border-arcus-divider'
+                                                : 'text-[#666666] dark:text-arcus-fg-tertiary hover:text-[#1A1A1A] dark:hover:text-white hover:bg-black/5 dark:hover:bg-arcus-elevated'
                                             }`}
                                         >
                                             <motion.div layout>

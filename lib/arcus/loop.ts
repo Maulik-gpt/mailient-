@@ -212,7 +212,20 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
 
             const toolResults: Array<{ type: 'tool_result'; tool_use_id: string; content: string }> = [];
 
+            // ── ask_user: emit question event and stop the loop ───────────
+            const askUserCall = toolCalls.find(tc => tc.name === 'ask_user');
+            if (askUserCall) {
+              const questions = askUserCall.input?.questions ?? [];
+              if (questions.length > 0) {
+                emit('question', { questions, runId });
+                emit('done', { runId, durationMs: Date.now() - startedAt, totalSteps: totalToolCalls });
+                controller.close();
+                return;
+              }
+            }
+
             for (const tc of toolCalls) {
+              if (tc.name === 'ask_user') continue; // skip — handled above
               if (totalToolCalls >= MAX_TOOL_CALLS) {
                 emit('thinking', { status: 'Reached tool call limit. Summarising…' });
                 break;

@@ -6,12 +6,15 @@
  * Rotates across three API keys × three models until one succeeds.
  */
 
-// Ordered by quality — all free except deepseek-chat-v3 which has a generous free tier
 const MODELS = [
   'deepseek/deepseek-chat-v3-0324:free',
+  'google/gemini-2.5-flash-preview-05-20:free',
+  'meta-llama/llama-4-maverick:free',
   'meta-llama/llama-3.3-70b-instruct:free',
-  'google/gemini-2.0-flash-exp:free',
+  'google/gemini-2.0-flash:free',
+  'qwen/qwen3-235b-a22b:free',
   'qwen/qwen-2.5-72b-instruct:free',
+  'microsoft/phi-4:free',
   'mistralai/mistral-7b-instruct:free',
   'openrouter/auto',
 ];
@@ -161,79 +164,89 @@ export async function callLLM(
     baseBody.tool_choice = 'auto';
   }
 
-  for (const key of keys) {
-    for (const model of MODELS) {
-      try {
-        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${key}`,
-            'Content-Type': 'application/json',
-            'HTTP-Referer': 'https://mailient.xyz',
-            'X-Title': 'Arcus AI',
-          },
-          body: JSON.stringify({ ...baseBody, model }),
-          signal: AbortSignal.timeout(45000),
-        });
+  const attempt = async (): Promise<LLMResponse | null> => {
+    for (const key of keys) {
+      for (const model of MODELS) {
+        try {
+          const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${key}`,
+              'Content-Type': 'application/json',
+              'HTTP-Referer': 'https://mailient.xyz',
+              'X-Title': 'Arcus AI',
+            },
+            body: JSON.stringify({ ...baseBody, model }),
+            signal: AbortSignal.timeout(45000),
+          });
 
-        if (!res.ok) {
-          const text = await res.text().catch(() => '');
-          if (res.status === 429 || res.status === 402) continue; // rate limit → try next
-          console.error(`[Arcus Engine] ${model} ${res.status}:`, text.slice(0, 200));
-          continue;
-        }
+          if (!res.ok) {
+            const text = await res.text().catch(() => '');
+            if (res.status === 429 || res.status === 402) continue;
+            console.error(`[Arcus Engine] ${model} ${res.status}:`, text.slice(0, 200));
+            continue;
+          }
 
-        const data = await res.json();
-        const choice = data.choices?.[0];
-        if (!choice) continue;
+          const data = await res.json();
+          const choice = data.choices?.[0];
+          if (!choice) continue;
 
-        const content: ContentBlock[] = [];
-        const rawContent = choice.message?.content;
+          const content: ContentBlock[] = [];
+          const rawContent = choice.message?.content;
 
-        // Text content
-        if (typeof rawContent === 'string' && rawContent.trim()) {
-          content.push({ type: 'text', text: rawContent });
-        } else if (Array.isArray(rawContent)) {
-          for (const block of rawContent) {
-            if (block.type === 'text' && block.text) content.push({ type: 'text', text: block.text });
-            else if (block.type === 'tool_use') {
-              content.push({ type: 'tool_use', id: block.id, name: block.name, input: block.input || {} });
+          if (typeof rawContent === 'string' && rawContent.trim()) {
+            content.push({ type: 'text', text: rawContent });
+          } else if (Array.isArray(rawContent)) {
+            for (const block of rawContent) {
+              if (block.type === 'text' && block.text) content.push({ type: 'text', text: block.text });
+              else if (block.type === 'tool_use') {
+                content.push({ type: 'tool_use', id: block.id, name: block.name, input: block.input || {} });
+              }
             }
           }
-        }
 
-        // OpenAI-style tool_calls (most free models use this)
-        const toolCalls = choice.message?.tool_calls;
-        if (toolCalls?.length) {
-          for (const tc of toolCalls) {
-            let parsedInput: Record<string, any> = {};
-            try { parsedInput = JSON.parse(tc.function?.arguments || '{}'); } catch { /* ok */ }
-            content.push({
-              type: 'tool_use',
-              id: tc.id || `call_${Date.now()}_${Math.random().toString(36).slice(2)}`,
-              name: tc.function?.name || '',
-              input: parsedInput,
-            });
+          const toolCalls = choice.message?.tool_calls;
+          if (toolCalls?.length) {
+            for (const tc of toolCalls) {
+              let parsedInput: Record<string, any> = {};
+              try { parsedInput = JSON.parse(tc.function?.arguments || '{}'); } catch { /* ok */ }
+              content.push({
+                type: 'tool_use',
+                id: tc.id || `call_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+                name: tc.function?.name || '',
+                input: parsedInput,
+              });
+            }
           }
-        }
 
-        const stop_reason =
-          choice.finish_reason === 'tool_calls' ? 'tool_use'
-          : choice.finish_reason === 'stop' ? 'end_turn'
-          : (choice.finish_reason || 'end_turn');
+          const stop_reason =
+            choice.finish_reason === 'tool_calls' ? 'tool_use'
+            : choice.finish_reason === 'stop' ? 'end_turn'
+            : (choice.finish_reason || 'end_turn');
 
-        return { role: 'assistant', content, stop_reason };
+          return { role: 'assistant', content, stop_reason };
 
-      } catch (err: any) {
-        if (err.name === 'TimeoutError' || err.name === 'AbortError') {
-          console.warn(`[Arcus Engine] ${model} timed out.`);
+        } catch (err: any) {
+          if (err.name === 'TimeoutError' || err.name === 'AbortError') {
+            console.warn(`[Arcus Engine] ${model} timed out.`);
+            continue;
+          }
+          console.error(`[Arcus Engine] ${model} error:`, err.message);
           continue;
         }
-        console.error(`[Arcus Engine] ${model} error:`, err.message);
-        continue;
       }
     }
-  }
+    return null;
+  };
+
+  // First attempt
+  const first = await attempt();
+  if (first) return first;
+
+  // Single retry after 3 s — catches transient 429 bursts
+  await new Promise(r => setTimeout(r, 3000));
+  const second = await attempt();
+  if (second) return second;
 
   throw new Error('All models and API keys exhausted. Please try again.');
 }
