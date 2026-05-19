@@ -644,7 +644,7 @@ async function draftReply(userId: string, input: any): Promise<ToolResult> {
   const displayName = input.recipientName || input.to.split('@')[0];
 
   return {
-    output: `Draft saved. Displaying inline for user review.\nDraft ID: ${draft.id}\nTo: ${input.to} (${displayName})\nSubject: ${subject}\nThe user will send it from the chat draft preview — do NOT call send_email.`,
+    output: `Draft saved to Gmail successfully.\nTo: ${displayName} <${input.to}>\nSubject: ${subject}\n\nDraft body (first 400 chars):\n${input.body.slice(0, 400)}${input.body.length > 400 ? '...' : ''}\n\nNow write your final response: confirm what you did, include the subject line and the opening lines of the draft verbatim, and tell the user to review and send from the draft panel. Do NOT call send_email.`,
     canvasData: {
       title: `Draft: ${subject}`,
       type: 'email_draft',

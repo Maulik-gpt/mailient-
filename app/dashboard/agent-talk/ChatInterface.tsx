@@ -2164,14 +2164,17 @@ export default function ChatInterface({
             }
 
             case 'canvas': {
-              // Tool produced canvas content — open the panel immediately
+              // Tool produced canvas content — open the panel immediately if it's not a draft or reply
               const cv = data;
               if (cv?.title && cv?.markdown) {
                 const canvasContent = cv.type === 'email_draft' && cv.draftMeta
                   ? cv.draftMeta
                   : cv.markdown;
-                setCanvasData({ type: cv.type || 'notes', title: cv.title, content: canvasContent, raw: cv.markdown });
-                setIsCanvasOpen(true);
+                
+                if (cv.type !== 'email_draft' && cv.type !== 'reply') {
+                  setCanvasData({ type: cv.type || 'notes', title: cv.title, content: canvasContent, raw: cv.markdown });
+                  setIsCanvasOpen(true);
+                }
 
                 // Persist the canvas content + draft reply data on the active message meta
                 setMessages(msgs => msgs.map(m => {
@@ -2316,8 +2319,8 @@ export default function ChatInterface({
               const { thinking: liveThinkingText, cleanText: roadmapText } = extractThinking(rawOutput);
               finalContent = roadmapText;
 
-              // Open canvas panel if the agent produced canvas content
-              if (data.canvasContent) {
+              // Open canvas panel if the agent produced canvas content (excluding email_draft and reply)
+              if (data.canvasContent && data.canvasContent.type !== 'email_draft' && data.canvasContent.type !== 'reply') {
                 const cv = data.canvasContent;
                 // email_draft needs structured content; everything else gets raw markdown string
                 const canvasContent = cv.type === 'email_draft' && cv.meta

@@ -1,9 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Copy, X, Edit2, Mail, Send, Check, Sparkles, ArrowUp, Undo2, CornerDownLeft } from 'lucide-react';
+import { Copy, X, Edit2, Mail, Send, Check, Sparkles, ArrowUp, CornerDownLeft, Paperclip, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import WordBlurStream from '../../../../src/WordBlurStream';
+import { ArcusLogo } from '@/components/ui/arcus-logo';
+import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface DraftReplyBoxProps {
     draftData: {
@@ -70,8 +73,6 @@ export function DraftReplyBox({
             const text = editedContent.substring(start, end);
 
             if (text.trim().length > 0) {
-                // Approximate position for textarea (tough to get exact rect without a mirror div)
-                // Use the mouse position as a fallback or a fixed offset
                 const rect = textarea.getBoundingClientRect();
                 setSelection({ 
                     text, 
@@ -101,7 +102,6 @@ export function DraftReplyBox({
             const rect = range.getBoundingClientRect();
             const text = sel.toString();
             
-            // For view mode, we need the exact offset in the text
             const start = editedContent.indexOf(text);
             const end = start + text.length;
 
@@ -156,7 +156,6 @@ export function DraftReplyBox({
                     instruction: refinementInstruction
                 })
             });
-            // Parse response ONCE
             const data = await res.json().catch(() => ({}));
             if (!res.ok) {
                 throw new Error(data?.error || 'Refinement failed');
@@ -173,6 +172,7 @@ export function DraftReplyBox({
             setIsRefinementActive(false);
             setSelection(null);
             setShowTooltip(false);
+            toast.error(error instanceof Error ? error.message : 'Refinement failed');
         } finally {
             setIsProcessingRefinement(false);
             setRefinementInstruction('');
@@ -209,84 +209,105 @@ export function DraftReplyBox({
                 threadId: draftData.threadId
             });
             setSendSuccess(true);
+            toast.success('Email sent successfully!');
             setTimeout(() => {
                 onDismiss();
             }, 2000);
         } catch (error) {
             setSendError(error instanceof Error ? error.message : 'Failed to send reply');
+            toast.error(error instanceof Error ? error.message : 'Failed to send reply');
         } finally {
             setIsSending(false);
         }
     };
 
+    const handleCopyDraft = () => {
+        navigator.clipboard.writeText(editedContent);
+        toast.success('Copied email to clipboard');
+    };
+
     return (
-        <div className="bg-arcus-bg/60 border border-arcus-border rounded-xl overflow-hidden backdrop-blur-3xl animate-in fade-in slide-in-from-bottom-6 duration-700 max-w-2xl mx-auto my-6 relative">
-            {/* Technical noise overlay */}
-            <div className="absolute inset-0 pointer-events-none opacity-[0.02] z-[-1] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] brightness-100 contrast-150" />
+        <div className="bg-[#1C1C1C] border border-white/[0.08] rounded-[24px] overflow-hidden shadow-2xl animate-in fade-in slide-in-from-bottom-6 duration-700 max-w-2xl mx-auto my-6 relative select-text">
+            {/* Technical subtle noise overlay */}
+            <div className="absolute inset-0 pointer-events-none opacity-[0.015] z-[0] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] brightness-100 contrast-150" />
 
             {/* Ambient Glow */}
-            <div className="absolute -top-24 -right-24 w-48 h-48 bg-arcus-elevated rounded-full blur-[60px] pointer-events-none" />
+            <div className="absolute -top-24 -right-24 w-48 h-48 bg-white/[0.02] rounded-full blur-[60px] pointer-events-none" />
 
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-5 border-b border-white/[0.03] bg-arcus-elevated">
-                <div className="flex items-center gap-5">
-                    <div className="w-10 h-10 rounded-2xl bg-arcus-elevated flex items-center justify-center border border-neutral-200 dark:border-arcus-divider shadow-inner">
-                        <Mail className="w-5 h-5 text-black/5 dark:text-arcus-fg-tertiary" />
-                    </div>
+            <div className="flex items-center justify-between px-6 py-5 border-b border-white/[0.04] bg-[#222222]/30 relative z-10">
+                <div className="flex items-center gap-4">
+                    <ArcusLogo size={36} className="shrink-0" />
                     <div>
-                        <h3 className="text-black dark:text-white font-bold text-[13px] tracking-wide uppercase mb-1">Email Draft</h3>
-                        <div className="flex flex-col gap-1">
-                            <div className="flex items-center gap-3 text-[11px] tracking-wide">
-                                <span className="text-black/30 dark:text-arcus-fg-muted uppercase font-bold">To</span>
-                                <span className="text-black/80 dark:text-arcus-fg-secondary font-medium">{draftData.recipientName}</span>
-                                {draftData.recipientEmail && (
-                                    <span className="text-black/20 dark:text-arcus-fg-muted font-medium truncate">[{draftData.recipientEmail}]</span>
-                                )}
-                            </div>
-                        </div>
+                        <h3 className="text-white font-bold text-xs tracking-wider uppercase">Arcus AI Draft</h3>
+                        <p className="text-[10px] text-zinc-500 uppercase tracking-tight font-bold">Gmail Triage Agent</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <button
+                        onClick={handleCopyDraft}
+                        className="p-2 hover:bg-white/[0.06] rounded-xl text-zinc-400 hover:text-white transition-all duration-300"
+                        title="Copy draft"
+                    >
+                        <Copy className="w-4.5 h-4.5" />
+                    </button>
+                    <button
                         onClick={() => setIsEditing(!isEditing)}
-                        className={`p-2.5 rounded-xl transition-all duration-300 ${isEditing ? 'bg-white text-black' : 'hover:bg-black/[0.03] dark:hover:bg-arcus-surface text-black/40 dark:text-arcus-fg-tertiary hover:text-black dark:hover:text-white'}`}
+                        className={cn(
+                            "p-2 rounded-xl transition-all duration-300",
+                            isEditing 
+                                ? "bg-white text-black font-bold" 
+                                : "hover:bg-white/[0.06] text-zinc-400 hover:text-white"
+                        )}
                         title={isEditing ? 'Save changes' : 'Edit message'}
                     >
-                        <Edit2 className="w-4 h-4" />
+                        <Edit2 className="w-4.5 h-4.5" />
                     </button>
                     <button
                         onClick={onDismiss}
-                        className="p-2.5 hover:bg-black/[0.03] dark:hover:bg-arcus-surface rounded-xl transition-all duration-300 text-black/40 dark:text-arcus-fg-tertiary hover:text-black dark:hover:text-white"
-                        title="Cancel"
+                        className="p-2 hover:bg-white/[0.06] rounded-xl transition-all duration-300 text-zinc-400 hover:text-white"
+                        title="Dismiss"
                     >
-                        <X className="w-4 h-4" />
+                        <X className="w-4.5 h-4.5" />
                     </button>
                 </div>
             </div>
 
-            {/* Protocol Metadata (Subject) */}
-            <div className="px-6 py-4 bg-arcus-elevated border-b border-white/[0.03] flex items-center gap-4">
-                <span className="text-[10px] font-bold text-black/20 dark:text-arcus-fg-muted uppercase tracking-[0.1em] shrink-0">Subject</span>
-                <span className="text-[12px] text-black/60 dark:text-arcus-fg-secondary font-medium truncate tracking-tight">{draftData.subject}</span>
+            {/* Recipient & Subject Strip */}
+            <div className="px-6 py-4 bg-[#222222]/15 border-b border-white/[0.04] flex flex-col gap-2 relative z-10">
+                <div className="flex items-center gap-4 text-xs tracking-wide">
+                    <span className="text-zinc-500 font-bold uppercase tracking-widest w-12 shrink-0">To</span>
+                    <span className="text-zinc-200 font-semibold">{draftData.recipientName}</span>
+                    {draftData.recipientEmail && (
+                        <span className="text-zinc-500 font-medium truncate font-mono text-[11px]">&lt;{draftData.recipientEmail}&gt;</span>
+                    )}
+                </div>
+                <div className="h-px bg-white/[0.02] w-full" />
+                <div className="flex items-center gap-4 text-xs tracking-wide">
+                    <span className="text-zinc-500 font-bold uppercase tracking-widest w-12 shrink-0">Subject</span>
+                    <span className="text-zinc-300 font-medium truncate">{draftData.subject}</span>
+                </div>
             </div>
 
-            <div className="p-7 relative" onMouseUp={handleMouseUp}>
+            {/* Email Body Content Area */}
+            <div className="p-7 relative z-10" onMouseUp={handleMouseUp}>
                 {isEditing ? (
                     <textarea
                         value={editedContent}
                         onChange={(e) => setEditedContent(e.target.value)}
-                        className="w-full min-h-[180px] bg-arcus-elevated border border-arcus-border rounded-2xl p-6 text-black dark:text-white text-[15px] leading-[1.6] resize-none focus:outline-none focus:border-neutral-300 dark:border-arcus-divider transition-all duration-500 placeholder:text-black/10 dark:placeholder:text-white/10 font-sans selection:bg-white selection:text-black"
+                        className="w-full min-h-[200px] bg-[#1E1E1E] border border-white/[0.06] focus:border-white/[0.12] rounded-2xl p-6 text-zinc-100 text-[15px] leading-[1.8] resize-none focus:outline-none transition-all duration-300 placeholder:text-zinc-600 font-sans selection:bg-blue-500/30"
                         placeholder="Type your message here..."
+                        autoFocus
                     />
                 ) : (
-                    <div className="min-h-[120px] text-black/90 dark:text-arcus-fg text-[15px] whitespace-pre-wrap leading-[1.6] selection:bg-black/[0.010] dark:bg-white/20 tracking-tight">
+                    <div className="min-h-[120px] text-zinc-100 text-[15px] whitespace-pre-wrap leading-[1.8] selection:bg-blue-500/25 tracking-tight font-sans">
                         {proposedRefinement && selection ? (
                             <>
                                 {editedContent.slice(0, selection.start)}
-                                <span className="text-black/20 dark:text-arcus-fg-muted line-through decoration-red-500/30 decoration-1 bg-red-500/5">
+                                <span className="text-zinc-500 line-through decoration-red-500/40 decoration-1 bg-red-500/5 px-0.5 rounded">
                                     {selection.text}
                                 </span>
-                                <span className="text-black dark:text-white bg-blue-500/30 px-1 rounded-md border-b-2 border-blue-500/50 shadow-[0_0_20px_rgba(59,130,246,0.1)]">
+                                <span className="text-white bg-blue-500/20 px-1.5 py-0.5 rounded border border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.15)] font-semibold">
                                     <WordBlurStream text={proposedRefinement} loop={false} />
                                 </span>
                                 {editedContent.slice(selection.end)}
@@ -310,26 +331,26 @@ export function DraftReplyBox({
                                 left: selection.rect.left + (selection.rect.width / 2),
                                 top: selection.rect.top - 16,
                                 transform: 'translate(-50%, -100%)',
-                                zIndex: 100
+                                zIndex: 1100
                             }}
                             className="pointer-events-auto"
                         >
                             {!isRefinementActive && !proposedRefinement && (
                                 <button
                                     onClick={() => setIsRefinementActive(true)}
-                                    className="bg-arcus-bg/80 border border-neutral-300 dark:border-arcus-divider rounded-full px-5 py-2.5 flex items-center gap-4 shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_20px_rgba(255,255,255,0.05)] backdrop-blur-2xl hover:bg-white dark:bg-black hover:border-white/30 transition-all group active:scale-95"
+                                    className="bg-[#2A2A2A] border border-white/[0.08] hover:border-white/20 rounded-full px-5 py-2.5 flex items-center gap-3.5 shadow-2xl backdrop-blur-2xl transition-all duration-300 group active:scale-95"
                                 >
                                     <Sparkles className="w-3.5 h-3.5 text-blue-400 group-hover:animate-pulse" />
-                                    <span className="text-black dark:text-white font-bold text-xs tracking-tight">Ask for changes</span>
+                                    <span className="text-white font-bold text-xs tracking-tight">Ask for changes</span>
                                     <div className="flex items-center gap-1 opacity-40">
-                                        <div className="px-1.5 py-0.5 rounded border border-neutral-300 dark:border-arcus-divider bg-black/[0.03] dark:bg-arcus-elevated text-[9px] font-bold">Ctrl</div>
-                                        <div className="px-1.5 py-0.5 rounded border border-neutral-300 dark:border-arcus-divider bg-black/[0.03] dark:bg-arcus-elevated text-[9px] font-bold">M</div>
+                                        <div className="px-1.5 py-0.5 rounded border border-white/10 bg-white/5 text-[9px] font-bold text-white">Ctrl</div>
+                                        <div className="px-1.5 py-0.5 rounded border border-white/10 bg-white/5 text-[9px] font-bold text-white">M</div>
                                     </div>
                                 </button>
                             )}
 
                             {isRefinementActive && (
-                                <div className="bg-black/90 border border-neutral-200 dark:border-arcus-border rounded-[1.5rem] p-1.5 shadow-[0_30px_70px_rgba(0,0,0,0.9),0_0_30px_rgba(255,255,255,0.03)] w-[360px] backdrop-blur-3xl overflow-hidden ring-1 ring-arcus-border">
+                                <div className="bg-[#2A2A2A] border border-white/10 rounded-[18px] p-1.5 shadow-2xl w-[360px] backdrop-blur-3xl overflow-hidden ring-1 ring-white/5">
                                     <div className="relative group/input">
                                         <input
                                             autoFocus
@@ -339,14 +360,14 @@ export function DraftReplyBox({
                                                 if (e.key === 'Enter') handleRefinementSubmit();
                                                 if (e.key === 'Escape') setIsRefinementActive(false);
                                             }}
-                                            placeholder="Describe your changes"
-                                            className="w-full bg-arcus-elevated text-black dark:text-white text-[14px] py-3.5 px-5 pr-14 rounded-2xl border border-arcus-border focus:outline-none focus:border-neutral-300 dark:border-arcus-divider transition-all placeholder:text-black/20 dark:placeholder:text-white/20 font-medium tracking-tight"
+                                            placeholder="Describe your changes..."
+                                            className="w-full bg-[#1E1E1E] text-white text-[13.5px] py-3.5 px-5 pr-14 rounded-[14px] border border-transparent focus:outline-none focus:border-white/10 transition-all placeholder:text-zinc-600 font-medium tracking-tight"
                                         />
                                         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
                                             {refinementInstruction && !isProcessingRefinement && (
                                                 <button 
                                                     onClick={() => setRefinementInstruction('')}
-                                                    className="w-6 h-6 rounded-lg flex items-center justify-center text-black/30 dark:text-arcus-fg-muted hover:text-black dark:hover:text-white transition-colors"
+                                                    className="w-6 h-6 rounded-lg flex items-center justify-center text-zinc-500 hover:text-white transition-colors"
                                                 >
                                                     <X className="w-3.5 h-3.5" />
                                                 </button>
@@ -354,10 +375,10 @@ export function DraftReplyBox({
                                             <button 
                                                 onClick={handleRefinementSubmit}
                                                 disabled={isProcessingRefinement || !refinementInstruction.trim()}
-                                                className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-black dark:text-white hover:bg-blue-500 transition-all disabled:opacity-30 disabled:grayscale shadow-lg shadow-blue-500/20 active:scale-90"
+                                                className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white hover:bg-blue-500 transition-all disabled:opacity-30 disabled:grayscale shadow-lg shadow-blue-500/20 active:scale-90"
                                             >
                                                 {isProcessingRefinement ? (
-                                                    <div className="w-4 h-4 border-[2.5px] border-neutral-300 dark:border-arcus-divider border-t-white rounded-full animate-spin" />
+                                                    <div className="w-4 h-4 border-[2px] border-white/20 border-t-white rounded-full animate-spin" />
                                                 ) : (
                                                     <ArrowUp className="w-4 h-4 stroke-[3]" />
                                                 )}
@@ -368,22 +389,22 @@ export function DraftReplyBox({
                             )}
 
                             {proposedRefinement && (
-                                <div className="bg-black/90 border border-neutral-300 dark:border-arcus-divider rounded-2xl p-2 flex items-center gap-2 shadow-[0_30px_70px_rgba(0,0,0,0.9)] backdrop-blur-3xl ring-1 ring-arcus-border">
+                                <div className="bg-[#2A2A2A] border border-white/10 rounded-[18px] p-2 flex items-center gap-2 shadow-2xl backdrop-blur-3xl ring-1 ring-white/5">
                                     <button 
                                         onClick={() => setProposedRefinement(null)}
-                                        className="h-10 px-5 rounded-xl text-black/70 dark:text-arcus-fg-secondary hover:text-black dark:hover:text-white hover:bg-black/[0.03] dark:hover:bg-arcus-surface text-[13px] font-bold transition-all flex items-center gap-3 active:scale-95"
+                                        className="h-10 px-4 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 text-[13px] font-bold transition-all flex items-center gap-3 active:scale-95"
                                     >
                                         Undo
-                                        <div className="px-1.5 py-0.5 rounded border border-neutral-200 dark:border-arcus-border bg-black/[0.03] dark:bg-arcus-elevated text-[9px] font-bold opacity-40 uppercase">Esc</div>
+                                        <div className="px-1.5 py-0.5 rounded border border-white/10 bg-white/5 text-[9px] font-bold opacity-40 uppercase">Esc</div>
                                     </button>
-                                    <div className="w-px h-6 bg-black/[0.05] dark:bg-arcus-divider mx-1" />
+                                    <div className="w-px h-6 bg-white/10 mx-1" />
                                     <button 
                                         onClick={handleAcceptRefinement}
-                                        className="h-10 px-5 bg-blue-600 hover:bg-blue-500 rounded-xl text-black dark:text-white text-[13px] font-bold transition-all flex items-center gap-4 shadow-xl shadow-blue-500/25 active:scale-95 active:translate-y-0.5"
+                                        className="h-10 px-5 bg-blue-600 hover:bg-blue-500 rounded-xl text-white text-[13px] font-bold transition-all flex items-center gap-4 shadow-xl shadow-blue-500/25 active:scale-95 active:translate-y-0.5"
                                     >
                                         Accept
                                         <div className="flex items-center gap-1 opacity-70">
-                                            <div className="px-1.5 py-0.5 rounded border border-white/30 bg-black/[0.05] dark:bg-arcus-surface-hover text-[9px] font-bold uppercase tracking-tighter">Ctrl</div>
+                                            <div className="px-1.5 py-0.5 rounded border border-white/30 bg-white/10 text-[9px] font-bold uppercase tracking-tighter">Ctrl</div>
                                             <CornerDownLeft className="w-3 h-3" />
                                         </div>
                                     </button>
@@ -394,51 +415,62 @@ export function DraftReplyBox({
                 </AnimatePresence>
             </div>
 
-            {/* Command Interface (Footer) */}
-            <div className="px-8 py-5 bg-arcus-elevated border-t border-white/[0.03] flex items-center justify-between">
+            {/* Footer / Controls */}
+            <div className="px-8 py-5 bg-[#222222]/30 border-t border-white/[0.04] flex items-center justify-between relative z-10">
                 <div className="flex items-center gap-3">
                     {sendError ? (
-                        <div className="flex items-center gap-2 text-red-500 text-[10px] tracking-widest bg-red-500/5 px-4 py-2 rounded-xl border border-red-500/10 uppercase">
+                        <div className="flex items-center gap-2 text-red-400 text-[10px] tracking-wider bg-red-500/5 px-4 py-2 rounded-xl border border-red-500/10 uppercase font-bold">
                             <X className="w-3 h-3" />
                             {sendError}
                         </div>
                     ) : sendSuccess ? (
-                        <div className="flex items-center gap-2 text-black dark:text-white text-[10px] tracking-widest bg-black/[0.03] dark:bg-arcus-elevated px-4 py-2 rounded-xl border border-neutral-200 dark:border-arcus-border uppercase">
+                        <div className="flex items-center gap-2 text-emerald-400 text-[10px] tracking-wider bg-emerald-500/5 px-4 py-2 rounded-xl border border-emerald-500/10 uppercase font-bold">
                             <Check className="w-3 h-3" />
                             Sent successfully
                         </div>
                     ) : (
-                        <span className="text-black/10 dark:text-arcus-fg-muted text-[9px] tracking-tight uppercase">
-                            Review and send
+                        <span className="text-zinc-500 text-[9px] tracking-widest uppercase font-bold">
+                            Review and Send
                         </span>
                     )}
                 </div>
 
-                <button
-                    onClick={handleSend}
-                    disabled={isSending || sendSuccess || !draftData.recipientEmail}
-                    className={`group relative flex items-center gap-2.5 px-6 py-2 rounded-lg font-bold text-[10px] tracking-widest uppercase transition-all duration-500 transform active:scale-95 ${isSending || sendSuccess
-                        ? 'bg-black/[0.03] dark:bg-arcus-elevated text-black/20 dark:text-arcus-fg-muted cursor-not-allowed border border-neutral-200 dark:border-arcus-border'
-                        : 'bg-white text-black hover:bg-neutral-200'
-                        }`}
-                >
-                    {isSending ? (
-                        <>
-                            <div className="w-3.5 h-3.5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
-                            Sending...
-                        </>
-                    ) : sendSuccess ? (
-                        <>
-                            <Check className="w-3.5 h-3.5" />
-                            SENT
-                        </>
-                    ) : (
-                        <>
-                            <Send className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
-                            Send now
-                        </>
-                    )}
-                </button>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={onDismiss}
+                        disabled={isSending || sendSuccess}
+                        className="px-5 py-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 font-bold text-xs tracking-wider uppercase transition-all duration-300 disabled:opacity-30 disabled:pointer-events-none"
+                    >
+                        Discard
+                    </button>
+                    <button
+                        onClick={handleSend}
+                        disabled={isSending || sendSuccess || !draftData.recipientEmail}
+                        className={cn(
+                            "group relative flex items-center gap-2.5 px-6 py-2.5 rounded-xl font-bold text-xs tracking-widest uppercase transition-all duration-300 transform active:scale-95",
+                            isSending || sendSuccess
+                                ? 'bg-white/5 text-zinc-600 cursor-not-allowed border border-white/5'
+                                : 'bg-white text-black hover:bg-zinc-200 shadow-lg shadow-white/5'
+                        )}
+                    >
+                        {isSending ? (
+                            <>
+                                <div className="w-3.5 h-3.5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                                Sending...
+                            </>
+                        ) : sendSuccess ? (
+                            <>
+                                <Check className="w-3.5 h-3.5" />
+                                Sent
+                            </>
+                        ) : (
+                            <>
+                                <Send className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                                Send Now
+                            </>
+                        )}
+                    </button>
+                </div>
             </div>
         </div>
     );

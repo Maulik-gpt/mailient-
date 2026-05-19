@@ -468,7 +468,24 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
             continue;
           }
 
-          // ── Case 2c: Real final answer ────────────────────────────────────
+          // ── Case 2c: Empty response after tool calls — demand a real summary ──
+          // The LLM produced only <thinking> with no visible text. Force one retry.
+          if (!textContent && totalToolCalls > 0 && nudgeCount < MAX_NUDGES) {
+            nudgeCount++;
+            emit('thinking', { status: 'Writing summary…' });
+            messages.push({
+              role: 'user',
+              content:
+                'You produced no visible text in your response. Write your final reply now: ' +
+                '(1) one sentence confirming what you accomplished, ' +
+                '(2) the key result with specific details (subject line, opening sentences of any draft, etc.), ' +
+                '(3) one sentence telling the user what to do next. ' +
+                'Do NOT use <thinking> tags — write the reply directly.',
+            });
+            continue;
+          }
+
+          // ── Case 2d: Real final answer ────────────────────────────────────
           // If the model reasoned via <thinking> tags, surface that in the card.
           if (thinkingText && thinkingText.length >= 20) {
             emit('narrative', { text: thinkingText, iteration });
@@ -480,7 +497,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
         if (!finalText) {
           finalText = isPlanMode
             ? 'I was unable to generate a plan. Please try again with a more specific request.'
-            : 'Done. Let me know if you need anything else.';
+            : 'I\'ve completed the requested actions. Let me know if you need any changes.';
         }
 
         // ── Layer 2 end: append archive count ──────────────────────────────
