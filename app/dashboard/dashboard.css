@@ -412,7 +412,7 @@ input:focus-visible {
   pointer-events: none;
 /* Chats Page Styling */
 .chats-container {
-  background: #1A1A1A;
+  background: #0D0D0D;
   min-height: 100vh;
   max-height: 100vh;
   overflow: hidden;
@@ -428,7 +428,7 @@ input:focus-visible {
 }
 
 .chat-main-area {
-  background: #1A1A1A;
+  background: #0D0D0D;
   height: 100vh;
   overflow: hidden;
   display: flex;
@@ -804,7 +804,7 @@ input:focus-visible {
 
 /* Individual Chat Styling */
 .individual-chat {
-  background: #1A1A1A;
+  background: #0D0D0D;
 }
 
 .chat-header {
