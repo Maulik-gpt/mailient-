@@ -3687,7 +3687,7 @@ export default function ChatInterface({
 
                         {/* Dropdown Menu */}
                         {isTitleMenuOpen && (
-                          <div className="absolute top-full left-0 mt-2 w-48 bg-arcus-surface-hover border border-arcus-border rounded-xl shadow-2xl py-1.5 z-[100] animate-in fade-in zoom-in-95 duration-200">
+                          <div className="absolute top-full left-0 mt-2 w-48 bg-[#1A1A1A] border border-arcus-border rounded-xl shadow-2xl py-1.5 z-[100] animate-in fade-in zoom-in-95 duration-200">
                             <button
                               onClick={() => {
                                 setIsStarred(!isStarred);

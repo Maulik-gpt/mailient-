@@ -447,7 +447,7 @@ function PremiumDatePicker({ value, onChange, minDate }: {
       </div>
 
       {isOpen && (
-        <div className="absolute bottom-full left-0 mb-2 w-72 bg-arcus-elevated border border-arcus-border rounded-2xl shadow-2xl p-4.5 z-50 select-none animate-in fade-in slide-in-from-bottom-2 duration-150">
+        <div className="absolute bottom-full left-0 mb-2 w-72 bg-[#0A0A0A] border border-arcus-border rounded-2xl shadow-2xl p-4.5 z-[100] select-none animate-in fade-in slide-in-from-bottom-2 duration-150">
           <div className="flex items-center justify-between mb-3.5">
             <div className="flex gap-1">
               <button onClick={handlePrevYear} className="p-1.5 hover:bg-arcus-surface text-arcus-fg-muted hover:text-arcus-fg-secondary rounded-lg transition-colors text-[10px] font-extrabold font-mono">
@@ -586,7 +586,7 @@ function PremiumTimePicker({ value, onChange }: {
       </div>
 
       {isOpen && (
-        <div className="absolute bottom-full right-0 lg:left-0 mb-2 w-64 bg-arcus-elevated border border-arcus-border rounded-2xl shadow-2xl p-4 z-50 select-none animate-in fade-in slide-in-from-bottom-2 duration-150 flex gap-3">
+        <div className="absolute bottom-full right-0 lg:left-0 mb-2 w-64 bg-[#0A0A0A] border border-arcus-border rounded-2xl shadow-2xl p-4 z-[100] select-none animate-in fade-in slide-in-from-bottom-2 duration-150 flex gap-3">
           {/* Hours Column */}
           <div className="flex-1 flex flex-col items-center">
             <span className="text-[10px] uppercase tracking-wider text-arcus-fg-muted font-extrabold mb-2">Hour</span>

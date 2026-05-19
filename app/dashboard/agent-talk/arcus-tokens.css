@@ -78,10 +78,10 @@
   /* LIQUID GLASS SYSTEM     */
   /* ====================== */
   /* Glass tint values */
-  --glass-tint-card:    rgba(34,35,38,0.82);   /* cards on light page */
-  --glass-tint-sidebar: rgba(0,0,0,0.88);       /* sidebar */
-  --glass-tint-modal:   rgba(22,23,26,0.90);    /* modals */
-  --glass-tint-toast:   rgba(34,35,38,0.94);    /* toasts */
+  --glass-tint-card:    rgba(10,10,10,0.96);   /* cards on light page */
+  --glass-tint-sidebar: rgba(0,0,0,0.98);       /* sidebar */
+  --glass-tint-modal:   rgba(10,10,10,0.97);    /* modals */
+  --glass-tint-toast:   rgba(10,10,10,0.98);    /* toasts */
 
   /* Blur values */
   --glass-blur-card:    blur(24px);
