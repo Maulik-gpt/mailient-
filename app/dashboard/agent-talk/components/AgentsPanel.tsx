@@ -957,7 +957,7 @@ function AgentCard({ agent, onToggle, onEdit, onDelete, onToggleConf }: {
                     initial={{ opacity: 0, scale: 0.92, y: -4 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.92, y: -4 }}
-                    className="absolute right-0 top-10 w-36 bg-arcus-surface backdrop-blur-xl border border-arcus-border rounded-xl overflow-hidden shadow-2xl z-20"
+                    className="absolute right-0 top-10 w-36 bg-white dark:bg-neutral-900 border border-arcus-border rounded-xl overflow-hidden shadow-2xl z-20"
                   >
                     <button
                       onClick={() => { setMenuOpen(false); onEdit(); }}

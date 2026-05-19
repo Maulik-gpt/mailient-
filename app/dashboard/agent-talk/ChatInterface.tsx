@@ -53,6 +53,7 @@ import { cn } from "@/lib/utils";
 import { audioRuntime } from '@/lib/audio-runtime';
 import { NotificationService } from '@/lib/notification-service';
 import { GradientWave } from '@/components/ui/gradient-wave';
+import { SpiralLoader } from '@/components/ui/spiral-loader';
 import { useArcusAgentStream } from './hooks/useArcusAgentStream';
 import { useArcusV3Feed } from './hooks/useArcusV3Feed';
 import { usePlanModeBrief } from './hooks/usePlanModeBrief';
@@ -632,16 +633,19 @@ const NoScrollbarStyles = () => (
 );
 
 
+const THINKING_LABELS = ['Thinking', 'Reasoning', 'Analyzing', 'Planning', 'Processing'];
+
 function AgentThinkingSection({ content, isComplete }: { content: string, isComplete?: boolean }) {
   const [isOpen, setIsOpen] = useState(true);
   const [timer, setTimer] = useState(0);
+  const [labelIdx, setLabelIdx] = useState(0);
   const [accumulatedThought, setAccumulatedThought] = useState('');
   const contentRef = useRef<HTMLDivElement>(null);
   const startTimeRef = useRef(Date.now());
   const scrollPosRef = useRef(0);
   const scrollRafRef = useRef<number | null>(null);
 
-  // Accumulate real narrative text (skip short status messages)
+  // Accumulate real narrative text (ignore short status-only messages)
   useEffect(() => {
     if (!content || content === 'SKELETON') return;
     const isStatusOnly = content.length < 60 &&
@@ -651,26 +655,29 @@ function AgentThinkingSection({ content, isComplete }: { content: string, isComp
     }
   }, [content]);
 
-  // Elapsed timer — stops when done
+  // Rolling label cycle
   useEffect(() => {
     if (isComplete) return;
-    startTimeRef.current = Date.now();
-    const id = setInterval(() => {
-      setTimer(Math.floor((Date.now() - startTimeRef.current) / 1000));
-    }, 1000);
+    const id = setInterval(() => setLabelIdx(i => (i + 1) % THINKING_LABELS.length), 2800);
     return () => clearInterval(id);
   }, [isComplete]);
 
-  // Auto-scroll loop using rAF — smooth, recalculates maxScroll each frame
+  // Elapsed timer
+  useEffect(() => {
+    if (isComplete) return;
+    startTimeRef.current = Date.now();
+    const id = setInterval(() => setTimer(Math.floor((Date.now() - startTimeRef.current) / 1000)), 1000);
+    return () => clearInterval(id);
+  }, [isComplete]);
+
+  // rAF auto-scroll — stops when complete or collapsed
   useEffect(() => {
     if (isComplete || !isOpen) {
       if (scrollRafRef.current) cancelAnimationFrame(scrollRafRef.current);
       return;
     }
-
     let lastTime = 0;
-    const PX_PER_SEC = 28; // comfortable reading speed
-
+    const PX_PER_SEC = 28;
     const tick = (ts: number) => {
       const el = contentRef.current;
       if (!el) { scrollRafRef.current = requestAnimationFrame(tick); return; }
@@ -678,75 +685,67 @@ function AgentThinkingSection({ content, isComplete }: { content: string, isComp
       lastTime = ts;
       const maxScroll = el.scrollHeight - el.clientHeight;
       if (maxScroll > 0) {
-        scrollPosRef.current = scrollPosRef.current + PX_PER_SEC * delta;
+        scrollPosRef.current += PX_PER_SEC * delta;
         if (scrollPosRef.current >= maxScroll) scrollPosRef.current = 0;
         el.scrollTop = scrollPosRef.current;
       }
       scrollRafRef.current = requestAnimationFrame(tick);
     };
-
     scrollRafRef.current = requestAnimationFrame(tick);
-    return () => {
-      if (scrollRafRef.current) cancelAnimationFrame(scrollRafRef.current);
-    };
+    return () => { if (scrollRafRef.current) cancelAnimationFrame(scrollRafRef.current); };
   }, [isComplete, isOpen]);
 
   if (!content) return null;
 
-  const displayText = accumulatedThought ||
-    (content !== 'SKELETON' ? content : 'Analyzing your request…');
+  const displayText = accumulatedThought || 'Analyzing your request…';
 
   return (
-    <div className="flex flex-col gap-2 mt-3 mb-2">
-      {/* Header row */}
-      <div className="flex items-center gap-2.5">
+    <div className="flex flex-col gap-2 mt-3 mb-2 min-w-0">
+      {/* Header — single line, no wrap */}
+      <div className="flex items-center gap-2 min-w-0">
         {!isComplete ? (
-          /* Spinning loader */
-          <svg
-            className="w-3.5 h-3.5 animate-spin text-white/40 flex-shrink-0"
-            fill="none" viewBox="0 0 24 24"
-          >
-            <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
-            <path className="opacity-70" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-          </svg>
+          <SpiralLoader size={16} className="flex-shrink-0 opacity-70" />
         ) : (
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="w-3.5 h-3.5 rounded-full bg-arcus-elevated border border-arcus-border flex items-center justify-center flex-shrink-0"
+            className="w-4 h-4 rounded-full bg-arcus-elevated border border-arcus-border flex items-center justify-center flex-shrink-0"
           >
             <div className="w-1 h-1 rounded-full bg-white/25" />
           </motion.div>
         )}
 
         {!isComplete ? (
-          /* Shimmer "Arcus AI is thinking" */
-          <motion.span
-            className="text-[12px] font-semibold bg-[linear-gradient(110deg,#555,30%,#ddd,50%,#555,70%,#555)] bg-[length:250%_100%] bg-clip-text text-transparent select-none"
-            animate={{ backgroundPosition: ['200% 0', '-200% 0'] }}
-            transition={{ repeat: Infinity, duration: 3, ease: 'linear' }}
-          >
-            Arcus AI is thinking
-          </motion.span>
+          <AnimatePresence mode="wait">
+            <motion.span
+              key={labelIdx}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.25 }}
+              className="text-[12px] font-semibold bg-[linear-gradient(110deg,#555,30%,#ddd,50%,#555,70%,#555)] bg-[length:250%_100%] bg-clip-text text-transparent select-none whitespace-nowrap shrink-0"
+              style={{ backgroundSize: '250% 100%', animation: 'shimmer-text 3s linear infinite' }}
+            >
+              {THINKING_LABELS[labelIdx]}
+            </motion.span>
+          </AnimatePresence>
         ) : (
           <motion.span
             initial={{ opacity: 0, x: -4 }}
             animate={{ opacity: 1, x: 0 }}
-            className="text-[11px] font-medium text-white/20 tracking-widest select-none uppercase"
+            className="text-[11px] font-medium text-white/20 tracking-widest select-none uppercase whitespace-nowrap shrink-0"
           >
             Thought
           </motion.span>
         )}
 
-        {/* Timer */}
         {!isComplete && (
-          <span className="text-[11px] font-mono text-white/25 tabular-nums">{timer}s</span>
+          <span className="text-[11px] font-mono text-white/25 tabular-nums shrink-0">{timer}s</span>
         )}
 
-        {/* Collapse toggle */}
         <button
           onClick={() => setIsOpen(v => !v)}
-          className="ml-auto text-white/15 hover:text-white/40 transition-colors"
+          className="ml-auto flex-shrink-0 text-white/15 hover:text-white/40 transition-colors"
         >
           <motion.div animate={{ rotate: isOpen ? 90 : 0 }} transition={{ duration: 0.15 }}>
             <ChevronRight className="w-3.5 h-3.5" />
@@ -764,25 +763,13 @@ function AgentThinkingSection({ content, isComplete }: { content: string, isComp
             transition={{ duration: 0.18 }}
             className="overflow-hidden"
           >
-            <div
-              className={cn(
-                'relative h-[148px] overflow-hidden rounded-xl border transition-all',
-                isComplete
-                  ? 'bg-white/[0.015] border-white/[0.04]'
-                  : 'bg-white/[0.03] border-white/[0.06]'
-              )}
-            >
-              {/* Top fade overlay */}
+            <div className={cn(
+              'relative h-[148px] overflow-hidden rounded-xl border transition-all',
+              isComplete ? 'bg-white/[0.015] border-white/[0.04]' : 'bg-white/[0.03] border-white/[0.06]'
+            )}>
               <div className="absolute top-0 left-0 right-0 h-9 bg-gradient-to-b from-black/80 to-transparent z-10 pointer-events-none rounded-t-xl" />
-              {/* Bottom fade overlay */}
               <div className="absolute bottom-0 left-0 right-0 h-9 bg-gradient-to-t from-black/80 to-transparent z-10 pointer-events-none rounded-b-xl" />
-
-              {/* Scrollable content — overflow-hidden allows programmatic scrollTop */}
-              <div
-                ref={contentRef}
-                className="h-full overflow-hidden px-4 py-3"
-                style={{ scrollBehavior: 'auto' }}
-              >
+              <div ref={contentRef} className="h-full overflow-hidden px-4 py-3" style={{ scrollBehavior: 'auto' }}>
                 <p className={cn(
                   'text-[12px] leading-relaxed whitespace-pre-wrap font-normal',
                   isComplete ? 'text-white/25' : 'text-white/45'
@@ -794,6 +781,13 @@ function AgentThinkingSection({ content, isComplete }: { content: string, isComp
           </motion.div>
         )}
       </AnimatePresence>
+
+      <style jsx global>{`
+        @keyframes shimmer-text {
+          0%   { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
+      `}</style>
     </div>
   );
 }
