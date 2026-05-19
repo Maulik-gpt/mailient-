@@ -26,32 +26,30 @@ function log(level: 'info' | 'warn' | 'error', module: string, msg: string, extr
 // ── Model lists ────────────────────────────────────────────────────────────────
 
 /**
- * Models that reliably support tool/function calling on OpenRouter free tier.
- * Ordered by quality + availability. IDs verified May 2026.
+ * Free tool-capable models, verified live 2026-05-19 against OpenRouter.
+ * Ordered: confirmed-responding first, then ones that were rate-limited
+ * at probe time but may recover. NOTE: openrouter/auto is NOT usable —
+ * these accounts have zero credits and auto only routes to paid models.
  */
 const TOOL_CAPABLE_MODELS = [
-  'deepseek/deepseek-chat-v3-0324:free',
-  'google/gemini-2.5-flash-preview:free',
-  'meta-llama/llama-4-maverick:free',
-  'google/gemini-2.0-flash-001:free',
-  'meta-llama/llama-4-scout:free',
+  // Confirmed clean 200 responses
+  'openai/gpt-oss-120b:free',
+  'google/gemma-4-31b-it:free',
+  'google/gemma-4-26b-a4b-it:free',
+  'nvidia/nemotron-3-super-120b-a12b:free',
+  'z-ai/glm-4.5-air:free',
+  'arcee-ai/trinity-large-thinking:free',
+  // Currently rate-limited upstream — retry-worthy fallbacks
+  'deepseek/deepseek-v4-flash:free',
+  'qwen/qwen3-next-80b-a3b-instruct:free',
+  'qwen/qwen3-coder:free',
   'meta-llama/llama-3.3-70b-instruct:free',
-  'qwen/qwen3-235b-a22b:free',
-  'qwen/qwen-2.5-72b-instruct:free',
-  'microsoft/phi-4:free',
-  'google/gemma-3-27b-it:free',
+  'openai/gpt-oss-20b:free',
 ];
 
-/**
- * Fallback models — lighter/cheaper, may not support structured tool calls.
- * Used in round 2 and the no-tools emergency round.
- */
 const FALLBACK_MODELS = [
-  'mistralai/mistral-small-3.2-24b-instruct:free',
-  'tngtech/deepseek-r1t-chimera:free',
-  'qwen/qwen3-14b:free',
-  'qwen/qwen3-8b:free',
-  'mistralai/mistral-7b-instruct:free',
+  'nvidia/nemotron-3-nano-30b-a3b:free',
+  'minimax/minimax-m2.5:free',
 ];
 
 const ALL_FREE_MODELS = [
@@ -307,36 +305,39 @@ export async function callLLM(
 
   function sleep(ms: number) { return new Promise<void>(r => setTimeout(r, ms)); }
 
-  // 1. openrouter/auto — let OR route to the best model it can find
-  log('info', 'Engine', 'Step 1: openrouter/auto', { hasTools, keys: keys.length });
-  const autoResult = await tryModel('openrouter/auto', baseBody);
-  if (autoResult) return autoResult;
-
-  // 2. Sequential free model fallbacks — one model at a time, all keys race each
-  const fallbackList = hasTools ? TOOL_CAPABLE_MODELS : ALL_FREE_MODELS;
-  for (let i = 0; i < fallbackList.length; i++) {
-    await sleep(i === 0 ? 500 : 1000);
-    const result = await tryModel(fallbackList[i], baseBody, 15000);
+  // Pass 1: sequential free models, all keys race each. 429s are common on
+  // the shared free pool, so we just move to the next model immediately.
+  const list = hasTools ? TOOL_CAPABLE_MODELS : ALL_FREE_MODELS;
+  log('info', 'Engine', 'Pass 1 — free models', { count: list.length, keys: keys.length, hasTools });
+  for (let i = 0; i < list.length; i++) {
+    if (i > 0) await sleep(400);
+    const result = await tryModel(list[i], baseBody, 18000);
     if (result) return result;
   }
 
-  // 3. Emergency: strip tool schemas, try openrouter/auto + top 2 free models
-  log('warn', 'Engine', 'All models failed — emergency text-only round');
+  // Pass 2: brief pause then retry the confirmed-good models (rate limits
+  // often clear within a couple seconds on the free pool).
+  log('warn', 'Engine', 'Pass 1 failed — 3 s pause then retrying top models');
+  await sleep(3000);
+  for (const model of TOOL_CAPABLE_MODELS.slice(0, 6)) {
+    const result = await tryModel(model, baseBody, 18000);
+    if (result) return result;
+    await sleep(400);
+  }
+
+  // Pass 3: emergency — strip tool schemas, try top models for a text answer.
+  log('warn', 'Engine', 'Pass 2 failed — emergency text-only round');
   await sleep(1000);
   const noToolsBody: Record<string, any> = { ...baseBody };
   delete noToolsBody.tools;
   delete noToolsBody.tool_choice;
-
-  const emAuto = await tryModel('openrouter/auto', noToolsBody, 15000);
-  if (emAuto) return emAuto;
-
-  for (const model of ['deepseek/deepseek-chat-v3-0324:free', 'meta-llama/llama-4-maverick:free']) {
-    await sleep(500);
-    const r = await tryModel(model, noToolsBody, 15000);
+  for (const model of TOOL_CAPABLE_MODELS.slice(0, 4)) {
+    const r = await tryModel(model, noToolsBody, 18000);
     if (r) return r;
+    await sleep(400);
   }
 
-  log('error', 'Engine', 'All rounds exhausted', {
+  log('error', 'Engine', 'All passes exhausted', {
     keys: keys.length, deadKeys: [...deadKeys].map(k => `…${k.slice(-4)}`),
   });
   throw new Error('All models are currently busy. Please try again in a moment.');

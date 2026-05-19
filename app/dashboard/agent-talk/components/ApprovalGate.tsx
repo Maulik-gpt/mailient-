@@ -57,16 +57,16 @@ const statusConfig: Record<PlanStatus, { label: string; color: string; icon: any
   executing: { label: 'Executing', color: 'text-blue-400', icon: Loader2 },
   completed: { label: 'Completed', color: 'text-emerald-400', icon: CheckCircle2 },
   failed: { label: 'Failed', color: 'text-red-400', icon: XCircle },
-  cancelled: { label: 'Cancelled', color: 'text-neutral-600 dark:text-neutral-600 dark:text-neutral-400', icon: XCircle }
+  cancelled: { label: 'Cancelled', color: 'text-neutral-600 dark:text-neutral-400', icon: XCircle }
 };
 
 const todoStatusConfig: Record<string, { label: string; color: string; bgColor: string }> = {
-  pending: { label: 'Pending', color: 'text-black/30 dark:text-white/30', bgColor: 'bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5' },
+  pending: { label: 'Pending', color: 'text-black/30 dark:text-white/30', bgColor: 'bg-black/[0.03] dark:bg-white/5' },
   ready: { label: 'Ready', color: 'text-blue-400', bgColor: 'bg-blue-500/10' },
   running: { label: 'Running', color: 'text-amber-400', bgColor: 'bg-amber-500/10' },
   completed: { label: 'Done', color: 'text-emerald-400', bgColor: 'bg-emerald-500/10' },
   failed: { label: 'Failed', color: 'text-red-400', bgColor: 'bg-red-500/10' },
-  skipped: { label: 'Skipped', color: 'text-neutral-600 dark:text-neutral-600 dark:text-neutral-400', bgColor: 'bg-neutral-500/10' },
+  skipped: { label: 'Skipped', color: 'text-neutral-600 dark:text-neutral-400', bgColor: 'bg-neutral-500/10' },
   blocked_approval: { label: 'Needs Approval', color: 'text-orange-400', bgColor: 'bg-orange-500/10' }
 };
 
@@ -128,19 +128,19 @@ export function ApprovalGate({ plan, onApprove, onReject, onModify, isProcessing
                   plan.status === 'draft' ? 'text-amber-400 border-amber-500/30 bg-amber-500/10' :
                   plan.status === 'approved' ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' :
                   plan.status === 'executing' ? 'text-blue-400 border-blue-500/30 bg-blue-500/10' :
-                  'text-neutral-600 dark:text-neutral-600 dark:text-neutral-400 border-neutral-200 dark:border-white/10 bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5'
+                  'text-neutral-600 dark:text-neutral-400 border-neutral-200 dark:border-white/10 bg-black/[0.03] dark:bg-white/5'
                 )}>
                   {statusInfo.label}
                 </span>
               </div>
-              <p className="text-[13px] text-black/5 dark:text-black/50 dark:text-white/50 mt-1 leading-relaxed">
+              <p className="text-[13px] text-black/50 dark:text-white/50 mt-1 leading-relaxed">
                 {plan.objective}
               </p>
             </div>
           </div>
           <button
             onClick={() => setExpanded(!expanded)}
-            className="p-2 hover:bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 rounded-lg transition-colors text-black/40 dark:text-white/40 hover:text-black/60 dark:text-white/60"
+            className="p-2 hover:bg-black/[0.03] dark:bg-white/5 rounded-lg transition-colors text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60"
           >
             {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
@@ -214,7 +214,7 @@ export function ApprovalGate({ plan, onApprove, onReject, onModify, isProcessing
                 <div className="space-y-3 pt-2">
                   <button
                     onClick={() => setShowTodos(!showTodos)}
-                    className="flex items-center justify-between w-full text-black/40 dark:text-white/40 hover:text-black/60 dark:text-white/60 transition-colors"
+                    className="flex items-center justify-between w-full text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors"
                   >
                     <div className="flex items-center gap-2">
                       <ListTodo className="w-3.5 h-3.5" />
@@ -236,7 +236,7 @@ export function ApprovalGate({ plan, onApprove, onReject, onModify, isProcessing
                         {/* Progress Bar */}
                         {isExecuting && (
                           <div className="mb-4">
-                            <div className="h-1.5 bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 rounded-full overflow-hidden">
+                            <div className="h-1.5 bg-black/[0.03] dark:bg-white/5 rounded-full overflow-hidden">
                               <motion.div
                                 initial={{ width: 0 }}
                                 animate={{ width: `${progress}%` }}
@@ -287,7 +287,7 @@ export function ApprovalGate({ plan, onApprove, onReject, onModify, isProcessing
                   <button
                     onClick={() => onReject(plan.planId)}
                     disabled={isApproving || isProcessing}
-                    className="px-4 py-3 bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 border border-neutral-200 dark:border-white/10 text-black/60 dark:text-white/60 text-[13px] font-bold rounded-xl hover:bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 hover:text-black dark:text-white transition-all disabled:opacity-50"
+                    className="px-4 py-3 bg-black/[0.03] dark:bg-white/5 border border-neutral-200 dark:border-white/10 text-black/60 dark:text-white/60 text-[13px] font-bold rounded-xl hover:bg-black/[0.05] dark:hover:bg-white/10 hover:text-black dark:hover:text-white transition-all disabled:opacity-50"
                   >
                     Cancel
                   </button>
@@ -366,7 +366,7 @@ function TodoCard({ todo, index }: { todo: TodoItem; index: number }) {
         <div className="flex items-start justify-between gap-2">
           <h4 className={cn(
             "text-[13px] font-semibold leading-tight",
-            isCompleted ? 'text-black/5 dark:text-black/50 dark:text-white/50 line-through' : 'text-black/80 dark:text-white/80'
+            isCompleted ? 'text-black/50 dark:text-white/50 line-through' : 'text-black/80 dark:text-white/80'
           )}>
             {todo.title}
           </h4>
@@ -381,7 +381,7 @@ function TodoCard({ todo, index }: { todo: TodoItem; index: number }) {
         {todo.description && (
           <p className={cn(
             "text-[12px] mt-1 leading-relaxed",
-            isCompleted ? 'text-black/30 dark:text-white/30' : 'text-black/5 dark:text-black/50 dark:text-white/50'
+            isCompleted ? 'text-black/30 dark:text-white/30' : 'text-black/50 dark:text-white/50'
           )}>
             {todo.description}
           </p>
@@ -437,7 +437,7 @@ export function ApprovalGateCompact({ plan, onApprove, isProcessing }: {
         </div>
         <div className="flex-1 min-w-0">
           <h4 className="text-[14px] font-bold text-black/90 dark:text-white/90">{plan.title}</h4>
-          <p className="text-[12px] text-black/5 dark:text-black/50 dark:text-white/50 mt-1 line-clamp-2">{plan.objective}</p>
+          <p className="text-[12px] text-black/50 dark:text-white/50 mt-1 line-clamp-2">{plan.objective}</p>
           <div className="flex items-center gap-2 mt-2">
             <span className="text-[11px] text-black/40 dark:text-white/40">
               {plan.todos.length} steps
@@ -465,7 +465,7 @@ export function ApprovalGateCompact({ plan, onApprove, isProcessing }: {
             </>
           )}
         </button>
-        <button className="px-3 py-2 bg-black/[0.03] dark:bg-black/[0.03] dark:bg-white/5 text-black/5 dark:text-black/50 dark:text-white/50 text-[12px] font-bold rounded-lg hover:bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10 transition-all">
+        <button className="px-3 py-2 bg-black/[0.03] dark:bg-white/5 text-black/50 dark:text-white/50 text-[12px] font-bold rounded-lg hover:bg-black/[0.05] dark:hover:bg-white/10 transition-all">
           Review
         </button>
       </div>

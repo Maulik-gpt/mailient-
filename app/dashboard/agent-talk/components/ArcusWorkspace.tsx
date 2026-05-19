@@ -140,15 +140,15 @@ export function ArcusWorkspace({
   const getStatusConfig = () => {
     if (hasError) return {
       icon: AlertCircle,
-      color: 'text-black/5 dark:text-black/50 dark:text-white/50',
-      bgColor: 'bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10',
+      color: 'text-black/50 dark:text-white/50',
+      bgColor: 'bg-black/[0.05] dark:bg-white/10',
       borderColor: 'border-neutral-300 dark:border-white/20',
       label: 'Error'
     };
     if (needsApproval) return {
       icon: Shield,
       color: 'text-black/70 dark:text-white/70',
-      bgColor: 'bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10',
+      bgColor: 'bg-black/[0.05] dark:bg-white/10',
       borderColor: 'border-neutral-300 dark:border-white/20',
       label: 'Approval Required'
     };
@@ -169,7 +169,7 @@ export function ArcusWorkspace({
     return {
       icon: Terminal,
       color: 'text-black/60 dark:text-white/60',
-      bgColor: 'bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10',
+      bgColor: 'bg-black/[0.05] dark:bg-white/10',
       borderColor: 'border-neutral-300 dark:border-white/20',
       label: 'Ready'
     };
@@ -202,7 +202,7 @@ export function ArcusWorkspace({
             </p>
           )}
         </div>
-        <Maximize2 className="w-4 h-4 text-black/30 dark:text-white/30 group-hover:text-black/5 dark:text-black/50 dark:text-white/50 ml-2" />
+        <Maximize2 className="w-4 h-4 text-black/30 dark:text-white/30 group-hover:text-black/50 dark:group-hover:text-white/50 ml-2" />
       </motion.button>
     );
   }
@@ -457,11 +457,11 @@ export function ArcusWorkspaceBadge({
   onClick?: () => void;
 }) {
   const getConfig = () => {
-    if (error) return { color: 'text-black/5 dark:text-black/50 dark:text-white/50', bgColor: 'bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10', icon: AlertCircle };
-    if (plan?.status === 'draft') return { color: 'text-black/70 dark:text-white/70', bgColor: 'bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10', icon: Shield };
+    if (error) return { color: 'text-black/50 dark:text-white/50', bgColor: 'bg-black/[0.05] dark:bg-white/10', icon: AlertCircle };
+    if (plan?.status === 'draft') return { color: 'text-black/70 dark:text-white/70', bgColor: 'bg-black/[0.05] dark:bg-white/10', icon: Shield };
     if (runtime?.status === 'executing') return { color: 'text-black/80 dark:text-white/80', bgColor: 'bg-white/15', icon: Zap };
     if (plan?.status === 'completed' || runtime?.status === 'completed') return { color: 'text-black/90 dark:text-white/90', bgColor: 'bg-white/15', icon: CheckCircle2 };
-    return { color: 'text-black/5 dark:text-black/50 dark:text-white/50', bgColor: 'bg-black/[0.05] dark:bg-black/[0.05] dark:bg-white/10', icon: Terminal };
+    return { color: 'text-black/50 dark:text-white/50', bgColor: 'bg-black/[0.05] dark:bg-white/10', icon: Terminal };
   };
 
   const config = getConfig();

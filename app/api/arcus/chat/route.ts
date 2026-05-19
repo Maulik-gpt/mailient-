@@ -11,7 +11,10 @@
  */
 
 import { NextRequest } from 'next/server';
-import { auth } from '../../../../lib/auth.js';
+// @ts-ignore
+import { auth as nextAuth } from '../../../../lib/auth.js';
+// @ts-ignore
+const auth: any = nextAuth;
 import { runAgentLoop } from '../../../../lib/arcus/loop';
 import { buildSystemPrompt, getConnectedIntegrations } from '../../../../lib/arcus/system-prompt';
 import { searchMemories, extractAndSaveInsights } from '../../../../lib/arcus/memory';
@@ -160,7 +163,7 @@ export async function POST(request: NextRequest) {
     .filter(h => h.role && h.content?.trim())
     .map(h => ({ role: h.role as 'user' | 'assistant', content: h.content }));
 
-  log('info', 'Starting agent loop', { tools: connectedIntegrations, historyKept: sanitizedHistory.length, setupMs: Date.now() - reqStart });
+  log('info', 'Starting agent loop', { tools: connectedIntegrations, historyKept: sanitizedHistory.length, setupMs: Date.now() - reqStart, systemPromptChars: systemPrompt.length });
 
   let stream: ReadableStream;
   try {
