@@ -334,7 +334,7 @@ export function ConnectorsModal({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 md:p-8 overflow-hidden isolate">
+      <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 md:p-8 overflow-hidden isolate dark">
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
