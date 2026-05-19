@@ -2670,7 +2670,8 @@ export default function ChatInterface({
       const requestId = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
       const approvalToken = canvasData?.approvalTokens?.[action];
 
-      const response = await fetch('/api/agent-talk/chat-arcus', {
+      console.log(`[Arcus:Canvas] Executing action '${action}' with requestId=${requestId}`);
+      const response = await fetch('/api/arcus/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2687,7 +2688,11 @@ export default function ChatInterface({
         })
       });
 
-      const result = await response.json();
+      if (!response.ok) {
+        const errBody = await response.text().catch(() => '(no body)');
+        console.error(`[Arcus:Canvas] POST /api/arcus/chat failed — status=${response.status}, body=${errBody}`);
+      }
+      const result = await response.json().catch(() => ({ error: 'Failed to parse response' }));
 
       // Phase 1: Handle all execution statuses from the gateway
       const executionStatus = result.resultStatus || result.executionResult?.status;
@@ -2766,7 +2771,7 @@ export default function ChatInterface({
       toast.error('Execution failed', {
         description: errorMessage
       });
-      console.error('Canvas execution error:', error);
+      console.error('[Arcus:Canvas] Execution error:', { action, error, message: errorMessage });
 
       // Add error to chat
       const errorAgentMessage: AgentMessage = {
@@ -2792,7 +2797,8 @@ export default function ChatInterface({
 
   const handleDeclinePlan = async (plan: any) => {
     try {
-      await fetch('/api/agent-talk/chat-arcus', {
+      console.log(`[Arcus:Plan] Declining plan: ${plan.planId}`);
+      const declineRes = await fetch('/api/arcus/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2806,10 +2812,13 @@ export default function ChatInterface({
           canvasActionData: { planId: plan.planId }
         })
       });
+      if (!declineRes.ok) {
+        console.error(`[Arcus:Plan] Decline failed — status=${declineRes.status}`);
+      }
 
       toast.info('Plan declined');
     } catch (error) {
-      console.error('Error declining plan:', error);
+      console.error('[Arcus:Plan] Error declining plan:', error);
       toast.error('Error declining plan');
     }
   };
@@ -2818,7 +2827,8 @@ export default function ChatInterface({
   const handlePlanApprove = async (planId: string, messageId: number) => {
     setIsProcessingPlan(true);
     try {
-      const response = await fetch('/api/agent-talk/chat-arcus', {
+      console.log(`[Arcus:Plan] Approving plan: ${planId}`);
+      const response = await fetch('/api/arcus/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2833,7 +2843,11 @@ export default function ChatInterface({
         })
       });
 
-      const result = await response.json();
+      if (!response.ok) {
+        const errBody = await response.text().catch(() => '(no body)');
+        console.error(`[Arcus:Plan] Approve failed — status=${response.status}, body=${errBody}`);
+      }
+      const result = await response.json().catch(() => ({ error: 'Failed to parse response' }));
 
       if (result.executionResult?.success || result.success) {
         toast.success(result.message || 'Plan approved and execution started');
@@ -2872,7 +2886,7 @@ export default function ChatInterface({
       }
     } catch (error) {
       toast.error('Failed to approve plan');
-      console.error('Plan approval error:', error);
+      console.error('[Arcus:Plan] Approval error:', error);
     } finally {
       setIsProcessingPlan(false);
     }
@@ -3012,19 +3026,22 @@ export default function ChatInterface({
   useEffect(() => {
     const fetchGmailToken = async () => {
       try {
+        console.log('[Arcus:Init] Fetching Gmail token from /api/agent-talk/gmail-token...');
         const res = await fetch('/api/agent-talk/gmail-token');
         if (!res.ok) {
-          console.warn('Gmail token not available for agent');
+          const errBody = await res.json().catch(() => ({}));
+          console.warn(`[Arcus:Init] Gmail token not available — status=${res.status}, reason=${errBody.error || 'unknown'}. Gmail features will be limited.`);
           setGmailAccessToken(null);
           setGmailTokenSource(null);
           return;
         }
 
         const data = await res.json();
+        console.log(`[Arcus:Init] Gmail token loaded successfully (source=${data.source || 'unknown'})`);
         setGmailAccessToken(data.accessToken || null);
         setGmailTokenSource(data.source || null);
       } catch (error) {
-        console.error('Failed to load Gmail token for agent:', error);
+        console.error('[Arcus:Init] Failed to load Gmail token for agent:', error);
         setGmailAccessToken(null);
         setGmailTokenSource(null);
       }
@@ -3366,7 +3383,8 @@ export default function ChatInterface({
 
     try {
       setIsLoading(true);
-      const res = await fetch('/api/agent-talk/chat-arcus', {
+      console.log('[Arcus:Reply] Sending reply to:', draftData.recipientEmail);
+      const res = await fetch('/api/arcus/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -3378,7 +3396,11 @@ export default function ChatInterface({
         })
       });
 
-      if (!res.ok) throw new Error('Failed to send reply');
+      if (!res.ok) {
+        const errBody = await res.text().catch(() => '(no body)');
+        console.error(`[Arcus:Reply] POST /api/arcus/chat failed — status=${res.status}, body=${errBody}`);
+        throw new Error(`Failed to send reply (${res.status})`);
+      }
 
       const data = await res.json();
 
@@ -3465,8 +3487,17 @@ export default function ChatInterface({
     let cancelled = false;
     const pollRun = async () => {
       try {
-        const res = await fetch(`/api/agent-talk/chat-arcus/run/${activeRun.runId}`);
-        if (!res.ok) return;
+        // Note: Run polling endpoint is not currently implemented.
+        // The SSE stream already provides real-time updates.
+        // This polling is a fallback for cases where the SSE stream disconnects.
+        const res = await fetch(`/api/arcus/v3/chat?pollRunId=${activeRun.runId}`);
+        if (!res.ok) {
+          // Run polling is best-effort; the SSE stream handles real-time updates
+          if (res.status !== 404) {
+            console.warn(`[Arcus:Poll] Run poll returned status=${res.status} for runId=${activeRun.runId}`);
+          }
+          return;
+        }
         const data = await res.json();
         if (cancelled) return;
 
@@ -3501,7 +3532,7 @@ export default function ChatInterface({
           });
         }
       } catch (error) {
-        console.error('Run polling failed:', error);
+        console.error('[Arcus:Poll] Run polling failed:', error);
       }
     };
 

@@ -188,3 +188,179 @@ export function isVagueInstruction(text: string): boolean {
 
   return VAGUE.some(p => p.test(t));
 }
+
+// ── Pattern Recognition Intelligence ──────────────────────────────────────────
+//
+// Actively detects high-value data structures in email content:
+//   - Booking links (Calendly, Cal.com, Acuity, HubSpot, etc.)
+//   - Calendar invitations (ICS attachments, .ics references, invite keywords)
+//   - Time-sensitive demands (deadlines, ASAP, EOD, contract windows)
+//   - Revenue-critical opportunities (pricing, proposals, scope changes)
+//
+// These signals are annotated onto email content so the LLM can surface
+// critical commercial opportunities instantly rather than burying them.
+// ──────────────────────────────────────────────────────────────────────────────
+
+// Booking link patterns — scheduling platform URLs embedded in emails
+const BOOKING_LINK_PATTERNS = [
+  /https?:\/\/calendly\.com\/[^\s)"<>]+/gi,
+  /https?:\/\/cal\.com\/[^\s)"<>]+/gi,
+  /https?:\/\/[^\s)"<>]*acuityscheduling\.com[^\s)"<>]*/gi,
+  /https?:\/\/[^\s)"<>]*hubspot\.com\/meetings\/[^\s)"<>]+/gi,
+  /https?:\/\/[^\s)"<>]*chili\s*piper\.com[^\s)"<>]*/gi,
+  /https?:\/\/[^\s)"<>]*savvycal\.com[^\s)"<>]*/gi,
+  /https?:\/\/[^\s)"<>]*tidycal\.com[^\s)"<>]*/gi,
+  /https?:\/\/[^\s)"<>]*youcanbook\.me[^\s)"<>]*/gi,
+  /https?:\/\/[^\s)"<>]*doodle\.com[^\s)"<>]*/gi,
+  /https?:\/\/[^\s)"<>]*book\.morgen\.so[^\s)"<>]*/gi,
+  /https?:\/\/[^\s)"<>]*zcal\.co[^\s)"<>]*/gi,
+];
+
+// Calendar invite signals — ICS attachments, invite keywords
+const CALENDAR_INVITE_KW = /\b(\.ics|text\/calendar|application\/ics|VCALENDAR|BEGIN:VEVENT|calendar\s+invite|calendar\s+invitation|event\s+invite|you('re|\s+are)\s+invited|has\s+invited\s+you|accept\s+this\s+invite|rsvp|please\s+confirm\s+your\s+attendance)\b/i;
+
+// Time-sensitive demand patterns — urgency and deadline signals
+const TIME_SENSITIVE_KW = /\b(urgent|asap|as\s+soon\s+as\s+possible|by\s+eod|by\s+end\s+of\s+(day|week|month|business)|before\s+(the\s+)?meeting|deadline\s+(is|on|by|tomorrow|today|this\s+week)|expires?\s+(today|tomorrow|soon|in\s+\d)|time[- ]?sensitive|immediate(ly)?|critical\s+(deadline|timeline|window)|last\s+chance|final\s+notice|action\s+required|response\s+needed|awaiting\s+your\s+(response|reply|confirmation)|please\s+respond\s+(by|before|today|asap)|closing\s+(today|tomorrow|soon|this\s+week)|contract\s+(expires?|window|deadline)|offer\s+(expires?|valid\s+until|ends))\b/i;
+
+// Revenue opportunity patterns — commercial signals beyond basic keywords
+const REVENUE_OPPORTUNITY_KW = /\b(ready\s+to\s+(sign|proceed|move\s+forward|close)|let'?s\s+(close|finalize|proceed|move\s+forward)|approved\s+(the\s+)?(budget|proposal|quote|deal)|budget\s+(approved|allocated|confirmed|available)|purchase\s+order|scope\s+change|rate\s+increase|new\s+project\s+(inquiry|request)|rfp|request\s+for\s+proposal|partnership\s+opportunity|joint\s+venture|investment\s+opportunity|equity\s+offer|funding\s+round|term\s+sheet|due\s+diligence|letter\s+of\s+intent|loi\b|acquisition|merger\s+discussion)\b/i;
+
+export interface EmailSignal {
+  type: 'booking_link' | 'calendar_invite' | 'time_sensitive' | 'revenue_opportunity';
+  badge: string;
+  detail: string;
+}
+
+/**
+ * Extracts high-value signals from email content (subject + preview + body).
+ * Returns structured signals the agent can act on immediately.
+ *
+ * This is the core of Pattern Recognition Intelligence — detecting booking links,
+ * calendar invites, time-sensitive demands, and revenue opportunities that would
+ * otherwise be buried in general inbox noise.
+ */
+export function extractEmailSignals(subject: string, preview: string, body?: string): EmailSignal[] {
+  const signals: EmailSignal[] = [];
+  const combined = `${subject} ${preview} ${body || ''}`;
+
+  // 1. Booking links — extract actual URLs
+  for (const pattern of BOOKING_LINK_PATTERNS) {
+    const matches = combined.match(pattern);
+    if (matches && matches.length > 0) {
+      signals.push({
+        type: 'booking_link',
+        badge: '📅 BOOKING LINK',
+        detail: `Scheduling link detected: ${matches[0]}`,
+      });
+      break; // one booking signal per email is enough
+    }
+  }
+
+  // 2. Calendar invitations
+  if (CALENDAR_INVITE_KW.test(combined)) {
+    signals.push({
+      type: 'calendar_invite',
+      badge: '📨 CALENDAR INVITE',
+      detail: 'Contains a calendar invitation or event invite — may require RSVP or calendar sync.',
+    });
+  }
+
+  // 3. Time-sensitive demands
+  const tsMatch = combined.match(TIME_SENSITIVE_KW);
+  if (tsMatch) {
+    signals.push({
+      type: 'time_sensitive',
+      badge: '⏰ TIME-SENSITIVE',
+      detail: `Contains time-sensitive language: "${tsMatch[0]}" — surface immediately.`,
+    });
+  }
+
+  // 4. Revenue opportunities (beyond basic tier-2 classification)
+  const revMatch = combined.match(REVENUE_OPPORTUNITY_KW);
+  if (revMatch) {
+    signals.push({
+      type: 'revenue_opportunity',
+      badge: '💰 REVENUE OPPORTUNITY',
+      detail: `High-value commercial signal: "${revMatch[0]}" — prioritize for immediate action.`,
+    });
+  }
+
+  return signals;
+}
+
+/**
+ * Annotates a single email's tool output with detected signals.
+ * Called by read_email to enrich the output the LLM sees.
+ */
+export function annotateEmailWithSignals(toolOutput: string): string {
+  // Extract subject and body from read_email output format
+  const subjectMatch = toolOutput.match(/Subject:\s*(.+)/i);
+  const bodyStart = toolOutput.indexOf('--- Body ---');
+  const subject = subjectMatch?.[1]?.trim() || '';
+  const body = bodyStart !== -1 ? toolOutput.slice(bodyStart + 12).trim() : '';
+
+  const signals = extractEmailSignals(subject, '', body);
+  if (signals.length === 0) return toolOutput;
+
+  const signalBlock = signals
+    .map(s => `⚡ [${s.badge}] ${s.detail}`)
+    .join('\n');
+
+  // Inject signals right before the body so the LLM sees them first
+  if (bodyStart !== -1) {
+    return toolOutput.slice(0, bodyStart) + `--- Detected Signals ---\n${signalBlock}\n\n` + toolOutput.slice(bodyStart);
+  }
+  return toolOutput + `\n\n--- Detected Signals ---\n${signalBlock}`;
+}
+
+/**
+ * Annotates search_gmail results with signals per email.
+ * Runs on every search_gmail output (not just inbox tasks).
+ */
+export function annotateSearchResultsWithSignals(toolOutput: string): string {
+  if (!toolOutput.startsWith('Found') || !toolOutput.includes('[ID:')) {
+    return toolOutput;
+  }
+
+  const blocks = toolOutput.split(/\n(?=\d+\. )/);
+  if (blocks.length <= 1) return toolOutput;
+
+  const header = blocks[0];
+  const annotated = blocks.slice(1).map(block => {
+    const subject = block.match(/Subject:\s*(.+)/i)?.[1]?.trim() || '';
+    const preview = block.match(/Preview:\s*(.+)/i)?.[1]?.trim() || '';
+    const signals = extractEmailSignals(subject, preview);
+    if (signals.length === 0) return block;
+    const badges = signals.map(s => `[${s.badge}]`).join(' ');
+    // Inject badges into the first line
+    return block.replace(/^(\d+\.\s*)/, `$1${badges} `);
+  });
+
+  return header + '\n' + annotated.join('\n');
+}
+
+// ── Context Switching Elimination ─────────────────────────────────────────────
+
+/**
+ * Detects whether a user request is a broad/compound task that would benefit
+ * from a unified context sweep across all connected integrations simultaneously.
+ *
+ * When true, the agent loop will pre-fetch from Gmail, Calendar, and Notion
+ * in parallel before the LLM reasons, eliminating context-switching overhead.
+ */
+export function isBroadContextTask(userMessage: string): boolean {
+  const t = userMessage.trim().toLowerCase();
+  if (t.length > 200) return false;
+
+  const BROAD = [
+    /\b(prepare|get\s+me\s+ready|brief\s+me|what'?s?\s+(happening|going\s+on|on\s+my\s+plate))\b/i,
+    /\b(morning\s+brief|daily\s+brief|daily\s+summary|morning\s+update|start\s+my\s+day)\b/i,
+    /\b(overview|status\s+update|where\s+do\s+I\s+stand|full\s+picture|big\s+picture)\b/i,
+    /\b(wrap\s+up|end\s+of\s+day|eod\s+summary|close\s+out)\s+(my\s+)?(day|everything)\b/i,
+    /\b(sync\s+(everything|all|across)|cross[- ]?reference|correlate)\b/i,
+    /\b(what\s+did\s+I\s+miss|anything\s+I\s+(missed|need\s+to\s+know))\b/i,
+    /\b(prepare\s+for\s+(this|next)\s+week|weekly\s+(prep|planning|review))\b/i,
+  ];
+
+  return BROAD.some(p => p.test(t));
+}

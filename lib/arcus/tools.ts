@@ -10,6 +10,7 @@
 
 import { getSupabaseAdmin } from '../supabase.js';
 import { decrypt, encrypt } from '../crypto.js';
+import { annotateEmailWithSignals, annotateSearchResultsWithSignals } from './inbox-pipeline';
 import type { ToolSchema } from './engine';
 
 // ── Token helpers ──────────────────────────────────────────────────────────────
@@ -527,7 +528,11 @@ async function searchGmail(userId: string, input: any): Promise<ToolResult> {
   const lines = valid.map((m: any, i: number) =>
     `${i + 1}. [ID: ${m.id}] [Thread: ${m.threadId}]\n   From: ${m.from}\n   Subject: ${m.subject}\n   Date: ${m.date}\n   Preview: ${m.snippet}`
   );
-  return { output: `Found ${valid.length} email(s) for query "${input.query}":\n\n${lines.join('\n\n')}` };
+  const rawOutput = `Found ${valid.length} email(s) for query "${input.query}":\n\n${lines.join('\n\n')}`;
+
+  // Pattern Recognition Intelligence: annotate results with booking links, calendar invites,
+  // time-sensitive demands, and revenue opportunities so the LLM surfaces them immediately.
+  return { output: annotateSearchResultsWithSignals(rawOutput) };
 }
 
 async function readEmail(userId: string, input: any): Promise<ToolResult> {
@@ -547,20 +552,22 @@ async function readEmail(userId: string, input: any): Promise<ToolResult> {
   const body = extractBody(m.payload);
   const rfcId = getHeader(h, 'Message-ID');
 
-  return {
-    output: [
-      `Message-ID: ${m.id}`,
-      `Thread-ID: ${m.threadId}`,
-      `RFC-Message-ID: ${rfcId}`,
-      `From: ${getHeader(h, 'From')}`,
-      `To: ${getHeader(h, 'To')}`,
-      `Subject: ${getHeader(h, 'Subject')}`,
-      `Date: ${getHeader(h, 'Date')}`,
-      '',
-      '--- Body ---',
-      body || '(no plain text body)',
-    ].join('\n'),
-  };
+  const rawOutput = [
+    `Message-ID: ${m.id}`,
+    `Thread-ID: ${m.threadId}`,
+    `RFC-Message-ID: ${rfcId}`,
+    `From: ${getHeader(h, 'From')}`,
+    `To: ${getHeader(h, 'To')}`,
+    `Subject: ${getHeader(h, 'Subject')}`,
+    `Date: ${getHeader(h, 'Date')}`,
+    '',
+    '--- Body ---',
+    body || '(no plain text body)',
+  ].join('\n');
+
+  // Pattern Recognition Intelligence: annotate with booking links, calendar invites,
+  // time-sensitive demands, and revenue opportunities detected in the email body.
+  return { output: annotateEmailWithSignals(rawOutput) };
 }
 
 async function getSentEmails(userId: string, input: any): Promise<ToolResult> {

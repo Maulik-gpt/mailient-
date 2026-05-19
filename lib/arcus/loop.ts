@@ -42,7 +42,7 @@
 import crypto from 'crypto';
 import { callLLM, getText, getToolCalls, sanitizeModelText } from './engine';
 import { executeTool, getAvailableTools, TOOL_SCHEMAS } from './tools';
-import { processGmailResults, isInboxTask, isVagueInstruction } from './inbox-pipeline';
+import { processGmailResults, isInboxTask, isVagueInstruction, isBroadContextTask } from './inbox-pipeline';
 import type { LLMMessage } from './engine';
 
 const ASK_USER_SCHEMA = TOOL_SCHEMAS.find(s => s.name === 'ask_user')!;
@@ -219,6 +219,68 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
         let archivedCount = 0;
         const outcomes: ToolOutcome[] = [];
 
+        // ── Context Switching Elimination: Unified context sweep ───────────
+        // For broad tasks ("morning brief", "prepare for tomorrow", "what did I miss"),
+        // pre-fetch from all connected integrations in parallel BEFORE the LLM
+        // starts reasoning. This gives the LLM a unified view across platforms
+        // and eliminates the need for sequential tool calls just to gather context.
+        const broadTask = !isPlanMode && isBroadContextTask(userMessage);
+        if (broadTask && connectedIntegrations.length > 0) {
+          emit('thinking', { status: 'Gathering context across your connected tools…' });
+          log('info', 'Unified context sweep triggered', { integrations: connectedIntegrations });
+
+          const sweepResults: string[] = [];
+          const sweepPromises: Promise<void>[] = [];
+
+          // Gmail: recent unread emails
+          if (connectedIntegrations.includes('gmail')) {
+            sweepPromises.push(
+              executeTool('search_gmail', { query: 'is:unread newer_than:2d', maxResults: 10 }, userId)
+                .then(r => { sweepResults.push(`## Recent Unread Emails\n${r.output}`); })
+                .catch(() => { sweepResults.push('## Recent Unread Emails\n(Could not fetch — Gmail may need reconnection)'); })
+            );
+          }
+
+          // Calendar: next 3 days
+          if (connectedIntegrations.includes('gcal')) {
+            sweepPromises.push(
+              executeTool('get_calendar_events', { daysAhead: 3, maxResults: 15 }, userId)
+                .then(r => { sweepResults.push(`## Upcoming Calendar (3 days)\n${r.output}`); })
+                .catch(() => { sweepResults.push('## Upcoming Calendar\n(Could not fetch — Calendar may need reconnection)'); })
+            );
+          }
+
+          // Notion: recent activity
+          if (connectedIntegrations.includes('notion')) {
+            sweepPromises.push(
+              executeTool('search_notion', { query: '', maxResults: 5 }, userId)
+                .then(r => { sweepResults.push(`## Recent Notion Pages\n${r.output}`); })
+                .catch(() => { sweepResults.push('## Recent Notion Pages\n(Could not fetch)'); })
+            );
+          }
+
+          await Promise.allSettled(sweepPromises);
+
+          if (sweepResults.length > 0) {
+            // Inject the unified context as a system message so the LLM can
+            // synthesize across all platforms in its first response.
+            const contextBlock = sweepResults.join('\n\n---\n\n');
+            messages.push({
+              role: 'user',
+              content: [
+                '[UNIFIED CONTEXT SWEEP — pre-fetched from connected integrations]',
+                'The following data was gathered in parallel from the user\'s connected tools.',
+                'Use this context to give a comprehensive, cross-platform answer.',
+                'You do NOT need to call these tools again unless you need more detail.',
+                '',
+                contextBlock,
+              ].join('\n'),
+            } as any);
+            log('info', 'Context sweep injected', { sections: sweepResults.length, totalChars: contextBlock.length });
+            totalToolCalls += sweepPromises.length; // count pre-fetches toward the limit
+          }
+        }
+
         if (!isPlanMode && availableTools.length > 0) {
           try {
             const tlRes = await callLLM(
@@ -315,6 +377,33 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
 
                 outcomes.push({ tool: tc.name, ok: true });
                 toolResults.push({ type: 'tool_result', tool_use_id: tc.id, content: result.output });
+
+                // ── Deep Integration Auto-Bridge ────────────────────────────
+                // When a tool completes that has cross-integration implications,
+                // inject a hint so the LLM auto-bridges to connected tools.
+                // This eliminates the user needing to say "also log to Notion"
+                // or "also check my calendar" — it happens automatically.
+                if (tc.name === 'schedule_meeting' && connectedIntegrations.includes('notion')) {
+                  toolResults.push({
+                    type: 'tool_result',
+                    tool_use_id: `bridge_${tc.id}`,
+                    content: '[AUTO-BRIDGE] Meeting created. Notion is connected — automatically log this meeting to Notion now using create_notion_page (database hint: "meetings"). Include: attendees, time, agenda, Meet link. Report "Logged to Notion ✓" after.',
+                  } as any);
+                }
+                if (tc.name === 'draft_reply' && connectedIntegrations.includes('notion')) {
+                  toolResults.push({
+                    type: 'tool_result',
+                    tool_use_id: `bridge_${tc.id}`,
+                    content: '[AUTO-BRIDGE] Email draft saved. Notion is connected — after the user sends this email, automatically log the conversation to Notion (database hint: "contacts" or "meetings"). Include: contact name, date, key discussion points.',
+                  } as any);
+                }
+                if ((tc.name === 'search_gmail' || tc.name === 'read_email') && connectedIntegrations.includes('gcal') && result.output.match(/\b(meeting|schedule|book|calendar|invite|call|sync)\b/i)) {
+                  toolResults.push({
+                    type: 'tool_result',
+                    tool_use_id: `bridge_${tc.id}`,
+                    content: '[AUTO-BRIDGE] Email mentions scheduling. Google Calendar is connected — check calendar availability with get_calendar_events before suggesting times or confirming meetings.',
+                  } as any);
+                }
 
               } catch (err: any) {
                 const errorMsg = err?.message ?? 'Unknown error';
