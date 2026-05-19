@@ -7,8 +7,7 @@ import {
   ChevronDown, ChevronRight,
   Search, Mail, Send, FileText, Calendar, Database,
   Globe, MessageSquare, Inbox, PenLine, Clock,
-  LayoutTemplate, Terminal, CheckCircle2, AlertCircle,
-  Loader2,
+  LayoutTemplate, Terminal, AlertCircle,
 } from 'lucide-react';
 import type { AgentStep, AgentNarrative } from './AgentExecutionTimeline';
 
@@ -37,35 +36,175 @@ function getToolMeta(tool?: string) {
   return TOOL_META[tool] ?? { icon: <Terminal className="w-4 h-4" />, label: tool.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) };
 }
 
-// ─── Extract result count from summary string ─────────────────────────────────
+// ─── Summary cleaning + snippet extraction ────────────────────────────────────
+
+// Strip all bracket annotations like [ID: xxx], [Thread: xxx], [🔵 CLIENT THREAD], etc.
+function stripBrackets(text: string): string {
+  return text
+    .replace(/\[[^\]]{0,80}\]/g, '')   // remove [anything up to 80 chars]
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+// Extract first name from "Full Name <email@domain.com>" or "Full Name" or "email@domain.com"
+function extractSenderName(from: string): string {
+  const stripped = stripBrackets(from).trim();
+  // "Name <email>" → "Name"
+  const nameMatch = stripped.match(/^([^<@]+?)\s*(?:<|$)/);
+  if (nameMatch?.[1]?.trim()) return nameMatch[1].trim();
+  // bare email → local part
+  const emailMatch = stripped.match(/^([^@]+)@/);
+  return emailMatch?.[1] ?? stripped;
+}
+
+// Parse a tier badge like "🔵 CLIENT THREAD", "🟢 REVENUE", "🟡 SCHEDULING", "GENERAL"
+// into a clean human label
+function tierToLabel(badge: string): string {
+  const b = badge.toLowerCase();
+  if (b.includes('client')) return 'Client';
+  if (b.includes('revenue')) return 'Revenue';
+  if (b.includes('schedul')) return 'Scheduling';
+  return '';
+}
+
+// Extract tier badge from a raw block line like "[🔵 CLIENT THREAD] [ID: ...] [Thread: ...]"
+function extractTier(rawLine: string): string {
+  const m = rawLine.match(/\[([^\]]+(?:CLIENT|REVENUE|SCHEDULING|GENERAL)[^\]]*)\]/i);
+  return m ? tierToLabel(m[1]) : '';
+}
+
+export interface ParsedSnippet {
+  subject: string;
+  from: string;
+  tier: string;
+  preview?: string;
+}
+
+// Parse email-style tool output (search_gmail, search_inbox, get_sent_emails)
+// Format: numbered blocks with From:, Subject:, Date:, Preview: lines
+function parseEmailSnippets(summary: string): ParsedSnippet[] {
+  const blocks = summary.split(/\n(?=\d+\.\s)/).filter(Boolean);
+  const results: ParsedSnippet[] = [];
+
+  for (const block of blocks) {
+    const lines = block.split('\n');
+    const headerLine = lines[0] || '';
+    const tier = extractTier(headerLine);
+
+    const subjectLine = lines.find(l => /^subject:/i.test(l.trim()));
+    const fromLine = lines.find(l => /^from:/i.test(l.trim()));
+    const previewLine = lines.find(l => /^preview:/i.test(l.trim()));
+
+    const subject = subjectLine
+      ? subjectLine.replace(/^subject:\s*/i, '').trim()
+      : stripBrackets(headerLine).replace(/^\d+\.\s*/, '').trim();
+
+    const from = fromLine
+      ? extractSenderName(fromLine.replace(/^from:\s*/i, '').trim())
+      : '';
+
+    const preview = previewLine
+      ? previewLine.replace(/^preview:\s*/i, '').trim().slice(0, 120)
+      : undefined;
+
+    if (subject && subject.length > 1) {
+      results.push({ subject, from, tier, preview });
+    }
+  }
+
+  return results.slice(0, 6);
+}
+
+// Parse calendar events output
+function parseCalendarSnippets(summary: string): ParsedSnippet[] {
+  const lines = summary.split('\n').filter(Boolean);
+  const results: ParsedSnippet[] = [];
+
+  for (const line of lines) {
+    const clean = stripBrackets(line).trim();
+    // Lines like "• Meeting with Priya — Thu Jan 16 at 2:00 PM"
+    // or "1. Product Sync — Friday 9am"
+    const stripped = clean.replace(/^[-•\d.)\s]+/, '').trim();
+    if (stripped.length > 4 && !stripped.toLowerCase().startsWith('found') && !stripped.toLowerCase().startsWith('no event')) {
+      results.push({ subject: stripped, from: '', tier: '' });
+    }
+  }
+
+  return results.slice(0, 5);
+}
+
+// Parse Notion search / web search output
+function parseGenericSnippets(summary: string): ParsedSnippet[] {
+  const lines = summary.split('\n').filter(Boolean);
+  const results: ParsedSnippet[] = [];
+
+  for (const line of lines) {
+    const clean = stripBrackets(line).trim();
+    const stripped = clean
+      .replace(/^[-•\d.)]+\s*/, '')
+      .replace(/^(title|page|result|url|link):\s*/i, '')
+      .trim();
+    if (stripped.length > 6 && !/^found\s/i.test(stripped) && !/^no\s/i.test(stripped)) {
+      results.push({ subject: stripped, from: '', tier: '' });
+    }
+  }
+
+  return results.slice(0, 5);
+}
 
 function extractResultCount(summary?: string): number | null {
   if (!summary) return null;
-  const m = summary.match(/(\d+)\s*(email|result|event|item|message|row|record|snippet|match)/i);
-  return m ? parseInt(m[1], 10) : null;
+  const m = summary.match(/found\s+(\d+)|(\d+)\s+(email|result|event|item|message|thread|match)/i);
+  const n = parseInt(m?.[1] ?? m?.[2] ?? '', 10);
+  return isNaN(n) ? null : n;
 }
 
-// ─── Extract result snippets from summary (email subjects / titles) ───────────
-
-function extractSnippets(summary?: string): string[] {
-  if (!summary) return [];
-  // Lines that look like "Subject: ...", "- ...", numbered items, or quoted strings
-  const lines = summary.split(/\n/).map(l => l.trim()).filter(Boolean);
-  return lines
-    .filter(l =>
-      l.startsWith('-') ||
-      l.startsWith('•') ||
-      /^\d+[.)]\s/.test(l) ||
-      l.startsWith('"') ||
-      l.toLowerCase().startsWith('subject:') ||
-      l.toLowerCase().startsWith('title:') ||
-      l.toLowerCase().startsWith('event:')
-    )
-    .map(l => l.replace(/^[-•\d.)"']+\s*/, '').replace(/^(subject|title|event):\s*/i, ''))
-    .slice(0, 6);
+function getSnippets(tool: string | undefined, summary: string | undefined): ParsedSnippet[] {
+  if (!summary || !tool) return [];
+  const emailTools = ['search_gmail', 'search_inbox', 'get_sent_emails', 'read_email'];
+  const calTools = ['get_calendar_events', 'schedule_meeting'];
+  if (emailTools.includes(tool)) return parseEmailSnippets(summary);
+  if (calTools.includes(tool)) return parseCalendarSnippets(summary);
+  return parseGenericSnippets(summary);
 }
 
 // ─── Single expandable step card ─────────────────────────────────────────────
+
+const TIER_COLORS: Record<string, string> = {
+  Client:     'text-blue-400/80',
+  Revenue:    'text-emerald-400/80',
+  Scheduling: 'text-amber-400/80',
+};
+
+function SnippetRow({ snippet }: { snippet: ParsedSnippet }) {
+  return (
+    <div className="flex items-start gap-2.5 py-1.5">
+      <div className="w-1 h-1 rounded-full bg-white/20 mt-[7px] flex-shrink-0" />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-baseline gap-2 min-w-0">
+          <span className="text-[12.5px] text-white/65 leading-snug truncate">
+            {snippet.subject}
+          </span>
+          {snippet.from && (
+            <span className="text-[11px] text-white/30 flex-shrink-0 truncate max-w-[100px]">
+              {snippet.from}
+            </span>
+          )}
+          {snippet.tier && (
+            <span className={cn('text-[10px] font-semibold flex-shrink-0', TIER_COLORS[snippet.tier] ?? 'text-white/30')}>
+              {snippet.tier}
+            </span>
+          )}
+        </div>
+        {snippet.preview && (
+          <p className="text-[11px] text-white/25 mt-0.5 leading-snug line-clamp-1">
+            {snippet.preview}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function StepCard({ step }: { step: AgentStep }) {
   const [open, setOpen] = useState(false);
@@ -74,13 +213,11 @@ function StepCard({ step }: { step: AgentStep }) {
 
   const { icon, label } = getToolMeta(step.tool);
   const resultCount = isActive ? null : extractResultCount(step.summary);
-  const snippets = isActive ? [] : extractSnippets(step.summary);
-  const hasDetails = snippets.length > 0 || (step.summary && step.summary.length > 40 && !isActive);
+  const snippets = isActive ? [] : getSnippets(step.tool, step.summary);
+  const hasDetails = snippets.length > 0;
 
   const resultLabel = resultCount !== null
     ? `${resultCount} result${resultCount !== 1 ? 's' : ''}`
-    : step.summary && !isActive && step.summary.length < 50
-    ? step.summary
     : null;
 
   return (
@@ -147,12 +284,7 @@ function StepCard({ step }: { step: AgentStep }) {
             )}>
               {label}
               {resultLabel && (
-                <span className={cn(
-                  'ml-1.5',
-                  isError ? 'text-red-400/50' : 'text-white/30',
-                )}>
-                  — {resultLabel}
-                </span>
+                <span className="ml-1.5 text-white/30">— {resultLabel}</span>
               )}
             </span>
           )}
@@ -177,7 +309,7 @@ function StepCard({ step }: { step: AgentStep }) {
         ) : null}
       </button>
 
-      {/* Expanded details */}
+      {/* Expanded snippet list */}
       <AnimatePresence initial={false}>
         {open && hasDetails && (
           <motion.div
@@ -187,17 +319,10 @@ function StepCard({ step }: { step: AgentStep }) {
             transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
             className="overflow-hidden border-t border-white/[0.06]"
           >
-            <div className="px-3.5 py-2.5 space-y-1.5">
-              {snippets.length > 0 ? (
-                snippets.map((s, i) => (
-                  <div key={i} className="flex items-start gap-2">
-                    <div className="w-1 h-1 rounded-full bg-white/20 mt-[7px] flex-shrink-0" />
-                    <span className="text-[12px] text-white/40 leading-snug">{s}</span>
-                  </div>
-                ))
-              ) : step.summary ? (
-                <p className="text-[12px] text-white/35 leading-relaxed">{step.summary}</p>
-              ) : null}
+            <div className="px-3.5 pb-2 pt-1 divide-y divide-white/[0.04]">
+              {snippets.map((s, i) => (
+                <SnippetRow key={i} snippet={s} />
+              ))}
             </div>
           </motion.div>
         )}
