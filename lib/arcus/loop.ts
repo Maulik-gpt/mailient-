@@ -40,7 +40,7 @@
  */
 
 import crypto from 'crypto';
-import { callLLM, getText, getToolCalls, sanitizeModelText } from './engine';
+import { callLLM, getText, getRawText, getToolCalls, sanitizeModelText } from './engine';
 import { executeTool, getAvailableTools, TOOL_SCHEMAS } from './tools';
 import { processGmailResults, isInboxTask, isVagueInstruction, isBroadContextTask } from './inbox-pipeline';
 import type { LLMMessage } from './engine';
@@ -319,12 +319,20 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
           messages.push({ role: 'assistant', content: response.content });
 
           const toolCalls = getToolCalls(response.content);
-          const textContent = sanitizeModelText(getText(response.content));
+          const rawText = getRawText(response.content);
+          const textContent = sanitizeModelText(rawText);
+
+          // Extract chain-of-thought from <thinking> tags emitted by reasoning models.
+          // sanitizeModelText strips these before getText returns, so we must read raw.
+          const thinkMatch = rawText.match(/<thinking>([\s\S]*?)<\/thinking>/i);
+          const thinkingText = thinkMatch ? thinkMatch[1].trim() : '';
 
           // ── Case 1: Tool calls ────────────────────────────────────────────
           if (toolCalls.length > 0) {
-            if (textContent && textContent.length >= 20 && textContent.length <= 2000 && !isIntentText(textContent)) {
-              emit('narrative', { text: textContent, iteration });
+            // Prefer raw chain-of-thought for the narrative card; fall back to visible text.
+            const narrativeText = thinkingText || textContent;
+            if (narrativeText && narrativeText.length >= 20 && narrativeText.length <= 6000 && !isIntentText(narrativeText)) {
+              emit('narrative', { text: narrativeText, iteration });
             }
 
             const toolResults: Array<{ type: 'tool_result'; tool_use_id: string; content: string }> = [];
@@ -461,6 +469,10 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
           }
 
           // ── Case 2c: Real final answer ────────────────────────────────────
+          // If the model reasoned via <thinking> tags, surface that in the card.
+          if (thinkingText && thinkingText.length >= 20) {
+            emit('narrative', { text: thinkingText, iteration });
+          }
           finalText = textContent;
           break;
         }

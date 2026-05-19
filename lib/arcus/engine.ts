@@ -377,12 +377,15 @@ export function sanitizeModelText(text: string): string {
   return clean.replace(/\n{3,}/g, '\n\n').trim();
 }
 
-export function getText(content: ContentBlock[]): string {
-  const raw = content
+export function getRawText(content: ContentBlock[]): string {
+  return content
     .filter((b): b is { type: 'text'; text: string } => b.type === 'text')
     .map(b => b.text)
     .join('\n');
-  return sanitizeModelText(raw);
+}
+
+export function getText(content: ContentBlock[]): string {
+  return sanitizeModelText(getRawText(content));
 }
 
 export function getToolCalls(
