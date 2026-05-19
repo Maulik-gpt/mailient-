@@ -1598,64 +1598,121 @@ textarea,
 
 /* ===== LIGHT THEME SPECIFIC OVERRIDES ===== */
 /* Light mode specific styles */
-.light .text-\[\#fafafa\] {
-  color: var(--sift-text-primary);
+.light .text-\[\#fafafa\],
+.light .text-\[\#ffffff\],
+.light .text-\[\#FAFAFA\],
+.light .text-\[\#FFFFFF\] {
+  color: var(--sift-text-primary) !important;
 }
 
-.light .text-\[\#ffffff\] {
-  color: var(--sift-text-primary);
-}
-
-.light .bg-\[\#0a0a0a\] {
-  background-color: var(--sift-bg);
-}
-
-.light .bg-\[\#000000\] {
-  background-color: var(--sift-bg);
-}
-
+.light .bg-\[\#0a0a0a\],
+.light .bg-\[\#0A0A0A\],
+.light .bg-\[\#000000\],
+.light .bg-\[\#050505\],
+.light .bg-\[\#070707\],
+.light .bg-\[\#0b0b0c\],
+.light .bg-\[\#0c0c0c\],
+.light .bg-\[\#0d0d0d\],
+.light .bg-\[\#0e0e0e\],
+.light .bg-\[\#0f0f0f\],
+.light .bg-\[\#0f0f10\],
+.light .bg-\[\#111111\],
+.light .bg-\[\#121212\],
+.light .bg-\[\#141414\],
+.light .bg-\[\#1a1a1a\],
+.light .bg-\[\#1A1A1A\],
+.light .bg-\[\#1b1b1b\],
+.light .bg-\[\#1e1e1e\],
+.light .bg-\[\#1f1f1f\],
+.light .bg-\[\#23252a\],
+.light .bg-\[\#232323\],
+.light .bg-\[\#0a0a0c\],
+.light .bg-\[\#0D0D0D\],
 .light .bg-black {
-  background-color: var(--sift-bg);
+  background-color: var(--sift-bg) !important;
+  background-image: none !important;
 }
 
-.light .border-neutral-800 {
-  border-color: var(--sift-border);
+.light .from-neutral-900\/60,
+.light .from-neutral-950,
+.light .from-black,
+.light .to-\[\#0a0a0a\],
+.light .to-\[\#0A0A0A\],
+.light .to-black,
+.light .bg-neutral-900\/30,
+.light .bg-neutral-900\/60,
+.light .bg-neutral-900\/40,
+.light .bg-neutral-800\/30,
+.light .bg-neutral-800\/50,
+.light .bg-neutral-900,
+.light .bg-neutral-800,
+.light .bg-zinc-900,
+.light .bg-zinc-850,
+.light .bg-zinc-800 {
+  background-color: var(--sift-surface) !important;
+  background-image: none !important;
 }
 
-.light .border-neutral-800\/50 {
-  border-color: rgba(226, 232, 240, 0.5);
+.light .hover\:bg-neutral-900:hover,
+.light .hover\:bg-neutral-800:hover,
+.light .hover\:bg-\[\#2A2A2A\]:hover,
+.light .hover\:bg-zinc-800:hover,
+.light .hover\:bg-zinc-900:hover {
+  background-color: var(--sift-surface-hover) !important;
 }
 
-.light .text-neutral-500 {
-  color: var(--sift-text-secondary);
+.light .border-neutral-800,
+.light .border-neutral-700,
+.light .border-neutral-800\/50,
+.light .border-white\/5,
+.light .border-white\/10,
+.light .border-white\/20,
+.light .border-white\/\[0\.08\],
+.light .border-white\/\[0\.05\],
+.light .border-white\/\[0\.06\],
+.light .border-neutral-200,
+.light .border-neutral-300,
+.light .border-zinc-800,
+.light .border-zinc-700 {
+  border-color: var(--sift-border) !important;
 }
 
-.light .text-neutral-400 {
-  color: var(--sift-text-secondary);
+.light .text-neutral-500,
+.light .text-neutral-400,
+.light .text-gray-400,
+.light .text-gray-300,
+.light .text-zinc-400,
+.light .text-zinc-300,
+.light .text-slate-400,
+.light .text-slate-300 {
+  color: var(--sift-text-secondary) !important;
 }
 
-.light .hover\:bg-neutral-900:hover {
-  background-color: var(--sift-surface-hover);
+.light .text-neutral-600,
+.light .text-gray-500,
+.light .text-zinc-500,
+.light .text-slate-500 {
+  color: var(--sift-text-tertiary) !important;
 }
 
-.light .hover\:bg-neutral-800:hover {
-  background-color: var(--sift-surface-hover);
+/* Perfect contrast conversion for hardcoded dark/white text classes in light theme (excluding buttons and active controls) */
+.light :not(button):not([role="button"]):not(a):not(.bg-indigo-500):not(.bg-blue-600):not(.bg-purple-600):not(.bg-red-500).text-white,
+.light :not(button):not([role="button"]):not(a):not(.bg-indigo-500):not(.bg-blue-600):not(.bg-purple-600):not(.bg-red-500).text-\[\#fafafa\],
+.light :not(button):not([role="button"]):not(a):not(.bg-indigo-500):not(.bg-blue-600):not(.bg-purple-600):not(.bg-red-500).text-\[\#FAFAFA\],
+.light :not(button):not([role="button"]):not(a):not(.bg-indigo-500):not(.bg-blue-600):not(.bg-purple-600):not(.bg-red-500).text-\[\#ffffff\],
+.light :not(button):not([role="button"]):not(a):not(.bg-indigo-500):not(.bg-blue-600):not(.bg-purple-600):not(.bg-red-500).text-\[\#FFFFFF\] {
+  color: var(--sift-text-primary) !important;
 }
 
-.light .bg-neutral-900 {
-  background-color: var(--sift-surface);
-}
-
-.light .bg-neutral-900\/50 {
-  background-color: rgba(241, 245, 249, 0.5);
-}
-
-.light .bg-neutral-900\/30 {
-  background-color: rgba(241, 245, 249, 0.3);
-}
-
-.light .bg-neutral-800 {
-  background-color: var(--sift-surface);
+.light :not(button):not([role="button"]):not(a):not(.bg-indigo-500):not(.bg-blue-600):not(.bg-purple-600):not(.bg-red-500).text-gray-300,
+.light :not(button):not([role="button"]):not(a):not(.bg-indigo-500):not(.bg-blue-600):not(.bg-purple-600):not(.bg-red-500).text-neutral-300,
+.light :not(button):not([role="button"]):not(a):not(.bg-indigo-500):not(.bg-blue-600):not(.bg-purple-600):not(.bg-red-500).text-zinc-300,
+.light :not(button):not([role="button"]):not(a):not(.bg-indigo-500):not(.bg-blue-600):not(.bg-purple-600):not(.bg-red-500).text-slate-300,
+.light :not(button):not([role="button"]):not(a):not(.bg-indigo-500):not(.bg-blue-600):not(.bg-purple-600):not(.bg-red-500).text-gray-400,
+.light :not(button):not([role="button"]):not(a):not(.bg-indigo-500):not(.bg-blue-600):not(.bg-purple-600):not(.bg-red-500).text-neutral-400,
+.light :not(button):not([role="button"]):not(a):not(.bg-indigo-500):not(.bg-blue-600):not(.bg-purple-600):not(.bg-red-500).text-zinc-400,
+.light :not(button):not([role="button"]):not(a):not(.bg-indigo-500):not(.bg-blue-600):not(.bg-purple-600):not(.bg-red-500).text-slate-400 {
+  color: var(--sift-text-secondary) !important;
 }
 
 /* Light theme text selection */
