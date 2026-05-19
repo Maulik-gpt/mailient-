@@ -3022,15 +3022,29 @@ export default function ChatInterface({
     }
   };
 
-  // Pull a fresh Gmail access token so we can pass it to ElevenLabs sessions/tools
+  // Pull a fresh Gmail access token — only if Gmail is actually connected
+  // (avoids the 404 network error when Gmail integration doesn't exist)
   useEffect(() => {
     const fetchGmailToken = async () => {
       try {
-        console.log('[Arcus:Init] Fetching Gmail token from /api/agent-talk/gmail-token...');
+        // First check if Gmail is connected before hitting the token endpoint
+        const statusRes = await fetch('/api/integrations/status');
+        if (statusRes.ok) {
+          const statusData = await statusRes.json();
+          const gmailConnected = statusData.integrations?.gmail || false;
+          if (!gmailConnected) {
+            console.log('[Arcus:Init] Gmail not connected — skipping token fetch.');
+            setGmailAccessToken(null);
+            setGmailTokenSource(null);
+            return;
+          }
+        }
+
+        console.log('[Arcus:Init] Gmail connected — fetching access token...');
         const res = await fetch('/api/agent-talk/gmail-token');
         if (!res.ok) {
           const errBody = await res.json().catch(() => ({}));
-          console.warn(`[Arcus:Init] Gmail token not available — status=${res.status}, reason=${errBody.error || 'unknown'}. Gmail features will be limited.`);
+          console.warn(`[Arcus:Init] Gmail token not available — status=${res.status}, reason=${errBody.error || 'unknown'}.`);
           setGmailAccessToken(null);
           setGmailTokenSource(null);
           return;
