@@ -26,34 +26,40 @@ function log(level: 'info' | 'warn' | 'error', module: string, msg: string, extr
 // ── Model lists ────────────────────────────────────────────────────────────────
 
 /**
- * Models that reliably support tool/function calling.
- * Ordered by quality + free-tier availability.
+ * Models that reliably support tool/function calling on OpenRouter free tier.
+ * Ordered by quality + availability. IDs verified May 2026.
  */
 const TOOL_CAPABLE_MODELS = [
   'deepseek/deepseek-chat-v3-0324:free',
-  'google/gemini-2.5-flash-preview-05-20:free',
+  'google/gemini-2.5-flash-preview:free',
   'meta-llama/llama-4-maverick:free',
-  'google/gemini-2.0-flash-exp:free',
-  'google/gemini-2.0-flash:free',
+  'google/gemini-2.0-flash-001:free',
   'meta-llama/llama-4-scout:free',
   'meta-llama/llama-3.3-70b-instruct:free',
   'qwen/qwen3-235b-a22b:free',
   'qwen/qwen-2.5-72b-instruct:free',
-  'microsoft/phi-4-reasoning-plus:free',
   'microsoft/phi-4:free',
-  'nvidia/llama-3.1-nemotron-ultra-253b-v1:free',
+  'google/gemma-3-27b-it:free',
 ];
 
 /**
- * Fallback text-only models. Fast and cheap but don't call tools.
- * Used in round 2 when all tool-capable models are exhausted.
+ * Fallback models — lighter/cheaper, may not support structured tool calls.
+ * Used in round 2 and the no-tools emergency round.
  */
 const FALLBACK_MODELS = [
   'mistralai/mistral-small-3.2-24b-instruct:free',
-  'mistralai/mistral-7b-instruct:free',
   'tngtech/deepseek-r1t-chimera:free',
   'qwen/qwen3-14b:free',
   'qwen/qwen3-8b:free',
+  'mistralai/mistral-7b-instruct:free',
+];
+
+/** Top models used in Round 4 text-only emergency (no tools, no tool_choice). */
+const EMERGENCY_MODELS = [
+  'deepseek/deepseek-chat-v3-0324:free',
+  'meta-llama/llama-4-maverick:free',
+  'google/gemini-2.5-flash-preview:free',
+  'meta-llama/llama-3.3-70b-instruct:free',
 ];
 
 function getKeys(): string[] {
@@ -257,7 +263,7 @@ export async function callLLM(
           'X-Title': 'Arcus AI',
         },
         body: JSON.stringify({ ...baseBody, model }),
-        signal: AbortSignal.timeout(45000),
+        signal: AbortSignal.timeout(20000),
       });
 
       if (!res.ok) {
@@ -355,7 +361,7 @@ export async function callLLM(
   const r2 = await sweepModels(round2Models);
   if (r2) return r2;
 
-  // ── Round 3: tool-capable only, 8 s total from start (5 s more) ──────────
+  // ── Round 3: tool-capable only (5 s more) ────────────────────────────────
   log('warn', 'Engine', 'Round 2 exhausted — waiting 5 s for final retry');
   await sleep(5000);
   rateLimitedModels.clear();
@@ -363,7 +369,49 @@ export async function callLLM(
   const r3 = await sweepModels(TOOL_CAPABLE_MODELS);
   if (r3) return r3;
 
-  log('error', 'Engine', 'All 3 rounds exhausted — no model responded successfully', {
+  // ── Round 4: emergency text-only (strip tools entirely) ──────────────────
+  // Some models refuse tool_choice when rate-limited but still answer text.
+  log('warn', 'Engine', 'Round 3 exhausted — trying text-only emergency round');
+  await sleep(2000);
+  rateLimitedModels.clear();
+  const emergencyBody = { ...baseBody };
+  delete emergencyBody.tools;
+  delete emergencyBody.tool_choice;
+
+  for (const key of keys) {
+    if (deadKeys.has(key)) continue;
+    for (const model of EMERGENCY_MODELS) {
+      try {
+        log('info', 'Engine', `Emergency attempt`, { model, key: `…${key.slice(-4)}` });
+        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${key}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://mailient.xyz',
+            'X-Title': 'Arcus AI',
+          },
+          body: JSON.stringify({ ...emergencyBody, model }),
+          signal: AbortSignal.timeout(20000),
+        });
+        if (!res.ok) {
+          if (res.status === 401 || res.status === 403) deadKeys.add(key);
+          continue;
+        }
+        const data = await res.json();
+        if (data.error) continue;
+        const parsed = parseOpenAIResponse(data);
+        if (parsed) {
+          log('info', 'Engine', `Emergency success (text-only)`, { model, key: `…${key.slice(-4)}` });
+          return parsed;
+        }
+      } catch {
+        continue;
+      }
+    }
+  }
+
+  log('error', 'Engine', 'All 4 rounds exhausted — no model responded successfully', {
     keys: keys.length,
     deadKeys: [...deadKeys].map(k => `…${k.slice(-4)}`),
     rateLimitedModels: Object.fromEntries(rateLimitedModels),
