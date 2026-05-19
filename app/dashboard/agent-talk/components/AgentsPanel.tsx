@@ -3,9 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import {
   Plus, Clock, Mail, Zap, Loader2, X, Slack,
-  MoreHorizontal, AlertCircle, ChevronDown, Edit2, Trash2,
+  MoreHorizontal, AlertCircle, ChevronDown, Edit2, Trash2, Play,
   List, CalendarDays, ChevronLeft, ChevronRight, Compass,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -918,8 +919,8 @@ function CreateModal({ onClose, onSave, initial }: {
 
 // ── Agent Card ─────────────────────────────────────────────────────────────────
 
-function AgentCard({ agent, onToggle, onEdit, onDelete, onToggleConf }: {
-  agent: Agent; onToggle: () => void; onEdit: () => void; onDelete: () => void; onToggleConf: () => void;
+function AgentCard({ agent, onToggle, onEdit, onDelete, onToggleConf, onRunNow }: {
+  agent: Agent; onToggle: () => void; onEdit: () => void; onDelete: () => void; onToggleConf: () => void; onRunNow: () => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -959,6 +960,12 @@ function AgentCard({ agent, onToggle, onEdit, onDelete, onToggleConf }: {
                     exit={{ opacity: 0, scale: 0.92, y: -4 }}
                     className="absolute right-0 top-10 w-36 bg-white dark:bg-neutral-900 border border-arcus-border rounded-xl overflow-hidden shadow-2xl z-20"
                   >
+                    <button
+                      onClick={() => { setMenuOpen(false); onRunNow(); }}
+                      className="w-full flex items-center gap-2 px-3.5 py-2.5 text-[13px] text-arcus-fg-secondary hover:bg-arcus-raised hover:text-arcus-fg transition-all"
+                    >
+                      <Play className="w-3.5 h-3.5" /> Run now
+                    </button>
                     <button
                       onClick={() => { setMenuOpen(false); onEdit(); }}
                       className="w-full flex items-center gap-2 px-3.5 py-2.5 text-[13px] text-arcus-fg-secondary hover:bg-arcus-raised hover:text-arcus-fg transition-all"
@@ -1060,6 +1067,8 @@ export function AgentsPanel({ className, onSendMessage }: AgentsPanelProps) {
   const [editAgent, setEditAgent] = useState<Agent | null>(null);
   const [templateInit, setTemplateInit] = useState<Partial<Agent> | null>(null);
   const [tableError, setTableError] = useState(false);
+  const [runningId, setRunningId] = useState<string | null>(null);
+  const router = useRouter();
 
   const fetchAgents = async () => {
     try {
@@ -1124,6 +1133,28 @@ export function AgentsPanel({ className, onSendMessage }: AgentsPanelProps) {
     await fetch(`/api/arcus/agents?id=${agent.id}`, { method: 'DELETE' });
     setAgents(prev => prev.filter(a => a.id !== agent.id));
     toast.success('Schedule deleted');
+  };
+
+  const handleRunNow = async (agent: Agent) => {
+    if (runningId) return;
+    setRunningId(agent.id);
+    const toastId = toast.loading(`Running "${agent.name}"…`);
+    try {
+      const res = await fetch('/api/arcus/agents/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: agent.id }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Run failed');
+      toast.success(`"${agent.name}" finished — opening conversation`, { id: toastId });
+      await fetchAgents();
+      if (json.conversationId) router.push(`/dashboard/agent-talk/${json.conversationId}`);
+    } catch (err: any) {
+      toast.error(err.message || 'Run failed', { id: toastId });
+    } finally {
+      setRunningId(null);
+    }
   };
 
   return (
@@ -1238,6 +1269,7 @@ export function AgentsPanel({ className, onSendMessage }: AgentsPanelProps) {
                 onEdit={() => setEditAgent(agent)}
                 onDelete={() => handleDelete(agent)}
                 onToggleConf={() => handleToggleConf(agent)}
+                onRunNow={() => handleRunNow(agent)}
               />
             ))}
           </AnimatePresence>

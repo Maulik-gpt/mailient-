@@ -18,12 +18,19 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '../../../../lib/supabase.js';
-import { runAgentLoop } from '../../../../lib/arcus/loop';
-import { buildSystemPrompt, getConnectedIntegrations } from '../../../../lib/arcus/system-prompt';
-import { searchMemories } from '../../../../lib/arcus/memory';
+import { runAgentTask } from '../../../../lib/arcus/run-agent';
 
 const CRON_SECRET = process.env.CRON_SECRET || 'arcus-cron-secret';
 const SENDER_EMAIL = process.env.ARCUS_SENDER_EMAIL || 'mailient.xyz@gmail.com';
+
+// A 'running' row older than this is treated as a crashed/timed-out run
+// (stuck lock) and is allowed to run again, instead of being excluded forever.
+// Must exceed the 55-min anti-double-run guard in shouldAgentRunNow so a
+// recovered agent isn't immediately re-blocked by its own stale last_run_at.
+const STALE_LOCK_MIN = 60;
+
+export const dynamic = 'force-dynamic';
+export const maxDuration = 60; // Vercel Hobby caps functions at 60s; runs that exceed it are retried via stale-lock recovery
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Cron entry
@@ -43,7 +50,7 @@ export async function GET(request: NextRequest) {
   const { data: agents, error } = await supabase
     .from('arcus_agents')
     .select('*')
-    .eq('status', 'active');
+    .in('status', ['active', 'running']);
 
   if (error?.code === '42P01') {
     return NextResponse.json({ message: 'arcus_agents table not found — skipping.' });
@@ -76,6 +83,29 @@ export async function GET(request: NextRequest) {
 
   for (const agent of agents) {
     try {
+      // Expiry: stop (and deactivate) agents past their expiry date.
+      if (agent.expires_at) {
+        const expiryEnd = new Date(`${agent.expires_at}T23:59:59Z`).getTime();
+        if (now.getTime() > expiryEnd) {
+          if (agent.status !== 'paused') {
+            await supabase.from('arcus_agents').update({ status: 'paused' }).eq('id', agent.id);
+            results.push(`Expired (paused): ${agent.name}`);
+          }
+          continue;
+        }
+      }
+
+      // Stuck-lock recovery: a 'running' row is either a genuinely in-flight
+      // run (skip it) or a crashed/timed-out run that never reset its status
+      // (older than STALE_LOCK_MIN — let it run again so it isn't lost forever).
+      if (agent.status === 'running') {
+        const startedMinAgo = agent.last_run_at
+          ? (now.getTime() - new Date(agent.last_run_at).getTime()) / 60000
+          : Infinity;
+        if (startedMinAgo < STALE_LOCK_MIN) continue;
+        results.push(`Recovering stuck agent: ${agent.name}`);
+      }
+
       const userTz = tzMap[agent.user_id] || 'UTC';
       if (!shouldAgentRunNow(agent.cron_schedule, agent.last_run_at, userTz)) continue;
 
@@ -84,7 +114,7 @@ export async function GET(request: NextRequest) {
 
       await supabase.from('arcus_agents').update({ status: 'running' }).eq('id', agent.id);
 
-      const report = await runAgent(agent);
+      const report = await runAgentTask(agent);
 
       if (agent.output_channel === 'gmail' || agent.output_channel === 'both') {
         await sendGmailReport(agent.user_id, agent.name, report);
@@ -170,82 +200,6 @@ function matchCronField(field: string, value: number, _min: number, _max: number
   if (field.includes('-') && !field.includes(',')) { const [a, b] = field.split('-').map(Number); return value >= a && value <= b; }
   if (field.includes(',')) return field.split(',').map(Number).includes(value);
   return parseInt(field) === value;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Agent execution
-// ─────────────────────────────────────────────────────────────────────────────
-
-const REPORT_FORMAT_SUFFIX = `
-
----
-📋 **Report Formatting Instructions**
-When writing your final report, follow this structure EXACTLY:
-- Use emojis liberally throughout — make it fun and engaging! 🎉
-- Start with a brief # H1 title with an emoji
-- Use ## H2 for major sections, ### H3 for subsections, #### H4 for sub-details
-- Use ##### H5 and ###### H6 sparingly for the deepest detail levels
-- Use **bold** for key numbers, names, and important highlights
-- Use tables (with | pipes) for any comparative data, stats, or lists with multiple attributes
-- Use bullet points (- ) for actionable items and unordered facts
-- Use numbered lists (1. ) for ranked items or sequential steps
-- Include a 📊 **Summary** section near the top with the key stats in a table
-- End with a 🎯 **Next Steps** or **Key Takeaways** section
-- Keep the tone playful, warm, and helpful — like a brilliant assistant who loves their job
-- Do NOT wrap the response in a code block`;
-
-async function runAgent(agent: any): Promise<string> {
-  const userId = agent.user_id;
-  const taskDescription = agent.task_description;
-
-  const [connectedIntegrations, memories] = await Promise.all([
-    getConnectedIntegrations(userId),
-    searchMemories(userId, taskDescription, 3),
-  ]);
-
-  const systemPrompt = buildSystemPrompt({
-    userName: 'User',
-    userId,
-    connectedIntegrations,
-    memories,
-    isBackgroundAgent: true,
-    agentTaskDescription: taskDescription,
-  });
-
-  const stream = runAgentLoop({
-    userId,
-    systemPrompt,
-    history: [],
-    userMessage: taskDescription + REPORT_FORMAT_SUFFIX,
-    connectedIntegrations,
-  });
-
-  const reader = stream.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
-  let finalText = '';
-  let currentEventType = '';
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop() || '';
-
-    for (const line of lines) {
-      if (line.startsWith('event: ')) { currentEventType = line.slice(7).trim(); continue; }
-      if (line.startsWith('data: ') && currentEventType === 'message') {
-        try {
-          const data = JSON.parse(line.slice(6).trim());
-          if (data.content) finalText = data.content;
-        } catch { /* ok */ }
-        currentEventType = '';
-      }
-    }
-  }
-
-  return finalText || 'Agent completed but produced no report.';
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -13,7 +13,7 @@
 CREATE TABLE IF NOT EXISTS arcus_integrations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id TEXT NOT NULL,
-  provider TEXT NOT NULL CHECK (provider IN ('gcal', 'slack', 'notion', 'calcom')),
+  provider TEXT NOT NULL CHECK (provider IN ('gmail', 'gcal', 'slack', 'notion', 'calcom')),
   access_token TEXT NOT NULL,         -- AES-256-GCM encrypted
   refresh_token TEXT,                  -- AES-256-GCM encrypted
   scopes TEXT[] DEFAULT '{}',
@@ -31,6 +31,18 @@ CREATE TABLE IF NOT EXISTS arcus_integrations (
 
 -- Index for fast user lookups
 CREATE INDEX IF NOT EXISTS idx_arcus_integrations_user ON arcus_integrations(user_id);
+
+-- Migration (idempotent): older databases were created with a CHECK constraint
+-- that omitted 'gmail', which silently rejected the Gmail OAuth callback's
+-- upsert and broke background-agent Gmail reporting. Re-create it to include
+-- every provider the Arcus V3 OAuth callbacks actually write.
+DO $$
+BEGIN
+  ALTER TABLE arcus_integrations DROP CONSTRAINT IF EXISTS arcus_integrations_provider_check;
+  ALTER TABLE arcus_integrations
+    ADD CONSTRAINT arcus_integrations_provider_check
+    CHECK (provider IN ('gmail', 'gcal', 'slack', 'notion', 'calcom'));
+END $$;
 
 -- ─── 2. Plans ───────────────────────────────────────────────────────────────────
 
@@ -119,6 +131,29 @@ CREATE TABLE IF NOT EXISTS arcus_briefs (
 
 CREATE INDEX IF NOT EXISTS idx_arcus_briefs_user ON arcus_briefs(user_id, generated_at DESC);
 
+-- ─── 7. Background Scheduling Agents ────────────────────────────────────────────
+-- The table the scheduling feature depends on. The schedule card writes here via
+-- POST /api/arcus/agents; the cron runner GET /api/cron/run-agents reads it.
+
+CREATE TABLE IF NOT EXISTS arcus_agents (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  task_description TEXT NOT NULL,
+  cron_schedule TEXT NOT NULL DEFAULT '0 7 * * *',
+  output_channel TEXT NOT NULL DEFAULT 'gmail' CHECK (output_channel IN ('gmail', 'slack', 'both')),
+  slack_channel TEXT,
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'running', 'paused')),
+  skip_confirmations BOOLEAN NOT NULL DEFAULT false,
+  expires_at DATE,
+  last_run_at TIMESTAMPTZ,
+  last_report_summary TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_arcus_agents_user ON arcus_agents(user_id);
+CREATE INDEX IF NOT EXISTS idx_arcus_agents_status ON arcus_agents(status);
+
 -- ─── RLS Policies ───────────────────────────────────────────────────────────────
 -- Enable Row Level Security on all tables
 
@@ -127,6 +162,7 @@ ALTER TABLE arcus_plans ENABLE ROW LEVEL SECURITY;
 ALTER TABLE arcus_plan_steps ENABLE ROW LEVEL SECURITY;
 ALTER TABLE arcus_events_queue ENABLE ROW LEVEL SECURITY;
 ALTER TABLE arcus_briefs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE arcus_agents ENABLE ROW LEVEL SECURITY;
 
 -- Service role has full access (for API routes running server-side)
 -- These policies allow the service role key to perform all operations
@@ -135,6 +171,7 @@ CREATE POLICY "Service role full access" ON arcus_plans FOR ALL USING (true) WIT
 CREATE POLICY "Service role full access" ON arcus_plan_steps FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Service role full access" ON arcus_events_queue FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Service role full access" ON arcus_briefs FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Service role full access" ON arcus_agents FOR ALL USING (true) WITH CHECK (true);
 
 -- ─── Cleanup Function ──────────────────────────────────────────────────────────
 -- Call periodically to remove expired dedup entries
