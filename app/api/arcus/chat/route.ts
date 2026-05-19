@@ -142,20 +142,28 @@ export async function POST(request: NextRequest) {
   let connectedIntegrations: string[] = [];
   let memories = '';
   let personalityData = '';
+  let voiceContext = '';
   try {
-    [connectedIntegrations, memories, personalityData] = await Promise.all([
+    [connectedIntegrations, memories, personalityData, voiceContext] = await Promise.all([
       getConnectedIntegrations(userId),
       searchMemories(userId, message, 5),
       fetchPersonality(userId),
+      getVoiceContext(userId),
     ]);
-    log('info', 'Context ready', { integrations: connectedIntegrations, memoryChars: memories.length });
+    log('info', 'Context ready', { integrations: connectedIntegrations, memoryChars: memories.length, voiceProfileChars: voiceContext.length });
   } catch (e: any) {
     log('error', 'Context build failed — continuing with empty context', { error: e.message, stack: e.stack?.slice(0, 300) });
   }
 
+  // The learned voice profile is the HIGHEST-priority styling instruction —
+  // it precedes the free-text personality preference so it dominates email bodies.
+  const combinedPersonality = [voiceContext, personalityData]
+    .filter(s => s && s.trim())
+    .join('\n\n');
+
   const systemPrompt = isPlanMode
     ? buildPlanSystemPrompt(userName, connectedIntegrations)
-    : buildSystemPrompt({ userName, userId, connectedIntegrations, memories, personality: personalityData });
+    : buildSystemPrompt({ userName, userId, connectedIntegrations, memories, personality: combinedPersonality });
 
   // Sanitize history (last 20 turns)
   const sanitizedHistory = history
@@ -215,5 +223,92 @@ async function fetchPersonality(userId: string): Promise<string> {
     return (prefs.arcus_personality as string) || '';
   } catch {
     return '';
+  }
+}
+
+/**
+ * Resolve the user's learned writing voice into a prompt block.
+ *
+ * Reads the real `user_voice_profiles` profile. If the user has never had one
+ * built, bootstraps it once from their last 50 sent emails so that the very
+ * first draft already sounds like them. The whole bootstrap is time-boxed so a
+ * cold profile can never blow the request's streaming budget.
+ */
+async function getVoiceContext(userId: string): Promise<string> {
+  try {
+    const { voiceProfileService } = await import('../../../../lib/voice-profile-service.js');
+
+    let profile: any = await voiceProfileService.getVoiceProfile(userId);
+
+    // Only bootstrap when the user has genuinely never been profiled. A saved
+    // 'default' profile means we already tried — don't hammer Gmail every turn.
+    if (!profile) {
+      profile = await bootstrapVoiceProfile(userId, voiceProfileService);
+    }
+
+    if (!profile || profile.status === 'default') return '';
+
+    const prompt = voiceProfileService.generateVoicePrompt(profile);
+    return typeof prompt === 'string' ? prompt.trim() : '';
+  } catch (e: any) {
+    log('warn', 'Voice profile load failed (non-fatal)', { error: e.message });
+    return '';
+  }
+}
+
+/**
+ * One-time voice-profile bootstrap from the user's sent mail.
+ * Returns the saved profile, or null if it could not be built. Always persists
+ * *something* (even a default) so subsequent turns short-circuit instead of
+ * re-running this expensive path on every message.
+ */
+async function bootstrapVoiceProfile(userId: string, voiceProfileService: any): Promise<any | null> {
+  try {
+    const { getSupabaseAdmin } = await import('../../../../lib/supabase.js');
+    const { decrypt } = await import('../../../../lib/crypto.js');
+    const supabase = getSupabaseAdmin();
+
+    const { data } = await supabase
+      .from('arcus_integrations')
+      .select('access_token, refresh_token')
+      .eq('user_id', userId)
+      .eq('provider', 'gmail')
+      .maybeSingle();
+
+    if (!data?.access_token) return null; // Gmail not connected — try again later
+
+    const accessToken = decrypt(data.access_token);
+    const refreshToken = data.refresh_token ? decrypt(data.refresh_token) : '';
+
+    const { GmailService } = await import('../../../../lib/gmail');
+    const gmail = new GmailService(accessToken, refreshToken);
+
+    // Time-box the whole fetch+analyze+save so a slow mailbox cannot stall chat.
+    const TIMEOUT = Symbol('timeout');
+    const built = await Promise.race([
+      (async () => {
+        const sentEmails = await voiceProfileService.fetchSentEmails(gmail, 50);
+        if (!Array.isArray(sentEmails) || sentEmails.length < 3) {
+          // Persist a default so we don't retry this every single message.
+          const def = voiceProfileService.getDefaultVoiceProfile();
+          await voiceProfileService.saveVoiceProfile(userId, def);
+          return null;
+        }
+        const profile = await voiceProfileService.analyzeVoiceProfile(sentEmails);
+        await voiceProfileService.saveVoiceProfile(userId, profile);
+        log('info', 'Voice profile auto-generated from sent mail', { emails: sentEmails.length });
+        return profile;
+      })(),
+      new Promise(resolve => setTimeout(() => resolve(TIMEOUT), 22000)),
+    ]);
+
+    if (built === TIMEOUT) {
+      log('warn', 'Voice profile bootstrap timed out — using generic voice this turn');
+      return null;
+    }
+    return built;
+  } catch (e: any) {
+    log('warn', 'Voice profile bootstrap failed (non-fatal)', { error: e.message });
+    return null;
   }
 }
