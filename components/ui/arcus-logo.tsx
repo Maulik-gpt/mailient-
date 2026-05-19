@@ -37,52 +37,22 @@ export const ArcusLogo = React.forwardRef<HTMLDivElement, ArcusLogoProps>(
             fill="#ffffff"
           />
 
-          {/* Left Eyeball (Black Pupil) */}
+          {/* Left Eyeball (Black Pupil) - Static Shifted Left */}
           <circle
-            cx="80"
+            cx="76"
             cy="110"
             r="30"
             fill="#000000"
-            className="animate-arcus-eye-left"
           />
 
-          {/* Right Eyeball (Black Pupil) */}
+          {/* Right Eyeball (Black Pupil) - Static Shifted Left */}
           <circle
-            cx="126"
+            cx="122"
             cy="114"
             r="26"
             fill="#000000"
-            className="animate-arcus-eye-right"
           />
         </svg>
-
-        {/* Premium Slow CSS Animations */}
-        <style>{`
-          @keyframes arcusEyeLeft {
-            0%, 100% {
-              transform: translate(-4px, 0px);
-            }
-            50% {
-              transform: translate(14px, 1px);
-            }
-          }
-          @keyframes arcusEyeRight {
-            0%, 100% {
-              transform: translate(-4px, 0px);
-            }
-            50% {
-              transform: translate(12px, 1px);
-            }
-          }
-          .animate-arcus-eye-left {
-            animation: arcusEyeLeft 7s ease-in-out infinite;
-            transform-origin: 80px 110px;
-          }
-          .animate-arcus-eye-right {
-            animation: arcusEyeRight 7s ease-in-out infinite;
-            transform-origin: 126px 114px;
-          }
-        `}</style>
       </div>
     );
   }

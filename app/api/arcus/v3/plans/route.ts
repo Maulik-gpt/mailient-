@@ -47,30 +47,48 @@ export async function GET(request: NextRequest) {
     const { data: plans, error } = await query;
 
     if (error) {
-      console.error('[Arcus V3] Plans list error:', error.message);
-      return NextResponse.json({ error: 'Database error' }, { status: 500 });
+      // Table may not exist yet — return empty list instead of 500
+      const isMissingTable = error.message?.includes('does not exist') ||
+        error.message?.includes('relation') ||
+        error.code === '42P01';
+      if (isMissingTable) {
+        console.warn('[Arcus V3] arcus_plans table not found — returning empty list');
+        return NextResponse.json({ plans: [], nextCursor: null });
+      }
+      console.error('[Arcus V3] Plans list error:', error.message, error.code);
+      return NextResponse.json({ plans: [], nextCursor: null, _error: error.message }, { status: 200 });
+    }
+
+    if (!plans || plans.length === 0) {
+      return NextResponse.json({ plans: [], nextCursor: null });
     }
 
     // For each plan, fetch its steps
     const plansWithSteps = await Promise.all(
-      (plans || []).map(async (plan) => {
-        const { data: steps } = await supabase
-          .from('arcus_plan_steps')
-          .select('*')
-          .eq('plan_id', plan.id)
-          .order('position', { ascending: true });
-
-        return { ...plan, steps: steps || [] };
+      plans.map(async (plan) => {
+        try {
+          const { data: steps } = await supabase
+            .from('arcus_plan_steps')
+            .select('*')
+            .eq('plan_id', plan.id)
+            .order('position', { ascending: true });
+          return { ...plan, steps: steps || [] };
+        } catch {
+          return { ...plan, steps: [] };
+        }
       })
     );
 
     return NextResponse.json({
       plans: plansWithSteps,
-      nextCursor: plansWithSteps.length === limit ? plansWithSteps[plansWithSteps.length - 1].created_at : null
+      nextCursor: plansWithSteps.length === limit
+        ? plansWithSteps[plansWithSteps.length - 1].created_at
+        : null,
     });
 
-  } catch (error) {
-    console.error('[Arcus V3] Plans API error:', (error as Error).message);
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+  } catch (error: any) {
+    console.error('[Arcus V3] Plans API unhandled error:', error.message, error.stack?.slice(0, 300));
+    // Always return a valid shape — never 500 on a feed poll
+    return NextResponse.json({ plans: [], nextCursor: null }, { status: 200 });
   }
 }

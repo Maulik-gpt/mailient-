@@ -2385,13 +2385,15 @@ export default function ChatInterface({
                   },
                 };
               }));
-              // Close canvas if open — error state should not show stale canvas
+              // Error = stream is closing — mark as finished so the "unexpected close" path is skipped
+              streamFinishedNormally = true;
               setIsCanvasOpen(false);
               setCanvasData(null);
               break;
 
             case 'question': {
-              // AI needs user input before it can proceed
+              // AI needs user input — stream stops intentionally here
+              streamFinishedNormally = true;
               setPendingQuestion({
                 questions: data.questions || [],
                 runId: data.runId || '',
