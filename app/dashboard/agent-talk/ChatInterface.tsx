@@ -10,7 +10,8 @@ import { ChatHistoryModal } from './components/ChatHistoryModal';
 import { ThinkingLayer, ResultCard, type ThinkingStep, type ThinkingBlock, type SearchSession } from './components/ThinkingLayer';
 import { ConnectorRequiredPanel, type ConnectorRequiredEntry } from './components/ThinkingLayerV2';
 import { AskUserCard, type AskQuestion } from './components/AskUserCard';
-import { AgentExecutionTimeline, type AgentStep, type AgentNarrative } from './components/AgentExecutionTimeline';
+import { type AgentStep, type AgentNarrative } from './components/AgentExecutionTimeline';
+import { LiveStepTracker } from './components/LiveStepTracker';
 import { TaskProgressCard, type TaskList } from './components/TaskProgressCard';
 import { LiveTaskWidget } from './components/LiveTaskWidget';
 import { DraftReplyBox } from './components/DraftReplyBox';
@@ -888,12 +889,10 @@ function CollapsibleSteps({
             transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
             className="overflow-hidden"
           >
-            <AgentExecutionTimeline
+            <LiveStepTracker
               steps={steps}
               narratives={narratives}
               isActive={isActive}
-              runId={runId}
-              totalDurationMs={totalDurationMs}
             />
           </motion.div>
         )}
