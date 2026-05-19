@@ -633,123 +633,163 @@ const NoScrollbarStyles = () => (
 
 function AgentThinkingSection({ content, isComplete }: { content: string, isComplete?: boolean }) {
   const [isOpen, setIsOpen] = useState(true);
+  const [timer, setTimer] = useState(0);
+  const [accumulatedThought, setAccumulatedThought] = useState('');
+  const contentRef = useRef<HTMLDivElement>(null);
+  const startTimeRef = useRef(Date.now());
+  const scrollPosRef = useRef(0);
+  const scrollRafRef = useRef<number | null>(null);
+
+  // Accumulate real narrative text (skip short status messages)
+  useEffect(() => {
+    if (!content || content === 'SKELETON') return;
+    const isStatusOnly = content.length < 60 &&
+      /^(thinking|processing|working|checking|preparing|completing|interpreting|summaris|done|reaching)/i.test(content.trim());
+    if (!isStatusOnly) {
+      setAccumulatedThought(prev => prev ? `${prev}\n\n${content}` : content);
+    }
+  }, [content]);
+
+  // Elapsed timer — stops when done
+  useEffect(() => {
+    if (isComplete) return;
+    startTimeRef.current = Date.now();
+    const id = setInterval(() => {
+      setTimer(Math.floor((Date.now() - startTimeRef.current) / 1000));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [isComplete]);
+
+  // Auto-scroll loop using rAF — smooth, recalculates maxScroll each frame
+  useEffect(() => {
+    if (isComplete || !isOpen) {
+      if (scrollRafRef.current) cancelAnimationFrame(scrollRafRef.current);
+      return;
+    }
+
+    let lastTime = 0;
+    const PX_PER_SEC = 28; // comfortable reading speed
+
+    const tick = (ts: number) => {
+      const el = contentRef.current;
+      if (!el) { scrollRafRef.current = requestAnimationFrame(tick); return; }
+      const delta = lastTime ? (ts - lastTime) / 1000 : 0;
+      lastTime = ts;
+      const maxScroll = el.scrollHeight - el.clientHeight;
+      if (maxScroll > 0) {
+        scrollPosRef.current = scrollPosRef.current + PX_PER_SEC * delta;
+        if (scrollPosRef.current >= maxScroll) scrollPosRef.current = 0;
+        el.scrollTop = scrollPosRef.current;
+      }
+      scrollRafRef.current = requestAnimationFrame(tick);
+    };
+
+    scrollRafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (scrollRafRef.current) cancelAnimationFrame(scrollRafRef.current);
+    };
+  }, [isComplete, isOpen]);
 
   if (!content) return null;
 
-  return (
-    <div className="flex flex-col gap-3 mt-4 mb-2 relative">
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-2">
-          {!isComplete ? (
-            /* Minimal glowing orb — single dot + single pulse ring */
-            <div className="relative flex-shrink-0 w-4 h-4 flex items-center justify-center">
-              {/* Pulse ring */}
-              <motion.div
-                className="absolute inset-0 rounded-full border border-white/25"
-                animate={{ scale: [1, 1.7, 1], opacity: [0.5, 0, 0.5] }}
-                transition={{ repeat: Infinity, duration: 2, ease: "easeOut" }}
-              />
-              {/* Soft ambient glow */}
-              <motion.div
-                className="absolute inset-[-3px] rounded-full bg-white/8 blur-sm"
-                animate={{ opacity: [0.3, 0.7, 0.3] }}
-                transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-              />
-              {/* Core dot */}
-              <motion.div
-                className="w-2 h-2 rounded-full bg-white z-10"
-                animate={{ opacity: [0.7, 1, 0.7], scale: [0.9, 1.05, 0.9] }}
-                transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-              />
-            </div>
-          ) : (
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="w-4 h-4 rounded-full bg-arcus-elevated border border-arcus-border flex items-center justify-center flex-shrink-0"
-            >
-              <div className="w-1.5 h-1.5 rounded-full bg-white/25" />
-            </motion.div>
-          )}
+  const displayText = accumulatedThought ||
+    (content !== 'SKELETON' ? content : 'Analyzing your request…');
 
-          <div className="flex items-center gap-1.5 ml-0.5">
-            {!isComplete ? (
-              <motion.span
-                animate={{ opacity: [0.5, 0.9, 0.5] }}
-                transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-                className="text-[11px] font-medium text-white/60 tracking-widest select-none uppercase"
-              >
-                Thinking
-              </motion.span>
-            ) : (
-              <motion.span
-                initial={{ opacity: 0, x: -5 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="text-[11px] font-medium text-white/20 tracking-widest select-none uppercase"
-              >
-                Thought
-              </motion.span>
-            )}
-            <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="text-white/10 hover:text-white/30 transition-colors"
-            >
-              <motion.div animate={{ rotate: isOpen ? 90 : 0 }}>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </motion.div>
-            </button>
-          </div>
-        </div>
+  return (
+    <div className="flex flex-col gap-2 mt-3 mb-2">
+      {/* Header row */}
+      <div className="flex items-center gap-2.5">
+        {!isComplete ? (
+          /* Spinning loader */
+          <svg
+            className="w-3.5 h-3.5 animate-spin text-white/40 flex-shrink-0"
+            fill="none" viewBox="0 0 24 24"
+          >
+            <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+            <path className="opacity-70" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          </svg>
+        ) : (
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="w-3.5 h-3.5 rounded-full bg-arcus-elevated border border-arcus-border flex items-center justify-center flex-shrink-0"
+          >
+            <div className="w-1 h-1 rounded-full bg-white/25" />
+          </motion.div>
+        )}
+
+        {!isComplete ? (
+          /* Shimmer "Arcus AI is thinking" */
+          <motion.span
+            className="text-[12px] font-semibold bg-[linear-gradient(110deg,#555,30%,#ddd,50%,#555,70%,#555)] bg-[length:250%_100%] bg-clip-text text-transparent select-none"
+            animate={{ backgroundPosition: ['200% 0', '-200% 0'] }}
+            transition={{ repeat: Infinity, duration: 3, ease: 'linear' }}
+          >
+            Arcus AI is thinking
+          </motion.span>
+        ) : (
+          <motion.span
+            initial={{ opacity: 0, x: -4 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="text-[11px] font-medium text-white/20 tracking-widest select-none uppercase"
+          >
+            Thought
+          </motion.span>
+        )}
+
+        {/* Timer */}
+        {!isComplete && (
+          <span className="text-[11px] font-mono text-white/25 tabular-nums">{timer}s</span>
+        )}
+
+        {/* Collapse toggle */}
+        <button
+          onClick={() => setIsOpen(v => !v)}
+          className="ml-auto text-white/15 hover:text-white/40 transition-colors"
+        >
+          <motion.div animate={{ rotate: isOpen ? 90 : 0 }} transition={{ duration: 0.15 }}>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </motion.div>
+        </button>
       </div>
+
+      {/* Scrolling thought card */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.18 }}
             className="overflow-hidden"
           >
-            <motion.div
-              initial={{ opacity: 0, x: -5 }}
-              animate={{ opacity: 1, x: 0 }}
+            <div
               className={cn(
-                "pl-6 border-l border-arcus-border py-0.5 transition-all",
-                isComplete ? "opacity-70" : "opacity-100"
+                'relative h-[148px] overflow-hidden rounded-xl border transition-all',
+                isComplete
+                  ? 'bg-white/[0.015] border-white/[0.04]'
+                  : 'bg-white/[0.03] border-white/[0.06]'
               )}
             >
-              {content === 'SKELETON' ? (
-                <div className="py-2" />
-              ) : (
-                <div className={cn(
-                  "text-[13px] leading-relaxed italic font-normal tracking-tight markdown-thought",
-                  isComplete ? "text-white/50" : "text-white/70"
+              {/* Top fade overlay */}
+              <div className="absolute top-0 left-0 right-0 h-9 bg-gradient-to-b from-black/80 to-transparent z-10 pointer-events-none rounded-t-xl" />
+              {/* Bottom fade overlay */}
+              <div className="absolute bottom-0 left-0 right-0 h-9 bg-gradient-to-t from-black/80 to-transparent z-10 pointer-events-none rounded-b-xl" />
+
+              {/* Scrollable content — overflow-hidden allows programmatic scrollTop */}
+              <div
+                ref={contentRef}
+                className="h-full overflow-hidden px-4 py-3"
+                style={{ scrollBehavior: 'auto' }}
+              >
+                <p className={cn(
+                  'text-[12px] leading-relaxed whitespace-pre-wrap font-normal',
+                  isComplete ? 'text-white/25' : 'text-white/45'
                 )}>
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    components={{
-                      ...MarkdownComponents,
-                      // Override some components for a more subtle "thought" look
-                      h1: ({ children }: any) => <h1 className="text-base font-bold text-white/60 mb-2 mt-4 first:mt-0 uppercase tracking-widest">{children}</h1>,
-                      h2: ({ children }: any) => <h2 className="text-sm font-bold text-white/50 mb-1.5 mt-3">{children}</h2>,
-                      h3: ({ children }: any) => <h3 className="text-xs font-bold text-white/40 mb-1 mt-2">{children}</h3>,
-                      p: ({ children }: any) => <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>,
-                      ul: ({ children }: any) => <ul className="list-disc pl-4 mb-2 space-y-1 text-white/40">{children}</ul>,
-                      ol: ({ children }: any) => <ol className="list-decimal pl-4 mb-2 space-y-1 text-white/40">{children}</ol>,
-                      hr: () => <hr className="my-4 border-0 h-px bg-white/[0.05]" />,
-                      table: ({ children }: any) => (
-                        <div className="my-4 w-full overflow-hidden rounded-xl border border-arcus-border bg-arcus-elevated">
-                          <table className="w-full border-collapse text-[12px] text-left">
-                            {children}
-                          </table>
-                        </div>
-                      ),
-                    }}
-                  >
-                    {content}
-                  </ReactMarkdown>
-                </div>
-              )}
-            </motion.div>
+                  {displayText}
+                </p>
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
