@@ -36,7 +36,7 @@ import { RainbowButton } from '@/components/ui/rainbow-button';
 import { HomeFeedSidebar } from "@/components/ui/home-feed-sidebar";
 import { TextShimmer } from '@/components/ui/text-shimmer';
 import WordBlurStream from '../../../src/WordBlurStream';
-import { GlassButton } from "@/components/ui/apple-tahoe-liquid-glass-button";
+import { GlassButton, GlassTabContainer } from "@/components/ui/apple-tahoe-liquid-glass-button";
 
 import { UsageLimitModal } from '@/components/ui/usage-limit-modal';
 import { SettingsCard } from '@/components/ui/settings-card';
@@ -3612,46 +3612,57 @@ export default function ChatInterface({
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                          className="flex items-center gap-1 p-1 bg-arcus-surface border border-arcus-border rounded-full shadow-lg"
                         >
-                          <GlassButton
-                            size="sm"
-                            onClick={() => setDashboardTab('home')}
-                            className={cn(
-                              "px-5 py-2 rounded-full text-[12px] font-bold transition-all flex items-center gap-2 border border-transparent shadow-none",
-                              dashboardTab === 'home'
-                                ? "text-arcus-fg border-arcus-divider"
-                                : "text-arcus-fg-tertiary hover:text-arcus-fg-secondary"
-                            )}
-                            glassColor={dashboardTab === 'home' ? "oklch(from var(--arcus-raised) l c h / 40%)" : "transparent"}
-                          >
-                            <Sparkles className="w-3.5 h-3.5" />
-                            Home
-                          </GlassButton>
-                          <GlassButton
-                            size="sm"
-                            onClick={() => setDashboardTab('agents')}
-                            className={cn(
-                              "px-5 py-2 rounded-full text-[12px] font-bold transition-all flex items-center gap-2 border border-transparent shadow-none",
-                              dashboardTab === 'agents'
-                                ? "text-arcus-fg border-arcus-divider"
-                                : "text-arcus-fg-tertiary hover:text-arcus-fg-secondary"
-                            )}
-                            glassColor={dashboardTab === 'agents' ? "oklch(from var(--arcus-raised) l c h / 40%)" : "transparent"}
-                          >
-                            <Bot className="w-3.5 h-3.5" />
-                            Agent
-                            <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 text-[8px] font-extrabold tracking-wider uppercase border border-amber-500/20 ml-0.5">
-                              Beta
-                            </span>
-                            {scheduledAgents && scheduledAgents.filter(a => a.status === 'running').length > 0 && (
-                              <motion.div
-                                className="w-1.5 h-1.5 bg-green-400 rounded-full"
-                                animate={{ opacity: [1, 0.4, 1] }}
-                                transition={{ repeat: Infinity, duration: 1.5 }}
-                              />
-                            )}
-                          </GlassButton>
+                          <GlassTabContainer className="flex items-center gap-1 p-1">
+                            <button
+                              onClick={() => setDashboardTab('home')}
+                              className={cn(
+                                "relative px-5 py-2 rounded-full text-[12px] font-bold transition-all flex items-center gap-2 select-none",
+                                dashboardTab === 'home'
+                                  ? "text-arcus-fg"
+                                  : "text-arcus-fg-tertiary hover:text-arcus-fg-secondary"
+                              )}
+                            >
+                              {dashboardTab === 'home' && (
+                                <motion.div
+                                  layoutId="activeArcusTab"
+                                  className="absolute inset-0 bg-white/[0.08] dark:bg-white/[0.12] border border-white/10 rounded-full"
+                                  transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                                />
+                              )}
+                              <Sparkles className="w-3.5 h-3.5 z-10" />
+                              <span className="z-10">Home</span>
+                            </button>
+                            <button
+                              onClick={() => setDashboardTab('agents')}
+                              className={cn(
+                                "relative px-5 py-2 rounded-full text-[12px] font-bold transition-all flex items-center gap-2 select-none",
+                                dashboardTab === 'agents'
+                                  ? "text-arcus-fg"
+                                  : "text-arcus-fg-tertiary hover:text-arcus-fg-secondary"
+                              )}
+                            >
+                              {dashboardTab === 'agents' && (
+                                <motion.div
+                                  layoutId="activeArcusTab"
+                                  className="absolute inset-0 bg-white/[0.08] dark:bg-white/[0.12] border border-white/10 rounded-full"
+                                  transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                                />
+                              )}
+                              <Bot className="w-3.5 h-3.5 z-10" />
+                              <span className="z-10">Agent</span>
+                              <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 text-[8px] font-extrabold tracking-wider uppercase border border-amber-500/20 ml-0.5 z-10">
+                                Beta
+                              </span>
+                              {scheduledAgents && scheduledAgents.filter(a => a.status === 'running').length > 0 && (
+                                <motion.div
+                                  className="w-1.5 h-1.5 bg-green-400 rounded-full z-10"
+                                  animate={{ opacity: [1, 0.4, 1] }}
+                                  transition={{ repeat: Infinity, duration: 1.5 }}
+                                />
+                              )}
+                            </button>
+                          </GlassTabContainer>
                         </motion.div>
                       </div>
                     )}
