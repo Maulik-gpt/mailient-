@@ -226,6 +226,20 @@ body,
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
 
+  /* Arcus design system color tokens */
+  --color-arcus-bg: var(--arcus-bg);
+  --color-arcus-elevated: var(--arcus-bg-elevated);
+  --color-arcus-surface: var(--arcus-surface);
+  --color-arcus-surface-hover: var(--arcus-surface-hover);
+  --color-arcus-raised: var(--arcus-raised);
+  --color-arcus-border: var(--arcus-border);
+  --color-arcus-divider: var(--arcus-divider);
+  --color-arcus-fg: var(--arcus-fg);
+  --color-arcus-fg-secondary: var(--arcus-fg-secondary);
+  --color-arcus-fg-tertiary: var(--arcus-fg-tertiary);
+  --color-arcus-fg-muted: var(--arcus-fg-muted);
+  --color-arcus-fg-inverse: var(--arcus-fg-inverse);
+
   /* Note / Button-1 design system color tokens */
   --color-context-card-border: var(--context-card-border);
   --color-blue-100: var(--ds-blue-100);
