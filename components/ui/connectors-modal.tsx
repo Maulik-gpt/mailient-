@@ -354,7 +354,7 @@ export function ConnectorsModal({
           exit={{ opacity: 0, scale: 0.98, y: 30 }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
           className={cn(
-            "relative w-full max-w-[920px] h-full max-h-[820px] bg-arcus-elevated rounded-[2.5rem] border border-arcus-border shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden z-10",
+            "relative w-full max-w-[920px] h-full max-h-[820px] bg-[#0A0A0A] rounded-[2.5rem] border border-[#2A2A2A] shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden z-10",
             selectedApp ? "pointer-events-none" : "pointer-events-auto"
           )}
           onClick={(e) => e.stopPropagation()}
@@ -381,8 +381,8 @@ export function ConnectorsModal({
           {/* Grid Area */}
           <div className="flex-1 relative overflow-hidden">
             {/* Fade Overlays */}
-            <div className="absolute top-0 left-0 right-0 h-12 bg-gradient-to-b from-arcus-elevated to-transparent z-10 pointer-events-none" />
-            <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-arcus-elevated to-transparent z-10 pointer-events-none" />
+            <div className="absolute top-0 left-0 right-0 h-12 bg-gradient-to-b from-[#0A0A0A] to-transparent z-10 pointer-events-none" />
+            <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-[#0A0A0A] to-transparent z-10 pointer-events-none" />
             
             <div className="h-full overflow-y-auto p-10 py-12 arcus-scrollbar pb-12">
             <div className="grid grid-cols-1 gap-4">
@@ -438,7 +438,7 @@ export function ConnectorsModal({
               initial={{ opacity: 0, scale: 0.95, y: 30 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 30 }}
-              className="absolute z-[20000] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(95vw,480px)] bg-arcus-elevated rounded-[3rem] border border-arcus-border shadow-[0_40px_120px_rgba(0,0,0,0.9)] p-8 md:p-10 flex flex-col items-center pointer-events-auto"
+              className="absolute z-[20000] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(95vw,480px)] bg-[#0A0A0A] rounded-[3rem] border border-[#2A2A2A] shadow-[0_40px_120px_rgba(0,0,0,0.9)] p-8 md:p-10 flex flex-col items-center pointer-events-auto"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Close Button */}
@@ -505,7 +505,7 @@ export function ConnectorsModal({
                     <div className="relative flex-1">
                       <button
                         onClick={() => setManageDropdownOpen(!manageDropdownOpen)}
-                        className="w-full py-4 bg-arcus-raised text-white rounded-2xl font-bold text-[15px] hover:bg-arcus-raised active:scale-95 transition-all flex items-center justify-center gap-2"
+                        className="w-full py-4 bg-[#232323] text-white rounded-2xl font-bold text-[15px] hover:bg-[#232323] active:scale-95 transition-all flex items-center justify-center gap-2"
                       >
                         Manage
                         <ChevronDown className={cn("w-4 h-4 transition-transform", manageDropdownOpen && "rotate-180")} />
@@ -518,7 +518,7 @@ export function ConnectorsModal({
                             initial={{ opacity: 0, y: 10, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                            className="absolute bottom-full mb-3 left-0 right-0 bg-arcus-surface-hover border border-arcus-border rounded-2xl shadow-2xl overflow-hidden z-[220]"
+                            className="absolute bottom-full mb-3 left-0 right-0 bg-[#1A1A1A] border border-[#2A2A2A] rounded-2xl shadow-2xl overflow-hidden z-[220]"
                           >
                             <button className="w-full px-4 py-3 text-left text-[14px] font-medium text-white/70 hover:bg-white/5 hover:text-white flex items-center gap-3 transition-all">
                               <Plus className="w-4 h-4" />
@@ -628,7 +628,7 @@ export function ConnectorsModal({
                     <motion.div 
                       initial={{ y: 20 }}
                       animate={{ y: 0 }}
-                      className="w-full max-w-[420px] bg-arcus-surface border border-arcus-border rounded-[2rem] p-8 shadow-2xl flex flex-col gap-6"
+                      className="w-full max-w-[420px] bg-[#141414] border border-[#2A2A2A] rounded-[2rem] p-8 shadow-2xl flex flex-col gap-6"
                     >
                       <div className="flex items-center justify-between">
                         <h3 className="text-[15px] font-bold text-white/90">Feedback for {selectedApp.name}</h3>

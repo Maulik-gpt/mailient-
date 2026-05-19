@@ -3150,7 +3150,7 @@ export function GmailInterfaceFixed() {
                                                                         className="pointer-events-auto refinement-toolkit"
                                                                     >
                                                                         {!isRefinementActive && !proposedRefinement && !showLinkInput && (
-                                                                            <div className="bg-[#2A2A2A] border border-white/10 rounded-[14px] px-2 py-1.5 flex items-center gap-1 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl" onMouseDown={(e) => e.preventDefault()}>
+                                                                            <div className="bg-[#2A2A2A] border border-white/10 rounded-[14px] px-2 py-1.5 flex items-center gap-1 shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-[100]" onMouseDown={(e) => e.preventDefault()}>
                                                                                 <button 
                                                                                     onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setIsRefinementActive(true); }}
                                                                                     className="flex items-center gap-2 pl-3 pr-2 py-1.5 text-[#3b82f6] hover:text-blue-400 font-medium tracking-wide transition-colors text-[13px]"
@@ -3213,7 +3213,7 @@ export function GmailInterfaceFixed() {
 
                                                                         {/* Inline Link Input (replaces browser prompt) */}
                                                                         {showLinkInput && !isRefinementActive && !proposedRefinement && (
-                                                                            <div className="bg-[#2A2A2A] border border-white/10 rounded-[14px] p-1.5 shadow-[0_30px_70px_rgba(0,0,0,0.6)] w-[320px] backdrop-blur-xl ring-1 ring-white/5" onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.preventDefault()}>
+                                                                            <div className="bg-[#2A2A2A] border border-white/10 rounded-[14px] p-1.5 shadow-[0_30px_70px_rgba(0,0,0,0.6)] w-[320px] z-[100] ring-1 ring-white/5" onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.preventDefault()}>
                                                                                 <div className="relative">
                                                                                     <input
                                                                                         autoFocus
@@ -3281,7 +3281,7 @@ export function GmailInterfaceFixed() {
                                                                         )}
 
                                                                         {isRefinementActive && (
-                                                                            <div className="bg-[#2A2A2A] border border-white/10 rounded-[14px] p-1.5 shadow-[0_30px_70px_rgba(0,0,0,0.6)] w-[360px] backdrop-blur-xl ring-1 ring-white/5" onClick={(e) => e.stopPropagation()}>
+                                                                            <div className="bg-[#2A2A2A] border border-white/10 rounded-[14px] p-1.5 shadow-[0_30px_70px_rgba(0,0,0,0.6)] w-[360px] z-[100] ring-1 ring-white/5" onClick={(e) => e.stopPropagation()}>
                                                                                 <div className="relative group/input">
                                                                                     <input
                                                                                         autoFocus
@@ -3312,7 +3312,7 @@ export function GmailInterfaceFixed() {
                                                                         )}
 
                                                                         {proposedRefinement && (
-                                                                            <div className="bg-[#2A2A2A] border border-white/10 rounded-[14px] p-2 flex flex-col gap-3 shadow-[0_30px_70px_rgba(0,0,0,0.6)] w-[360px] backdrop-blur-xl ring-1 ring-white/5" onClick={(e) => e.stopPropagation()}>
+                                                                            <div className="bg-[#2A2A2A] border border-white/10 rounded-[14px] p-2 flex flex-col gap-3 shadow-[0_30px_70px_rgba(0,0,0,0.6)] w-[360px] z-[100] ring-1 ring-white/5" onClick={(e) => e.stopPropagation()}>
                                                                                 <div className="px-3 pt-2 text-zinc-200 text-[14px] tracking-wide leading-relaxed font-medium">
                                                                                     <div dangerouslySetInnerHTML={{ __html: proposedRefinement }} />
                                                                                 </div>
