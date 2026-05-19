@@ -1088,16 +1088,67 @@ export function AgentsPanel({ className, onSendMessage }: AgentsPanelProps) {
 
   const handleCreate = async (data: Partial<Agent> & { _timezone?: string }) => {
     const { _timezone, ...agentData } = data;
-    const res = await fetch('/api/arcus/agents', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: agentData.name, taskDescription: agentData.task_description, cronSchedule: agentData.cron_schedule, outputChannel: agentData.output_channel, slackChannel: agentData.slack_channel, skipConfirmations: agentData.skip_confirmations, expiresAt: agentData.expires_at ?? null }),
-    });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error);
     if (_timezone) saveTimezone(_timezone);
-    toast.success(`"${agentData.name}" is now live`);
-    await fetchAgents();
+
+    const cron = agentData.cron_schedule || '0 7 * * *';
+    const scheduleLabel = cronToLabel(cron);
+    const channel = agentData.output_channel || 'gmail';
+    const channelText =
+      channel === 'both'
+        ? `both Gmail (email) and Slack${agentData.slack_channel ? ` (channel ${agentData.slack_channel})` : ''}`
+        : channel === 'slack'
+          ? `Slack${agentData.slack_channel ? ` (channel ${agentData.slack_channel})` : ''}`
+          : 'Gmail (email)';
+
+    // Plain-English standing instruction handed to the agent loop. The system
+    // prompt's "Creating a scheduled background agent" section turns this into:
+    // spec doc → open_canvas → create_scheduled_agent → confirmation.
+    const prompt = [
+      `Create a new scheduled background agent for me with these exact settings:`,
+      ``,
+      `- Name: ${agentData.name}`,
+      `- What it should do every run: ${agentData.task_description}`,
+      `- Schedule: ${scheduleLabel} — use the cron expression "${cron}" exactly.`,
+      `- Deliver the report via: ${channelText}.`,
+      `- Skip confirmations (act without asking): ${agentData.skip_confirmations ? 'yes' : 'no'}.`,
+      agentData.expires_at ? `- Auto-pause after: ${agentData.expires_at}.` : `- No expiry.`,
+      ``,
+      `Write the full specification document, open it in the canvas, then actually create the scheduled agent with create_scheduled_agent using exactly these settings, and confirm when it is live.`,
+    ].join('\n');
+
+    const conversationId = `conv_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+    const time = new Date().toLocaleTimeString('en-US', {
+      hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true,
+    });
+    const userMessage = {
+      id: Date.now(),
+      type: 'user',
+      role: 'user',
+      notes: [],
+      content: prompt,
+      attachments: [],
+      time,
+    };
+
+    try {
+      localStorage.setItem(`conv_${conversationId}_title`, `Create: ${agentData.name}`);
+      localStorage.setItem(
+        `conversation_${conversationId}`,
+        JSON.stringify({
+          id: conversationId,
+          messages: [userMessage],
+          title: `Create: ${agentData.name}`,
+          lastUpdated: new Date().toISOString(),
+          messageCount: 1,
+        }),
+      );
+      localStorage.setItem('pending_arcus_id', conversationId);
+      localStorage.setItem('pending_arcus_message', prompt);
+      localStorage.setItem('pending_arcus_options', JSON.stringify({}));
+    } catch { /* localStorage unavailable — navigation still works, loader will fetch */ }
+
+    toast.success(`Setting up "${agentData.name}"…`);
+    router.push(`/dashboard/agent-talk/${conversationId}`);
   };
 
   const handleEdit = async (data: Partial<Agent> & { _timezone?: string }) => {

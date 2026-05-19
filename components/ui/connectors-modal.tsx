@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTheme } from 'next-themes';
 import { 
   Calendar, 
   Video,
@@ -198,6 +199,13 @@ export function ConnectorsModal({
   onDisconnect,
   onTryOut
 }: ConnectorsModalProps) {
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  const isDark = mounted && resolvedTheme === 'dark';
+
   const [statuses, setStatuses] = useState<any[]>([]);
   const [selectedApp, setSelectedApp] = useState<any | null>(null);
   const [showDetails, setShowDetails] = useState(false);
@@ -354,35 +362,52 @@ export function ConnectorsModal({
           exit={{ opacity: 0, scale: 0.98, y: 30 }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
           className={cn(
-            "relative w-full max-w-[920px] h-full max-h-[820px] bg-gradient-to-br from-[#FAFAFA] to-[#EBEBEB] rounded-[2.5rem] border border-black/[0.08] shadow-[0_32px_128px_-16px_rgba(0,0,0,0.15)] flex flex-col overflow-hidden z-10",
+            "relative w-full max-w-[920px] h-full max-h-[820px] rounded-[2.5rem] flex flex-col overflow-hidden z-10",
+            isDark 
+              ? "bg-[#0A0A0A] border border-[#2A2A2A] shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)]"
+              : "bg-gradient-to-br from-[#FAFAFA] to-[#EBEBEB] border border-black/[0.08] shadow-[0_32px_128px_-16px_rgba(0,0,0,0.15)]",
             selectedApp ? "pointer-events-none" : "pointer-events-auto"
           )}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
           <div className="flex items-center justify-between px-10 py-8">
-            <h2 className="text-[20px] font-bold text-neutral-900 tracking-tight">Connectors</h2>
+            <h2 className={cn("text-[20px] font-bold tracking-tight", isDark ? "text-white" : "text-neutral-900")}>Connectors</h2>
             <button 
               onClick={onClose}
-              className="p-1.5 hover:bg-black/5 rounded-lg text-neutral-400 hover:text-neutral-900 transition-all"
+              className={cn(
+                "p-1.5 rounded-lg transition-all",
+                isDark 
+                  ? "hover:bg-white/5 text-white/30 hover:text-white" 
+                  : "hover:bg-black/5 text-neutral-400 hover:text-neutral-900"
+              )}
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
           {/* Navigation - Apps Only (Tabs removed) */}
-          <div className="px-10 flex items-center border-b border-black/[0.05]">
-            <button className="pb-4 text-[14px] font-bold text-neutral-900 relative">
+          <div className={cn("px-10 flex items-center border-b", isDark ? "border-white/[0.03]" : "border-black/[0.05]")}>
+            <button className={cn("pb-4 text-[14px] font-bold relative", isDark ? "text-white" : "text-neutral-900")}>
               Apps
-              <motion.div layoutId="tab-underline" className="absolute bottom-0 left-0 right-0 h-[3px] bg-neutral-900 rounded-full" />
+              <motion.div 
+                layoutId="tab-underline" 
+                className={cn("absolute bottom-0 left-0 right-0 h-[3px] rounded-full", isDark ? "bg-white" : "bg-neutral-900")} 
+              />
             </button>
           </div>
 
           {/* Grid Area */}
           <div className="flex-1 relative overflow-hidden">
             {/* Fade Overlays */}
-            <div className="absolute top-0 left-0 right-0 h-12 bg-gradient-to-b from-[#FAFAFA] to-transparent z-10 pointer-events-none" />
-            <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-[#EBEBEB] to-transparent z-10 pointer-events-none" />
+            <div className={cn(
+              "absolute top-0 left-0 right-0 h-12 z-10 pointer-events-none bg-gradient-to-b",
+              isDark ? "from-[#0A0A0A] to-transparent" : "from-[#FAFAFA] to-transparent"
+            )} />
+            <div className={cn(
+              "absolute bottom-0 left-0 right-0 h-12 z-10 pointer-events-none bg-gradient-to-t",
+              isDark ? "from-[#0A0A0A] to-transparent" : "from-[#EBEBEB] to-transparent"
+            )} />
             
             <div className="h-full overflow-y-auto p-10 py-12 arcus-scrollbar pb-12">
             <div className="grid grid-cols-1 gap-4">
@@ -393,12 +418,20 @@ export function ConnectorsModal({
                   <button
                     key={app.id}
                     onClick={() => setSelectedApp(app)}
-                    className="flex items-start gap-6 p-6 rounded-[2rem] bg-[#F0F0F2] border border-black/[0.04] hover:bg-[#E5E5E9] hover:border-black/[0.08] transition-all text-left group shadow-sm"
+                    className={cn(
+                      "flex items-start gap-6 p-6 rounded-[2rem] border transition-all text-left group shadow-sm",
+                      isDark 
+                        ? "bg-white/[0.02] border-white/5 hover:bg-white/10 hover:border-white/20" 
+                        : "bg-[#F0F0F2] border-black/[0.04] hover:bg-[#E5E5E9] hover:border-black/[0.08]"
+                    )}
                   >
                     <div 
                       className={cn(
-                        "w-16 h-16 rounded-2xl flex items-center justify-center border border-black/[0.05] shrink-0 shadow-lg group-hover:scale-110 transition-transform p-3",
-                        app.id === 'notion' ? "bg-[#FAFAFA]" : "bg-black/5"
+                        "w-16 h-16 rounded-2xl flex items-center justify-center border shrink-0 shadow-lg group-hover:scale-110 transition-transform p-3",
+                        isDark ? "border-white/[0.05]" : "border-black/[0.05]",
+                        app.id === 'notion' 
+                          ? (isDark ? "bg-white" : "bg-[#FAFAFA]") 
+                          : (isDark ? "bg-black/40" : "bg-black/5")
                       )}
                     >
                       <app.icon className="w-full h-full" />
@@ -406,20 +439,23 @@ export function ConnectorsModal({
                     <div className="flex-1 pr-2">
                       <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center gap-3">
-                          <span className="text-[15px] font-bold text-neutral-900 tracking-tight">{app.name}</span>
+                          <span className={cn("text-[15px] font-bold tracking-tight", isDark ? "text-white/90" : "text-neutral-900")}>{app.name}</span>
                           {app.comingSoon && (
-                            <span className="px-2 py-0.5 rounded-full bg-black/5 text-[10px] font-bold text-neutral-500 uppercase tracking-wider">
+                            <span className={cn(
+                              "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider",
+                              isDark ? "bg-white/10 text-white/40" : "bg-black/5 text-neutral-500"
+                            )}>
                               Coming soon
                             </span>
                           )}
                         </div>
                         {isConnected && (
                           <div className="w-4 h-4 rounded-full bg-transparent flex items-center justify-center">
-                            <Check className="w-3 h-3 text-emerald-600 font-bold" />
+                            <Check className={cn("w-3 h-3 font-bold", isDark ? "text-emerald-500/80" : "text-emerald-600")} />
                           </div>
                         )}
                       </div>
-                      <p className="text-[14px] text-neutral-500 leading-relaxed line-clamp-2 mt-1">
+                      <p className={cn("text-[14px] leading-relaxed line-clamp-2 mt-1", isDark ? "text-white/40" : "text-neutral-500")}>
                         {app.description}
                       </p>
                     </div>
@@ -430,7 +466,6 @@ export function ConnectorsModal({
           </div>
         </div>
       </motion.div>
-
         {/* Sub Modal (App Detail View) */}
         <AnimatePresence>
           {selectedApp && (
@@ -438,7 +473,12 @@ export function ConnectorsModal({
               initial={{ opacity: 0, scale: 0.95, y: 30 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 30 }}
-              className="absolute z-[20000] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(95vw,480px)] bg-gradient-to-br from-[#FAFAFA] to-[#EBEBEB] rounded-[3rem] border border-black/[0.08] shadow-[0_40px_120px_rgba(0,0,0,0.2)] p-8 md:p-10 flex flex-col items-center pointer-events-auto"
+              className={cn(
+                "absolute z-[20000] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(95vw,480px)] rounded-[3rem] p-8 md:p-10 flex flex-col items-center pointer-events-auto",
+                isDark 
+                  ? "bg-[#0A0A0A] border border-[#2A2A2A] shadow-[0_40px_120px_rgba(0,0,0,0.9)]"
+                  : "bg-gradient-to-br from-[#FAFAFA] to-[#EBEBEB] border border-black/[0.08] shadow-[0_40px_120px_rgba(0,0,0,0.2)]"
+              )}
               onClick={(e) => e.stopPropagation()}
             >
               {/* Close Button */}
@@ -449,7 +489,12 @@ export function ConnectorsModal({
                   setShowDetails(false);
                   setManageDropdownOpen(false);
                 }}
-                className="absolute top-6 right-6 p-2 bg-black/5 hover:bg-black/10 rounded-full text-neutral-400 hover:text-neutral-900 transition-all shadow-sm"
+                className={cn(
+                  "absolute top-6 right-6 p-2 rounded-full transition-all shadow-sm",
+                  isDark 
+                    ? "bg-white/5 hover:bg-white/10 text-white/20 hover:text-white" 
+                    : "bg-black/5 hover:bg-black/10 text-neutral-400 hover:text-neutral-900"
+                )}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -457,8 +502,11 @@ export function ConnectorsModal({
               {/* App Icon */}
               <div 
                 className={cn(
-                  "w-24 h-24 rounded-[28px] flex items-center justify-center border border-black/[0.05] shadow-2xl mb-6 mt-4 p-5",
-                  selectedApp.id === 'notion' || selectedApp.id === 'cal_com' ? "bg-white" : "bg-black/5"
+                  "w-24 h-24 rounded-[28px] flex items-center justify-center border shadow-2xl mb-6 mt-4 p-5",
+                  isDark ? "border-white/5" : "border-black/[0.05]",
+                  selectedApp.id === 'notion' || selectedApp.id === 'cal_com' 
+                    ? "bg-white" 
+                    : (isDark ? "bg-black/60" : "bg-black/5")
                 )}
               >
                 <selectedApp.icon className="w-full h-full" />
@@ -469,18 +517,23 @@ export function ConnectorsModal({
                 <motion.div 
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mb-4 py-1.5 px-4 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center gap-2"
+                  className={cn(
+                    "mb-4 py-1.5 px-4 rounded-full flex items-center gap-2",
+                    isDark 
+                      ? "bg-emerald-500/10 border border-emerald-500/20" 
+                      : "bg-emerald-500/10 border border-emerald-500/20"
+                  )}
                 >
                   <div className="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center">
-                    <Check className="w-2.5 h-2.5 text-white font-bold" />
+                    <Check className={cn("w-2.5 h-2.5 font-bold", isDark ? "text-black" : "text-white")} />
                   </div>
-                  <span className="text-[13px] font-bold text-emerald-600 uppercase tracking-widest">{successMessage}</span>
+                  <span className={cn("text-[13px] font-bold uppercase tracking-widest", isDark ? "text-emerald-500" : "text-emerald-600")}>{successMessage}</span>
                 </motion.div>
               )}
 
-              <h3 className="text-2xl font-bold text-neutral-900 mb-4 tracking-tight">{selectedApp.name}</h3>
+              <h3 className={cn("text-2xl font-bold mb-4 tracking-tight", isDark ? "text-white" : "text-neutral-900")}>{selectedApp.name}</h3>
               
-              <p className="text-[14px] text-neutral-600 leading-relaxed text-center mb-8 px-4">
+              <p className={cn("text-[14px] leading-relaxed text-center mb-8 px-4", isDark ? "text-white/50" : "text-neutral-600")}>
                 {selectedApp.description}
               </p>
 
@@ -496,16 +549,26 @@ export function ConnectorsModal({
                           setSelectedApp(null);
                         }
                       }}
-                      className="flex-1 py-4 bg-neutral-950 text-white rounded-2xl font-bold text-[15px] hover:bg-neutral-800 active:scale-95 transition-all flex items-center justify-center gap-2"
+                      className={cn(
+                        "flex-1 py-4 rounded-2xl font-bold text-[15px] active:scale-95 transition-all flex items-center justify-center gap-2",
+                        isDark 
+                          ? "bg-white text-black hover:bg-white/90" 
+                          : "bg-neutral-950 text-white hover:bg-neutral-800"
+                      )}
                     >
-                      <Zap className="w-4 h-4 fill-white" />
+                      <Zap className={cn("w-4 h-4", isDark ? "fill-black" : "fill-white")} />
                       Try it out
                     </button>
                     
                     <div className="relative flex-1">
                       <button
                         onClick={() => setManageDropdownOpen(!manageDropdownOpen)}
-                        className="w-full py-4 bg-[#F0F0F2] border border-black/[0.06] text-neutral-800 rounded-2xl font-bold text-[15px] hover:bg-[#E5E5E9] active:scale-95 transition-all flex items-center justify-center gap-2"
+                        className={cn(
+                          "w-full py-4 rounded-2xl font-bold text-[15px] active:scale-95 transition-all flex items-center justify-center gap-2",
+                          isDark 
+                            ? "bg-[#232323] text-white hover:bg-[#2A2A2A]" 
+                            : "bg-[#F0F0F2] border border-black/[0.06] text-neutral-850 rounded-2xl font-bold text-[15px] hover:bg-[#E5E5E9]"
+                        )}
                       >
                         Manage
                         <ChevronDown className={cn("w-4 h-4 transition-transform", manageDropdownOpen && "rotate-180")} />
@@ -518,15 +581,30 @@ export function ConnectorsModal({
                             initial={{ opacity: 0, y: 10, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                            className="absolute bottom-full mb-3 left-0 right-0 bg-white border border-black/[0.08] rounded-2xl shadow-2xl overflow-hidden z-[220]"
+                            className={cn(
+                              "absolute bottom-full mb-3 left-0 right-0 rounded-2xl shadow-2xl overflow-hidden z-[220]",
+                              isDark 
+                                ? "bg-[#1A1A1A] border border-[#2A2A2A]" 
+                                : "bg-white border border-black/[0.08]"
+                            )}
                           >
-                            <button className="w-full px-4 py-3 text-left text-[14px] font-medium text-neutral-600 hover:bg-black/5 hover:text-neutral-900 flex items-center gap-3 transition-all">
+                            <button className={cn(
+                              "w-full px-4 py-3 text-left text-[14px] font-medium flex items-center gap-3 transition-all",
+                              isDark 
+                                ? "text-white/70 hover:bg-white/5 hover:text-white" 
+                                : "text-neutral-600 hover:bg-black/5 hover:text-neutral-900"
+                            )}>
                               <Plus className="w-4 h-4" />
                               Configure
                             </button>
                             <button 
                               onClick={() => handleDisconnect(selectedApp.id)}
-                              className="w-full px-4 py-3 text-left text-[14px] font-medium text-red-650 hover:bg-red-500/5 flex items-center gap-3 transition-all border-t border-black/[0.04]"
+                              className={cn(
+                                "w-full px-4 py-3 text-left text-[14px] font-medium flex items-center gap-3 transition-all border-t",
+                                isDark 
+                                  ? "text-red-400 hover:bg-red-500/10 border-white/[0.03]" 
+                                  : "text-red-650 hover:bg-red-500/5 border-black/[0.04]"
+                              )}
                             >
                               <X className="w-4 h-4" />
                               Delete
@@ -539,7 +617,12 @@ export function ConnectorsModal({
                 ) : selectedApp.comingSoon ? (
                   <button
                     disabled
-                    className="w-full py-4 bg-black/5 text-neutral-400 rounded-2xl font-bold text-[15px] cursor-not-allowed flex items-center justify-center gap-2"
+                    className={cn(
+                      "w-full py-4 rounded-2xl font-bold text-[15px] cursor-not-allowed flex items-center justify-center gap-2",
+                      isDark 
+                        ? "bg-white/10 text-white/40" 
+                        : "bg-black/5 text-neutral-400"
+                    )}
                   >
                     <Clock className="w-4 h-4" />
                     Coming soon
@@ -547,19 +630,27 @@ export function ConnectorsModal({
                 ) : (
                   <button
                     onClick={() => handleConnectAction(selectedApp.id)}
-                    className="w-full py-4 bg-neutral-950 text-white rounded-2xl font-bold text-[15px] hover:bg-neutral-800 active:scale-95 transition-all flex items-center justify-center gap-2"
+                    className={cn(
+                      "w-full py-4 rounded-2xl font-bold text-[15px] active:scale-95 transition-all flex items-center justify-center gap-2",
+                      isDark 
+                        ? "bg-white text-black hover:bg-white/90" 
+                        : "bg-neutral-950 text-white hover:bg-neutral-800"
+                    )}
                   >
-                    <Zap className="w-4 h-4 fill-white" />
+                    <Zap className={cn("w-4 h-4", isDark ? "fill-black" : "fill-white")} />
                     Connect
                   </button>
                 )}
               </div>
 
               {/* Details Accordion */}
-              <div className="w-full border-t border-black/[0.05] pt-4">
+              <div className={cn("w-full border-t pt-4", isDark ? "border-white/[0.05]" : "border-black/[0.05]")}>
                 <button 
                   onClick={() => setShowDetails(!showDetails)}
-                  className="w-full flex items-center justify-center gap-2 py-2 text-neutral-450 hover:text-neutral-700 transition-all text-[13px] font-medium mb-4"
+                  className={cn(
+                    "w-full flex items-center justify-center gap-2 py-2 transition-all text-[13px] font-medium mb-4",
+                    isDark ? "text-white/30 hover:text-white/60" : "text-neutral-450 hover:text-neutral-700"
+                  )}
                 >
                   {showDetails ? 'Hide Details' : 'Show Details'}
                   <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", showDetails && "rotate-180")} />
@@ -573,33 +664,38 @@ export function ConnectorsModal({
                       exit={{ opacity: 0, height: 0 }}
                       className="overflow-hidden"
                     >
-                      <div className="bg-black/[0.02] rounded-3xl p-6 border border-black/[0.04] space-y-4 mb-2">
+                      <div className={cn(
+                        "rounded-3xl p-6 border space-y-4 mb-2",
+                        isDark 
+                          ? "bg-black/20 border-white/[0.03]" 
+                          : "bg-black/[0.02] border-black/[0.04]"
+                      )}>
                         <div className="flex items-center justify-between">
-                          <span className="text-[13px] text-neutral-400">Connector Type</span>
-                          <span className="text-[13px] text-neutral-800 font-medium">{selectedApp.type}</span>
+                          <span className={cn("text-[13px]", isDark ? "text-white/30" : "text-neutral-400")}>Connector Type</span>
+                          <span className={cn("text-[13px] font-medium", isDark ? "text-white/70" : "text-neutral-800")}>{selectedApp.type}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-[13px] text-neutral-400">Author</span>
-                          <span className="text-[13px] text-neutral-800 font-medium">{selectedApp.author}</span>
+                          <span className={cn("text-[13px]", isDark ? "text-white/30" : "text-neutral-400")}>Author</span>
+                          <span className={cn("text-[13px] font-medium", isDark ? "text-white/70" : "text-neutral-800")}>{selectedApp.author}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-[13px] text-neutral-400">UUID</span>
+                          <span className={cn("text-[13px]", isDark ? "text-white/30" : "text-neutral-400")}>UUID</span>
                           <div className="flex items-center gap-2">
-                            <span className="text-neutral-500 font-mono text-[11px] truncate max-w-[120px]">{selectedApp.uuid}</span>
-                            <button className="text-neutral-400 hover:text-neutral-800 transition-all"><Plus className="w-3.5 h-3.5 rotate-45" /></button>
+                            <span className={cn("font-mono text-[11px] truncate max-w-[120px]", isDark ? "text-white/40" : "text-neutral-500")}>{selectedApp.uuid}</span>
+                            <button className={cn("transition-all", isDark ? "text-white/20 hover:text-white" : "text-neutral-400 hover:text-neutral-800")}><Plus className="w-3.5 h-3.5 rotate-45" /></button>
                           </div>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-[13px] text-neutral-400">Website</span>
-                          <a href={selectedApp.website} target="_blank" className="text-neutral-400 hover:text-neutral-800 transition-all"><ExternalLink className="w-3.5 h-3.5" /></a>
+                          <span className={cn("text-[13px]", isDark ? "text-white/30" : "text-neutral-400")}>Website</span>
+                          <a href={selectedApp.website} target="_blank" className={cn("transition-all", isDark ? "text-white/20 hover:text-white" : "text-neutral-400 hover:text-neutral-800")}><ExternalLink className="w-3.5 h-3.5" /></a>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-[13px] text-neutral-400">Documentation</span>
-                          <a href={selectedApp.documentation} target="_blank" className="text-neutral-400 hover:text-neutral-800 transition-all"><ExternalLink className="w-3.5 h-3.5" /></a>
+                          <span className={cn("text-[13px]", isDark ? "text-white/30" : "text-neutral-400")}>Documentation</span>
+                          <a href={selectedApp.documentation} target="_blank" className={cn("transition-all", isDark ? "text-white/20 hover:text-white" : "text-neutral-400 hover:text-neutral-800")}><ExternalLink className="w-3.5 h-3.5" /></a>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-[13px] text-neutral-400">Privacy Policy</span>
-                          <a href={selectedApp.privacyPolicy} target="_blank" className="text-neutral-400 hover:text-neutral-800 transition-all"><ExternalLink className="w-3.5 h-3.5" /></a>
+                          <span className={cn("text-[13px]", isDark ? "text-white/30" : "text-neutral-400")}>Privacy Policy</span>
+                          <a href={selectedApp.privacyPolicy} target="_blank" className={cn("transition-all", isDark ? "text-white/20 hover:text-white" : "text-neutral-400 hover:text-neutral-800")}><ExternalLink className="w-3.5 h-3.5" /></a>
                         </div>
                       </div>
                     </motion.div>
@@ -609,7 +705,10 @@ export function ConnectorsModal({
                 <div className="flex justify-center mt-6">
                   <button 
                     onClick={() => setShowFeedback(true)}
-                    className="text-[13px] text-neutral-450 hover:text-neutral-700 transition-all underline underline-offset-4"
+                    className={cn(
+                      "text-[13px] transition-all underline underline-offset-4",
+                      isDark ? "text-white/20 hover:text-white/40" : "text-neutral-450 hover:text-neutral-700"
+                    )}
                   >
                     Provide feedback
                   </button>
@@ -623,18 +722,26 @@ export function ConnectorsModal({
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="absolute inset-0 z-[30000] bg-black/20 backdrop-blur-sm flex items-center justify-center p-6 rounded-[2.5rem]"
+                    className={cn(
+                      "absolute inset-0 z-[30000] backdrop-blur-sm flex items-center justify-center p-6 rounded-[2.5rem]",
+                      isDark ? "bg-black/40" : "bg-black/20"
+                    )}
                   >
                     <motion.div 
                       initial={{ y: 20 }}
                       animate={{ y: 0 }}
-                      className="w-full max-w-[420px] bg-gradient-to-br from-[#FAFAFA] to-[#EBEBEB] border border-black/[0.08] rounded-[2rem] p-8 shadow-2xl flex flex-col gap-6"
+                      className={cn(
+                        "w-full max-w-[420px] rounded-[2rem] p-8 shadow-2xl flex flex-col gap-6",
+                        isDark 
+                          ? "bg-[#141414] border border-[#2A2A2A]" 
+                          : "bg-gradient-to-br from-[#FAFAFA] to-[#EBEBEB] border border-black/[0.08]"
+                      )}
                     >
                       <div className="flex items-center justify-between">
-                        <h3 className="text-[15px] font-bold text-neutral-900">Feedback for {selectedApp.name}</h3>
+                        <h3 className={cn("text-[15px] font-bold", isDark ? "text-white/90" : "text-neutral-900")}>Feedback for {selectedApp.name}</h3>
                         <button 
                           onClick={() => setShowFeedback(false)}
-                          className="p-1 text-neutral-400 hover:text-neutral-900 transition-colors"
+                          className={cn("p-1 transition-colors", isDark ? "text-white/30 hover:text-white" : "text-neutral-400 hover:text-neutral-900")}
                         >
                           <X className="w-5 h-5" />
                         </button>
@@ -645,7 +752,12 @@ export function ConnectorsModal({
                           value={feedback}
                           onChange={(e) => setFeedback(e.target.value)}
                           placeholder="Share your thoughts..."
-                          className="w-full h-40 bg-[#F0F0F2] border border-black/[0.06] rounded-2xl p-5 text-[14px] text-neutral-900 placeholder:text-black/25 focus:outline-none focus:border-black/15 transition-all resize-none leading-relaxed"
+                          className={cn(
+                            "w-full h-40 rounded-2xl p-5 text-[14px] placeholder:text-neutral-400 focus:outline-none transition-all resize-none leading-relaxed",
+                            isDark 
+                              ? "bg-white/[0.03] border border-white/5 text-white placeholder:text-white/20 focus:border-white/10" 
+                              : "bg-[#F0F0F2] border border-black/[0.06] text-neutral-900 placeholder:text-black/25 focus:border-black/15"
+                          )}
                           autoFocus
                           onKeyDown={(e) => {
                             if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
@@ -659,7 +771,12 @@ export function ConnectorsModal({
                         <button 
                           onClick={handleSendFeedback}
                           disabled={isSubmittingFeedback || !feedback.trim()}
-                          className="bg-neutral-950 hover:bg-neutral-800 text-white rounded-full pl-6 pr-4 py-3 text-[14px] font-bold flex items-center gap-4 active:scale-95 transition-all disabled:opacity-20 disabled:grayscale disabled:cursor-not-allowed group"
+                          className={cn(
+                            "rounded-full pl-6 pr-4 py-3 text-[14px] font-bold flex items-center gap-4 active:scale-95 transition-all disabled:opacity-20 disabled:grayscale disabled:cursor-not-allowed group",
+                            isDark 
+                              ? "bg-white/10 hover:bg-white/20 text-white" 
+                              : "bg-neutral-950 hover:bg-neutral-800 text-white"
+                          )}
                         >
                           {isSubmittingFeedback ? (
                             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

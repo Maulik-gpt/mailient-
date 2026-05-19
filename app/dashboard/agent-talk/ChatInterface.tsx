@@ -16,6 +16,7 @@ import { TaskProgressCard, type TaskList } from './components/TaskProgressCard';
 import { LiveTaskWidget } from './components/LiveTaskWidget';
 import { DraftReplyBox } from './components/DraftReplyBox';
 import { ActionResultCard } from './components/ActionResultCard';
+import { ScheduledAgentCard, type ScheduledAgentData } from './components/ScheduledAgentCard';
 import { ChatPlanCard, type PlanCardData } from './components/ChatPlanCard';
 import { CanvasPanel, type CanvasData } from './components/CanvasPanel';
 import { ArtifactsGalleryPanel } from './components/ArtifactsGalleryPanel';
@@ -550,6 +551,7 @@ interface AgentMessage {
       attendees?: string[];
       contentPreview?: string;
     };
+    scheduledAgent?: ScheduledAgentData;
     searchExecution?: {
       mainQuery: string;
       subQueries: Array<{

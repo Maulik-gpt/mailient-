@@ -389,6 +389,23 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
     },
   },
   {
+    name: 'create_scheduled_agent',
+    description: 'Create a real, persistent background scheduled agent that the cron runner will execute on a recurring schedule. ALWAYS available. Call this AFTER you have written and opened the agent specification document via open_canvas. This actually creates the agent in the database — it is not a draft. Provide a clear name, a detailed task_description written as a direct instruction to the future agent (what to do every run, what to filter, what to deliver), and a valid 5-field cron expression.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Short human name for the agent, e.g. "Mailient Whale Scout Daily Harvest"' },
+        task_description: { type: 'string', description: 'The full instruction the agent runs every time it fires. Write it as a direct, self-contained command including all filtering rules, data sources, and what to deliver.' },
+        cron_schedule: { type: 'string', description: '5-field cron expression "m h dom mon dow" in the user\'s local time, e.g. "5 5 * * *" for daily at 05:05.' },
+        output_channel: { type: 'string', enum: ['gmail', 'slack', 'both'], description: 'Where the report is delivered. Default "gmail".' },
+        slack_channel: { type: 'string', description: 'Slack channel name (only if output_channel is slack or both).' },
+        skip_confirmations: { type: 'boolean', description: 'If true, the agent acts (sends/publishes) without asking for approval. Default false.' },
+        expires_at: { type: 'string', description: 'Optional ISO date (YYYY-MM-DD) after which the agent auto-pauses. Omit for no expiry.' },
+      },
+      required: ['name', 'task_description', 'cron_schedule'],
+    },
+  },
+  {
     name: 'ask_user',
     description: 'Ask the user clarifying questions before proceeding. Use this ONLY when the instruction is genuinely ambiguous and you cannot make a reasonable default decision. Keep questions concise. Provide 2-3 short option labels when the answer space is bounded; omit options for open-ended questions. Maximum 3 questions per call.',
     input_schema: {
@@ -431,6 +448,7 @@ const TOOL_INTEGRATION_MAP: Record<string, string | null> = {
   open_canvas: null,
   web_search: null,
   send_slack_message: 'slack',
+  create_scheduled_agent: null,
   ask_user: null,
 };
 
@@ -483,6 +501,7 @@ export async function executeTool(
       case 'open_canvas':       result = openCanvas(input); break;
       case 'web_search':        result = await webSearch(input); break;
       case 'send_slack_message': result = await sendSlackMessage(userId, input); break;
+      case 'create_scheduled_agent': result = await createScheduledAgent(userId, input); break;
       default:
         console.warn(`[Arcus:Tools] ${ts()} Unknown tool requested: "${name}"`);
         return { output: `Unknown tool: ${name}` };
@@ -1078,4 +1097,117 @@ async function sendSlackMessage(userId: string, input: any): Promise<ToolResult>
   const data = await res.json();
   if (!data.ok) return { output: `Slack error: ${data.error}` };
   return { output: `Slack message sent to ${input.channel} ✅` };
+}
+
+// ── Scheduled agent creation ───────────────────────────────────────────────────
+
+const DOW_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+/** Human-readable label for the cron patterns the create form / LLM produce. */
+function cronToLabel(cron: string): string {
+  const p = cron.trim().split(/\s+/);
+  if (p.length !== 5) return `Schedule: ${cron}`;
+  const [min, hour, , , dow] = p;
+  const hh = /^\d+$/.test(hour) ? hour.padStart(2, '0') : hour;
+  const mm = /^\d+$/.test(min) ? min.padStart(2, '0') : min;
+  if (hour.startsWith('*/')) return `Every ${hour.slice(2)} hour(s)`;
+  if (min.startsWith('*/')) return `Every ${min.slice(2)} minute(s)`;
+  const at = `${hh}:${mm}`;
+  if (dow === '*') return `Daily at ${at}`;
+  if (/^\d$/.test(dow)) return `Weekly on ${DOW_NAMES[Number(dow)]} at ${at}`;
+  return `At ${at} (${cron})`;
+}
+
+/** Next fire time for the supported cron patterns, as an ISO string. */
+function nextRunIso(cron: string): string | null {
+  const p = cron.trim().split(/\s+/);
+  if (p.length !== 5) return null;
+  const [minS, hourS, , , dowS] = p;
+  const now = new Date();
+  const next = new Date(now);
+
+  if (hourS.startsWith('*/')) {
+    const step = parseInt(hourS.slice(2)) || 1;
+    next.setMinutes(/^\d+$/.test(minS) ? parseInt(minS) : 0, 0, 0);
+    while (next <= now || next.getHours() % step !== 0) next.setHours(next.getHours() + 1);
+    return next.toISOString();
+  }
+  if (minS.startsWith('*/')) {
+    const step = parseInt(minS.slice(2)) || 15;
+    next.setSeconds(0, 0);
+    do { next.setMinutes(next.getMinutes() + 1); } while (next <= now || next.getMinutes() % step !== 0);
+    return next.toISOString();
+  }
+
+  const h = parseInt(hourS), m = parseInt(minS);
+  if (isNaN(h) || isNaN(m)) return null;
+  next.setHours(h, m, 0, 0);
+
+  if (/^\d$/.test(dowS)) {
+    const targetDow = Number(dowS);
+    while (next <= now || next.getDay() !== targetDow) next.setDate(next.getDate() + 1);
+  } else if (next <= now) {
+    next.setDate(next.getDate() + 1);
+  }
+  return next.toISOString();
+}
+
+async function createScheduledAgent(userId: string, input: any): Promise<ToolResult> {
+  if (!input?.name?.trim() || !input?.task_description?.trim()) {
+    return { output: 'Cannot create the agent — a name and a task description are both required.' };
+  }
+  const cron = (input.cron_schedule || '0 7 * * *').trim();
+  if (cron.split(/\s+/).length !== 5) {
+    return { output: `Invalid cron schedule "${cron}". It must have exactly 5 space-separated fields (m h dom mon dow).` };
+  }
+
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from('arcus_agents')
+    .insert({
+      user_id: userId.toLowerCase(),
+      name: input.name.trim(),
+      task_description: input.task_description.trim(),
+      cron_schedule: cron,
+      output_channel: input.output_channel || 'gmail',
+      slack_channel: input.slack_channel || null,
+      skip_confirmations: input.skip_confirmations ?? false,
+      expires_at: input.expires_at || null,
+      status: 'active',
+    })
+    .select()
+    .single();
+
+  if (error?.code === '42P01') {
+    return { output: 'The agents table is not set up in the database yet. Tell the user the scheduled-agents feature needs the arcus_agents migration applied.' };
+  }
+  if (error) {
+    return { output: `Failed to create the scheduled agent: ${error.message}` };
+  }
+
+  const scheduleLabel = cronToLabel(cron);
+  const nextRun = nextRunIso(cron);
+
+  return {
+    output: [
+      `Scheduled agent "${data.name}" created successfully and is now LIVE.`,
+      `Schedule: ${scheduleLabel} (cron: ${cron})`,
+      nextRun ? `Next run: ${nextRun}` : '',
+      `Delivery: ${data.output_channel}`,
+      `Now write a short confirmation to the user telling them the agent is live, when it will next run, and how the report will be delivered. Do NOT call any more tools.`,
+    ].filter(Boolean).join('\n'),
+    canvasData: {
+      title: data.name,
+      type: 'scheduled_agent',
+      markdown: '',
+      pageMeta: {
+        pageId: data.id,
+        contentPreview: data.task_description,
+        // schedule + delivery info packed into existing fields so no new ToolResult shape is needed
+        url: '',
+        startTime: nextRun || undefined,
+        attendees: [scheduleLabel, cron, data.output_channel, String(!!data.skip_confirmations), data.status],
+      },
+    },
+  };
 }
