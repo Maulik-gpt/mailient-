@@ -1556,11 +1556,11 @@ textarea,
   --arcus-border:           #E0E0E0; /* border 800 */
   --arcus-divider:          #D4D4D4; /* divider 700 */
 
-  /* Arcus Design System Text Overrides - Light Mode (Exact specs from user) */
-  --arcus-fg:               #0F172A;
-  --arcus-fg-secondary:     #475569;
-  --arcus-fg-tertiary:      #64748B;
-  --arcus-fg-muted:         #94A3B8;
+  /* Arcus Design System Text Overrides - Light Mode (Pure Graphite specs from user) */
+  --arcus-fg:               #111111; /* primary/ink */
+  --arcus-fg-secondary:     #555555; /* secondary */
+  --arcus-fg-tertiary:      #8A8A8A; /* tertiary */
+  --arcus-fg-muted:         #B8B8B8; /* muted */
   --arcus-fg-inverse:       #FFFFFF;
 }
 
