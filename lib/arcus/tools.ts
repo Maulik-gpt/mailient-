@@ -1023,8 +1023,15 @@ async function createNotionPage(userId: string, input: any): Promise<ToolResult>
 }
 
 function openCanvas(input: any): ToolResult {
+  const isAgentSpec = input.type === 'report' && (
+    input.title?.toLowerCase().includes('agent') ||
+    input.markdown?.toLowerCase().includes('agent objective') ||
+    input.markdown?.toLowerCase().includes('cron')
+  );
   return {
-    output: `Canvas opened: "${input.title}"`,
+    output: isAgentSpec
+      ? `Canvas opened: "${input.title}". The specification is now visible to the user. IMPORTANT: You must now immediately call create_scheduled_agent to register this agent in the system. The agent is NOT yet created — open_canvas only displayed the spec.`
+      : `Canvas opened: "${input.title}"`,
     canvasData: {
       title: input.title,
       type: input.type || 'notes',

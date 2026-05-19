@@ -1,167 +1,218 @@
 'use client';
 
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { Check, X } from 'lucide-react';
+import {
+  ChevronDown, ChevronRight,
+  Search, Mail, Send, FileText, Calendar, Database,
+  Globe, MessageSquare, Inbox, PenLine, Clock,
+  LayoutTemplate, Terminal, CheckCircle2, AlertCircle,
+  Loader2,
+} from 'lucide-react';
 import type { AgentStep, AgentNarrative } from './AgentExecutionTimeline';
 
-/**
- * LiveStepTracker — a premium vertical timeline of the agent's execution.
- *
- * Each step is one row on a connected vertical rail:
- *   - completed → solid green node with a check
- *   - active    → pulsing blue node (the step running right now)
- *   - error     → red node with an ✕
- *   - pending   → hollow gray node (queued / not started yet)
- *
- * It is fed by the same `agentSteps` SSE pipeline already in ChatInterface,
- * so it updates in real time as each tool call starts and finishes.
- */
+// ─── Tool icon + label map ────────────────────────────────────────────────────
 
-interface LiveStepTrackerProps {
-  steps: AgentStep[];
-  narratives?: AgentNarrative[];
-  isActive: boolean;
+const TOOL_META: Record<string, { icon: React.ReactNode; label: string }> = {
+  search_gmail:        { icon: <Mail className="w-4 h-4" />,          label: 'Searching Gmail' },
+  search_inbox:        { icon: <Search className="w-4 h-4" />,         label: 'Searching Inbox' },
+  read_email:          { icon: <Mail className="w-4 h-4" />,           label: 'Reading Email' },
+  get_sent_emails:     { icon: <Inbox className="w-4 h-4" />,          label: 'Fetching Sent Emails' },
+  draft_reply:         { icon: <PenLine className="w-4 h-4" />,        label: 'Drafting Reply' },
+  save_draft:          { icon: <PenLine className="w-4 h-4" />,        label: 'Saving Draft' },
+  send_email:          { icon: <Send className="w-4 h-4" />,           label: 'Sending Email' },
+  schedule_meeting:    { icon: <Calendar className="w-4 h-4" />,       label: 'Scheduling Meeting' },
+  get_calendar_events: { icon: <Clock className="w-4 h-4" />,          label: 'Checking Calendar' },
+  search_notion:       { icon: <Database className="w-4 h-4" />,       label: 'Searching Notion' },
+  open_canvas:         { icon: <LayoutTemplate className="w-4 h-4" />, label: 'Opening Canvas' },
+  web_search:          { icon: <Globe className="w-4 h-4" />,          label: 'Web Search' },
+  send_web_request:    { icon: <Globe className="w-4 h-4" />,          label: 'Fetching Web Page' },
+  send_slack_message:  { icon: <MessageSquare className="w-4 h-4" />,  label: 'Sending Slack Message' },
+  read_browser_page:   { icon: <Globe className="w-4 h-4" />,          label: 'Reading Page' },
+};
+
+function getToolMeta(tool?: string) {
+  if (!tool) return { icon: <Terminal className="w-4 h-4" />, label: 'Running Tool' };
+  return TOOL_META[tool] ?? { icon: <Terminal className="w-4 h-4" />, label: tool.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) };
 }
 
-type NodeState = 'completed' | 'active' | 'error' | 'pending';
+// ─── Extract result count from summary string ─────────────────────────────────
 
-function nodeState(step: AgentStep): NodeState {
-  if (step.status === 'completed') return 'completed';
-  if (step.status === 'error') return 'error';
-  if (step.status === 'active') return 'active';
-  return 'pending';
+function extractResultCount(summary?: string): number | null {
+  if (!summary) return null;
+  const m = summary.match(/(\d+)\s*(email|result|event|item|message|row|record|snippet|match)/i);
+  return m ? parseInt(m[1], 10) : null;
 }
 
-function StepNode({ state }: { state: NodeState }) {
-  if (state === 'completed') {
-    return (
-      <div className="w-[18px] h-[18px] rounded-full bg-emerald-500/90 flex items-center justify-center shadow-[0_0_8px_rgba(16,185,129,0.45)]">
-        <Check className="w-3 h-3 text-white" strokeWidth={3} />
-      </div>
-    );
-  }
+// ─── Extract result snippets from summary (email subjects / titles) ───────────
 
-  if (state === 'error') {
-    return (
-      <div className="w-[18px] h-[18px] rounded-full bg-red-500/90 flex items-center justify-center shadow-[0_0_8px_rgba(239,68,68,0.45)]">
-        <X className="w-3 h-3 text-white" strokeWidth={3} />
-      </div>
-    );
-  }
-
-  if (state === 'active') {
-    return (
-      <div className="relative w-[18px] h-[18px] flex items-center justify-center">
-        <motion.span
-          className="absolute inset-0 rounded-full bg-blue-500/30"
-          animate={{ scale: [1, 1.7, 1], opacity: [0.6, 0, 0.6] }}
-          transition={{ repeat: Infinity, duration: 1.6, ease: 'easeInOut' }}
-        />
-        <motion.span
-          className="w-[10px] h-[10px] rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.7)]"
-          animate={{ opacity: [0.7, 1, 0.7] }}
-          transition={{ repeat: Infinity, duration: 1.4, ease: 'easeInOut' }}
-        />
-      </div>
-    );
-  }
-
-  // pending
-  return (
-    <div className="w-[18px] h-[18px] rounded-full border-2 border-arcus-border bg-arcus-elevated" />
-  );
+function extractSnippets(summary?: string): string[] {
+  if (!summary) return [];
+  // Lines that look like "Subject: ...", "- ...", numbered items, or quoted strings
+  const lines = summary.split(/\n/).map(l => l.trim()).filter(Boolean);
+  return lines
+    .filter(l =>
+      l.startsWith('-') ||
+      l.startsWith('•') ||
+      /^\d+[.)]\s/.test(l) ||
+      l.startsWith('"') ||
+      l.toLowerCase().startsWith('subject:') ||
+      l.toLowerCase().startsWith('title:') ||
+      l.toLowerCase().startsWith('event:')
+    )
+    .map(l => l.replace(/^[-•\d.)"']+\s*/, '').replace(/^(subject|title|event):\s*/i, ''))
+    .slice(0, 6);
 }
 
-function StepRow({
-  step,
-  isLast,
-}: {
-  step: AgentStep;
-  isLast: boolean;
-}) {
-  const state = nodeState(step);
-  const isActive = state === 'active';
-  const isError = state === 'error';
+// ─── Single expandable step card ─────────────────────────────────────────────
 
-  const contextHint =
-    step.context ||
-    step.params?.query ||
-    step.params?.subject ||
-    step.params?.title ||
-    step.params?.channel ||
-    '';
+function StepCard({ step }: { step: AgentStep }) {
+  const [open, setOpen] = useState(false);
+  const isActive = step.status === 'active';
+  const isError = step.status === 'error';
 
-  const durationSec =
-    step.completedAt && step.startedAt
-      ? ((step.completedAt - step.startedAt) / 1000).toFixed(1)
-      : null;
+  const { icon, label } = getToolMeta(step.tool);
+  const resultCount = isActive ? null : extractResultCount(step.summary);
+  const snippets = isActive ? [] : extractSnippets(step.summary);
+  const hasDetails = snippets.length > 0 || (step.summary && step.summary.length > 40 && !isActive);
+
+  const resultLabel = resultCount !== null
+    ? `${resultCount} result${resultCount !== 1 ? 's' : ''}`
+    : step.summary && !isActive && step.summary.length < 50
+    ? step.summary
+    : null;
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-      className="relative flex gap-3 pb-3 last:pb-0"
+      transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+      className={cn(
+        'rounded-xl border overflow-hidden transition-colors',
+        isActive
+          ? 'bg-white/[0.04] border-white/10'
+          : isError
+          ? 'bg-red-500/[0.04] border-red-500/20'
+          : 'bg-white/[0.03] border-white/[0.07]',
+      )}
     >
-      {/* Rail + node */}
-      <div className="relative flex flex-col items-center flex-shrink-0">
-        <StepNode state={state} />
-        {!isLast && (
-          <div
-            className={cn(
-              'w-px flex-1 mt-1 min-h-[14px]',
-              state === 'completed' ? 'bg-emerald-500/30' : 'bg-arcus-border',
-            )}
-          />
+      {/* Header row */}
+      <button
+        onClick={() => hasDetails && setOpen(v => !v)}
+        className={cn(
+          'w-full flex items-center gap-3 px-3.5 py-2.5 text-left transition-colors',
+          hasDetails ? 'hover:bg-white/[0.03] cursor-pointer' : 'cursor-default',
         )}
-      </div>
+      >
+        {/* Tool icon */}
+        <div
+          className={cn(
+            'flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center border',
+            isActive
+              ? 'bg-white/[0.06] border-white/15 text-white/70'
+              : isError
+              ? 'bg-red-500/10 border-red-500/20 text-red-400'
+              : 'bg-white/[0.05] border-white/[0.08] text-white/40',
+          )}
+        >
+          {isActive ? (
+            <motion.div
+              animate={{ opacity: [0.5, 1, 0.5] }}
+              transition={{ repeat: Infinity, duration: 1.4, ease: 'easeInOut' }}
+            >
+              {icon}
+            </motion.div>
+          ) : isError ? (
+            <AlertCircle className="w-4 h-4" />
+          ) : (
+            icon
+          )}
+        </div>
 
-      {/* Label + context */}
-      <div className="flex-1 min-w-0 pt-[1px]">
-        <div className="flex items-center gap-2">
+        {/* Label */}
+        <div className="flex-1 min-w-0">
           {isActive ? (
             <motion.span
-              className="text-[13px] font-medium text-arcus-fg-secondary tracking-tight truncate"
-              animate={{ opacity: [0.75, 1, 0.75] }}
-              transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
+              className="text-[13px] font-medium text-white/60 tracking-tight block"
+              animate={{ opacity: [0.6, 1, 0.6] }}
+              transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}
             >
-              {step.label}
+              {label}
             </motion.span>
           ) : (
-            <span
-              className={cn(
-                'text-[13px] font-medium tracking-tight truncate',
-                isError
-                  ? 'text-red-400/70'
-                  : state === 'completed'
-                  ? 'text-arcus-fg-secondary'
-                  : 'text-arcus-fg-muted',
+            <span className={cn(
+              'text-[13px] font-medium tracking-tight block',
+              isError ? 'text-red-400/70' : 'text-white/55',
+            )}>
+              {label}
+              {resultLabel && (
+                <span className={cn(
+                  'ml-1.5',
+                  isError ? 'text-red-400/50' : 'text-white/30',
+                )}>
+                  — {resultLabel}
+                </span>
               )}
-            >
-              {step.label}
-            </span>
-          )}
-
-          {durationSec && !isActive && (
-            <span className="flex-shrink-0 text-[10px] text-arcus-fg-muted font-mono tabular-nums">
-              {durationSec}s
             </span>
           )}
         </div>
 
-        {contextHint && (
-          <span className="block text-[11px] text-arcus-fg-muted italic truncate mt-0.5">
-            {contextHint}
-          </span>
+        {/* Right side */}
+        {isActive ? (
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {[0, 0.2, 0.4].map((delay, i) => (
+              <motion.span
+                key={i}
+                className="w-1 h-1 rounded-full bg-white/30"
+                animate={{ opacity: [0.2, 0.8, 0.2] }}
+                transition={{ repeat: Infinity, duration: 1.2, delay, ease: 'easeInOut' }}
+              />
+            ))}
+          </div>
+        ) : hasDetails ? (
+          <div className="flex-shrink-0 text-white/20">
+            {open ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+          </div>
+        ) : null}
+      </button>
+
+      {/* Expanded details */}
+      <AnimatePresence initial={false}>
+        {open && hasDetails && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
+            className="overflow-hidden border-t border-white/[0.06]"
+          >
+            <div className="px-3.5 py-2.5 space-y-1.5">
+              {snippets.length > 0 ? (
+                snippets.map((s, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <div className="w-1 h-1 rounded-full bg-white/20 mt-[7px] flex-shrink-0" />
+                    <span className="text-[12px] text-white/40 leading-snug">{s}</span>
+                  </div>
+                ))
+              ) : step.summary ? (
+                <p className="text-[12px] text-white/35 leading-relaxed">{step.summary}</p>
+              ) : null}
+            </div>
+          </motion.div>
         )}
-      </div>
+      </AnimatePresence>
     </motion.div>
   );
 }
 
-export function LiveStepTracker({ steps, narratives = [], isActive }: LiveStepTrackerProps) {
-  // Drop bare "thinking..." placeholder steps — only real tool steps belong on the rail.
+// ─── Main export ──────────────────────────────────────────────────────────────
+
+export function LiveStepTracker({ steps, narratives = [], isActive }: {
+  steps: AgentStep[];
+  narratives?: AgentNarrative[];
+  isActive: boolean;
+}) {
   const visible = steps.filter(s => {
     if (s.type === 'thinking') {
       const l = s.label?.toLowerCase() || '';
@@ -172,14 +223,12 @@ export function LiveStepTracker({ steps, narratives = [], isActive }: LiveStepTr
 
   if (visible.length === 0) return null;
 
-  // Interleave any iteration-level narrative above the first step of that iteration.
   const seenIterations = new Set<number>();
 
   return (
-    <div className="mt-1 mb-3 pl-0.5">
+    <div className="mt-1 mb-3 space-y-1.5">
       <AnimatePresence initial={false}>
         {visible.map((step, idx) => {
-          const isLast = idx === visible.length - 1;
           const narrative = seenIterations.has(step.iteration)
             ? undefined
             : narratives.find(n => n.iteration === step.iteration);
@@ -192,29 +241,16 @@ export function LiveStepTracker({ steps, narratives = [], isActive }: LiveStepTr
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, ease: 'easeOut' }}
-                  className="text-[13px] text-arcus-fg-tertiary leading-[1.7] pb-2 pl-[30px]"
+                  className="text-[13px] text-white/35 leading-[1.7] pb-1.5"
                 >
                   {narrative.text}
                 </motion.p>
               )}
-              <StepRow step={step} isLast={isLast} />
+              <StepCard step={step} />
             </div>
           );
         })}
       </AnimatePresence>
-
-      {isActive && (
-        <div className="flex items-center gap-1.5 pl-[30px] mt-0.5">
-          {[0, 0.2, 0.4].map((delay, i) => (
-            <motion.span
-              key={i}
-              className="w-1 h-1 rounded-full bg-blue-400/60"
-              animate={{ opacity: [0.3, 1, 0.3] }}
-              transition={{ repeat: Infinity, duration: 1.2, delay, ease: 'easeInOut' }}
-            />
-          ))}
-        </div>
-      )}
     </div>
   );
 }

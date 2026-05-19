@@ -675,7 +675,7 @@ function AgentThinkingSection({ content, isComplete }: { content: string, isComp
       {/* Header — single line, no wrap */}
       <div className="flex items-center gap-2 min-w-0">
         {!isComplete ? (
-          <SpiralLoader size={16} className="flex-shrink-0 opacity-70" />
+          <SpiralLoader size={28} className="flex-shrink-0 opacity-85" />
         ) : (
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
@@ -853,19 +853,19 @@ function CollapsibleSteps({
   const totalCount = steps.length;
 
   return (
-    <div className="mb-2">
+    <div className="mb-3">
       {/* Toggle row */}
       <button
         onClick={() => setCollapsed(c => !c)}
-        className="flex items-center gap-1.5 text-white/25 hover:text-white/50 transition-colors mb-2 group/toggle"
+        className="flex items-center gap-1.5 text-white/30 hover:text-white/55 transition-colors mb-2"
       >
         <ChevronDown
           className={cn(
-            'w-3 h-3 transition-transform duration-200',
+            'w-3.5 h-3.5 transition-transform duration-200',
             collapsed ? '-rotate-90' : 'rotate-0',
           )}
         />
-        <span className="text-[11px] font-mono tracking-wide">
+        <span className="text-[12px] font-medium tracking-wide">
           {collapsed
             ? `${totalCount} step${totalCount !== 1 ? 's' : ''}`
             : isActive
@@ -4431,8 +4431,8 @@ export default function ChatInterface({
                                       />
                                     )}
 
-                                    {/* Scheduled Agent Card — shown after create_scheduled_agent succeeds */}
-                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.scheduledAgent && !(msg as AgentMessage).meta?.isStreaming && (
+                                    {/* Scheduled Agent Card — shown as soon as create_scheduled_agent fires */}
+                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.scheduledAgent && (
                                       <ScheduledAgentCard
                                         data={(msg as AgentMessage).meta!.scheduledAgent!}
                                       />
