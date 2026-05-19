@@ -341,7 +341,7 @@ const PromptInput = forwardRef<HTMLDivElement, PromptInputProps>(
             onFocus={onFocus}
              onBlur={onBlur}
               className={cn(
-               "rounded-[32px] bg-white/[0.06] dark:bg-white/[0.04] backdrop-blur-2xl p-2 transition-all duration-300 relative overflow-hidden",
+               "rounded-[32px] bg-white/[0.06] dark:bg-white/[0.04] backdrop-blur-2xl p-2 transition-all duration-300 relative",
                "border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.06)]",
                !hideShadow && "shadow-[0_20px_60px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)]",
                isLoading && "border-white/[0.12] shadow-[0_0_0_1px_rgba(255,255,255,0.06),0_20px_60px_rgba(0,0,0,0.5)]",
@@ -757,11 +757,13 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
         )}
       >
         {isLoading && (
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.1] to-transparent w-[200%] pointer-events-none z-0"
-            animate={{ x: ['-100%', '100%'] }}
-            transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
-          />
+          <div className="absolute inset-0 overflow-hidden rounded-[32px] pointer-events-none z-0">
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.1] to-transparent w-[200%]"
+              animate={{ x: ['-100%', '100%'] }}
+              transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+            />
+          </div>
         )}
         <AnimatePresence>
           {files.length > 0 && !isRecording && (
@@ -870,7 +872,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      className="absolute bottom-full left-0 mb-2 w-64 bg-neutral-50 dark:bg-arcus-surface-hover border border-arcus-border rounded-2xl shadow-2xl z-[70] overflow-hidden p-1.5"
+                      className="absolute bottom-full left-0 mb-2 w-64 bg-[#141414] backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl z-[70] overflow-hidden p-1.5"
                     >
                       {MODES.map((mode) => (
                         <div key={mode.id} className="relative group">
@@ -880,8 +882,8 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                             className={cn(
                               "w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl transition-all text-left",
                               activeMode === mode.id 
-                                ? "bg-black/[0.05] dark:bg-white/5 text-black dark:text-white" 
-                                : "hover:bg-black/[0.03] dark:hover:bg-white/[0.03] text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white"
+                                ? "bg-white/10 text-white" 
+                                : "hover:bg-white/[0.03] text-white/50 hover:text-white"
                             )}
                           >
                             <div className="flex items-center gap-3">
@@ -892,8 +894,8 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                           </button>
 
                           {/* Tooltip / Description for each mode on hover */}
-                          <div className="absolute left-full ml-2 top-0 invisible group-hover:visible w-48 bg-white dark:bg-arcus-surface-hover border border-black/5 dark:border-arcus-border rounded-xl p-3 shadow-xl z-[80]">
-                            <p className="text-[11px] text-black/60 dark:text-white/60 leading-relaxed">
+                          <div className="absolute left-full ml-2 top-0 invisible group-hover:visible w-48 bg-[#141414] border border-white/10 rounded-xl p-3 shadow-xl z-[80]">
+                            <p className="text-[11px] text-white/60 leading-relaxed">
                               {mode.description}
                             </p>
                           </div>
@@ -966,7 +968,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                     </div>
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" side="top" className="w-56 bg-neutral-900 border-white/10 text-white">
+                <DropdownMenuContent align="end" side="top" className="w-56 bg-[#141414]/95 backdrop-blur-xl border border-white/10 text-white">
                   {AI_MODELS.map(model => {
                     const isLocked = 
                       (model.tier !== 'free' && (props.currentPlan === 'free' || props.currentPlan === 'none' || !props.currentPlan)) || 
