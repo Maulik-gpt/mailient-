@@ -222,7 +222,7 @@ export const ArcusQuickChat: React.FC<ArcusQuickChatProps> = ({ isOpen, onClose,
           className="fixed bottom-6 right-6 z-[3000] w-[450px] h-[80vh] flex flex-col origin-bottom-right"
         >
           {/* Main Card */}
-          <div className="relative group bg-arcus-bg border border-arcus-divider rounded-[2rem] shadow-[0_30px_70px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col ring-1 ring-white/10 h-full">
+          <div className="relative group bg-[#0A0A0C]/85 backdrop-blur-2xl border border-white/10 rounded-[2rem] shadow-[0_30px_70px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col ring-1 ring-white/10 h-full">
             
             {/* Header */}
             <div className="px-6 py-5 border-b border-arcus-border flex items-center justify-between bg-white/[0.02]">

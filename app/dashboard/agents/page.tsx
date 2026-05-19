@@ -363,7 +363,7 @@ function PremiumDatePicker({ value, onChange, minDate }: {
       </div>
 
       {isOpen && (
-        <div className="absolute bottom-full left-0 mb-2 w-72 bg-[#0A0A0A] border border-zinc-900 rounded-2xl shadow-2xl p-4.5 z-[100] select-none animate-in fade-in slide-in-from-bottom-2 duration-150">
+        <div className="absolute bottom-full left-0 mb-2 w-72 bg-[#0A0A0C]/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-4.5 z-[100] select-none animate-in fade-in slide-in-from-bottom-2 duration-150">
           {/* Header navigation */}
           <div className="flex items-center justify-between mb-3.5">
             <div className="flex gap-1">
@@ -506,7 +506,7 @@ function PremiumTimePicker({ value, onChange }: {
       </div>
 
       {isOpen && (
-        <div className="absolute bottom-full right-0 lg:left-0 mb-2 w-64 bg-[#0A0A0A] border border-zinc-900 rounded-2xl shadow-2xl p-4 z-[100] select-none animate-in fade-in slide-in-from-bottom-2 duration-150 flex gap-3">
+        <div className="absolute bottom-full right-0 lg:left-0 mb-2 w-64 bg-[#0A0A0C]/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-4 z-[100] select-none animate-in fade-in slide-in-from-bottom-2 duration-150 flex gap-3">
           {/* Hours Column */}
           <div className="flex-1 flex flex-col items-center">
             <span className="text-[10px] uppercase tracking-wider text-zinc-600 font-extrabold mb-2">Hour</span>
@@ -631,7 +631,7 @@ function NewScheduleModal({ open, onClose, onSave, initial }: {
       <DialogContent
         showCloseButton={false}
         className={cn(
-          'w-full max-w-4xl bg-[#0a0a0b] border border-zinc-900 rounded-2xl p-0 overflow-hidden shadow-2xl shadow-black/60',
+          'w-full max-w-4xl bg-[#0A0A0C]/85 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-0 overflow-hidden shadow-2xl shadow-black/60',
           'max-h-[95vh] flex flex-col',
         )}
       >
@@ -648,7 +648,7 @@ function NewScheduleModal({ open, onClose, onSave, initial }: {
           </button>
         </div>
 
-        <div className="px-8 py-6 overflow-y-auto custom-scroll flex-1 bg-[#0a0a0b]">
+        <div className="px-8 py-6 overflow-y-auto custom-scroll flex-1 bg-transparent">
           <style dangerouslySetInnerHTML={{ __html: `
             .custom-scroll::-webkit-scrollbar {
               width: 6px;
@@ -851,7 +851,7 @@ function AgentDetailModal({ agent, onClose, onToggle, onEdit, onDelete, onToggle
 
   return (
     <Dialog open onOpenChange={v => !v && onClose()}>
-      <DialogContent showCloseButton={false} className="w-full max-w-md bg-zinc-950 border border-zinc-700/50 rounded-2xl p-0 overflow-hidden shadow-2xl shadow-black/60">
+      <DialogContent showCloseButton={false} className="w-full max-w-md bg-[#0A0A0B]/85 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-0 overflow-hidden shadow-2xl shadow-black/60">
         <div className="px-6 pt-6 pb-4 border-b border-zinc-800/60 flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="px-2.5 py-1 rounded-md text-[11px] font-semibold border border-zinc-700/60 bg-zinc-800/60 text-zinc-300">
@@ -1084,7 +1084,7 @@ function TemplateCards({ onActivate }: { onActivate: (t: typeof TEMPLATES[0]) =>
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.06 }}
-            className="bg-zinc-900/60 border border-zinc-800/70 rounded-2xl p-5 flex flex-col hover:border-zinc-600/70 hover:bg-zinc-900/80 transition-all group shadow-sm"
+            className="bg-[#141414]/60 backdrop-blur-xl border border-white/[0.08] rounded-2xl p-5 flex flex-col hover:border-white/20 hover:bg-[#141414]/85 transition-all group shadow-sm"
           >
             <div className="flex items-center gap-3 mb-3">
               <div className="w-9 h-9 rounded-xl bg-zinc-800/80 flex items-center justify-center flex-shrink-0 group-hover:bg-zinc-700/80 transition-colors">
@@ -1123,7 +1123,7 @@ function AgentTaskCard({ agent, onClick, onToggle, onEdit, onDelete, onToggleCon
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -6 }}
-      className="bg-[#0a0a0b] border border-zinc-900 rounded-2xl overflow-hidden hover:border-zinc-800 hover:shadow-lg hover:shadow-black/20 transition-all duration-200 group"
+      className="bg-[#0A0A0B]/60 backdrop-blur-xl border border-zinc-900 rounded-2xl overflow-hidden hover:border-zinc-800 hover:shadow-lg hover:shadow-black/20 transition-all duration-200 group"
     >
       <div className="p-6">
         <div className="flex items-start gap-4">
@@ -1159,7 +1159,7 @@ function AgentTaskCard({ agent, onClick, onToggle, onEdit, onDelete, onToggleCon
                   <MoreHorizontal className="w-4.5 h-4.5" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="min-w-[140px] bg-zinc-900 border border-zinc-800 rounded-xl p-1 shadow-2xl">
+              <DropdownMenuContent align="end" className="min-w-[140px] bg-[#141414]/90 backdrop-blur-xl border border-white/10 rounded-xl p-1 shadow-2xl">
                 <DropdownMenuItem onClick={onEdit} className="flex items-center gap-2 px-3 py-2 text-[13px] text-zinc-300 hover:text-zinc-100 cursor-pointer rounded-lg transition-colors">
                   <Edit2 className="w-3.5 h-3.5" /> Edit schedule
                 </DropdownMenuItem>
